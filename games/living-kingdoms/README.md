@@ -4,7 +4,7 @@ A match-based Roblox real-time strategy game developed through the Atlas workflo
 
 ## Current stage
 
-Repository foundation. The trackable source and test scaffold is in place; no gameplay code has been added yet.
+Repository foundation. The source scaffold and Rojo mappings are in place; no gameplay code has been added yet.
 
 ## First playable milestone
 
@@ -21,6 +21,7 @@ A gray-box map with five Workers where the player can:
 
 ```text
 living-kingdoms/
+├── default.project.json
 ├── src/
 │   ├── client/
 │   ├── server/
@@ -29,14 +30,22 @@ living-kingdoms/
 └── README.md
 ```
 
-The source and test directories contain placeholder files so Git preserves the scaffold. Rojo mappings will be added separately in `LK-0002`; client and server bootstrap scripts remain part of `LK-0003`.
+The source and test directories contain placeholder files so Git preserves the scaffold. `default.project.json` maps source into Roblox services as follows:
+
+| Source path | Roblox destination |
+| --- | --- |
+| `src/client` | `StarterPlayer/StarterPlayerScripts/Client` |
+| `src/server` | `ServerScriptService/Server` |
+| `src/shared` | `ReplicatedStorage/Shared` |
+
+Client and server bootstrap scripts remain part of `LK-0003`.
 
 ## Active task
 
-`LK-0002` — Add `default.project.json` mappings for client, server, and shared source.
+`LK-0003` — Add minimal client and server bootstrap scripts.
 
 Use `prompts/codex-master-prompt.md` and append:
 
 ```text
-Execute task LK-0002: Add default.project.json mappings for client, server, and shared source.
+Execute task LK-0003: Add minimal client and server bootstrap scripts.
 ```
