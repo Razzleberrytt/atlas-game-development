@@ -55,12 +55,16 @@ After synchronizing the project into Roblox Studio, start a play session and con
 
 Follow the Windows guide at [`docs/production/LOCAL-SETUP.md`](../../docs/production/LOCAL-SETUP.md) to install the pinned Rojo CLI and Studio plugin, start the server, connect Studio, and complete the verification checklist.
 
+## Luau tooling
+
+Follow [`docs/production/LUAU-TOOLING.md`](../../docs/production/LUAU-TOOLING.md) for the pinned Windows commands to format, check, and lint all Living Kingdoms source.
+
 ## Active task
 
-`LK-0005` — Add formatting and static-analysis configuration selected for the toolchain.
+`LK-0006` — Verify a local Rojo build produces a valid place file or synchronized Studio tree.
 
 Use `prompts/codex-master-prompt.md` and append:
 
 ```text
-Execute task LK-0005: Add formatting and static-analysis configuration selected for the toolchain.
+Execute task LK-0006: Verify a local Rojo build produces a valid place file or synchronized Studio tree.
 ```
