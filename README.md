@@ -44,4 +44,4 @@ Read these files in order:
 
 **Atlas version:** 0.1  
 **Living Kingdoms phase:** Repository foundation  
-**Next executable task:** LK-0001 — establish the Roblox/Rojo project scaffold
+**Next executable task:** LK-0002 — add `default.project.json` mappings for client, server, and shared source
