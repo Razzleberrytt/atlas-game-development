@@ -59,12 +59,16 @@ Follow the Windows guide at [`docs/production/LOCAL-SETUP.md`](../../docs/produc
 
 Follow [`docs/production/LUAU-TOOLING.md`](../../docs/production/LUAU-TOOLING.md) for the pinned Windows commands to format, check, and lint all Living Kingdoms source.
 
+## Rojo build validation
+
+The pinned Rojo 7.7.0 CLI successfully generated a non-empty place file outside the repository, and the synchronized Roblox Studio tree contained all three documented mappings. See [`docs/production/ROJO-BUILD-VALIDATION.md`](../../docs/production/ROJO-BUILD-VALIDATION.md) for the commands and results.
+
 ## Active task
 
-`LK-0006` — Verify a local Rojo build produces a valid place file or synchronized Studio tree.
+`LK-0007` — Add a smoke-test checklist and record the first successful launch.
 
 Use `prompts/codex-master-prompt.md` and append:
 
 ```text
-Execute task LK-0006: Verify a local Rojo build produces a valid place file or synchronized Studio tree.
+Execute task LK-0007: Add a smoke-test checklist and record the first successful launch.
 ```

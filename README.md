@@ -47,4 +47,4 @@ For Luau formatting and static analysis, follow the [Luau tooling guide](docs/pr
 
 **Atlas version:** 0.1  
 **Living Kingdoms phase:** Repository foundation  
-**Next executable task:** LK-0006 — verify a local Rojo build produces a valid place file or synchronized Studio tree
+**Next executable task:** LK-0007 — add a smoke-test checklist and record the first successful launch
