@@ -40,8 +40,10 @@ Read these files in order:
 4. `docs/roadmap/MASTER-ROADMAP.md`
 5. `prompts/codex-master-prompt.md`
 
+For Windows installation and Roblox Studio synchronization, follow the [Windows local setup guide](docs/production/LOCAL-SETUP.md).
+
 ## Project status
 
 **Atlas version:** 0.1  
 **Living Kingdoms phase:** Repository foundation  
-**Next executable task:** LK-0004 — document local setup for Roblox Studio, Rojo, and the repository
+**Next executable task:** LK-0005 — add formatting and static-analysis configuration selected for the toolchain

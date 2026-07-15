@@ -51,12 +51,16 @@ They intentionally contain no gameplay systems or framework lifecycle code.
 
 After synchronizing the project into Roblox Studio, start a play session and confirm that the Output window shows each startup message once with no new errors or warnings.
 
+## Local setup
+
+Follow the Windows guide at [`docs/production/LOCAL-SETUP.md`](../../docs/production/LOCAL-SETUP.md) to install the pinned Rojo CLI and Studio plugin, start the server, connect Studio, and complete the verification checklist.
+
 ## Active task
 
-`LK-0004` — Document local setup for Roblox Studio, Rojo, and the repository.
+`LK-0005` — Add formatting and static-analysis configuration selected for the toolchain.
 
 Use `prompts/codex-master-prompt.md` and append:
 
 ```text
-Execute task LK-0004: Document local setup for Roblox Studio, Rojo, and the repository.
+Execute task LK-0005: Add formatting and static-analysis configuration selected for the toolchain.
 ```
