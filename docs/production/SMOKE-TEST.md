@@ -51,3 +51,22 @@ Observed:
 - The successful client confirmation verifies that `CameraController` initialized and started without interrupting bootstrap.
 - No Living Kingdoms-originated errors or warnings appeared.
 - Roblox Studio repeated the previously documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. These remain classified as Roblox Studio-owned environment noise.
+
+## LK-0011 Fixed overhead camera validation
+
+- Date: 2026-07-15
+- Environment: Microsoft Windows 11 Home 10.0.26200; Roblox Studio 0.730.0.7300790
+- Rojo: repository-pinned CLI 7.7.0 and Studio plugin 7.7.0
+- Project: `LivingKingdoms` synchronized from `games\living-kingdoms\default.project.json` at `localhost:34872`
+- Runs: one clean Play run after clearing Output
+
+Observed:
+
+- `Workspace.Camera.CameraType` was `Scriptable` during Play.
+- The viewport showed the baseplate from a visibly overhead angle aimed toward the configured world-space focus point.
+- The view remained fixed after startup and did not return to the player-avatar camera.
+- `[Living Kingdoms] Fixed overhead camera activated` appeared exactly once.
+- `[Living Kingdoms] Server bootstrap started` appeared exactly once.
+- `[Living Kingdoms] Client bootstrap started` appeared exactly once.
+- No Living Kingdoms-originated errors or warnings appeared.
+- Roblox Studio repeated the previously documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. These remain classified as Roblox Studio-owned environment noise.

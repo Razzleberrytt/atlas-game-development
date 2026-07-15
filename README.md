@@ -49,4 +49,4 @@ For the reusable Studio launch check and first successful result, see the [smoke
 **Atlas version:** 0.1  
 **Living Kingdoms phase:** Overhead camera
 
-**Next executable task:** LK-0011 — switch the local camera to a fixed overhead strategy view
+**Next executable task:** LK-0012 — add keyboard camera panning
