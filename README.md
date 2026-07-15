@@ -42,9 +42,11 @@ Read these files in order:
 
 For Windows installation and Roblox Studio synchronization, follow the [Windows local setup guide](docs/production/LOCAL-SETUP.md).
 For Luau formatting and static analysis, follow the [Luau tooling guide](docs/production/LUAU-TOOLING.md).
+For the reusable Studio launch check and first successful result, see the [smoke-test record](docs/production/SMOKE-TEST.md).
 
 ## Project status
 
 **Atlas version:** 0.1  
-**Living Kingdoms phase:** Repository foundation  
-**Next executable task:** LK-0007 — add a smoke-test checklist and record the first successful launch
+**Living Kingdoms phase:** Overhead camera
+
+**Next executable task:** LK-0010 — create `CameraController` with an explicit public lifecycle

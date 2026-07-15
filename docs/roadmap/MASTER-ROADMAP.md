@@ -15,7 +15,7 @@
 - [x] **LK-0004** Document local setup for Roblox Studio, Rojo, and the repository.
 - [x] **LK-0005** Add formatting and static-analysis configuration selected for the toolchain.
 - [x] **LK-0006** Verify a local Rojo build produces a valid place file or synchronized Studio tree.
-- [ ] **LK-0007** Add a smoke-test checklist and record the first successful launch.
+- [x] **LK-0007** Add a smoke-test checklist and record the first successful launch.
 
 ### M0 exit criteria
 

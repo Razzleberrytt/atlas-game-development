@@ -4,7 +4,7 @@ A match-based Roblox real-time strategy game developed through the Atlas workflo
 
 ## Current stage
 
-Repository foundation. Rojo mappings and minimal client/server bootstraps are in place; no gameplay systems have been added yet.
+Repository foundation complete. The Rojo mappings and minimal client/server bootstraps have passed their first Studio launch smoke test; no gameplay systems have been added yet.
 
 ## First playable milestone
 
@@ -63,12 +63,16 @@ Follow [`docs/production/LUAU-TOOLING.md`](../../docs/production/LUAU-TOOLING.md
 
 The pinned Rojo 7.7.0 CLI successfully generated a non-empty place file outside the repository, and the synchronized Roblox Studio tree contained all three documented mappings. See [`docs/production/ROJO-BUILD-VALIDATION.md`](../../docs/production/ROJO-BUILD-VALIDATION.md) for the commands and results.
 
+## Smoke testing
+
+Follow [`docs/production/SMOKE-TEST.md`](../../docs/production/SMOKE-TEST.md) for the reusable Studio launch checklist and the first successful launch record.
+
 ## Active task
 
-`LK-0007` — Add a smoke-test checklist and record the first successful launch.
+`LK-0010` — Create `CameraController` with an explicit public lifecycle.
 
 Use `prompts/codex-master-prompt.md` and append:
 
 ```text
-Execute task LK-0007: Add a smoke-test checklist and record the first successful launch.
+Execute task LK-0010: Create CameraController with an explicit public lifecycle.
 ```
