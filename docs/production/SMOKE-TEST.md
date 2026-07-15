@@ -35,3 +35,19 @@ Observed on both runs:
 Roblox Studio emitted `[PlatformLeaderboard] Fetcher request failed` and `checkRemoteAgainstAllowList` warnings naming `PlatformLeaderboardPush`, `PlatformLeaderboardTabOpened`, and `PlatformLeaderboardTabClosed`. These messages appeared on both clean Play runs and are classified as Roblox Studio-owned environment noise, not Living Kingdoms regressions.
 
 Future smoke tests must distinguish project logs from platform and editor logs while still recording unexpected environment noise.
+
+## LK-0010 CameraController launch validation
+
+- Date: 2026-07-15
+- Environment: Microsoft Windows 11 Home 10.0.26200; Roblox Studio 0.730.0.7300790
+- Rojo: repository-pinned CLI 7.7.0 and Studio plugin 7.7.0
+- Project: `LivingKingdoms` synchronized from `games\living-kingdoms\default.project.json` at `localhost:34872`
+- Runs: one clean Play run after clearing Output
+
+Observed:
+
+- `[Living Kingdoms] Server bootstrap started` appeared exactly once.
+- `[Living Kingdoms] Client bootstrap started` appeared exactly once after `CameraController.init()` and `CameraController.start()` returned.
+- The successful client confirmation verifies that `CameraController` initialized and started without interrupting bootstrap.
+- No Living Kingdoms-originated errors or warnings appeared.
+- Roblox Studio repeated the previously documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. These remain classified as Roblox Studio-owned environment noise.
