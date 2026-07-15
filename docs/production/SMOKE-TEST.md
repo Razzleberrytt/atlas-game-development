@@ -70,3 +70,27 @@ Observed:
 - `[Living Kingdoms] Client bootstrap started` appeared exactly once.
 - No Living Kingdoms-originated errors or warnings appeared.
 - Roblox Studio repeated the previously documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. These remain classified as Roblox Studio-owned environment noise.
+
+## LK-0012 Keyboard camera panning validation
+
+- Date: 2026-07-15
+- Environment: Microsoft Windows 11 Home 10.0.26200; Roblox Studio 0.730.0.7300790
+- Rojo: repository-pinned CLI 7.7.0 and Studio plugin 7.7.0
+- Project: `LivingKingdoms` synchronized from `games\living-kingdoms\default.project.json` at `localhost:34872`
+- Runs: one clean Play smoke run after clearing Output, followed by manual held-key validation
+
+Observed:
+
+- `W` and `S` continuously panned forward and backward.
+- Up Arrow and Down Arrow continuously panned forward and backward.
+- `A` and `D` continuously panned left and right.
+- Left Arrow and Right Arrow continuously panned left and right.
+- Holding `W+D` produced normalized diagonal movement without moving faster than cardinal input.
+- Releasing all movement keys stopped the camera immediately.
+- Camera translation remained horizontal while pitch, yaw, and height remained unchanged.
+- Typing movement keys in the chat text box did not move the camera.
+- `[Living Kingdoms] Fixed overhead camera activated` appeared exactly once.
+- `[Living Kingdoms] Server bootstrap started` appeared exactly once.
+- `[Living Kingdoms] Client bootstrap started` appeared exactly once.
+- No Living Kingdoms-originated errors or warnings appeared.
+- Roblox Studio repeated the previously documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. These remain classified as Roblox Studio-owned environment noise.
