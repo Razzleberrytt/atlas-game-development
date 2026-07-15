@@ -4,7 +4,7 @@ A match-based Roblox real-time strategy game developed through the Atlas workflo
 
 ## Current stage
 
-The client now starts a fixed overhead strategy camera with desktop keyboard panning. Zoom remains deferred.
+The client now starts a fixed overhead strategy camera with desktop keyboard panning and mouse-wheel zoom.
 
 ## First playable milestone
 
@@ -49,9 +49,9 @@ The client and server bootstrap scripts use strict Luau and print these startup 
 
 The client bootstrap initializes and starts `CameraController` before printing its existing confirmation. The controller exposes `init()`, `start()`, `stop()`, and `destroy()`; repeated lifecycle calls are safe no-ops when the requested state is already satisfied, and destruction is terminal.
 
-The fixed view uses initial focus point `(0, 0, 0)`, pitch `-60` degrees, yaw `45` degrees, and height `80` studs. These values derive the initial position `(32.6599, 80, 32.6599)`, and `CFrame.lookAt(cameraPosition, focusPoint)` aims the camera. While started, the controller keeps `Workspace.CurrentCamera` Scriptable and reapplies the frame each render step. It safely waits when `CurrentCamera` is unavailable, adopts replacements, and restores the captured `CameraType` and `CFrame` when stopped or when switching cameras where practical.
+The fixed view uses initial focus point `(0, 0, 0)`, pitch `-60` degrees, yaw `45` degrees, and initial height `80` studs. Mouse-wheel zoom changes height by `10` studs per wheel unit and clamps it to the inclusive range from `40` to `160` studs. Wheel forward decreases height to zoom in; wheel backward increases height to zoom out. Every view update recomputes the camera offset from the unchanged pitch, unchanged yaw, and current height before `CFrame.lookAt(cameraPosition, focusPoint)` aims the camera at the preserved world-space focus point. While started, the controller keeps `Workspace.CurrentCamera` Scriptable and reapplies the frame each render step. It safely waits when `CurrentCamera` is unavailable, adopts replacements, and restores the captured `CameraType` and `CFrame` when stopped or when switching cameras where practical.
 
-Keyboard panning moves the mutable world-space focus point at `48` studs per second. `W` or Up Arrow moves forward, `S` or Down Arrow moves backward, `A` or Left Arrow moves left, and `D` or Right Arrow moves right. Forward and right come from the camera frame projected onto the horizontal XZ plane, combined input is normalized before delta-time movement is applied, and the camera position remains the fixed configured offset from the focus point. Game-processed input and input received while a Roblox text box is focused are ignored. Input connections are created by `start()` and disconnected by `stop()` or `destroy()`. Zoom, smoothing, bounds, acceleration, rotation, edge scrolling, touch controls, and gameplay behavior remain deferred.
+Keyboard panning moves the mutable world-space focus point at `48` studs per second. `W` or Up Arrow moves forward, `S` or Down Arrow moves backward, `A` or Left Arrow moves left, and `D` or Right Arrow moves right. Forward and right come from the camera frame projected onto the horizontal XZ plane, combined input is normalized before delta-time movement is applied, and panning remains functional at every zoom height. Game-processed pan and zoom input and input received while a Roblox text box is focused are ignored. Input connections are created by `start()` and disconnected by `stop()` or `destroy()`. Camera bounds, smoothing, acceleration, rotation, edge scrolling, touch controls, and gameplay behavior remain deferred.
 
 ### Bootstrap verification
 
@@ -75,10 +75,10 @@ Follow [`docs/production/SMOKE-TEST.md`](../../docs/production/SMOKE-TEST.md) fo
 
 ## Active task
 
-`LK-0013` — Add mouse-wheel zoom.
+`LK-0014` — Add configurable camera bounds.
 
 Use `prompts/codex-master-prompt.md` and append:
 
 ```text
-Execute task LK-0013: Add mouse-wheel zoom.
+Execute task LK-0014: Add configurable camera bounds.
 ```

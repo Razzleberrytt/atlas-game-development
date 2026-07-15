@@ -26,7 +26,7 @@ The repository can be cloned, synchronized or built, launched in Roblox Studio, 
 - [x] **LK-0010** Create `CameraController` with an explicit public lifecycle.
 - [x] **LK-0011** Switch the local camera to a fixed overhead strategy view.
 - [x] **LK-0012** Add keyboard camera panning.
-- [ ] **LK-0013** Add mouse-wheel zoom.
+- [x] **LK-0013** Add mouse-wheel zoom.
 - [ ] **LK-0014** Add configurable camera bounds.
 - [ ] **LK-0015** Add smoothing without making input feel delayed.
 - [ ] **LK-0016** Add initial touch pan and pinch-zoom design notes.

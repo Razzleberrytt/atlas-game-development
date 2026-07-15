@@ -49,4 +49,4 @@ For the reusable Studio launch check and first successful result, see the [smoke
 **Atlas version:** 0.1  
 **Living Kingdoms phase:** Overhead camera
 
-**Next executable task:** LK-0013 — add mouse-wheel zoom
+**Next executable task:** LK-0014 — add configurable camera bounds
