@@ -4,7 +4,7 @@ A match-based Roblox real-time strategy game developed through the Atlas workflo
 
 ## Current stage
 
-Repository foundation. The source scaffold and Rojo mappings are in place; no gameplay code has been added yet.
+Repository foundation. Rojo mappings and minimal client/server bootstraps are in place; no gameplay systems have been added yet.
 
 ## First playable milestone
 
@@ -24,13 +24,15 @@ living-kingdoms/
 ├── default.project.json
 ├── src/
 │   ├── client/
+│   │   └── init.client.luau
 │   ├── server/
+│   │   └── init.server.luau
 │   └── shared/
 ├── tests/
 └── README.md
 ```
 
-The source and test directories contain placeholder files so Git preserves the scaffold. `default.project.json` maps source into Roblox services as follows:
+The shared source and test directories contain placeholder files so Git preserves the remaining scaffold. `default.project.json` maps source into Roblox services as follows:
 
 | Source path | Roblox destination |
 | --- | --- |
@@ -38,14 +40,23 @@ The source and test directories contain placeholder files so Git preserves the s
 | `src/server` | `ServerScriptService/Server` |
 | `src/shared` | `ReplicatedStorage/Shared` |
 
-Client and server bootstrap scripts remain part of `LK-0003`.
+The client and server bootstrap scripts use strict Luau and print these startup confirmations when they run:
+
+- `[Living Kingdoms] Client bootstrap started`
+- `[Living Kingdoms] Server bootstrap started`
+
+They intentionally contain no gameplay systems or framework lifecycle code.
+
+### Bootstrap verification
+
+After synchronizing the project into Roblox Studio, start a play session and confirm that the Output window shows each startup message once with no new errors or warnings.
 
 ## Active task
 
-`LK-0003` — Add minimal client and server bootstrap scripts.
+`LK-0004` — Document local setup for Roblox Studio, Rojo, and the repository.
 
 Use `prompts/codex-master-prompt.md` and append:
 
 ```text
-Execute task LK-0003: Add minimal client and server bootstrap scripts.
+Execute task LK-0004: Document local setup for Roblox Studio, Rojo, and the repository.
 ```
