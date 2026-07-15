@@ -14,7 +14,7 @@
 - [x] **LK-0003** Add minimal client and server bootstrap scripts.
 - [x] **LK-0004** Document local setup for Roblox Studio, Rojo, and the repository.
 - [x] **LK-0005** Add formatting and static-analysis configuration selected for the toolchain.
-- [ ] **LK-0006** Verify a local Rojo build produces a valid place file or synchronized Studio tree.
+- [x] **LK-0006** Verify a local Rojo build produces a valid place file or synchronized Studio tree.
 - [ ] **LK-0007** Add a smoke-test checklist and record the first successful launch.
 
 ### M0 exit criteria
