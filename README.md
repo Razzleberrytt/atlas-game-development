@@ -41,9 +41,10 @@ Read these files in order:
 5. `prompts/codex-master-prompt.md`
 
 For Windows installation and Roblox Studio synchronization, follow the [Windows local setup guide](docs/production/LOCAL-SETUP.md).
+For Luau formatting and static analysis, follow the [Luau tooling guide](docs/production/LUAU-TOOLING.md).
 
 ## Project status
 
 **Atlas version:** 0.1  
 **Living Kingdoms phase:** Repository foundation  
-**Next executable task:** LK-0005 — add formatting and static-analysis configuration selected for the toolchain
+**Next executable task:** LK-0006 — verify a local Rojo build produces a valid place file or synchronized Studio tree

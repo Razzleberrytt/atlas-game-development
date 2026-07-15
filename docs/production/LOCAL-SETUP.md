@@ -144,4 +144,4 @@ The following tools are optional and are not required to complete the setup abov
 - The Rojo Visual Studio Code extension
 - GitHub CLI
 
-Formatting and static-analysis tools are intentionally not selected or configured here. That work belongs to `LK-0005`.
+After completing required setup, see [`LUAU-TOOLING.md`](LUAU-TOOLING.md) for the pinned optional formatting and static-analysis commands.
