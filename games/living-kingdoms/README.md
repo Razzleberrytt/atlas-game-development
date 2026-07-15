@@ -4,7 +4,7 @@ A match-based Roblox real-time strategy game developed through the Atlas workflo
 
 ## Current stage
 
-Repository foundation complete. The Rojo mappings and minimal client/server bootstraps have passed their first Studio launch smoke test; no gameplay systems have been added yet.
+Overhead-camera work has begun. The client now initializes and starts a lifecycle-only `CameraController`; camera positioning and controls remain deferred.
 
 ## First playable milestone
 
@@ -24,6 +24,8 @@ living-kingdoms/
 ├── default.project.json
 ├── src/
 │   ├── client/
+│   │   ├── Controllers/
+│   │   │   └── CameraController.luau
 │   │   └── init.client.luau
 │   ├── server/
 │   │   └── init.server.luau
@@ -45,7 +47,7 @@ The client and server bootstrap scripts use strict Luau and print these startup 
 - `[Living Kingdoms] Client bootstrap started`
 - `[Living Kingdoms] Server bootstrap started`
 
-They intentionally contain no gameplay systems or framework lifecycle code.
+The client bootstrap initializes and starts `CameraController` before printing its existing confirmation. The controller exposes `init()`, `start()`, `stop()`, and `destroy()`; repeated lifecycle calls are safe no-ops when the requested state is already satisfied, and destruction is terminal. It retains only the local player and current camera references. Camera positioning, pan, zoom, smoothing, bounds, edge scrolling, touch controls, and gameplay behavior remain deferred.
 
 ### Bootstrap verification
 
@@ -69,10 +71,10 @@ Follow [`docs/production/SMOKE-TEST.md`](../../docs/production/SMOKE-TEST.md) fo
 
 ## Active task
 
-`LK-0010` — Create `CameraController` with an explicit public lifecycle.
+`LK-0011` — Switch the local camera to a fixed overhead strategy view.
 
 Use `prompts/codex-master-prompt.md` and append:
 
 ```text
-Execute task LK-0010: Create CameraController with an explicit public lifecycle.
+Execute task LK-0011: Switch the local camera to a fixed overhead strategy view.
 ```
