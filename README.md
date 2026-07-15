@@ -44,4 +44,4 @@ Read these files in order:
 
 **Atlas version:** 0.1  
 **Living Kingdoms phase:** Repository foundation  
-**Next executable task:** LK-0003 — add minimal client and server bootstrap scripts
+**Next executable task:** LK-0004 — document local setup for Roblox Studio, Rojo, and the repository
