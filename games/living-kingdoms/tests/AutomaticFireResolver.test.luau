@@ -96,6 +96,7 @@ local function weaponState(loadedRounds: number?, nextAllowedTimestamp: number?)
 			lastFireServerTimestamp = 4,
 			nextAllowedFireServerTimestamp = nextAllowedTimestamp or 5,
 		},
+		reloadState = nil,
 	}
 end
 
@@ -248,6 +249,20 @@ for _, readinessStateId in { "CadenceBlocked", "Reloading", "Empty", "Disabled" 
 		"weapon readiness " .. readinessStateId
 	)
 end
+
+local reloadingState = weaponState()
+reloadingState.readinessStateId = "Reloading"
+reloadingState.reloadState = {
+	weaponId = "weapon.basic_firearm",
+	startedAtServerTimestamp = 4,
+	completionServerTimestamp = 6,
+}
+assertRejected(
+	resolver.resolve(operative(), selectedTarget(), reloadingState, 5),
+	rejectionReasons.WeaponNotReady,
+	reloadingState,
+	"reload timing state preserved"
+)
 
 local emptyWeapon = weaponState()
 emptyWeapon.ammunition.loadedRounds = 0

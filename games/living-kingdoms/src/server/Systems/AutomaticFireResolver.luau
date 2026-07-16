@@ -19,6 +19,7 @@ type AutomaticFireRejectionReasonId = CombatContracts.AutomaticFireRejectionReas
 type AutomaticFireResolution = CombatContracts.AutomaticFireResolution
 type CombatEntityId = CombatContracts.CombatEntityId
 type OperativeCombatStateId = CombatContracts.OperativeCombatStateId
+type ReloadState = CombatContracts.ReloadState
 type SelectedTargetState = CombatContracts.SelectedTargetState
 type WeaponCadenceState = CombatContracts.WeaponCadenceState
 type WeaponReadinessState = CombatContracts.WeaponReadinessState
@@ -57,12 +58,25 @@ local function copyCadence(cadence: WeaponCadenceState): WeaponCadenceState
 	}
 end
 
+local function copyReloadState(reloadState: ReloadState?): ReloadState?
+	if reloadState == nil then
+		return nil
+	end
+
+	return {
+		weaponId = reloadState.weaponId,
+		startedAtServerTimestamp = reloadState.startedAtServerTimestamp,
+		completionServerTimestamp = reloadState.completionServerTimestamp,
+	}
+end
+
 local function copyWeaponState(weaponState: WeaponReadinessState): WeaponReadinessState
 	return {
 		weaponId = weaponState.weaponId,
 		readinessStateId = weaponState.readinessStateId,
 		ammunition = copyAmmunition(weaponState.ammunition),
 		cadence = copyCadence(weaponState.cadence),
+		reloadState = copyReloadState(weaponState.reloadState),
 	}
 end
 
@@ -182,6 +196,7 @@ function AutomaticFireResolver.resolve(
 		readinessStateId = weaponState.readinessStateId,
 		ammunition = ammunitionAfter,
 		cadence = cadenceAfter,
+		reloadState = copyReloadState(weaponState.reloadState),
 	}
 	local shotId = deterministicShotId(operativeState.entityId, weaponState.weaponId, serverTimestamp)
 

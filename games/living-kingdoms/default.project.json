@@ -4,6 +4,15 @@
     "$className": "DataModel",
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
+      "CombatNetwork": {
+        "$className": "Folder",
+        "CombatPresentation": {
+          "$className": "RemoteEvent"
+        },
+        "ReloadIntent": {
+          "$className": "RemoteEvent"
+        }
+      },
       "Shared": {
         "$className": "Folder",
         "$path": "src/shared"

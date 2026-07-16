@@ -108,7 +108,7 @@ Combat uses server-authoritative automatic target acquisition and fire. Players 
 
 ## Automatic-combat contracts
 
-LK-0201 adds shared contracts in `src/shared/Combat/CombatContracts.luau`, prototype balance values in `src/shared/Config/FirearmConfig.luau`, and the canonical [`automatic-combat contract specification`](../../docs/specifications/automatic-combat-contracts.md). Pure LK-0202 through LK-0205 server modules consume these declarations, but the server bootstrap imports none of them. No runtime targeting, firing, enemy, health mutation, remote, or presentation behavior is implemented.
+LK-0201 adds shared contracts in `src/shared/Combat/CombatContracts.luau`, prototype balance values in `src/shared/Config/FirearmConfig.luau`, and the canonical [`automatic-combat contract specification`](../../docs/specifications/automatic-combat-contracts.md). Pure LK-0202 through LK-0206 server modules consume these declarations. There is still no production runtime targeting, firing, enemy, or health mutation behavior.
 
 The server owns entity and relationship truth, operative and weapon state, visibility, line of sight, range, target legality and selection, cadence, ammunition, hits, damage, and authoritative timestamps. Clients may use only disclosed state for non-authoritative presentation and may never establish combat truth.
 
@@ -142,8 +142,18 @@ LK-0205 adds `FirearmHitResolver.resolve(acceptedFireResult, shotContext, target
 
 Duplicate protection is a temporary caller-owned `processedShotIds` set carried in the health state. The caller must atomically commit the returned state; cleanup, lifetime, and runtime ownership remain deferred. Run the standalone fixture with `lune run games/living-kingdoms/tests/FirearmHitDamageResolver.test.luau`. The modules are not imported by the server bootstrap and add no enemy, discovery, loop, networking, reload, client, or presentation behavior.
 
+## Reload input and immediate combat presentation
+
+LK-0206 adds `WeaponController` with the existing `init()`, `start()`, `stop()`, and `destroy()` lifecycle. Desktop `R` sends only the configured equipped `WeaponId`; game-processed input and focused text boxes are ignored, a local `0.5`-second cooldown bounds repeated requests, and stop/destroy disconnect input and presentation connections. The client never sends ammunition, capacity, duration, timestamp, eligibility, target, hit, or damage.
+
+The controller consumes only explicit server-disclosed target, shot, and reload messages. A disclosed target can receive one small temporary highlight, clear destroys it, a disclosed ShotId produces one concise status update, and reload start/completion/interruption produce temporary status text. Unknown messages and shot target IDs never create target indicators. Presentation does not mutate authoritative ammunition or health.
+
+`ReloadResolver.begin` and `ReloadResolver.complete` own the pure authoritative transition. Begin requires a ready operative, the configured equipped weapon, a non-full magazine, reserve ammunition, and no current reload. Completion at or after the configured two-second server deadline moves `min(capacity - loaded, reserve)` without discarding loaded rounds. Incapacitation, death, weapon disablement, or equipped-weapon change interrupts with no transfer; movement and taking damage do not interrupt this initial prototype.
+
+The two explicit RemoteEvents are `CombatNetwork.ReloadIntent` and `CombatNetwork.CombatPresentation`. A Studio-only `ReloadDevelopmentHarness` validates the sending player and weapon against isolated server-owned prototype state and exercises reload timing/presentation. It is inactive outside Studio and is not a production combat owner, hostile-discovery path, automatic-fire loop, or final ammunition system. Run `ReloadResolver.test.luau` and `WeaponController.test.luau` with Lune for focused validation.
+
 ## Next executable task
 
-`LK-0206 — Add immediate automatic-combat presentation and reload input.`
+`LK-0207 — Complete two-client automatic-combat security and feel checks.`
 
-LK-0206 remains not started. Reload input, client presentation, enemies, discovery, networking, and runtime combat integration remain later work.
+LK-0207 remains not started. Production combat orchestration, hostile discovery, enemies, scarcity pickups, and later gameplay systems remain deferred.
