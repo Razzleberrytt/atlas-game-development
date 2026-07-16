@@ -270,18 +270,29 @@ presentationEvent:Fire({
 	kindId = "TargetSelected",
 	targetEntityId = "hostile.disclosed",
 })
+assert(activeInstance("Highlight") == nil, "malformed known target disclosure was presented")
+
+presentationEvent:Fire({
+	kindId = "TargetSelected",
+	operativeEntityId = "operative.local",
+	targetEntityId = "hostile.disclosed",
+	serverTimestamp = 10,
+})
 local highlight = activeInstance("Highlight")
 assert(highlight ~= nil, "disclosed selected target was not highlighted")
 assert(highlight.Adornee == target, "highlight adorned the wrong target")
 
-presentationEvent:Fire({ kindId = "TargetCleared" })
+presentationEvent:Fire({ kindId = "TargetCleared", operativeEntityId = "operative.local", serverTimestamp = 10.1 })
 assert(highlight.destroyed == true, "target clear retained highlight")
 assert(activeInstance("Highlight") == nil, "target clear retained target presentation")
 
 local authoritativePayload = {
 	kindId = "ShotFired",
 	shotId = "shot.server.1",
+	operativeEntityId = "operative.local",
+	weaponId = "weapon.basic_firearm",
 	targetEntityId = "hostile.undisclosed",
+	serverTimestamp = 10.2,
 	ammunitionAfter = { loadedRounds = 3, reserveRounds = 7 },
 	healthAfter = 80,
 }
@@ -289,7 +300,14 @@ local authoritativePayloadBefore = deepCopy(authoritativePayload)
 local statusLabel = activeInstance("TextLabel")
 presentationEvent:Fire(authoritativePayload)
 presentationEvent:Fire(authoritativePayload)
-presentationEvent:Fire({ kindId = "ShotFired", shotId = "shot.server.2" })
+presentationEvent:Fire({
+	kindId = "ShotFired",
+	shotId = "shot.server.2",
+	operativeEntityId = "operative.local",
+	weaponId = "weapon.basic_firearm",
+	targetEntityId = "hostile.disclosed",
+	serverTimestamp = 10.4,
+})
 presentationEvent:Fire(authoritativePayload)
 local shotWrites = 0
 for _, value in statusLabel.textWrites do
@@ -301,7 +319,11 @@ assert(shotWrites == 2, "disclosed ShotIds were not presented exactly once")
 assert(activeInstance("Highlight") == nil, "shot target created an undisclosed target indicator")
 assert(deepEqual(authoritativePayload, authoritativePayloadBefore), "presentation mutated ammo or health payload")
 
-presentationEvent:Fire({ kindId = "ReloadStarted", weaponId = "weapon.basic_firearm" })
+presentationEvent:Fire({
+	kindId = "ReloadStarted",
+	weaponId = "weapon.basic_firearm",
+	completionServerTimestamp = 12,
+})
 assert(statusLabel.Text == "Reloading", "reload start was not presented")
 presentationEvent:Fire({ kindId = "ReloadCompleted", weaponId = "weapon.basic_firearm" })
 assert(statusLabel.Text == "Reload complete", "reload completion was not presented")

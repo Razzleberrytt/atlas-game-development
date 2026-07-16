@@ -2,13 +2,13 @@
 
 **Status:** Canonical contract specification
 
-**Tasks:** LK-0201, LK-0202, LK-0203, LK-0204, LK-0205, LK-0206
+**Tasks:** LK-0201, LK-0202, LK-0203, LK-0204, LK-0205, LK-0206, LK-0207
 
-**Runtime behavior:** Pure server candidate-validation, target-selection, automatic-fire, hit-resolution, damage, and reload transitions; focused client reload/presentation controller; Studio-only reload integration harness
+**Runtime behavior:** Pure server candidate-validation, target-selection, automatic-fire, hit-resolution, damage, and reload transitions; focused client reload/presentation controller; Studio-only stationary-fixture integration harness
 
 ## Scope
 
-This specification defines the smallest shared vocabulary required for the P2 automatic-combat pipeline. LK-0201 declared data shapes, stable IDs, authority, trust boundaries, and prototype firearm balance homes. LK-0202 adds validation of exactly one server-derived candidate. LK-0203 adds deterministic selection from a caller-provided candidate list. LK-0204 adds a pure server-owned automatic-fire decision and weapon-state transition for one already selected target. LK-0205 adds pure server-owned hit revalidation and damage transitions for one accepted shot. LK-0206 adds pure server-owned reload transitions and a focused local reload/presentation boundary. These functions do not discover hostiles, retain hidden global state, run a production combat loop, or implement enemy behavior.
+This specification defines the smallest shared vocabulary required for the P2 automatic-combat pipeline. LK-0201 declared data shapes, stable IDs, authority, trust boundaries, and prototype firearm balance homes. LK-0202 adds validation of exactly one server-derived candidate. LK-0203 adds deterministic selection from a caller-provided candidate list. LK-0204 adds a pure server-owned automatic-fire decision and weapon-state transition for one already selected target. LK-0205 adds pure server-owned hit revalidation and damage transitions for one accepted shot. LK-0206 adds pure server-owned reload transitions and a focused local reload/presentation boundary. LK-0207 composes those accepted modules only in a Studio-only two-client harness and integration fixtures. No production hostile discovery, combat loop, health owner, or enemy behavior is introduced.
 
 Manual priority-target override and authored scarcity pickups remain deferred. LK-0206 does not add an `AimController`, `CombatSystem`, `EngagementSystem`, enemy, weapon instance, production health change, or generic networking framework.
 
@@ -206,7 +206,11 @@ The server may send a target or shot message only after that target is safe to d
 
 ## Temporary runtime boundary
 
-There is still no production owner for automatic-combat discovery, selection, firing, ammunition, hits, damage, or reload scheduling. `ReloadDevelopmentHarness` runs only when `RunService:IsStudio()` and owns isolated per-player prototype reload state so the explicit reload and presentation remotes can be exercised. It initializes a partially loaded configured firearm, validates the sending player and equipped weapon, uses server time, and schedules only reload completion. It creates no hostile, target-selection poll, fire loop, hit, damage, health, AI, or production ammunition truth. Outside Studio the harness does not connect the reload remote; the future production combat owner must adopt the pure resolver and remote boundary rather than treating this harness as runtime integration.
+There is still no production owner for automatic-combat discovery, selection, firing, ammunition, hits, damage, health, or reload scheduling. `AutomaticCombatDevelopmentHarness` runs only when `RunService:IsStudio()`. It creates exactly two stationary labeled fixtures, assigns operative-specific threat facts, and owns isolated per-player weapon/reload state plus server-owned fixture health and processed ShotIds. It starts each test weapon empty with temporary reserve ammunition so testers explicitly exercise reload before acquisition and fire. Its bounded evaluation composes `TargetCandidateSelector`, `AutomaticFireResolver`, `FirearmHitResolver`, `DamageResolver`, and `ReloadResolver`; it does not duplicate their rules.
+
+The harness has no client control API beyond the existing narrow `ReloadIntent`. Its only direct test controls are server-side `start()` and `stop()` calls available through the Studio server command bar. `stop()` disconnects every harness connection, clears per-player state, clears target presentation, and destroys the fixture folder. Player leave removes that player's state; character replacement creates fresh combat/reload state and invalidates delayed reload callbacks through a generation token. Repeated lifecycle calls are safe. Outside Studio, `start()` returns before creating fixtures or connecting remotes. These stationary fixtures are not enemy AI or production combat completion.
+
+`WeaponController` validates the complete required shape of every presentation message before acting. Target and shot messages require nonempty operative/target identity and finite server timestamps; shot and reload messages require the configured weapon; reload start requires a finite completion timestamp. Unknown target IDs and malformed tables fail closed. Presentation remains unable to mutate ammunition, legality, hits, damage, or health.
 
 ## Unresolved design questions
 

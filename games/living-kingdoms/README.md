@@ -4,7 +4,7 @@ Living Kingdoms is the temporary working title and internal identifier for a bru
 
 ## Current stage
 
-P1, tactical player movement and character control, is complete. The initial MVP targets 1–4 players, while architecture should permit later support for up to 8. Each player controls one specialist operative rather than an army.
+P1, tactical player movement and character control, and P2, automatic targeting and basic firearm combat, are complete. The initial MVP targets 1–4 players, while architecture should permit later support for up to 8. Each player controls one specialist operative rather than an army.
 
 The existing client starts a fixed elevated tactical camera that smoothly follows the local player while Roblox's standard character moves relative to that camera. Mouse-wheel zoom and configurable world-space focus-point bounds remain active. Keyboard camera panning remains implemented but is disabled while survivor movement is active so one keypress cannot move both the character and camera.
 
@@ -150,10 +150,10 @@ The controller consumes only explicit server-disclosed target, shot, and reload 
 
 `ReloadResolver.begin` and `ReloadResolver.complete` own the pure authoritative transition. Begin requires a ready operative, the configured equipped weapon, a non-full magazine, reserve ammunition, and no current reload. Completion at or after the configured two-second server deadline moves `min(capacity - loaded, reserve)` without discarding loaded rounds. Incapacitation, death, weapon disablement, or equipped-weapon change interrupts with no transfer; movement and taking damage do not interrupt this initial prototype.
 
-The two explicit RemoteEvents are `CombatNetwork.ReloadIntent` and `CombatNetwork.CombatPresentation`. A Studio-only `ReloadDevelopmentHarness` validates the sending player and weapon against isolated server-owned prototype state and exercises reload timing/presentation. It is inactive outside Studio and is not a production combat owner, hostile-discovery path, automatic-fire loop, or final ammunition system. Run `ReloadResolver.test.luau` and `WeaponController.test.luau` with Lune for focused validation.
+The two explicit RemoteEvents are `CombatNetwork.ReloadIntent` and `CombatNetwork.CombatPresentation`. `ReloadIntent` is the only client-to-server combat listener. A Studio-only `AutomaticCombatDevelopmentHarness` composes the accepted pure P2 modules with two stationary labeled fixtures, isolated per-player weapon state, and server-owned fixture health/processed ShotIds. It starts test magazines empty so `R` exercises the authoritative two-second reload before acquisition and fire. It is inactive outside Studio and is not a production combat owner, hostile-discovery path, enemy architecture, AI, or final ammunition system. Run all P2 fixtures plus `CombatSecurityIntegration.test.luau` with Lune for focused validation.
 
 ## Next executable task
 
-`LK-0207 — Complete two-client automatic-combat security and feel checks.`
+`P3 — Health, incapacitation, revival, and death.`
 
-LK-0207 remains not started. Production combat orchestration, hostile discovery, enemies, scarcity pickups, and later gameplay systems remain deferred.
+LK-0207 and P2 are complete. P3 is the next roadmap milestone and has not begun. Production combat orchestration, hostile discovery, enemies, scarcity pickups, and later gameplay systems remain deferred.

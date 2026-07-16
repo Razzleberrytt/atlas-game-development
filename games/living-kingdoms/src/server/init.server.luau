@@ -2,10 +2,10 @@
 
 local MovementValidationSystem = require(script.Systems.MovementValidationSystem)
 local MovementStateReplicationSystem = require(script.Systems.MovementStateReplicationSystem)
-local ReloadDevelopmentHarness = require(script.Systems.ReloadDevelopmentHarness)
+local AutomaticCombatDevelopmentHarness = require(script.Systems.AutomaticCombatDevelopmentHarness)
 
 MovementValidationSystem.start()
 MovementStateReplicationSystem.start()
-ReloadDevelopmentHarness.start()
+AutomaticCombatDevelopmentHarness.start()
 
 print("[Living Kingdoms] Server bootstrap started")

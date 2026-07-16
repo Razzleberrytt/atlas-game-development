@@ -114,6 +114,14 @@ local function presentShot(shotId: string)
 	setStatus("Shot fired")
 end
 
+local function isNonEmptyString(value: unknown): boolean
+	return type(value) == "string" and value ~= ""
+end
+
+local function isFiniteNumber(value: unknown): boolean
+	return type(value) == "number" and value == value and math.abs(value) < math.huge
+end
+
 local function onPresentationMessage(message: unknown)
 	if type(message) ~= "table" then
 		return
@@ -122,22 +130,43 @@ local function onPresentationMessage(message: unknown)
 	local payload = message :: any
 	local kindId = payload.kindId
 	if kindId == CombatContracts.PresentationMessageKindIds.TargetSelected then
-		if type(payload.targetEntityId) == "string" and payload.targetEntityId ~= "" then
+		if
+			isNonEmptyString(payload.operativeEntityId)
+			and isNonEmptyString(payload.targetEntityId)
+			and isFiniteNumber(payload.serverTimestamp)
+		then
 			presentSelectedTarget(payload.targetEntityId)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.TargetCleared then
-		clearTargetPresentation()
-		setStatus("")
+		if isNonEmptyString(payload.operativeEntityId) and isFiniteNumber(payload.serverTimestamp) then
+			clearTargetPresentation()
+			setStatus("")
+		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ShotFired then
-		if type(payload.shotId) == "string" and payload.shotId ~= "" then
+		if
+			isNonEmptyString(payload.shotId)
+			and isNonEmptyString(payload.operativeEntityId)
+			and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+			and isNonEmptyString(payload.targetEntityId)
+			and isFiniteNumber(payload.serverTimestamp)
+		then
 			presentShot(payload.shotId)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadStarted then
-		setStatus("Reloading")
+		if
+			payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+			and isFiniteNumber(payload.completionServerTimestamp)
+		then
+			setStatus("Reloading")
+		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadCompleted then
-		setStatus("Reload complete")
+		if payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
+			setStatus("Reload complete")
+		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadInterrupted then
-		setStatus("Reload interrupted")
+		if payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
+			setStatus("Reload interrupted")
+		end
 	end
 end
 
