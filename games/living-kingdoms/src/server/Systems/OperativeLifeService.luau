@@ -18,7 +18,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local OperativeLifeConfig = require(ReplicatedStorage.Shared.Config.OperativeLifeConfig)
 local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.OperativeLifeContracts)
+local OperativeHealthResolver = require(script.Parent.OperativeHealthResolver)
 
+type AuthoritativeOperativeDamage = OperativeLifeContracts.AuthoritativeOperativeDamage
 type OperativeLifeStateSnapshot = OperativeLifeContracts.OperativeLifeStateSnapshot
 
 export type AuthoritativeRead = {
@@ -64,6 +66,11 @@ type OperativeLifeService = {
 	registerPlayer: (player: Player) -> AuthoritativeRead?,
 	unregisterPlayer: (player: Player) -> boolean,
 	read: (player: Player) -> AuthoritativeRead?,
+	applyAuthoritativeDamage: (
+		operativeEntityId: string,
+		expectedRevision: number,
+		authoritativeDamage: AuthoritativeOperativeDamage
+	) -> CommitResult,
 	commitAcceptedTransition: (player: Player, expectedRevision: number, resolverResult: unknown) -> CommitResult,
 	isAlive: (player: Player) -> boolean,
 	isCharacterMovementAllowed: (player: Player, character: Model) -> boolean,
@@ -365,6 +372,62 @@ function OperativeLifeService.read(player: Player): AuthoritativeRead?
 		return nil
 	end
 	return { revision = entry.revision, snapshot = copySnapshot(entry.snapshot) }
+end
+
+function OperativeLifeService.applyAuthoritativeDamage(
+	operativeEntityId: string,
+	expectedRevision: number,
+	authoritativeDamage: AuthoritativeOperativeDamage
+): CommitResult
+	if type(operativeEntityId) ~= "string" or operativeEntityId == "" then
+		return rejected("UnknownOperative")
+	end
+	local player = playerByOperativeEntityId[operativeEntityId]
+	if player == nil then
+		return rejected("OperativeNotRegistered")
+	end
+	local entry = entries[player]
+	if entry == nil or entry.operativeEntityId ~= operativeEntityId then
+		return rejected("OperativeNotRegistered")
+	end
+	if
+		type(expectedRevision) ~= "number"
+		or expectedRevision ~= expectedRevision
+		or expectedRevision == math.huge
+		or expectedRevision == -math.huge
+		or expectedRevision % 1 ~= 0
+		or expectedRevision < 0
+		or expectedRevision ~= entry.revision
+	then
+		return rejected("StaleRevision")
+	end
+
+	local snapshot = copySnapshot(entry.snapshot)
+	local damage = authoritativeDamage :: any
+	local serverTimestamp = if type(damage) == "table" then damage.serverTimestamp else nil
+	local resolverResult = OperativeHealthResolver.resolveDamage(snapshot, authoritativeDamage, serverTimestamp :: any)
+	if type(resolverResult) ~= "table" or resolverResult.didTransition ~= true then
+		local reason = if type(resolverResult) == "table"
+				and type(resolverResult.rejectionReasonId) == "string"
+			then resolverResult.rejectionReasonId
+			else "ResolverRejected"
+		return rejected(reason)
+	end
+	local result = resolverResult :: any
+	local snapshotAfter = result.snapshotAfter
+	if
+		type(damage) ~= "table"
+		or type(damage.damageEventId) ~= "string"
+		or damage.damageEventId == ""
+		or result.damageEventId ~= damage.damageEventId
+		or type(snapshotAfter) ~= "table"
+		or type(snapshotAfter.processedDamageEventIds) ~= "table"
+		or snapshotAfter.processedDamageEventIds[damage.damageEventId] ~= true
+	then
+		return rejected("InvalidResolverResult")
+	end
+
+	return OperativeLifeService.commitAcceptedTransition(player, expectedRevision, resolverResult)
 end
 
 function OperativeLifeService.commitAcceptedTransition(

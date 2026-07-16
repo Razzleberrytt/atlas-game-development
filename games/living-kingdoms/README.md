@@ -184,8 +184,12 @@ LK-0305 adds `OperativeLifeService`, the production same-server owner of one cop
 
 Alive remains eligible for P1 movement and P2 combat. Incapacitated and Dead are stationary without anchoring, cannot fire/reload/target, and synchronously clear reload and selection while preserving ammunition, cadence, and processed ShotIds. A valid committed return to Alive restores movement/combat eligibility without refilling. Character replacements bind to the existing snapshot; stale characters are disabled. Automatic character loading is disabled and performed deliberately so Roblox respawn cannot reset Dead or Incapacitated. Humanoid health is a positive locomotion shell with its Dead state disabled, not the authoritative P3 health value. `OperativeLifeDevelopmentHarness` composes existing pure resolvers for validation and, only in Studio, creates server-only `BindableFunction` controls in `ServerStorage`; it exposes no remote or production loop. Run `lune run games/living-kingdoms/tests/OperativeLifeService.test.luau` for focused ownership and restriction coverage.
 
+LK-0306 adds the server-only `OperativeLifeService.applyAuthoritativeDamage(operativeEntityId, expectedRevision, authoritativeDamage)` entry point. It copies the current service-owned snapshot, rejects a stale authoritative revision, invokes the pure LK-0302 resolver, validates its accepted correlation and processed-event result, and commits through the existing atomic transition boundary. Successful results are copied. Ordinary nonlethal, lethal, and overkill damage therefore update runtime health and restrictions without allowing ordinary damage to produce `Dead`.
+
+Replay protection remains solely in each authoritative snapshot's `processedDamageEventIds` set: LK-0302 checks and copies it, and `OperativeLifeService` commits and owns it for the registered operative lifetime. No client remote accepts damage, health, life state, revision, timestamps, processed IDs, or transition results. The Studio-only server `ApplyDamage` BindableFunction is isolated in `ServerStorage` for development validation. Run `lune run games/living-kingdoms/tests/OperativeLifeDamageRouting.test.luau` for focused runtime routing coverage.
+
 ## Next executable task
 
-`LK-0306 — Add revive input and disclosed life-state presentation.`
+`LK-0307 — Implement server-owned squad-failure evaluation.`
 
-LK-0207, P2, the P3 plan, and LK-0301 through LK-0305 are complete. LK-0306 remains unstarted and is the next executable task. Hostile damage routing, timers, revive networking/runtime sessions, squad failure, operation flow, persistence, enemies, scarcity pickups, and later gameplay systems remain deferred.
+LK-0207, P2, the P3 plan, and LK-0301 through LK-0306 are complete. LK-0307 remains unstarted and is the next executable task. Timers, revive networking/runtime sessions, squad failure, operation flow, persistence, enemies, scarcity pickups, and later gameplay systems remain deferred.

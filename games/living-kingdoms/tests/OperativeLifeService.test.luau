@@ -9,6 +9,7 @@ local luau = require("@lune/luau")
 local COMBAT_TOKEN = {}
 local CONFIG_TOKEN = {}
 local CONTRACTS_TOKEN = {}
+local HEALTH_RESOLVER_TOKEN = {}
 
 local lifeStateIds = table.freeze({ Alive = "Alive", Incapacitated = "Incapacitated", Dead = "Dead" })
 local combatContracts = {
@@ -109,8 +110,16 @@ local environment = {
 		if token == CONTRACTS_TOKEN then
 			return contracts
 		end
+		if token == HEALTH_RESOLVER_TOKEN then
+			return {
+				resolveDamage = function()
+					error("damage routing is covered by LK-0306 fixtures")
+				end,
+			}
+		end
 		error("unexpected module")
 	end,
+	script = { Parent = { OperativeHealthResolver = HEALTH_RESOLVER_TOKEN } },
 	typeof = function(value)
 		return if type(value) == "table" and value._className ~= nil then "Instance" else type(value)
 	end,

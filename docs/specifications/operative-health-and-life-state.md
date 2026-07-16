@@ -117,7 +117,7 @@ LK-0304 adds a separate pure `OperativeReviveResolver`. `beginRevive(reviverSnap
 
 At or after the deadline, a valid continuation completes the session at the evaluation timestamp, transitions the target to `Alive`, restores exactly `OperativeLifeConfig.ReviveHealth` (`30`), and clears incapacitation/recovery timing while preserving maximum health, solo recovery eligibility and usage, processed damage IDs, and unrelated state. Its focused caller-owned combat companion reuses P2 `WeaponReadinessState`, `SelectedTargetState`, and `ProcessedShotIds`: the result preserves ammunition, cadence, and processed ShotIds by value in newly copied state, clears reload state and any `Reloading` readiness, and clears selected target. It grants no invulnerability and does not mutate the reviver or any input.
 
-The LK-0304 APIs remain synchronous pure functions. LK-0305 can commit an already accepted completion, but distance, line of sight, connection/participation, movement continuity, accepted-damage continuity, and live revive sessions remain deferred. LK-0306 is next and remains unstarted.
+The LK-0304 APIs remain synchronous pure functions. LK-0305 can commit an already accepted completion, but distance, line of sight, connection/participation, movement continuity, accepted-damage continuity, and live revive sessions remain deferred.
 
 ## LK-0305 runtime ownership and restrictions
 
@@ -125,7 +125,17 @@ The LK-0304 APIs remain synchronous pure functions. LK-0305 can commit an alread
 
 Alive retains normal movement and combat. Incapacitated and Dead cannot move, fire, reload, or acquire/retain a target; restriction application clears reload and selection while preserving ammunition, cadence, and processed ShotIds. Return to Alive restores eligibility and derives readiness from preserved ammunition without refilling. Character replacement binds to the existing snapshot, stale bindings are ignored, and Roblox automatic character loading is disabled so a replacement cannot reset Incapacitated or Dead to Alive.
 
-The P3 snapshot, never `Humanoid.Health`, is authoritative. A bound Humanoid is retained as a positive-health locomotion shell with its Roblox Dead state disabled. Incapacitated and Dead use zero WalkSpeed/jump and AutoRotate plus server displacement neutralization, not anchoring or destruction. LK-0305 adds no life-state remote, hostile damage routing, timers, revive session/runtime networking, UI, squad failure, operation flow, persistence, or presentation.
+The P3 snapshot, never `Humanoid.Health`, is authoritative. A bound Humanoid is retained as a positive-health locomotion shell with its Roblox Dead state disabled. Incapacitated and Dead use zero WalkSpeed/jump and AutoRotate plus server displacement neutralization, not anchoring or destruction.
+
+## LK-0306 authoritative ordinary-damage routing
+
+`OperativeLifeService.applyAuthoritativeDamage(operativeEntityId, expectedRevision, authoritativeDamage)` is a server-module API with no RemoteEvent or client caller. The server caller supplies the authoritative target identity, expected runtime revision, damage identity/source/amount, and timestamp. The service locates the registered operative, copies its current snapshot, rejects a revision mismatch, calls `OperativeHealthResolver.resolveDamage`, validates an accepted result's damage correlation and processed-event membership, and then delegates to `commitAcceptedTransition`. Every rejection returns before mutation; a successful commit updates character and combat eligibility and returns another copied authoritative snapshot.
+
+The authoritative pipeline is: server-owned damage source → copied current service snapshot → pure LK-0302 resolution → accepted result validation → atomic commit → movement/combat restrictions. Nonlethal damage stays `Alive`; exact lethal and overkill damage clamp to zero and become `Incapacitated`; ordinary damage never produces `Dead`.
+
+Replay ownership is not duplicated. The service-owned snapshot's `processedDamageEventIds` collection remains the single operative-lifetime record. LK-0302 rejects an identity already in that set and adds an accepted identity to its copied result; the service preserves and commits the set atomically. Unknown/unregistered operatives, malformed damage, duplicates, stale revisions, resolver rejection, invalid resolver output, invalid snapshots, and commit rejection leave the authoritative snapshot and revision unchanged.
+
+The Studio-only server harness exposes an isolated `ApplyDamage` BindableFunction under `ServerStorage` for development checks. It is never reachable through a client remote and is not production gameplay. LK-0306 adds no damage discovery, enemy, hazard, finishing damage, bleed-out evaluation or scheduling, revival runtime/networking/UI, solo recovery scheduling, squad failure, operation flow, persistence, or P4 work. LK-0307 is next and remains unstarted.
 
 ## Canonical life state and transitions
 
