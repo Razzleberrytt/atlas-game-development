@@ -138,10 +138,15 @@ type OperativeLifeStateSnapshot = {
 	healthState: OperativeHealthState,
 	incapacitationState: IncapacitationState?,
 	soloRecoveryState: SoloRecoveryState,
+	processedDamageEventIds: { [string]: boolean },
 }
 type OperativeLifeTransitionResult = {
 	didTransition: boolean,
 	rejectionReasonId: string?,
+	lifeStateIdBefore: ("Alive" | "Incapacitated" | "Dead")?,
+	lifeStateIdAfter: ("Alive" | "Incapacitated" | "Dead")?,
+	transitionServerTimestamp: number?,
+	damageEventId: string?,
 	snapshotAfter: OperativeLifeStateSnapshot,
 }
 type ReviveSessionState = {
@@ -180,10 +185,15 @@ local representativeSnapshot: OperativeLifeStateSnapshot = {
 		recoveryStartedAtServerTimestamp = 10,
 		recoveryCompletionServerTimestamp = 10 + config.SoloRecoveryDurationSeconds,
 	},
+	processedDamageEventIds = {},
 }
 local representativeTransition: OperativeLifeTransitionResult = {
 	didTransition = true,
 	rejectionReasonId = nil,
+	lifeStateIdBefore = "Alive",
+	lifeStateIdAfter = "Incapacitated",
+	transitionServerTimestamp = 10,
+	damageEventId = "damage.fixture",
 	snapshotAfter = representativeSnapshot,
 }
 local representativeRevive: ReviveTransitionResult = {

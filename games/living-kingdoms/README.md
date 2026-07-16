@@ -160,8 +160,16 @@ The configuration centralizes maximum health `100`, bleed-out `30` seconds, revi
 
 These shared modules are safe for client and server code to require, but the server remains authoritative. No bootstrap imports them, and they add no owner, transition resolver, timers, character changes, remotes, UI, or runtime behavior. The P2 `TargetHealthState`, `DamageResolver.becameDead` semantics, firearm configuration, processed-ShotId boundary, and all P2 fixtures remain unchanged. Run `lune run games/living-kingdoms/tests/OperativeLifeContracts.test.luau` for the LK-0301 fixture.
 
+## Pure operative health and incapacitation transitions
+
+LK-0302 adds `OperativeHealthResolver.resolveDamage(operativeSnapshot, authoritativeDamage, serverTimestamp)`. The pure server-domain resolver validates one canonical operative snapshot and one server-owned damage input, applies finite positive damage only to `Alive`, preserves positive-health results as `Alive`, and turns exact-zero or overkill results into `Incapacitated` at zero health. Incapacitation starts at the exact authoritative timestamp and derives its deadline from the configured 30-second bleed-out duration; the resolver does not complete bleed-out or enter `Dead`.
+
+The returned snapshot carries a copied caller-owned `processedDamageEventIds` set. Duplicate rejection is effective only after a future caller atomically commits the returned snapshot; this task adds no hidden deduplication state, runtime owner, persistence, cleanup, loop, scheduler, character mutation, remote, or presentation. A P2 `AuthoritativeDamageEvent` is structurally compatible as server input, while P2 damage creation, processed ShotIds, and `becameDead` retain their existing semantics.
+
+Run `lune run games/living-kingdoms/tests/OperativeHealthResolver.test.luau` for health boundaries, invalid values, timestamp/identity validation, illegal-state rejection, duplicates, deterministic precedence, and immutability.
+
 ## Next executable task
 
-`LK-0302 — Implement pure operative health and incapacitation transitions.`
+`LK-0303 — Add pure bleed-out, finishing-death, and solo-recovery transitions.`
 
-LK-0207, P2, the P3 plan, and LK-0301 are complete. LK-0302 remains unstarted and is the next executable task. Production combat orchestration, health ownership, runtime life-state behavior, hostile discovery, enemies, scarcity pickups, and later gameplay systems remain deferred.
+LK-0207, P2, the P3 plan, LK-0301, and LK-0302 are complete. LK-0303 remains unstarted and is the next executable task. Production combat orchestration, health ownership, runtime life-state behavior, hostile discovery, enemies, scarcity pickups, and later gameplay systems remain deferred.
