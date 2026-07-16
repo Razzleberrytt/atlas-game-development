@@ -2,13 +2,13 @@
 
 **Status:** Canonical contract specification
 
-**Task:** LK-0201
+**Tasks:** LK-0201, LK-0202
 
-**Runtime behavior:** None
+**Runtime behavior:** One pure server candidate-validation function; no runtime bootstrap integration
 
 ## Scope
 
-This specification defines the smallest shared vocabulary required for the P2 automatic-combat pipeline. It declares data shapes, stable IDs, authority, trust boundaries, and prototype firearm balance homes. It does not discover hostiles, validate candidates, select targets, fire weapons, apply damage, add remotes, or present combat.
+This specification defines the smallest shared vocabulary required for the P2 automatic-combat pipeline. LK-0201 declared data shapes, stable IDs, authority, trust boundaries, and prototype firearm balance homes. LK-0202 adds validation of exactly one server-derived candidate. It does not discover hostiles, select targets, fire weapons, apply damage, add remotes, or present combat.
 
 Manual priority-target override and authored scarcity pickups remain deferred. No `AimController`, `WeaponController`, `CombatSystem`, `EngagementSystem`, enemy, weapon instance, health change, or networking behavior is created by LK-0201.
 
@@ -57,18 +57,31 @@ Each arrow crosses an explicit data boundary, not an event bus or service requir
 
 ## Target eligibility
 
-LK-0202 must return a deterministic `TargetValidationResult`. A candidate is valid only when all checks pass:
+LK-0202 returns a deterministic `TargetValidationResult` for exactly one operative and one server-derived candidate. The validator does not prove input provenance; its caller must obtain operative, relationship, hostile, visibility, line-of-sight, position, ammunition, and readiness facts from server-owned systems. Remote payloads and client-authored attributes are not valid sources.
+
+A candidate is valid only when all checks pass in this stable first-failure order:
 
 1. The operative combat state permits combat.
 2. The server-derived relationship is `Hostile`.
-3. The hostile is alive and targetable.
-4. Gameplay visibility rules mark the hostile visible to the operative.
-5. A server line-of-sight test passes independently of visibility.
-6. Server-computed distance, using the policy finalized by LK-0202, is within the equipped weapon range.
-7. Server-owned ammunition is available.
-8. Server-owned weapon readiness permits consideration.
+3. The hostile is alive.
+4. The hostile is targetable.
+5. Gameplay visibility rules mark the hostile visible to the operative.
+6. A server line-of-sight test passes independently of visibility.
+7. Horizontal XZ distance from the operative to the hostile is within the equipped weapon range.
+8. Server-owned loaded ammunition is available.
+9. Server-owned weapon readiness permits consideration.
+
+The first failed check returns its canonical LK-0201 rejection ID: `OperativeStateInvalid`, `RelationshipNotHostile`, `HostileDead`, `HostileUntargetable`, `NotVisible`, `NoLineOfSight`, `OutOfRange`, `NoAmmunition`, or `WeaponNotReady`. These canonical IDs correspond to the more descriptive task vocabulary without adding duplicates.
 
 Visibility and line of sight are separate. Visibility determines whether the operative is allowed to know and engage the hostile; line of sight determines whether an unobstructed legal shot exists. A client rendering a hostile or reporting an unobstructed view satisfies neither rule.
+
+## LK-0202 range and execution policy
+
+The first isometric prototype measures weapon range on the horizontal XZ plane. Vertical separation does not alter the engagement radius. `TargetCandidateValidator` computes the squared horizontal distance from server-derived positions and compares it with the squared `FirearmConfig.BasicFirearm.RangeStuds`; it does not trust the candidate's stored `distanceStuds` field as an independent authority.
+
+The maximum-range boundary is inclusive: exactly `80` horizontal studs and values just inside are valid, while any value just outside is `OutOfRange`. Squared comparison avoids an unnecessary square root without changing the boundary.
+
+`TargetCandidateValidator.validate(operative, candidate)` is deterministic and side-effect free. It validates only the configured basic firearm, creates no discovery or selection state, runs no loop, performs no raycast, and mutates no input or gameplay state. Visibility and line of sight remain separate server-derived booleans. Their provider implementations, including visibility discovery and raycast filtering, remain deferred.
 
 ## Threatening-hostile definition and priority
 
@@ -110,7 +123,6 @@ These are prototype values, not a balance promise. Temporary initial ammunition 
 - Team/faction assignment and relationship lookup source.
 - The gameplay visibility provider and exact line-of-sight raycast policy.
 - The server-owned hostile intent signal used to establish active threat.
-- Whether range is measured in full 3D or on the horizontal plane.
 - Deterministic equal-distance tie-breaking and target-switch stability.
 - Reload interruption rules and whether a partially completed reload has any effect.
 - Hit model, obstruction filtering, body-part treatment, and damage application order.

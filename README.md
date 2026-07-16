@@ -45,6 +45,6 @@ For the reusable Studio launch check and first successful result, see the [smoke
 **Atlas version:** 0.1  
 **Living Kingdoms phase:** P2 — Automatic targeting and basic firearm combat
 
-**Next executable task:** LK-0202 — validate automatic-target candidates on the server
+**Next executable task:** LK-0203 — select targets using the initial priority rules
 
 Final public branding is unresolved. Living Kingdoms remains the working title and internal project identifier; naming work is outside the current scope.
