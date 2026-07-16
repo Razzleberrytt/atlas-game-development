@@ -98,6 +98,7 @@ function TargetCandidateSelector.select(
 	return {
 		operativeEntityId = operative.entityId,
 		targetEntityId = selectedCandidate.entityId,
+		isValid = true,
 		selectionReasonId = if closestThreat ~= nil
 			then selectionReasons.ThreateningClosest
 			else selectionReasons.ValidClosest,

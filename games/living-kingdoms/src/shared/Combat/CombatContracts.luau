@@ -86,6 +86,7 @@ export type TargetValidationResult = {
 export type SelectedTargetState = {
 	operativeEntityId: CombatEntityId,
 	targetEntityId: CombatEntityId?,
+	isValid: boolean,
 	selectionReasonId: TargetSelectionReasonId?,
 	selectedAtServerTimestamp: number?,
 }
@@ -107,9 +108,15 @@ export type AuthoritativeFireResult = {
 	targetEntityId: CombatEntityId?,
 	firedAtServerTimestamp: number?,
 	ammunitionAfter: AmmunitionState,
-	didHit: boolean,
+	didHit: boolean?,
 	hitEntityId: CombatEntityId?,
 	rejectionReasonId: AutomaticFireRejectionReasonId?,
+}
+
+export type AutomaticFireResolution = {
+	decision: AutomaticFireDecision,
+	fireResult: AuthoritativeFireResult,
+	weaponStateAfter: WeaponReadinessState,
 }
 
 export type AuthoritativeDamageEvent = {
@@ -209,6 +216,11 @@ CombatContracts.AutomaticFireRejectionReasonIds = table.freeze({
 	NoAmmunition = "NoAmmunition",
 	WeaponNotReady = "WeaponNotReady",
 	CadenceBlocked = "CadenceBlocked",
+})
+
+CombatContracts.AuthoritativeFireStatusIds = table.freeze({
+	Fired = "Fired",
+	Rejected = "Rejected",
 })
 
 CombatContracts.DamageTypeIds = table.freeze({

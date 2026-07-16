@@ -2,13 +2,13 @@
 
 **Status:** Canonical contract specification
 
-**Tasks:** LK-0201, LK-0202, LK-0203
+**Tasks:** LK-0201, LK-0202, LK-0203, LK-0204
 
-**Runtime behavior:** Pure server candidate-validation and target-selection functions; no runtime bootstrap integration
+**Runtime behavior:** Pure server candidate-validation, target-selection, and automatic-fire state-transition functions; no runtime bootstrap integration
 
 ## Scope
 
-This specification defines the smallest shared vocabulary required for the P2 automatic-combat pipeline. LK-0201 declared data shapes, stable IDs, authority, trust boundaries, and prototype firearm balance homes. LK-0202 adds validation of exactly one server-derived candidate. LK-0203 adds deterministic selection from a caller-provided candidate list. Neither function discovers hostiles, retains target state, fires weapons, applies damage, adds remotes, or presents combat.
+This specification defines the smallest shared vocabulary required for the P2 automatic-combat pipeline. LK-0201 declared data shapes, stable IDs, authority, trust boundaries, and prototype firearm balance homes. LK-0202 adds validation of exactly one server-derived candidate. LK-0203 adds deterministic selection from a caller-provided candidate list. LK-0204 adds a pure server-owned automatic-fire decision and weapon-state transition for one already selected target. These functions do not discover hostiles, retain global state, resolve hits, apply damage, add remotes, or present combat.
 
 Manual priority-target override and authored scarcity pickups remain deferred. No `AimController`, `WeaponController`, `CombatSystem`, `EngagementSystem`, enemy, weapon instance, health change, or networking behavior is created by LK-0201.
 
@@ -97,11 +97,30 @@ A valid hostile is **actively threatening the operative** only when server-owned
 
 Selection recomputes squared horizontal XZ distance from the server-derived operative and candidate positions. It never trusts `distanceStuds` as authority. Distances use exact Luau number comparisons with no epsilon: a smaller squared value wins, and exact numeric equality reaches the ID tie-break. This keeps comparison transitive and input-order independent. The validator's inclusive maximum-range rule remains authoritative, so a candidate exactly at maximum range is eligible.
 
-The function returns a `SelectedTargetState` using canonical reason `ThreateningClosest` or `ValidClosest`. The returned target ID is non-optional and `selectedAtServerTimestamp` is `nil` because this pure selection step does not read or create authoritative time. When no candidate validates, it returns `nil` rather than a retained or cleared selection state. Every call is independent: there is no target persistence, target-switch hysteresis, reacquisition cache, randomness, or input mutation. Safe target loss therefore produces `nil`, and a later call may reacquire solely from its current inputs. Manual priority override and sticky targeting remain deferred.
+The function returns a `SelectedTargetState` marked `isValid = true` using canonical reason `ThreateningClosest` or `ValidClosest`. The returned target ID is non-optional and `selectedAtServerTimestamp` is `nil` because this pure selection step does not read or create authoritative time. The validity flag records the authoritative caller's current representation; callers must set it false when later server-owned facts invalidate a retained selection. When no candidate validates, selection returns `nil` rather than a retained or cleared selection state. Every call is independent: there is no target persistence, target-switch hysteresis, reacquisition cache, randomness, or input mutation. Safe target loss therefore produces `nil`, and a later call may reacquire solely from its current inputs. Manual priority override and sticky targeting remain deferred.
 
 ## Fire readiness, cadence, and ammunition
 
-Automatic fire requires a selected target that remains valid, operative state `Ready`, weapon readiness `Ready`, at least one loaded round, and a server timestamp at or after `nextAllowedFireServerTimestamp`. A successful server fire consumes exactly one loaded round and advances cadence in the same authoritative decision. Rejected decisions consume nothing.
+`AutomaticFireResolver.resolve(operativeState, selectedTarget, weaponState, serverTimestamp)` evaluates one authoritative attempt and returns an `AutomaticFireResolution` containing the canonical `AutomaticFireDecision`, `AuthoritativeFireResult`, and a new `WeaponReadinessState`. The caller must supply server-owned state, use a monotonic server time source, and commit the returned weapon state before resolving another attempt. The resolver has no global state, does not mutate its inputs, runs no loop, and accepts at most one shot per call.
+
+The stable first-failure rejection order is:
+
+1. Operative combat state is not `Ready`: `OperativeStateInvalid`.
+2. No `SelectedTargetState` exists: `NoSelectedTarget`.
+3. The selection is not marked valid by the authoritative caller, has no target ID, or names a different operative: canonical `SelectedTargetInvalid`.
+4. The weapon, ammunition, or cadence weapon ID is not the configured basic firearm, or weapon readiness is not `Ready`: `WeaponNotReady`.
+5. Loaded ammunition is zero or less: `NoAmmunition`.
+6. The server timestamp is earlier than `nextAllowedFireServerTimestamp`: `CadenceBlocked`.
+
+`SelectedTargetInvalid` is the canonical contract ID for the task's “TargetInvalid” vocabulary. Every non-`Ready` weapon readiness state, including `CadenceBlocked`, `Reloading`, `Empty`, and `Disabled`, returns `WeaponNotReady`; `CadenceBlocked` as an automatic-fire rejection is derived independently from the authoritative cadence timestamp. A rejected decision creates no shot, preserves ammunition and cadence timestamps, and returns an unchanged-value weapon-state copy. Repeated calls with the same blocked state therefore produce the same rejection.
+
+Exactly `nextAllowedFireServerTimestamp` is legal; any representable timestamp just before it is blocked. An accepted shot sets `lastFireServerTimestamp` to the evaluated server timestamp and sets `nextAllowedFireServerTimestamp` to that timestamp plus `FirearmConfig.BasicFirearm.CadenceSeconds`. Cadence advances from the current authoritative fire time, never from the previous deadline, so long elapsed intervals do not create catch-up bursts. Client timestamps are not an API source and must never be forwarded as `serverTimestamp`.
+
+An accepted shot consumes exactly one loaded round, preserves reserve rounds and magazine capacity, and includes the selected target ID. The last loaded round may fire and reaches zero; another attempt with zero loaded rounds is rejected. Prototype initial loaded and reserve values remain temporary P2 test configuration, not P6 scarcity completion.
+
+LK-0204 creates a deterministic `ShotId` as `shot:<operativeEntityId>:<weaponId>:<serverTimestamp>`. This is server-owned because the resolver has no ShotId input. It is intentionally temporary: uniqueness depends on the authoritative caller committing the returned cadence state and not accepting two shots for the same operative, weapon, and timestamp. Persistent identity, cross-server uniqueness, and respawn lifetime policy remain deferred until a runtime combat owner requires them.
+
+`AuthoritativeFireResult.didHit` and `hitEntityId` remain `nil` for both accepted and rejected LK-0204 results. Firing does not determine a miss, perform obstruction or hit checks, or apply damage. Those behaviors begin in LK-0205.
 
 The client directly chooses reload timing through a future `ReloadIntent`, but the server owns whether reload begins, how reserve ammunition moves into the magazine, its duration, interruption, and completion. Scarcity pickups and final operation ammunition tuning belong to P6.
 
