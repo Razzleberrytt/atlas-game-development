@@ -48,7 +48,7 @@ The charter, MVP, technical blueprint, roadmap, decision record, and readmes agr
 
 ## P1 — Tactical player movement and character controller
 
-- [ ] **LK-0101 — Add camera-relative movement for one local survivor.**
+- [x] **LK-0101 — Add camera-relative movement for one local survivor.**
   - **Scope:** create the smallest useful desktop control step from the existing tactical camera; no combat, aiming, sprint, stamina, interaction, animation overhaul, enemies, or camera redesign.
   - **Acceptance:** one local Roblox character is the controlled operative; W/A/S/D input produces movement directions projected from the tactical camera onto the ground plane; diagonal input is normalized; input is ignored when game-processed or while a text box is focused; default controls do not double-apply movement; character respawn is handled without duplicate connections; stopping or destroying the controller disconnects input and clears movement intent; the existing `CameraController` lifecycle, pan, zoom, and bounds continue working; StyLua, Selene, Rojo sourcemap, and Rojo build pass; manual Studio checks are documented.
 - [ ] **LK-0102 — Define and enforce the initial movement authority boundary.**

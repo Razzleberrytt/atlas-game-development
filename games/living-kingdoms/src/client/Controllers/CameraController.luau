@@ -61,6 +61,7 @@ type CameraController = {
 	start: () -> (),
 	stop: () -> (),
 	destroy: () -> (),
+	setKeyboardPanningEnabled: (enabled: boolean) -> (),
 }
 
 type LifecycleState = {
@@ -79,6 +80,7 @@ type LifecycleState = {
 	activationLogged: boolean,
 	focusPoint: Vector3,
 	currentHeight: number,
+	keyboardPanningEnabled: boolean,
 	pressedPanKeys: { [Enum.KeyCode]: boolean },
 }
 
@@ -99,6 +101,7 @@ local state: LifecycleState = {
 	activationLogged = false,
 	focusPoint = CameraConfig.FocusPoint,
 	currentHeight = CameraConfig.InitialHeight,
+	keyboardPanningEnabled = true,
 	pressedPanKeys = {},
 }
 
@@ -153,7 +156,7 @@ local function onInputChanged(input: InputObject, gameProcessedEvent: boolean)
 end
 
 local function updateFocusPoint(deltaTime: number)
-	if UserInputService:GetFocusedTextBox() ~= nil then
+	if not state.keyboardPanningEnabled or UserInputService:GetFocusedTextBox() ~= nil then
 		return
 	end
 
@@ -178,7 +181,7 @@ local function updateFocusPoint(deltaTime: number)
 end
 
 local function onInputBegan(input: InputObject, gameProcessedEvent: boolean)
-	if gameProcessedEvent or UserInputService:GetFocusedTextBox() ~= nil then
+	if not state.keyboardPanningEnabled or gameProcessedEvent or UserInputService:GetFocusedTextBox() ~= nil then
 		return
 	end
 
@@ -226,6 +229,14 @@ function CameraController.init()
 	state.localPlayer = Players.LocalPlayer
 	state.currentCamera = Workspace.CurrentCamera
 	state.initialized = true
+end
+
+function CameraController.setKeyboardPanningEnabled(enabled: boolean)
+	state.keyboardPanningEnabled = enabled
+
+	if not enabled then
+		table.clear(state.pressedPanKeys)
+	end
 end
 
 function CameraController.start()
