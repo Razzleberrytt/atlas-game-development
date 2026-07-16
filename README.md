@@ -45,6 +45,6 @@ For the reusable Studio launch check and first successful result, see the [smoke
 **Atlas version:** 0.1  
 **Living Kingdoms phase:** P3 in progress — Health, incapacitation, revival, and death
 
-**Next executable task:** LK-0307 — Implement server-owned squad-failure evaluation
+**Next executable task:** LK-0308 — Complete two-client health, revival, security, and regression checks
 
 Final public branding is unresolved. Living Kingdoms remains the working title and internal project identifier; naming work is outside the current scope.

@@ -17,6 +17,7 @@ local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local OperativeLifeConfig = require(ReplicatedStorage.Shared.Config.OperativeLifeConfig)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
+local SquadFailureService = require(script.Parent.SquadFailureService)
 local OperativeIncapacitationResolver = require(script.Parent.OperativeIncapacitationResolver)
 local OperativeReviveResolver = require(script.Parent.OperativeReviveResolver)
 
@@ -44,6 +45,23 @@ function Harness.read(player: Player)
 		return nil
 	end
 	return OperativeLifeService.read(player)
+end
+
+function Harness.readSquadFailure()
+	if not studioOnly() then
+		return nil
+	end
+	return {
+		failure = SquadFailureService.read(),
+		participation = SquadFailureService.readParticipationFacts(),
+	}
+end
+
+function Harness.beginOperation()
+	if not studioOnly() then
+		return nil
+	end
+	return SquadFailureService.beginOperation()
 end
 
 function Harness.incapacitate(player: Player)
@@ -192,6 +210,33 @@ function Harness.revive(player: Player)
 	return commit(player, targetRead, completed)
 end
 
+function Harness.restoreAliveForSquadValidation(player: Player)
+	if not studioOnly() then
+		return nil
+	end
+	local read = OperativeLifeService.read(player)
+	if read == nil or read.snapshot.lifeStateId ~= "Incapacitated" then
+		return nil
+	end
+	local after = table.clone(read.snapshot)
+	after.healthState = table.clone(read.snapshot.healthState)
+	after.soloRecoveryState = table.clone(read.snapshot.soloRecoveryState)
+	after.processedDamageEventIds = table.clone(read.snapshot.processedDamageEventIds)
+	after.lifeStateId = "Alive"
+	after.healthState.currentHealth = OperativeLifeConfig.ReviveHealth
+	after.incapacitationState = nil
+	after.soloRecoveryState.isEligible = false
+	after.soloRecoveryState.recoveryStartedAtServerTimestamp = nil
+	after.soloRecoveryState.recoveryCompletionServerTimestamp = nil
+	return commit(player, read, {
+		didTransition = true,
+		lifeStateIdBefore = "Incapacitated",
+		lifeStateIdAfter = "Alive",
+		transitionServerTimestamp = Workspace:GetServerTimeNow(),
+		snapshotAfter = after,
+	})
+end
+
 local function createControl(name: string, callback: (Player) -> any)
 	local control = Instance.new("BindableFunction")
 	control.Name = name
@@ -212,9 +257,12 @@ function Harness.start()
 	folder.Parent = ServerStorage
 	controlFolder = folder
 	createControl("Read", Harness.read)
+	createControl("ReadSquadFailure", Harness.readSquadFailure)
+	createControl("BeginOperation", Harness.beginOperation)
 	createControl("ApplyDamage", Harness.applyDamage)
 	createControl("Incapacitate", Harness.incapacitate)
 	createControl("Revive", Harness.revive)
+	createControl("RestoreAliveForSquadValidation", Harness.restoreAliveForSquadValidation)
 	createControl("Kill", Harness.kill)
 end
 

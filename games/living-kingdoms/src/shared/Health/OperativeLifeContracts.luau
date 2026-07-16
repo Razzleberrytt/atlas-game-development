@@ -22,6 +22,14 @@ export type OperativeLifeTransitionRejectionReasonId =
 
 export type ReviveSessionStatusId = "Active" | "Cancelled" | "Completed"
 
+export type SquadFailureStatusId = "Viable" | "Pending" | "Failed"
+
+export type SquadFailureRejectionReasonId =
+	"InvalidFacts"
+	| "InvalidState"
+	| "InvalidServerTimestamp"
+	| "StaleEvaluation"
+
 export type ReviveRejectionReasonId =
 	"InvalidReviveInput"
 	| "ReviverNotAlive"
@@ -130,6 +138,31 @@ export type SquadViabilitySnapshot = {
 	failureDeadlineServerTimestamp: number?,
 }
 
+export type SquadFailureFacts = {
+	operativeSnapshots: { OperativeLifeStateSnapshot },
+	operationStartedSolo: boolean,
+	hasEverHadMultipleParticipants: boolean,
+	lateJoiningProhibited: boolean,
+	isAuthoritativelyAbandoned: boolean,
+}
+
+export type SquadFailureState = {
+	statusId: SquadFailureStatusId,
+	pendingStartedAtServerTimestamp: number?,
+	pendingDeadlineServerTimestamp: number?,
+	failedAtServerTimestamp: number?,
+}
+
+export type SquadFailureEvaluationResult = {
+	didResolve: boolean,
+	rejectionReasonId: SquadFailureRejectionReasonId?,
+	isViable: boolean?,
+	hasAliveOperative: boolean?,
+	hasPendingSoloRecovery: boolean?,
+	activeOperativeCount: number?,
+	stateAfter: SquadFailureState,
+}
+
 OperativeLifeContracts.OperativeLifeStateIds = table.freeze({
 	Alive = "Alive",
 	Incapacitated = "Incapacitated",
@@ -165,6 +198,19 @@ OperativeLifeContracts.ReviveRejectionReasonIds = table.freeze({
 	ReviveNotComplete = "ReviveNotComplete",
 	ReviveInterrupted = "ReviveInterrupted",
 	InvalidServerTimestamp = "InvalidServerTimestamp",
+})
+
+OperativeLifeContracts.SquadFailureStatusIds = table.freeze({
+	Viable = "Viable",
+	Pending = "Pending",
+	Failed = "Failed",
+})
+
+OperativeLifeContracts.SquadFailureRejectionReasonIds = table.freeze({
+	InvalidFacts = "InvalidFacts",
+	InvalidState = "InvalidState",
+	InvalidServerTimestamp = "InvalidServerTimestamp",
+	StaleEvaluation = "StaleEvaluation",
 })
 
 return table.freeze(OperativeLifeContracts)
