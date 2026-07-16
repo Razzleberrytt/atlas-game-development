@@ -23,7 +23,8 @@ export type OperativeLifeTransitionRejectionReasonId =
 export type ReviveSessionStatusId = "Active" | "Cancelled" | "Completed"
 
 export type ReviveRejectionReasonId =
-	"ReviverNotAlive"
+	"InvalidReviveInput"
+	| "ReviverNotAlive"
 	| "TargetNotIncapacitated"
 	| "SameOperative"
 	| "TargetBusy"
@@ -86,6 +87,7 @@ export type OperativeLifeTransitionResult = {
 }
 
 export type ReviveSessionState = {
+	sessionId: string,
 	reviverOperativeEntityId: string,
 	targetOperativeEntityId: string,
 	statusId: ReviveSessionStatusId,
@@ -93,9 +95,28 @@ export type ReviveSessionState = {
 	completionServerTimestamp: number,
 }
 
+export type ReviveBeginAuthorityFacts = {
+	sessionId: string,
+	reviverOperativeEntityId: string,
+	targetOperativeEntityId: string,
+	distanceStuds: number,
+	hasLineOfSight: boolean,
+	serverTimestamp: number,
+	activeSessionIdForTarget: string?,
+	hasConflictingActiveSession: boolean,
+}
+
+export type ReviveContinuationAuthorityFacts = ReviveBeginAuthorityFacts & {
+	reviverRemainsConnectedAndParticipating: boolean,
+	reviverMovementRemainedValid: boolean,
+	reviverReceivedNoInterruptingDamage: boolean,
+	holdRemainsActive: boolean,
+}
+
 export type ReviveTransitionResult = {
 	didTransition: boolean,
 	rejectionReasonId: ReviveRejectionReasonId?,
+	normalizedProgress: number,
 	sessionStateAfter: ReviveSessionState?,
 	targetSnapshotAfter: OperativeLifeStateSnapshot,
 }
@@ -133,6 +154,7 @@ OperativeLifeContracts.ReviveSessionStatusIds = table.freeze({
 })
 
 OperativeLifeContracts.ReviveRejectionReasonIds = table.freeze({
+	InvalidReviveInput = "InvalidReviveInput",
 	ReviverNotAlive = "ReviverNotAlive",
 	TargetNotIncapacitated = "TargetNotIncapacitated",
 	SameOperative = "SameOperative",
