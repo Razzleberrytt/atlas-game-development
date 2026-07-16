@@ -142,12 +142,12 @@ Create darkness, limited information, and selected squad navigation aids that pr
 - [x] **LK-0402 — Define shared perception, disclosure, and memory contracts.**
   - **Work type:** Pure contract/configuration work.
   - **Acceptance:** frozen `Unknown`/`Suspected`/`Observed` perception, `Hidden`/`Disclosed` disclosure, `None`/`Remembered` memory, categorical confidence, and direct-sight/teammate/objective source IDs are shared with a flat server-authored record, bounded semantic combinations, placeholder configuration, deterministic pure validator, stable rejection precedence, and focused fixtures; gameplay-light coverage is only a later visibility-resolver input and cannot create an observation or disclosure; rendering, gameplay visibility, targeting, line of sight, discovery runtime, forgetting, AI, hearing, rays, UI, remotes, and replication remain separate and unimplemented.
-- [ ] **LK-0403 — Implement the pure server visibility resolver.**
+- [x] **LK-0403 — Implement the pure server visibility resolver.**
   - **Work type:** Pure server-domain work.
-  - **Acceptance:** next and unstarted; server-known profiles and supplied authoritative spatial facts deterministically produce gameplay/targeting visibility without renderer data; fixtures cover darkness, light coverage, peripheral limits, blockers, state/range boundaries, immutability, and P2 hidden-target rejection.
+  - **Acceptance:** server-known profiles and supplied authoritative spatial facts deterministically produce separate gameplay visibility, direct-sight eligibility, and targeting visibility without renderer data; fixtures cover darkness, light coverage, forward/peripheral/outside regions, blockers, state/range boundaries, disclosure, immutability, and unchanged P2 gates.
 - [ ] **LK-0404 — Integrate server-owned discovery and bounded memory runtime.**
   - **Work type:** Runtime server work.
-  - **Acceptance:** one server owner stores recipient-specific discovery, expires/coarsens memory, sends only safe changed disclosures, and cleans up safely; no client can discover, refresh, or identify hidden hostiles; no enemy AI or polished presentation.
+  - **Acceptance:** next and unstarted; one server owner stores recipient-specific discovery, expires/coarsens memory, sends only safe changed disclosures, and cleans up safely; no client can discover, refresh, or identify hidden hostiles; no enemy AI or polished presentation.
 - [ ] **LK-0405 — Integrate bounded lighting-state runtime.**
   - **Work type:** Runtime server work.
   - **Acceptance:** authored and approved temporary gameplay-light state is server-owned, rate/lifetime/budget limited, and consumable by the visibility boundary; cosmetics remain non-authoritative; no unbounded dynamic-light, particle, shader, or post-processing system.
