@@ -6,7 +6,7 @@
 
 **Implementation tasks:** LK-0301 through LK-0308
 
-**Runtime behavior:** None through LK-0301
+**Runtime behavior:** Pure, unintegrated operative damage transitions through LK-0302
 
 ## Scope
 
@@ -67,6 +67,45 @@ The configuration module asserts that health, durations, and range are finite an
 | `SquadViabilitySnapshot` | The server derives roster counts, recovery paths, viability, and grace timestamps. | Clients may later read only a disclosed operation-status projection. | None. | Active roster, life states, recovery paths, viability, failure, grace timing, or authoritative timestamps. | LK-0307 |
 
 The shared types do not prove provenance. Future server callers must build every consequential value from server-owned state. No client-provided health, life state, incapacitation timestamp, bleed-out deadline, solo eligibility or usage, revive eligibility, distance, line of sight, start time, progress, completion, restored health, death, squad viability, squad failure, or timestamp may cross into these contracts as truth.
+
+## LK-0302 pure operative damage resolver
+
+`src/server/Systems/OperativeHealthResolver.luau` exposes one focused API:
+
+```luau
+OperativeHealthResolver.resolveDamage(
+    operativeSnapshot,
+    authoritativeDamage,
+    serverTimestamp
+): OperativeLifeTransitionResult
+```
+
+The resolver is deterministic, side-effect-free, server-domain only, and unintegrated. It applies at most one accepted damage event to one canonical `OperativeLifeStateSnapshot`. It does not prove that an input is authoritative: its caller must construct the snapshot, damage event, target identity, amount, and timestamp from server-owned state. Client health, life state, damage amount or type, target identity, timestamp, and transition requests are never valid sources.
+
+`AuthoritativeOperativeDamage` is the minimum accepted shape: nonempty `damageEventId`, optional nonempty `sourceEntityId`, nonempty `targetEntityId`, finite positive `damageAmount`, and `serverTimestamp`. The separately supplied server timestamp must be finite, nonnegative, and exactly match the event timestamp. Extra P2 event fields do not widen the resolver's authority surface.
+
+Validation uses this stable first-failure order and returns exactly one canonical LK-0301 reason:
+
+1. `InvalidSnapshot` — malformed identity or life-state vocabulary, malformed health table structure, inconsistent incapacitation structure, malformed solo-recovery state or nested timestamps, or malformed processed-event set.
+2. `InvalidHealth` — non-finite health, nonpositive or noncanonical maximum health, health outside `0..MaximumHealth`, `Alive` at zero, or non-Alive state with nonzero health.
+3. `InvalidDamage` — malformed or empty damage identity, malformed optional source identity, target mismatch, or damage that is not finite and strictly positive.
+4. `InvalidServerTimestamp` — non-finite, negative, or inconsistent event/call timestamps.
+5. `IllegalTransition` — a structurally valid `Incapacitated` or `Dead` snapshot; finishing damage and Dead-state behavior belong to LK-0303.
+6. `AlreadyResolved` — the valid damage identity is already present in the committed snapshot's processed-event set.
+
+`StaleTransition` remains a canonical LK-0301 ID for a later resolver and is not invented as an alias for any LK-0302 failure.
+
+Accepted nonlethal damage subtracts the amount, preserves maximum health and all unrelated canonical state, leaves health above zero, remains `Alive`, creates no incapacitation state, records the authoritative transition timestamp and damage-event correlation, and marks the event processed in the returned snapshot.
+
+Accepted damage that reaches or exceeds current health clamps health to exactly zero and transitions only `Alive` to `Incapacitated`. The resolver creates `startedAtServerTimestamp = serverTimestamp` and `bleedOutDeadlineServerTimestamp = serverTimestamp + OperativeLifeConfig.BleedOutDurationSeconds`. Exactly zero and overkill use the same configured 30-second rescue window; excess damage is discarded and cannot enter `Dead`, shorten bleed-out, or start solo recovery.
+
+The snapshot owns a caller-managed `processedDamageEventIds` set. The resolver copies that set and adds the accepted identity. Duplicate safety exists only after the caller atomically commits the complete returned snapshot before resolving another event for that operative. There is no hidden global service, runtime owner, persistence, cross-server guarantee, automatic cleanup, or memory bound in LK-0302. The future runtime owner must define one operative-lifetime boundary and cleanup policy.
+
+The resolver never mutates its snapshot or damage input. Accepted results contain copied nested tables; rejected results contain a deep copied, value-preserving snapshot and no accepted timestamp, correlation, or partial incapacitation. Repeated calls with equivalent inputs produce equivalent outputs.
+
+The P2 `AuthoritativeDamageEvent` is structurally compatible with the minimum LK-0302 input and may be adapted as authoritative server input without changing how P2 creates it. P2 `DamageResolver`, `TargetHealthState`, processed ShotIds, and the test-hostile `becameDead` health-crossing field remain unchanged. LK-0302 does not commit either P2 or P3 state at runtime.
+
+Bleed-out completion, damage against an already incapacitated operative, finishing death, solo recovery, revival, runtime character restrictions, remotes, presentation, squad failure, and every P4 behavior remain deferred. LK-0303 is the next pure domain task and is not started by this resolver.
 
 ## Canonical life state and transitions
 

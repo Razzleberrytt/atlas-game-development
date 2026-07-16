@@ -50,17 +50,32 @@ export type SoloRecoveryState = {
 	recoveryCompletionServerTimestamp: number?,
 }
 
+export type ProcessedDamageEventIds = { [string]: boolean }
+
+export type AuthoritativeOperativeDamage = {
+	damageEventId: string,
+	sourceEntityId: string?,
+	targetEntityId: string,
+	damageAmount: number,
+	serverTimestamp: number,
+}
+
 export type OperativeLifeStateSnapshot = {
 	operativeEntityId: string,
 	lifeStateId: OperativeLifeStateId,
 	healthState: OperativeHealthState,
 	incapacitationState: IncapacitationState?,
 	soloRecoveryState: SoloRecoveryState,
+	processedDamageEventIds: ProcessedDamageEventIds,
 }
 
 export type OperativeLifeTransitionResult = {
 	didTransition: boolean,
 	rejectionReasonId: OperativeLifeTransitionRejectionReasonId?,
+	lifeStateIdBefore: OperativeLifeStateId?,
+	lifeStateIdAfter: OperativeLifeStateId?,
+	transitionServerTimestamp: number?,
+	damageEventId: string?,
 	snapshotAfter: OperativeLifeStateSnapshot,
 }
 
