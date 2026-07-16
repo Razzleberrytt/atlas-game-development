@@ -2,13 +2,13 @@
 
 **Status:** Canonical contract specification
 
-**Tasks:** LK-0201, LK-0202
+**Tasks:** LK-0201, LK-0202, LK-0203
 
-**Runtime behavior:** One pure server candidate-validation function; no runtime bootstrap integration
+**Runtime behavior:** Pure server candidate-validation and target-selection functions; no runtime bootstrap integration
 
 ## Scope
 
-This specification defines the smallest shared vocabulary required for the P2 automatic-combat pipeline. LK-0201 declared data shapes, stable IDs, authority, trust boundaries, and prototype firearm balance homes. LK-0202 adds validation of exactly one server-derived candidate. It does not discover hostiles, select targets, fire weapons, apply damage, add remotes, or present combat.
+This specification defines the smallest shared vocabulary required for the P2 automatic-combat pipeline. LK-0201 declared data shapes, stable IDs, authority, trust boundaries, and prototype firearm balance homes. LK-0202 adds validation of exactly one server-derived candidate. LK-0203 adds deterministic selection from a caller-provided candidate list. Neither function discovers hostiles, retains target state, fires weapons, applies damage, adds remotes, or presents combat.
 
 Manual priority-target override and authored scarcity pickups remain deferred. No `AimController`, `WeaponController`, `CombatSystem`, `EngagementSystem`, enemy, weapon instance, health change, or networking behavior is created by LK-0201.
 
@@ -46,7 +46,7 @@ Each arrow crosses an explicit data boundary, not an event bus or service requir
 | `AmmunitionState` | Loaded, reserve, and capacity snapshot for one weapon | Server | May read a disclosed snapshot; may animate predicted feedback without mutation | Any ammunition count or capacity | LK-0202 for eligibility; LK-0204 for consumption |
 | `WeaponCadenceState` | Last and next legal server fire time | Server | May read disclosed timing for presentation | Client time, last-fire time, or next-fire time | LK-0204 |
 | `WeaponReadinessState` | Combines readiness, ammunition, and cadence state | Server | May read disclosed readiness; may not turn prediction into fire | Readiness, ammunition, or cadence | LK-0202 |
-| `TargetCandidate` | Server-derived facts needed to judge one possible hostile | Server | Must not receive hidden candidates; may mirror only disclosed facts for likely-target presentation | Candidate identity, distance, relationship, visibility, line of sight, threat, life, or targetability | LK-0202 |
+| `TargetCandidate` | Server-derived facts needed to judge and prioritize one possible hostile, including the exact operative it actively threatens when applicable | Server | Must not receive hidden candidates; may mirror only disclosed facts for likely-target presentation | Candidate identity, distance, relationship, visibility, line of sight, threat, life, or targetability | LK-0202 |
 | `TargetValidationResult` | Deterministic legal/illegal result and rejection reason | Server | May read a disclosed result for presentation/debugging | Validity or rejection reason | LK-0202 |
 | `SelectedTargetState` | Current authoritative target and deterministic selection reason | Server | May present a disclosed selection | Target identity, selection reason, or selection time | LK-0203 |
 | `AutomaticFireDecision` | Whether the server may fire now with a selected target | Server | May predict animation timing only | Decision, target, rejection reason, weapon, or evaluation time | LK-0204 |
@@ -87,7 +87,17 @@ The maximum-range boundary is inclusive: exactly `80` horizontal studs and value
 
 A valid hostile is **actively threatening the operative** only when server-owned hostile state says it is currently pursuing, attacking, or committed to an attack whose intended victim is that operative. Proximity, facing, client observation, or membership in a wave alone is insufficient.
 
-LK-0203 selects the closest valid actively threatening hostile first. If none exists, it selects the closest valid hostile in range. Tie behavior must be deterministic and will be finalized with selection implementation; a manual priority-target override remains deferred.
+`TargetCandidate.activelyThreateningOperativeEntityId` is the minimum server-derived intent signal used by LK-0203. It contains the intended operative's `CombatEntityId` only while the hostile is pursuing, attacking, or committed to an attack against that operative; otherwise it is `nil`. It must not be populated from proximity, facing, visibility alone, wave membership, client observation, damage presentation, or a generic hostile flag. The earlier generic `isActivelyThreatening` field remains in the shared shape for backward compatibility but does not establish operative-specific threat and is ignored by the selector.
+
+`TargetCandidateSelector.select(operative, candidates)` validates every caller-provided candidate through `TargetCandidateValidator` and selects at most one target in this order:
+
+1. The valid candidate actively threatening this exact operative with the shortest horizontal XZ distance.
+2. If no valid candidate threatens this operative, the valid candidate with the shortest horizontal XZ distance.
+3. If multiple candidates in the applicable priority group have exactly equal squared distances, the candidate with the lexically smallest `CombatEntityId`.
+
+Selection recomputes squared horizontal XZ distance from the server-derived operative and candidate positions. It never trusts `distanceStuds` as authority. Distances use exact Luau number comparisons with no epsilon: a smaller squared value wins, and exact numeric equality reaches the ID tie-break. This keeps comparison transitive and input-order independent. The validator's inclusive maximum-range rule remains authoritative, so a candidate exactly at maximum range is eligible.
+
+The function returns a `SelectedTargetState` using canonical reason `ThreateningClosest` or `ValidClosest`. The returned target ID is non-optional and `selectedAtServerTimestamp` is `nil` because this pure selection step does not read or create authoritative time. When no candidate validates, it returns `nil` rather than a retained or cleared selection state. Every call is independent: there is no target persistence, target-switch hysteresis, reacquisition cache, randomness, or input mutation. Safe target loss therefore produces `nil`, and a later call may reacquire solely from its current inputs. Manual priority override and sticky targeting remain deferred.
 
 ## Fire readiness, cadence, and ammunition
 
@@ -122,8 +132,7 @@ These are prototype values, not a balance promise. Temporary initial ammunition 
 - Combat-entity ID generation, lifetime across respawn, and reuse policy.
 - Team/faction assignment and relationship lookup source.
 - The gameplay visibility provider and exact line-of-sight raycast policy.
-- The server-owned hostile intent signal used to establish active threat.
-- Deterministic equal-distance tie-breaking and target-switch stability.
+- Target-switch hysteresis or other sticky-target behavior, if playtesting later demonstrates a need.
 - Reload interruption rules and whether a partially completed reload has any effect.
 - Hit model, obstruction filtering, body-part treatment, and damage application order.
 - Final weapon values, ammunition scarcity, and supply ownership after P2 prototypes.
