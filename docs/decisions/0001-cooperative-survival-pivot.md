@@ -63,3 +63,7 @@ These tasks are marked superseded, not completed. Generic concepts such as healt
 ## First follow-up
 
 `LK-0101 — Add camera-relative movement for one local survivor` is the first executable gameplay task. It is intentionally limited to reliable desktop control of one character while preserving the existing tactical camera. It does not implement aiming, weapons, enemies, classes, objectives, progression, or any other gameplay system.
+
+## Subsequent decisions
+
+Decision 0001 records the original cooperative-survival pivot and remains unchanged as project history. [Decision 0002](0002-automatic-combat-targeting.md) subsequently replaces the early manual-aiming assumption with server-authoritative automatic target acquisition and fire. This amendment does not change LK-0101 or the reasons for the original pivot.

@@ -55,8 +55,11 @@ The source of truth is:
 3. [`docs/architecture/technical-blueprint.md`](../../docs/architecture/technical-blueprint.md)
 4. [`docs/roadmap/MASTER-ROADMAP.md`](../../docs/roadmap/MASTER-ROADMAP.md)
 5. [`docs/decisions/0001-cooperative-survival-pivot.md`](../../docs/decisions/0001-cooperative-survival-pivot.md)
+6. [`docs/decisions/0002-automatic-combat-targeting.md`](../../docs/decisions/0002-automatic-combat-targeting.md)
 
 The former worker-selection, economy, construction, production, and army-command plan is superseded. Completed repository and camera work is preserved.
+
+Combat uses server-authoritative automatic target acquisition and fire. Players directly control movement, positioning, interaction, reload timing, class abilities, and resource decisions. A future manual priority-target override remains optional and is not part of the first combat milestone.
 
 ## Local validation
 

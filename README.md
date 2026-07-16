@@ -33,7 +33,8 @@ Read these files in order:
 3. `docs/architecture/technical-blueprint.md`
 4. `docs/roadmap/MASTER-ROADMAP.md`
 5. `docs/decisions/0001-cooperative-survival-pivot.md`
-6. `prompts/codex-master-prompt.md`
+6. `docs/decisions/0002-automatic-combat-targeting.md`
+7. `prompts/codex-master-prompt.md`
 
 For Windows installation and Roblox Studio synchronization, follow the [Windows local setup guide](docs/production/LOCAL-SETUP.md).
 For Luau formatting and static analysis, follow the [Luau tooling guide](docs/production/LUAU-TOOLING.md).
