@@ -2,10 +2,12 @@
 
 --[[
 	CameraController owns the local camera lifecycle and applies the fixed overhead
-	strategy view configured for LK-0011 with keyboard panning added in LK-0012.
+	strategy view configured for LK-0011, keyboard panning added in LK-0012, and
+	mouse-wheel zoom added in LK-0013. LK-0014 constrains the mutable focus point
+	to configurable world-space bounds.
 
-	Zoom, smoothing, bounds, rotation, edge scrolling, touch controls, and all gameplay
-	behavior remain intentionally deferred to later tasks.
+	Smoothing, rotation, edge scrolling, touch controls, and all gameplay behavior
+	remain intentionally deferred to later tasks.
 ]]
 
 local Players = game:GetService("Players")
@@ -13,11 +15,21 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
-local CAMERA_FOCUS_POINT = Vector3.new(0, 0, 0)
-local CAMERA_PITCH_DEGREES = -60
-local CAMERA_YAW_DEGREES = 45
-local CAMERA_HEIGHT = 80
 local PAN_SPEED_STUDS_PER_SECOND = 48
+
+local CameraConfig = table.freeze({
+	FocusPoint = Vector3.new(0, 0, 0),
+	MinimumFocusX = -128,
+	MaximumFocusX = 128,
+	MinimumFocusZ = -128,
+	MaximumFocusZ = 128,
+	PitchDegrees = -60,
+	YawDegrees = 45,
+	MinimumHeight = 40,
+	MaximumHeight = 160,
+	ZoomSensitivity = 10,
+	InitialHeight = 80,
+})
 
 local PAN_INPUT_BINDINGS = table.freeze({
 	[Enum.KeyCode.W] = Vector2.new(0, 1),
@@ -30,21 +42,17 @@ local PAN_INPUT_BINDINGS = table.freeze({
 	[Enum.KeyCode.Right] = Vector2.new(1, 0),
 })
 
-local pitchRadians = math.rad(-CAMERA_PITCH_DEGREES)
-local yawRadians = math.rad(CAMERA_YAW_DEGREES)
-local horizontalDistance = CAMERA_HEIGHT / math.tan(pitchRadians)
-local CAMERA_INITIAL_POSITION = CAMERA_FOCUS_POINT
-	+ Vector3.new(math.sin(yawRadians) * horizontalDistance, CAMERA_HEIGHT, math.cos(yawRadians) * horizontalDistance)
+local function getCameraOffset(height: number): Vector3
+	local pitchRadians = math.rad(-CameraConfig.PitchDegrees)
+	local yawRadians = math.rad(CameraConfig.YawDegrees)
+	local horizontalDistance = height / math.tan(pitchRadians)
 
-local CameraConfig = table.freeze({
-	FocusPoint = CAMERA_FOCUS_POINT,
-	PitchDegrees = CAMERA_PITCH_DEGREES,
-	YawDegrees = CAMERA_YAW_DEGREES,
-	Height = CAMERA_HEIGHT,
-	InitialPosition = CAMERA_INITIAL_POSITION,
-})
-local CAMERA_OFFSET = CameraConfig.InitialPosition - CameraConfig.FocusPoint
-local INITIAL_CAMERA_CFRAME = CFrame.lookAt(CameraConfig.InitialPosition, CameraConfig.FocusPoint)
+	return Vector3.new(math.sin(yawRadians) * horizontalDistance, height, math.cos(yawRadians) * horizontalDistance)
+end
+
+local INITIAL_CAMERA_OFFSET = getCameraOffset(CameraConfig.InitialHeight)
+local INITIAL_CAMERA_POSITION = CameraConfig.FocusPoint + INITIAL_CAMERA_OFFSET
+local INITIAL_CAMERA_CFRAME = CFrame.lookAt(INITIAL_CAMERA_POSITION, CameraConfig.FocusPoint)
 local CAMERA_FORWARD = Vector3.new(INITIAL_CAMERA_CFRAME.LookVector.X, 0, INITIAL_CAMERA_CFRAME.LookVector.Z).Unit
 local CAMERA_RIGHT = Vector3.new(INITIAL_CAMERA_CFRAME.RightVector.X, 0, INITIAL_CAMERA_CFRAME.RightVector.Z).Unit
 
@@ -65,10 +73,12 @@ type LifecycleState = {
 	originalCameraCFrame: CFrame?,
 	currentCameraChangedConnection: RBXScriptConnection?,
 	inputBeganConnection: RBXScriptConnection?,
+	inputChangedConnection: RBXScriptConnection?,
 	inputEndedConnection: RBXScriptConnection?,
 	renderSteppedConnection: RBXScriptConnection?,
 	activationLogged: boolean,
 	focusPoint: Vector3,
+	currentHeight: number,
 	pressedPanKeys: { [Enum.KeyCode]: boolean },
 }
 
@@ -83,10 +93,12 @@ local state: LifecycleState = {
 	originalCameraCFrame = nil,
 	currentCameraChangedConnection = nil,
 	inputBeganConnection = nil,
+	inputChangedConnection = nil,
 	inputEndedConnection = nil,
 	renderSteppedConnection = nil,
 	activationLogged = false,
 	focusPoint = CameraConfig.FocusPoint,
+	currentHeight = CameraConfig.InitialHeight,
 	pressedPanKeys = {},
 }
 
@@ -110,10 +122,34 @@ end
 
 local function applyFixedView(camera: Camera)
 	local focusPoint = state.focusPoint
-	local cameraPosition = focusPoint + CAMERA_OFFSET
+	local cameraPosition = focusPoint + getCameraOffset(state.currentHeight)
 
 	camera.CameraType = Enum.CameraType.Scriptable
 	camera.CFrame = CFrame.lookAt(cameraPosition, focusPoint)
+end
+
+local function clampFocusPoint(focusPoint: Vector3): Vector3
+	return Vector3.new(
+		math.clamp(focusPoint.X, CameraConfig.MinimumFocusX, CameraConfig.MaximumFocusX),
+		focusPoint.Y,
+		math.clamp(focusPoint.Z, CameraConfig.MinimumFocusZ, CameraConfig.MaximumFocusZ)
+	)
+end
+
+local function onInputChanged(input: InputObject, gameProcessedEvent: boolean)
+	if gameProcessedEvent or UserInputService:GetFocusedTextBox() ~= nil then
+		return
+	end
+
+	if input.UserInputType ~= Enum.UserInputType.MouseWheel then
+		return
+	end
+
+	state.currentHeight = math.clamp(
+		state.currentHeight - input.Position.Z * CameraConfig.ZoomSensitivity,
+		CameraConfig.MinimumHeight,
+		CameraConfig.MaximumHeight
+	)
 end
 
 local function updateFocusPoint(deltaTime: number)
@@ -138,7 +174,7 @@ local function updateFocusPoint(deltaTime: number)
 
 	local worldDirection = CAMERA_RIGHT * inputDirection.X + CAMERA_FORWARD * inputDirection.Y
 	local displacement = worldDirection * PAN_SPEED_STUDS_PER_SECOND * deltaTime
-	state.focusPoint += Vector3.new(displacement.X, 0, displacement.Z)
+	state.focusPoint = clampFocusPoint(state.focusPoint + Vector3.new(displacement.X, 0, displacement.Z))
 end
 
 local function onInputBegan(input: InputObject, gameProcessedEvent: boolean)
@@ -203,6 +239,7 @@ function CameraController.start()
 	state.currentCameraChangedConnection = Workspace:GetPropertyChangedSignal("CurrentCamera")
 		:Connect(updateCurrentCamera)
 	state.inputBeganConnection = UserInputService.InputBegan:Connect(onInputBegan)
+	state.inputChangedConnection = UserInputService.InputChanged:Connect(onInputChanged)
 	state.inputEndedConnection = UserInputService.InputEnded:Connect(onInputEnded)
 	state.renderSteppedConnection = RunService.RenderStepped:Connect(function(deltaTime)
 		if Workspace.CurrentCamera ~= state.currentCamera then
@@ -246,6 +283,12 @@ function CameraController.stop()
 	if inputEndedConnection ~= nil then
 		inputEndedConnection:Disconnect()
 		state.inputEndedConnection = nil
+	end
+
+	local inputChangedConnection = state.inputChangedConnection
+	if inputChangedConnection ~= nil then
+		inputChangedConnection:Disconnect()
+		state.inputChangedConnection = nil
 	end
 
 	restoreOwnedCameraProperties()
