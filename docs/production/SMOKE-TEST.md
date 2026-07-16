@@ -168,3 +168,23 @@ Observed:
 - `[Living Kingdoms] Client bootstrap started` appeared exactly once.
 - No Living Kingdoms-originated errors or warnings appeared in the final clean run.
 - Roblox Studio repeated the previously documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. These remain classified as Roblox Studio-owned environment noise.
+
+## LK-0102 Prototype movement authority validation
+
+- Date: 2026-07-15
+- Environment: Microsoft Windows 11 Home 10.0.26200; Roblox Studio 0.730.0.7300790
+- Rojo: repository-pinned CLI 7.7.0 and Studio plugin 7.7.0
+- Project: `LivingKingdoms` synchronized from `games\living-kingdoms\default.project.json` at `localhost:34872`
+- Runs: one focused movement/correction/respawn run followed by one clean Play smoke run after clearing Output
+
+Observed:
+
+- Normal W/A/S/D, arrow-key, and normalized diagonal control remained responsive through the existing `SurvivorController`; ordinary movement resumed after a correction.
+- Mouse-wheel zoom remained responsive, and the tactical camera remained active during survivor movement.
+- Ordinary jumping, falling/settling, movement on a transient 10-degree test slope, and small physics variation produced no movement-correction warning.
+- A deliberate client-side 100-stud horizontal displacement was detected on the server and corrected. The forced position began at approximately `(0.17, 4.22, 1.63)` and settled after correction near the last accepted sample at approximately `(5.60, 4.22, 1.63)`.
+- `[Living Kingdoms] Corrected impossible movement for razzleberryt` appeared once for the deliberate correction and did not repeat on following frames, resumed movement, jumping, slope traversal, or respawn.
+- Breaking the character joints produced a replacement character with a new `HumanoidRootPart`; validation state reset safely and normal control remained available.
+- The final clean run showed `[Living Kingdoms] Server bootstrap started`, `[Living Kingdoms] Fixed overhead camera activated`, and `[Living Kingdoms] Client bootstrap started` exactly once each.
+- No Living Kingdoms-originated error or unexpected warning appeared in the final clean run.
+- The final clean run repeated the previously documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. These remain classified as Roblox Studio-owned environment noise.
