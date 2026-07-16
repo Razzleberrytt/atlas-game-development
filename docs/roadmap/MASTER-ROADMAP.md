@@ -66,7 +66,7 @@ Complete. One player can reliably control one operative from the elevated tactic
 
 ## P2 — Automatic targeting and basic firearm combat
 
-- [ ] **LK-0201 — Specify the automatic-combat contract and firearm configuration.**
+- [x] **LK-0201 — Specify the automatic-combat contract and firearm configuration.**
   - **Acceptance:** stable weapon, hostile, and combat-state IDs; range; readiness; cadence; ammunition ownership; reload input; target eligibility; visibility; line-of-sight rules; threatening-hostile definition; and client/server presentation messages are documented; balance values have shared configuration homes; manual priority override and scarcity pickups remain deferred.
 - [ ] **LK-0202 — Validate automatic-target candidates on the server.**
   - **Acceptance:** a server function accepts an operative and candidate hostile and returns a deterministic legal/illegal result based on operative state, hostile state, visibility, line of sight, range, ammunition, and weapon readiness; clients cannot make an illegal target valid; deterministic rules receive automated tests where feasible.

@@ -43,8 +43,8 @@ For the reusable Studio launch check and first successful result, see the [smoke
 ## Project status
 
 **Atlas version:** 0.1  
-**Living Kingdoms phase:** P1 — Tactical player movement and character controller (complete)
+**Living Kingdoms phase:** P2 — Automatic targeting and basic firearm combat
 
-**Next executable task:** LK-0201 — specify the automatic-combat contract and firearm configuration (not started)
+**Next executable task:** LK-0202 — validate automatic-target candidates on the server
 
 Final public branding is unresolved. Living Kingdoms remains the working title and internal project identifier; naming work is outside the current scope.

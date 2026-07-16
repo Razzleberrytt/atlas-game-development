@@ -57,6 +57,8 @@ This is a boundary guide, not permission to scaffold every future module before 
 
 - `CameraController` — elevated camera lifecycle, local-survivor follow framing, panning, zoom, and current bounds
 - `SurvivorController` — implemented local operative input, character/respawn binding, and responsive camera-relative movement intent
+- `CombatContracts` — shared stable combat IDs and server-authoritative pipeline data shapes; declarations only in LK-0201
+- `FirearmConfig` — shared prototype balance home for the first basic firearm family
 - `WeaponController` — local reload input plus non-authoritative automatic-targeting and firing presentation
 - `SquadUIController` — personal status, teammate status, location aids, and operation information
 - `PlayerService` — server-owned operative lifecycle, class assignment, and spawn state
@@ -120,4 +122,4 @@ UI and controllers may call shared interfaces. Server systems may depend on shar
 
 ## Change policy
 
-Architecture exists to support the next playable milestone. A new abstraction must solve a present, demonstrated need or remove meaningful duplication. LK-0101 implements only camera-relative movement for one local survivor. LK-0102 adds one prototype server movement sanity boundary while preserving local Humanoid movement and normal Roblox character network ownership. LK-0103 makes local movement intent drive survivor yaw and derives replicated idle, moving, and facing presentation attributes from server-observed character state without accepting client movement messages or arbitrary transforms. LK-0104 adds bounded horizontal follow framing around the local survivor without changing pitch, yaw, zoom, movement ownership, or server authority. LK-0105 completes the two-client movement and regression checks without changing source architecture. P1 is complete; the next executable task is the LK-0201 automatic-combat contract specification, which is not started.
+Architecture exists to support the next playable milestone. A new abstraction must solve a present, demonstrated need or remove meaningful duplication. P1 is complete and remains unchanged. LK-0201 defines shared automatic-combat contracts and prototype firearm configuration without runtime behavior. The next executable task is LK-0202, limited to deterministic server target-candidate validation; it must not implement selection, firing, enemies, damage, networking, or presentation.
