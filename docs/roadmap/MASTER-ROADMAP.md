@@ -131,7 +131,43 @@ One or two controlled operatives use a server-owned `Alive`/`Incapacitated`/`Dea
 
 ## P4 — Darkness, limited vision, and squad-location tools
 
-Implement limited personal information, darkness presentation, server-owned discovery rules where gameplay relevant, separated spawn support, and a periodic location ping or equivalent aid that preserves uncertainty.
+Create darkness, limited information, and selected squad navigation aids that preserve uncertainty without withholding the information necessary to regroup and pursue the current objective. The canonical P4 architecture is `docs/specifications/darkness-visibility-and-squad-navigation.md`.
+
+- [x] **LK-P4-PLAN-001 — Plan and decompose P4 darkness, limited vision, and squad navigation.**
+  - **Work type:** Documentation and planning.
+  - **Acceptance:** the canonical specification separates rendering, gameplay, targeting, line-of-sight, discovery, and memory; defines darkness/light authority, automatic-targeting disclosure rules, player/enemy perception vocabulary, tool tradeoffs, performance/accessibility/security/synchronization policy, ordered tasks, dependencies, and exclusions; no gameplay source changes.
+- [ ] **LK-0401 — Define shared lighting contracts and configuration.**
+  - **Work type:** Pure contract/configuration work.
+  - **Acceptance:** stable visibility profiles, server-owned gameplay-light descriptors, activation/lifetime vocabulary, conservative budgets, and rejection reasons are documented and fixture-tested without lights, rendering, remotes, or runtime queries.
+- [ ] **LK-0402 — Define shared perception, disclosure, and memory contracts.**
+  - **Work type:** Pure contract/configuration work.
+  - **Acceptance:** strict per-operative current/stale/hidden discovery vocabulary, quantized memory policy, line-of-sight inputs/results, enemy hearing/sight/memory/investigation declarations, and target-disclosure compatibility are fixture-tested without AI, rays, UI, or replication.
+- [ ] **LK-0403 — Implement the pure server visibility resolver.**
+  - **Work type:** Pure server-domain work.
+  - **Acceptance:** server-known profiles and supplied authoritative spatial facts deterministically produce gameplay/targeting visibility without renderer data; fixtures cover darkness, light coverage, peripheral limits, blockers, state/range boundaries, immutability, and P2 hidden-target rejection.
+- [ ] **LK-0404 — Integrate server-owned discovery and bounded memory runtime.**
+  - **Work type:** Runtime server work.
+  - **Acceptance:** one server owner stores recipient-specific discovery, expires/coarsens memory, sends only safe changed disclosures, and cleans up safely; no client can discover, refresh, or identify hidden hostiles; no enemy AI or polished presentation.
+- [ ] **LK-0405 — Integrate bounded lighting-state runtime.**
+  - **Work type:** Runtime server work.
+  - **Acceptance:** authored and approved temporary gameplay-light state is server-owned, rate/lifetime/budget limited, and consumable by the visibility boundary; cosmetics remain non-authoritative; no unbounded dynamic-light, particle, shader, or post-processing system.
+- [ ] **LK-0406 — Add one approved flashlight or personal-light vertical slice.**
+  - **Work type:** Focused tool/runtime and presentation work.
+  - **Acceptance:** the selected tool has server-validated intent and gameplay coverage, responsive local-only presentation, bounded activation, accessibility treatment, and cannot reveal/target undiscovered enemies; alternative tools remain deferred.
+- [ ] **LK-0407 — Add the selected squad-navigation aid slice.**
+  - **Work type:** Focused tool/disclosure work.
+  - **Acceptance:** one playtested aid (for example a limited ping or compass policy) communicates only permitted teammate/objective information, is rate/expiry bounded with non-audio equivalence, and does not introduce a minimap or global hostile awareness.
+- [ ] **LK-0408 — Complete P4 security, performance, and integration validation.**
+  - **Work type:** Validation and focused defect repair only.
+  - **Acceptance:** adversarial clients cannot alter visibility, discovery, lights, memory, or targeting; 1–4 player representative budget measurements cover lights/particles/shadows/rays/checks; selected aid feel/accessibility is documented; P1–P3 and P2 regression suites pass; any repair is minimal and P4-only.
+
+### P4 execution order
+
+`LK-P4-PLAN-001` → `LK-0401` + `LK-0402` → `LK-0403` → (`LK-0404` + `LK-0405`) → (`LK-0406` + `LK-0407`) → `LK-0408`. `LK-0406` also depends on `LK-0405`; `LK-0407` depends on the disclosure contract/runtime it uses. No P5 enemy runtime begins during P4.
+
+### P4 exit criteria
+
+One to four operatives can navigate, regroup, and use only the selected bounded aids under readable darkness. The server controls gameplay visibility, discovery, memory, lighting state, and targeting disclosure; local rendering cannot expose or legalize hidden information; performance and accessibility criteria are measured without adding P5 systems.
 
 ## P5 — Enemy spawning, pursuit, and horde pressure
 
