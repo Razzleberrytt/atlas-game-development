@@ -25,9 +25,9 @@ living-kingdoms/
 │   │   │   └── MovementValidationSystem.luau
 │   │   └── init.server.luau
 │   └── shared/
-│       └── Config/
-│           ├── MovementLimits.luau
-│           └── MovementStateConfig.luau
+│       ├── Combat/
+│       ├── Config/
+│       └── Health/
 ├── tests/
 └── README.md
 ```
@@ -152,8 +152,16 @@ The controller consumes only explicit server-disclosed target, shot, and reload 
 
 The two explicit RemoteEvents are `CombatNetwork.ReloadIntent` and `CombatNetwork.CombatPresentation`. `ReloadIntent` is the only client-to-server combat listener. A Studio-only `AutomaticCombatDevelopmentHarness` composes the accepted pure P2 modules with two stationary labeled fixtures, isolated per-player weapon state, and server-owned fixture health/processed ShotIds. It starts test magazines empty so `R` exercises the authoritative two-second reload before acquisition and fire. It is inactive outside Studio and is not a production combat owner, hostile-discovery path, enemy architecture, AI, or final ammunition system. Run all P2 fixtures plus `CombatSecurityIntegration.test.luau` with Lune for focused validation.
 
+## Operative health and life-state declarations
+
+LK-0301 adds `OperativeLifeContracts` under `src/shared/Health` and `OperativeLifeConfig` under `src/shared/Config`. The contract module declares only the stable `Alive`, `Incapacitated`, and `Dead` life-state vocabulary plus focused health, incapacitation, transition, revive, solo-recovery, and squad-viability shapes. Stable identifier tables and the configuration table are frozen; runtime snapshots are not.
+
+The configuration centralizes maximum health `100`, bleed-out `30` seconds, revive range `8` studs, revive duration `4` seconds, revive health `30`, solo recovery `8` seconds, one solo recovery per operation, and squad-failure grace `3` seconds. Module-load assertions enforce positive finite values, revive health within maximum health, and exactly one solo recovery.
+
+These shared modules are safe for client and server code to require, but the server remains authoritative. No bootstrap imports them, and they add no owner, transition resolver, timers, character changes, remotes, UI, or runtime behavior. The P2 `TargetHealthState`, `DamageResolver.becameDead` semantics, firearm configuration, processed-ShotId boundary, and all P2 fixtures remain unchanged. Run `lune run games/living-kingdoms/tests/OperativeLifeContracts.test.luau` for the LK-0301 fixture.
+
 ## Next executable task
 
-`P3 — Health, incapacitation, revival, and death.`
+`LK-0302 — Implement pure operative health and incapacitation transitions.`
 
-LK-0207 and P2 are complete. P3 is canonically specified and decomposed; runtime implementation has not begun. LK-0301 is the next executable task. Production combat orchestration, hostile discovery, enemies, scarcity pickups, and later gameplay systems remain deferred.
+LK-0207, P2, the P3 plan, and LK-0301 are complete. LK-0302 remains unstarted and is the next executable task. Production combat orchestration, health ownership, runtime life-state behavior, hostile discovery, enemies, scarcity pickups, and later gameplay systems remain deferred.

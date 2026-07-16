@@ -92,7 +92,7 @@ Define server-owned health and damage, incapacitated state, teammate revival, un
 - [x] **LK-P3-PLAN-001 — Specify and decompose P3 health, incapacitation, revival, and death.**
   - **Work type:** Documentation and planning.
   - **Acceptance:** the canonical P3 specification defines authority, the minimal life-state vocabulary and legal transitions, health and bleed-out rules, teammate revival and interruption, the limited solo policy, death/respawn and reconnect behavior, squad failure, trust boundaries, deferrals, and unresolved tuning questions; P3 is decomposed into small ordered tasks; no gameplay source or later milestone behavior changes.
-- [ ] **LK-0301 — Specify shared operative health and life-state contracts and configuration.**
+- [x] **LK-0301 — Specify shared operative health and life-state contracts and configuration.**
   - **Work type:** Pure contract/configuration work.
   - **Acceptance:** shared strict types and stable IDs represent only `Alive`, `Incapacitated`, and `Dead`, health/life snapshots, authoritative transition results, revive state, and rejection reasons; maximum health, bleed-out, revive distance/duration/health, solo recovery, and failure grace have one shared configuration home; the P2 `TargetHealthState` and fixtures remain compatible; declarations create no runtime owner, remote, UI, character mutation, timer loop, or P4 behavior; automated fixtures verify frozen IDs/configuration and valid vocabulary; StyLua, Selene, Rojo sourcemap, and Rojo build pass.
   - **Studio validation:** not required; confirm the project launches only if shared-module loading changes beyond pure fixture coverage.
