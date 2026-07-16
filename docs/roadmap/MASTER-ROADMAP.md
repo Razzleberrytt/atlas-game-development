@@ -148,12 +148,12 @@ Create darkness, limited information, and selected squad navigation aids that pr
 - [x] **LK-0404 — Integrate server-owned discovery and bounded memory runtime.**
   - **Work type:** Runtime server work.
   - **Acceptance:** one unbootstrapped server-only owner stores recipient-specific current discovery and position-free stale memory, validates trusted LK-0403 fact/result correlation, caps remembered records at 32 with deterministic age/entity-ID eviction, owns one cancellable earliest-expiry timer, emits only copied recipient-specific changes, and cleans up on expiry, recipient/entity removal, and teardown; no client mutation or replication remote, lighting runtime, raycast, enemy AI, or polished presentation.
-- [ ] **LK-0405 — Integrate bounded lighting-state runtime.**
+- [x] **LK-0405 — Integrate bounded lighting-state runtime.**
   - **Work type:** Runtime server work.
-  - **Acceptance:** next and unstarted; authored and approved temporary gameplay-light state is server-owned, rate/lifetime/budget limited, and consumable by the visibility boundary; cosmetics remain non-authoritative; no unbounded dynamic-light, particle, shader, or post-processing system.
+  - **Acceptance:** one unbootstrapped server-only owner copies validated LK-0401 definitions, exposes flat copied activation records, supports permanent and bounded timed activation, owns one cancellable deterministic expiry timer, rejects stale transitions and active-light budget overflow, emits revisioned copied changes only for visible state mutations, and cleans up on expiration, removal, and teardown; coverage evaluation, visibility, discovery, rendering, Roblox light instances, remotes, tools, and AI remain deferred.
 - [ ] **LK-0406 — Add one approved flashlight or personal-light vertical slice.**
   - **Work type:** Focused tool/runtime and presentation work.
-  - **Acceptance:** the selected tool has server-validated intent and gameplay coverage, responsive local-only presentation, bounded activation, accessibility treatment, and cannot reveal/target undiscovered enemies; alternative tools remain deferred.
+  - **Acceptance:** next and unstarted; the selected tool has server-validated intent and gameplay coverage, responsive local-only presentation, bounded activation, accessibility treatment, and cannot reveal/target undiscovered enemies; alternative tools remain deferred.
 - [ ] **LK-0407 — Add the selected squad-navigation aid slice.**
   - **Work type:** Focused tool/disclosure work.
   - **Acceptance:** one playtested aid (for example a limited ping or compass policy) communicates only permitted teammate/objective information, is rate/expiry bounded with non-audio equivalence, and does not introduce a minimap or global hostile awareness.

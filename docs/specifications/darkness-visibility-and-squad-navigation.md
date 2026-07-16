@@ -1,6 +1,6 @@
 # P4 — Darkness, limited vision, and squad navigation
 
-**Implementation status:** LK-0401 through LK-0404 complete; LK-0405 is next and remains unstarted.
+**Implementation status:** LK-0401 through LK-0405 complete; LK-0406 is next and remains unstarted.
 
 ## Scope and outcome
 
@@ -118,7 +118,19 @@ Remembered records are position-free: no transform, `Vector3`, location, directi
 
 Recipient snapshots and subscription changes are defensive copies containing only disclosed record identity, perception/disclosure/memory state, confidence, source, observation/expiry timestamps, and revision. Revisions are monotonic per recipient and advance once only when that recipient-visible state changes. Equivalent replay is silent, older timestamps fail closed, and a cancelled stale expiry cannot delete refreshed sight. Removing a recipient affects only that recipient; removing an observed entity clears it for every recipient; stop clears all records, listeners, and scheduling state. No RemoteEvent or RemoteFunction was added, so replication and client presentation remain deferred. Clients cannot create, refresh, preserve, or upgrade discovery, and records carry no targetability permission.
 
-LK-0405 lighting-state runtime, production visibility/raycast callers, bootstrap integration, replication/presentation, tools, UI, targeting integration, and all enemy AI remain deferred and unstarted.
+Production visibility/raycast callers, gameplay-light lookup by coverage, bootstrap integration, replication/presentation, tools, UI, targeting integration, and all enemy AI remain deferred and unstarted.
+
+### Server gameplay-lighting runtime
+
+LK-0405 adds the unbootstrapped server-only `GameplayLightingService` in `src/server/Systems`. Its narrow API is `start`, `stop`, `registerLight`, `activateLight`, `deactivateLight`, `removeLight`, `readSnapshot`, `subscribe`, and the scheduler-facing `evaluateExpiriesAt`. Registration accepts a server-authored LK-0401 descriptor, rejects duplicate light identities, validates the source identity, source type, gameplay profile, inactive initial state, lifetime fields, bounded coverage, and ownership, then copies its definition. Callers cannot mutate the registered definition or authoritative activation state through retained input tables, snapshots, or subscriber payloads.
+
+The public runtime record contains only light ID, source ID, gameplay visibility profile ID, activation state, activation timestamp, expiry timestamp, and revision. It stores no Roblox `Light`, part, attachment, color, brightness, shadow, render, or spatial object. Permanent activation has no expiry. Approved temporary activation requires a configured 1–60 second lifetime; other registered sources may be permanent or use the same bounded timed lifecycle. Manual deactivation clears activation timing, expiration marks the record `Expired`, a later authoritative activation may reactivate it, and removal deletes the registration so the identity can be explicitly replaced. Exact duplicate activation and repeated deactivation are silent. Older or same-timestamp conflicting transitions fail closed as `StaleTransition`.
+
+One cancellable earliest-expiry timer owns all timed lights. It selects equal deadlines by stable light ID, and every callback revalidates the scheduler generation, light identity, record revision, active state, and expected expiry before evaluating expiration. Refreshing or replacing an activation cancels and reschedules that centralized owner, so an old callback cannot expire the refreshed record. Stop cancels scheduling and clears registrations, subscribers, and revisions; restart begins empty.
+
+The runtime applies `GameplayLightingConfig.MaximumActiveGameplayLocalizedLightsPerClientView` as a conservative global active gameplay-light ceiling until a later spatial/client-view owner exists. The ninth active light is rejected deterministically with `BudgetExceeded`; refreshes never consume another slot and there is no overflow path. Registration, activation, deactivation, expiration, refresh/replacement, and removal increment revision only when copied consumer-visible state changes. Equivalent replay, duplicate activation, duplicate deactivation, and repeated expiry cleanup do not advance revisions or notify subscribers.
+
+LK-0405 performs no coverage evaluation and does not call LK-0403 or LK-0404. Rendering, Roblox light instances, visibility integration, consequential line of sight and raycasts, discovery, replication, flashlight behavior, temporary item spawning, particles, targeting, AI, combat, and bootstrap ownership remain deferred. LK-0406 is next and remains unstarted.
 
 ## Perception and discovery
 
