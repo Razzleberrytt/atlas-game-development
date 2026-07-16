@@ -139,12 +139,12 @@ Create darkness, limited information, and selected squad navigation aids that pr
 - [x] **LK-0401 — Define shared lighting contracts and configuration.**
   - **Work type:** Pure contract/configuration work.
   - **Acceptance:** stable visibility profiles, server-owned gameplay-light descriptors, activation/lifetime vocabulary, conservative budgets, and rejection reasons are documented and fixture-tested without lights, rendering, remotes, or runtime queries.
-- [ ] **LK-0402 — Define shared perception, disclosure, and memory contracts.**
+- [x] **LK-0402 — Define shared perception, disclosure, and memory contracts.**
   - **Work type:** Pure contract/configuration work.
-  - **Acceptance:** strict per-operative current/stale/hidden discovery vocabulary, quantized memory policy, line-of-sight inputs/results, enemy hearing/sight/memory/investigation declarations, and target-disclosure compatibility are fixture-tested without AI, rays, UI, or replication.
+  - **Acceptance:** frozen `Unknown`/`Suspected`/`Observed` perception, `Hidden`/`Disclosed` disclosure, `None`/`Remembered` memory, categorical confidence, and approved observation-source IDs are shared with a flat server-authored record, bounded placeholder configuration, deterministic pure validator, stable rejection precedence, and focused fixtures; rendering, gameplay visibility, targeting, line of sight, discovery runtime, forgetting, AI, hearing, rays, UI, remotes, and replication remain separate and unimplemented.
 - [ ] **LK-0403 — Implement the pure server visibility resolver.**
   - **Work type:** Pure server-domain work.
-  - **Acceptance:** server-known profiles and supplied authoritative spatial facts deterministically produce gameplay/targeting visibility without renderer data; fixtures cover darkness, light coverage, peripheral limits, blockers, state/range boundaries, immutability, and P2 hidden-target rejection.
+  - **Acceptance:** next and unstarted; server-known profiles and supplied authoritative spatial facts deterministically produce gameplay/targeting visibility without renderer data; fixtures cover darkness, light coverage, peripheral limits, blockers, state/range boundaries, immutability, and P2 hidden-target rejection.
 - [ ] **LK-0404 — Integrate server-owned discovery and bounded memory runtime.**
   - **Work type:** Runtime server work.
   - **Acceptance:** one server owner stores recipient-specific discovery, expires/coarsens memory, sends only safe changed disclosures, and cleans up safely; no client can discover, refresh, or identify hidden hostiles; no enemy AI or polished presentation.

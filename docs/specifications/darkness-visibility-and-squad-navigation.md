@@ -1,6 +1,6 @@
 # P4 — Darkness, limited vision, and squad navigation
 
-**Implementation status:** LK-0401 complete; LK-0402 is next and remains unstarted.
+**Implementation status:** LK-0401 and LK-0402 complete; LK-0403 is next and remains unstarted.
 
 ## Scope and outcome
 
@@ -69,7 +69,28 @@ The canonical initial configuration fixes these profile targets and validation b
 
 Gameplay lighting is exclusively server-authored truth. The server owns light identity, source type, gameplay profile, activation and expiry, and approved coverage descriptors. A client may later submit only narrowly shaped intent. A client never submits authoritative radius, cone, profile, expiry, or visibility outcome. Rendered brightness, pixel luminance, post-processing, client `Lighting` properties, client-created lights, and local raycasts are never sampled for gameplay authority. Cosmetic intensity, flicker, color, bloom, and shadows remain non-authoritative unless a later task promotes one through an explicit bounded contract.
 
-LK-0401 adds no light objects, rendering, runtime ownership, activation resolution, remotes, controllers, spatial queries, discovery, targeting integration, temporary-light spawning, flashlight behavior, squad aids, or P5 behavior. Those concerns remain deferred to their ordered P4 tasks; LK-0402 perception/disclosure/memory contracts are next and unstarted.
+LK-0401 adds no light objects, rendering, runtime ownership, activation resolution, remotes, controllers, spatial queries, discovery, targeting integration, temporary-light spawning, flashlight behavior, squad aids, or P5 behavior. Those concerns remain deferred to their ordered P4 tasks.
+
+### Shared perception, disclosure, and memory contract
+
+LK-0402 defines the pure, unintegrated shared contract layer in `src/shared/Perception` and the frozen `src/shared/Config/PerceptionConfig.luau`. Its stable vocabularies are deliberately separate:
+
+- perception: `Unknown`, `Suspected`, `Observed`;
+- disclosure: `Hidden`, `Disclosed`;
+- memory: `None`, `Remembered`;
+- observation confidence: `Low`, `Medium`, `High`;
+- observation source: `DirectSight`, `TeammateInformation`, `AuthoredObjective`, `ApprovedGameplayLight`;
+- rejection reasons: `InvalidRecord`, `InvalidEntity`, `InvalidSource`, `InvalidDisclosure`, `InvalidPerception`, `InvalidMemory`, `InvalidConfidence`, `InvalidTimestamp`, `StaleObservation`.
+
+`Unknown` means no qualifying perception, `Suspected` means a possible presence without confirmed observation, and `Observed` means confirmed observation. `Hidden` and `Disclosed` describe only whether the server permits a recipient to receive the fact. `None` and `Remembered` describe only whether the fact is retained as remembered knowledge. Confidence is categorical rather than numeric. These states do not encode rendering, gameplay visibility, targeting eligibility, or line of sight, and none implies another without a later explicit resolver or runtime policy.
+
+The public types are `PerceptionStateId`, `DisclosureStateId`, `MemoryStateId`, `ObservationConfidenceId`, `ObservationSourceId`, `ObservationRecord`, `PerceptionEvaluation`, and `PerceptionRejectionReasonId`. An `ObservationRecord` contains only an observed entity identity, the four independent state/source IDs, categorical confidence, and its server observation timestamp. It contains no runtime object, transform, rendered state, spatial result, targeting state, or recipient object.
+
+The frozen initial configuration bounds a future owner to 32 remembered observations per operative and defines a 30-second maximum observation-age placeholder. It also repeats the supported perception and confidence IDs as contract values. These numbers are conservative placeholders, not playtested gameplay tuning; forgetting, decay, record ownership, and cleanup are not implemented here.
+
+`PerceptionContractsValidator.validate(record, evaluationServerTimestamp)` is side-effect free. The caller supplies an authoritative server timestamp so age validation requires no clock or timer. Its fixture-locked first-failure order is malformed record, invalid entity, invalid source, invalid disclosure, invalid perception, invalid memory, invalid confidence, invalid timestamp, then stale observation. An observation is stale only when its age is greater than the configured maximum; the exact boundary remains valid.
+
+The server owns observation creation, entity identity, source classification, disclosure, perception, memory, confidence, and both timestamps supplied to validation. Clients cannot author or refresh an observation. The contract performs no runtime lookup, visibility resolution, discovery transition, memory decay, spatial query, line-of-sight test, raycast, replication, rendering, or targeting decision. Hearing and all enemy-AI perception sources remain deferred. LK-0403 is next and remains unstarted.
 
 ## Perception and discovery
 
