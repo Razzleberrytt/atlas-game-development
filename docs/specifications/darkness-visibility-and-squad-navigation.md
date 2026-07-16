@@ -1,6 +1,6 @@
 # P4 — Darkness, limited vision, and squad navigation
 
-**Implementation status:** LK-0401 and LK-0402 complete; LK-0403 is next and remains unstarted.
+**Implementation status:** LK-0401 through LK-0403 complete; LK-0404 is next and remains unstarted.
 
 ## Scope and outcome
 
@@ -92,7 +92,21 @@ The frozen initial configuration bounds a future owner to 32 remembered observat
 
 `PerceptionContractsValidator.validate(record, evaluationServerTimestamp)` is side-effect free. The caller supplies an authoritative server timestamp so age validation requires no clock or timer. Its fixture-locked first-failure order is malformed record, invalid entity, invalid source, invalid disclosure, invalid perception, invalid memory, invalid confidence, invalid state combination, invalid timestamp, then stale observation. An observation is stale only when its age is greater than the configured maximum; the exact boundary remains valid.
 
-The server owns observation creation, entity identity, source classification, disclosure, perception, memory, confidence, and both timestamps supplied to validation. Clients cannot author or refresh an observation. The contract performs no runtime lookup, visibility resolution, discovery transition, memory decay, spatial query, line-of-sight test, raycast, replication, rendering, or targeting decision. Hearing and all enemy-AI perception sources remain deferred. LK-0403 is next and remains unstarted.
+The server owns observation creation, entity identity, source classification, disclosure, perception, memory, confidence, and both timestamps supplied to validation. Clients cannot author or refresh an observation. The contract performs no runtime lookup, visibility resolution, discovery transition, memory decay, spatial query, line-of-sight test, raycast, replication, rendering, or targeting decision. Hearing and all enemy-AI perception sources remain deferred.
+
+### Pure visibility resolver
+
+LK-0403 adds the pure, unintegrated `VisibilityResolver.resolve(facts)` boundary in `src/shared/Perception`. Despite its shared location, only authoritative server-derived facts may be supplied. `VisibilityEvaluationFacts` contains observer and candidate string identities, observer perception eligibility, candidate category/presence/life/targetability, relationship, normalized nested illumination facts (environmental visibility profile and qualifying bounded local-light coverage), normalized nested spatial facts (squared distance, a server-derived perceptual region, and consequential line of sight), and current disclosure. It contains no instance, character, humanoid, player, camera, light object, renderer result, raw geometry, client claim, timestamp, observation, memory record, weapon state, or target selection.
+
+The frozen resolver vocabulary adds entity categories `Operative`/`Hostile`/`Objective`, relationships `Friendly`/`Hostile`/`Neutral`, and perceptual regions `Forward`/`Peripheral`/`Outside`. Input rejection is separate from a valid non-visible decision. The fixture-locked rejection order is malformed facts, observer identity, candidate identity, self-evaluation, observer state, candidate state, relationship/category, visibility profile, spatial container, region, illumination fact, squared-distance fact, line-of-sight fact, then disclosure fact. Valid evaluations use `OutsidePerceptualRegion`, `OutsideVisibilityRange`, `InsufficientIllumination`, `NoLineOfSight`, `PeripheralOnly`, `NotDisclosedForTargeting`, `RelationshipNotHostile`, `CandidateUntargetable`, or `ObservedTargetingVisible` as their decision reason.
+
+Initial forward visibility ranges are explicitly prototype perception values, not firearm ranges: 24 studs for `Dark`, 32 for `Dim`, and 64 for `Lit`. `Dark` requires qualifying local-light coverage for forward observation; line of sight alone cannot overcome darkness. `Dim` permits bounded forward observation without an additional local-light contribution. `Lit` permits normal bounded forward observation. All three still require a gameplay-present living candidate, an in-range forward region, and consequential line of sight for `Observed` and `DirectSight` eligibility. The resolver consumes already-resolved light coverage and never evaluates a `GameplayLightDescriptor` volume.
+
+Forward qualifying sight yields `Observed`, gameplay visibility, and eligibility for a later owner to create a `DirectSight` record. `Dim` uses `Medium` confidence; qualifying `Dark` and `Lit` use `High`. Peripheral presence yields at most low-confidence `Suspected`, never gameplay visibility, direct sight, or targeting visibility. Outside-region or out-of-range candidates remain low-confidence `Unknown`. Qualifying light coverage is never an observation source and creates no observation or disclosure record.
+
+Targeting visibility is a narrower output. It requires current gameplay visibility and line of sight, `Disclosed`, the `Hostile` category and relationship, and targetability. Hidden, remembered without current sight, stale, suspected, peripheral-only, teammate-information-only, authored-objective, and renderer-only facts never become target-visible. Even `isTargetingVisible = true` is only an input to the unchanged P2 validator: P2 operative state, range, ammunition, readiness, cadence, selection, firing, obstruction, and damage rules remain independent and authoritative.
+
+The resolver returns a newly frozen `VisibilityResolution` containing validity, gameplay visibility, perception state, confidence, direct-sight observation eligibility, targeting visibility, and exactly one rejection or decision reason as applicable. It creates and mutates no observation, disclosure, memory, candidate, selection, or firing state. Runtime spatial classification, light-coverage ownership, consequential raycasts, discovery and memory storage/decay, replication, client disclosure, targeting integration/revalidation, rendering, tools, UI, and enemy perception remain deferred. LK-0404 is next and remains unstarted.
 
 ## Perception and discovery
 
