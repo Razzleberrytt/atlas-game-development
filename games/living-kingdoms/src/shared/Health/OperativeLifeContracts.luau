@@ -107,6 +107,9 @@ export type ReviveBeginAuthorityFacts = {
 }
 
 export type ReviveContinuationAuthorityFacts = ReviveBeginAuthorityFacts & {
+	reviverRemainsConnectedAndParticipating: boolean,
+	reviverMovementRemainedValid: boolean,
+	reviverReceivedNoInterruptingDamage: boolean,
 	holdRemainsActive: boolean,
 }
 

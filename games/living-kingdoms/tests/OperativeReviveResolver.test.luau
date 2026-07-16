@@ -6,6 +6,7 @@ local luau = require("@lune/luau")
 
 local CONTRACTS_TOKEN = {}
 local CONFIG_TOKEN = {}
+local COMBAT_CONTRACTS_TOKEN = {}
 
 local lifeStateIds = table.freeze({
 	Alive = "Alive",
@@ -35,6 +36,19 @@ local contracts = {
 	ReviveRejectionReasonIds = reasons,
 	ReviveSessionStatusIds = statusIds,
 }
+local combatContracts = {
+	WeaponReadinessStateIds = table.freeze({
+		Ready = "Ready",
+		CadenceBlocked = "CadenceBlocked",
+		Reloading = "Reloading",
+		Empty = "Empty",
+		Disabled = "Disabled",
+	}),
+	TargetSelectionReasonIds = table.freeze({
+		ThreateningClosest = "ThreateningClosest",
+		ValidClosest = "ValidClosest",
+	}),
+}
 local config = {
 	MaximumHealth = 100,
 	BleedOutDurationSeconds = 30,
@@ -45,6 +59,7 @@ local config = {
 }
 local replicatedStorage = {
 	Shared = {
+		Combat = { CombatContracts = COMBAT_CONTRACTS_TOKEN },
 		Config = { OperativeLifeConfig = CONFIG_TOKEN },
 		Health = { OperativeLifeContracts = CONTRACTS_TOKEN },
 	},
@@ -57,6 +72,9 @@ local environment = {
 		end,
 	},
 	require = function(token: unknown)
+		if token == COMBAT_CONTRACTS_TOKEN then
+			return combatContracts
+		end
 		if token == CONTRACTS_TOKEN then
 			return contracts
 		end
@@ -72,7 +90,7 @@ local loader = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/O
 	environment = environment,
 	injectGlobals = true,
 })
-local resolver = loader()
+local productionResolver = loader()
 
 local function deepCopy(value: any): any
 	if type(value) ~= "table" then
@@ -171,8 +189,65 @@ local function continueFacts(timestamp: number?)
 		serverTimestamp = timestamp or 20,
 		activeSessionIdForTarget = "revive.1",
 		hasConflictingActiveSession = false,
+		reviverRemainsConnectedAndParticipating = true,
+		reviverMovementRemainedValid = true,
+		reviverReceivedNoInterruptingDamage = true,
 	}
 end
+
+local function combatState()
+	return {
+		weaponState = {
+			weaponId = "weapon.basic_firearm",
+			readinessStateId = "Reloading",
+			ammunition = {
+				weaponId = "weapon.basic_firearm",
+				loadedRounds = 5,
+				reserveRounds = 17,
+				magazineCapacity = 12,
+			},
+			cadence = {
+				weaponId = "weapon.basic_firearm",
+				lastFireServerTimestamp = 15,
+				nextAllowedFireServerTimestamp = 20,
+			},
+			reloadState = {
+				weaponId = "weapon.basic_firearm",
+				startedAtServerTimestamp = 19,
+				completionServerTimestamp = 21,
+			},
+		},
+		processedShotIds = {
+			["shot.prior"] = true,
+		},
+		selectedTargetState = {
+			operativeEntityId = "operative.target",
+			targetEntityId = "hostile.fixture",
+			isValid = true,
+			selectionReasonId = "ValidClosest",
+			selectedAtServerTimestamp = 19,
+		},
+	}
+end
+
+local resolver = {
+	beginRevive = productionResolver.beginRevive,
+	continueRevive = function(
+		reviverSnapshot: any,
+		targetSnapshot: any,
+		sessionState: any,
+		authorityFacts: any,
+		completionCombatState: any?
+	)
+		return productionResolver.continueRevive(
+			reviverSnapshot,
+			targetSnapshot,
+			sessionState,
+			authorityFacts,
+			completionCombatState or combatState()
+		)
+	end,
+}
 
 local function assertRejected(actual: any, expectedReason: string)
 	assert(not actual.didTransition, "rejection must not transition")
@@ -268,6 +343,37 @@ assertRejected(resolver.beginRevive(reviver, target, statePrecedenceFacts), "Out
 
 -- Progress boundaries and continuity interruptions.
 local session = began.sessionStateAfter
+local function assertContinuityInterruption(authorityFacts: any, context: string)
+	local reviverBefore = deepCopy(reviver)
+	local targetBefore = deepCopy(target)
+	local sessionBefore = deepCopy(session)
+	local factsBefore = deepCopy(authorityFacts)
+	local combatBefore = combatState()
+	local combatInput = deepCopy(combatBefore)
+	local interruption = resolver.continueRevive(reviver, target, session, authorityFacts, combatInput)
+	assert(interruption.didTransition, context .. ": interruption must transition")
+	assert(interruption.rejectionReasonId == "ReviveInterrupted", context .. ": wrong interruption reason")
+	assert(interruption.sessionStateAfter.statusId == "Cancelled", context .. ": session must cancel")
+	assert(interruption.normalizedProgress == 0, context .. ": progress must reset")
+	assert(interruption.targetSnapshotAfter.lifeStateId == "Incapacitated", context .. ": target state changed")
+	assert(interruption.targetSnapshotAfter.healthState.currentHealth == 0, context .. ": target health changed")
+	assert(deepEqual(interruption.combatStateAfter, combatBefore), context .. ": combat state changed")
+	assert(interruption.combatStateAfter ~= combatInput, context .. ": combat output was not copied")
+	assert(deepEqual(reviver, reviverBefore), context .. ": reviver input mutated")
+	assert(deepEqual(target, targetBefore), context .. ": target input mutated")
+	assert(deepEqual(session, sessionBefore), context .. ": session input mutated")
+	assert(deepEqual(authorityFacts, factsBefore), context .. ": facts input mutated")
+	assert(deepEqual(combatInput, combatBefore), context .. ": combat input mutated")
+
+	local retryAuthorityFacts = beginFacts()
+	retryAuthorityFacts.sessionId = "retry." .. context
+	retryAuthorityFacts.serverTimestamp = 30
+	local retryResult = resolver.beginRevive(reviver, target, retryAuthorityFacts)
+	assert(retryResult.didTransition, context .. ": retry did not begin")
+	assert(retryResult.normalizedProgress == 0, context .. ": retry inherited progress")
+	return interruption
+end
+
 local immediate = resolver.continueRevive(reviver, target, session, continueFacts(20))
 assertRejected(immediate, "ReviveNotComplete")
 assert(immediate.normalizedProgress == 0, "immediate progress must be zero")
@@ -307,6 +413,33 @@ assert(
 )
 local targetDied = resolver.continueRevive(reviver, dead("operative.target"), session, continueFacts(21))
 assert(targetDied.didTransition and targetDied.sessionStateAfter.statusId == "Cancelled", "death must interrupt")
+
+local disconnectedFacts = continueFacts(21)
+disconnectedFacts.reviverRemainsConnectedAndParticipating = false
+local disconnected = assertContinuityInterruption(disconnectedFacts, "disconnect")
+local invalidMovementFacts = continueFacts(21)
+invalidMovementFacts.distanceStuds = 4
+invalidMovementFacts.reviverMovementRemainedValid = false
+local invalidMovement = assertContinuityInterruption(invalidMovementFacts, "movement")
+local damagedFacts = continueFacts(21)
+damagedFacts.reviverReceivedNoInterruptingDamage = false
+local damaged = assertContinuityInterruption(damagedFacts, "damage")
+assert(disconnected.normalizedProgress == 0, "disconnect banked progress")
+assert(invalidMovement.normalizedProgress == 0, "movement banked progress")
+assert(damaged.normalizedProgress == 0, "damage banked progress")
+
+for _, factName in
+	{
+		"reviverRemainsConnectedAndParticipating",
+		"reviverMovementRemainedValid",
+		"reviverReceivedNoInterruptingDamage",
+	}
+do
+	local malformedFacts = continueFacts(21)
+	malformedFacts[factName] = "not-a-boolean"
+	assertRejected(resolver.continueRevive(reviver, target, session, malformedFacts), "InvalidReviveInput")
+end
+
 local releasedFacts = continueFacts(21)
 releasedFacts.holdRemainsActive = false
 local released = resolver.continueRevive(reviver, target, session, releasedFacts)
@@ -358,6 +491,9 @@ local participantFirst =
 	resolver.continueRevive(dead("operative.reviver"), dead("operative.target"), session, participantPrecedence)
 assert(participantFirst.rejectionReasonId == "ReviveInterrupted", "participant mismatch precedence changed")
 local continuityPrecedence = continueFacts(21)
+continuityPrecedence.reviverRemainsConnectedAndParticipating = false
+continuityPrecedence.reviverMovementRemainedValid = false
+continuityPrecedence.reviverReceivedNoInterruptingDamage = false
 continuityPrecedence.holdRemainsActive = false
 continuityPrecedence.distanceStuds = 9
 continuityPrecedence.hasLineOfSight = false
@@ -371,6 +507,21 @@ assert(
 		== "TargetNotIncapacitated",
 	"target precedence changed"
 )
+assert(
+	resolver.continueRevive(reviver, target, session, continuityPrecedence).rejectionReasonId == "ReviveInterrupted",
+	"connected/participating precedence changed"
+)
+continuityPrecedence.reviverRemainsConnectedAndParticipating = true
+assert(
+	resolver.continueRevive(reviver, target, session, continuityPrecedence).rejectionReasonId == "ReviveInterrupted",
+	"movement precedence changed"
+)
+continuityPrecedence.reviverMovementRemainedValid = true
+assert(
+	resolver.continueRevive(reviver, target, session, continuityPrecedence).rejectionReasonId == "ReviveInterrupted",
+	"damage precedence changed"
+)
+continuityPrecedence.reviverReceivedNoInterruptingDamage = true
 assert(
 	resolver.continueRevive(reviver, target, session, continuityPrecedence).rejectionReasonId == "ReviveInterrupted",
 	"hold precedence changed"
@@ -417,7 +568,9 @@ local targetBeforeCompletion = deepCopy(target)
 local sessionBeforeCompletion = deepCopy(session)
 local completionFacts = continueFacts(24)
 local factsBeforeCompletion = deepCopy(completionFacts)
-local completedOnce = resolver.continueRevive(reviver, target, session, completionFacts)
+local completionCombatInput = combatState()
+local combatBeforeCompletion = deepCopy(completionCombatInput)
+local completedOnce = resolver.continueRevive(reviver, target, session, completionFacts, completionCombatInput)
 assert(completedOnce.targetSnapshotAfter.lifeStateId == "Alive", "completion must revive target")
 assert(completedOnce.targetSnapshotAfter.healthState.currentHealth == 30, "completion must restore exactly 30 health")
 assert(completedOnce.targetSnapshotAfter.healthState.maximumHealth == 100, "completion changed maximum health")
@@ -436,10 +589,37 @@ assert(
 	completedOnce.targetSnapshotAfter.processedDamageEventIds["damage.target.prior"] == true,
 	"completion lost processed damage IDs"
 )
+assert(
+	deepEqual(completedOnce.combatStateAfter.weaponState.ammunition, combatBeforeCompletion.weaponState.ammunition),
+	"completion changed ammunition"
+)
+assert(
+	completedOnce.combatStateAfter.weaponState.ammunition ~= completionCombatInput.weaponState.ammunition,
+	"completion did not copy ammunition"
+)
+assert(
+	deepEqual(completedOnce.combatStateAfter.processedShotIds, combatBeforeCompletion.processedShotIds),
+	"completion changed processed ShotIds"
+)
+assert(
+	completedOnce.combatStateAfter.processedShotIds ~= completionCombatInput.processedShotIds,
+	"completion did not copy processed ShotIds"
+)
+assert(completedOnce.combatStateAfter.weaponState.reloadState == nil, "completion did not clear reload state")
+assert(
+	completedOnce.combatStateAfter.weaponState.readinessStateId == "Ready",
+	"completion left weapon readiness Reloading"
+)
+assert(completedOnce.combatStateAfter.selectedTargetState == nil, "completion did not clear selected target")
+assert(
+	deepEqual(completedOnce.combatStateAfter.weaponState.cadence, combatBeforeCompletion.weaponState.cadence),
+	"completion changed cadence"
+)
 assert(deepEqual(reviver, reviverBeforeCompletion), "completion mutated reviver")
 assert(deepEqual(target, targetBeforeCompletion), "completion mutated target")
 assert(deepEqual(session, sessionBeforeCompletion), "completion mutated session")
 assert(deepEqual(completionFacts, factsBeforeCompletion), "completion mutated facts")
+assert(deepEqual(completionCombatInput, combatBeforeCompletion), "completion mutated combat input")
 assert(completedOnce.targetSnapshotAfter ~= target, "completion must construct target output")
 assert(completedOnce.targetSnapshotAfter.healthState ~= target.healthState, "completion must copy health")
 assert(
@@ -450,7 +630,7 @@ assert(
 	completedOnce.targetSnapshotAfter.processedDamageEventIds ~= target.processedDamageEventIds,
 	"completion must copy processed IDs"
 )
-local completedTwice = resolver.continueRevive(reviver, target, session, completionFacts)
+local completedTwice = resolver.continueRevive(reviver, target, session, completionFacts, completionCombatInput)
 assert(deepEqual(completedOnce, completedTwice), "equivalent completion calls must be deterministic")
 
 local sessionImmutability = deepCopy(session)
