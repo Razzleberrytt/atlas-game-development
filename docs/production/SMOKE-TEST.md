@@ -268,3 +268,134 @@ Known limitations and changes:
 - The validator remains a tolerant, discrete prototype sanity boundary. This record does not claim production-grade networking or exploit prevention.
 - Roblox Studio repeated the documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. They are classified as Studio-owned environment noise.
 - No reproducible LK-0105 source defect was found. No runtime source file or architecture was changed; LK-0105 changes are documentation-only.
+
+## LK-0207 Two-client automatic-combat security and feel validation
+
+- Date: 2026-07-16
+- Environment: Microsoft Windows 11 Home 10.0.26200; Roblox Studio 0.730.0.7300790
+- Rojo: repository-pinned CLI and Studio plugin 7.7.0
+- Studio mode: local **Server & Clients** session with one server and two clients on one machine
+- Runs: focused security/timing/lifecycle sessions followed by one clean two-client startup and combat-presentation run
+- Exact roadmap acceptance: “clients cannot select illegal targets, fire for another operative, exceed cadence, create ammunition, set damage, or hit through invalid obstruction; target priority matches the documented rules; camera and movement regressions pass; manual priority override remains unimplemented unless separately approved.”
+
+### Fixture and harness boundary
+
+`AutomaticCombatDevelopmentHarness` replaced the reload-only development harness. It is guarded by `RunService:IsStudio()` before it creates state or connects the reload remote. It creates exactly two anchored, clearly labeled fixtures, `hostile.lk0207.alpha` and `hostile.lk0207.bravo`; these are stationary test targets, not enemy AI, pathfinding, spawning, waves, or production combat completion.
+
+The harness starts each test weapon with zero loaded rounds and the existing temporary 24-round reserve so a tester must exercise `R` before acquisition and fire. Each fixture starts at 1000 harness-only health. Per-player weapon, cadence, reload, selected-target, and threat state is server-owned. Fixture eligibility, obstruction outcome, health, and processed ShotIds are server-owned. The harness composes the existing P2 selector and resolvers instead of copying their rules.
+
+The only direct harness controls are `start()` and `stop()` from the Studio server command bar. `stop()` disconnects the reload listener, Heartbeat, player lifecycle connections, and character connections; clears per-player state and selected-target presentation; and destroys `Workspace.LK0207CombatFixtures`. Character replacement creates fresh per-player combat/reload state and invalidates delayed reload callbacks with a generation token. Player leave removes its state. Repeated `stop()`/`start()` calls produced exactly two fixtures, with no duplicate connections or error.
+
+Test-only client command-bar listeners observed already-disclosed presentation messages and their receipt timestamps. A client command sent malformed `CombatPresentation:FireServer(...)` and wrong/extra `ReloadIntent:FireServer(...)` payloads solely to verify that no authoritative path accepted them. These hooks exist only in the temporary Studio session, add no source or admin command, and disappear when the session closes.
+
+### Client authority and remote audit
+
+Pass. `default.project.json` contains exactly two combat RemoteEvents. `ReloadIntent` is the only `OnServerEvent` combat listener and accepts exactly one configured `WeaponId`; Roblox supplies the sending `Player`. `CombatPresentation` has only server-to-client listeners in project code. There is no target, fire, ammunition, cadence, timestamp, damage, hit, health, target-state, obstruction, or ShotId client request path.
+
+- Client A could not submit a target or choose Client B’s target/operative through any remote.
+- Cross-operative selected-target state was rejected as `SelectedTargetInvalid` in the integration fixture.
+- Client A and B consumed their own ammunition and retained independent cadence/reload state.
+- Wrong weapon IDs and extra reload arguments produced no `ReloadStarted` event. A subsequent valid local `R` immediately produced `ReloadStarted`, proving the rejection did not corrupt state.
+- A client-fired malformed `CombatPresentation` message produced no target, shot, ammo, health, or damage transition because the server has no listener.
+- Resolver fixtures confirmed that client-like extra damage amount/type/timestamp fields cannot replace configured 20 `Ballistic` damage or server time.
+- `WeaponController` now rejects incomplete target, clear, shot, and reload tables; nonempty IDs, configured weapon IDs, and finite required timestamps are validated before presentation.
+
+### Target priority and legality
+
+Pass through the LK-0202/LK-0203 fixtures and the new two-operative integration fixture.
+
+- Each operative preferred the valid hostile threatening its exact operative. A threat to the other operative was not promoted.
+- Closest threatening wins; without a threat, closest valid wins; equal distance uses lexical `CombatEntityId` ordering.
+- Candidate ordering did not change selection.
+- Hidden, obstructed, friendly/neutral, dead, untargetable, empty-ammo, non-ready, and out-of-range candidates were excluded.
+- Exactly 80 horizontal studs remained legal; 80.001 was rejected.
+- Loss returned `nil`, cleared presentation, and later authoritative facts allowed reacquisition.
+- In Studio, Client 1 received only `hostile.lk0207.bravo` as its selected target and Client 2 received only `hostile.lk0207.alpha` in the observed threat-assigned cycle.
+- Manual priority override remains unimplemented.
+
+### Fire, cadence, and ammunition
+
+Pass. Pure fixtures confirmed exact-boundary legality, just-before rejection, at most one shot per evaluation, no catch-up burst, last-round legality, zero-loaded rejection, one-round consumption, and unchanged reserve while firing.
+
+In Studio, one 12-round magazine changed its target from 1000 to 760 health: exactly 12 accepted shots at 20 damage. A final clean run showed the first accepted shot change 1000 to 980. Client 2 remained at zero loaded rounds until its own reload and then began its own independent cycle. Observed authoritative shot intervals were 0.201–0.250 seconds in the 0.05-second Studio harness evaluation loop. No faster shot, doubled evaluation, or catch-up burst appeared.
+
+### Hit, damage, and obstruction
+
+Pass through LK-0205 and integration fixtures.
+
+- A legal unobstructed shot applied exactly configured 20 `Ballistic` damage.
+- `Blocked` and explicit `Miss` outcomes applied no damage.
+- Dead, untargetable, hidden, neutral/friendly, mismatched, and newly out-of-range targets failed revalidation safely.
+- Exactly-at-range remained legal.
+- A committed ShotId could not apply damage twice, including after a miss/rejection became terminal.
+- Health clamped to zero; lethal and nonlethal flags were correct.
+- Client-like damage amount, type, timestamp, target health, and hit fields were ignored or rejected.
+
+The live harness default used only the server-owned `TargetHit` fact. Obstruction and post-selection invalidation variants were deterministic automated checks, not claims of a production raycast or enemy runtime.
+
+### Reload
+
+Pass through LK-0206 fixtures, integration checks, and live two-client observation.
+
+- Local `R` sent one configured weapon ID; processed input, text focus, rapid input, and controller lifecycle guards remained covered by `WeaponController.test.luau`.
+- Full magazine, zero reserve, wrong weapon, extra payloads, and already-reloading requests were rejected.
+- Just-before deadline was rejected; exactly the two-second deadline was legal.
+- Existing rounds remained loaded; transfer used `min(missing capacity, reserve)` and conserved totals.
+- Incapacitation, death, weapon disablement, and weapon change interrupted without transfer. Movement and damage-only fixture fields did not interrupt.
+- Client 1’s reload event was absent from Client 2. Client 2 later reloaded and fired independently.
+
+Measured loopback presentation: Client 1 received reload start and completion 1.999 seconds apart. Client 2’s observed pair was 2.017 seconds apart, reflecting Studio scheduling around the server-owned two-second deadline. No early completion occurred.
+
+### Presentation and disclosure
+
+Pass.
+
+- Target indicators were created only from valid server `TargetSelected` messages naming an existing disclosed fixture.
+- Unknown IDs, unknown message kinds, and malformed known-target disclosures failed closed.
+- Client 1 and Client 2 received different operative-specific target IDs; neither local selection changed until that client independently reloaded and acquired.
+- Each disclosed ShotId was presented once; repeated ShotIds were ignored by the controller fixture and none repeated in live logs.
+- Reload start/completion stayed local to the applicable player.
+- Presentation changed status/highlight only; it did not mutate ammo, health, legality, hits, damage, or server state.
+- Target clear arrived after the empty magazine made selection invalid and removed the indicator.
+
+Measured loopback delivery from message server timestamp to client receipt was 18.5–23.4 ms for target, shot, and clear messages. Target acquisition followed reload completion within approximately 0–16 ms of client-observed event ordering. The final clear followed the last shot’s authoritative timestamp by approximately 50 ms (one harness evaluation) plus approximately 23 ms delivery.
+
+### P1 multiplayer regressions
+
+Pass with the accepted LK-0105 record plus focused live checks; no movement, facing, camera, chat, or zoom source changed in LK-0207.
+
+- Two distinct characters and local cameras remained present during combat.
+- Client 1 camera remained `Scriptable`; local wheel input changed its camera height from 80 to 40 while Client 2 remained `Scriptable` at 80, confirming camera isolation and zoom.
+- Respawning Player1 replaced its character and freshened combat state while Player2’s root remained unchanged at `(-4.0821, 4.2229, -1.3529)`.
+- Closing Player2 produced a server disconnect and reduced the player count from two to one without a Living Kingdoms error. Repeated fresh two-client sessions established zero-loaded, 24-reserve server state and 1000-health fixtures again.
+- The accepted LK-0105 held-movement, facing replication, chat suppression, and camera-follow evidence remains the direct input regression record. Desktop automation could not sustain a held movement key in this run, so those measurements were not restated as new observations.
+- Repeated harness lifecycle calls remained safe. `WeaponController` repeated init/start/stop/destroy behavior remained covered by its fixture.
+- In the final clean run, the server bootstrap appeared exactly once; each client’s camera activation and client bootstrap appeared exactly once. No unintended Living Kingdoms warning or error appeared.
+
+### Feel observations
+
+- Target selection felt prompt after reload, with acquisition appearing in the same visible transition as readiness returned.
+- Server acceptance to shot presentation was approximately 19–23 ms on local loopback and did not feel delayed.
+- Cadence appeared steady. The 0.05-second evaluation produced small 0.201–0.250-second spacing variation without bursts.
+- Target clear occurred promptly at empty magazine, within one evaluation plus local delivery.
+- Reload feedback matched the two-second vulnerability window and was understandable: `Reloading`, then `Reload complete`, acquisition, and shots.
+- No visible combat-induced rubber-banding or camera jitter was observed. The only documented correction snap remains the deliberate LK-0105 invalid-movement probe.
+- Automatic targeting was understandable with the two labeled stationary fixtures because the threatened target received the indicator and health changed in 20-point steps.
+- The temporary `Shot fired` status is readable but repetitive and does not explain why a particular threat won priority without looking at the target indicator. This is a known presentation limitation, not a balance-tuning change.
+
+### Defect and exact fix
+
+One reproducible LK-0207 defect was found: `WeaponController` accepted under-specified server presentation tables when only a kind and one local field were present. The narrow fix validates complete required identity, configured weapon, and finite timestamp fields before presenting. A regression fixture now proves that a malformed disclosure naming a real fixture does not create a highlight.
+
+The Studio harness was also adjusted from 200 to 1000 fixture health and from an initially loaded magazine to an empty one. This is test setup only: it keeps fixtures observable after slow local client startup and makes reload timing explicit. It does not change `FirearmConfig` or production balance.
+
+### Known limitations
+
+- This was a two-client, single-machine Studio loopback test; it does not measure internet latency, packet loss, adverse frame rate, mobile/console input, or production load.
+- Stationary fixtures are not enemy AI, hostile discovery, pathfinding, production spawning, waves, or a permanent enemy architecture.
+- Harness visibility, line of sight, threat, and obstruction are controlled server-owned facts. No production visibility provider or raycast filter is claimed.
+- Harness health and processed ShotIds are server-owned only for the Studio session. P3 production health ownership and long-lived deduplication remain unimplemented.
+- Same-server client rejoin could not be driven after the closed Studio client window; cleanup was directly observed and repeated clean sessions proved fresh join state. The harness’s `PlayerAdded` and `PlayerRemoving` paths remain deterministic source/fixture boundaries.
+- Existing Roblox Studio platform messages remain environment noise; no new Living Kingdoms-originated warning/error appeared.
+
+LK-0207 and P2 are complete. The next roadmap milestone is P3 — health, incapacitation, revival, and death. P3 was not started.

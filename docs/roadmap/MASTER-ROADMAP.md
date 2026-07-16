@@ -78,12 +78,12 @@ Complete. One player can reliably control one operative from the elevated tactic
   - **Acceptance:** one configured firearm family resolves obstruction, range, hit, and damage against a test hostile on the server; no client-supplied hit or damage is trusted; target invalidation between acquisition and shot fails safely; deterministic validation receives tests where feasible.
 - [x] **LK-0206 — Add immediate automatic-combat presentation and reload input.**
   - **Acceptance:** the client presents target selection and firing promptly without establishing target legality, ammunition truth, hits, or damage; the player directly controls reload timing; reload has a documented interruption rule; presentation does not reveal hidden or otherwise undisclosed hostiles.
-- [ ] **LK-0207 — Complete two-client automatic-combat security and feel checks.**
+- [x] **LK-0207 — Complete two-client automatic-combat security and feel checks.**
   - **Acceptance:** clients cannot select illegal targets, fire for another operative, exceed cadence, create ammunition, set damage, or hit through invalid obstruction; target priority matches the documented rules; camera and movement regressions pass; manual priority override remains unimplemented unless separately approved.
 
 ### P2 exit criteria
 
-A controlled operative automatically acquires and fires one basic firearm at a valid test hostile through an explicit server-authoritative contract. Players retain direct control of movement, positioning, and reload timing, while presentation remains responsive and cannot determine combat truth.
+Complete. A controlled operative automatically acquires and fires one basic firearm at a valid test hostile through an explicit server-authoritative contract. Players retain direct control of movement, positioning, and reload timing, while presentation remains responsive and cannot determine combat truth.
 
 ## P3 — Health, incapacitation, revival, and death
 
