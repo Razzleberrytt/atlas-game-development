@@ -108,7 +108,7 @@ Combat uses server-authoritative automatic target acquisition and fire. Players 
 
 ## Automatic-combat contracts
 
-LK-0201 adds declaration-only shared contracts in `src/shared/Combat/CombatContracts.luau`, prototype balance values in `src/shared/Config/FirearmConfig.luau`, and the canonical [`automatic-combat contract specification`](../../docs/specifications/automatic-combat-contracts.md). No runtime script requires these modules yet, and no targeting, firing, enemy, damage, remote, or presentation behavior is implemented.
+LK-0201 adds shared contracts in `src/shared/Combat/CombatContracts.luau`, prototype balance values in `src/shared/Config/FirearmConfig.luau`, and the canonical [`automatic-combat contract specification`](../../docs/specifications/automatic-combat-contracts.md). Pure LK-0202 through LK-0204 server modules consume these declarations, but the server bootstrap imports none of them. No runtime targeting, firing, enemy, damage, remote, or presentation behavior is implemented.
 
 The server owns entity and relationship truth, operative and weapon state, visibility, line of sight, range, target legality and selection, cadence, ammunition, hits, damage, and authoritative timestamps. Clients may use only disclosed state for non-authoritative presentation and may never establish combat truth.
 
@@ -130,8 +130,14 @@ The shared candidate contract adds optional `activelyThreateningOperativeEntityI
 
 Run its standalone fixture from the repository root with `lune run games/living-kingdoms/tests/TargetCandidateSelector.test.luau`. The selector is not imported by the server bootstrap, so it adds no polling, discovery, automatic firing, cadence mutation, ammunition consumption, damage, enemies, networking, or presentation behavior.
 
+## Server-authoritative automatic-fire transition
+
+LK-0204 adds `AutomaticFireResolver.resolve(operativeState, selectedTarget, weaponState, serverTimestamp)`, a pure server function that accepts or rejects at most one shot. Accepted fire consumes one loaded round, preserves reserve ammunition, advances last and next cadence timestamps from the authoritative fire time, returns a deterministic server-owned ShotId, and leaves hit fields unresolved. Rejected fire preserves all input values and uses a stable first-failure reason.
+
+The resolver trusts no client timestamp, ammunition, cadence, target, or ShotId input. Its caller must provide authoritative state and commit the returned weapon-state copy. Run its standalone fixture with `lune run games/living-kingdoms/tests/AutomaticFireResolver.test.luau`. The module is not imported by the server bootstrap and adds no loop, discovery, hit resolution, damage, enemy, networking, client, or presentation behavior.
+
 ## Next executable task
 
-`LK-0204 — Add server-authoritative automatic fire and cadence.`
+`LK-0205 — Resolve server-authoritative firearm hits and damage.`
 
-LK-0204 remains not started. Hit resolution, damage, enemies, networking, and presentation remain later tasks.
+LK-0205 remains not started. Hit resolution, damage, enemies, networking, and presentation remain later tasks.

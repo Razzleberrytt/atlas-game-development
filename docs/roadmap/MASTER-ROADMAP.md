@@ -72,7 +72,7 @@ Complete. One player can reliably control one operative from the elevated tactic
   - **Acceptance:** a server function accepts an operative and candidate hostile and returns a deterministic legal/illegal result based on operative state, hostile state, visibility, line of sight, range, ammunition, and weapon readiness; clients cannot make an illegal target valid; deterministic rules receive automated tests where feasible.
 - [x] **LK-0203 — Select targets using the initial priority rules.**
   - **Acceptance:** the server selects the closest valid hostile actively threatening the operative, otherwise the closest valid hostile in range; ties use a documented deterministic rule; invalid, hidden, obstructed, dead, or out-of-range candidates are excluded; target loss and reacquisition are safe.
-- [ ] **LK-0204 — Add server-authoritative automatic fire and cadence.**
+- [x] **LK-0204 — Add server-authoritative automatic fire and cadence.**
   - **Acceptance:** a ready operative with a valid selected target fires automatically at configured cadence; the server owns ammunition consumption and weapon readiness; empty, reloading, incapacitated, invalid-target, and cadence-violating states cannot fire; temporary test ammunition is isolated from P6 scarcity completion.
 - [ ] **LK-0205 — Resolve server-authoritative firearm hits and damage.**
   - **Acceptance:** one configured firearm family resolves obstruction, range, hit, and damage against a test hostile on the server; no client-supplied hit or damage is trusted; target invalidation between acquisition and shot fails safely; deterministic validation receives tests where feasible.

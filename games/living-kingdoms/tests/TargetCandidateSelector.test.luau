@@ -137,6 +137,7 @@ local function assertSelected(result: any, targetEntityId: string, reasonId: str
 	assert(result ~= nil, context .. ": expected a selected target")
 	assert(result.operativeEntityId == "operative.alpha", context .. ": wrong operative")
 	assert(result.targetEntityId == targetEntityId, context .. ": wrong target")
+	assert(result.isValid == true, context .. ": selected target was not marked valid")
 	assert(result.selectionReasonId == reasonId, context .. ": wrong selection reason")
 	assert(result.selectedAtServerTimestamp == nil, context .. ": selector created a timestamp")
 end
