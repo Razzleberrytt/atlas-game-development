@@ -3,10 +3,11 @@
 --[[
 	CameraController owns the local camera lifecycle and applies the fixed overhead
 	strategy view configured for LK-0011, keyboard panning added in LK-0012, and
-	mouse-wheel zoom added in LK-0013.
+	mouse-wheel zoom added in LK-0013. LK-0014 constrains the mutable focus point
+	to configurable world-space bounds.
 
-	Camera bounds, smoothing, rotation, edge scrolling, touch controls, and all
-	gameplay behavior remain intentionally deferred to later tasks.
+	Smoothing, rotation, edge scrolling, touch controls, and all gameplay behavior
+	remain intentionally deferred to later tasks.
 ]]
 
 local Players = game:GetService("Players")
@@ -18,6 +19,10 @@ local PAN_SPEED_STUDS_PER_SECOND = 48
 
 local CameraConfig = table.freeze({
 	FocusPoint = Vector3.new(0, 0, 0),
+	MinimumFocusX = -128,
+	MaximumFocusX = 128,
+	MinimumFocusZ = -128,
+	MaximumFocusZ = 128,
 	PitchDegrees = -60,
 	YawDegrees = 45,
 	MinimumHeight = 40,
@@ -123,6 +128,14 @@ local function applyFixedView(camera: Camera)
 	camera.CFrame = CFrame.lookAt(cameraPosition, focusPoint)
 end
 
+local function clampFocusPoint(focusPoint: Vector3): Vector3
+	return Vector3.new(
+		math.clamp(focusPoint.X, CameraConfig.MinimumFocusX, CameraConfig.MaximumFocusX),
+		focusPoint.Y,
+		math.clamp(focusPoint.Z, CameraConfig.MinimumFocusZ, CameraConfig.MaximumFocusZ)
+	)
+end
+
 local function onInputChanged(input: InputObject, gameProcessedEvent: boolean)
 	if gameProcessedEvent or UserInputService:GetFocusedTextBox() ~= nil then
 		return
@@ -161,7 +174,7 @@ local function updateFocusPoint(deltaTime: number)
 
 	local worldDirection = CAMERA_RIGHT * inputDirection.X + CAMERA_FORWARD * inputDirection.Y
 	local displacement = worldDirection * PAN_SPEED_STUDS_PER_SECOND * deltaTime
-	state.focusPoint += Vector3.new(displacement.X, 0, displacement.Z)
+	state.focusPoint = clampFocusPoint(state.focusPoint + Vector3.new(displacement.X, 0, displacement.Z))
 end
 
 local function onInputBegan(input: InputObject, gameProcessedEvent: boolean)

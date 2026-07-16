@@ -118,3 +118,27 @@ Observed:
 - `[Living Kingdoms] Client bootstrap started` appeared exactly once in the final clean run.
 - No Living Kingdoms-originated errors or warnings appeared in the final clean run.
 - Roblox Studio repeated the previously documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. These remain classified as Roblox Studio-owned environment noise.
+
+## LK-0014 Configurable camera bounds validation
+
+- Date: 2026-07-15
+- Environment: Microsoft Windows 11 Home 10.0.26200; Roblox Studio 0.730.0.7300790
+- Rojo: repository-pinned CLI 7.7.0 and Studio plugin 7.7.0
+- Project: `LivingKingdoms` synchronized from `games\living-kingdoms\default.project.json` at `localhost:34872`
+- Runs: one interactive camera-validation run followed by one clean Play smoke run after clearing Output
+
+Observed:
+
+- The focus point stopped exactly at minimum X `-128` and maximum X `128`.
+- The focus point stopped exactly at minimum Z `-128` and maximum Z `128`.
+- Diagonal movement into all four corners clamped both axes to their configured limits.
+- Holding input against an edge caused no jitter or drift, and releasing and repressing input did not accumulate movement beyond the boundary.
+- Moving away from an edge responded immediately.
+- Mouse-wheel zoom remained functional at edges and did not alter the bounded focus point.
+- Keyboard panning remained functional at the minimum `40`-stud height, initial `80`-stud height, and maximum `160`-stud height.
+- Camera translation remained horizontal while pitch, yaw, and camera-height behavior remained otherwise unchanged.
+- `[Living Kingdoms] Fixed overhead camera activated` appeared exactly once in the final clean run.
+- `[Living Kingdoms] Server bootstrap started` appeared exactly once in the final clean run.
+- `[Living Kingdoms] Client bootstrap started` appeared exactly once in the final clean run.
+- No Living Kingdoms-originated errors or warnings appeared in the final clean run.
+- Roblox Studio repeated the previously documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. These remain classified as Roblox Studio-owned environment noise.
