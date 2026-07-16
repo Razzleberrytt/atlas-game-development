@@ -93,7 +93,7 @@ Validation uses this stable first-failure order and returns exactly one canonica
 5. `IllegalTransition` — a structurally valid `Incapacitated` or `Dead` snapshot; finishing damage and Dead-state behavior belong to LK-0303.
 6. `AlreadyResolved` — the valid damage identity is already present in the committed snapshot's processed-event set.
 
-`StaleTransition` remains a canonical LK-0301 ID for a later resolver and is not invented as an alias for any LK-0302 failure.
+`StaleTransition` is not invented as an alias for any LK-0302 failure. LK-0303 uses it only when an otherwise valid authoritative evaluation timestamp predates the stored incapacitation or recovery start. `TransitionNotReady` is the stable boundary for an otherwise valid bleed-out or solo-recovery evaluation before its completion deadline.
 
 Accepted nonlethal damage subtracts the amount, preserves maximum health and all unrelated canonical state, leaves health above zero, remains `Alive`, creates no incapacitation state, records the authoritative transition timestamp and damage-event correlation, and marks the event processed in the returned snapshot.
 
@@ -105,7 +105,13 @@ The resolver never mutates its snapshot or damage input. Accepted results contai
 
 The P2 `AuthoritativeDamageEvent` is structurally compatible with the minimum LK-0302 input and may be adapted as authoritative server input without changing how P2 creates it. P2 `DamageResolver`, `TargetHealthState`, processed ShotIds, and the test-hostile `becameDead` health-crossing field remain unchanged. LK-0302 does not commit either P2 or P3 state at runtime.
 
-Bleed-out completion, damage against an already incapacitated operative, finishing death, solo recovery, revival, runtime character restrictions, remotes, presentation, squad failure, and every P4 behavior remain deferred. LK-0303 is the next pure domain task and is not started by this resolver.
+LK-0303 adds a separate pure `OperativeIncapacitationResolver`. `evaluateBleedOut(snapshot, serverTimestamp)` rejects before the snapshot's stored bleed-out deadline and transitions to `Dead` exactly at or after it; it never derives a replacement deadline from the evaluation time. `resolveFinishingDamage(snapshot, damage, serverTimestamp)` accepts any finite positive authoritative damage against the same incapacitated operative, records the stable event identity in a copied processed-event set, and transitions to `Dead` at zero health. Duplicate identities are deterministically rejected.
+
+`evaluateSoloRecovery(snapshot, operationParticipation, serverTimestamp)` requires explicit server-owned facts that the operation started solo and has never had multiple participants. It requires the stored recovery start to match incapacitation start and the stored completion to be exactly the configured eight seconds later. At or after completion it restores the configured `ReviveHealth` of `30`, atomically increments the one-use count, marks recovery ineligible, clears incapacitation and recovery timing, and creates no invulnerability.
+
+The LK-0303 first-failure orders are stable. Bleed-out validates snapshot, health, server time, required life state, stale time, then deadline readiness. Finishing damage validates snapshot, health, damage, server time, required life state, duplicate identity, then stale time. Solo recovery validates snapshot, health, participation facts, server time, required life state, exhausted allowance, eligibility and operation history, canonical recovery timing, stale time, then completion readiness. All three APIs are synchronous and immutable; no scheduler, polling, runtime owner, client clock, Humanoid behavior, remotes, UI, squad evaluation, or teammate revival exists.
+
+Revival, runtime character restrictions, remotes, presentation, squad failure, and every P4 behavior remain deferred. LK-0304 is next and remains unstarted.
 
 ## Canonical life state and transitions
 
