@@ -178,8 +178,14 @@ Every continuation revalidates session ownership, participants, life states, hol
 
 Completion is impossible before the stored deadline; at or after it, the target becomes `Alive`, receives exactly the configured `ReviveHealth` of `30`, clears incapacitation/recovery timing, and preserves maximum health, recovery eligibility/usage, processed damage IDs, and unrelated state. A focused caller-owned combat companion reuses the P2 weapon, selection, and processed-ShotId shapes: completion preserves ammunition, cadence, and ShotIds by value in copied state while clearing reload and selected target. LK-0304 adds no runtime owner, P2 orchestration, session storage, connection/damage/movement listener, timer, polling, Heartbeat, remote, input, UI, or character/Humanoid mutation. Run `lune run games/living-kingdoms/tests/OperativeReviveResolver.test.luau` for the LK-0304 fixture.
 
+## Operative life runtime
+
+LK-0305 adds `OperativeLifeService`, the production same-server owner of one copied P3 snapshot and monotonic revision per registered player. Identity is derived from server-known `Player.UserId`. Registration creates `Alive` at `100/100`, with no incapacitation, no processed damage IDs, and no invented solo-operation eligibility. `read` returns a deep copy; `commitAcceptedTransition` accepts only an accepted pure resolver result at the current revision and validates identity, structure, health/life invariants, legal direction, and non-regressing authoritative time before atomically replacing state. Player removal clears the owned lifetime.
+
+Alive remains eligible for P1 movement and P2 combat. Incapacitated and Dead are stationary without anchoring, cannot fire/reload/target, and synchronously clear reload and selection while preserving ammunition, cadence, and processed ShotIds. A valid committed return to Alive restores movement/combat eligibility without refilling. Character replacements bind to the existing snapshot; stale characters are disabled. Automatic character loading is disabled and performed deliberately so Roblox respawn cannot reset Dead or Incapacitated. Humanoid health is a positive locomotion shell with its Dead state disabled, not the authoritative P3 health value. `OperativeLifeDevelopmentHarness` composes existing pure resolvers for validation and, only in Studio, creates server-only `BindableFunction` controls in `ServerStorage`; it exposes no remote or production loop. Run `lune run games/living-kingdoms/tests/OperativeLifeService.test.luau` for focused ownership and restriction coverage.
+
 ## Next executable task
 
-`LK-0305 — Integrate server-owned operative life state and character restrictions.`
+`LK-0306 — Add revive input and disclosed life-state presentation.`
 
-LK-0207, P2, the P3 plan, and LK-0301 through LK-0304 are complete. LK-0305 remains unstarted and is the next executable task. Production combat orchestration, health ownership, runtime life-state behavior, hostile discovery, enemies, scarcity pickups, and later gameplay systems remain deferred.
+LK-0207, P2, the P3 plan, and LK-0301 through LK-0305 are complete. LK-0306 remains unstarted and is the next executable task. Hostile damage routing, timers, revive networking/runtime sessions, squad failure, operation flow, persistence, enemies, scarcity pickups, and later gameplay systems remain deferred.

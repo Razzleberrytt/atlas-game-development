@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local MovementLimits = require(ReplicatedStorage.Shared.Config.MovementLimits)
+local OperativeLifeService = require(script.Parent.OperativeLifeService)
 
 type CharacterValidationState = {
 	character: Model,
@@ -107,6 +108,12 @@ local function observePlayer(player: Player, now: number)
 	local lastAcceptedTimestamp = state.lastAcceptedTimestamp
 	if lastAcceptedPosition == nil or lastAcceptedTimestamp == nil then
 		state.lastAcceptedPosition = currentPosition
+		state.lastAcceptedTimestamp = now
+		return
+	end
+
+	if not OperativeLifeService.isCharacterMovementAllowed(player, character) then
+		correctCharacter(rootPart, lastAcceptedPosition)
 		state.lastAcceptedTimestamp = now
 		return
 	end

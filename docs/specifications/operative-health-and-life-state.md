@@ -117,7 +117,15 @@ LK-0304 adds a separate pure `OperativeReviveResolver`. `beginRevive(reviverSnap
 
 At or after the deadline, a valid continuation completes the session at the evaluation timestamp, transitions the target to `Alive`, restores exactly `OperativeLifeConfig.ReviveHealth` (`30`), and clears incapacitation/recovery timing while preserving maximum health, solo recovery eligibility and usage, processed damage IDs, and unrelated state. Its focused caller-owned combat companion reuses P2 `WeaponReadinessState`, `SelectedTargetState`, and `ProcessedShotIds`: the result preserves ammunition, cadence, and processed ShotIds by value in newly copied state, clears reload state and any `Reloading` readiness, and clears selected target. It grants no invulnerability and does not mutate the reviver or any input.
 
-The LK-0304 APIs are synchronous and unintegrated. Distance, line of sight, connection/participation, movement continuity, and accepted-damage continuity are server-owned facts calculated by a future runtime owner; this layer contains no positions, instances, raycasts, connection tracking, damage or movement subscriptions, P2 orchestration, runtime session storage, timer, polling, Heartbeat, remote, input, UI, character/Humanoid mutation, squad failure, or operation flow. LK-0305 is next and remains unstarted.
+The LK-0304 APIs remain synchronous pure functions. LK-0305 can commit an already accepted completion, but distance, line of sight, connection/participation, movement continuity, accepted-damage continuity, and live revive sessions remain deferred. LK-0306 is next and remains unstarted.
+
+## LK-0305 runtime ownership and restrictions
+
+`OperativeLifeService` owns one snapshot and monotonic revision per connected server-known `Player`. Registration derives `operative.player:<UserId>`, initializes `Alive` at `100/100` with no incapacitation, no processed damage IDs, zero recoveries used, and conservative solo-recovery ineligibility because operation history is not yet owned. Reads and successful commit returns are deep copies. A commit accepts only an accepted pure resolver result for the registered identity at the current revision, validates the complete returned snapshot and health/life invariants, rejects backward authoritative time and illegal state direction, then replaces the snapshot and increments the revision atomically. Player removal clears the lifetime; there is no persistence or cross-server state.
+
+Alive retains normal movement and combat. Incapacitated and Dead cannot move, fire, reload, or acquire/retain a target; restriction application clears reload and selection while preserving ammunition, cadence, and processed ShotIds. Return to Alive restores eligibility and derives readiness from preserved ammunition without refilling. Character replacement binds to the existing snapshot, stale bindings are ignored, and Roblox automatic character loading is disabled so a replacement cannot reset Incapacitated or Dead to Alive.
+
+The P3 snapshot, never `Humanoid.Health`, is authoritative. A bound Humanoid is retained as a positive-health locomotion shell with its Roblox Dead state disabled. Incapacitated and Dead use zero WalkSpeed/jump and AutoRotate plus server displacement neutralization, not anchoring or destruction. LK-0305 adds no life-state remote, hostile damage routing, timers, revive session/runtime networking, UI, squad failure, operation flow, persistence, or presentation.
 
 ## Canonical life state and transitions
 
@@ -147,7 +155,7 @@ All other transitions are rejected without partial mutation. In particular, `Ali
 
 LK-0205 `TargetHealthState` and `DamageResolver` remain accepted, pure P2 contracts for test hostile damage and ShotId deduplication. Their `becameDead` field means only that the P2 target health crossed from positive to zero; it is not the canonical P3 operative-death decision.
 
-P3 must introduce a focused operative life-state contract rather than reinterpret or silently expand the P2 table in place. The future runtime owner will atomically commit operative health/life state and processed ShotIds, adapting an accepted authoritative damage event into the P3 transition. It will preserve P2 fixture behavior. Processed ShotIds survive incapacitation and revival for the same operative lifetime and are cleared only when that runtime lifetime is torn down; a revive cannot make a ShotId reusable.
+P3 uses a focused operative life-state contract rather than reinterpreting the P2 table. LK-0305 atomically owns operative health/life snapshots and their processed damage-event IDs. Existing P2 combat state remains separately owned by its current caller; life restrictions preserve its ammunition, cadence, and processed ShotIds across incapacitation and revival. Hostile runtime damage adaptation remains deferred.
 
 ## Incapacitation policy
 
