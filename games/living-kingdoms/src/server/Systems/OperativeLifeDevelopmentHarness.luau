@@ -1,7 +1,7 @@
 --!strict
 
 --[[
-	Studio-only, server-command-bar transition controls for LK-0305 validation.
+	Studio-only, server-command-bar transition controls for runtime life validation.
 	Every committed snapshot is produced by an existing pure P3 resolver and is
 	committed through OperativeLifeService's revision boundary. This module has
 	no start loop, RemoteEvent, client surface, or production orchestration role.
@@ -17,7 +17,6 @@ local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local OperativeLifeConfig = require(ReplicatedStorage.Shared.Config.OperativeLifeConfig)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
-local OperativeHealthResolver = require(script.Parent.OperativeHealthResolver)
 local OperativeIncapacitationResolver = require(script.Parent.OperativeIncapacitationResolver)
 local OperativeReviveResolver = require(script.Parent.OperativeReviveResolver)
 
@@ -56,14 +55,31 @@ function Harness.incapacitate(player: Player)
 		return nil
 	end
 	local now = Workspace:GetServerTimeNow()
-	local resolverResult = OperativeHealthResolver.resolveDamage(read.snapshot, {
+	return OperativeLifeService.applyAuthoritativeDamage(read.snapshot.operativeEntityId, read.revision, {
 		damageEventId = eventId("studio.incapacitate"),
 		sourceEntityId = nil,
 		targetEntityId = read.snapshot.operativeEntityId,
 		damageAmount = OperativeLifeConfig.MaximumHealth,
 		serverTimestamp = now,
-	}, now)
-	return commit(player, read, resolverResult)
+	})
+end
+
+function Harness.applyDamage(player: Player, damageAmount: number, damageEventId: string?)
+	if not studioOnly() then
+		return nil
+	end
+	local read = OperativeLifeService.read(player)
+	if read == nil then
+		return nil
+	end
+	local now = Workspace:GetServerTimeNow()
+	return OperativeLifeService.applyAuthoritativeDamage(read.snapshot.operativeEntityId, read.revision, {
+		damageEventId = damageEventId or eventId("studio.damage"),
+		sourceEntityId = "studio.server",
+		targetEntityId = read.snapshot.operativeEntityId,
+		damageAmount = damageAmount,
+		serverTimestamp = now,
+	})
 end
 
 function Harness.kill(player: Player)
@@ -196,6 +212,7 @@ function Harness.start()
 	folder.Parent = ServerStorage
 	controlFolder = folder
 	createControl("Read", Harness.read)
+	createControl("ApplyDamage", Harness.applyDamage)
 	createControl("Incapacitate", Harness.incapacitate)
 	createControl("Revive", Harness.revive)
 	createControl("Kill", Harness.kill)
