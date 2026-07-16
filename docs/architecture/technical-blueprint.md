@@ -56,7 +56,7 @@ This is a boundary guide, not permission to scaffold every future module before 
 ## Intended system boundaries
 
 - `CameraController` — existing elevated camera lifecycle, panning, zoom, and current bounds
-- `SurvivorController` — local operative input and responsive movement intent
+- `SurvivorController` — implemented local operative input, character/respawn binding, and responsive camera-relative movement intent
 - `WeaponController` — local reload input plus non-authoritative automatic-targeting and firing presentation
 - `SquadUIController` — personal status, teammate status, location aids, and operation information
 - `PlayerService` — server-owned operative lifecycle, class assignment, and spawn state
@@ -77,9 +77,10 @@ Names may be refined in the milestone that first needs them. Avoid duplicate man
 - Repository layout, Rojo project mappings, bootstrap scripts, pinned toolchain, production documentation, and smoke/build workflows remain valid.
 - `CameraController` and its explicit `init`, `start`, `stop`, and `destroy` lifecycle remain valid.
 - The fixed overhead/elevated view, keyboard panning, mouse-wheel zoom, replacement-camera handling, and configurable focus-point bounds remain implemented and must not be deleted.
+- `SurvivorController` now owns desktop movement input while active and temporarily disables `CameraController` keyboard panning, restoring it when stopped. Zoom, bounds, Scriptable mode, and both controllers' lifecycle behavior remain available.
 - Current strict-mode and client/server/shared dependency rules remain valid.
 
-The camera is a foundation, not a final survival control design. Its bounds must later be configured around the authored operation map. Panning, follow behavior, framing, input coexistence, touch support, and the relationship between camera and controlled operative require focused adaptation. Existing working camera code should be extended only when a survival milestone demonstrates the need.
+The camera is a foundation, not a final survival control design. Its bounds must later be configured around the authored operation map. Giving survivor movement sole ownership of W/A/S/D and arrow keys is a temporary input-conflict decision: keyboard camera panning remains implemented but is disabled during active survivor control. Panning, follow behavior, framing, touch support, and the relationship between camera and controlled operative require focused adaptation in LK-0104. Existing working camera code should be extended only when a survival milestone demonstrates the need.
 
 ## Superseded RTS architecture
 
@@ -119,4 +120,4 @@ UI and controllers may call shared interfaces. Server systems may depend on shar
 
 ## Change policy
 
-Architecture exists to support the next playable milestone. A new abstraction must solve a present, demonstrated need or remove meaningful duplication. The first post-pivot gameplay change remains only camera-relative movement for one local survivor; it must not introduce automatic targeting, weapons, enemies, classes, progression, or other later systems.
+Architecture exists to support the next playable milestone. A new abstraction must solve a present, demonstrated need or remove meaningful duplication. LK-0101 implements only camera-relative movement for one local survivor. The next executable task is LK-0102, limited to the initial movement-authority boundary; it must not introduce automatic targeting, weapons, enemies, classes, progression, or other later systems.

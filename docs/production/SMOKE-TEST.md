@@ -142,3 +142,29 @@ Observed:
 - `[Living Kingdoms] Client bootstrap started` appeared exactly once in the final clean run.
 - No Living Kingdoms-originated errors or warnings appeared in the final clean run.
 - Roblox Studio repeated the previously documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. These remain classified as Roblox Studio-owned environment noise.
+
+## LK-0101 Camera-relative survivor movement validation
+
+- Date: 2026-07-15
+- Environment: Microsoft Windows 11 Home 10.0.26200; Roblox Studio 0.730.0.7300790
+- Rojo: repository-pinned CLI 7.7.0 and Studio plugin 7.7.0
+- Project: `LivingKingdoms` synchronized from `games\living-kingdoms\default.project.json` at `localhost:34872`
+- Runs: one final clean Play run after focused movement, lifecycle, respawn, and camera regression checks
+
+Observed:
+
+- W/S and Up/Down moved the survivor forward and backward relative to the tactical camera; A/D and Left/Right moved left and right.
+- Half-second cardinal samples traveled approximately `7.97` to `8.27` studs. A half-second W+D sample traveled `8.266` studs versus `8.267` studs for W, confirming normalized diagonal input.
+- Releasing all movement keys stopped immediately; measured post-release displacement was approximately `0.0000038` studs.
+- Settled ground movement stayed horizontal within approximately `0.00000024` studs of Y drift. An initial one-stud descent occurred when normal character collision carried the avatar from the raised SpawnLocation onto the Baseplate.
+- The camera position did not change during survivor movement samples, confirming movement keys did not simultaneously pan the camera.
+- Typing movement letters and arrow-key input in the in-game chat text box changed neither survivor nor camera position.
+- Mouse-wheel zoom remained functional: the camera reached the configured `40`-stud minimum and returned to `90` studs while retaining `Scriptable` mode and the same look vector.
+- Existing bounds and clamp logic were unchanged. Extreme keyboard-pan traversal was not repeated because keyboard panning is intentionally disabled while survivor control is active; the accepted LK-0014 boundary validation remains the regression record for that preserved behavior.
+- Breaking the character joints produced a replacement character with a Humanoid and HumanoidRootPart without Living Kingdoms errors or warnings.
+- Repeated `init()`, `start()`, `stop()`, and restart calls completed without errors.
+- `[Living Kingdoms] Fixed overhead camera activated` appeared exactly once.
+- `[Living Kingdoms] Server bootstrap started` appeared exactly once.
+- `[Living Kingdoms] Client bootstrap started` appeared exactly once.
+- No Living Kingdoms-originated errors or warnings appeared in the final clean run.
+- Roblox Studio repeated the previously documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. These remain classified as Roblox Studio-owned environment noise.

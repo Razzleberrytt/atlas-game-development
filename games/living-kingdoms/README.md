@@ -4,9 +4,9 @@ Living Kingdoms is the temporary working title and internal identifier for a bru
 
 ## Current stage
 
-P0 reframes the project around finite authored survival operations. The initial MVP targets 1–4 players, while architecture should permit later support for up to 8. Each player will control one specialist operative rather than an army.
+The project is in P1, tactical player movement and character control. The initial MVP targets 1–4 players, while architecture should permit later support for up to 8. Each player controls one specialist operative rather than an army.
 
-No survival gameplay is implemented yet. The existing client starts a fixed elevated tactical camera with desktop keyboard panning, mouse-wheel zoom, and configurable world-space focus-point bounds.
+The existing client starts a fixed elevated tactical camera and lets the local player move Roblox's standard character relative to that camera. Mouse-wheel zoom and configurable world-space focus-point bounds remain active. Keyboard camera panning remains implemented but is temporarily disabled while survivor movement is active so one keypress cannot move both the character and camera.
 
 ## Preserved project layout
 
@@ -16,7 +16,8 @@ living-kingdoms/
 ├── src/
 │   ├── client/
 │   │   ├── Controllers/
-│   │   │   └── CameraController.luau
+│   │   │   ├── CameraController.luau
+│   │   │   └── SurvivorController.luau
 │   │   └── init.client.luau
 │   ├── server/
 │   │   └── init.server.luau
@@ -38,13 +39,19 @@ The bootstrap scripts use strict Luau and print these startup confirmations:
 - `[Living Kingdoms] Client bootstrap started`
 - `[Living Kingdoms] Server bootstrap started`
 
+## Local survivor movement
+
+The client bootstrap initializes and starts `SurvivorController` after `CameraController`. Both controllers expose `init()`, `start()`, `stop()`, and `destroy()` with safe repeated calls and terminal destruction.
+
+`SurvivorController` binds to the existing local-player character, `Humanoid`, and `HumanoidRootPart`, including respawns and temporary missing instances. W/A/S/D and arrow-key input is converted through the tactical camera's horizontal look and right vectors, normalized to prevent faster diagonals, and applied every render step through `Humanoid:Move()`. Roblox's normal Humanoid movement, collision, and WalkSpeed remain in use. Processed input and text-box focus suppress movement, and Roblox's default character controls are disabled while this controller is active so movement is not double-applied.
+
 ## Preserved camera behavior
 
 The client bootstrap initializes and starts `CameraController`. The controller exposes `init()`, `start()`, `stop()`, and `destroy()`; repeated lifecycle calls are safe no-ops when the requested state is already satisfied, and destruction is terminal.
 
-The current view uses initial focus point `(0, 0, 0)`, pitch `-60` degrees, yaw `45` degrees, and height `80` studs. Mouse-wheel zoom changes height by `10` studs per wheel unit and clamps it from `40` to `160` studs. Keyboard panning moves the focus point at `48` studs per second relative to the camera's horizontal frame. The focus point is clamped from `-128` to `128` on X and Z.
+The current view uses initial focus point `(0, 0, 0)`, pitch `-60` degrees, yaw `45` degrees, and height `80` studs. Mouse-wheel zoom changes height by `10` studs per wheel unit and clamps it from `40` to `160` studs. The focus point is clamped from `-128` to `128` on X and Z. Keyboard panning remains available to the camera controller at `48` studs per second, but `SurvivorController` disables it while active and restores it on stop.
 
-These values and controls are not the final survival-camera design. Bounds, framing, follow behavior, and input coexistence must later be adapted to one authored operation map. Working camera code must remain intact until a focused survival task demonstrates a change is needed.
+These values and controls are not the final survival-camera design. Survivor movement temporarily owns the shared movement keys; LK-0104 will address follow behavior, framing, and longer-term control coexistence. Bounds must later be adapted to one authored operation map. Working camera code remains intact unless a focused survival task demonstrates a change is needed.
 
 ## Canonical direction
 
@@ -67,6 +74,6 @@ Follow [`docs/production/LOCAL-SETUP.md`](../../docs/production/LOCAL-SETUP.md),
 
 ## Next executable task
 
-`LK-0101 — Add camera-relative movement for one local survivor.`
+`LK-0102 — Define and enforce the initial movement authority boundary.`
 
-This task is limited to reliable desktop movement for one character while preserving the existing tactical camera. It must not add combat, aiming, enemies, classes, objectives, progression, saving, or other later systems.
+This task is limited to shared movement limits, server observation and correction of prototype movement constraints, and documenting correction behavior. It must not add combat, aiming, enemies, classes, objectives, progression, saving, or other later systems.
