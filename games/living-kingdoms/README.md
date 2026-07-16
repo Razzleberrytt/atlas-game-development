@@ -4,7 +4,7 @@ Living Kingdoms is the temporary working title and internal identifier for a bru
 
 ## Current stage
 
-The project is in P1, tactical player movement and character control. The initial MVP targets 1–4 players, while architecture should permit later support for up to 8. Each player controls one specialist operative rather than an army.
+P1, tactical player movement and character control, is complete. The initial MVP targets 1–4 players, while architecture should permit later support for up to 8. Each player controls one specialist operative rather than an army.
 
 The existing client starts a fixed elevated tactical camera that smoothly follows the local player while Roblox's standard character moves relative to that camera. Mouse-wheel zoom and configurable world-space focus-point bounds remain active. Keyboard camera panning remains implemented but is disabled while survivor movement is active so one keypress cannot move both the character and camera.
 
@@ -112,6 +112,6 @@ Follow [`docs/production/LOCAL-SETUP.md`](../../docs/production/LOCAL-SETUP.md),
 
 ## Next executable task
 
-`LK-0105 — Complete multiplayer movement and regression checks.`
+`LK-0201 — Specify the automatic-combat contract and firearm configuration.`
 
-This task is limited to two-client ownership and movement/camera lifecycle regressions. It must not add combat, aiming, enemies, classes, objectives, progression, saving, or other later systems.
+LK-0201 is not started. Its scope is specification only; implementation of combat or any later gameplay system requires a separate task.
