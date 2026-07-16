@@ -322,6 +322,7 @@ function SurvivorController.start()
 	state.playerControls = getPlayerControls(localPlayer)
 	state.started = true
 	CameraController.setKeyboardPanningEnabled(false)
+	CameraController.setSurvivorFollowEnabled(true)
 	state.characterAddedConnection = localPlayer.CharacterAdded:Connect(bindCharacter)
 	state.characterRemovingConnection = localPlayer.CharacterRemoving:Connect(function(character)
 		if state.character == character then
@@ -386,6 +387,7 @@ function SurvivorController.stop()
 
 	enableDefaultControls()
 	state.playerControls = nil
+	CameraController.setSurvivorFollowEnabled(false)
 	CameraController.setKeyboardPanningEnabled(true)
 	state.started = false
 end

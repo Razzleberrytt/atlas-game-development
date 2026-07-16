@@ -208,3 +208,27 @@ Observed:
 - The final clean run showed `[Living Kingdoms] Server bootstrap started`, `[Living Kingdoms] Fixed overhead camera activated`, and `[Living Kingdoms] Client bootstrap started` exactly once each.
 - No Living Kingdoms-originated error or unexpected warning appeared in the final clean run.
 - The final clean run repeated the previously documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. These remain classified as Roblox Studio-owned environment noise.
+
+## LK-0104 Survivor-follow camera validation
+
+- Date: 2026-07-15
+- Environment: Microsoft Windows 11 Home 10.0.26200; Roblox Studio 0.730.0.7300790
+- Rojo: repository-pinned CLI 7.7.0 and Studio plugin 7.7.0
+- Project: `LivingKingdoms` synchronized from `games\living-kingdoms\default.project.json` at `localhost:34872`
+- Runs: one focused two-client camera-validation run followed by one clean two-client smoke run
+
+Observed:
+
+- Horizontal root traversal in all cardinal and diagonal world directions moved the camera in the same direction. The survivor remained framed without visible per-frame snapping or jitter during the focused traversal.
+- The configured look vector remained approximately `(-0.3535534, -0.8660254, -0.3535534)` throughout focused movement, bounds, jump, zoom, respawn, and lifecycle probes, confirming unchanged pitch and yaw.
+- Mouse-wheel input reached exactly the configured `40`-stud minimum and `160`-stud maximum camera heights while the camera stayed `Scriptable` and retained the same look vector.
+- With the root held at `(140, approximately 3.22, -140)`, the reconstructed ground-plane camera focus was exactly `(128, 0, -128)`, confirming that the existing bounds constrain the followed focus point.
+- A jump raised the root from approximately `3.22` to `10.54` studs while camera Y remained exactly `80` throughout the sample. No distracting vertical camera bob was visible.
+- After the survivor target stopped, one `0.4`-second sample captured convergence and the following `0.4`-second sample measured zero camera displacement, confirming prompt settling without prolonged drift.
+- Temporarily removing the `HumanoidRootPart` produced zero camera displacement during the missing-root interval. Restoring it reacquired the root without a Living Kingdoms error or warning.
+- Breaking the character joints produced a replacement character. After one second, the reconstructed camera focus matched the new root X/Z, `Scriptable` mode remained active, and pitch/yaw were unchanged.
+- Repeated controller `init()`, `start()`, `stop()`, and `destroy()` calls completed safely. A stop/start cycle restored survivor-follow framing; terminal destroy calls were safe no-ops when repeated.
+- Existing LK-0101 and LK-0103 Studio records remain the direct held-key regression evidence for cardinal/diagonal movement, chat suppression, and movement-key ownership. LK-0104 did not change movement input handling; it only disables camera panning and enables follow alongside the existing survivor lifecycle.
+- The final clean run showed `[Living Kingdoms] Server bootstrap started`, `[Living Kingdoms] Fixed overhead camera activated`, and `[Living Kingdoms] Client bootstrap started` exactly once each per applicable server/client Output.
+- No Living Kingdoms-originated error or unexpected warning appeared in the final clean run.
+- The final clean run repeated the previously documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. These remain classified as Roblox Studio-owned environment noise.
