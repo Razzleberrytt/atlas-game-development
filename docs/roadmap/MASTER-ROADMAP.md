@@ -5,9 +5,14 @@
 - `[ ]` Not started
 - `[~]` In progress
 - `[x]` Complete
+- `[-]` Superseded by the cooperative-survival pivot
 - `[!]` Blocked
 
-## Milestone M0 — Repository and Roblox foundation
+Milestones are ordered. Work begins only after prerequisites are met, and later milestones do not authorize speculative scaffolding in earlier pull requests.
+
+## Preserved foundation history
+
+### Former M0 — Repository and Roblox foundation
 
 - [x] **LK-0001** Create the Rojo-compatible Roblox project scaffold.
 - [x] **LK-0002** Add `default.project.json` mappings for client, server, and shared source.
@@ -17,98 +22,119 @@
 - [x] **LK-0006** Verify a local Rojo build produces a valid place file or synchronized Studio tree.
 - [x] **LK-0007** Add a smoke-test checklist and record the first successful launch.
 
-### M0 exit criteria
-
-The repository can be cloned, synchronized or built, launched in Roblox Studio, and tested without undocumented setup knowledge.
-
-## Milestone M1 — Overhead camera
+### Former M1 — Overhead camera
 
 - [x] **LK-0010** Create `CameraController` with an explicit public lifecycle.
 - [x] **LK-0011** Switch the local camera to a fixed overhead strategy view.
 - [x] **LK-0012** Add keyboard camera panning.
 - [x] **LK-0013** Add mouse-wheel zoom.
 - [x] **LK-0014** Add configurable camera bounds.
-- [ ] **LK-0015** Add smoothing without making input feel delayed.
-- [ ] **LK-0016** Add initial touch pan and pinch-zoom design notes.
-- [ ] **LK-0017** Run and record the camera manual test suite.
+- [-] **LK-0015** Add RTS camera smoothing. Superseded; responsiveness will be evaluated with operative controls.
+- [-] **LK-0016** Add RTS touch pan and pinch-zoom design notes. Superseded; touch is redesigned after the desktop survival control model is proven.
+- [-] **LK-0017** Run the former RTS camera manual test suite. Superseded; existing camera regression checks remain useful and a survival-camera suite will be defined when controls change.
 
-### M1 exit criteria
+The implemented camera lifecycle, overhead framing, keyboard panning, mouse-wheel zoom, and bounds remain reusable. Future bounds and controls will be adapted to the authored survival-operation map without deleting working code.
 
-A desktop player can comfortably inspect the gray-box map without controlling a Roblox avatar.
+## P0 — Concept pivot and canonical specification
 
-## Milestone M2 — Selection
+- [x] **LK-PIVOT-001** Reframe the canonical product, MVP, architecture, roadmap, and project readmes around cooperative isometric survival.
+- [x] Record why the pivot occurred before major gameplay investment and what is preserved or discarded.
+- [x] Mark former RTS specifications and roadmap work as superseded.
+- [x] Define the first two implementation milestones as Codex-ready tasks.
 
-- [ ] **LK-0020** Define the selectable-unit interface and ownership attributes.
-- [ ] **LK-0021** Spawn five gray-box Worker models for local testing.
-- [ ] **LK-0022** Add single-click selection.
-- [ ] **LK-0023** Add deselection by clicking empty terrain.
-- [ ] **LK-0024** Add visible selection indicators.
-- [ ] **LK-0025** Add drag-box selection.
-- [ ] **LK-0026** Add Shift-based additive and subtractive selection.
-- [ ] **LK-0027** Prevent selection of enemy or unowned units.
-- [ ] **LK-0028** Define the initial touch-selection behavior.
-- [ ] **LK-0029** Run and record selection regression tests.
+### P0 exit criteria
 
-### M2 exit criteria
+The charter, MVP, technical blueprint, roadmap, decision record, and readmes agree on the new direction; no gameplay source changed; the existing project still formats, lints, sourcemaps, and builds.
 
-The player can reliably select one or several owned Workers and clearly see the current selection.
+## P1 — Tactical player movement and character controller
 
-## Milestone M3 — Commanded movement
+- [ ] **LK-0101 — Add camera-relative movement for one local survivor.**
+  - **Scope:** create the smallest useful desktop control step from the existing tactical camera; no combat, aiming, sprint, stamina, interaction, animation overhaul, enemies, or camera redesign.
+  - **Acceptance:** one local Roblox character is the controlled operative; W/A/S/D input produces movement directions projected from the tactical camera onto the ground plane; diagonal input is normalized; input is ignored when game-processed or while a text box is focused; default controls do not double-apply movement; character respawn is handled without duplicate connections; stopping or destroying the controller disconnects input and clears movement intent; the existing `CameraController` lifecycle, pan, zoom, and bounds continue working; StyLua, Selene, Rojo sourcemap, and Rojo build pass; manual Studio checks are documented.
+- [ ] **LK-0102 — Define and enforce the initial movement authority boundary.**
+  - **Acceptance:** shared movement limits are configuration-driven; the server observes operative state and rejects or corrects movement that violates defined prototype constraints; normal local movement remains responsive; correction behavior and limitations are documented; no combat or enemy behavior is added.
+- [ ] **LK-0103 — Add survivor-facing and movement-state replication.**
+  - **Acceptance:** facing follows the specified movement intent when not aiming; idle and moving states are consistent for other clients; the server does not accept an arbitrary client-supplied transform; respawn and disconnect paths are safe.
+- [ ] **LK-0104 — Adapt tactical camera framing around the controlled survivor.**
+  - **Acceptance:** the camera relationship to the operative is specified and implemented without removing existing lifecycle, pan, zoom, or bounds; authored-map bounds remain configurable; the player cannot accidentally lose the operative indefinitely; coexistence between camera and movement inputs is manually verified.
+- [ ] **LK-0105 — Complete multiplayer movement and regression checks.**
+  - **Acceptance:** two clients can move separate operatives without controlling one another; respawn, leave, camera replacement, text focus, and input lifecycle cases pass; observed network limitations are recorded; no later gameplay system is introduced.
 
-- [ ] **LK-0030** Define the move-command request contract.
-- [ ] **LK-0031** Validate unit ownership and destination requests on the server.
-- [ ] **LK-0032** Move one selected Worker to a terrain destination.
-- [ ] **LK-0033** Move several selected Workers in one command.
-- [ ] **LK-0034** Add simple destination spacing so units do not stack exactly.
-- [ ] **LK-0035** Add command feedback at the clicked destination.
-- [ ] **LK-0036** Handle unreachable or invalid destinations safely.
-- [ ] **LK-0037** Cancel or replace an active movement command.
-- [ ] **LK-0038** Measure behavior with 25 simultaneously moving units.
-- [ ] **LK-0039** Complete the first vertical-slice playtest.
+### P1 exit criteria
 
-### M3 exit criteria
+One player can reliably control one operative from the elevated tactical view, and two-client verification confirms distinct ownership and stable camera behavior.
 
-The player can select five Workers and command them around the map with responsive, predictable behavior.
+## P2 — Aiming and basic firearm combat
 
-## Milestone M4 — Wood economy
+- [ ] **LK-0201 — Specify the basic firearm contract and configuration.**
+  - **Acceptance:** stable weapon/action IDs, aim inputs, cadence, range, damage ownership, movement/aim tradeoff hooks, and client/server messages are documented; balance values have shared configuration homes; scarcity pickup behavior remains deferred to P6.
+- [ ] **LK-0202 — Add local pointer-to-world aiming.**
+  - **Acceptance:** the local operative can aim at a valid ground-plane/world point from the tactical camera; facing and reticle feedback are immediate and non-authoritative; invalid or UI-captured input is ignored; no damage is possible.
+- [ ] **LK-0203 — Add a validated fire request and cadence.**
+  - **Acceptance:** the client requests a shot with only necessary aim context; the server validates player, weapon state, cadence, and plausible aim; spammed or malformed requests fail safely; no client-supplied damage is trusted.
+- [ ] **LK-0204 — Resolve server-authoritative firearm hits and damage.**
+  - **Acceptance:** one configured firearm family can hit a test damageable target using the specified server resolution; range, obstruction, and damage are server-owned; hit feedback does not reveal hidden targets; deterministic validation receives tests where feasible.
+- [ ] **LK-0205 — Add reload commitment and movement-versus-fire hooks.**
+  - **Acceptance:** firing, aiming, moving, and reloading expose explicit states for later tuning; reload has an interruptible or non-interruptible rule; temporary test ammunition is clearly isolated and cannot be mistaken for P6 scarcity completion.
+- [ ] **LK-0206 — Complete two-client firearm security and feel checks.**
+  - **Acceptance:** clients cannot fire for one another, exceed cadence, set damage, or hit through invalid obstruction; camera and movement regressions pass; tuning questions are recorded without adding enemies or final effects.
 
-- [ ] **LK-0040** Specify Wood and Tree resource-node behavior.
-- [ ] **LK-0041** Add data-driven Tree configuration.
-- [ ] **LK-0042** Implement tree selection and contextual gather commands.
-- [ ] **LK-0043** Move Workers into harvest range.
-- [ ] **LK-0044** Implement timed wood harvesting.
-- [ ] **LK-0045** Add Worker carry capacity.
-- [ ] **LK-0046** Return carrying Workers to the Town Hall.
-- [ ] **LK-0047** Deposit Wood using server-owned balances.
-- [ ] **LK-0048** Add the Wood counter UI.
-- [ ] **LK-0049** Handle depleted trees and interrupted gathering.
+### P2 exit criteria
 
-## Milestone M5 — Construction and production
+A controlled operative can aim and use one basic firearm against a test target through an explicit server-authoritative contract, with enough state to tune movement, aiming, firing, and reload tradeoffs later.
 
-- [ ] **LK-0050** Specify Town Hall and Barracks behavior.
-- [ ] **LK-0051** Add Barracks placement preview.
-- [ ] **LK-0052** Validate placement and Wood cost on the server.
-- [ ] **LK-0053** Create construction progress and completion states.
-- [ ] **LK-0054** Add Barracks selection UI.
-- [ ] **LK-0055** Specify Swordsman configuration.
-- [ ] **LK-0056** Add a server-authoritative training queue.
-- [ ] **LK-0057** Spawn trained Swordsmen at a valid rally location.
-- [ ] **LK-0058** Handle blocked spawns and queue cancellation.
-- [ ] **LK-0059** Complete the economy-to-army loop playtest.
+## P3 — Health, incapacitation, revival, and death
 
-## Milestone M6 — Combat and match completion
+Define server-owned health and damage, incapacitated state, teammate revival, unrecoverable death, squad failure conditions, readable feedback, and edge cases for disconnect or respawn.
 
-- [ ] **LK-0060** Define Health, Damage, Attack, and Death contracts.
-- [ ] **LK-0061** Add attack commands against valid enemy targets.
-- [ ] **LK-0062** Implement Swordsman melee range and cooldown.
-- [ ] **LK-0063** Apply server-authoritative damage.
-- [ ] **LK-0064** Handle death and cleanup.
-- [ ] **LK-0065** Add basic enemy defenders.
-- [ ] **LK-0066** Add minimal enemy attack behavior.
-- [ ] **LK-0067** Detect destruction of the enemy Town Hall.
-- [ ] **LK-0068** Add victory and defeat states.
-- [ ] **LK-0069** Complete an end-to-end match without developer intervention.
+## P4 — Darkness, limited vision, and squad-location tools
+
+Implement limited personal information, darkness presentation, server-owned discovery rules where gameplay relevant, separated spawn support, and a periodic location ping or equivalent aid that preserves uncertainty.
+
+## P5 — Enemy spawning, pursuit, and horde pressure
+
+Implement basic enemy lifecycle, fair spawn rules, pursuit, attacks, authored waves, roaming pressure, escalation triggers, recovery windows, and representative performance measurement.
+
+## P6 — Ammunition scarcity and supply collection
+
+Replace temporary firearm resources with server-owned finite ammunition, supply caches at authored risky locations, collection rules, clear inventory feedback, and balance telemetry sufficient to distinguish tension from unavoidable starvation.
+
+## P7 — Three interdependent MVP classes
+
+Implement combat specialist, medic, and engineer responsibilities, limitations, cross-class interactions, class choice, and multiplayer verification. The engineer may restore ammunition only within strict scarcity constraints.
+
+## P8 — Authored operation objectives
+
+Build one operation flow with two or three authored objectives, forced relocation, useful temporary defensive positions, failure rules, and objective state readable to the squad.
+
+## P9 — Special enemy and boss encounter
+
+Add one special enemy that disrupts a reliable tactic and one readable boss climax that demands coordination and tests lessons taught earlier in the operation.
+
+## P10 — Match completion, failure, and extraction
+
+Implement final extraction or holdout, full-squad success and failure resolution, result screens, cleanup, replay flow, and safe handling of leave/disconnect cases.
+
+## P11 — Persistent XP, ranks, and class unlock
+
+Implement server-owned XP awards for victory and limited meaningful participation on failure, a small military-style rank ladder, reliable persistence, anti-idle safeguards, and at least one side-grade specialist class unlock. Do not add paid power or material permanent stat inflation.
+
+## P12 — Cooperative balance, performance, and polish
+
+Tune difficulty for high but learnable failure, class dependence, scarcity, relocation pressure, solo-to-four-player scaling, horde performance, accessibility, feedback, and operation readability. Validate that architecture has no fixed four-player assumptions before expanding toward eight-player support.
+
+## Superseded RTS roadmap
+
+The following uncompleted RTS tasks are explicitly superseded, not completed:
+
+- [-] **LK-0020–LK-0029:** selectable-unit contracts, worker spawning, single/multi/drag selection, selection indicators, ownership selection rules, touch selection, and selection regression tests.
+- [-] **LK-0030–LK-0039:** selected-unit move commands, worker destination validation, formation spacing, command feedback, and the worker movement vertical slice.
+- [-] **LK-0040–LK-0049:** wood, trees, worker gathering, carrying, deposits, and resource-counter UI.
+- [-] **LK-0050–LK-0059:** Town Hall and Barracks specification, placement, construction, production queue, Swordsmen, rally locations, and economy-to-army testing.
+- [-] **LK-0060–LK-0069:** RTS attack commands, Swordsman combat, enemy defenders, enemy Town Hall destruction, and RTS match completion. Generic health, damage, death, enemies, success, and failure will receive new survival-specific contracts in P2–P10.
+
+The former RTS charter, MVP, and technical blueprint were canonical specifications and have been revised in place. Their historical text remains available through Git history and is summarized in the pivot decision record. No standalone gameplay specifications existed to retain.
 
 ## Backlog policy
 
-New ideas go into `BACKLOG.md`; they do not interrupt the active milestone unless they expose a blocker, security problem, data-loss risk, or fundamental architectural flaw.
+New ideas go into `BACKLOG.md` if that file is introduced; they do not interrupt the active milestone unless they expose a blocker, security problem, data-loss risk, or fundamental architectural flaw. Final branding work is deferred and must not rename the repository, game directory, Rojo project, scripts, or namespaces during these milestones.
