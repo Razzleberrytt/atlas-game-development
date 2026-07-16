@@ -1,7 +1,7 @@
 --!strict
 
--- Prototype balance values for the first basic firearm family. No runtime
--- combat system consumes this configuration in LK-0201.
+-- Prototype balance values for the first basic firearm family. Pure combat
+-- resolvers consume this configuration without runtime bootstrap integration.
 local CombatContracts = require(script.Parent.Parent.Combat.CombatContracts)
 
 return table.freeze({

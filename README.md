@@ -45,6 +45,6 @@ For the reusable Studio launch check and first successful result, see the [smoke
 **Atlas version:** 0.1  
 **Living Kingdoms phase:** P2 — Automatic targeting and basic firearm combat
 
-**Next executable task:** LK-0205 — resolve server-authoritative firearm hits and damage
+**Next executable task:** LK-0206 — add immediate automatic-combat presentation and reload input
 
 Final public branding is unresolved. Living Kingdoms remains the working title and internal project identifier; naming work is outside the current scope.

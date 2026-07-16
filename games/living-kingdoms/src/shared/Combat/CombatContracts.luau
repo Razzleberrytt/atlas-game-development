@@ -41,6 +41,20 @@ export type AutomaticFireRejectionReasonId =
 	| "CadenceBlocked"
 
 export type AuthoritativeFireStatusId = "Fired" | "Rejected"
+export type ShotObstructionResultId = "TargetHit" | "Blocked" | "Miss"
+export type FirearmHitRejectionReasonId =
+	"FireNotAccepted"
+	| "MissingShotIdentity"
+	| "WeaponInvalid"
+	| "TargetMismatch"
+	| "TargetInvalid"
+	| "TargetDead"
+	| "TargetNotHostile"
+	| "NotVisible"
+	| "OutOfRange"
+	| "LineOfSightBlocked"
+	| "Miss"
+	| "ShotAlreadyResolved"
 export type CombatPresentationMessageKindId = "TargetSelected" | "TargetCleared" | "ShotFired"
 
 export type AmmunitionState = {
@@ -119,6 +133,32 @@ export type AutomaticFireResolution = {
 	weaponStateAfter: WeaponReadinessState,
 }
 
+export type ShotResolutionContext = {
+	operativeEntityId: CombatEntityId,
+	weaponId: WeaponId,
+	selectedTargetEntityId: CombatEntityId,
+	operativeWorldPosition: Vector3,
+	obstructionResultId: ShotObstructionResultId,
+}
+
+export type FirearmTargetContext = {
+	entityId: CombatEntityId,
+	worldPosition: Vector3,
+	isAlive: boolean,
+	isTargetable: boolean,
+	relationshipId: TeamRelationshipId,
+	isVisible: boolean,
+}
+
+export type FirearmHitResolution = {
+	shotId: ShotId?,
+	sourceEntityId: CombatEntityId?,
+	targetEntityId: CombatEntityId?,
+	weaponId: WeaponId?,
+	didHit: boolean,
+	rejectionReasonId: FirearmHitRejectionReasonId?,
+}
+
 export type AuthoritativeDamageEvent = {
 	damageEventId: DamageEventId,
 	shotId: ShotId,
@@ -128,6 +168,22 @@ export type AuthoritativeDamageEvent = {
 	damageTypeId: DamageTypeId,
 	damageAmount: number,
 	serverTimestamp: number,
+}
+
+export type ProcessedShotIds = { [ShotId]: boolean }
+
+export type TargetHealthState = {
+	entityId: CombatEntityId,
+	currentHealth: number,
+	processedShotIds: ProcessedShotIds,
+}
+
+export type DamageResolution = {
+	damageEvent: AuthoritativeDamageEvent?,
+	targetHealthStateAfter: TargetHealthState,
+	didApplyDamage: boolean,
+	becameDead: boolean,
+	rejectionReasonId: FirearmHitRejectionReasonId?,
 }
 
 export type ReloadIntent = {
@@ -221,6 +277,27 @@ CombatContracts.AutomaticFireRejectionReasonIds = table.freeze({
 CombatContracts.AuthoritativeFireStatusIds = table.freeze({
 	Fired = "Fired",
 	Rejected = "Rejected",
+})
+
+CombatContracts.ShotObstructionResultIds = table.freeze({
+	TargetHit = "TargetHit",
+	Blocked = "Blocked",
+	Miss = "Miss",
+})
+
+CombatContracts.FirearmHitRejectionReasonIds = table.freeze({
+	FireNotAccepted = "FireNotAccepted",
+	MissingShotIdentity = "MissingShotIdentity",
+	WeaponInvalid = "WeaponInvalid",
+	TargetMismatch = "TargetMismatch",
+	TargetInvalid = "TargetInvalid",
+	TargetDead = "TargetDead",
+	TargetNotHostile = "TargetNotHostile",
+	NotVisible = "NotVisible",
+	OutOfRange = "OutOfRange",
+	LineOfSightBlocked = "LineOfSightBlocked",
+	Miss = "Miss",
+	ShotAlreadyResolved = "ShotAlreadyResolved",
 })
 
 CombatContracts.DamageTypeIds = table.freeze({
