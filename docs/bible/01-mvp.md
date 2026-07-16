@@ -72,17 +72,36 @@ Enemy pressure combines authored waves, roaming threats, and objective-triggered
 
 Waves are pacing tools, not isolated arenas. Their purpose is to force decisions about whether to hold, move, spend resources, rescue a teammate, or abandon a position. Pressure should escalate across the operation while still allowing short recovery windows.
 
+## Automatic combat targeting
+
+Operatives automatically acquire and fire on valid hostile targets within their weapon range. A target is valid only when all of the following are true:
+
+- The hostile is visible to the operative under gameplay-relevant visibility rules.
+- The operative has line of sight to the hostile.
+- The operative is in a state that permits combat.
+- The weapon has ammunition and is ready to fire.
+- The hostile is alive, targetable, in range, and legal for that operative to attack.
+
+Initial target priority is deterministic:
+
+1. The closest valid hostile actively threatening the operative.
+2. Otherwise, the closest valid hostile in range.
+
+Automatic target acquisition, firing cadence, ammunition consumption, hit validation, damage, and target legality are server-authoritative. The client may immediately present a likely target, facing response, muzzle event, tracer, or equivalent feedback, but that presentation cannot establish ammunition truth, a legal hit, or damage.
+
+A lightweight manual priority-target override may be considered later. It is not required for the first combat implementation or the MVP unless playtesting proves automatic priority insufficient.
+
 ## Boss encounter philosophy
 
 The MVP boss is the authored climax, not merely a larger horde enemy. It must have readable behaviors, at least one coordination demand, and opportunities for multiple classes to contribute. The encounter should test lessons already taught by the operation and should not invalidate remaining ammo or recovery choices through an unexplained requirement. Failure must be attributable to decisions or execution players can improve.
 
-## Movement-versus-combat tradeoffs
+## Movement and automatic-combat tradeoffs
 
-Moving, firing, aiming, reloading, reviving, repairing, and retreating compete for attention, position, and time. The exact control model will be prototyped, but these rules guide it:
+Moving, positioning, reloading, reviving, repairing, using class abilities, interacting, and retreating compete for attention, position, and time. Firing is automatic when the server confirms a valid target and ready weapon, but players control the conditions that make effective fire possible.
 
-- Accurate or sustained fire should require some commitment of speed, facing, or positioning.
+- Effective or sustained automatic fire should require some commitment of range, line of sight, movement, facing, or positioning.
 - Reloading creates a readable vulnerability window.
-- Retreating preserves life and distance but may reduce fire effectiveness or expose slower teammates.
+- Retreating preserves life and distance but may break line of sight, leave weapon range, reduce fire effectiveness, or expose slower teammates.
 - Players should be able to make deliberate fighting withdrawals; movement must not be disabled so aggressively that combat becomes static.
 - Class actions create protect-the-teammate moments without routinely removing a player from play for long periods.
 
@@ -143,4 +162,4 @@ The MVP succeeds when:
 
 ## Deferred design questions
 
-Operation duration, exact aiming scheme, control support beyond desktop, friendly fire, class duplication, solo scaling, incapacitation limits, inventory transfer, reconnaissance mechanics, rank names, XP curves, and the final unlockable class are intentionally unresolved. Each must be answered by focused specification or prototype work rather than assumed during unrelated implementation.
+Operation duration, auto-target switching behavior, the definition of an actively threatening hostile, whether manual priority override becomes necessary, control support beyond desktop, friendly fire, class duplication, solo scaling, incapacitation limits, inventory transfer, reconnaissance mechanics, rank names, XP curves, and the final unlockable class are intentionally unresolved. Each must be answered by focused specification or prototype work rather than assumed during unrelated implementation.

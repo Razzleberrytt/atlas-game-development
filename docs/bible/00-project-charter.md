@@ -10,6 +10,8 @@ The MVP supports 1–4 players and is architected so a later release can support
 
 The player is one capable but vulnerable member of a squad, not the commander of an army. Alone, their information and options are incomplete. Together, specialists become a functioning unit: combat expertise holds a line, medical expertise recovers teammates, engineering keeps equipment and ammunition available, and reconnaissance turns uncertainty into actionable information.
 
+Players directly control movement, positioning, interaction, reload timing, class abilities, and resource decisions. Operatives automatically acquire and fire on valid hostile targets in range. This keeps the player's attention on squad movement and survival decisions while server-authoritative combat rules preserve scarcity, target legality, and difficulty.
+
 The desired arc is to begin lost and exposed, feel genuine relief upon finding teammates, become dependent on their specialties, and earn a memorable victory through disciplined cooperation under pressure.
 
 ## Design pillars
@@ -21,6 +23,7 @@ The desired arc is to begin lost and exposed, feel genuine relief upon finding t
 5. **Hard but learnable:** failure should reveal patterns, improve team knowledge, and make later success feel earned rather than arbitrary.
 6. **Authored operations create stories:** each match has deliberate objectives, escalation, a climax, and a clear success or failure state.
 7. **Mastery outweighs account power:** ranks and class unlocks create long-term pride while permanent statistical bonuses remain absent or very small.
+8. **Positioning drives combat:** automatic attacks convert range, visibility, line of sight, ammunition, readiness, and hostile pressure into tactical movement decisions rather than manual aim execution.
 
 ## Emotional goals
 
@@ -38,7 +41,7 @@ The design must preserve:
 
 ## Core gameplay loop
 
-Spawn separated → Orient with limited information → Locate the squad → Assign roles and pool knowledge → Scavenge and complete objectives → Defend briefly → Relocate under escalating pressure → Confront the operation climax → Extract or make a final stand → Earn career progress → Apply learned tactics to the next run
+Spawn separated → Orient with limited information → Locate the squad → Assign roles and pool knowledge → Position operatives and manage automatic engagements → Scavenge and complete objectives → Defend briefly → Relocate under escalating pressure → Confront the operation climax → Extract or make a final stand → Earn career progress → Apply learned tactics to the next run
 
 ## Product direction
 
