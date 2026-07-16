@@ -145,12 +145,12 @@ Create darkness, limited information, and selected squad navigation aids that pr
 - [x] **LK-0403 — Implement the pure server visibility resolver.**
   - **Work type:** Pure server-domain work.
   - **Acceptance:** server-known profiles and supplied authoritative spatial facts deterministically produce separate gameplay visibility, direct-sight eligibility, and targeting visibility without renderer data; fixtures cover darkness, light coverage, forward/peripheral/outside regions, blockers, state/range boundaries, disclosure, immutability, and unchanged P2 gates.
-- [ ] **LK-0404 — Integrate server-owned discovery and bounded memory runtime.**
+- [x] **LK-0404 — Integrate server-owned discovery and bounded memory runtime.**
   - **Work type:** Runtime server work.
-  - **Acceptance:** next and unstarted; one server owner stores recipient-specific discovery, expires/coarsens memory, sends only safe changed disclosures, and cleans up safely; no client can discover, refresh, or identify hidden hostiles; no enemy AI or polished presentation.
+  - **Acceptance:** one unbootstrapped server-only owner stores recipient-specific current discovery and position-free stale memory, validates trusted LK-0403 fact/result correlation, caps remembered records at 32 with deterministic age/entity-ID eviction, owns one cancellable earliest-expiry timer, emits only copied recipient-specific changes, and cleans up on expiry, recipient/entity removal, and teardown; no client mutation or replication remote, lighting runtime, raycast, enemy AI, or polished presentation.
 - [ ] **LK-0405 — Integrate bounded lighting-state runtime.**
   - **Work type:** Runtime server work.
-  - **Acceptance:** authored and approved temporary gameplay-light state is server-owned, rate/lifetime/budget limited, and consumable by the visibility boundary; cosmetics remain non-authoritative; no unbounded dynamic-light, particle, shader, or post-processing system.
+  - **Acceptance:** next and unstarted; authored and approved temporary gameplay-light state is server-owned, rate/lifetime/budget limited, and consumable by the visibility boundary; cosmetics remain non-authoritative; no unbounded dynamic-light, particle, shader, or post-processing system.
 - [ ] **LK-0406 — Add one approved flashlight or personal-light vertical slice.**
   - **Work type:** Focused tool/runtime and presentation work.
   - **Acceptance:** the selected tool has server-validated intent and gameplay coverage, responsive local-only presentation, bounded activation, accessibility treatment, and cannot reveal/target undiscovered enemies; alternative tools remain deferred.
