@@ -75,6 +75,7 @@ export type TargetCandidate = {
 	isVisible: boolean,
 	hasLineOfSight: boolean,
 	isActivelyThreatening: boolean,
+	activelyThreateningOperativeEntityId: CombatEntityId?,
 }
 
 export type TargetValidationResult = {

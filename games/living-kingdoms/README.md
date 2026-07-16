@@ -122,8 +122,16 @@ LK-0202 adds `TargetCandidateValidator.validate(operative, candidate)`, a pure, 
 
 The standalone fixture runner requires Lune and can be invoked from the repository root with `lune run games/living-kingdoms/tests/TargetCandidateValidator.test.luau`. The validator is not imported by the server bootstrap, so it adds no polling, discovery, selection, firing, damage, enemy, networking, or presentation behavior.
 
+## Deterministic server target selection
+
+LK-0203 adds `TargetCandidateSelector.select(operative, candidates)`, a pure server function that validates every caller-provided candidate through `TargetCandidateValidator` and returns at most one `SelectedTargetState`. Valid hostiles actively threatening the exact operative take priority; otherwise the closest valid hostile wins. Distance is recomputed from authoritative positions on the horizontal XZ plane, and exact equal-distance ties use lexical `CombatEntityId` ordering.
+
+The shared candidate contract adds optional `activelyThreateningOperativeEntityId`, the exact intended victim derived from server threat state. The selector ignores the earlier generic threat boolean because it cannot prove that a hostile is pursuing, attacking, or committed to attack this operative. When there is no valid candidate, selection returns `nil`; it has no timestamp, persistence, hysteresis, cache, or input mutation.
+
+Run its standalone fixture from the repository root with `lune run games/living-kingdoms/tests/TargetCandidateSelector.test.luau`. The selector is not imported by the server bootstrap, so it adds no polling, discovery, automatic firing, cadence mutation, ammunition consumption, damage, enemies, networking, or presentation behavior.
+
 ## Next executable task
 
-`LK-0203 — Select targets using the initial priority rules.`
+`LK-0204 — Add server-authoritative automatic fire and cadence.`
 
-LK-0203 remains not started. Automatic firing, damage, enemies, networking, and presentation remain later tasks.
+LK-0204 remains not started. Hit resolution, damage, enemies, networking, and presentation remain later tasks.
