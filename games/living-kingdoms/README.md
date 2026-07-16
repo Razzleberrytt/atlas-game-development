@@ -108,7 +108,7 @@ Combat uses server-authoritative automatic target acquisition and fire. Players 
 
 ## Automatic-combat contracts
 
-LK-0201 adds shared contracts in `src/shared/Combat/CombatContracts.luau`, prototype balance values in `src/shared/Config/FirearmConfig.luau`, and the canonical [`automatic-combat contract specification`](../../docs/specifications/automatic-combat-contracts.md). Pure LK-0202 through LK-0204 server modules consume these declarations, but the server bootstrap imports none of them. No runtime targeting, firing, enemy, damage, remote, or presentation behavior is implemented.
+LK-0201 adds shared contracts in `src/shared/Combat/CombatContracts.luau`, prototype balance values in `src/shared/Config/FirearmConfig.luau`, and the canonical [`automatic-combat contract specification`](../../docs/specifications/automatic-combat-contracts.md). Pure LK-0202 through LK-0205 server modules consume these declarations, but the server bootstrap imports none of them. No runtime targeting, firing, enemy, health mutation, remote, or presentation behavior is implemented.
 
 The server owns entity and relationship truth, operative and weapon state, visibility, line of sight, range, target legality and selection, cadence, ammunition, hits, damage, and authoritative timestamps. Clients may use only disclosed state for non-authoritative presentation and may never establish combat truth.
 
@@ -136,8 +136,14 @@ LK-0204 adds `AutomaticFireResolver.resolve(operativeState, selectedTarget, weap
 
 The resolver trusts no client timestamp, ammunition, cadence, target, or ShotId input. Its caller must provide authoritative state and commit the returned weapon-state copy. Run its standalone fixture with `lune run games/living-kingdoms/tests/AutomaticFireResolver.test.luau`. The module is not imported by the server bootstrap and adds no loop, discovery, hit resolution, damage, enemy, networking, client, or presentation behavior.
 
+## Server-authoritative hit and damage transitions
+
+LK-0205 adds `FirearmHitResolver.resolve(acceptedFireResult, shotContext, targetContext)` and `DamageResolver.resolve(hitResolution, targetHealthState, serverTimestamp)`. The first revalidates current authoritative target identity, life, targetability, hostility, visibility, horizontal XZ range, and one server-owned obstruction outcome for one already accepted shot. The second returns a copied health state and, only for a successful hit, one frozen configured Ballistic damage event. Neither module mutates input state or calls `Humanoid:TakeDamage`.
+
+Duplicate protection is a temporary caller-owned `processedShotIds` set carried in the health state. The caller must atomically commit the returned state; cleanup, lifetime, and runtime ownership remain deferred. Run the standalone fixture with `lune run games/living-kingdoms/tests/FirearmHitDamageResolver.test.luau`. The modules are not imported by the server bootstrap and add no enemy, discovery, loop, networking, reload, client, or presentation behavior.
+
 ## Next executable task
 
-`LK-0205 — Resolve server-authoritative firearm hits and damage.`
+`LK-0206 — Add immediate automatic-combat presentation and reload input.`
 
-LK-0205 remains not started. Hit resolution, damage, enemies, networking, and presentation remain later tasks.
+LK-0206 remains not started. Reload input, client presentation, enemies, discovery, networking, and runtime combat integration remain later work.

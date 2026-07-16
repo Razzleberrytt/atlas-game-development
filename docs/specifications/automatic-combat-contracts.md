@@ -2,13 +2,13 @@
 
 **Status:** Canonical contract specification
 
-**Tasks:** LK-0201, LK-0202, LK-0203, LK-0204
+**Tasks:** LK-0201, LK-0202, LK-0203, LK-0204, LK-0205
 
-**Runtime behavior:** Pure server candidate-validation, target-selection, and automatic-fire state-transition functions; no runtime bootstrap integration
+**Runtime behavior:** Pure server candidate-validation, target-selection, automatic-fire, hit-resolution, and damage-transition functions; no runtime bootstrap integration
 
 ## Scope
 
-This specification defines the smallest shared vocabulary required for the P2 automatic-combat pipeline. LK-0201 declared data shapes, stable IDs, authority, trust boundaries, and prototype firearm balance homes. LK-0202 adds validation of exactly one server-derived candidate. LK-0203 adds deterministic selection from a caller-provided candidate list. LK-0204 adds a pure server-owned automatic-fire decision and weapon-state transition for one already selected target. These functions do not discover hostiles, retain global state, resolve hits, apply damage, add remotes, or present combat.
+This specification defines the smallest shared vocabulary required for the P2 automatic-combat pipeline. LK-0201 declared data shapes, stable IDs, authority, trust boundaries, and prototype firearm balance homes. LK-0202 adds validation of exactly one server-derived candidate. LK-0203 adds deterministic selection from a caller-provided candidate list. LK-0204 adds a pure server-owned automatic-fire decision and weapon-state transition for one already selected target. LK-0205 adds pure server-owned hit revalidation and damage transitions for one accepted shot. These functions do not discover hostiles, retain hidden global state, add remotes, run a combat loop, or present combat.
 
 Manual priority-target override and authored scarcity pickups remain deferred. No `AimController`, `WeaponController`, `CombatSystem`, `EngagementSystem`, enemy, weapon instance, health change, or networking behavior is created by LK-0201.
 
@@ -124,6 +124,37 @@ LK-0204 creates a deterministic `ShotId` as `shot:<operativeEntityId>:<weaponId>
 
 The client directly chooses reload timing through a future `ReloadIntent`, but the server owns whether reload begins, how reserve ammunition moves into the magazine, its duration, interruption, and completion. Scarcity pickups and final operation ammunition tuning belong to P6.
 
+## Hit revalidation, obstruction, and miss policy
+
+`FirearmHitResolver.resolve(acceptedFireResult, shotContext, targetContext)` resolves one already accepted LK-0204 shot against one current authoritative target snapshot. The caller must provide server-owned operative and target positions, identity, relationship, life, targetability, gameplay visibility, and an obstruction result. The resolver does not discover or select a target, decide whether fire is allowed, consume ammunition, advance cadence, perform a raycast, or mutate input state.
+
+Hit validation uses this stable first-failure order:
+
+1. The fire result is `Fired` and its hit fields remain unresolved: otherwise `FireNotAccepted`.
+2. The fire result has a nonempty operative ID, selected target ID, fired timestamp, and the deterministic server-owned LK-0204 `ShotId`; the shot context names the same operative: otherwise `MissingShotIdentity`.
+3. The fire result and shot context name `FirearmConfig.BasicFirearm.WeaponId`: otherwise `WeaponInvalid`.
+4. The current target and shot context both match the selected target ID: otherwise `TargetMismatch`.
+5. The current target is alive: otherwise `TargetDead`.
+6. The current target is targetable: otherwise `TargetInvalid`.
+7. The current server-derived relationship is `Hostile`: otherwise `TargetNotHostile`.
+8. Current gameplay visibility is true: otherwise `NotVisible`.
+9. Current horizontal XZ distance is within configured range: otherwise `OutOfRange`.
+10. The authoritative obstruction outcome is resolved: `Blocked` returns `LineOfSightBlocked`, `Miss` returns `Miss`, and `TargetHit` succeeds.
+
+Revalidation deliberately occurs after the fire decision because current target facts may differ from the earlier candidate and selection snapshots. Range is recomputed from the current server-owned positions; prior `TargetCandidate.distanceStuds` is not an input. It uses the same horizontal XZ squared-distance policy and inclusive configured maximum as LK-0202, so exactly `80` studs remains legal.
+
+`ShotResolutionContext.obstructionResultId` is the single initial obstruction/hit input boundary. It must be produced by authoritative server code and is limited to `TargetHit`, `Blocked`, or `Miss`. For the basic firearm, a legal `TargetHit` outcome means the selected target was unobstructed and resolves as a hit. `Blocked` represents failed server-confirmed line of sight, while `Miss` represents an explicit authoritative miss. The resolver accepts no hit part, hit position, client raycast result, visibility claim, target choice, or damage value. Raycast implementation and filtering remain deferred until runtime integration needs them.
+
+The initial model has no penetration, ricochet, spread, critical hit, body-part multiplier, armor, splash damage, projectile, or bullet simulation behavior.
+
+## Authoritative damage transition and duplicate boundary
+
+`DamageResolver.resolve(hitResolution, targetHealthState, serverTimestamp)` returns a new `DamageResolution` without mutating its inputs. A successful hit against the matching health-state entity subtracts exactly `FirearmConfig.BasicFirearm.DamagePerHit`, clamps health to zero, and returns a frozen `AuthoritativeDamageEvent`. The event's weapon ID, `Ballistic` damage type, amount, source, target, shot, and authoritative timestamp are derived only from server-owned resolver inputs and configuration. No client damage amount, type, target, or timestamp is accepted.
+
+A successful transition reports `becameDead = true` only when this damage moves positive health to zero. A nonlethal hit reports false. A miss, blocked shot, rejected hit, or mismatched target creates no damage event and preserves health. LK-0205 does not call `Humanoid:TakeDamage` and adds no incapacitation, revival, death presentation, loot, XP, or progression behavior.
+
+`TargetHealthState.processedShotIds` is the temporary caller-owned duplicate boundary. `DamageResolver` copies it, marks the accepted `ShotId` terminal on the first damage-resolution pass even when that shot missed or was rejected during revalidation, and returns the copy in `targetHealthStateAfter`. The caller must atomically commit that returned state before processing another resolution. A committed duplicate returns `ShotAlreadyResolved`, creates no second damage event, and preserves health. There is no hidden global or persistent deduplication service. Ownership, atomic commit, cleanup, memory bounds, cross-server behavior, and lifetime across respawn remain limitations for the future runtime combat owner to resolve.
+
 ## Prototype firearm configuration
 
 `FirearmConfig.BasicFirearm` is the shared balance home for the first firearm family:
@@ -150,10 +181,10 @@ These are prototype values, not a balance promise. Temporary initial ammunition 
 
 - Combat-entity ID generation, lifetime across respawn, and reuse policy.
 - Team/faction assignment and relationship lookup source.
-- The gameplay visibility provider and exact line-of-sight raycast policy.
+- The gameplay visibility provider and exact runtime raycast/filtering implementation behind the authoritative obstruction boundary.
 - Target-switch hysteresis or other sticky-target behavior, if playtesting later demonstrates a need.
 - Reload interruption rules and whether a partially completed reload has any effect.
-- Hit model, obstruction filtering, body-part treatment, and damage application order.
+- Runtime health ownership and atomic processed-ShotId commit/cleanup policy.
 - Final weapon values, ammunition scarcity, and supply ownership after P2 prototypes.
 
 Each question is resolved by the first later task that needs the answer. None authorizes speculative runtime code in LK-0201.
