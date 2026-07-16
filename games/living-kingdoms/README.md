@@ -21,11 +21,13 @@ living-kingdoms/
 │   │   └── init.client.luau
 │   ├── server/
 │   │   ├── Systems/
+│   │   │   ├── MovementStateReplicationSystem.luau
 │   │   │   └── MovementValidationSystem.luau
 │   │   └── init.server.luau
 │   └── shared/
 │       └── Config/
-│           └── MovementLimits.luau
+│           ├── MovementLimits.luau
+│           └── MovementStateConfig.luau
 ├── tests/
 └── README.md
 ```
@@ -61,6 +63,14 @@ When horizontal displacement clearly exceeds the formula, the server restores th
 
 This is only a prototype movement sanity boundary. It is deliberately tolerant, observes discrete samples rather than continuous paths, and is not production-grade exploit prevention. It does not add movement remotes, custom replication, client prediction/reconciliation, teleport gameplay, or a speculative security framework.
 
+## Survivor facing and replicated movement state
+
+While survivor control is active, `SurvivorController` temporarily disables the local Humanoid's automatic rotation and turns the character toward the normalized camera-relative movement direction. Releasing input preserves the last facing. The controller restores the Humanoid's prior `AutoRotate` value on stop, character replacement, or destruction. No aiming system exists yet, so all current facing is movement-driven; a future aiming task must explicitly define when aim overrides movement facing.
+
+The server observes every active living character from one shared bounded loop. `MovementStateConfig` names the `SurvivorMovementState` and `SurvivorFacingDirection` character attributes, the `Idle` and `Moving` state IDs, a `0.1`-second observation interval, and a `1`-stud-per-second moving threshold. The server derives speed from successive replicated root positions and publishes the root's horizontal look direction while moving. Idle preserves the last known facing so other clients see stable presentation state.
+
+There is no client movement-state remote and the server accepts no client-supplied facing, speed, validation state, or transform. Missing, dead, or replaced characters reset observation samples; replacement clears the old character's attributes, player leave removes state, and system shutdown disconnects the shared connections and clears all replicated state. These attributes are presentation signals, not a production anti-cheat or an animation system. Their discrete observation can briefly lag a transition by one interval and physics-driven horizontal motion can qualify as moving.
+
 ## Preserved camera behavior
 
 The client bootstrap initializes and starts `CameraController`. The controller exposes `init()`, `start()`, `stop()`, and `destroy()`; repeated lifecycle calls are safe no-ops when the requested state is already satisfied, and destruction is terminal.
@@ -90,6 +100,6 @@ Follow [`docs/production/LOCAL-SETUP.md`](../../docs/production/LOCAL-SETUP.md),
 
 ## Next executable task
 
-`LK-0103 — Add survivor-facing and movement-state replication.`
+`LK-0104 — Adapt tactical camera framing around the controlled survivor.`
 
-This task is limited to replicated facing and movement state without accepting arbitrary client transforms. It must not add combat, aiming, enemies, classes, objectives, progression, saving, or other later systems.
+This task is limited to camera framing and control coexistence. It must not add combat, aiming, enemies, classes, objectives, progression, saving, or other later systems.
