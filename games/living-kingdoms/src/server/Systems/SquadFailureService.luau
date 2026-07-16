@@ -47,6 +47,7 @@ type SquadFailureService = {
 		lateJoiningProhibited: boolean,
 		isAuthoritativelyAbandoned: boolean,
 	},
+	isOperativeAdmitted: (operativeEntityId: string) -> boolean,
 	subscribe: (listener: StatusListener) -> ListenerConnection,
 }
 
@@ -265,6 +266,13 @@ function Service.readParticipationFacts()
 		lateJoiningProhibited = lateJoiningProhibited,
 		isAuthoritativelyAbandoned = isAuthoritativelyAbandoned,
 	}
+end
+
+function Service.isOperativeAdmitted(operativeEntityId: string): boolean
+	return operationStarted
+		and type(operativeEntityId) == "string"
+		and operativeEntityId ~= ""
+		and admittedOperativeIds[operativeEntityId] == true
 end
 
 function Service.subscribe(listener: StatusListener): ListenerConnection

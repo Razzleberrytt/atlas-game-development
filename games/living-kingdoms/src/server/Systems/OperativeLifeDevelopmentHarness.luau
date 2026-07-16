@@ -7,19 +7,15 @@
 	no start loop, RemoteEvent, client surface, or production orchestration role.
 ]]
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
 
-local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
-local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local OperativeLifeConfig = require(ReplicatedStorage.Shared.Config.OperativeLifeConfig)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
+local OperativeLifeRuntimeService = require(script.Parent.OperativeLifeRuntimeService)
 local SquadFailureService = require(script.Parent.SquadFailureService)
-local OperativeIncapacitationResolver = require(script.Parent.OperativeIncapacitationResolver)
-local OperativeReviveResolver = require(script.Parent.OperativeReviveResolver)
 
 local Harness = {}
 local nextEventId = 0
@@ -34,10 +30,6 @@ end
 local function eventId(prefix: string): string
 	nextEventId += 1
 	return string.format("%s:%d", prefix, nextEventId)
-end
-
-local function commit(player: Player, read, resolverResult)
-	return OperativeLifeService.commitAcceptedTransition(player, read.revision, resolverResult)
 end
 
 function Harness.read(player: Player)
@@ -119,98 +111,20 @@ function Harness.kill(player: Player)
 		end
 	end
 	local now = Workspace:GetServerTimeNow()
-	local resolverResult = OperativeIncapacitationResolver.resolveFinishingDamage(read.snapshot, {
-		damageEventId = eventId("studio.finish"),
-		sourceEntityId = nil,
-		targetEntityId = read.snapshot.operativeEntityId,
-		damageAmount = 1,
-		serverTimestamp = now,
-	}, now)
-	return commit(player, read, resolverResult)
+	return OperativeLifeRuntimeService.applyAuthoritativeFinishingDamage(
+		read.snapshot.operativeEntityId,
+		read.revision,
+		{
+			damageEventId = eventId("studio.finish"),
+			sourceEntityId = nil,
+			targetEntityId = read.snapshot.operativeEntityId,
+			damageAmount = 1,
+			serverTimestamp = now,
+		}
+	)
 end
 
-local function reviveCombatState(operativeEntityId: string)
-	local weaponId = FirearmConfig.BasicFirearm.WeaponId
-	return {
-		weaponState = {
-			weaponId = weaponId,
-			readinessStateId = CombatContracts.WeaponReadinessStateIds.Ready,
-			ammunition = {
-				weaponId = weaponId,
-				loadedRounds = 0,
-				reserveRounds = 0,
-				magazineCapacity = FirearmConfig.BasicFirearm.MagazineCapacity,
-			},
-			cadence = {
-				weaponId = weaponId,
-				lastFireServerTimestamp = nil,
-				nextAllowedFireServerTimestamp = 0,
-			},
-			reloadState = nil,
-		},
-		selectedTargetState = nil,
-		processedShotIds = {},
-		operativeEntityId = operativeEntityId,
-	}
-end
-
-function Harness.revive(player: Player)
-	if not studioOnly() then
-		return nil
-	end
-	local targetRead = OperativeLifeService.read(player)
-	if targetRead == nil or targetRead.snapshot.lifeStateId ~= "Incapacitated" then
-		return nil
-	end
-	local reviverRead = nil
-	for _, candidate in Players:GetPlayers() do
-		if candidate ~= player then
-			local candidateRead = OperativeLifeService.read(candidate)
-			if candidateRead ~= nil and candidateRead.snapshot.lifeStateId == "Alive" then
-				reviverRead = candidateRead
-				break
-			end
-		end
-	end
-	if reviverRead == nil then
-		return nil
-	end
-	local now = Workspace:GetServerTimeNow()
-	local sessionId = eventId("studio.revive")
-	local beginFacts = {
-		sessionId = sessionId,
-		reviverOperativeEntityId = reviverRead.snapshot.operativeEntityId,
-		targetOperativeEntityId = targetRead.snapshot.operativeEntityId,
-		distanceStuds = 0,
-		hasLineOfSight = true,
-		serverTimestamp = now,
-		activeSessionIdForTarget = nil,
-		hasConflictingActiveSession = false,
-	}
-	local began = OperativeReviveResolver.beginRevive(reviverRead.snapshot, targetRead.snapshot, beginFacts)
-	if not began.didTransition or began.sessionStateAfter == nil then
-		return began
-	end
-	local completionTimestamp = now + OperativeLifeConfig.ReviveDurationSeconds
-	local completed =
-		OperativeReviveResolver.continueRevive(reviverRead.snapshot, targetRead.snapshot, began.sessionStateAfter, {
-			sessionId = sessionId,
-			reviverOperativeEntityId = reviverRead.snapshot.operativeEntityId,
-			targetOperativeEntityId = targetRead.snapshot.operativeEntityId,
-			distanceStuds = 0,
-			hasLineOfSight = true,
-			serverTimestamp = completionTimestamp,
-			activeSessionIdForTarget = sessionId,
-			hasConflictingActiveSession = false,
-			reviverRemainsConnectedAndParticipating = true,
-			reviverMovementRemainedValid = true,
-			reviverReceivedNoInterruptingDamage = true,
-			holdRemainsActive = true,
-		}, reviveCombatState(targetRead.snapshot.operativeEntityId))
-	return commit(player, targetRead, completed)
-end
-
-function Harness.restoreAliveForSquadValidation(player: Player)
+function Harness.advanceToNextLifeDeadline(player: Player)
 	if not studioOnly() then
 		return nil
 	end
@@ -218,23 +132,15 @@ function Harness.restoreAliveForSquadValidation(player: Player)
 	if read == nil or read.snapshot.lifeStateId ~= "Incapacitated" then
 		return nil
 	end
-	local after = table.clone(read.snapshot)
-	after.healthState = table.clone(read.snapshot.healthState)
-	after.soloRecoveryState = table.clone(read.snapshot.soloRecoveryState)
-	after.processedDamageEventIds = table.clone(read.snapshot.processedDamageEventIds)
-	after.lifeStateId = "Alive"
-	after.healthState.currentHealth = OperativeLifeConfig.ReviveHealth
-	after.incapacitationState = nil
-	after.soloRecoveryState.isEligible = false
-	after.soloRecoveryState.recoveryStartedAtServerTimestamp = nil
-	after.soloRecoveryState.recoveryCompletionServerTimestamp = nil
-	return commit(player, read, {
-		didTransition = true,
-		lifeStateIdBefore = "Incapacitated",
-		lifeStateIdAfter = "Alive",
-		transitionServerTimestamp = Workspace:GetServerTimeNow(),
-		snapshotAfter = after,
-	})
+	local recoveryDeadline = read.snapshot.soloRecoveryState.recoveryCompletionServerTimestamp
+	local incapacitation = read.snapshot.incapacitationState
+	local deadline = if recoveryDeadline ~= nil
+		then recoveryDeadline
+		else if incapacitation == nil then nil else incapacitation.bleedOutDeadlineServerTimestamp
+	if deadline == nil then
+		return nil
+	end
+	return OperativeLifeRuntimeService.evaluateDeadlinesAt(deadline)
 end
 
 local function createControl(name: string, callback: (Player) -> any)
@@ -261,8 +167,7 @@ function Harness.start()
 	createControl("BeginOperation", Harness.beginOperation)
 	createControl("ApplyDamage", Harness.applyDamage)
 	createControl("Incapacitate", Harness.incapacitate)
-	createControl("Revive", Harness.revive)
-	createControl("RestoreAliveForSquadValidation", Harness.restoreAliveForSquadValidation)
+	createControl("AdvanceToNextLifeDeadline", Harness.advanceToNextLifeDeadline)
 	createControl("Kill", Harness.kill)
 end
 
