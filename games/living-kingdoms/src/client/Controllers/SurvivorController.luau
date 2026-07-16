@@ -47,6 +47,7 @@ type LifecycleState = {
 	character: Model?,
 	humanoid: Humanoid?,
 	humanoidRootPart: BasePart?,
+	humanoidAutoRotate: boolean?,
 	playerControls: PlayerControls?,
 	defaultControlsDisabled: boolean,
 	characterAddedConnection: RBXScriptConnection?,
@@ -69,6 +70,7 @@ local state: LifecycleState = {
 	character = nil,
 	humanoid = nil,
 	humanoidRootPart = nil,
+	humanoidAutoRotate = nil,
 	playerControls = nil,
 	defaultControlsDisabled = false,
 	characterAddedConnection = nil,
@@ -128,6 +130,16 @@ local function disconnectCharacterConnections()
 	end
 end
 
+local function restoreHumanoidAutoRotate()
+	local humanoid = state.humanoid
+	local humanoidAutoRotate = state.humanoidAutoRotate
+	if humanoid ~= nil and humanoid.Parent ~= nil and humanoidAutoRotate ~= nil then
+		humanoid.AutoRotate = humanoidAutoRotate
+	end
+
+	state.humanoidAutoRotate = nil
+end
+
 local function refreshCharacterParts()
 	local character = state.character
 	if character == nil then
@@ -136,9 +148,18 @@ local function refreshCharacterParts()
 		return
 	end
 
-	state.humanoid = character:FindFirstChildOfClass("Humanoid")
-	if state.humanoid ~= nil then
-		state.humanoid.WalkSpeed = MovementLimits.MaximumPrototypeHorizontalSpeed
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid ~= state.humanoid then
+		restoreHumanoidAutoRotate()
+		state.humanoid = humanoid
+		if humanoid ~= nil then
+			state.humanoidAutoRotate = humanoid.AutoRotate
+			humanoid.AutoRotate = false
+		end
+	end
+
+	if humanoid ~= nil then
+		humanoid.WalkSpeed = MovementLimits.MaximumPrototypeHorizontalSpeed
 	end
 
 	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
@@ -156,6 +177,7 @@ end
 local function clearCharacter()
 	disconnectCharacterConnections()
 	clearMovementInput()
+	restoreHumanoidAutoRotate()
 	state.character = nil
 	state.humanoid = nil
 	state.humanoidRootPart = nil
@@ -270,6 +292,10 @@ local function updateMovement()
 	local inputDirection = getInputDirection()
 	local worldDirection = getCameraRelativeDirection(inputDirection)
 	humanoid:Move(worldDirection, false)
+
+	if worldDirection.Magnitude > 0 then
+		humanoidRootPart.CFrame = CFrame.lookAt(humanoidRootPart.Position, humanoidRootPart.Position + worldDirection)
+	end
 end
 
 function SurvivorController.init()
@@ -374,6 +400,7 @@ function SurvivorController.destroy()
 	state.character = nil
 	state.humanoid = nil
 	state.humanoidRootPart = nil
+	state.humanoidAutoRotate = nil
 	state.playerControls = nil
 	state.initialized = false
 	state.destroyed = true
