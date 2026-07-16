@@ -1,18 +1,12 @@
 # Atlas Game Development
 
-An AI-first development framework and home of **Living Kingdoms**, a match-based Roblox real-time strategy game.
+An AI-first development framework and home of **Living Kingdoms**, the temporary working title for a brutally difficult cooperative isometric survival game on Roblox.
 
 ## Current objective
 
-Build the smallest complete RTS vertical slice:
+Build one finite, authored survival operation in which separated players find one another, combine specialist abilities, manage scarce ammunition and recovery resources, withstand escalating enemy pressure, and complete an extraction or final objective.
 
-1. Control an overhead camera.
-2. Select multiple workers.
-3. Move selected units.
-4. Gather wood.
-5. Construct a Barracks.
-6. Train Swordsmen.
-7. Destroy an enemy Town Hall.
+The initial MVP targets 1–4 players while keeping the architecture compatible with a later maximum of 8 cooperative players.
 
 ## Operating rule
 
@@ -20,8 +14,8 @@ Atlas exists to help ship the game—not delay it. Infrastructure work is time-b
 
 ## Repository map
 
-- `docs/bible/` — product vision and game-design decisions
-- `docs/specifications/` — source-of-truth behavior for game objects and systems
+- `docs/bible/` — canonical product vision and game-design decisions
+- `docs/specifications/` — source-of-truth behavior for game objects and systems when added
 - `docs/architecture/` — technical boundaries and engineering rules
 - `docs/roadmap/` — ordered milestones and executable tasks
 - `docs/decisions/` — architecture and design decision records
@@ -38,7 +32,8 @@ Read these files in order:
 2. `docs/bible/01-mvp.md`
 3. `docs/architecture/technical-blueprint.md`
 4. `docs/roadmap/MASTER-ROADMAP.md`
-5. `prompts/codex-master-prompt.md`
+5. `docs/decisions/0001-cooperative-survival-pivot.md`
+6. `prompts/codex-master-prompt.md`
 
 For Windows installation and Roblox Studio synchronization, follow the [Windows local setup guide](docs/production/LOCAL-SETUP.md).
 For Luau formatting and static analysis, follow the [Luau tooling guide](docs/production/LUAU-TOOLING.md).
@@ -47,6 +42,8 @@ For the reusable Studio launch check and first successful result, see the [smoke
 ## Project status
 
 **Atlas version:** 0.1  
-**Living Kingdoms phase:** Overhead camera
+**Living Kingdoms phase:** P0 — Concept pivot and canonical specification
 
-**Next executable task:** LK-0015 — add camera smoothing without making input feel delayed
+**Next executable task:** LK-0101 — add camera-relative movement for one local survivor
+
+Final public branding is unresolved. Living Kingdoms remains the working title and internal project identifier; naming work is outside the current scope.
