@@ -6,7 +6,7 @@
 
 **Implementation tasks:** LK-0301 through LK-0308
 
-**Runtime behavior:** None in this planning change
+**Runtime behavior:** None through LK-0301
 
 ## Scope
 
@@ -21,6 +21,52 @@ The canonical life-state vocabulary is exactly `Alive`, `Incapacitated`, and `De
 - Server timestamps use one monotonic server time domain. A client timestamp is never an authority input.
 - Character physics or Roblox network ownership does not make a client authoritative over distance, movement restrictions, health, life state, or interaction continuity.
 - Health and life-state balance values belong in shared configuration. Consequential transitions remain server-only.
+
+## Shared LK-0301 declarations
+
+`src/shared/Health/OperativeLifeContracts.luau` is the declaration-only home for the P3 domain. Its `OperativeLifeStateIds` table contains exactly `Alive`, `Incapacitated`, and `Dead`. It also freezes stable transition-rejection and revive-status/rejection ID tables while leaving runtime snapshots mutable for future pure resolvers to copy and return.
+
+The initial stable rejection/status vocabulary is intentionally bounded:
+
+- Operative life transition rejections: `InvalidSnapshot`, `InvalidHealth`, `InvalidDamage`, `InvalidServerTimestamp`, `IllegalTransition`, `StaleTransition`, and `AlreadyResolved`.
+- Revive session statuses: `Active`, `Cancelled`, and `Completed`.
+- Revive rejections: `ReviverNotAlive`, `TargetNotIncapacitated`, `SameOperative`, `TargetBusy`, `OutOfRange`, `NoLineOfSight`, `SessionNotActive`, `ReviveNotComplete`, `ReviveInterrupted`, and `InvalidServerTimestamp`.
+
+These status values are revive-session state, not additional operative life states. Reloading, reviving, disabled, respawning, extracted, and spectating remain outside the operative life-state vocabulary.
+
+`src/shared/Config/OperativeLifeConfig.luau` is the single canonical initial P3 configuration home:
+
+| Value | Initial setting |
+| --- | ---: |
+| `MaximumHealth` | `100` |
+| `BleedOutDurationSeconds` | `30` |
+| `ReviveRangeStuds` | `8` |
+| `ReviveDurationSeconds` | `4` |
+| `ReviveHealth` | `30` |
+| `SoloRecoveryDurationSeconds` | `8` |
+| `SoloRecoveriesPerOperation` | `1` |
+| `SquadFailureGraceSeconds` | `3` |
+
+The configuration module asserts that health, durations, and range are finite and positive; revive health does not exceed maximum health; and the solo allowance is exactly the integer one. The returned configuration is frozen. Client code may read these shared prototype values for disclosed presentation, but their availability never lets a client establish authoritative state or timing.
+
+### Contract ownership and first consumers
+
+| Contract | Server-authoritative owner | Client disclosure | Client request boundary | Never accept from a client as truth | First consumer |
+| --- | --- | --- | --- | --- | --- |
+| `OperativeLifeStateId` | The future operative runtime owner assigns the current life state. | May read a deliberately disclosed operative state. | None; a client cannot request a chosen state. | Life state or a transition claim. | LK-0302 |
+| `OperativeHealthState` | The server owns current and maximum health. | May read disclosed health for permitted presentation. | None. | Current health, maximum health, damage result, or restored health. | LK-0302 |
+| `OperativeLifeStateSnapshot` | The server owns and atomically commits the complete snapshot. | May read only a curated disclosed snapshot. | None. | Any snapshot field, including nested timestamps or solo state. | LK-0302 |
+| `OperativeLifeTransitionResult` | A server-only pure resolver derives the result; the runtime owner later commits it. | May receive a separately curated outcome, not use the result as authority. | None. | Acceptance, rejection, state after, health after, or authoritative time. | LK-0302 |
+| `OperativeLifeTransitionRejectionReasonId` | The server selects the first applicable rejection. | May read a disclosed reason for presentation or diagnostics. | None. | A rejection reason or validity claim. | LK-0302 |
+| `IncapacitationState` | The server creates the incapacitation start and bleed-out deadline. | The affected client may read disclosed timing; teammate disclosure remains bounded. | None. | Incapacitation time, bleed-out deadline, elapsed time, or completion. | LK-0303 |
+| `SoloRecoveryState` | The server derives eligibility, usage, start, and completion from operation history. | The affected client may read its disclosed status. | None; recovery is automatic when eligible. | Eligibility, participant history, usage, timing, or completion. | LK-0303 |
+| `ReviveSessionState` | The server owns participants, status, start, and completion time. | Involved clients may read a disclosed session snapshot. | A later request may name only a target and begin/end hold phase. | Reviver identity, eligibility, distance, line of sight, timing, progress, status, or completion. | LK-0304 |
+| `ReviveSessionStatusId` | The server assigns `Active`, `Cancelled`, or `Completed`. | Involved clients may read a disclosed status. | A hold phase is intent, never a requested authoritative status. | Status, cancellation, or completion. | LK-0304 |
+| `ReviveTransitionResult` | A server-only pure resolver derives the result; the runtime owner later commits it. | May receive curated revive feedback only. | A later target/hold request may trigger evaluation. | Acceptance, rejection, progress, session after, target state, or restored health. | LK-0304 |
+| `ReviveRejectionReasonId` | The server derives the first applicable rejection from authoritative facts. | The requesting client may read a safe disclosed reason. | A client may request evaluation but not choose its outcome. | Eligibility, range, line of sight, busy state, interruption, timing, or rejection reason. | LK-0304 |
+| `SquadViabilitySnapshot` | The server derives roster counts, recovery paths, viability, and grace timestamps. | Clients may later read only a disclosed operation-status projection. | None. | Active roster, life states, recovery paths, viability, failure, grace timing, or authoritative timestamps. | LK-0307 |
+
+The shared types do not prove provenance. Future server callers must build every consequential value from server-owned state. No client-provided health, life state, incapacitation timestamp, bleed-out deadline, solo eligibility or usage, revive eligibility, distance, line of sight, start time, progress, completion, restored health, death, squad viability, squad failure, or timestamp may cross into these contracts as truth.
 
 ## Canonical life state and transitions
 

@@ -43,8 +43,8 @@ For the reusable Studio launch check and first successful result, see the [smoke
 ## Project status
 
 **Atlas version:** 0.1  
-**Living Kingdoms phase:** P2 complete — Automatic targeting and basic firearm combat
+**Living Kingdoms phase:** P3 in progress — Health, incapacitation, revival, and death
 
-**Next executable task:** LK-0301 — Specify shared operative health and life-state contracts and configuration
+**Next executable task:** LK-0302 — Implement pure operative health and incapacitation transitions
 
 Final public branding is unresolved. Living Kingdoms remains the working title and internal project identifier; naming work is outside the current scope.
