@@ -72,6 +72,8 @@ type OperativeLifeService = {
 	registerPlayer: (player: Player) -> AuthoritativeRead?,
 	unregisterPlayer: (player: Player) -> boolean,
 	read: (player: Player) -> AuthoritativeRead?,
+	readByOperativeEntityId: (operativeEntityId: string) -> AuthoritativeRead?,
+	playerForOperativeEntityId: (operativeEntityId: string) -> Player?,
 	readAll: () -> { AuthoritativeRosterRead },
 	configureSoloOperationEligibility: (operativeEntityId: string, isEligible: boolean) -> boolean,
 	applyAuthoritativeDamage: (
@@ -391,6 +393,24 @@ function OperativeLifeService.read(player: Player): AuthoritativeRead?
 		return nil
 	end
 	return { revision = entry.revision, snapshot = copySnapshot(entry.snapshot) }
+end
+
+function OperativeLifeService.readByOperativeEntityId(operativeEntityId: string): AuthoritativeRead?
+	if type(operativeEntityId) ~= "string" or operativeEntityId == "" then
+		return nil
+	end
+	local player = playerByOperativeEntityId[operativeEntityId]
+	if player == nil then
+		return nil
+	end
+	return OperativeLifeService.read(player)
+end
+
+function OperativeLifeService.playerForOperativeEntityId(operativeEntityId: string): Player?
+	if type(operativeEntityId) ~= "string" or operativeEntityId == "" then
+		return nil
+	end
+	return playerByOperativeEntityId[operativeEntityId]
 end
 
 function OperativeLifeService.readAll(): { AuthoritativeRosterRead }

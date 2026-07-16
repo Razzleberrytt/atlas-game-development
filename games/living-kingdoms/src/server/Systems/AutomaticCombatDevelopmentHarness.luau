@@ -10,6 +10,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
 
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
@@ -54,6 +55,9 @@ type PlayerCombatState = {
 type AutomaticCombatDevelopmentHarness = {
 	start: () -> (),
 	stop: () -> (),
+	readReviveCombatState: (player: Player) -> any?,
+	commitReviveCombatState: (player: Player, expectedGeneration: number, combatState: any) -> boolean,
+	readDevelopmentCombatState: (player: Player) -> any?,
 }
 
 local FIXTURE_FOLDER_NAME = "LK0207CombatFixtures"
@@ -79,6 +83,7 @@ local playerStates: { [Player]: PlayerCombatState } = {}
 local hostileFixtures: { HostileFixture } = {}
 local hostileByEntityId: { [CombatEntityId]: HostileFixture } = {}
 local fixtureFolder: Folder? = nil
+local controlFolder: Folder? = nil
 
 local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
 local reloadIntentRemote = combatNetwork:WaitForChild("ReloadIntent") :: RemoteEvent
@@ -124,6 +129,68 @@ local function createPlayerState(player: Player): PlayerCombatState
 		generation = 1,
 		processedShotIds = {},
 	}
+end
+
+local function deepCopy(value: any): any
+	if type(value) ~= "table" then
+		return value
+	end
+	local result = {}
+	for key, child in value do
+		result[key] = deepCopy(child)
+	end
+	return result
+end
+
+function AutomaticCombatDevelopmentHarness.readReviveCombatState(player: Player): any?
+	local playerState = playerStates[player]
+	if playerState == nil then
+		return nil
+	end
+	local weaponState = deepCopy(playerState.weaponState)
+	if weaponState.readinessStateId == CombatContracts.WeaponReadinessStateIds.Disabled then
+		weaponState.readinessStateId = if weaponState.ammunition.loadedRounds == 0
+			then CombatContracts.WeaponReadinessStateIds.Empty
+			else CombatContracts.WeaponReadinessStateIds.Ready
+	end
+	return {
+		generation = playerState.generation,
+		combatState = {
+			weaponState = weaponState,
+			processedShotIds = deepCopy(playerState.processedShotIds),
+			selectedTargetState = nil,
+		},
+	}
+end
+
+function AutomaticCombatDevelopmentHarness.commitReviveCombatState(
+	player: Player,
+	expectedGeneration: number,
+	combatState: any
+): boolean
+	local playerState = playerStates[player]
+	if
+		playerState == nil
+		or playerState.generation ~= expectedGeneration
+		or type(combatState) ~= "table"
+		or type(combatState.weaponState) ~= "table"
+		or type(combatState.processedShotIds) ~= "table"
+		or combatState.selectedTargetState ~= nil
+	then
+		return false
+	end
+	playerState.weaponState = deepCopy(combatState.weaponState)
+	playerState.processedShotIds = deepCopy(combatState.processedShotIds)
+	playerState.selectedTargetEntityId = nil
+	return true
+end
+
+function AutomaticCombatDevelopmentHarness.readDevelopmentCombatState(player: Player): any?
+	if not RunService:IsStudio() then
+		return nil
+	end
+	local playerState = playerStates[player]
+	return if playerState == nil then nil else deepCopy(playerState)
 end
 
 local function setFixtureHealthPresentation(fixture: HostileFixture)
@@ -467,6 +534,17 @@ function AutomaticCombatDevelopmentHarness.start()
 		return
 	end
 	started = true
+	local existingControls = ServerStorage:FindFirstChild("LK0207CombatDevelopment")
+	if existingControls ~= nil then
+		existingControls:Destroy()
+	end
+	controlFolder = Instance.new("Folder")
+	controlFolder.Name = "LK0207CombatDevelopment"
+	controlFolder.Parent = ServerStorage
+	local readControl = Instance.new("BindableFunction")
+	readControl.Name = "ReadCombatState"
+	readControl.OnInvoke = AutomaticCombatDevelopmentHarness.readDevelopmentCombatState
+	readControl.Parent = controlFolder
 	createFixtures()
 	for _, player in Players:GetPlayers() do
 		addPlayer(player)
@@ -526,6 +604,10 @@ function AutomaticCombatDevelopmentHarness.stop()
 	if folder ~= nil then
 		folder:Destroy()
 		fixtureFolder = nil
+	end
+	if controlFolder ~= nil then
+		controlFolder:Destroy()
+		controlFolder = nil
 	end
 	accumulatedSeconds = 0
 	nextThreatIndex = 1
