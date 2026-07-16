@@ -70,6 +70,7 @@ assertExactIds(contracts.ReviveSessionStatusIds, {
 	Completed = "Completed",
 }, "revive session statuses")
 assertExactIds(contracts.ReviveRejectionReasonIds, {
+	InvalidReviveInput = "InvalidReviveInput",
 	ReviverNotAlive = "ReviverNotAlive",
 	TargetNotIncapacitated = "TargetNotIncapacitated",
 	SameOperative = "SameOperative",
@@ -151,6 +152,7 @@ type OperativeLifeTransitionResult = {
 	snapshotAfter: OperativeLifeStateSnapshot,
 }
 type ReviveSessionState = {
+	sessionId: string,
 	reviverOperativeEntityId: string,
 	targetOperativeEntityId: string,
 	statusId: "Active" | "Cancelled" | "Completed",
@@ -160,6 +162,7 @@ type ReviveSessionState = {
 type ReviveTransitionResult = {
 	didTransition: boolean,
 	rejectionReasonId: string?,
+	normalizedProgress: number,
 	sessionStateAfter: ReviveSessionState?,
 	targetSnapshotAfter: OperativeLifeStateSnapshot,
 }
@@ -200,7 +203,9 @@ local representativeTransition: OperativeLifeTransitionResult = {
 local representativeRevive: ReviveTransitionResult = {
 	didTransition = false,
 	rejectionReasonId = "ReviveNotComplete",
+	normalizedProgress = 0.5,
 	sessionStateAfter = {
+		sessionId = "revive.fixture",
 		reviverOperativeEntityId = "operative.bravo",
 		targetOperativeEntityId = representativeSnapshot.operativeEntityId,
 		statusId = "Active",

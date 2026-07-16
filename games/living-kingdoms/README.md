@@ -172,8 +172,12 @@ LK-0303 adds `OperativeIncapacitationResolver` with three explicit pure APIs: `e
 
 Solo recovery requires explicit server-owned facts that the operation started solo and never had multiple participants, plus canonical snapshot timing. It completes at the stored eight-second deadline, restores the configured `ReviveHealth` of `30`, consumes the one operation use, clears incapacitation/recovery timing, and grants no invulnerability. These synchronous APIs have no scheduler, runtime owner, timer, polling, Humanoid behavior, remote, UI, squad evaluation, or teammate revival. Run `lune run games/living-kingdoms/tests/OperativeIncapacitationResolver.test.luau` for the LK-0303 fixture.
 
+LK-0304 adds the pure `OperativeReviveResolver.beginRevive` and `continueRevive` APIs. Begin requires distinct valid identities, an `Alive` reviver, an `Incapacitated` target, no accepted session already owning the target, at most the configured `8` studs, and server-confirmed line of sight. Distance and line of sight are explicit server-owned facts. The resolver derives an `Active` session's four-second deadline from its authoritative start time; continuation derives clamped progress only from authoritative time and the stored session timestamps.
+
+Every continuation revalidates session ownership, participants, life states, hold continuity, range, and line of sight. Any interruption returns a copied `Cancelled` session with zero progress, and a retry must begin a new session with no carried progress. Completion is impossible before the stored deadline; at or after it, the target becomes `Alive`, receives exactly the configured `ReviveHealth` of `30`, clears incapacitation/recovery timing, and preserves maximum health, recovery eligibility/usage, processed damage IDs, and unrelated state. LK-0304 adds no runtime owner, session storage, timer, polling, Heartbeat, remote, input, UI, or character/Humanoid mutation. Run `lune run games/living-kingdoms/tests/OperativeReviveResolver.test.luau` for the LK-0304 fixture.
+
 ## Next executable task
 
-`LK-0304 — Implement pure revive eligibility and progress transitions.`
+`LK-0305 — Integrate server-owned operative life state and character restrictions.`
 
-LK-0207, P2, the P3 plan, LK-0301, LK-0302, and LK-0303 are complete. LK-0304 remains unstarted and is the next executable task. Production combat orchestration, health ownership, runtime life-state behavior, hostile discovery, enemies, scarcity pickups, and later gameplay systems remain deferred.
+LK-0207, P2, the P3 plan, and LK-0301 through LK-0304 are complete. LK-0305 remains unstarted and is the next executable task. Production combat orchestration, health ownership, runtime life-state behavior, hostile discovery, enemies, scarcity pickups, and later gameplay systems remain deferred.
