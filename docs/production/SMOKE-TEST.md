@@ -398,4 +398,16 @@ The Studio harness was also adjusted from 200 to 1000 fixture health and from an
 - Same-server client rejoin could not be driven after the closed Studio client window; cleanup was directly observed and repeated clean sessions proved fresh join state. The harness’s `PlayerAdded` and `PlayerRemoving` paths remain deterministic source/fixture boundaries.
 - Existing Roblox Studio platform messages remain environment noise; no new Living Kingdoms-originated warning/error appeared.
 
-LK-0207 and P2 are complete. The next roadmap milestone is P3 — health, incapacitation, revival, and death. P3 was not started.
+At the time of this LK-0207 record, P2 was complete and P3 had not started.
+
+## LK-0305 operative life runtime validation
+
+- Environment: Windows 11, Roblox Studio two-client local Server & Clients session, Rojo 7.7.0 at `localhost:34872`.
+- Final clean server started once with no Living Kingdoms error. Both players read `Alive`, health `100`, revision `0` from the server-VM Studio-only bindable controls.
+- Alive control remained available: a client movement probe displaced Player1, and one explicit reload produced exactly 12 accepted shots (`1000` to `760` fixture health).
+- A server-only pure-resolver transition committed Player1 to `Incapacitated`, health `0`, revision `1`, and `WalkSpeed 0`; the same 60-frame movement-intent probe produced `0` displacement. Player2 remained `Alive 100`, revision `0`, with `WalkSpeed 16`. Reload/fire while down did not change fixture health.
+- A server-only accepted revive committed Player1 to `Alive`, health `30`, revision `2`, with `WalkSpeed 16`. A one-stud client displacement remained accepted. No ammunition appeared automatically; after an explicit reload, the preserved second 12-round reserve magazine fired normally (`760` to `520`).
+- A server-only death transition followed by `Player:LoadCharacter()` left Player1 `Dead`, health `0`, revision `4`; the character instance changed, its authoritative restriction remained `WalkSpeed 0`, Humanoid health remained a non-authoritative positive shell, and `Players.CharacterAutoLoads` remained `false`.
+- A client command attempted to set Humanoid health and WalkSpeed. The server still read `Dead`, health `0`, revision `4`, and `WalkSpeed 0`. No life-state RemoteEvent or client transition surface existed.
+
+The live pass found and fixed two integration defects before the final run: Studio command-bar requires use a separate module cache, so the development controls now use Studio-only `BindableFunction` instances in `ServerStorage`; and zero-loaded readiness now returns to the existing P2 `Ready` convention after revival so reload is eligible without refilling ammunition. LK-0306 remains unstarted.

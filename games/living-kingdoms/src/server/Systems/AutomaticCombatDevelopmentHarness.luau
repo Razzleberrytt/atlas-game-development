@@ -17,6 +17,7 @@ local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local AutomaticFireResolver = require(script.Parent.AutomaticFireResolver)
 local DamageResolver = require(script.Parent.DamageResolver)
 local FirearmHitResolver = require(script.Parent.FirearmHitResolver)
+local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local ReloadResolver = require(script.Parent.ReloadResolver)
 local TargetCandidateSelector = require(script.Parent.TargetCandidateSelector)
 
@@ -47,6 +48,7 @@ type PlayerCombatState = {
 	threateningHostileEntityId: CombatEntityId,
 	lastRequestServerTimestamp: number,
 	generation: number,
+	processedShotIds: { [string]: boolean },
 }
 
 type AutomaticCombatDevelopmentHarness = {
@@ -71,6 +73,7 @@ local reloadIntentConnection: RBXScriptConnection? = nil
 local playerAddedConnection: RBXScriptConnection? = nil
 local playerRemovingConnection: RBXScriptConnection? = nil
 local heartbeatConnection: RBXScriptConnection? = nil
+local lifeStateConnection: { Disconnect: (self: any) -> () }? = nil
 local characterAddedConnections: { [Player]: RBXScriptConnection } = {}
 local playerStates: { [Player]: PlayerCombatState } = {}
 local hostileFixtures: { HostileFixture } = {}
@@ -119,6 +122,7 @@ local function createPlayerState(player: Player): PlayerCombatState
 		threateningHostileEntityId = threateningHostile.entityId,
 		lastRequestServerTimestamp = -math.huge,
 		generation = 1,
+		processedShotIds = {},
 	}
 end
 
@@ -307,6 +311,14 @@ local function resolveAcceptedShot(
 end
 
 local function evaluatePlayer(player: Player, playerState: PlayerCombatState, now: number)
+	if not OperativeLifeService.isCombatAllowed(player) then
+		discloseTarget(player, playerState, nil, now)
+		local restricted = OperativeLifeService.applyCombatRestrictions(player, playerState)
+		if restricted ~= nil then
+			playerStates[player] = restricted
+		end
+		return
+	end
 	local operativePosition = getOperativePosition(player)
 	if operativePosition == nil then
 		discloseTarget(player, playerState, nil, now)
@@ -337,6 +349,13 @@ local function completeReload(player: Player, expectedCompletionTimestamp: numbe
 	if playerState == nil or playerState.generation ~= expectedGeneration then
 		return
 	end
+	if not OperativeLifeService.isCombatAllowed(player) then
+		local restricted = OperativeLifeService.applyCombatRestrictions(player, playerState)
+		if restricted ~= nil then
+			playerStates[player] = restricted
+		end
+		return
+	end
 	local reloadState = playerState.weaponState.reloadState
 	if reloadState == nil or reloadState.completionServerTimestamp ~= expectedCompletionTimestamp then
 		return
@@ -363,7 +382,11 @@ local function onReloadIntent(player: Player, weaponId: unknown, ...: unknown)
 		return
 	end
 	local playerState = playerStates[player]
-	if playerState == nil or weaponId ~= playerState.operativeState.equippedWeaponId then
+	if
+		playerState == nil
+		or not OperativeLifeService.isCombatAllowed(player)
+		or weaponId ~= playerState.operativeState.equippedWeaponId
+	then
 		return
 	end
 	local now = Workspace:GetServerTimeNow()
@@ -392,12 +415,35 @@ end
 
 local function resetPlayer(player: Player)
 	local previousState = playerStates[player]
-	local replacementState = createPlayerState(player)
-	if previousState ~= nil then
-		replacementState.threateningHostileEntityId = previousState.threateningHostileEntityId
-		replacementState.generation = previousState.generation + 1
+	if previousState == nil then
+		playerStates[player] = createPlayerState(player)
+		return
 	end
-	playerStates[player] = replacementState
+	previousState.generation += 1
+	local restricted = OperativeLifeService.applyCombatRestrictions(player, previousState)
+	if restricted ~= nil then
+		playerStates[player] = restricted
+	end
+end
+
+local function applyLifeStateRestriction(player: Player)
+	local playerState = playerStates[player]
+	if playerState == nil then
+		return
+	end
+	local wasReloading = playerState.weaponState.reloadState ~= nil
+	discloseTarget(player, playerState, nil, Workspace:GetServerTimeNow())
+	local restricted = OperativeLifeService.applyCombatRestrictions(player, playerState)
+	if restricted == nil then
+		return
+	end
+	playerStates[player] = restricted
+	if wasReloading and restricted.weaponState.reloadState == nil then
+		presentationRemote:FireClient(player, {
+			kindId = CombatContracts.PresentationMessageKindIds.ReloadInterrupted,
+			weaponId = FirearmConfig.BasicFirearm.WeaponId,
+		})
+	end
 end
 
 local function addPlayer(player: Player)
@@ -427,6 +473,9 @@ function AutomaticCombatDevelopmentHarness.start()
 	end
 	playerAddedConnection = Players.PlayerAdded:Connect(addPlayer)
 	playerRemovingConnection = Players.PlayerRemoving:Connect(removePlayer)
+	lifeStateConnection = OperativeLifeService.subscribe(function(player)
+		applyLifeStateRestriction(player)
+	end)
 	reloadIntentConnection = reloadIntentRemote.OnServerEvent:Connect(onReloadIntent)
 	heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
 		accumulatedSeconds += deltaTime
@@ -465,6 +514,10 @@ function AutomaticCombatDevelopmentHarness.stop()
 	playerAddedConnection = nil
 	playerRemovingConnection = nil
 	heartbeatConnection = nil
+	if lifeStateConnection ~= nil then
+		lifeStateConnection:Disconnect()
+		lifeStateConnection = nil
+	end
 	table.clear(characterAddedConnections)
 	table.clear(playerStates)
 	table.clear(hostileFixtures)
