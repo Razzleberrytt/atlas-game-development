@@ -122,4 +122,4 @@ UI and controllers may call shared interfaces. Server systems may depend on shar
 
 ## Change policy
 
-Architecture exists to support the next playable milestone. A new abstraction must solve a present, demonstrated need or remove meaningful duplication. P1 is complete and remains unchanged. LK-0201 defines shared automatic-combat contracts and prototype firearm configuration without runtime behavior. The next executable task is LK-0202, limited to deterministic server target-candidate validation; it must not implement selection, firing, enemies, damage, networking, or presentation.
+Architecture exists to support the next playable milestone. A new abstraction must solve a present, demonstrated need or remove meaningful duplication. P1 is complete and remains unchanged. LK-0201 defines shared automatic-combat contracts and prototype firearm configuration without runtime behavior. LK-0202 adds only deterministic server target-candidate validation without runtime integration. The next executable task is LK-0203, limited to deterministic target selection; it must not implement firing, enemies, damage, networking, or presentation.

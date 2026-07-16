@@ -116,8 +116,14 @@ The server owns entity and relationship truth, operative and weapon state, visib
 
 Follow [`docs/production/LOCAL-SETUP.md`](../../docs/production/LOCAL-SETUP.md), [`docs/production/LUAU-TOOLING.md`](../../docs/production/LUAU-TOOLING.md), [`docs/production/ROJO-BUILD-VALIDATION.md`](../../docs/production/ROJO-BUILD-VALIDATION.md), and [`docs/production/SMOKE-TEST.md`](../../docs/production/SMOKE-TEST.md).
 
+## Server target-candidate validation
+
+LK-0202 adds `TargetCandidateValidator.validate(operative, candidate)`, a pure, unintegrated server function that evaluates one server-derived hostile candidate in a stable first-failure order. It uses horizontal XZ range, treats exactly the configured maximum range as valid, and keeps gameplay visibility separate from line of sight. The caller—not the validator—must guarantee that all facts came from authoritative server systems.
+
+The standalone fixture runner requires Lune and can be invoked from the repository root with `lune run games/living-kingdoms/tests/TargetCandidateValidator.test.luau`. The validator is not imported by the server bootstrap, so it adds no polling, discovery, selection, firing, damage, enemy, networking, or presentation behavior.
+
 ## Next executable task
 
-`LK-0202 — Validate automatic-target candidates on the server.`
+`LK-0203 — Select targets using the initial priority rules.`
 
-LK-0202 is limited to deterministic server-side candidate validation against the LK-0201 contract. Target selection, firing, enemies, damage, networking, and presentation remain later tasks.
+LK-0203 remains not started. Automatic firing, damage, enemies, networking, and presentation remain later tasks.
