@@ -55,7 +55,23 @@ export type FirearmHitRejectionReasonId =
 	| "LineOfSightBlocked"
 	| "Miss"
 	| "ShotAlreadyResolved"
-export type CombatPresentationMessageKindId = "TargetSelected" | "TargetCleared" | "ShotFired"
+export type ReloadRejectionReasonId =
+	"OperativeStateInvalid"
+	| "WeaponInvalid"
+	| "WeaponNotReady"
+	| "AlreadyReloading"
+	| "MagazineFull"
+	| "NoReserveAmmunition"
+	| "ReloadNotInProgress"
+	| "ReloadNotComplete"
+	| "ReloadInterrupted"
+export type CombatPresentationMessageKindId =
+	"TargetSelected"
+	| "TargetCleared"
+	| "ShotFired"
+	| "ReloadStarted"
+	| "ReloadCompleted"
+	| "ReloadInterrupted"
 
 export type AmmunitionState = {
 	weaponId: WeaponId,
@@ -75,6 +91,34 @@ export type WeaponReadinessState = {
 	readinessStateId: WeaponReadinessStateId,
 	ammunition: AmmunitionState,
 	cadence: WeaponCadenceState,
+	reloadState: ReloadState?,
+}
+
+export type ReloadState = {
+	weaponId: WeaponId,
+	startedAtServerTimestamp: number,
+	completionServerTimestamp: number,
+}
+
+export type OperativeReloadState = {
+	entityId: CombatEntityId,
+	combatStateId: OperativeCombatStateId,
+	equippedWeaponId: WeaponId,
+}
+
+export type ReloadBeginResolution = {
+	didBegin: boolean,
+	rejectionReasonId: ReloadRejectionReasonId?,
+	operativeStateAfter: OperativeReloadState,
+	weaponStateAfter: WeaponReadinessState,
+}
+
+export type ReloadCompletionResolution = {
+	didComplete: boolean,
+	wasInterrupted: boolean,
+	rejectionReasonId: ReloadRejectionReasonId?,
+	operativeStateAfter: OperativeReloadState,
+	weaponStateAfter: WeaponReadinessState,
 }
 
 export type TargetCandidate = {
@@ -212,10 +256,29 @@ export type ShotFiredPresentationMessage = {
 	serverTimestamp: number,
 }
 
+export type ReloadStartedPresentationMessage = {
+	kindId: "ReloadStarted",
+	weaponId: WeaponId,
+	completionServerTimestamp: number,
+}
+
+export type ReloadCompletedPresentationMessage = {
+	kindId: "ReloadCompleted",
+	weaponId: WeaponId,
+}
+
+export type ReloadInterruptedPresentationMessage = {
+	kindId: "ReloadInterrupted",
+	weaponId: WeaponId,
+}
+
 export type CombatPresentationMessage =
 	TargetSelectedPresentationMessage
 	| TargetClearedPresentationMessage
 	| ShotFiredPresentationMessage
+	| ReloadStartedPresentationMessage
+	| ReloadCompletedPresentationMessage
+	| ReloadInterruptedPresentationMessage
 
 CombatContracts.CombatEntityKindIds = table.freeze({
 	Operative = "Operative",
@@ -300,6 +363,18 @@ CombatContracts.FirearmHitRejectionReasonIds = table.freeze({
 	ShotAlreadyResolved = "ShotAlreadyResolved",
 })
 
+CombatContracts.ReloadRejectionReasonIds = table.freeze({
+	OperativeStateInvalid = "OperativeStateInvalid",
+	WeaponInvalid = "WeaponInvalid",
+	WeaponNotReady = "WeaponNotReady",
+	AlreadyReloading = "AlreadyReloading",
+	MagazineFull = "MagazineFull",
+	NoReserveAmmunition = "NoReserveAmmunition",
+	ReloadNotInProgress = "ReloadNotInProgress",
+	ReloadNotComplete = "ReloadNotComplete",
+	ReloadInterrupted = "ReloadInterrupted",
+})
+
 CombatContracts.DamageTypeIds = table.freeze({
 	Ballistic = "Ballistic",
 })
@@ -308,6 +383,9 @@ CombatContracts.PresentationMessageKindIds = table.freeze({
 	TargetSelected = "TargetSelected",
 	TargetCleared = "TargetCleared",
 	ShotFired = "ShotFired",
+	ReloadStarted = "ReloadStarted",
+	ReloadCompleted = "ReloadCompleted",
+	ReloadInterrupted = "ReloadInterrupted",
 })
 
 return table.freeze(CombatContracts)

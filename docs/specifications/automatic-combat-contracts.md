@@ -2,15 +2,15 @@
 
 **Status:** Canonical contract specification
 
-**Tasks:** LK-0201, LK-0202, LK-0203, LK-0204, LK-0205
+**Tasks:** LK-0201, LK-0202, LK-0203, LK-0204, LK-0205, LK-0206
 
-**Runtime behavior:** Pure server candidate-validation, target-selection, automatic-fire, hit-resolution, and damage-transition functions; no runtime bootstrap integration
+**Runtime behavior:** Pure server candidate-validation, target-selection, automatic-fire, hit-resolution, damage, and reload transitions; focused client reload/presentation controller; Studio-only reload integration harness
 
 ## Scope
 
-This specification defines the smallest shared vocabulary required for the P2 automatic-combat pipeline. LK-0201 declared data shapes, stable IDs, authority, trust boundaries, and prototype firearm balance homes. LK-0202 adds validation of exactly one server-derived candidate. LK-0203 adds deterministic selection from a caller-provided candidate list. LK-0204 adds a pure server-owned automatic-fire decision and weapon-state transition for one already selected target. LK-0205 adds pure server-owned hit revalidation and damage transitions for one accepted shot. These functions do not discover hostiles, retain hidden global state, add remotes, run a combat loop, or present combat.
+This specification defines the smallest shared vocabulary required for the P2 automatic-combat pipeline. LK-0201 declared data shapes, stable IDs, authority, trust boundaries, and prototype firearm balance homes. LK-0202 adds validation of exactly one server-derived candidate. LK-0203 adds deterministic selection from a caller-provided candidate list. LK-0204 adds a pure server-owned automatic-fire decision and weapon-state transition for one already selected target. LK-0205 adds pure server-owned hit revalidation and damage transitions for one accepted shot. LK-0206 adds pure server-owned reload transitions and a focused local reload/presentation boundary. These functions do not discover hostiles, retain hidden global state, run a production combat loop, or implement enemy behavior.
 
-Manual priority-target override and authored scarcity pickups remain deferred. No `AimController`, `WeaponController`, `CombatSystem`, `EngagementSystem`, enemy, weapon instance, health change, or networking behavior is created by LK-0201.
+Manual priority-target override and authored scarcity pickups remain deferred. LK-0206 does not add an `AimController`, `CombatSystem`, `EngagementSystem`, enemy, weapon instance, production health change, or generic networking framework.
 
 ## Canonical pipeline
 
@@ -24,7 +24,7 @@ Each arrow crosses an explicit data boundary, not an event bus or service requir
 - A client may read only combat state the server deliberately discloses. Hidden candidates and undisclosed tactical state must not be replicated merely because a shared type exists.
 - A client may predict a likely target or firing feedback only for immediate presentation. Prediction cannot consume ammunition, establish a legal target or hit, change health, or become authoritative through later echoing.
 - Never accept a client-supplied target, hit, damage value, ammunition total, cadence state, or timestamp as truth.
-- `ReloadIntent` is the minimal future player-directed input: the client may identify the equipped weapon it wants to reload. The server must derive eligibility, ammunition movement, duration, interruption, and completion. LK-0201 declares no remote.
+- `ReloadIntent` is the minimal player-directed input: the client may identify only the equipped weapon it wants to reload. The server derives eligibility, ammunition movement, duration, interruption, and completion. The remote accepts no client timestamp, ammunition, capacity, duration, completion time, state table, target, hit, or damage.
 - Server timestamps use one server-owned monotonic time domain. Clients may use disclosed timestamps to align presentation but may not submit timestamps for validation.
 
 ## Stable identifiers
@@ -52,8 +52,8 @@ Each arrow crosses an explicit data boundary, not an event bus or service requir
 | `AutomaticFireDecision` | Whether the server may fire now with a selected target | Server | May predict animation timing only | Decision, target, rejection reason, weapon, or evaluation time | LK-0204 |
 | `AuthoritativeFireResult` | Accepted/rejected shot result, authoritative ammunition, and optional hit correlation | Server | May drive disclosed firing presentation | Shot ID, status, ammunition, target, hit, or timestamp | LK-0204; hit fields first resolved in LK-0205 |
 | `AuthoritativeDamageEvent` | Immutable description of server-resolved damage | Server | May drive disclosed damage presentation | Source, target, shot, weapon, type, amount, or timestamp | LK-0205 |
-| `ReloadIntent` | Minimal future player request to reload the equipped weapon | Client requests; server decides | Client originates weapon intent and may predict presentation | Eligibility, ammunition transfer, duration, completion, interruption, or time | LK-0206 |
-| `CombatPresentationMessage` | Disclosed target and shot events for non-authoritative feedback | Server curates; client presents | May drive immediate presentation | Messages may never be treated as target, hit, ammo, or damage authority | LK-0206 |
+| `ReloadIntent` | Minimal player request to reload the equipped weapon | Client requests; server decides | Client originates weapon intent and may predict presentation | Eligibility, ammunition transfer, duration, completion, interruption, or time | LK-0206 |
+| `CombatPresentationMessage` | Disclosed target, shot, and reload events for non-authoritative feedback | Server curates; client presents | May drive immediate presentation | Messages may never be treated as target, hit, ammo, or damage authority | LK-0206 |
 
 ## Target eligibility
 
@@ -122,7 +122,30 @@ LK-0204 creates a deterministic `ShotId` as `shot:<operativeEntityId>:<weaponId>
 
 `AuthoritativeFireResult.didHit` and `hitEntityId` remain `nil` for both accepted and rejected LK-0204 results. Firing does not determine a miss, perform obstruction or hit checks, or apply damage. Those behaviors begin in LK-0205.
 
-The client directly chooses reload timing through a future `ReloadIntent`, but the server owns whether reload begins, how reserve ammunition moves into the magazine, its duration, interruption, and completion. Scarcity pickups and final operation ammunition tuning belong to P6.
+The client directly chooses reload timing through `ReloadIntent`, but the server owns whether reload begins, how reserve ammunition moves into the magazine, its duration, interruption, and completion. Scarcity pickups and final operation ammunition tuning belong to P6.
+
+## Reload begin, completion, and interruption
+
+`ReloadResolver.begin(operativeState, weaponState, serverTimestamp)` and `ReloadResolver.complete(operativeState, weaponState, serverTimestamp)` are deterministic, side-effect-free state transitions. Their caller supplies and commits server-owned operative and weapon state and uses a monotonic server timestamp. Both functions return copied state and leave their inputs unchanged.
+
+Reload begins only when all of these conditions pass in stable first-failure order:
+
+1. Operative state is `Ready`; otherwise `OperativeStateInvalid`.
+2. The configured basic firearm is equipped and all weapon/ammunition/cadence IDs and configured magazine capacity agree; otherwise `WeaponInvalid`.
+3. No reload is already represented by readiness or reload timing; otherwise `AlreadyReloading`.
+4. Weapon readiness is `Ready`; otherwise `WeaponNotReady`.
+5. Loaded rounds are below magazine capacity; otherwise `MagazineFull`.
+6. Reserve rounds are greater than zero; otherwise `NoReserveAmmunition`.
+
+An accepted begin preserves ammunition and cadence, changes operative and weapon readiness to `Reloading`, records the configured weapon ID, and derives `completionServerTimestamp = serverTimestamp + FirearmConfig.BasicFirearm.ReloadDurationSeconds`. The configured duration is initially `2` seconds. A client timestamp, duration, eligibility claim, or completion claim is never an input.
+
+Completion requires an active reload for the configured weapon. Any server timestamp before the completion timestamp returns `ReloadNotComplete` and preserves state; exactly the completion timestamp is legal. A successful completion transfers:
+
+`min(magazineCapacity - loadedRounds, reserveRounds)`
+
+Loaded rounds increase and reserve rounds decrease by exactly the same amount. Capacity and cadence remain unchanged, existing loaded rounds are never discarded, and the reload timing is cleared. A second completion returns `ReloadNotInProgress`, so ammunition cannot transfer twice.
+
+The initial interruption policy is intentionally narrow. Incapacitation, death, weapon disablement, or changing the equipped weapon interrupts reload, clears reload timing, and transfers no ammunition. Rejected and interrupted transitions preserve loaded and reserve totals. Movement does not interrupt reload. Taking damage alone does not interrupt reload. Final scarcity, pickups, switching behavior, and additional weapon families remain deferred.
 
 ## Hit revalidation, obstruction, and miss policy
 
@@ -173,9 +196,17 @@ A successful transition reports `becameDead = true` only when this damage moves 
 
 These are prototype values, not a balance promise. Temporary initial ammunition exists only to support P2 combat verification and must not be mistaken for P6 scarcity completion.
 
-## Presentation boundary
+## Reload intent and presentation networking
 
-`TargetSelected`, `TargetCleared`, and `ShotFired` are the only declared presentation message kinds. They are type declarations, not remotes. The server must disclose them only when doing so does not reveal hidden hostiles. A client may respond with facing, muzzle, tracer, sound, or UI feedback in LK-0206, but the corresponding authoritative fire result and damage event remain server truth.
+`ReplicatedStorage.CombatNetwork.ReloadIntent` is the single client-to-server combat request added by LK-0206. Its only payload is one `WeaponId`. Roblox supplies the sending `Player`; the server maps that player to server-owned operative and equipped-weapon state, rejects extra arguments or the wrong weapon ID, rate-limits requests, and derives all consequential values. The local controller also applies a `0.5`-second request cooldown so held or repeated `R` input cannot create uncontrolled requests.
+
+`ReplicatedStorage.CombatNetwork.CombatPresentation` is server-to-client only. It carries explicit `TargetSelected`, `TargetCleared`, `ShotFired`, `ReloadStarted`, `ReloadCompleted`, or `ReloadInterrupted` messages. Reload messages disclose only the configured weapon ID and, for start, the server-owned completion timestamp; they do not disclose or accept ammunition state. Target and shot messages retain the small canonical IDs and timestamps already declared.
+
+The server may send a target or shot message only after that target is safe to disclose to that specific player. The client does not poll, predict, or search for hostiles. `WeaponController` creates a small highlight only after `TargetSelected`, destroys it on `TargetCleared`, never creates a target indicator from a shot or unknown message, and presents each disclosed ShotId at most once. It uses temporary status text for shot and reload events. Presentation never spends ammunition, changes reload state, selects targets, establishes hits, applies damage, changes health, or creates damage numbers, health bars, hit markers, or a permanent HUD.
+
+## Temporary runtime boundary
+
+There is still no production owner for automatic-combat discovery, selection, firing, ammunition, hits, damage, or reload scheduling. `ReloadDevelopmentHarness` runs only when `RunService:IsStudio()` and owns isolated per-player prototype reload state so the explicit reload and presentation remotes can be exercised. It initializes a partially loaded configured firearm, validates the sending player and equipped weapon, uses server time, and schedules only reload completion. It creates no hostile, target-selection poll, fire loop, hit, damage, health, AI, or production ammunition truth. Outside Studio the harness does not connect the reload remote; the future production combat owner must adopt the pure resolver and remote boundary rather than treating this harness as runtime integration.
 
 ## Unresolved design questions
 
@@ -183,7 +214,6 @@ These are prototype values, not a balance promise. Temporary initial ammunition 
 - Team/faction assignment and relationship lookup source.
 - The gameplay visibility provider and exact runtime raycast/filtering implementation behind the authoritative obstruction boundary.
 - Target-switch hysteresis or other sticky-target behavior, if playtesting later demonstrates a need.
-- Reload interruption rules and whether a partially completed reload has any effect.
 - Runtime health ownership and atomic processed-ShotId commit/cleanup policy.
 - Final weapon values, ammunition scarcity, and supply ownership after P2 prototypes.
 
