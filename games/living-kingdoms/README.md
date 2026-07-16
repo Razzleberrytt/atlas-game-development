@@ -106,12 +106,18 @@ The former worker-selection, economy, construction, production, and army-command
 
 Combat uses server-authoritative automatic target acquisition and fire. Players directly control movement, positioning, interaction, reload timing, class abilities, and resource decisions. A future manual priority-target override remains optional and is not part of the first combat milestone.
 
+## Automatic-combat contracts
+
+LK-0201 adds declaration-only shared contracts in `src/shared/Combat/CombatContracts.luau`, prototype balance values in `src/shared/Config/FirearmConfig.luau`, and the canonical [`automatic-combat contract specification`](../../docs/specifications/automatic-combat-contracts.md). No runtime script requires these modules yet, and no targeting, firing, enemy, damage, remote, or presentation behavior is implemented.
+
+The server owns entity and relationship truth, operative and weapon state, visibility, line of sight, range, target legality and selection, cadence, ammunition, hits, damage, and authoritative timestamps. Clients may use only disclosed state for non-authoritative presentation and may never establish combat truth.
+
 ## Local validation
 
 Follow [`docs/production/LOCAL-SETUP.md`](../../docs/production/LOCAL-SETUP.md), [`docs/production/LUAU-TOOLING.md`](../../docs/production/LUAU-TOOLING.md), [`docs/production/ROJO-BUILD-VALIDATION.md`](../../docs/production/ROJO-BUILD-VALIDATION.md), and [`docs/production/SMOKE-TEST.md`](../../docs/production/SMOKE-TEST.md).
 
 ## Next executable task
 
-`LK-0201 — Specify the automatic-combat contract and firearm configuration.`
+`LK-0202 — Validate automatic-target candidates on the server.`
 
-LK-0201 is not started. Its scope is specification only; implementation of combat or any later gameplay system requires a separate task.
+LK-0202 is limited to deterministic server-side candidate validation against the LK-0201 contract. Target selection, firing, enemies, damage, networking, and presentation remain later tasks.
