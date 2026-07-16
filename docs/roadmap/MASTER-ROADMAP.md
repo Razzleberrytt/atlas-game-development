@@ -64,24 +64,26 @@ The charter, MVP, technical blueprint, roadmap, decision record, and readmes agr
 
 One player can reliably control one operative from the elevated tactical view, and two-client verification confirms distinct ownership and stable camera behavior.
 
-## P2 — Aiming and basic firearm combat
+## P2 — Automatic targeting and basic firearm combat
 
-- [ ] **LK-0201 — Specify the basic firearm contract and configuration.**
-  - **Acceptance:** stable weapon/action IDs, aim inputs, cadence, range, damage ownership, movement/aim tradeoff hooks, and client/server messages are documented; balance values have shared configuration homes; scarcity pickup behavior remains deferred to P6.
-- [ ] **LK-0202 — Add local pointer-to-world aiming.**
-  - **Acceptance:** the local operative can aim at a valid ground-plane/world point from the tactical camera; facing and reticle feedback are immediate and non-authoritative; invalid or UI-captured input is ignored; no damage is possible.
-- [ ] **LK-0203 — Add a validated fire request and cadence.**
-  - **Acceptance:** the client requests a shot with only necessary aim context; the server validates player, weapon state, cadence, and plausible aim; spammed or malformed requests fail safely; no client-supplied damage is trusted.
-- [ ] **LK-0204 — Resolve server-authoritative firearm hits and damage.**
-  - **Acceptance:** one configured firearm family can hit a test damageable target using the specified server resolution; range, obstruction, and damage are server-owned; hit feedback does not reveal hidden targets; deterministic validation receives tests where feasible.
-- [ ] **LK-0205 — Add reload commitment and movement-versus-fire hooks.**
-  - **Acceptance:** firing, aiming, moving, and reloading expose explicit states for later tuning; reload has an interruptible or non-interruptible rule; temporary test ammunition is clearly isolated and cannot be mistaken for P6 scarcity completion.
-- [ ] **LK-0206 — Complete two-client firearm security and feel checks.**
-  - **Acceptance:** clients cannot fire for one another, exceed cadence, set damage, or hit through invalid obstruction; camera and movement regressions pass; tuning questions are recorded without adding enemies or final effects.
+- [ ] **LK-0201 — Specify the automatic-combat contract and firearm configuration.**
+  - **Acceptance:** stable weapon, hostile, and combat-state IDs; range; readiness; cadence; ammunition ownership; reload input; target eligibility; visibility; line-of-sight rules; threatening-hostile definition; and client/server presentation messages are documented; balance values have shared configuration homes; manual priority override and scarcity pickups remain deferred.
+- [ ] **LK-0202 — Validate automatic-target candidates on the server.**
+  - **Acceptance:** a server function accepts an operative and candidate hostile and returns a deterministic legal/illegal result based on operative state, hostile state, visibility, line of sight, range, ammunition, and weapon readiness; clients cannot make an illegal target valid; deterministic rules receive automated tests where feasible.
+- [ ] **LK-0203 — Select targets using the initial priority rules.**
+  - **Acceptance:** the server selects the closest valid hostile actively threatening the operative, otherwise the closest valid hostile in range; ties use a documented deterministic rule; invalid, hidden, obstructed, dead, or out-of-range candidates are excluded; target loss and reacquisition are safe.
+- [ ] **LK-0204 — Add server-authoritative automatic fire and cadence.**
+  - **Acceptance:** a ready operative with a valid selected target fires automatically at configured cadence; the server owns ammunition consumption and weapon readiness; empty, reloading, incapacitated, invalid-target, and cadence-violating states cannot fire; temporary test ammunition is isolated from P6 scarcity completion.
+- [ ] **LK-0205 — Resolve server-authoritative firearm hits and damage.**
+  - **Acceptance:** one configured firearm family resolves obstruction, range, hit, and damage against a test hostile on the server; no client-supplied hit or damage is trusted; target invalidation between acquisition and shot fails safely; deterministic validation receives tests where feasible.
+- [ ] **LK-0206 — Add immediate automatic-combat presentation and reload input.**
+  - **Acceptance:** the client presents target selection and firing promptly without establishing target legality, ammunition truth, hits, or damage; the player directly controls reload timing; reload has a documented interruption rule; presentation does not reveal hidden or otherwise undisclosed hostiles.
+- [ ] **LK-0207 — Complete two-client automatic-combat security and feel checks.**
+  - **Acceptance:** clients cannot select illegal targets, fire for another operative, exceed cadence, create ammunition, set damage, or hit through invalid obstruction; target priority matches the documented rules; camera and movement regressions pass; manual priority override remains unimplemented unless separately approved.
 
 ### P2 exit criteria
 
-A controlled operative can aim and use one basic firearm against a test target through an explicit server-authoritative contract, with enough state to tune movement, aiming, firing, and reload tradeoffs later.
+A controlled operative automatically acquires and fires one basic firearm at a valid test hostile through an explicit server-authoritative contract. Players retain direct control of movement, positioning, and reload timing, while presentation remains responsive and cannot determine combat truth.
 
 ## P3 — Health, incapacitation, revival, and death
 

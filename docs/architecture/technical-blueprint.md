@@ -10,15 +10,15 @@ Support a small, server-authoritative cooperative survival operation without pre
 
 - Tactical camera controls and presentation
 - Local input sampling and interpretation
-- Immediate aim, movement, reload, interaction, and UI feedback
+- Immediate movement, reload, interaction, class-ability, targeting, firing-presentation, and UI feedback
 - Local visibility presentation, lighting effects, indicators, and non-authoritative effects
-- Requests to move, fire, reload, use class abilities, interact, revive, or collect supplies
+- Requests to move, reload, use class abilities, interact, revive, or collect supplies
 
 ### Server owns
 
 - Operative identity, class eligibility, spawn assignment, and match participation
 - Validation of movement constraints and interaction range
-- Weapon configuration, fire cadence, ammunition, reload state, hit validation, damage, and death
+- Target legality, automatic target acquisition, weapon configuration, fire cadence, ammunition, reload state, hit validation, damage, and death
 - Health, incapacitation, revival, and recovery resources
 - Supply availability and collection
 - Enemy spawning, navigation, targeting, attacks, and boss state
@@ -26,7 +26,7 @@ Support a small, server-authoritative cooperative survival operation without pre
 - XP awards, ranks, unlocks, and persistent data
 - Any gameplay-relevant visibility or discovery rule
 
-The client requests actions and may predict safe presentation for responsiveness. The server validates and applies consequential state. Never trust client-supplied damage, ammunition totals, health, inventory, class unlocks, XP, rank, objective completion, enemy state, or visibility claims.
+The client requests player-directed actions and may predict safe targeting and firing presentation for responsiveness. The server selects or confirms legal automatic-combat targets and applies consequential state. Never trust client-supplied targets, hits, damage, ammunition totals, cadence, health, inventory, class unlocks, XP, rank, objective completion, enemy state, or visibility claims.
 
 Roblox character network ownership may provide responsive physical simulation, but it does not make the client authoritative. Movement work must define server-side sanity checks and recovery behavior before competitive integrity or exploit resistance is claimed.
 
@@ -57,12 +57,11 @@ This is a boundary guide, not permission to scaffold every future module before 
 
 - `CameraController` — existing elevated camera lifecycle, panning, zoom, and current bounds
 - `SurvivorController` — local operative input and responsive movement intent
-- `AimController` — local pointer-to-world aim interpretation and presentation
-- `WeaponController` — local firearm input, feedback, and server requests
+- `WeaponController` — local reload input plus non-authoritative automatic-targeting and firing presentation
 - `SquadUIController` — personal status, teammate status, location aids, and operation information
 - `PlayerService` — server-owned operative lifecycle, class assignment, and spawn state
 - `MovementValidationSystem` — server sanity checks for operative movement and state restrictions
-- `CombatSystem` — server-owned firing validation, hits, health, damage, incapacitation, revival, and death
+- `CombatSystem` — server-owned target acquisition, automatic firing, ammunition use, hits, health, damage, incapacitation, revival, and death
 - `InventorySystem` — server-owned ammunition, recovery resources, and supply collection
 - `ClassSystem` — server-owned specialist eligibility and class actions
 - `VisibilitySystem` — gameplay-relevant discovery and squad-location rules
@@ -93,7 +92,7 @@ Balance values belong in shared configuration modules rather than controller log
 ## Networking rules
 
 - Use a small, explicit request and state-update surface.
-- Validate player state, class, range, timing, target legality, resource cost, and operation phase on the server.
+- Validate operative state, class, visibility, line of sight, range, target legality, weapon readiness, cadence, ammunition, resource cost, and operation phase on the server.
 - Rate-limit requests that can be spammed.
 - Use server timestamps or equivalent state for cadence and reload validation.
 - Send only information a client needs; limited visibility must not be undermined by replicating hidden tactical state through custom remotes.
@@ -120,4 +119,4 @@ UI and controllers may call shared interfaces. Server systems may depend on shar
 
 ## Change policy
 
-Architecture exists to support the next playable milestone. A new abstraction must solve a present, demonstrated need or remove meaningful duplication. The first post-pivot gameplay change is only camera-relative movement for one local survivor; it must not introduce weapons, enemies, classes, progression, or other later systems.
+Architecture exists to support the next playable milestone. A new abstraction must solve a present, demonstrated need or remove meaningful duplication. The first post-pivot gameplay change remains only camera-relative movement for one local survivor; it must not introduce automatic targeting, weapons, enemies, classes, progression, or other later systems.
