@@ -1,6 +1,6 @@
 # P4 — Darkness, limited vision, and squad navigation
 
-**Implementation status:** LK-0401 through LK-0403 complete; LK-0404 is next and remains unstarted.
+**Implementation status:** LK-0401 through LK-0404 complete; LK-0405 is next and remains unstarted.
 
 ## Scope and outcome
 
@@ -106,7 +106,19 @@ Forward qualifying sight yields `Observed`, gameplay visibility, and eligibility
 
 Targeting visibility is a narrower output. It requires current gameplay visibility and line of sight, `Disclosed`, the `Hostile` category and relationship, and targetability. Hidden, remembered without current sight, stale, suspected, peripheral-only, teammate-information-only, authored-objective, and renderer-only facts never become target-visible. Even `isTargetingVisible = true` is only an input to the unchanged P2 validator: P2 operative state, range, ammunition, readiness, cadence, selection, firing, obstruction, and damage rules remain independent and authoritative.
 
-The resolver returns a newly frozen `VisibilityResolution` containing validity, gameplay visibility, perception state, confidence, direct-sight observation eligibility, targeting visibility, and exactly one rejection or decision reason as applicable. It creates and mutates no observation, disclosure, memory, candidate, selection, or firing state. Runtime spatial classification, light-coverage ownership, consequential raycasts, discovery and memory storage/decay, replication, client disclosure, targeting integration/revalidation, rendering, tools, UI, and enemy perception remain deferred. LK-0404 is next and remains unstarted.
+The resolver returns a newly frozen `VisibilityResolution` containing validity, gameplay visibility, perception state, confidence, direct-sight observation eligibility, targeting visibility, and exactly one rejection or decision reason as applicable. It creates and mutates no observation, disclosure, memory, candidate, selection, or firing state. Runtime spatial classification, light-coverage ownership, consequential raycasts, replication, client presentation, targeting integration/revalidation, rendering, tools, UI, and enemy perception remain deferred.
+
+### Server discovery and bounded memory runtime
+
+LK-0404 adds the unbootstrapped server-only `DiscoveryMemoryService` in `src/server/Systems`. Its narrow API is `start`, `stop`, `registerRecipient`, `unregisterRecipient`, `applyVisibilityResolution`, `removeObservedEntity`, `readRecipientSnapshot`, `subscribeRecipient`, and the scheduler-facing `evaluateExpiriesAt`. The commit boundary accepts a recipient identity, expected observed identity, authoritative LK-0403 candidate facts and matching accepted resolution, plus a server timestamp. It re-runs the pure resolver only to validate the supplied fact/result pair and identity correlation; it performs no visibility calculation, spatial query, raycast, renderer query, or light lookup. No client route can call the commit boundary.
+
+Each operative has an isolated table keyed by observed entity identity. Qualifying accepted forward sight creates a server-authored `Disclosed`/`Observed`/`None` record with `DirectSight`, resolver confidence, and the authoritative timestamp. Loss of qualifying sight changes an existing current record to explicitly stale `Remembered` information without refreshing its observation timestamp. The record expires only after `PerceptionConfig.MaximumObservationAgeSeconds`; the exact age boundary remains retained. A new qualifying sight result replaces or refreshes it. Peripheral-only `Suspected` results create no entity-specific record because the canonical contracts do not yet represent anonymous suspicion; exact hostile identity remains fail-closed.
+
+Remembered records are position-free: no transform, `Vector3`, location, direction, or invented quantization policy is stored. Each recipient retains at most `MaximumRememberedObservationsPerOperative` remembered records. Expired records are removed first, then the oldest observation, with observed entity ID as the stable tie break. Current observations are not evicted to preserve stale memory. One cancellable earliest-expiry timer owns cleanup, revalidates generation, record identity, revision, and expiry, and is cleared on teardown; there is no task or loop per observation.
+
+Recipient snapshots and subscription changes are defensive copies containing only disclosed record identity, perception/disclosure/memory state, confidence, source, observation/expiry timestamps, and revision. Revisions are monotonic per recipient and advance once only when that recipient-visible state changes. Equivalent replay is silent, older timestamps fail closed, and a cancelled stale expiry cannot delete refreshed sight. Removing a recipient affects only that recipient; removing an observed entity clears it for every recipient; stop clears all records, listeners, and scheduling state. No RemoteEvent or RemoteFunction was added, so replication and client presentation remain deferred. Clients cannot create, refresh, preserve, or upgrade discovery, and records carry no targetability permission.
+
+LK-0405 lighting-state runtime, production visibility/raycast callers, bootstrap integration, replication/presentation, tools, UI, targeting integration, and all enemy AI remain deferred and unstarted.
 
 ## Perception and discovery
 
