@@ -232,3 +232,39 @@ Observed:
 - The final clean run showed `[Living Kingdoms] Server bootstrap started`, `[Living Kingdoms] Fixed overhead camera activated`, and `[Living Kingdoms] Client bootstrap started` exactly once each per applicable server/client Output.
 - No Living Kingdoms-originated error or unexpected warning appeared in the final clean run.
 - The final clean run repeated the previously documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. These remain classified as Roblox Studio-owned environment noise.
+
+## LK-0105 Multiplayer movement and regression validation
+
+- Date: 2026-07-15
+- Environment: Microsoft Windows 11 Home 10.0.26200; Roblox Studio 0.730.0.7300790
+- Rojo: repository-pinned CLI 7.7.0 and Studio plugin 7.7.0
+- Project: `LivingKingdoms` synchronized from `games\living-kingdoms\default.project.json` at `localhost:34872`
+- Studio mode: local **Server & Clients** session with one server and two clients on one machine
+- Runs: one focused two-client regression session followed by one clean two-client startup/log run
+
+Observed:
+
+- Each client moved only its own survivor. Movement and facing changes on one survivor left the other survivor's position and rotation unchanged, and each camera followed only its local survivor.
+- Both clients observed the remote survivor's replicated `Idle`/`Moving` transitions and facing updates. Returning to `Idle` preserved the last replicated facing.
+- A valid-speed sample moved Player1 approximately `8.06` studs without an LK-0102 correction. Player2 observed the remote movement while its local survivor and camera remained stationary.
+- A forced 100-stud Player1 displacement was corrected by the server in approximately `0.35` seconds. Player2 remained undisturbed, and both survivors could resume normal movement afterward. The expected corrected client showed one visible snap/rubber-band; no repeated correction followed.
+- Respawning Player1 did not disturb Player2, and respawning Player2 did not disturb Player1. Each replacement character established fresh `Idle` state, facing, movement-validation sampling, and local camera follow.
+- Closing Player2 removed it from the session while Player1 remained healthy. Server movement-validation and movement-state tracking cleaned up without a Living Kingdoms error or warning.
+- Replacing Client 1's `Workspace.CurrentCamera` reacquired the local survivor immediately, restored `Scriptable` mode, preserved follow framing, and retained mouse-wheel zoom.
+- A focused local text box suppressed movement keys and wheel zoom only on Client 1. Client 2 retained independent input and zoom. Wheel input changed only the receiving client's camera, and movement keys did not pan either camera.
+- Repeated controller `init()`, `start()`, and `stop()` calls completed safely on both clients. Idempotent no-op calls created no duplicate connections or logs; a deliberate stop/start cycle emitted one expected activation for that new lifecycle. Existing LK-0101 and LK-0104 records remain the direct held-key evidence for cardinal/diagonal control and movement-key ownership.
+- In the final clean run, each client emitted `[Living Kingdoms] Fixed overhead camera activated` and `[Living Kingdoms] Client bootstrap started` exactly once; the server emitted `[Living Kingdoms] Server bootstrap started` exactly once. No unintended Living Kingdoms error or warning appeared.
+
+Network observations:
+
+- The local loopback sample observed the remote `Moving` state approximately `0.016` seconds after the measured movement probe began. This is an approximate Studio observation, not a production latency guarantee.
+- No obvious remote-character jitter was visible during the valid-speed sample. The deterministic probe used small stepped displacements, so it does not represent adverse network conditions.
+- The forced invalid displacement produced the expected local correction snap after approximately `0.35` seconds. The other client did not visibly receive the full invalid displacement before correction.
+- Roblox character network ownership behaved as expected for this prototype: local character movement replicated to the server and peer, while the server could reject the impossible displacement and propagate the correction. Client ownership was not treated as gameplay authority.
+
+Known limitations and changes:
+
+- This was a two-client, single-machine Studio loopback test. It does not measure internet latency, packet loss, low frame rate, mobile input, console input, or production server load.
+- The validator remains a tolerant, discrete prototype sanity boundary. This record does not claim production-grade networking or exploit prevention.
+- Roblox Studio repeated the documented `PlatformLeaderboard` fetch and protected-container allow-list warnings. They are classified as Studio-owned environment noise.
+- No reproducible LK-0105 source defect was found. No runtime source file or architecture was changed; LK-0105 changes are documentation-only.

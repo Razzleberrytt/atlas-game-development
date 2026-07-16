@@ -57,12 +57,12 @@ The charter, MVP, technical blueprint, roadmap, decision record, and readmes agr
   - **Acceptance:** facing follows the specified movement intent when not aiming; idle and moving states are consistent for other clients; the server does not accept an arbitrary client-supplied transform; respawn and disconnect paths are safe.
 - [x] **LK-0104 — Adapt tactical camera framing around the controlled survivor.**
   - **Acceptance:** the camera relationship to the operative is specified and implemented without removing existing lifecycle, pan, zoom, or bounds; authored-map bounds remain configurable; the player cannot accidentally lose the operative indefinitely; coexistence between camera and movement inputs is manually verified.
-- [ ] **LK-0105 — Complete multiplayer movement and regression checks.**
+- [x] **LK-0105 — Complete multiplayer movement and regression checks.**
   - **Acceptance:** two clients can move separate operatives without controlling one another; respawn, leave, camera replacement, text focus, and input lifecycle cases pass; observed network limitations are recorded; no later gameplay system is introduced.
 
 ### P1 exit criteria
 
-One player can reliably control one operative from the elevated tactical view, and two-client verification confirms distinct ownership and stable camera behavior.
+Complete. One player can reliably control one operative from the elevated tactical view, and two-client verification confirms distinct ownership and stable camera behavior.
 
 ## P2 — Automatic targeting and basic firearm combat
 
