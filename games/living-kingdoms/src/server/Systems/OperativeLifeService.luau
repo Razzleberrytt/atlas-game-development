@@ -28,6 +28,10 @@ export type AuthoritativeRead = {
 	snapshot: OperativeLifeStateSnapshot,
 }
 
+export type AuthoritativeRosterRead = AuthoritativeRead & {
+	operativeEntityId: string,
+}
+
 export type CommitResult = {
 	didCommit: boolean,
 	rejectionReason: string?,
@@ -52,9 +56,11 @@ type OperativeEntry = {
 	revision: number,
 	lastTransitionServerTimestamp: number?,
 	characterBinding: CharacterBinding?,
+	soloOperationEligible: boolean,
 }
 
 type LifeStateListener = (player: Player, snapshot: OperativeLifeStateSnapshot, revision: number) -> ()
+type RosterListener = (eventName: "Registered" | "Unregistered", operativeEntityId: string) -> ()
 
 type ListenerConnection = {
 	Disconnect: (self: ListenerConnection) -> (),
@@ -66,6 +72,8 @@ type OperativeLifeService = {
 	registerPlayer: (player: Player) -> AuthoritativeRead?,
 	unregisterPlayer: (player: Player) -> boolean,
 	read: (player: Player) -> AuthoritativeRead?,
+	readAll: () -> { AuthoritativeRosterRead },
+	configureSoloOperationEligibility: (operativeEntityId: string, isEligible: boolean) -> boolean,
 	applyAuthoritativeDamage: (
 		operativeEntityId: string,
 		expectedRevision: number,
@@ -78,6 +86,7 @@ type OperativeLifeService = {
 	applyCombatRestrictions: (player: Player, combatState: any) -> any?,
 	bindCharacter: (player: Player, character: Model) -> boolean,
 	subscribe: (listener: LifeStateListener) -> ListenerConnection,
+	subscribeRoster: (listener: RosterListener) -> ListenerConnection,
 }
 
 local lifeStateIds = OperativeLifeContracts.OperativeLifeStateIds
@@ -86,6 +95,7 @@ local entries: { [Player]: OperativeEntry } = {}
 local playerByOperativeEntityId: { [string]: Player } = {}
 local characterAddedConnections: { [Player]: RBXScriptConnection } = {}
 local listeners: { [number]: LifeStateListener } = {}
+local rosterListeners: { [number]: RosterListener } = {}
 local nextListenerId = 0
 local playerAddedConnection: RBXScriptConnection? = nil
 local playerRemovingConnection: RBXScriptConnection? = nil
@@ -322,6 +332,12 @@ local function notifyListeners(player: Player, entry: OperativeEntry)
 	end
 end
 
+local function notifyRosterListeners(eventName: "Registered" | "Unregistered", operativeEntityId: string)
+	for _, listener in rosterListeners do
+		listener(eventName, operativeEntityId)
+	end
+end
+
 local function rejected(reason: string): CommitResult
 	return {
 		didCommit = false,
@@ -349,9 +365,11 @@ function OperativeLifeService.registerPlayer(player: Player): AuthoritativeRead?
 		revision = 0,
 		lastTransitionServerTimestamp = nil,
 		characterBinding = nil,
+		soloOperationEligible = false,
 	}
 	entries[player] = entry
 	playerByOperativeEntityId[operativeEntityId] = player
+	notifyRosterListeners("Registered", operativeEntityId)
 	return { revision = entry.revision, snapshot = copySnapshot(entry.snapshot) }
 end
 
@@ -363,6 +381,7 @@ function OperativeLifeService.unregisterPlayer(player: Player): boolean
 	unbindCharacter(entry)
 	entries[player] = nil
 	playerByOperativeEntityId[entry.operativeEntityId] = nil
+	notifyRosterListeners("Unregistered", entry.operativeEntityId)
 	return true
 end
 
@@ -372,6 +391,34 @@ function OperativeLifeService.read(player: Player): AuthoritativeRead?
 		return nil
 	end
 	return { revision = entry.revision, snapshot = copySnapshot(entry.snapshot) }
+end
+
+function OperativeLifeService.readAll(): { AuthoritativeRosterRead }
+	local result = {}
+	for _, entry in entries do
+		table.insert(result, {
+			operativeEntityId = entry.operativeEntityId,
+			revision = entry.revision,
+			snapshot = copySnapshot(entry.snapshot),
+		})
+	end
+	table.sort(result, function(left, right)
+		return left.operativeEntityId < right.operativeEntityId
+	end)
+	return result
+end
+
+function OperativeLifeService.configureSoloOperationEligibility(operativeEntityId: string, isEligible: boolean): boolean
+	if type(operativeEntityId) ~= "string" or type(isEligible) ~= "boolean" then
+		return false
+	end
+	local player = playerByOperativeEntityId[operativeEntityId]
+	local entry = if player == nil then nil else entries[player]
+	if entry == nil then
+		return false
+	end
+	entry.soloOperationEligible = isEligible
+	return true
 end
 
 function OperativeLifeService.applyAuthoritativeDamage(
@@ -425,6 +472,15 @@ function OperativeLifeService.applyAuthoritativeDamage(
 		or snapshotAfter.processedDamageEventIds[damage.damageEventId] ~= true
 	then
 		return rejected("InvalidResolverResult")
+	end
+	if snapshotAfter.lifeStateId == lifeStateIds.Incapacitated and entry.soloOperationEligible then
+		local recovery = snapshotAfter.soloRecoveryState
+		if recovery.recoveriesUsed < OperativeLifeConfig.SoloRecoveriesPerOperation then
+			recovery.isEligible = true
+			recovery.recoveryStartedAtServerTimestamp = serverTimestamp
+			recovery.recoveryCompletionServerTimestamp = serverTimestamp
+				+ OperativeLifeConfig.SoloRecoveryDurationSeconds
+		end
 	end
 
 	return OperativeLifeService.commitAcceptedTransition(player, expectedRevision, resolverResult)
@@ -621,6 +677,22 @@ function OperativeLifeService.subscribe(listener: LifeStateListener): ListenerCo
 	return connection
 end
 
+function OperativeLifeService.subscribeRoster(listener: RosterListener): ListenerConnection
+	nextListenerId += 1
+	local listenerId = nextListenerId
+	rosterListeners[listenerId] = listener
+	local connected = true
+	local connection = {} :: ListenerConnection
+	function connection:Disconnect()
+		if not connected then
+			return
+		end
+		connected = false
+		rosterListeners[listenerId] = nil
+	end
+	return connection
+end
+
 local function addPlayer(player: Player)
 	local registered = OperativeLifeService.registerPlayer(player)
 	if registered == nil then
@@ -703,6 +775,7 @@ function OperativeLifeService.stop()
 		previousCharacterAutoLoads = nil
 	end
 	table.clear(listeners)
+	table.clear(rosterListeners)
 end
 
 return OperativeLifeService

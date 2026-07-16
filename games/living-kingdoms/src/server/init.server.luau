@@ -5,8 +5,10 @@ local MovementStateReplicationSystem = require(script.Systems.MovementStateRepli
 local AutomaticCombatDevelopmentHarness = require(script.Systems.AutomaticCombatDevelopmentHarness)
 local OperativeLifeDevelopmentHarness = require(script.Systems.OperativeLifeDevelopmentHarness)
 local OperativeLifeService = require(script.Systems.OperativeLifeService)
+local SquadFailureService = require(script.Systems.SquadFailureService)
 
 OperativeLifeService.start()
+SquadFailureService.start()
 OperativeLifeDevelopmentHarness.start()
 MovementValidationSystem.start()
 MovementStateReplicationSystem.start()
