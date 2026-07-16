@@ -6,7 +6,7 @@ Living Kingdoms is the temporary working title and internal identifier for a bru
 
 The project is in P1, tactical player movement and character control. The initial MVP targets 1–4 players, while architecture should permit later support for up to 8. Each player controls one specialist operative rather than an army.
 
-The existing client starts a fixed elevated tactical camera and lets the local player move Roblox's standard character relative to that camera. Mouse-wheel zoom and configurable world-space focus-point bounds remain active. Keyboard camera panning remains implemented but is temporarily disabled while survivor movement is active so one keypress cannot move both the character and camera.
+The existing client starts a fixed elevated tactical camera that smoothly follows the local player while Roblox's standard character moves relative to that camera. Mouse-wheel zoom and configurable world-space focus-point bounds remain active. Keyboard camera panning remains implemented but is disabled while survivor movement is active so one keypress cannot move both the character and camera.
 
 ## Preserved project layout
 
@@ -77,7 +77,19 @@ The client bootstrap initializes and starts `CameraController`. The controller e
 
 The current view uses initial focus point `(0, 0, 0)`, pitch `-60` degrees, yaw `45` degrees, and height `80` studs. Mouse-wheel zoom changes height by `10` studs per wheel unit and clamps it from `40` to `160` studs. The focus point is clamped from `-128` to `128` on X and Z. Keyboard panning remains available to the camera controller at `48` studs per second, but `SurvivorController` disables it while active and restores it on stop.
 
-These values and controls are not the final survival-camera design. Survivor movement temporarily owns the shared movement keys; LK-0104 will address follow behavior, framing, and longer-term control coexistence. Bounds must later be adapted to one authored operation map. Working camera code remains intact unless a focused survival task demonstrates a change is needed.
+These values and controls are not the final survival-camera design. Survivor movement owns the shared movement keys while active. Bounds must later be adapted to one authored operation map. Working camera code remains intact unless a focused survival task demonstrates a change is needed.
+
+## Local survivor camera follow
+
+While `SurvivorController` is active, it enables `CameraController` survivor-follow mode and disables keyboard camera panning. Stopping survivor control disables follow and restores keyboard panning. Movement retains sole ownership of W/A/S/D and arrow keys; mouse-wheel zoom remains available.
+
+The camera follows the local character's `HumanoidRootPart` on the horizontal XZ plane. `SurvivorFollowConfig` centralizes a world-space offset of `(0, 0, 0)`, responsiveness of `12` per second, a `0.05`-stud settle distance, and the `PreserveConfiguredFocusHeight` vertical policy. The follow target is `(root.X + offset.X, configuredFocusY + offset.Y, root.Z + offset.Z)`, clamped to the existing `-128` to `128` X/Z focus bounds.
+
+Each render step uses exponential smoothing with `alpha = 1 - exp(-responsiveness * deltaTime)` and interpolates the current focus toward the bounded target. Once the remaining distance is at most `0.05` studs, the focus is set to the target so it does not drift indefinitely. Root Y is intentionally ignored, so ordinary walking physics, animation, slopes, and jumping do not produce vertical camera bob. Pitch `-60` degrees, yaw `45` degrees, current zoom height, zoom limits `40` to `160`, and `Scriptable` mode are unchanged.
+
+`CameraController` listens for local character addition/removal and for root addition/removal while started. Respawn binds the replacement character and converges from the last valid frame. A missing character, missing root, or missing `Workspace.CurrentCamera` causes no follow update; the last valid focus remains until a valid target or camera returns. Stop and destroy disconnect all follow-owned connections, and repeated lifecycle calls remain safe.
+
+The configured focus bounds must enclose the authored playable area. If gameplay later permits a survivor to move beyond those bounds, the focus remains correctly clamped and the survivor can eventually leave the frame; viewport-aware bounds and survivor movement confinement are not part of LK-0104.
 
 ## Canonical direction
 
@@ -100,6 +112,6 @@ Follow [`docs/production/LOCAL-SETUP.md`](../../docs/production/LOCAL-SETUP.md),
 
 ## Next executable task
 
-`LK-0104 — Adapt tactical camera framing around the controlled survivor.`
+`LK-0105 — Complete multiplayer movement and regression checks.`
 
-This task is limited to camera framing and control coexistence. It must not add combat, aiming, enemies, classes, objectives, progression, saving, or other later systems.
+This task is limited to two-client ownership and movement/camera lifecycle regressions. It must not add combat, aiming, enemies, classes, objectives, progression, saving, or other later systems.

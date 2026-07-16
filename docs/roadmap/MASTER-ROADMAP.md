@@ -55,7 +55,7 @@ The charter, MVP, technical blueprint, roadmap, decision record, and readmes agr
   - **Acceptance:** shared movement limits are configuration-driven; the server observes operative state and rejects or corrects movement that violates defined prototype constraints; normal local movement remains responsive; correction behavior and limitations are documented; no combat or enemy behavior is added.
 - [x] **LK-0103 — Add survivor-facing and movement-state replication.**
   - **Acceptance:** facing follows the specified movement intent when not aiming; idle and moving states are consistent for other clients; the server does not accept an arbitrary client-supplied transform; respawn and disconnect paths are safe.
-- [ ] **LK-0104 — Adapt tactical camera framing around the controlled survivor.**
+- [x] **LK-0104 — Adapt tactical camera framing around the controlled survivor.**
   - **Acceptance:** the camera relationship to the operative is specified and implemented without removing existing lifecycle, pan, zoom, or bounds; authored-map bounds remain configurable; the player cannot accidentally lose the operative indefinitely; coexistence between camera and movement inputs is manually verified.
 - [ ] **LK-0105 — Complete multiplayer movement and regression checks.**
   - **Acceptance:** two clients can move separate operatives without controlling one another; respawn, leave, camera replacement, text focus, and input lifecycle cases pass; observed network limitations are recorded; no later gameplay system is introduced.

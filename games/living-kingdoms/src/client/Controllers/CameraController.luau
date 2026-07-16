@@ -1,13 +1,12 @@
 --!strict
 
 --[[
-	CameraController owns the local camera lifecycle and applies the fixed overhead
-	strategy view configured for LK-0011, keyboard panning added in LK-0012, and
-	mouse-wheel zoom added in LK-0013. LK-0014 constrains the mutable focus point
-	to configurable world-space bounds.
+	CameraController owns the local camera lifecycle and elevated tactical view.
+	It preserves keyboard panning, mouse-wheel zoom, and world-space focus bounds,
+	and can smoothly follow the local survivor on the horizontal plane.
 
-	Smoothing, rotation, edge scrolling, touch controls, and all gameplay behavior
-	remain intentionally deferred to later tasks.
+	Rotation, edge scrolling, touch controls, and unrelated camera behavior remain
+	intentionally deferred.
 ]]
 
 local Players = game:GetService("Players")
@@ -29,6 +28,14 @@ local CameraConfig = table.freeze({
 	MaximumHeight = 160,
 	ZoomSensitivity = 10,
 	InitialHeight = 80,
+})
+
+local SurvivorFollowConfig = table.freeze({
+	WorldSpaceOffset = Vector3.new(0, 0, 0),
+	ResponsivenessPerSecond = 12,
+	SettleDistanceStuds = 0.05,
+	VerticalFollowPolicy = "PreserveConfiguredFocusHeight",
+	PreservedFocusHeight = CameraConfig.FocusPoint.Y,
 })
 
 local PAN_INPUT_BINDINGS = table.freeze({
@@ -62,6 +69,7 @@ type CameraController = {
 	stop: () -> (),
 	destroy: () -> (),
 	setKeyboardPanningEnabled: (enabled: boolean) -> (),
+	setSurvivorFollowEnabled: (enabled: boolean) -> (),
 }
 
 type LifecycleState = {
@@ -73,6 +81,10 @@ type LifecycleState = {
 	originalCameraType: Enum.CameraType?,
 	originalCameraCFrame: CFrame?,
 	currentCameraChangedConnection: RBXScriptConnection?,
+	characterAddedConnection: RBXScriptConnection?,
+	characterRemovingConnection: RBXScriptConnection?,
+	characterChildAddedConnection: RBXScriptConnection?,
+	characterChildRemovedConnection: RBXScriptConnection?,
 	inputBeganConnection: RBXScriptConnection?,
 	inputChangedConnection: RBXScriptConnection?,
 	inputEndedConnection: RBXScriptConnection?,
@@ -81,6 +93,9 @@ type LifecycleState = {
 	focusPoint: Vector3,
 	currentHeight: number,
 	keyboardPanningEnabled: boolean,
+	survivorFollowEnabled: boolean,
+	followCharacter: Model?,
+	followRootPart: BasePart?,
 	pressedPanKeys: { [Enum.KeyCode]: boolean },
 }
 
@@ -94,6 +109,10 @@ local state: LifecycleState = {
 	originalCameraType = nil,
 	originalCameraCFrame = nil,
 	currentCameraChangedConnection = nil,
+	characterAddedConnection = nil,
+	characterRemovingConnection = nil,
+	characterChildAddedConnection = nil,
+	characterChildRemovedConnection = nil,
 	inputBeganConnection = nil,
 	inputChangedConnection = nil,
 	inputEndedConnection = nil,
@@ -102,8 +121,68 @@ local state: LifecycleState = {
 	focusPoint = CameraConfig.FocusPoint,
 	currentHeight = CameraConfig.InitialHeight,
 	keyboardPanningEnabled = true,
+	survivorFollowEnabled = false,
+	followCharacter = nil,
+	followRootPart = nil,
 	pressedPanKeys = {},
 }
+
+local function disconnectFollowCharacterConnections()
+	local characterChildAddedConnection = state.characterChildAddedConnection
+	if characterChildAddedConnection ~= nil then
+		characterChildAddedConnection:Disconnect()
+		state.characterChildAddedConnection = nil
+	end
+
+	local characterChildRemovedConnection = state.characterChildRemovedConnection
+	if characterChildRemovedConnection ~= nil then
+		characterChildRemovedConnection:Disconnect()
+		state.characterChildRemovedConnection = nil
+	end
+end
+
+local function refreshFollowRootPart()
+	local character = state.followCharacter
+	if character == nil or character.Parent == nil then
+		state.followRootPart = nil
+		return
+	end
+
+	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	if rootPart ~= nil and rootPart:IsA("BasePart") then
+		state.followRootPart = rootPart
+	else
+		state.followRootPart = nil
+	end
+end
+
+local function clearFollowCharacter()
+	disconnectFollowCharacterConnections()
+	state.followCharacter = nil
+	state.followRootPart = nil
+end
+
+local function bindFollowCharacter(character: Model)
+	disconnectFollowCharacterConnections()
+	state.followCharacter = character
+	refreshFollowRootPart()
+	state.characterChildAddedConnection = character.ChildAdded:Connect(refreshFollowRootPart)
+	state.characterChildRemovedConnection = character.ChildRemoved:Connect(refreshFollowRootPart)
+end
+
+local function refreshFollowCharacter()
+	local localPlayer = state.localPlayer
+	local character = if localPlayer ~= nil then localPlayer.Character else nil
+	if character == state.followCharacter then
+		refreshFollowRootPart()
+		return
+	end
+
+	clearFollowCharacter()
+	if character ~= nil then
+		bindFollowCharacter(character)
+	end
+end
 
 local function restoreOwnedCameraProperties()
 	local camera = state.currentCamera
@@ -137,6 +216,42 @@ local function clampFocusPoint(focusPoint: Vector3): Vector3
 		focusPoint.Y,
 		math.clamp(focusPoint.Z, CameraConfig.MinimumFocusZ, CameraConfig.MaximumFocusZ)
 	)
+end
+
+local function updateSurvivorFollow(deltaTime: number)
+	if not state.survivorFollowEnabled then
+		return
+	end
+
+	local rootPart = state.followRootPart
+	local character = state.followCharacter
+	if rootPart == nil or rootPart.Parent ~= character or character == nil or character.Parent == nil then
+		refreshFollowCharacter()
+		rootPart = state.followRootPart
+		character = state.followCharacter
+	end
+
+	if rootPart == nil or character == nil or rootPart.Parent ~= character then
+		return
+	end
+
+	local rootPosition = rootPart.Position
+	local followOffset = SurvivorFollowConfig.WorldSpaceOffset
+	local targetFocusPoint = clampFocusPoint(
+		Vector3.new(
+			rootPosition.X + followOffset.X,
+			SurvivorFollowConfig.PreservedFocusHeight + followOffset.Y,
+			rootPosition.Z + followOffset.Z
+		)
+	)
+	local smoothingAlpha = 1 - math.exp(-SurvivorFollowConfig.ResponsivenessPerSecond * math.max(deltaTime, 0))
+	local smoothedFocusPoint = state.focusPoint:Lerp(targetFocusPoint, smoothingAlpha)
+
+	if (targetFocusPoint - smoothedFocusPoint).Magnitude <= SurvivorFollowConfig.SettleDistanceStuds then
+		state.focusPoint = targetFocusPoint
+	else
+		state.focusPoint = clampFocusPoint(smoothedFocusPoint)
+	end
 end
 
 local function onInputChanged(input: InputObject, gameProcessedEvent: boolean)
@@ -239,16 +354,44 @@ function CameraController.setKeyboardPanningEnabled(enabled: boolean)
 	end
 end
 
+function CameraController.setSurvivorFollowEnabled(enabled: boolean)
+	if state.destroyed then
+		return
+	end
+
+	state.survivorFollowEnabled = enabled
+	if enabled and state.started then
+		refreshFollowCharacter()
+	else
+		clearFollowCharacter()
+	end
+end
+
 function CameraController.start()
 	if state.started or state.destroyed then
 		return
 	end
 
 	CameraController.init()
+	local localPlayer = state.localPlayer
+	if localPlayer == nil then
+		return
+	end
+
 	state.started = true
 	state.activationLogged = false
 	state.currentCameraChangedConnection = Workspace:GetPropertyChangedSignal("CurrentCamera")
 		:Connect(updateCurrentCamera)
+	state.characterAddedConnection = localPlayer.CharacterAdded:Connect(function(character)
+		if state.survivorFollowEnabled then
+			bindFollowCharacter(character)
+		end
+	end)
+	state.characterRemovingConnection = localPlayer.CharacterRemoving:Connect(function(character)
+		if state.followCharacter == character then
+			clearFollowCharacter()
+		end
+	end)
 	state.inputBeganConnection = UserInputService.InputBegan:Connect(onInputBegan)
 	state.inputChangedConnection = UserInputService.InputChanged:Connect(onInputChanged)
 	state.inputEndedConnection = UserInputService.InputEnded:Connect(onInputEnded)
@@ -258,12 +401,16 @@ function CameraController.start()
 		end
 
 		updateFocusPoint(deltaTime)
+		updateSurvivorFollow(deltaTime)
 
 		local currentCamera = state.currentCamera
 		if currentCamera ~= nil then
 			applyFixedView(currentCamera)
 		end
 	end)
+	if state.survivorFollowEnabled then
+		refreshFollowCharacter()
+	end
 	updateCurrentCamera()
 end
 
@@ -283,6 +430,20 @@ function CameraController.stop()
 		renderSteppedConnection:Disconnect()
 		state.renderSteppedConnection = nil
 	end
+
+	local characterAddedConnection = state.characterAddedConnection
+	if characterAddedConnection ~= nil then
+		characterAddedConnection:Disconnect()
+		state.characterAddedConnection = nil
+	end
+
+	local characterRemovingConnection = state.characterRemovingConnection
+	if characterRemovingConnection ~= nil then
+		characterRemovingConnection:Disconnect()
+		state.characterRemovingConnection = nil
+	end
+
+	clearFollowCharacter()
 
 	local inputBeganConnection = state.inputBeganConnection
 	if inputBeganConnection ~= nil then
@@ -317,6 +478,7 @@ function CameraController.destroy()
 	CameraController.stop()
 	state.localPlayer = nil
 	state.currentCamera = nil
+	state.survivorFollowEnabled = false
 	state.initialized = false
 	state.destroyed = true
 end
