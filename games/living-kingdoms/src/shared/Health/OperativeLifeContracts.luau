@@ -17,6 +17,7 @@ export type OperativeLifeTransitionRejectionReasonId =
 	| "InvalidServerTimestamp"
 	| "IllegalTransition"
 	| "StaleTransition"
+	| "TransitionNotReady"
 	| "AlreadyResolved"
 
 export type ReviveSessionStatusId = "Active" | "Cancelled" | "Completed"
@@ -48,6 +49,11 @@ export type SoloRecoveryState = {
 	recoveriesUsed: number,
 	recoveryStartedAtServerTimestamp: number?,
 	recoveryCompletionServerTimestamp: number?,
+}
+
+export type OperationParticipationFacts = {
+	operationStartedSolo: boolean,
+	hasEverHadMultipleParticipants: boolean,
 }
 
 export type ProcessedDamageEventIds = { [string]: boolean }
@@ -116,6 +122,7 @@ OperativeLifeContracts.OperativeLifeTransitionRejectionReasonIds = table.freeze(
 	InvalidServerTimestamp = "InvalidServerTimestamp",
 	IllegalTransition = "IllegalTransition",
 	StaleTransition = "StaleTransition",
+	TransitionNotReady = "TransitionNotReady",
 	AlreadyResolved = "AlreadyResolved",
 })
 

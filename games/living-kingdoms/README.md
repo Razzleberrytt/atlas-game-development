@@ -168,8 +168,12 @@ The returned snapshot carries a copied caller-owned `processedDamageEventIds` se
 
 Run `lune run games/living-kingdoms/tests/OperativeHealthResolver.test.luau` for health boundaries, invalid values, timestamp/identity validation, illegal-state rejection, duplicates, deterministic precedence, and immutability.
 
+LK-0303 adds `OperativeIncapacitationResolver` with three explicit pure APIs: `evaluateBleedOut`, `resolveFinishingDamage`, and `evaluateSoloRecovery`. Bleed-out accepts at the stored snapshot deadline or later without recalculating it. Any accepted positive finishing-damage event transitions `Incapacitated` to `Dead` at zero health and copies its stable identity into the returned processed-event set.
+
+Solo recovery requires explicit server-owned facts that the operation started solo and never had multiple participants, plus canonical snapshot timing. It completes at the stored eight-second deadline, restores the configured `ReviveHealth` of `30`, consumes the one operation use, clears incapacitation/recovery timing, and grants no invulnerability. These synchronous APIs have no scheduler, runtime owner, timer, polling, Humanoid behavior, remote, UI, squad evaluation, or teammate revival. Run `lune run games/living-kingdoms/tests/OperativeIncapacitationResolver.test.luau` for the LK-0303 fixture.
+
 ## Next executable task
 
-`LK-0303 — Add pure bleed-out, finishing-death, and solo-recovery transitions.`
+`LK-0304 — Implement pure revive eligibility and progress transitions.`
 
-LK-0207, P2, the P3 plan, LK-0301, and LK-0302 are complete. LK-0303 remains unstarted and is the next executable task. Production combat orchestration, health ownership, runtime life-state behavior, hostile discovery, enemies, scarcity pickups, and later gameplay systems remain deferred.
+LK-0207, P2, the P3 plan, LK-0301, LK-0302, and LK-0303 are complete. LK-0304 remains unstarted and is the next executable task. Production combat orchestration, health ownership, runtime life-state behavior, hostile discovery, enemies, scarcity pickups, and later gameplay systems remain deferred.

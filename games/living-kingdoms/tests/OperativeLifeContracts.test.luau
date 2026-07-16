@@ -61,6 +61,7 @@ assertExactIds(contracts.OperativeLifeTransitionRejectionReasonIds, {
 	InvalidServerTimestamp = "InvalidServerTimestamp",
 	IllegalTransition = "IllegalTransition",
 	StaleTransition = "StaleTransition",
+	TransitionNotReady = "TransitionNotReady",
 	AlreadyResolved = "AlreadyResolved",
 }, "operative transition rejection reasons")
 assertExactIds(contracts.ReviveSessionStatusIds, {
