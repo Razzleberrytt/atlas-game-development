@@ -8,11 +8,13 @@
 ]]
 
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local CameraController = require(script.Parent.CameraController)
+local MovementLimits = require(ReplicatedStorage.Shared.Config.MovementLimits)
 
 local INPUT_BINDINGS = table.freeze({
 	[Enum.KeyCode.W] = Vector2.new(0, 1),
@@ -135,6 +137,9 @@ local function refreshCharacterParts()
 	end
 
 	state.humanoid = character:FindFirstChildOfClass("Humanoid")
+	if state.humanoid ~= nil then
+		state.humanoid.WalkSpeed = MovementLimits.MaximumPrototypeHorizontalSpeed
+	end
 
 	local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
 	if humanoidRootPart ~= nil and humanoidRootPart:IsA("BasePart") then

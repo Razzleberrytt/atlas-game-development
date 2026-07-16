@@ -20,8 +20,12 @@ living-kingdoms/
 │   │   │   └── SurvivorController.luau
 │   │   └── init.client.luau
 │   ├── server/
+│   │   ├── Systems/
+│   │   │   └── MovementValidationSystem.luau
 │   │   └── init.server.luau
 │   └── shared/
+│       └── Config/
+│           └── MovementLimits.luau
 ├── tests/
 └── README.md
 ```
@@ -44,6 +48,18 @@ The bootstrap scripts use strict Luau and print these startup confirmations:
 The client bootstrap initializes and starts `SurvivorController` after `CameraController`. Both controllers expose `init()`, `start()`, `stop()`, and `destroy()` with safe repeated calls and terminal destruction.
 
 `SurvivorController` binds to the existing local-player character, `Humanoid`, and `HumanoidRootPart`, including respawns and temporary missing instances. W/A/S/D and arrow-key input is converted through the tactical camera's horizontal look and right vectors, normalized to prevent faster diagonals, and applied every render step through `Humanoid:Move()`. Roblox's normal Humanoid movement, collision, and WalkSpeed remain in use. Processed input and text-box focus suppress movement, and Roblox's default character controls are disabled while this controller is active so movement is not double-applied.
+
+## Prototype movement authority boundary
+
+Responsive movement still uses the local `SurvivorController`, Roblox's standard `Humanoid`, and normal character network ownership. `MovementLimits` names the shared prototype values: maximum horizontal speed `16` studs per second, observation interval `0.25` seconds, horizontal tolerance `4` studs, and warning cooldown `2` seconds. The client uses the configured speed as its intended Humanoid WalkSpeed; the server independently uses the same speed as a validation limit and does not trust any client-reported position, speed, timestamp, or validation state.
+
+The server starts one `MovementValidationSystem` and uses one shared bounded Heartbeat loop for all active players. For each valid living character, it stores the last accepted root position and server timestamp. At an observation, allowed horizontal displacement is `16 * elapsed server seconds + 4 studs`. Vertical displacement is intentionally excluded so normal jumping, falling, slopes, and small physics variation do not cause corrections.
+
+Initial spawn and replacement characters establish a fresh accepted point. Missing characters, missing or replaced `HumanoidRootPart` instances, and dead Humanoids clear the accepted sample so respawn or temporary incomplete character state cannot be compared with stale data. Player state is removed on leave, character replacement overwrites the prior state, and stopping the system disconnects its shared connections and clears all state. No server-authorized teleport or reset gameplay exists yet; any future system that adds one must explicitly coordinate a validation reset before moving the character.
+
+When horizontal displacement clearly exceeds the formula, the server restores the root to the last accepted full position while preserving its orientation, clears assembly linear and angular velocity, advances the accepted timestamp to stabilize the next observation, and emits `[Living Kingdoms] Corrected impossible movement for <player>` at most once per two-second cooldown. Consequential correction remains server-owned.
+
+This is only a prototype movement sanity boundary. It is deliberately tolerant, observes discrete samples rather than continuous paths, and is not production-grade exploit prevention. It does not add movement remotes, custom replication, client prediction/reconciliation, teleport gameplay, or a speculative security framework.
 
 ## Preserved camera behavior
 
@@ -74,6 +90,6 @@ Follow [`docs/production/LOCAL-SETUP.md`](../../docs/production/LOCAL-SETUP.md),
 
 ## Next executable task
 
-`LK-0102 — Define and enforce the initial movement authority boundary.`
+`LK-0103 — Add survivor-facing and movement-state replication.`
 
-This task is limited to shared movement limits, server observation and correction of prototype movement constraints, and documenting correction behavior. It must not add combat, aiming, enemies, classes, objectives, progression, saving, or other later systems.
+This task is limited to replicated facing and movement state without accepting arbitrary client transforms. It must not add combat, aiming, enemies, classes, objectives, progression, saving, or other later systems.

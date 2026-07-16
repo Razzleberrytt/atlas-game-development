@@ -45,6 +45,6 @@ For the reusable Studio launch check and first successful result, see the [smoke
 **Atlas version:** 0.1  
 **Living Kingdoms phase:** P1 — Tactical player movement and character controller
 
-**Next executable task:** LK-0102 — define and enforce the initial movement authority boundary
+**Next executable task:** LK-0103 — add survivor-facing and movement-state replication
 
 Final public branding is unresolved. Living Kingdoms remains the working title and internal project identifier; naming work is outside the current scope.
