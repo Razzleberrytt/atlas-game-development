@@ -1,5 +1,7 @@
 # P4 — Darkness, limited vision, and squad navigation
 
+**Implementation status:** LK-0401 complete; LK-0402 is next and remains unstarted.
+
 ## Scope and outcome
 
 P4 is the first post-P3 gameplay milestone. It introduces darkness, limited information, and navigation aids that make an operative feel isolated, vulnerable, and reliant on teammates while preserving the information needed to move, regroup, and pursue the current objective. It does not add enemies, enemy AI, fog/shaders, post-processing, particles, objectives, minimaps, or a production HUD beyond the narrowly chosen P4 aids.
@@ -33,6 +35,41 @@ Environmental darkness is a level-authored baseline that establishes the intende
 | Light asset placement and authored blockers | Gameplay-affecting when used by a server profile/line-of-sight query. | Authored content is validated server-side. |
 
 P4 should begin with a small, explicit set of visibility profiles rather than pixel, luminance, or client-renderer sampling. Lights are represented to gameplay as deterministic bounded volumes/profiles; rendering may be richer but may not add knowledge. Initial Roblox multiplayer budgets are targets to profile, not licenses for unbounded effects: at most 8 active gameplay-relevant localized lights per client view, 2 shadow-casting dynamic lights per client view, 24 cosmetic dynamic lights per client view, 40 simultaneous temporary-light particles per client view, and no per-frame full-squad scans. Any later level must measure representative 1–4 player load before raising a budget.
+
+### Shared gameplay-light contract
+
+LK-0401 defines the pure, unintegrated contract layer in `src/shared/Lighting` and its single configuration home in `src/shared/Config/GameplayLightingConfig.luau`. The frozen stable vocabularies are:
+
+- visibility profiles: `Dark`, `Dim`, `Lit`;
+- source types: `AuthoredEnvironmental`, `ApprovedPersonal`, `ApprovedTemporary`;
+- activation states: `Inactive`, `Active`, `Expired`;
+- coverage kinds: `Radius`, `ForwardCone`, `AuthoredZone`;
+- rejection reasons: `InvalidDescriptor`, `InvalidSourceIdentity`, `InvalidSourceType`, `UnknownVisibilityProfile`, `InvalidActivationState`, `InvalidTimestamp`, `InvalidLifetime`, `InvalidCoverage`, `InvalidOwnerIdentity`, `BudgetExceeded`, `StaleTransition`.
+
+`Dark` is the server-known baseline profile with no qualifying gameplay-light contribution. `Dim` is bounded partial gameplay illumination that may support later limited visibility rules. `Lit` is bounded qualifying gameplay illumination; it does not by itself disclose or legalize a target. The source categories distinguish authored environmental declarations, approved operative-owned personal declarations, and approved short-lived temporary declarations without selecting a future tool.
+
+The public types are `VisibilityProfileId`, `GameplayLightSourceTypeId`, `GameplayLightActivationStateId`, `GameplayLightCoverageDescriptor`, `GameplayLightDescriptor`, `GameplayLightActivation`, `GameplayLightValidationResult`, and `GameplayLightRejectionReasonId`. Coverage contains only a bounded radius, bounded forward cone, or nonempty authored-zone profile identity. It contains no spatial runtime object and does not resolve whether a point is covered.
+
+The canonical initial configuration fixes these profile targets and validation bounds:
+
+| Configuration | Value |
+| --- | ---: |
+| Active gameplay-relevant localized lights per client view | 8 |
+| Shadow-casting dynamic lights per client view | 2 |
+| Cosmetic dynamic lights per client view | 24 |
+| Simultaneous temporary-light particles per client view | 40 |
+| Consequential visibility/targeting line-of-sight checks per operative per second | 10 |
+| Global four-operative line-of-sight checks per second | 40 |
+| Temporary-light lifetime | 1–60 seconds |
+| Radius coverage | 0.1–64 studs |
+| Forward-cone range | 0.1–64 studs |
+| Forward-cone angle | 1–120 degrees |
+
+`GameplayLightDescriptorValidator.validate` is side-effect free and uses this fixture-locked first-failure order: malformed descriptor, invalid source identity, invalid source type, unknown visibility profile, invalid activation state, invalid timestamp, invalid lifetime, invalid coverage, then invalid ownership fields. `BudgetExceeded` and `StaleTransition` are reserved stable rejection vocabulary for later bounded owners; this descriptor-local validator does not inspect runtime state or globally enforce budgets.
+
+Gameplay lighting is exclusively server-authored truth. The server owns light identity, source type, gameplay profile, activation and expiry, and approved coverage descriptors. A client may later submit only narrowly shaped intent. A client never submits authoritative radius, cone, profile, expiry, or visibility outcome. Rendered brightness, pixel luminance, post-processing, client `Lighting` properties, client-created lights, and local raycasts are never sampled for gameplay authority. Cosmetic intensity, flicker, color, bloom, and shadows remain non-authoritative unless a later task promotes one through an explicit bounded contract.
+
+LK-0401 adds no light objects, rendering, runtime ownership, activation resolution, remotes, controllers, spatial queries, discovery, targeting integration, temporary-light spawning, flashlight behavior, squad aids, or P5 behavior. Those concerns remain deferred to their ordered P4 tasks; LK-0402 perception/disclosure/memory contracts are next and unstarted.
 
 ## Perception and discovery
 

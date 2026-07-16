@@ -136,7 +136,7 @@ Create darkness, limited information, and selected squad navigation aids that pr
 - [x] **LK-P4-PLAN-001 — Plan and decompose P4 darkness, limited vision, and squad navigation.**
   - **Work type:** Documentation and planning.
   - **Acceptance:** the canonical specification separates rendering, gameplay, targeting, line-of-sight, discovery, and memory; defines darkness/light authority, automatic-targeting disclosure rules, player/enemy perception vocabulary, tool tradeoffs, performance/accessibility/security/synchronization policy, ordered tasks, dependencies, and exclusions; no gameplay source changes.
-- [ ] **LK-0401 — Define shared lighting contracts and configuration.**
+- [x] **LK-0401 — Define shared lighting contracts and configuration.**
   - **Work type:** Pure contract/configuration work.
   - **Acceptance:** stable visibility profiles, server-owned gameplay-light descriptors, activation/lifetime vocabulary, conservative budgets, and rejection reasons are documented and fixture-tested without lights, rendering, remotes, or runtime queries.
 - [ ] **LK-0402 — Define shared perception, disclosure, and memory contracts.**
