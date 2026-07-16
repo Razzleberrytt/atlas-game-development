@@ -17,7 +17,7 @@ export type MemoryStateId = "None" | "Remembered"
 
 export type ObservationConfidenceId = "Low" | "Medium" | "High"
 
-export type ObservationSourceId = "DirectSight" | "TeammateInformation" | "AuthoredObjective" | "ApprovedGameplayLight"
+export type ObservationSourceId = "DirectSight" | "TeammateInformation" | "AuthoredObjective"
 
 export type ObservationRecord = {
 	observedEntityId: string,
@@ -37,6 +37,7 @@ export type PerceptionRejectionReasonId =
 	| "InvalidPerception"
 	| "InvalidMemory"
 	| "InvalidConfidence"
+	| "InvalidStateCombination"
 	| "InvalidTimestamp"
 	| "StaleObservation"
 
@@ -71,7 +72,6 @@ PerceptionContracts.ObservationSourceIds = table.freeze({
 	DirectSight = "DirectSight",
 	TeammateInformation = "TeammateInformation",
 	AuthoredObjective = "AuthoredObjective",
-	ApprovedGameplayLight = "ApprovedGameplayLight",
 })
 
 PerceptionContracts.PerceptionRejectionReasonIds = table.freeze({
@@ -82,6 +82,7 @@ PerceptionContracts.PerceptionRejectionReasonIds = table.freeze({
 	InvalidPerception = "InvalidPerception",
 	InvalidMemory = "InvalidMemory",
 	InvalidConfidence = "InvalidConfidence",
+	InvalidStateCombination = "InvalidStateCombination",
 	InvalidTimestamp = "InvalidTimestamp",
 	StaleObservation = "StaleObservation",
 })

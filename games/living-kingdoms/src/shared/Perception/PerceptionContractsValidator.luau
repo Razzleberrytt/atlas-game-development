@@ -38,8 +38,23 @@ local function isKnownValue(values: { [string]: string }, value: unknown): boole
 	return values[value] == value
 end
 
+local function stateCombinationIsValid(record: { [string]: any }): boolean
+	if record.perceptionStateId == PerceptionContracts.PerceptionStateIds.Unknown then
+		if record.confidenceId == PerceptionContracts.ObservationConfidenceIds.High then
+			return false
+		end
+	end
+
+	if record.memoryStateId == PerceptionContracts.MemoryStateIds.Remembered then
+		return record.perceptionStateId == PerceptionContracts.PerceptionStateIds.Suspected
+			or record.perceptionStateId == PerceptionContracts.PerceptionStateIds.Observed
+	end
+
+	return true
+end
+
 -- Stable first failure: record, entity, source, disclosure, perception,
--- memory, confidence, timestamp, then age.
+-- memory, confidence, state combination, timestamp, then age.
 function PerceptionContractsValidator.validate(record: unknown, evaluationServerTimestamp: unknown)
 	if typeof(record) ~= "table" then
 		return rejected(PerceptionContracts.PerceptionRejectionReasonIds.InvalidRecord)
@@ -61,6 +76,9 @@ function PerceptionContractsValidator.validate(record: unknown, evaluationServer
 	end
 	if not isKnownValue(PerceptionContracts.ObservationConfidenceIds, record.confidenceId) then
 		return rejected(PerceptionContracts.PerceptionRejectionReasonIds.InvalidConfidence)
+	end
+	if not stateCombinationIsValid(record) then
+		return rejected(PerceptionContracts.PerceptionRejectionReasonIds.InvalidStateCombination)
 	end
 	if
 		not isFiniteNonnegativeNumber(record.observedAtServerTimestamp)

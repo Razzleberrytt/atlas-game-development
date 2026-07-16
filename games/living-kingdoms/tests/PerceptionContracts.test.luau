@@ -79,7 +79,6 @@ assertExactIds(contracts.ObservationSourceIds, {
 	DirectSight = "DirectSight",
 	TeammateInformation = "TeammateInformation",
 	AuthoredObjective = "AuthoredObjective",
-	ApprovedGameplayLight = "ApprovedGameplayLight",
 }, "observation sources")
 assertExactIds(contracts.PerceptionRejectionReasonIds, {
 	InvalidRecord = "InvalidRecord",
@@ -89,6 +88,7 @@ assertExactIds(contracts.PerceptionRejectionReasonIds, {
 	InvalidPerception = "InvalidPerception",
 	InvalidMemory = "InvalidMemory",
 	InvalidConfidence = "InvalidConfidence",
+	InvalidStateCombination = "InvalidStateCombination",
 	InvalidTimestamp = "InvalidTimestamp",
 	StaleObservation = "StaleObservation",
 }, "rejection reasons")
@@ -147,9 +147,23 @@ local function assertRejected(record: any, evaluationServerTimestamp: any, expec
 	return result
 end
 
-assertAccepted(observation("DirectSight"), 100)
-assertAccepted(observation("TeammateInformation"), 110)
-assertAccepted(observation("AuthoredObjective"), 130)
+local directSight = observation("DirectSight")
+assertAccepted(directSight, 100)
+assert(directSight.rendererState == nil, "direct sight cannot encode renderer authority")
+assert(directSight.visibilityProfileId == nil, "direct sight cannot encode gameplay-light authority")
+assert(directSight.gameplayLightCoverage == nil, "direct sight cannot encode light coverage")
+
+local teammateInformation = observation("TeammateInformation")
+teammateInformation.observedEntityId = "operative.bravo"
+assertAccepted(teammateInformation, 110)
+assert(teammateInformation.lineOfSight == nil, "teammate information cannot encode line-of-sight authority")
+assert(teammateInformation.targetEligible == nil, "teammate information cannot encode targeting authority")
+
+local authoredObjective = observation("AuthoredObjective")
+authoredObjective.observedEntityId = "objective.generator-room"
+assertAccepted(authoredObjective, 130)
+assert(authoredObjective.hostileTargetEligible == nil, "authored objective cannot encode hostile targeting authority")
+assert(authoredObjective.lineOfSight == nil, "authored objective cannot encode line-of-sight authority")
 
 local direct = observation("DirectSight")
 local firstResult = assertAccepted(direct, 120)
@@ -161,7 +175,7 @@ assert(direct.observedAtServerTimestamp == 100, "validator mutated timestamp")
 assert(not table.isfrozen(direct), "validator must not freeze caller record")
 
 local nestedSentinel = { marker = { value = "unchanged" } }
-local recordWithNestedSentinel = observation("ApprovedGameplayLight")
+local recordWithNestedSentinel = observation("DirectSight")
 recordWithNestedSentinel.callerMetadata = nestedSentinel
 assertAccepted(recordWithNestedSentinel, 100)
 assert(recordWithNestedSentinel.callerMetadata == nestedSentinel, "validator replaced nested caller data")
@@ -175,6 +189,8 @@ invalid.observedEntityId = ""
 assertRejected(invalid, 100, "InvalidEntity")
 invalid = observation("Hearing")
 assertRejected(invalid, 100, "InvalidSource")
+invalid = observation("ApprovedGameplayLight")
+assertRejected(invalid, 100, "InvalidSource")
 invalid = observation("DirectSight")
 invalid.disclosureStateId = "Partial"
 assertRejected(invalid, 100, "InvalidDisclosure")
@@ -187,6 +203,45 @@ assertRejected(invalid, 100, "InvalidMemory")
 invalid = observation("DirectSight")
 invalid.confidenceId = "Certain"
 assertRejected(invalid, 100, "InvalidConfidence")
+
+invalid = observation("DirectSight")
+invalid.perceptionStateId = "Unknown"
+assertRejected(invalid, 100, "InvalidStateCombination")
+invalid = observation("DirectSight")
+invalid.perceptionStateId = "Unknown"
+invalid.memoryStateId = "Remembered"
+invalid.confidenceId = "Low"
+assertRejected(invalid, 100, "InvalidStateCombination")
+
+local rememberedSuspected = observation("TeammateInformation")
+rememberedSuspected.perceptionStateId = "Suspected"
+rememberedSuspected.memoryStateId = "Remembered"
+rememberedSuspected.confidenceId = "Medium"
+assertAccepted(rememberedSuspected, 100)
+
+local hiddenRememberedSuspected = observation("TeammateInformation")
+hiddenRememberedSuspected.disclosureStateId = "Hidden"
+hiddenRememberedSuspected.perceptionStateId = "Suspected"
+hiddenRememberedSuspected.memoryStateId = "Remembered"
+hiddenRememberedSuspected.confidenceId = "Low"
+assertAccepted(hiddenRememberedSuspected, 100)
+
+local rememberedObserved = observation("DirectSight")
+rememberedObserved.memoryStateId = "Remembered"
+assertAccepted(rememberedObserved, 100)
+
+invalid = observation("DirectSight")
+invalid.perceptionStateId = "Unknown"
+invalid.confidenceId = "Certain"
+assertRejected(invalid, -1, "InvalidConfidence")
+invalid.confidenceId = "High"
+local firstCombinationResult = assertRejected(invalid, -1, "InvalidStateCombination")
+local secondCombinationResult = assertRejected(invalid, -1, "InvalidStateCombination")
+assert(firstCombinationResult.isValid == secondCombinationResult.isValid, "combination acceptance changed")
+assert(
+	firstCombinationResult.rejectionReasonId == secondCombinationResult.rejectionReasonId,
+	"combination precedence changed"
+)
 
 for _, timestamp in { -1, 0 / 0, math.huge, -math.huge, "now" } do
 	invalid = observation("DirectSight")
