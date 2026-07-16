@@ -156,4 +156,4 @@ The two explicit RemoteEvents are `CombatNetwork.ReloadIntent` and `CombatNetwor
 
 `P3 — Health, incapacitation, revival, and death.`
 
-LK-0207 and P2 are complete. P3 is the next roadmap milestone and has not begun. Production combat orchestration, hostile discovery, enemies, scarcity pickups, and later gameplay systems remain deferred.
+LK-0207 and P2 are complete. P3 is canonically specified and decomposed; runtime implementation has not begun. LK-0301 is the next executable task. Production combat orchestration, hostile discovery, enemies, scarcity pickups, and later gameplay systems remain deferred.
