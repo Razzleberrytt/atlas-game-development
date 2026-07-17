@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "assetKey": "visual.enemy.standard-hostile.model",
+  "candidateId": "exclusion-walker.v1",
+  "status": "source-candidate-not-runtime-approved",
+  "sourceKind": "ProjectOriginal",
+  "sourceLicense": "Original project asset; all project rights retained",
+  "generatorFile": "generate_exclusion_walker.py",
+  "generatedModelFile": "exclusion_walker.obj",
+  "generatedPreviewFile": "exclusion_walker_preview.svg",
+  "format": "Generated OBJ multi-object source with vertex colors",
+  "designIntent": "Original grounded biomechanical horde enemy with a broad torso, long striking arms, readable sensor face, and heavy feet",
+  "orientation": {
+    "forward": "-Y",
+    "up": "+Z"
+  },
+  "sourceRootName": "HumanoidRootPart (integration wrapper)",
+  "robloxModelName": "ExclusionWalker",
+  "runtimeFallbackModelName": "ExclusionWalkerPresentation",
+  "componentMeshCount": 18,
+  "attachmentLocators": {
+    "AttackOrigin": [0.0, -0.52, 0.27]
+  },
+  "gameplayFootprint": {
+    "id": "enemy.exclusion_walker",
+    "rootSizeStuds": [3.0, 5.6, 3.0],
+    "owner": "server",
+    "changedByCandidate": false
+  },
+  "gameplayAuthority": {
+    "identity": "server",
+    "spawn": "server",
+    "movement": "server",
+    "targeting": "server",
+    "health": "server",
+    "attacks": "server",
+    "death": "server",
+    "cleanup": "server"
+  },
+  "runtimeBounds": {
+    "fixedVisualPartCount": 18,
+    "connectionsPerEnemy": 0,
+    "newHeartbeatConnections": 0,
+    "newTimersPerEnemy": 0
+  },
+  "studioGate": {
+    "imported": false,
+    "visualReviewPassed": false,
+    "attackAnimationVerified": false,
+    "deathAnimationVerified": false,
+    "isometricReadabilityVerified": false,
+    "representativeHordePerformanceVerified": false
+  }
+}

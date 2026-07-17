@@ -25,20 +25,18 @@ Weapon meshes do not own shooting. Enemy rigs do not own health, targeting, atta
   - All current records remain honestly classified as primitive, default-avatar, missing, or temporary; no production asset is falsely approved.
   - Declarations load no assets, register no numeric IDs, create no runtime owner, and change no gameplay behavior.
 - [~] **VIS-0102 — Replace the basic firearm presentation.**
-  - Source creation is complete for the original Blackwater Service Carbine candidate: deterministic 19-component model generator, five attachment transforms, and explicit `Fire`, `Reload`, and `Empty` animation curves.
-  - A client-only 19-part procedural fallback now attaches to every operative so the game no longer presents an invisible firearm while the imported mesh remains unapproved.
-  - Local bolt, magazine, empty-state, and reload motion follows server-disclosed shot, reload deadline/completion/interruption, and private ammunition-state messages.
-  - Accepted shots and authoritative reload lifecycle are disclosed squad-wide so every visible operative's bolt and magazine move from the correct server-owned action; teammate ammunition counts remain private.
-  - Accepted shots also drive temporary muzzle flash and casing presentation; an impact spark appears only when the server confirms that damage was applied and supplies the impact position.
-  - Hit-confirmed tracer policy now permits one 0.055-second presentation-only streak from the correct visible muzzle to the server-disclosed damage endpoint; blocked and non-damaging shots display no tracer.
-  - The candidate is project-original and contains no uploaded asset ID or gameplay mutation.
+  - The current project-original Blackwater Support LMG procedural fallback provides a belt feed, ammunition box, carry handle, long barrel, heat shield, bipod, stable attachment locators, and deterministic 45-component import source; the earlier Blackwater Service Carbine source remains available for comparison and rollback.
+  - Local and squad-visible bolt, ammunition-box, empty-state, and reload motion follows only server-disclosed shot and reload lifecycle messages; teammate ammunition counts remain private.
+  - Accepted shots drive temporary muzzle flash, casing, hit-confirmed tracer, and authoritative damage-impact presentation.
+  - Hit-confirmed tracer policy remains implemented: only server-confirmed damaging shots with an authoritative impact position display the short-lived tracer.
   - Still required: Roblox Studio mesh import and canonical swap, grip/isometric readability review, production effects, audio, and representative performance evidence.
   - Existing server-owned cadence, ammunition, reload, targeting, hit, and damage boundaries remain unchanged.
-- [ ] **VIS-0103 — Replace the standard hostile presentation.**
-  - Add one canonical horde rig and bounded cosmetic variants.
-  - Support pursuit, attack anticipation, active strike, recovery, hit reaction, death, and stand-down.
-  - Preserve the canonical enemy root, gameplay footprint, health, speed, attack, and targetability.
-  - Validate representative horde load and cleanup.
+- [~] **VIS-0103 — Replace the standard hostile presentation.**
+  - A deterministic 18-component Exclusion Walker source candidate and matching replicated procedural fallback now replace the invisible/one-block silhouette with a broad torso, sensor face, long striking arms, claws, heavy feet, dorsal spine, and back canister.
+  - The authoritative `HumanoidRootPart` remains exactly `3 x 5.6 x 3` studs and continues to own collision, movement, network ownership, targeting position, and gameplay footprint.
+  - One `EnemyEntities.ChildAdded` connection attaches the fixed presentation shell; there are zero per-enemy connections, new heartbeats, timers, remotes, or gameplay mutations.
+  - A stable presentation-only `AttackOrigin` locator is available for future authored attack effects.
+  - Still required: Roblox Studio mesh import/canonical swap, pursuit and attack animation states, active strike/recovery, hit reaction, death, stand-down, effects, audio, bounded cosmetic variants, and representative horde performance evidence.
 - [ ] **VIS-0104 — Add operative and starting-class visual identity.**
   - Add one shared operative rig plus Combat Specialist, Medic, and Engineer equipment silhouettes.
   - Integrate firearm carry, locomotion, incapacitation, revive, death, and visible class-action cues only after their gameplay states exist.

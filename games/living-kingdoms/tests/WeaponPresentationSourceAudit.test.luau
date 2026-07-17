@@ -129,7 +129,7 @@ assertThat(
 assertThat(
 	string.find(
 		registry,
-		"Authoritative basic firearm state exists without a canonical production weapon model.",
+		"canonical imported production approval remains pending.",
 		1,
 		true
 	) ~= nil,

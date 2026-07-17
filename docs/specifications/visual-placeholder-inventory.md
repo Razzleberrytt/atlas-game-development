@@ -18,12 +18,12 @@ The registry is descriptive only. It does not load assets or change gameplay.
 
 | Family | Asset | Current state | Current owner / evidence | Replacement track |
 |---|---|---|---|---|
-| Weapon | Basic firearm model | Missing presentation | `OperativeCombatRuntimeService`; firearm state exists without a canonical model | VIS-0102 |
+| Weapon | Basic firearm model | Missing production presentation | `BasicFirearmPresentationFactory`; project-original Blackwater Support LMG procedural fallback and deterministic source candidate | VIS-0102 |
 | Operative | Base operative rig | Default-avatar placeholder | `OperativeLifeService`; Roblox character shell bound through `HumanoidRootPart` | VIS-0104 |
 | Class equipment | Combat Specialist equipment | Missing presentation | Text-only class selection | VIS-0104 |
 | Class equipment | Medic equipment | Missing presentation | Text-only class selection | VIS-0104 |
 | Class equipment | Engineer equipment | Missing presentation | Text-only class selection | VIS-0104 |
-| Enemy | Exclusion Walker model | Primitive placeholder | `EnemyDirectorService`; one `3 x 5.6 x 3` Part, Humanoid, and health billboard | VIS-0103 |
+| Enemy | Exclusion Walker model | Primitive placeholder | `EnemyPresentationService`; fixed 18-part procedural shell attached to the unchanged authoritative `3 x 5.6 x 3` root | VIS-0103 |
 | Supply | Ammunition cache | Primitive placeholder | `AmmunitionCacheService`; one green metal Part and ProximityPrompt | VIS-0105 |
 | Objective | Relay console | Primitive placeholder | `MissionDirectorService`; primitive console, lamp, and ProximityPrompt | VIS-0105 / P8 |
 | Extraction | Extraction beacon | Primitive placeholder | `MissionDirectorService`; neon signal pillar, light, and billboard | VIS-0105 / P10 |
@@ -36,7 +36,7 @@ The registry is descriptive only. It does not load assets or change gameplay.
 | Landmark | Rocky Overlook | Primitive placeholder | Primitive plateau and rock composition | VIS-0105 |
 | Landmark | Military Roadblock | Primitive placeholder | Primitive barriers, vehicle, light, and props | VIS-0105 |
 | Landmark | Extraction Clearing | Primitive placeholder | Authored primitive clearing awaiting final extraction package | VIS-0105 |
-| Effect | Basic firearm fire/impact set | Missing presentation | No approved muzzle, casing, tracer, or impact set | VIS-0102 |
+| Effect | Basic firearm fire/impact set | Temporary presentation | Code-built muzzle flash, casing, hit-confirmed tracer, and authoritative impact cue | VIS-0102 |
 | Effect | Standard hostile attack set | Missing presentation | Authoritative melee exists without approved anticipation/strike effects | VIS-0103 |
 | Audio | Basic firearm set | Missing presentation | No approved fire, reload, empty, or handling set | VIS-0102 |
 | Audio | Standard hostile set | Missing presentation | No approved alert, pursuit, attack, hit, or death set | VIS-0103 |
@@ -82,4 +82,4 @@ When canonical production assets begin entering the registry:
 
 ## Next task
 
-`VIS-0102` is the first actual production-asset vertical slice: approve the firearm visual direction, integrate one canonical model and its presentation attachments, and prove the weapon still obeys the existing server-owned firearm contract.
+Continue the two active vertical slices through their honest remaining gates: Roblox Studio review for the Blackwater Support LMG and Exclusion Walker, then authored hostile state animation/effects and operative/class silhouettes when their gameplay states are ready.
