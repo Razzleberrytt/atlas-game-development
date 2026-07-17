@@ -37,7 +37,10 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Am
 	injectGlobals = true,
 })()
 
-check(config.Version == "P6-0103-v1")
+check(config.Version == "P6-0104-v1")
+check(config.Interaction.MaximumDistanceStuds == 10)
+check(config.Interaction.HoldDurationSeconds == 0.65)
+check(table.isfrozen(config.Interaction))
 check(#config.Caches == 3)
 check(table.isfrozen(config) and table.isfrozen(config.Caches))
 
