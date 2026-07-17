@@ -26,6 +26,7 @@ PersonalFlashlightController.start()
 SquadPingController.start()
 EnvironmentAmbienceController.start()
 MissionController.start()
+-- Mission presentation starts first; selection then recovers its authoritative snapshot.
 ClassSelectionController.start()
 
 print("[Living Kingdoms] Client bootstrap started")
