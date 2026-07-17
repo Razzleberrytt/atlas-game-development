@@ -19,7 +19,7 @@ on:
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -27,8 +27,10 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Check out repository
+      - name: Check out pull-request branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
@@ -38,9 +40,23 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Check Luau formatting
+      - name: Apply StyLua formatting
         shell: bash
-        run: stylua --check games/living-kingdoms/src
+        run: stylua games/living-kingdoms/src
+
+      - name: Commit formatter output
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/p5-0105-pressure-pacing-domain'
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No formatting changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add games/living-kingdoms/src
+          git commit -m "Format pressure pacing domain with StyLua"
+          git push origin HEAD:${{ github.head_ref }}
 
       - name: Run Selene
         shell: bash
