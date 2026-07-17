@@ -3,22 +3,32 @@ name: Luau validation
 on:
   pull_request:
     paths:
+      - "games/living-kingdoms/**"
+      - "rokit.toml"
+      - "stylua.toml"
+      - "selene.toml"
+      - ".github/workflows/luau-validation.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "games/living-kingdoms/**"
+      - "rokit.toml"
+      - "stylua.toml"
+      - "selene.toml"
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  publish-supply-cache-visuals:
-    if: github.actor != 'github-actions[bot]'
+  validate:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
 
     steps:
-      - name: Check out supply cache branch
+      - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: feat/supply-cache-visual-readability
 
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
@@ -28,28 +38,15 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Apply supply cache integration
-        run: python .github/scripts/apply_supply_cache_visuals.py
-
-      - name: Format changed Luau
-        run: |
-          stylua \
-            games/living-kingdoms/src/client/Presentation/SupplyCachePresentationConfig.luau \
-            games/living-kingdoms/src/client/Presentation/SupplyCachePresentationFactory.luau \
-            games/living-kingdoms/src/client/Controllers/AmmunitionCachePresentationController.luau \
-            games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau \
-            games/living-kingdoms/tests/P6CacheDepletionPresentation.test.luau \
-            games/living-kingdoms/tests/SupplyCachePresentationConfig.test.luau \
-            games/living-kingdoms/tests/SupplyCacheVisualReadabilitySourceAudit.test.luau \
-            games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau
-
       - name: Check Luau formatting
+        shell: bash
         run: stylua --check games/living-kingdoms/src
 
       - name: Run Selene
+        shell: bash
         run: selene games/living-kingdoms/src
 
-      - name: Run complete Lune fixtures
+      - name: Run Lune fixtures
         shell: bash
         run: |
           set -euo pipefail
@@ -61,28 +58,11 @@ jobs:
             fixture_count=$((fixture_count + 1))
           done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
           if [ "$fixture_count" -eq 0 ]; then
+            echo "No Living Kingdoms fixtures were discovered." >&2
             exit 1
           fi
+          echo "Executed $fixture_count Living Kingdoms fixtures."
 
       - name: Build Rojo project
+        shell: bash
         run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
-
-      - name: Commit only validated product files
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add \
-            games/living-kingdoms/src/client/Presentation/SupplyCachePresentationConfig.luau \
-            games/living-kingdoms/src/client/Presentation/SupplyCachePresentationFactory.luau \
-            games/living-kingdoms/src/client/Controllers/AmmunitionCachePresentationController.luau \
-            games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau \
-            games/living-kingdoms/tests/P6CacheDepletionPresentation.test.luau \
-            games/living-kingdoms/tests/SupplyCachePresentationConfig.test.luau \
-            games/living-kingdoms/tests/SupplyCacheVisualReadabilitySourceAudit.test.luau \
-            games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau \
-            games/living-kingdoms/assets/visual/supply/ammunition-cache/README.md \
-            games/living-kingdoms/assets/visual/supply/ammunition-cache/asset-manifest.json \
-            docs/roadmap/VISUAL-PRODUCTION-TRACK.md \
-            docs/specifications/visual-placeholder-inventory.md
-          git commit -m "feat: add supply cache visual readability"
-          git push origin HEAD:feat/supply-cache-visual-readability
