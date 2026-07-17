@@ -56,8 +56,8 @@ do
 	assertThat(string.find(controller, required, 1, true) ~= nil, "missing squad motion routing " .. required)
 end
 
-local _, localReloadFilterCount = string.gsub(hud, "isLocalOperativeEntityId(payload.operativeEntityId)", "")
-assertThat(localReloadFilterCount >= 4, "local HUD must filter shot and all broadcast reload lifecycle messages")
+local _, localFilterReferenceCount = string.gsub(hud, "isLocalOperativeEntityId", "")
+assertThat(localFilterReferenceCount >= 5, "local HUD must filter shot and all broadcast reload lifecycle messages")
 
 for _, required in
 	{
