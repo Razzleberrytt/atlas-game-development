@@ -1,0 +1,20 @@
+{
+  "assetKey": "world.logging-road",
+  "candidateId": "authored-route-guides.v1",
+  "status": "PrimitivePlaceholder",
+  "runtimeOwner": "src/client/Controllers/RouteGuidePresentationController.luau",
+  "presentationRoot": "RouteGuidePresentation",
+  "truthSource": "ExistingAuthoredRouteSegment",
+  "partsPerSegment": 2,
+  "maximumBoundSegments": 11,
+  "maximumPresentationParts": 22,
+  "globalConnections": 2,
+  "perSegmentConnections": 0,
+  "frameConnections": 0,
+  "timerCount": 0,
+  "newRemoteCount": 0,
+  "serverRuntimeChanges": 0,
+  "createsDestinationLabels": false,
+  "createsExtractionCue": false,
+  "studioApproved": false
+}
