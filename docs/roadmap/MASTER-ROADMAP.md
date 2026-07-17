@@ -157,9 +157,9 @@ Create darkness, limited information, and selected squad navigation aids that pr
 - [x] **LK-0407 — Add the selected squad-navigation aid slice.**
   - **Work type:** Focused tool/disclosure work.
   - **Acceptance:** one production-connected Location-only squad ping accepts category plus candidate position only, derives identity/recipients/time/limits on the server, quantizes within 120 studs, replaces at one active per sender, caps four per squad, expires after six seconds through one deterministic scheduler, replicates revisioned safe snapshots only to current squadmates, supports G/middle-mouse, D-pad Up, and touch with text/shape non-audio presentation, and cleans up on life, roster, squad, expiry, and teardown transitions without discovery, hostile, targeting, minimap, compass, or tracking authority.
-- [ ] **LK-0408 — Complete P4 security, performance, and integration validation.**
+- [x] **LK-0408 — Complete P4 security, performance, and integration validation.**
   - **Work type:** Validation and focused defect repair only.
-  - **Acceptance:** next and unstarted; adversarial clients cannot alter visibility, discovery, lights, memory, or targeting; 1–4 player representative budget measurements cover lights/particles/shadows/rays/checks; selected aid feel/accessibility is documented; P1–P3 and P2 regression suites pass; any repair is minimal and P4-only.
+  - **Acceptance:** cross-system fixtures and source/runtime audits prove adversarial clients cannot alter visibility, discovery, lights, memory, pings, squad recipients, or P2 targeting; representative 1/2/4-player measurements remain bounded at 1/2/4 gameplay lights, 1/2/4 pings, one P4 expiry scheduler, 15/23/39 P4 connections, zero bootstrapped memory tables, and zero P4 shadows/particles/visibility rays; two-client Studio observation verifies accessible flashlight/ping presentation, life-state isolation, disconnect cleanup, and zero final owner counts; all prior fixtures and scoped source/build checks pass; the unchanged-tree StyLua line-ending limitation is documented separately; no production defect, optimization, or P5 work was required.
 
 ### P4 execution order
 
@@ -168,6 +168,8 @@ Create darkness, limited information, and selected squad navigation aids that pr
 ### P4 exit criteria
 
 One to four operatives can navigate, regroup, and use only the selected bounded aids under readable darkness. The server controls gameplay visibility, discovery, memory, lighting state, and targeting disclosure; local rendering cannot expose or legalize hidden information; performance and accessibility criteria are measured without adding P5 systems.
+
+**P4 status:** Complete. Prototype visibility/discovery production orchestration, hostile-load profiling, remote-operative flashlight cosmetics, broader squad tooling, and enemy behavior remain deferred to their explicitly planned later milestones.
 
 ## P5 — Enemy spawning, pursuit, and horde pressure
 
