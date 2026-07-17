@@ -4,12 +4,22 @@ on:
   pull_request:
     paths:
       - "games/living-kingdoms/**"
-      - "docs/roadmap/P6-P12-EXECUTION-ROADMAP.md"
-      - "docs/specifications/mvp-specialist-classes.md"
+      - "rokit.toml"
+      - "stylua.toml"
+      - "selene.toml"
+      - ".github/workflows/luau-validation.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "games/living-kingdoms/**"
+      - "rokit.toml"
+      - "stylua.toml"
+      - "selene.toml"
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate:
@@ -17,10 +27,8 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Check out PR branch
+      - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
@@ -30,96 +38,9 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Clean branch and synchronize P7 status
+      - name: Check Luau formatting
         shell: bash
-        run: |
-          git fetch origin main --depth=1
-          git checkout origin/main -- \
-            games/living-kingdoms/tests/AmmunitionCacheConfig.test.luau \
-            games/living-kingdoms/tests/AmmunitionScarcityTelemetryService.test.luau \
-            games/living-kingdoms/tests/AmmunitionSupplyResolver.test.luau \
-            games/living-kingdoms/tests/CombatSecurityIntegration.test.luau \
-            games/living-kingdoms/tests/EnemyBehaviorResolver.test.luau \
-            games/living-kingdoms/tests/EnemyContracts.test.luau \
-            games/living-kingdoms/tests/EnemyDirectorService.test.luau \
-            games/living-kingdoms/tests/EnemyValidationProbeSourceAudit.test.luau \
-            games/living-kingdoms/tests/OperativeCombatRuntimeService.test.luau \
-            games/living-kingdoms/tests/P5IntegrationValidation.test.luau \
-            games/living-kingdoms/tests/P6AmmunitionCacheRuntimeSourceAudit.test.luau \
-            games/living-kingdoms/tests/P6CacheDepletionPresentation.test.luau \
-            games/living-kingdoms/tests/P6ScarcityTelemetrySourceAudit.test.luau
-
-          python3 - <<'PY'
-          from pathlib import Path
-
-          service_path = Path("games/living-kingdoms/src/server/Systems/ClassService.luau")
-          service = service_path.read_text(encoding="utf-8")
-          service = service.replace("type ClassId = ClassContracts.ClassId\n", "")
-          service = service.replace(
-              "\tif selectionStateId == SelectionStateIds.Open and deadline ~= nil then\n\t\tscheduleLock(deadline)\n\tend\n\tpublishAll()",
-              "\tsynchronizeSelectionWindow()\n\tpublishAll()",
-          )
-          service_path.write_text(service, encoding="utf-8")
-
-          roadmap_path = Path("docs/roadmap/P6-P12-EXECUTION-ROADMAP.md")
-          roadmap = roadmap_path.read_text(encoding="utf-8")
-          roadmap = roadmap.replace("- [ ] **P7-0101 — Define shared class contracts and configuration.**", "- [x] **P7-0101 — Define shared class contracts and configuration.**")
-          roadmap = roadmap.replace("- [ ] **P7-0102 — Implement server-owned class selection and assignment.**", "- [x] **P7-0102 — Implement server-owned class selection and assignment.**")
-          roadmap = roadmap.replace(
-              "P7 implementation begins only after P6-0109. The class vertical slices share contracts and assignment but do not depend on one another's runtime implementation.",
-              "A temporary sequencing exception permits P7-0101 and P7-0102 because declarations and class assignment do not mutate P6 scarcity. P7-0103 through P7-0107 remain blocked until P6-0109 or another explicit evidence-independent exception. The class vertical slices share contracts and assignment but do not depend on one another's runtime implementation.",
-          )
-          roadmap_path.write_text(roadmap, encoding="utf-8")
-
-          spec_path = Path("docs/specifications/mvp-specialist-classes.md")
-          spec = spec_path.read_text(encoding="utf-8")
-          spec = spec.replace(
-              "**P7-PLAN-001 complete.** This specification defines the implementation boundary and ordered tasks for the three starting classes. P7 gameplay implementation remains blocked until P6 scarcity validation and tuning sign-off are complete.",
-              "**P7-PLAN-001, P7-0101, and P7-0102 complete.** Shared declarations plus server-owned class selection/assignment are implemented under the temporary P6/P7 sequencing exception. P7 class-effect runtime remains blocked until P6 scarcity validation and tuning sign-off resume or another explicit evidence-independent exception is approved.",
-          )
-          selection_block = """- Selection is available during the briefing/pre-insertion phase.
-- The server validates that the requested class is a known, currently unlocked class.
-- Insertion locks the class for the active operation.
-- No ordinary mid-run class swapping.
-- A fresh replay creates a fresh selection window.
-"""
-          replacement_block = """- The final product will expose selection during briefing/pre-insertion.
-- The current prototype has no separate Briefing phase, so its bounded 20-second `Insertion` phase is the temporary selection window.
-- The server validates that the requested class is a known, currently available starting class.
-- Combat Specialist is the deterministic fallback when no accepted selection is made.
-- The exact authoritative insertion deadline locks every assignment for the active operation.
-- Duplicate starting classes remain allowed; no ordinary mid-run class swapping exists.
-- A future P10 replay shell creates a fresh selection window; P7-0102 does not implement replay.
-"""
-          if selection_block in spec:
-              spec = spec.replace(selection_block, replacement_block)
-          marker = "## Shared class vocabulary\n"
-          implementation = """## Implemented P7-0102 selection boundary
-
-- `ClassService` owns one assignment per registered operative, a global `Open`/`Locked` window, per-assignment revisions, bounded processed request IDs, rate limits, roster lifecycle, and recipient-specific copied snapshots.
-- `ClassSelectionResolver` deterministically validates intent shape, class identity, participation, mission phase/deadline, lock state, availability, replay, and rate limits without runtime side effects.
-- `ClassNetwork` contains only `SelectionIntent`, `State`, and the read-only `ReadState` snapshot function. No `ActionIntent` exists.
-- The client sends only `{ requestId, classId }`; operative identity and every consequential fact are server-derived.
-- One owner-level deadline timer locks the roster. There is no Heartbeat, per-player timer, health/ammunition mutation, class effect, or persistent unlock lookup.
-- Disconnect removes the active assignment. Registration after lock receives no new operation assignment, matching the current late-join prohibition.
-
-"""
-          if implementation not in spec:
-              spec = spec.replace(marker, implementation + marker)
-          spec_path.write_text(spec, encoding="utf-8")
-          PY
-
-          stylua \
-            games/living-kingdoms/src/client/Controllers/ClassSelectionController.luau \
-            games/living-kingdoms/src/client/init.client.luau \
-            games/living-kingdoms/src/server/Systems/ClassSelectionResolver.luau \
-            games/living-kingdoms/src/server/Systems/ClassService.luau \
-            games/living-kingdoms/src/server/init.server.luau \
-            games/living-kingdoms/src/shared/Classes/ClassContracts.luau \
-            games/living-kingdoms/src/shared/Config/ClassConfig.luau \
-            games/living-kingdoms/tests/ClassContractsConfig.test.luau \
-            games/living-kingdoms/tests/ClassSelectionResolver.test.luau \
-            games/living-kingdoms/tests/P7ClassSelectionSourceAudit.test.luau
+        run: stylua --check games/living-kingdoms/src
 
       - name: Run Selene
         shell: bash
@@ -145,16 +66,3 @@ jobs:
       - name: Build Rojo project
         shell: bash
         run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
-
-      - name: Restore workflow and commit clean branch
-        shell: bash
-        run: |
-          git checkout origin/main -- .github/workflows/luau-validation.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/workflows/luau-validation.yml games/living-kingdoms docs/roadmap/P6-P12-EXECUTION-ROADMAP.md docs/specifications/mvp-specialist-classes.md
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m "Clean and finalize P7 class selection"
-          git push
