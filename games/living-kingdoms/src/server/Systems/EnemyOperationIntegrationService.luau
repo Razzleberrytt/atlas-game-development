@@ -23,7 +23,7 @@ local Service = {}
 local started = false
 local accumulatedSeconds = 0
 local updateConnection: RBXScriptConnection? = nil
-local requestedWaves: { [number]: boolean } = {}
+local completedWaves: { [number]: boolean } = {}
 local lastAttackByEnemyId: { [string]: number } = {}
 local attackSequenceByEnemyId: { [string]: number } = {}
 
@@ -32,22 +32,32 @@ local function now(): number
 end
 
 local function requestWave(waveIndex: number)
-	if requestedWaves[waveIndex] then
+	if completedWaves[waveIndex] then
 		return
 	end
 	local wave = MissionConfig.Escalation.Waves[waveIndex]
 	if wave == nil then
 		return
 	end
-	requestedWaves[waveIndex] = true
+
+	local allMembersPresent = true
 	for _, definition in wave do
-		EnemyLifecycleService.requestSpawn({
-			entityId = definition.id,
-			archetypeId = EnemyContracts.ArchetypeIds.Shambler,
-			position = { x = definition.x, y = definition.y, z = definition.z },
-			facingDirection = nil,
-			correlationId = string.format("%s.wave.%d", MissionConfig.OperationId, waveIndex),
-		})
+		if EnemyLifecycleService.read(definition.id) == nil then
+			local result = EnemyLifecycleService.requestSpawn({
+				entityId = definition.id,
+				archetypeId = EnemyContracts.ArchetypeIds.Shambler,
+				position = { x = definition.x, y = definition.y, z = definition.z },
+				facingDirection = nil,
+				correlationId = string.format("%s.wave.%d.%s", MissionConfig.OperationId, waveIndex, definition.id),
+			})
+			if not result.didSpawn then
+				allMembersPresent = false
+			end
+		end
+	end
+
+	if allMembersPresent then
+		completedWaves[waveIndex] = true
 	end
 end
 
@@ -168,7 +178,7 @@ function Service.stop()
 		updateConnection:Disconnect()
 		updateConnection = nil
 	end
-	table.clear(requestedWaves)
+	table.clear(completedWaves)
 	table.clear(lastAttackByEnemyId)
 	table.clear(attackSequenceByEnemyId)
 	accumulatedSeconds = 0
