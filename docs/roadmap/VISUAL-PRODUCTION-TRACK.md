@@ -51,6 +51,18 @@ Record defects as bounded follow-up tasks. Only approved shapes/material roles s
 
 All current world additions remain presentation-only: no gameplay ownership, new remotes, server-state mutation, collision authority, or production approval.
 
+## Completed slice details
+
+Source-audited detail of what each in-progress slice has already delivered. These remain temporary or fallback presentation, not canonical production approval.
+
+- **VIS-0102 firearms.** Hit-confirmed tracer policy: a temporary tracer marks server-resolved shots and the reload lifecycle; final effects and audio are still pending.
+- **VIS-0103 Exclusion Walker.** A deterministic 18-component Exclusion Walker source candidate exists as an offline fallback silhouette. Attack readability uses a cancelable 0.6-second server-owned windup so the disclosed-state pose telegraphs the strike.
+- **VIS-0104 operatives.** Life-state cues plus event-driven upper-body carry poses read the operative's weapon state without changing the canonical rig.
+- **VIS-0105 world presentation.**
+  - Cache: a procedural supply case presents available/consumed state around the unchanged server-owned cache.
+  - Routes: paired edge guides on authored segments, capped at 22 parts, with no destination or extraction hints.
+  - Relay and extraction: Validated monotonic safe mission snapshots drive client presentation; inconsistent state restores primitive fallbacks.
+
 ## Dependency rules
 
 Execution order:

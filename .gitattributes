@@ -1,0 +1,27 @@
+# Enforce LF line endings across the repo so Windows checkouts match the
+# Linux CI. StyLua and the source-audit Lune fixtures match on `\n`, which
+# breaks under CRLF. Text files are normalized to LF on commit and checkout.
+* text=auto eol=lf
+
+# Explicitly treat known text types as LF regardless of local core.autocrlf.
+*.luau text eol=lf
+*.lua text eol=lf
+*.md text eol=lf
+*.toml text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.py text eol=lf
+
+# Binary assets must never be line-ending normalized.
+*.rbxl binary
+*.rbxlx binary
+*.rbxm binary
+*.rbxmx binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ogg binary
+*.mp3 binary
+*.wav binary
+*.fbx binary
