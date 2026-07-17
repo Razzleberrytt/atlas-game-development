@@ -15,6 +15,7 @@ local PersonalFlashlightController = require(script.Controllers.PersonalFlashlig
 local SquadPingController = require(script.Controllers.SquadPingController)
 local EnvironmentAmbienceController = require(script.Controllers.EnvironmentAmbienceController)
 local MissionController = require(script.Controllers.MissionController)
+local MissionObjectPresentationController = require(script.Controllers.MissionObjectPresentationController)
 
 CameraController.init()
 CameraController.start()
@@ -34,6 +35,7 @@ PersonalFlashlightController.start()
 SquadPingController.start()
 EnvironmentAmbienceController.start()
 MissionController.start()
+MissionObjectPresentationController.start()
 -- Mission presentation starts first; class selection then requests authoritative state.
 ClassSelectionController.start()
 ClassSilhouetteController.start()
