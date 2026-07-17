@@ -53,3 +53,5 @@ jobs:
           git add -A
           git commit -m "feat: add server-owned Exclusion Walker windup"
           git push origin HEAD:feat/exclusion-walker-attack-windup
+
+# trigger after workflow registration
