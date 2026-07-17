@@ -69,12 +69,45 @@ local function ensureMissionNetwork()
 	end
 end
 
+local function ensureClassNetwork()
+	local existingNetwork = ReplicatedStorage:FindFirstChild("ClassNetwork")
+	local network: Folder
+	if existingNetwork == nil then
+		network = Instance.new("Folder")
+		network.Name = "ClassNetwork"
+		network.Parent = ReplicatedStorage
+	else
+		assert(existingNetwork:IsA("Folder"), "ClassNetwork must be a Folder")
+		network = existingNetwork
+	end
+	for _, remoteName in { "SelectionIntent", "State" } do
+		local existingRemote = network:FindFirstChild(remoteName)
+		if existingRemote == nil then
+			local remote = Instance.new("RemoteEvent")
+			remote.Name = remoteName
+			remote.Parent = network
+		else
+			assert(existingRemote:IsA("RemoteEvent"), remoteName .. " must be a RemoteEvent")
+		end
+	end
+	local existingReadState = network:FindFirstChild("ReadState")
+	if existingReadState == nil then
+		local readState = Instance.new("RemoteFunction")
+		readState.Name = "ReadState"
+		readState.Parent = network
+	else
+		assert(existingReadState:IsA("RemoteFunction"), "ReadState must be a RemoteFunction")
+	end
+end
+
 ensureFlashlightNetwork()
 ensureSquadPingNetwork()
 ensureMissionNetwork()
+ensureClassNetwork()
 
 local AmmunitionCacheService = require(script.Systems.AmmunitionCacheService)
 local AmmunitionScarcityValidationProbeService = require(script.Systems.AmmunitionScarcityValidationProbeService)
+local ClassService = require(script.Systems.ClassService)
 local MovementValidationSystem = require(script.Systems.MovementValidationSystem)
 local MovementStateReplicationSystem = require(script.Systems.MovementStateReplicationSystem)
 local EnemyDirectorService = require(script.Systems.EnemyDirectorService)
@@ -106,5 +139,6 @@ OperativeCombatRuntimeService.start()
 AmmunitionCacheService.start()
 AmmunitionScarcityValidationProbeService.start()
 MissionDirectorService.start()
+ClassService.start()
 
 print("[Living Kingdoms] Server bootstrap started")
