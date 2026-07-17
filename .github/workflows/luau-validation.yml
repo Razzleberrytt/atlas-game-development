@@ -28,11 +28,11 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Build and validate supply cache visuals
-        shell: bash
+      - name: Apply supply cache integration
+        run: python .github/scripts/apply_supply_cache_visuals.py
+
+      - name: Format changed Luau
         run: |
-          set -euo pipefail
-          python .github/scripts/apply_supply_cache_visuals.py
           stylua \
             games/living-kingdoms/src/client/Presentation/SupplyCachePresentationConfig.luau \
             games/living-kingdoms/src/client/Presentation/SupplyCachePresentationFactory.luau \
@@ -41,17 +41,36 @@ jobs:
             games/living-kingdoms/tests/SupplyCachePresentationConfig.test.luau \
             games/living-kingdoms/tests/SupplyCacheVisualReadabilitySourceAudit.test.luau \
             games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau
-          stylua --check games/living-kingdoms/src
-          selene games/living-kingdoms/src
+
+      - name: Check Luau formatting
+        run: stylua --check games/living-kingdoms/src
+
+      - name: Run Selene
+        run: selene games/living-kingdoms/src
+
+      - name: Run focused supply cache fixtures
+        run: |
+          lune run games/living-kingdoms/tests/SupplyCachePresentationConfig.test.luau
+          lune run games/living-kingdoms/tests/SupplyCacheVisualReadabilitySourceAudit.test.luau
+          lune run games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau
+
+      - name: Run complete Lune fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
           fixture_count=0
           while IFS= read -r -d '' fixture; do
+            echo "::group::Lune fixture: $fixture"
             lune run "$fixture"
+            echo "::endgroup::"
             fixture_count=$((fixture_count + 1))
           done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
           if [ "$fixture_count" -eq 0 ]; then
             exit 1
           fi
-          rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
+
+      - name: Build Rojo project
+        run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
 
       - name: Commit only validated product files
         run: |
