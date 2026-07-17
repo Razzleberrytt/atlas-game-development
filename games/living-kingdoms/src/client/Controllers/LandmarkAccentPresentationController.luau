@@ -23,6 +23,13 @@ local REQUIRED_ANCHOR_NAMES = table.freeze({
 	RadioMast = true,
 	CheckpointCabin = true,
 	RoadblockEmergencyLight = true,
+	AbandonedTent1 = true,
+	AbandonedTent2 = true,
+	DeadFire = true,
+	WashedOutWarning = true,
+	FallenCreekTree = true,
+	BrokenGuardRail = true,
+	ReadableCliffEdge = true,
 })
 
 local function landmarkModelFor(instance: Instance): Model?

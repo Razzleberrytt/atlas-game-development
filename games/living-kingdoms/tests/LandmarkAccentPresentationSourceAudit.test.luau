@@ -13,8 +13,9 @@ local factory = fs.readFile("games/living-kingdoms/src/client/Presentation/Landm
 local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/LandmarkAccentPresentationController.luau")
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 
-check(string.find(resolver, 'RangerStation = "RangerStation"', 1, true) ~= nil)
-check(string.find(resolver, 'MilitaryRoadblock = "MilitaryRoadblock"', 1, true) ~= nil)
+for _, style in { "RangerStation", "MilitaryRoadblock", "Campground", "CreekCrossing", "RockyOverlook" } do
+	check(string.find(resolver, style .. ' = "' .. style .. '"', 1, true) ~= nil, "missing safe landmark style")
+end
 check(string.find(resolver, "LookoutTower", 1, true) == nil, "resolver must not select the objective-area lookout")
 check(
 	string.find(resolver, "ExtractionClearing", 1, true) == nil,
@@ -22,14 +23,32 @@ check(
 )
 
 check(string.find(factory, 'PresentationModelName = "LandmarkSilhouettePresentation"', 1, true) ~= nil)
-check(string.find(factory, "MaximumPresentationParts = 10", 1, true) ~= nil)
-check(string.find(factory, 'basePart(model, "Roof")', 1, true) ~= nil)
-check(string.find(factory, 'basePart(model, "RadioMast")', 1, true) ~= nil)
-check(string.find(factory, 'basePart(model, "CheckpointCabin")', 1, true) ~= nil)
-check(string.find(factory, 'basePart(model, "RoadblockEmergencyLight")', 1, true) ~= nil)
+check(string.find(factory, "MaximumPresentationParts = 22", 1, true) ~= nil)
+check(
+	string.find(factory, "WorldMaterialLanguageConfig", 1, true) ~= nil,
+	"factory must use the shared material language"
+)
+for _, anchorName in
+	{
+		"Roof",
+		"RadioMast",
+		"CheckpointCabin",
+		"RoadblockEmergencyLight",
+		"AbandonedTent1",
+		"AbandonedTent2",
+		"DeadFire",
+		"WashedOutWarning",
+		"FallenCreekTree",
+		"BrokenGuardRail",
+		"ReadableCliffEdge",
+	}
+do
+	check(string.find(factory, 'basePart(model, "' .. anchorName .. '")', 1, true) ~= nil, "missing landmark anchor")
+	check(string.find(controller, anchorName .. " = true", 1, true) ~= nil, "controller must track every anchor")
+end
 
 local _, makeAccentCount = string.gsub(factory, "makeAccent%(", "")
-check(makeAccentCount == 11, "factory must define one helper and exactly ten bounded accent parts")
+check(makeAccentCount == 23, "factory must define one helper and exactly twenty-two bounded accent parts")
 check(string.find(factory, "part.Massless = true", 1, true) ~= nil)
 check(string.find(factory, "part.CanCollide = false", 1, true) ~= nil)
 check(string.find(factory, "part.CanTouch = false", 1, true) ~= nil)
