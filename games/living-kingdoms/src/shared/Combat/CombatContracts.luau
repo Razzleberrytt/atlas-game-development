@@ -72,6 +72,8 @@ export type CombatPresentationMessageKindId =
 	| "ReloadStarted"
 	| "ReloadCompleted"
 	| "ReloadInterrupted"
+	| "AmmunitionState"
+	| "AmmunitionCollected"
 
 export type AmmunitionState = {
 	weaponId: WeaponId,
@@ -272,6 +274,25 @@ export type ReloadInterruptedPresentationMessage = {
 	weaponId: WeaponId,
 }
 
+export type AmmunitionStatePresentationMessage = {
+	kindId: "AmmunitionState",
+	weaponId: WeaponId,
+	loadedRounds: number,
+	reserveRounds: number,
+	magazineCapacity: number,
+	maximumReserveRounds: number,
+}
+
+export type AmmunitionCollectedPresentationMessage = {
+	kindId: "AmmunitionCollected",
+	weaponId: WeaponId,
+	grantedRounds: number,
+	loadedRounds: number,
+	reserveRounds: number,
+	magazineCapacity: number,
+	maximumReserveRounds: number,
+}
+
 export type CombatPresentationMessage =
 	TargetSelectedPresentationMessage
 	| TargetClearedPresentationMessage
@@ -279,6 +300,8 @@ export type CombatPresentationMessage =
 	| ReloadStartedPresentationMessage
 	| ReloadCompletedPresentationMessage
 	| ReloadInterruptedPresentationMessage
+	| AmmunitionStatePresentationMessage
+	| AmmunitionCollectedPresentationMessage
 
 CombatContracts.CombatEntityKindIds = table.freeze({
 	Operative = "Operative",
@@ -386,6 +409,8 @@ CombatContracts.PresentationMessageKindIds = table.freeze({
 	ReloadStarted = "ReloadStarted",
 	ReloadCompleted = "ReloadCompleted",
 	ReloadInterrupted = "ReloadInterrupted",
+	AmmunitionState = "AmmunitionState",
+	AmmunitionCollected = "AmmunitionCollected",
 })
 
 return table.freeze(CombatContracts)

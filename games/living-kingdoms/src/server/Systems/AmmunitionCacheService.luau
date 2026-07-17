@@ -88,7 +88,14 @@ local function tryCollect(player: Player, definition)
 	end
 	local stateAfter = result.stateAfter
 	combatState.weaponState.ammunition.reserveRounds = stateAfter.reserveRounds
-	if not OperativeCombatRuntimeService.commitReviveCombatState(player, read.generation, combatState) then
+	if
+		not OperativeCombatRuntimeService.commitReviveCombatState(
+			player,
+			read.generation,
+			combatState,
+			result.grantedRounds
+		)
+	then
 		return
 	end
 	processedByPlayer[player] = table.clone(stateAfter.processedSupplyIds)

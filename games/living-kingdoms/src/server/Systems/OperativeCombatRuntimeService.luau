@@ -59,7 +59,13 @@ type OperativeCombatRuntimeService = {
 	start: () -> (),
 	stop: () -> (),
 	readReviveCombatState: (player: Player) -> any?,
-	commitReviveCombatState: (player: Player, expectedGeneration: number, combatState: any) -> boolean,
+	commitReviveCombatState: (
+		player: Player,
+		expectedGeneration: number,
+		combatState: any,
+		grantedRounds: number?
+	) -> boolean,
+	publishAmmunitionState: (player: Player, grantedRounds: number?) -> boolean,
 	evaluateAt: (serverTimestamp: number) -> (),
 }
 
@@ -134,6 +140,30 @@ local function deepCopy(value: any): any
 	return result
 end
 
+function OperativeCombatRuntimeService.publishAmmunitionState(player: Player, grantedRounds: number?): boolean
+	local playerState = playerStates[player]
+	if playerState == nil then
+		return false
+	end
+	local ammunition = playerState.weaponState.ammunition
+	local kindId = if grantedRounds == nil
+		then CombatContracts.PresentationMessageKindIds.AmmunitionState
+		else CombatContracts.PresentationMessageKindIds.AmmunitionCollected
+	local payload = {
+		kindId = kindId,
+		weaponId = ammunition.weaponId,
+		loadedRounds = ammunition.loadedRounds,
+		reserveRounds = ammunition.reserveRounds,
+		magazineCapacity = ammunition.magazineCapacity,
+		maximumReserveRounds = FirearmConfig.BasicFirearm.MaximumReserveRounds,
+	}
+	if grantedRounds ~= nil then
+		payload.grantedRounds = grantedRounds
+	end
+	presentationRemote:FireClient(player, payload)
+	return true
+end
+
 function OperativeCombatRuntimeService.readReviveCombatState(player: Player): any?
 	local playerState = playerStates[player]
 	if playerState == nil then
@@ -158,7 +188,8 @@ end
 function OperativeCombatRuntimeService.commitReviveCombatState(
 	player: Player,
 	expectedGeneration: number,
-	combatState: any
+	combatState: any,
+	grantedRounds: number?
 ): boolean
 	local playerState = playerStates[player]
 	if
@@ -174,6 +205,7 @@ function OperativeCombatRuntimeService.commitReviveCombatState(
 	playerState.weaponState = deepCopy(combatState.weaponState)
 	playerState.processedShotIds = deepCopy(combatState.processedShotIds)
 	playerState.selectedTargetEntityId = nil
+	OperativeCombatRuntimeService.publishAmmunitionState(player, grantedRounds)
 	return true
 end
 
@@ -376,6 +408,7 @@ local function evaluatePlayer(player: Player, playerState: PlayerCombatState, no
 	playerState.weaponState = fireResolution.weaponStateAfter
 	if fireResolution.decision.shouldFire then
 		resolveAcceptedShot(player, playerState, operativePosition, fireResolution.fireResult, nowTimestamp)
+		OperativeCombatRuntimeService.publishAmmunitionState(player)
 	end
 end
 
@@ -408,6 +441,9 @@ local function completeReload(player: Player, expectedCompletionTimestamp: numbe
 		ReloadResolver.complete(playerState.operativeState, playerState.weaponState, Workspace:GetServerTimeNow())
 	playerState.operativeState = resolution.operativeStateAfter
 	playerState.weaponState = resolution.weaponStateAfter
+	if resolution.didComplete or resolution.wasInterrupted then
+		OperativeCombatRuntimeService.publishAmmunitionState(player)
+	end
 	if resolution.didComplete then
 		presentationRemote:FireClient(player, {
 			kindId = CombatContracts.PresentationMessageKindIds.ReloadCompleted,
@@ -492,8 +528,10 @@ end
 
 local function addPlayer(player: Player)
 	resetPlayer(player)
+	OperativeCombatRuntimeService.publishAmmunitionState(player)
 	characterAddedConnections[player] = player.CharacterAdded:Connect(function()
 		resetPlayer(player)
+		OperativeCombatRuntimeService.publishAmmunitionState(player)
 	end)
 end
 

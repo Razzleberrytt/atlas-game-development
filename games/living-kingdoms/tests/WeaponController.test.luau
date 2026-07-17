@@ -194,10 +194,14 @@ local function inputR(gameProcessed: boolean)
 	inputBegan:Fire({ KeyCode = keyCodeR }, gameProcessed)
 end
 
-local function activeInstance(className: string)
+local function activeInstance(className: string, instanceName: string?)
 	for index = #createdInstances, 1, -1 do
 		local instance = createdInstances[index]
-		if instance.ClassName == className and not instance.destroyed then
+		if
+			instance.ClassName == className
+			and not instance.destroyed
+			and (instanceName == nil or instance.Name == instanceName)
+		then
 			return instance
 		end
 	end
@@ -297,7 +301,7 @@ local authoritativePayload = {
 	healthAfter = 80,
 }
 local authoritativePayloadBefore = deepCopy(authoritativePayload)
-local statusLabel = activeInstance("TextLabel")
+local statusLabel = activeInstance("TextLabel", "Status")
 presentationEvent:Fire(authoritativePayload)
 presentationEvent:Fire(authoritativePayload)
 presentationEvent:Fire({
