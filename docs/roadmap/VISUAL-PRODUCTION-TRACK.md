@@ -19,10 +19,11 @@ Weapon meshes do not own shooting. Enemy rigs do not own health, targeting, atta
 - [x] **VIS-PLAN-001 — Define the visual asset production specification.**
   - Defines the visual target, placeholder policy, authority boundary, asset families, cosmetic policy, source/license requirements, provisional budgets, review gates, and ordered production tasks.
   - Planning and documentation only.
-- [ ] **VIS-0101 — Define the visual asset registry and placeholder inventory.**
-  - Add stable visual asset keys, family/version metadata, attachment or rig expectations, canonical fallbacks, and source/license fields.
-  - Inventory current primitive weapons, enemies, operatives, interactables, world props, effects, sounds, and temporary UI.
-  - No production imports, arbitrary numeric client IDs, or gameplay behavior changes.
+- [x] **VIS-0101 — Define the visual asset registry and placeholder inventory.**
+  - Adds 28 stable visual asset keys with family/version metadata, expected roots/attachments, gameplay-footprint references, cosmetic eligibility, and source/runtime-owner records.
+  - Inventories current primitive weapons, enemies, operatives, interactables, world props, effects, sounds, ambience, and temporary UI in `visual-placeholder-inventory.md`.
+  - All current records remain honestly classified as primitive, default-avatar, missing, or temporary; no production asset is falsely approved.
+  - Declarations load no assets, register no numeric IDs, create no runtime owner, and change no gameplay behavior.
 - [ ] **VIS-0102 — Replace the basic firearm presentation.**
   - Approve a reference board and representative firearm concept.
   - Add the canonical firearm model, attachment points, magazine state, fire/reload/empty animation compatibility, muzzle/impact effects, and sound set.
