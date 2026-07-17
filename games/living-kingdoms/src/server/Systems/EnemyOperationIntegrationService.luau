@@ -1,10 +1,9 @@
 --!strict
 
 --[[
-	P5-0104 integration owner between the authored Blackwater Relay mission,
-	production enemy lifecycle, and P3 operative damage. It uses one bounded
-	service update connection, creates no client authority path, and never owns
-	enemy or operative health directly.
+	P5-0105 integration owner between Blackwater Relay, production enemies, P3
+	operative damage, and bounded pressure pacing. It keeps one service update
+	connection and introduces no client authority path or additional scheduler.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,6 +14,7 @@ local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local EnemyContracts = require(ReplicatedStorage.Shared.Enemy.EnemyContracts)
 local MissionConfig = require(ReplicatedStorage.Shared.Config.MissionConfig)
 local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.OperativeLifeContracts)
+local PressurePacingDomain = require(script.Parent.Parent.Domain.PressurePacingDomain)
 local EnemyLifecycleService = require(script.Parent.EnemyLifecycleService)
 local MissionDirectorService = require(script.Parent.MissionDirectorService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
@@ -23,7 +23,11 @@ local Service = {}
 local started = false
 local accumulatedSeconds = 0
 local updateConnection: RBXScriptConnection? = nil
+local releasedWaves: { [number]: boolean } = {}
 local completedWaves: { [number]: boolean } = {}
+local releasedWaveCount = 0
+local lastWaveReleasedServerTimestamp: number? = nil
+local recoveryUntilServerTimestamp: number? = nil
 local lastAttackByEnemyId: { [string]: number } = {}
 local attackSequenceByEnemyId: { [string]: number } = {}
 
@@ -31,7 +35,17 @@ local function now(): number
 	return Workspace:GetServerTimeNow()
 end
 
-local function requestWave(waveIndex: number)
+local function countActiveEnemies(): number
+	local count = 0
+	for _, snapshot in EnemyLifecycleService.readAll() do
+		if snapshot.lifecycleStateId == EnemyContracts.LifecycleStateIds.Active then
+			count += 1
+		end
+	end
+	return count
+end
+
+local function requestWaveMembers(waveIndex: number)
 	if completedWaves[waveIndex] then
 		return
 	end
@@ -59,6 +73,34 @@ local function requestWave(waveIndex: number)
 	if allMembersPresent then
 		completedWaves[waveIndex] = true
 	end
+end
+
+local function tryReleaseWave(waveIndex: number, missionResolved: boolean, serverTimestamp: number)
+	if releasedWaves[waveIndex] then
+		requestWaveMembers(waveIndex)
+		return
+	end
+
+	local decision = PressurePacingDomain.evaluate({
+		missionResolved = missionResolved,
+		requestedWaveIndex = waveIndex,
+		completedWaveCount = releasedWaveCount,
+		activeEnemyCount = countActiveEnemies(),
+		maximumConcurrentEnemies = MissionConfig.Escalation.MaximumConcurrentEnemies,
+		serverTimestamp = serverTimestamp,
+		lastWaveReleasedServerTimestamp = lastWaveReleasedServerTimestamp,
+		minimumSecondsBetweenWaves = MissionConfig.Escalation.MinimumSecondsBetweenWaves,
+		recoveryUntilServerTimestamp = recoveryUntilServerTimestamp,
+	})
+	if not decision.shouldReleaseWave then
+		return
+	end
+
+	releasedWaves[waveIndex] = true
+	releasedWaveCount = waveIndex
+	lastWaveReleasedServerTimestamp = serverTimestamp
+	recoveryUntilServerTimestamp = serverTimestamp + MissionConfig.Escalation.RecoverySecondsAfterWave
+	requestWaveMembers(waveIndex)
 end
 
 local function operativeTarget(operativeEntityId: string): (Vector3?, number?)
@@ -143,9 +185,14 @@ function Service.evaluateAt(serverTimestamp: number)
 		return
 	end
 	local mission = MissionDirectorService.read()
-	if mission.phaseId ~= "Resolved" then
-		for waveIndex = 1, mission.escalationLevel do
-			requestWave(waveIndex)
+	local missionResolved = mission.phaseId == "Resolved"
+	if not missionResolved then
+		local nextWaveIndex = releasedWaveCount + 1
+		if nextWaveIndex <= mission.escalationLevel then
+			tryReleaseWave(nextWaveIndex, false, serverTimestamp)
+		end
+		for waveIndex = 1, releasedWaveCount do
+			requestWaveMembers(waveIndex)
 		end
 	end
 	for _, enemySnapshot in EnemyLifecycleService.readAll() do
@@ -178,9 +225,13 @@ function Service.stop()
 		updateConnection:Disconnect()
 		updateConnection = nil
 	end
+	table.clear(releasedWaves)
 	table.clear(completedWaves)
 	table.clear(lastAttackByEnemyId)
 	table.clear(attackSequenceByEnemyId)
+	releasedWaveCount = 0
+	lastWaveReleasedServerTimestamp = nil
+	recoveryUntilServerTimestamp = nil
 	accumulatedSeconds = 0
 end
 
