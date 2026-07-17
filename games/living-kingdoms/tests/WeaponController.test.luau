@@ -101,6 +101,7 @@ local replicatedStorage = {
 
 local playerGui = fakeInstance("PlayerGui")
 local localPlayer = {
+	UserId = 42,
 	WaitForChild = function(_self: unknown, name: string)
 		assert(name == "PlayerGui", "unexpected player child")
 		return playerGui
@@ -278,7 +279,7 @@ assert(activeInstance("Highlight") == nil, "malformed known target disclosure wa
 
 presentationEvent:Fire({
 	kindId = "TargetSelected",
-	operativeEntityId = "operative.local",
+	operativeEntityId = "operative.player:42",
 	targetEntityId = "hostile.disclosed",
 	serverTimestamp = 10,
 })
@@ -286,14 +287,14 @@ local highlight = activeInstance("Highlight")
 assert(highlight ~= nil, "disclosed selected target was not highlighted")
 assert(highlight.Adornee == target, "highlight adorned the wrong target")
 
-presentationEvent:Fire({ kindId = "TargetCleared", operativeEntityId = "operative.local", serverTimestamp = 10.1 })
+presentationEvent:Fire({ kindId = "TargetCleared", operativeEntityId = "operative.player:42", serverTimestamp = 10.1 })
 assert(highlight.destroyed == true, "target clear retained highlight")
 assert(activeInstance("Highlight") == nil, "target clear retained target presentation")
 
 local authoritativePayload = {
 	kindId = "ShotFired",
 	shotId = "shot.server.1",
-	operativeEntityId = "operative.local",
+	operativeEntityId = "operative.player:42",
 	weaponId = "weapon.basic_firearm",
 	targetEntityId = "hostile.undisclosed",
 	serverTimestamp = 10.2,
@@ -307,10 +308,18 @@ presentationEvent:Fire(authoritativePayload)
 presentationEvent:Fire({
 	kindId = "ShotFired",
 	shotId = "shot.server.2",
-	operativeEntityId = "operative.local",
+	operativeEntityId = "operative.player:42",
 	weaponId = "weapon.basic_firearm",
 	targetEntityId = "hostile.disclosed",
 	serverTimestamp = 10.4,
+})
+presentationEvent:Fire({
+	kindId = "ShotFired",
+	shotId = "shot.server.remote",
+	operativeEntityId = "operative.player:99",
+	weaponId = "weapon.basic_firearm",
+	targetEntityId = "hostile.disclosed",
+	serverTimestamp = 10.45,
 })
 presentationEvent:Fire(authoritativePayload)
 local shotWrites = 0

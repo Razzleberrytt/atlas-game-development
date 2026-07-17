@@ -29,12 +29,11 @@ MissionContracts: P5-0103 vocabulary, snapshot validation, and authored config p
 === games/living-kingdoms/tests/MissionDirectorService.test.luau ===
 MissionDirectorService: P5-0103 phases, objective, extraction, holdout, wipe, disconnect, and cleanup passed
 === games/living-kingdoms/tests/OperativeCombatRuntimeService.test.luau ===
-attempt to call missing method 'FireAllClients' of table
+/home/runner/work/atlas-game-development/atlas-game-development/games/living-kingdoms/tests/OperativeCombatRuntimeService.test:624: combat runtime must stay narrow: FireAllClients
 [Stack Begin]
-    Script 'OperativeCombatRuntimeService', Line 369
-    Script 'OperativeCombatRuntimeService', Line 411
-    Script 'OperativeCombatRuntimeService', Line 421
-    Script '/home/runner/work/atlas-game-development/atlas-game-development/games/living-kingdoms/tests/OperativeCombatRuntimeService.test', Line 477
+    Script '[C]' - function 'error'
+    Script '/home/runner/work/atlas-game-development/atlas-game-development/games/living-kingdoms/tests/OperativeCombatRuntimeService.test', Line 13
+    Script '/home/runner/work/atlas-game-development/atlas-game-development/games/living-kingdoms/tests/OperativeCombatRuntimeService.test', Line 624
 [Stack End]
 
 === games/living-kingdoms/tests/OperativeHealthResolver.test.luau ===
@@ -96,12 +95,7 @@ VisibilityResolver: LK-0403 validation, policy, P2 compatibility, determinism, a
 === games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau ===
 === games/living-kingdoms/tests/VisualWeaponAssetSourceAudit.test.luau ===
 === games/living-kingdoms/tests/WeaponController.test.luau ===
-/home/runner/work/atlas-game-development/atlas-game-development/games/living-kingdoms/tests/WeaponController.test:322: disclosed ShotIds were not presented exactly once
-[Stack Begin]
-    Script '[C]' - function 'assert'
-    Script '/home/runner/work/atlas-game-development/atlas-game-development/games/living-kingdoms/tests/WeaponController.test', Line 322
-[Stack End]
-
+WeaponController: reload input, cooldown, focus, lifecycle, disclosure, shot, and authority checks passed
 === games/living-kingdoms/tests/WeaponPresentationSourceAudit.test.luau ===
 === games/living-kingdoms/tests/WorldFoundationConfig.test.luau ===
 WorldFoundationConfig fixtures passed
