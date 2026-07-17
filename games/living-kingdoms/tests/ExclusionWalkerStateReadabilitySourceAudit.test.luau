@@ -8,12 +8,11 @@ local function assertThat(condition: unknown, message: string)
 	end
 end
 
-local serverPresenter =
-	fs.readFile("games/living-kingdoms/src/server/Systems/EnemyPresentationService.luau")
-local controller =
-	fs.readFile("games/living-kingdoms/src/client/Controllers/EnemyPresentationController.luau")
-local resolver =
-	fs.readFile("games/living-kingdoms/src/client/Presentation/EnemyPresentationPoseResolver.luau")
+local serverPresenter = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyPresentationService.luau")
+local director = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau")
+local contracts = fs.readFile("games/living-kingdoms/src/shared/Visual/EnemyPresentationContracts.luau")
+local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/EnemyPresentationController.luau")
+local resolver = fs.readFile("games/living-kingdoms/src/client/Presentation/EnemyPresentationPoseResolver.luau")
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 local manifest = fs.readFile("games/living-kingdoms/assets/visual/enemy/standard-hostile/asset-manifest.json")
 local readme = fs.readFile("games/living-kingdoms/assets/visual/enemy/standard-hostile/README.md")
@@ -33,18 +32,47 @@ do
 	assertThat(string.find(serverPresenter, required, 1, true) ~= nil, "motorized Walker rig missing: " .. required)
 end
 
+for _, attributeName in
+	{
+		"EnemyPresentationBehaviorStateId",
+		"EnemyPresentationLifeStateId",
+		"EnemyPresentationAttackSequence",
+		"EnemyPresentationAttackServerTimestamp",
+		"EnemyPresentationHitSequence",
+		"EnemyPresentationHitServerTimestamp",
+	}
+do
+	assertThat(string.find(contracts, attributeName, 1, true) ~= nil, "presentation contract missing " .. attributeName)
+end
+
 for _, required in
 	{
-		'RunService.RenderStepped:Connect',
-		'folder.DescendantAdded:Connect',
-		'folder.ChildRemoved:Connect',
-		'Workspace:GetServerTimeNow()',
-		'EnemyPresentationPoseResolver.resolve',
-		'record.humanoid.MoveDirection.Magnitude',
-		'record.humanoid.WalkSpeed',
-		'string.match(label.Text, "Health:%s*(%-?%d+)")',
-		'record.torsoMotor.C0 =',
-		'record.sensor.Color =',
+		"initializePresentationAttributes(entry)",
+		"setPresentationBehaviorState(entry, decision.behaviorStateIdAfter)",
+		"discloseCommittedAttack(entry, attack.serverTimestamp)",
+		"discloseCommittedHit(entry, serverTimestamp)",
+		"PresentationAttributeNames.AttackSequence",
+		"PresentationAttributeNames.HitSequence",
+		"PresentationLifeStateIds.Dead",
+	}
+do
+	assertThat(string.find(director, required, 1, true) ~= nil, "server disclosure missing: " .. required)
+end
+
+for _, required in
+	{
+		"RunService.RenderStepped:Connect",
+		"folder.DescendantAdded:Connect",
+		"folder.ChildRemoved:Connect",
+		"Workspace:GetServerTimeNow()",
+		"EnemyPresentationContracts.AttributeNames",
+		"PresentationAttributeNames.BehaviorStateId",
+		"PresentationAttributeNames.AttackServerTimestamp",
+		"PresentationAttributeNames.HitServerTimestamp",
+		"record.humanoid.MoveDirection.Magnitude",
+		"EnemyPresentationPoseResolver.resolve",
+		"record.torsoMotor.C0 =",
+		"record.sensor.Color =",
 	}
 do
 	assertThat(string.find(controller, required, 1, true) ~= nil, "Walker state controller missing: " .. required)
@@ -74,6 +102,7 @@ for _, forbidden in
 		"root.Position =",
 		"humanoid.WalkSpeed =",
 		"healthLabel.Text =",
+		"string.match",
 		"Anchored =",
 		"task.delay",
 		"task.spawn",
@@ -81,18 +110,24 @@ for _, forbidden in
 do
 	assertThat(
 		not string.find(controller, forbidden, 1, true),
-		"Walker state controller must not contain network, scheduler, or gameplay mutation token " .. forbidden
+		"Walker state controller must not contain network, scheduler, inference, or gameplay mutation token "
+			.. forbidden
 	)
 end
 
 for _, required in
 	{
+		'StrikeActiveLeft = "StrikeActiveLeft"',
+		'StrikeActiveRight = "StrikeActiveRight"',
+		'StrikeRecoveryLeft = "StrikeRecoveryLeft"',
+		'StrikeRecoveryRight = "StrikeRecoveryRight"',
+		"AttackActiveSeconds = 0.16",
+		"AttackRecoverySeconds = 0.52",
 		'HitReaction = "HitReaction"',
 		'ThreatReady = "ThreatReady"',
 		'StandDown = "StandDown"',
 		'Dead = "Dead"',
-		'secondsSinceHit <= 0.28',
-		'if input.isDead then',
+		"if input.isDead then",
 	}
 do
 	assertThat(string.find(resolver, required, 1, true) ~= nil, "Walker pose resolver missing: " .. required)
@@ -106,6 +141,10 @@ assertThat(
 )
 
 assertThat(
+	string.find(manifest, '"serverPresentationAttributeCount": 6', 1, true) ~= nil,
+	"Walker manifest must record the six server presentation attributes"
+)
+assertThat(
 	string.find(manifest, '"clientFrameConnections": 1', 1, true) ~= nil,
 	"Walker manifest must record the one client frame connection"
 )
@@ -114,16 +153,16 @@ assertThat(
 	"Walker manifest must preserve zero per-enemy connections"
 )
 assertThat(
-	string.find(readme, "client-local pose controller", 1, true) ~= nil,
-	"Walker README must document the local state layer"
+	string.find(readme, "six ordinary replicated model attributes", 1, true) ~= nil,
+	"Walker README must document the server disclosure contract"
 )
 assertThat(
-	string.find(roadmap, "client-local pose controller", 1, true) ~= nil,
-	"VIS-0103 roadmap must record the state readability slice"
+	string.find(roadmap, "alternating left/right active-strike and recovery poses", 1, true) ~= nil,
+	"VIS-0103 roadmap must record confirmed strike/recovery"
 )
 assertThat(
-	string.find(roadmap, "committed strike/recovery remains pending", 1, true) ~= nil,
-	"roadmap must not falsely claim server-confirmed strike animation"
+	string.find(roadmap, "Attack anticipation remains pending", 1, true) ~= nil,
+	"roadmap must not falsely claim an attack windup"
 )
 
-print("ExclusionWalkerStateReadabilitySourceAudit: motor, lifecycle, authority, and documentation checks passed")
+print("ExclusionWalkerStateReadabilitySourceAudit: disclosure, strike/recovery, lifecycle, authority, and docs passed")

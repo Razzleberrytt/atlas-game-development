@@ -21,6 +21,7 @@ local Workspace = game:GetService("Workspace")
 
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)
+local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 local WorldFoundationConfig = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)
 local EnemyBehaviorResolver = require(script.Parent.EnemyBehaviorResolver)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
@@ -31,6 +32,8 @@ type EnemySpawnRequest = EnemyContracts.EnemySpawnRequest
 type EnemyWorldPosition = EnemyContracts.EnemyWorldPosition
 
 local BehaviorStateIds = EnemyContracts.EnemyBehaviorStateIds
+local PresentationAttributeNames = EnemyPresentationContracts.AttributeNames
+local PresentationLifeStateIds = EnemyPresentationContracts.LifeStateIds
 local SpawnSourceIds = EnemyContracts.EnemySpawnSourceIds
 local SpawnRejectionReasonIds = EnemyContracts.EnemySpawnRejectionReasonIds
 
@@ -84,6 +87,8 @@ type EnemyEntry = {
 	behaviorStateId: string,
 	targetOperativeEntityId: string?,
 	lastAttackServerTimestamp: number?,
+	attackPresentationSequence: number,
+	hitPresentationSequence: number,
 	healthRevision: number,
 	healthState: {
 		entityId: string,
@@ -138,6 +143,35 @@ local function setHealthPresentation(entry: EnemyEntry)
 	entry.healthLabel.Text =
 		string.format("%s\nHealth: %d", entry.model.Name, math.max(0, entry.healthState.currentHealth))
 	entry.root.Color = if entry.isAlive then Color3.fromRGB(126, 46, 46) else Color3.fromRGB(74, 74, 74)
+end
+
+local function setPresentationBehaviorState(entry: EnemyEntry, behaviorStateId: string)
+	if entry.behaviorStateId == behaviorStateId then
+		return
+	end
+	entry.behaviorStateId = behaviorStateId
+	entry.model:SetAttribute(PresentationAttributeNames.BehaviorStateId, behaviorStateId)
+end
+
+local function initializePresentationAttributes(entry: EnemyEntry)
+	entry.model:SetAttribute(PresentationAttributeNames.BehaviorStateId, entry.behaviorStateId)
+	entry.model:SetAttribute(PresentationAttributeNames.LifeStateId, PresentationLifeStateIds.Alive)
+	entry.model:SetAttribute(PresentationAttributeNames.AttackSequence, 0)
+	entry.model:SetAttribute(PresentationAttributeNames.AttackServerTimestamp, 0)
+	entry.model:SetAttribute(PresentationAttributeNames.HitSequence, 0)
+	entry.model:SetAttribute(PresentationAttributeNames.HitServerTimestamp, 0)
+end
+
+local function discloseCommittedAttack(entry: EnemyEntry, serverTimestamp: number)
+	entry.attackPresentationSequence += 1
+	entry.model:SetAttribute(PresentationAttributeNames.AttackSequence, entry.attackPresentationSequence)
+	entry.model:SetAttribute(PresentationAttributeNames.AttackServerTimestamp, serverTimestamp)
+end
+
+local function discloseCommittedHit(entry: EnemyEntry, serverTimestamp: number)
+	entry.hitPresentationSequence += 1
+	entry.model:SetAttribute(PresentationAttributeNames.HitSequence, entry.hitPresentationSequence)
+	entry.model:SetAttribute(PresentationAttributeNames.HitServerTimestamp, serverTimestamp)
 end
 
 local function readOperativeFacts(): { EnemyOperativeFact }
@@ -246,6 +280,8 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 		behaviorStateId = if isStoodDown then BehaviorStateIds.StandDown else BehaviorStateIds.Roaming,
 		targetOperativeEntityId = nil,
 		lastAttackServerTimestamp = nil,
+		attackPresentationSequence = 0,
+		hitPresentationSequence = 0,
 		healthRevision = 1,
 		healthState = {
 			entityId = request.entityId,
@@ -260,6 +296,7 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 	entries[request.entityId] = entry
 	activeEnemyCount += 1
 	setHealthPresentation(entry)
+	initializePresentationAttributes(entry)
 	model.Parent = folder
 	-- Keep physical simulation server-owned so replicated movement cannot be
 	-- steered by a client.
@@ -340,7 +377,7 @@ function EnemyDirectorService.beginOperationPressure()
 	nextRoamingSpawnServerTimestamp = now() + cadence.IntervalSeconds
 	for _, entry in entries do
 		if entry.isAlive and entry.behaviorStateId == BehaviorStateIds.StandDown then
-			entry.behaviorStateId = BehaviorStateIds.Roaming
+			setPresentationBehaviorState(entry, BehaviorStateIds.Roaming)
 		end
 	end
 end
@@ -361,7 +398,7 @@ function EnemyDirectorService.endOperationPressure()
 	table.clear(pendingSpawns)
 	for _, entry in entries do
 		if entry.isAlive then
-			entry.behaviorStateId = BehaviorStateIds.StandDown
+			setPresentationBehaviorState(entry, BehaviorStateIds.StandDown)
 			entry.targetOperativeEntityId = nil
 			entry.humanoid.WalkSpeed = 0
 		end
@@ -402,7 +439,8 @@ end
 
 local function applyDeath(entry: EnemyEntry, serverTimestamp: number)
 	entry.isAlive = false
-	entry.behaviorStateId = BehaviorStateIds.Dead
+	setPresentationBehaviorState(entry, BehaviorStateIds.Dead)
+	entry.model:SetAttribute(PresentationAttributeNames.LifeStateId, PresentationLifeStateIds.Dead)
 	entry.targetOperativeEntityId = nil
 	entry.humanoid.WalkSpeed = 0
 	entry.root.Anchored = true
@@ -449,12 +487,16 @@ function EnemyDirectorService.commitHealthState(
 			return false
 		end
 	end
+	local previousHealth = entry.healthState.currentHealth
 	entry.healthState = {
 		entityId = entityId,
 		currentHealth = healthStateAfter.currentHealth,
 		processedShotIds = copyStringSet(healthStateAfter.processedShotIds),
 	}
 	entry.healthRevision += 1
+	if entry.healthState.currentHealth < previousHealth then
+		discloseCommittedHit(entry, serverTimestamp)
+	end
 	if entry.healthState.currentHealth <= 0 then
 		applyDeath(entry, serverTimestamp)
 	else
@@ -572,7 +614,7 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 	if decision.rejectionReasonId ~= nil then
 		return 0
 	end
-	entry.behaviorStateId = decision.behaviorStateIdAfter
+	setPresentationBehaviorState(entry, decision.behaviorStateIdAfter)
 	entry.targetOperativeEntityId = decision.targetOperativeEntityId
 
 	if decision.behaviorStateIdAfter == BehaviorStateIds.Pursuing then
@@ -621,6 +663,7 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 	})
 	if commit.didCommit then
 		entry.lastAttackServerTimestamp = attack.serverTimestamp
+		discloseCommittedAttack(entry, attack.serverTimestamp)
 		return 1
 	end
 	return 0

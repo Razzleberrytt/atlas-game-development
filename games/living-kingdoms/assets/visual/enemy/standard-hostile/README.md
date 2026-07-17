@@ -20,17 +20,18 @@ The design is an original grounded biomechanical horde enemy. It uses a broad ar
 
 The existing authoritative `HumanoidRootPart` remains exactly `3 x 5.6 x 3` studs and continues to own collision, movement, network ownership, targeting position, and gameplay footprint. The fallback parts are massless, non-collidable, non-touchable, and non-queryable. A stable `AttackOrigin` attachment is retained for future presentation effects only.
 
-`EnemyPresentationController` is a client-local pose controller. It reads only replicated movement speed, movement direction, the existing health label, and anchored death/stand-down state. It provides:
+`EnemyDirectorService` now writes six ordinary replicated model attributes for presentation only: exact behavior state, life state, confirmed attack sequence/timestamp, and confirmed hit sequence/timestamp. `EnemyPresentationController` consumes those server-authored facts plus replicated movement direction. It provides:
 
 - alternating roaming and pursuit stride poses;
-- a raised non-strike threat-ready pose when a pursuit-speed Walker is stationary;
-- a brief hit reaction after the authoritative health label decreases;
+- a raised non-strike threat-ready pose while the authoritative state is `Pursuing` or `Attacking`;
+- alternating left/right active-strike and recovery poses only after authoritative damage commits;
+- a brief hit reaction only after authoritative enemy health decreases;
 - distinct stand-down and death silhouettes;
 - sensor brightness changes that supplement, but do not replace, the pose cues.
 
-The server runtime owner uses one `EnemyEntities.ChildAdded` connection. The client state layer uses one `RenderStepped` connection plus two folder-level lifecycle connections. Both layers use zero per-enemy connections, zero remotes, and zero per-enemy timers. Motor writes occur only when the resolved pose ID changes.
+The server runtime owner uses one `EnemyEntities.ChildAdded` connection. The client state layer uses one `RenderStepped` connection plus two folder-level lifecycle connections. Both layers use zero per-enemy connections, zero remotes, and zero per-enemy timers. Attribute writes occur only on committed state/event changes, and motor writes occur only when the resolved pose ID changes.
 
-This slice does **not** claim an attack telegraph or committed strike. The current enemy contract applies authoritative contact damage immediately, so anticipation and server-confirmed strike/recovery presentation remain pending rather than being fabricated from proximity.
+This slice still does **not** claim attack anticipation. The current contact-damage contract has no windup phase, so the presentation begins only after the server confirms damage and never predicts a strike from proximity.
 
 ## Generate the import files
 
@@ -48,8 +49,8 @@ python games/living-kingdoms/assets/visual/enemy/standard-hostile/generate_exclu
 4. Wrap the imported components in a canonical model named `ExclusionWalker` bound to the stable `HumanoidRootPart`.
 5. Preserve the five stable motor names and create `AttackOrigin` using the transform in `asset-manifest.json`.
 6. Compare the imported candidate against the procedural fallback from the gameplay camera with representative 1-, 2-, and 4-operative horde counts.
-7. Verify roaming, pursuit, threat-ready, hit, stand-down, and death readability without relying on sensor color alone.
-8. Do not mark the candidate production-approved until attack anticipation/strike/recovery, effects, audio, cleanup, and representative performance gates pass.
+7. Verify roaming, pursuit, threat-ready, confirmed active-strike/recovery, hit, stand-down, and death readability without relying on sensor color alone.
+8. Do not mark the candidate production-approved until attack anticipation, effects, audio, cleanup, and representative performance gates pass.
 
 ## Authority boundary
 
@@ -57,4 +58,4 @@ The model, motors, pose resolver, and future animation clips are presentation on
 
 ## Current status
 
-The deterministic source, motorized procedural fallback, and client-local replicated-state pose layer are implemented. Imported mesh review, server-confirmed attack presentation, effects, audio, accessible anticipation, cosmetic variants, and representative horde performance evidence remain pending.
+The deterministic source, motorized procedural fallback, server-authored presentation disclosure, and client-local confirmed strike/recovery, hit, locomotion, death, and stand-down poses are implemented. Imported mesh review, attack anticipation, effects, audio, cosmetic variants, and representative horde performance evidence remain pending.

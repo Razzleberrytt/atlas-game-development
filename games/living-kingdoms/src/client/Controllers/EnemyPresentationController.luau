@@ -2,10 +2,10 @@
 
 --[[
 	VIS-0103 client-local state readability for the Exclusion Walker fallback.
-	One RenderStepped connection reads replicated presentation facts and changes
-	only Motor6D poses plus the sensor color. It does not send a remote, move an
-	enemy root, select a target, predict an attack, apply damage, change health,
-	or alter death and cleanup.
+	One RenderStepped connection reads server-authored presentation attributes
+	and changes only Motor6D poses plus the sensor appearance. It does not send
+	a remote, move an enemy root, select a target, predict an attack, apply
+	damage, change health, or alter death and cleanup.
 
 	The controller uses two folder-level lifecycle connections and zero per-enemy
 	connections. Motor writes occur only when a resolved pose ID changes.
@@ -16,20 +16,25 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
+local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)
+local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 local EnemyPresentationPoseResolver = require(script.Parent.Parent.Presentation.EnemyPresentationPoseResolver)
 
 local EnemyPresentationController = {}
 
+local BehaviorStateIds = EnemyContracts.EnemyBehaviorStateIds
+local PresentationAttributeNames = EnemyPresentationContracts.AttributeNames
+local PresentationLifeStateIds = EnemyPresentationContracts.LifeStateIds
+
 local ENEMY_FOLDER_NAME = "EnemyEntities"
 local PRESENTATION_MODEL_NAME = "ExclusionWalkerPresentation"
-local HIT_REACTION_SECONDS = 0.28
 local MOVEMENT_THRESHOLD = 0.05
-local STOPPED_SPEED_THRESHOLD = 0.01
 local STRIDES_PER_SECOND = 3
 
 local SENSOR_COLORS = table.freeze({
 	Normal = Color3.fromRGB(218, 78, 53),
 	Alert = Color3.fromRGB(255, 145, 54),
+	Strike = Color3.fromRGB(255, 204, 74),
 	Hit = Color3.fromRGB(255, 245, 210),
 	Dim = Color3.fromRGB(105, 74, 62),
 	Dead = Color3.fromRGB(48, 28, 28),
@@ -38,16 +43,15 @@ local SENSOR_COLORS = table.freeze({
 local SENSOR_TRANSPARENCY = table.freeze({
 	Normal = 0,
 	Alert = 0,
+	Strike = 0,
 	Hit = 0,
 	Dim = 0.35,
 	Dead = 0.55,
 })
 
 type Record = {
-	model: Model,
 	root: BasePart,
 	humanoid: Humanoid,
-	healthLabel: TextLabel,
 	sensor: BasePart,
 	torsoMotor: Motor6D,
 	leftArmMotor: Motor6D,
@@ -59,8 +63,10 @@ type Record = {
 	rightArmBaseC0: CFrame,
 	leftLegBaseC0: CFrame,
 	rightLegBaseC0: CFrame,
-	lastHealth: number,
-	lastHitServerTimestamp: number?,
+	attackSequence: number,
+	attackServerTimestamp: number?,
+	hitSequence: number,
+	hitServerTimestamp: number?,
 	phaseOffsetSeconds: number,
 	poseId: string,
 }
@@ -72,12 +78,14 @@ local childRemovedConnection: RBXScriptConnection? = nil
 local renderConnection: RBXScriptConnection? = nil
 local records: { [Model]: Record } = {}
 
-local function readHealth(label: TextLabel): number?
-	local captured = string.match(label.Text, "Health:%s*(%-?%d+)")
-	if captured == nil then
-		return nil
-	end
-	return tonumber(captured)
+local function readNumberAttribute(model: Model, attributeName: string): number?
+	local value = model:GetAttribute(attributeName)
+	return if type(value) == "number" then value else nil
+end
+
+local function readStringAttribute(model: Model, attributeName: string): string?
+	local value = model:GetAttribute(attributeName)
+	return if type(value) == "string" then value else nil
 end
 
 local function stablePhaseOffset(model: Model): number
@@ -131,8 +139,6 @@ local function trackModel(model: Model)
 	end
 
 	local sensor = presentation:FindFirstChild("Sensor", true)
-	local billboard = root:FindFirstChild("EnemyLabel")
-	local healthLabel = if billboard == nil then nil else billboard:FindFirstChild("Health")
 	local torsoMotor = findMotor(model, "TorsoMotor")
 	local leftArmMotor = findMotor(model, "ForearmLeftMotor")
 	local rightArmMotor = findMotor(model, "ForearmRightMotor")
@@ -141,8 +147,6 @@ local function trackModel(model: Model)
 	if
 		sensor == nil
 		or not sensor:IsA("BasePart")
-		or healthLabel == nil
-		or not healthLabel:IsA("TextLabel")
 		or torsoMotor == nil
 		or leftArmMotor == nil
 		or rightArmMotor == nil
@@ -152,16 +156,17 @@ local function trackModel(model: Model)
 		return
 	end
 
-	local currentHealth = readHealth(healthLabel)
-	if currentHealth == nil then
+	local attackSequence = readNumberAttribute(model, PresentationAttributeNames.AttackSequence)
+	local attackServerTimestamp = readNumberAttribute(model, PresentationAttributeNames.AttackServerTimestamp)
+	local hitSequence = readNumberAttribute(model, PresentationAttributeNames.HitSequence)
+	local hitServerTimestamp = readNumberAttribute(model, PresentationAttributeNames.HitServerTimestamp)
+	if attackSequence == nil or attackServerTimestamp == nil or hitSequence == nil or hitServerTimestamp == nil then
 		return
 	end
 
 	records[model] = {
-		model = model,
 		root = root,
 		humanoid = humanoid,
-		healthLabel = healthLabel,
 		sensor = sensor,
 		torsoMotor = torsoMotor,
 		leftArmMotor = leftArmMotor,
@@ -173,8 +178,10 @@ local function trackModel(model: Model)
 		rightArmBaseC0 = rightArmMotor.C0,
 		leftLegBaseC0 = leftLegMotor.C0,
 		rightLegBaseC0 = rightLegMotor.C0,
-		lastHealth = currentHealth,
-		lastHitServerTimestamp = nil,
+		attackSequence = attackSequence,
+		attackServerTimestamp = if attackSequence > 0 and attackServerTimestamp > 0 then attackServerTimestamp else nil,
+		hitSequence = hitSequence,
+		hitServerTimestamp = if hitSequence > 0 and hitServerTimestamp > 0 then hitServerTimestamp else nil,
 		phaseOffsetSeconds = stablePhaseOffset(model),
 		poseId = "",
 	}
@@ -218,29 +225,45 @@ local function applyPose(record: Record, pose: EnemyPresentationPoseResolver.Pos
 	record.poseId = pose.id
 end
 
-local function updateRecord(record: Record, serverTimestamp: number)
-	local currentHealth = readHealth(record.healthLabel)
-	if currentHealth ~= nil then
-		if currentHealth < record.lastHealth then
-			record.lastHitServerTimestamp = serverTimestamp
-		end
-		record.lastHealth = currentHealth
+local function updateRecord(model: Model, record: Record, serverTimestamp: number)
+	local attackSequence = readNumberAttribute(model, PresentationAttributeNames.AttackSequence)
+	local attackServerTimestamp = readNumberAttribute(model, PresentationAttributeNames.AttackServerTimestamp)
+	if
+		attackSequence ~= nil
+		and attackServerTimestamp ~= nil
+		and attackSequence > record.attackSequence
+		and attackServerTimestamp > 0
+	then
+		record.attackSequence = attackSequence
+		record.attackServerTimestamp = attackServerTimestamp
 	end
 
-	local lastHitAt = record.lastHitServerTimestamp
-	local secondsSinceHit = if lastHitAt == nil then nil else serverTimestamp - lastHitAt
-	if secondsSinceHit ~= nil and secondsSinceHit > HIT_REACTION_SECONDS then
-		record.lastHitServerTimestamp = nil
-		secondsSinceHit = nil
+	local hitSequence = readNumberAttribute(model, PresentationAttributeNames.HitSequence)
+	local hitServerTimestamp = readNumberAttribute(model, PresentationAttributeNames.HitServerTimestamp)
+	if
+		hitSequence ~= nil
+		and hitServerTimestamp ~= nil
+		and hitSequence > record.hitSequence
+		and hitServerTimestamp > 0
+	then
+		record.hitSequence = hitSequence
+		record.hitServerTimestamp = hitServerTimestamp
 	end
 
-	local isDead = record.root.Anchored and record.lastHealth <= 0
-	local isStoodDown = not isDead and record.humanoid.WalkSpeed <= STOPPED_SPEED_THRESHOLD
+	local behaviorStateId = readStringAttribute(model, PresentationAttributeNames.BehaviorStateId)
+	local lifeStateId = readStringAttribute(model, PresentationAttributeNames.LifeStateId)
+	if behaviorStateId == nil or lifeStateId == nil then
+		return
+	end
+
+	local attackAt = record.attackServerTimestamp
+	local hitAt = record.hitServerTimestamp
+	local secondsSinceAttack = if attackAt == nil then nil else serverTimestamp - attackAt
+	local secondsSinceHit = if hitAt == nil then nil else serverTimestamp - hitAt
+	local isDead = lifeStateId == PresentationLifeStateIds.Dead
+	local isStoodDown = behaviorStateId == BehaviorStateIds.StandDown
 	local isMoving = record.humanoid.MoveDirection.Magnitude > MOVEMENT_THRESHOLD
-	local pursuitThreshold = (
-		EnemyConfig.Walker.RoamSpeedStudsPerSecond + EnemyConfig.Walker.PursuitSpeedStudsPerSecond
-	) / 2
-	local isPursuing = record.humanoid.WalkSpeed > pursuitThreshold
+	local isPursuing = behaviorStateId == BehaviorStateIds.Pursuing or behaviorStateId == BehaviorStateIds.Attacking
 	local strideIndex = math.floor((serverTimestamp + record.phaseOffsetSeconds) * STRIDES_PER_SECOND) % 2
 
 	local pose = EnemyPresentationPoseResolver.resolve({
@@ -248,6 +271,8 @@ local function updateRecord(record: Record, serverTimestamp: number)
 		isStoodDown = isStoodDown,
 		isMoving = isMoving,
 		isPursuing = isPursuing,
+		attackSequence = record.attackSequence,
+		secondsSinceAttack = secondsSinceAttack,
 		secondsSinceHit = secondsSinceHit,
 		strideIndex = strideIndex,
 	})
@@ -288,7 +313,7 @@ function EnemyPresentationController.start()
 			if model.Parent == nil then
 				records[model] = nil
 			else
-				updateRecord(record, serverTimestamp)
+				updateRecord(model, record, serverTimestamp)
 			end
 		end
 	end)
