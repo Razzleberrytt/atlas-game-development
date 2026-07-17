@@ -1,0 +1,51 @@
+name: Luau validation
+
+on:
+  pull_request:
+    paths:
+      - "games/living-kingdoms/**"
+      - "rokit.toml"
+      - "stylua.toml"
+      - "selene.toml"
+      - ".github/workflows/luau-validation.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "games/living-kingdoms/**"
+      - "rokit.toml"
+      - "stylua.toml"
+      - "selene.toml"
+      - ".github/workflows/luau-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Normalize Luau formatting
+        shell: bash
+        run: stylua games/living-kingdoms/src
+
+      - name: Run Selene
+        shell: bash
+        run: selene games/living-kingdoms/src
+
+      - name: Build Rojo project
+        shell: bash
+        run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
