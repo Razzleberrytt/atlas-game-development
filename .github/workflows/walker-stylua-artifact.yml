@@ -1,0 +1,40 @@
+name: Walker StyLua artifact
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+      - name: Format touched Walker sources
+        run: |
+          stylua \
+            games/living-kingdoms/src/client/Controllers/EnemyPresentationController.luau \
+            games/living-kingdoms/src/client/Presentation/EnemyPresentationPoseResolver.luau \
+            games/living-kingdoms/src/client/init.client.luau \
+            games/living-kingdoms/src/server/Systems/EnemyPresentationService.luau
+      - name: Stage formatted files
+        run: |
+          mkdir -p /tmp/walker-stylua
+          cp --parents \
+            games/living-kingdoms/src/client/Controllers/EnemyPresentationController.luau \
+            games/living-kingdoms/src/client/Presentation/EnemyPresentationPoseResolver.luau \
+            games/living-kingdoms/src/client/init.client.luau \
+            games/living-kingdoms/src/server/Systems/EnemyPresentationService.luau \
+            /tmp/walker-stylua
+      - uses: actions/upload-artifact@v4
+        with:
+          name: walker-stylua
+          path: /tmp/walker-stylua
+          if-no-files-found: error
