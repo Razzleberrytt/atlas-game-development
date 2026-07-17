@@ -11,9 +11,12 @@ local Resolver = {}
 Resolver.StyleIds = table.freeze({
 	RangerStation = "RangerStation",
 	MilitaryRoadblock = "MilitaryRoadblock",
+	Campground = "Campground",
+	CreekCrossing = "CreekCrossing",
+	RockyOverlook = "RockyOverlook",
 })
 
-export type StyleId = "RangerStation" | "MilitaryRoadblock"
+export type StyleId = "RangerStation" | "MilitaryRoadblock" | "Campground" | "CreekCrossing" | "RockyOverlook"
 
 function Resolver.resolve(modelName: unknown, landmarkId: unknown, isGraybox: unknown): StyleId?
 	if isGraybox ~= true or type(modelName) ~= "string" or type(landmarkId) ~= "string" then
@@ -24,6 +27,15 @@ function Resolver.resolve(modelName: unknown, landmarkId: unknown, isGraybox: un
 	end
 	if modelName == "MilitaryRoadblock" and landmarkId == "MilitaryRoadblock" then
 		return Resolver.StyleIds.MilitaryRoadblock
+	end
+	if modelName == "Campground" and landmarkId == "Campground" then
+		return Resolver.StyleIds.Campground
+	end
+	if modelName == "CreekCrossing" and landmarkId == "CreekCrossing" then
+		return Resolver.StyleIds.CreekCrossing
+	end
+	if modelName == "RockyOverlook" and landmarkId == "RockyOverlook" then
+		return Resolver.StyleIds.RockyOverlook
 	end
 	return nil
 end
