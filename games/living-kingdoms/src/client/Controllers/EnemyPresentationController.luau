@@ -120,7 +120,13 @@ local function trackModel(model: Model)
 	local presentation = model:FindFirstChild(PRESENTATION_MODEL_NAME)
 	local root = model:FindFirstChild("HumanoidRootPart")
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
-	if presentation == nil or not presentation:IsA("Model") or root == nil or not root:IsA("BasePart") or humanoid == nil then
+	if
+		presentation == nil
+		or not presentation:IsA("Model")
+		or root == nil
+		or not root:IsA("BasePart")
+		or humanoid == nil
+	then
 		return
 	end
 
@@ -231,7 +237,9 @@ local function updateRecord(record: Record, serverTimestamp: number)
 	local isDead = record.root.Anchored and record.lastHealth <= 0
 	local isStoodDown = not isDead and record.humanoid.WalkSpeed <= STOPPED_SPEED_THRESHOLD
 	local isMoving = record.humanoid.MoveDirection.Magnitude > MOVEMENT_THRESHOLD
-	local pursuitThreshold = (EnemyConfig.Walker.RoamSpeedStudsPerSecond + EnemyConfig.Walker.PursuitSpeedStudsPerSecond) / 2
+	local pursuitThreshold = (
+		EnemyConfig.Walker.RoamSpeedStudsPerSecond + EnemyConfig.Walker.PursuitSpeedStudsPerSecond
+	) / 2
 	local isPursuing = record.humanoid.WalkSpeed > pursuitThreshold
 	local strideIndex = math.floor((serverTimestamp + record.phaseOffsetSeconds) * STRIDES_PER_SECOND) % 2
 
