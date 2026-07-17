@@ -42,7 +42,7 @@ The registry is descriptive only. It does not load assets or change gameplay.
 | Audio | Standard hostile set | Missing presentation | No approved alert, pursuit, attack, hit, or death set | VIS-0103 |
 | Audio | Blackwater ambience | Temporary presentation | `EnvironmentAmbienceController` code-driven ambience | VIS-0105 / VIS-0108 |
 | Interface | Ammunition display | Temporary presentation | Functional weapon/ammunition UI | VIS-0102 / VIS-0108 |
-| Interface | Life-state display | Temporary presentation | Functional alive/incapacitated/revive/death UI | VIS-0104 / VIS-0108 |
+| Interface | Life-state display | Temporary presentation | `OperativeLifeController` retains functional local UI; `OperativeLifeWorldPresentationController` adds server-attribute-driven downed, revive-progress, solo-recovery, and KIA geometry/text cues | VIS-0104 / VIS-0108 |
 | Interface | Mission display | Temporary presentation | Explicit temporary objective/radio/countdown/outcome UI | P8/P10 / VIS-0108 |
 | Interface | Class selection | Temporary presentation | Functional three-button selection panel | VIS-0104 / VIS-0108 |
 | Interface | Squad ping | Temporary presentation | Functional location marker presentation | VIS-0108 |
@@ -82,4 +82,4 @@ When canonical production assets begin entering the registry:
 
 ## Next task
 
-Continue VIS-0104 with authoritative operative life-state presentation while keeping canonical rig import, gameplay-camera approval, class-action cues, avatar-scale coverage, and representative squad performance evidence pending.
+Continue VIS-0104 with firearm carry and body-pose integration while keeping canonical rig import, gameplay-camera approval, class-action cues, avatar-scale coverage, and representative squad performance evidence pending.

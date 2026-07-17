@@ -85,6 +85,13 @@ assertThat(
 	config.ByKey[contracts.AssetKeys.EnemyStandardHostileModel].statusId == contracts.StatusIds.PrimitivePlaceholder,
 	"standard hostile must remain honestly marked as primitive geometry"
 )
+local lifeInterface = config.ByKey[contracts.AssetKeys.InterfaceLifeState]
+assertThat(lifeInterface.statusId == contracts.StatusIds.TemporaryPresentation, "life interface must remain temporary")
+assertThat(
+	lifeInterface.runtimeOwnerPath == "src/client/Controllers/OperativeLifeWorldPresentationController.luau",
+	"life interface registry must name the world cue owner"
+)
+assertThat(lifeInterface.expectedRootName == "OperativeLifeWorldCue", "life cue root contract drifted")
 assertThat(
 	config.ByKey[contracts.AssetKeys.InterfaceMission].statusId == contracts.StatusIds.TemporaryPresentation,
 	"mission interface must remain honestly marked as temporary"
