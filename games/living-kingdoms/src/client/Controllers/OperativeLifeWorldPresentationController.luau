@@ -108,12 +108,12 @@ local function createMarkerPart(
 	return part
 end
 
-local function markerDefinitions(markerKindId: string): ({
+local function markerDefinitions(markerKindId: string): {
 	name: string,
 	size: Vector3,
 	offset: Vector3,
 	rotationDegrees: number,
-})
+}
 	if markerKindId == "RecoveryChevron" then
 		return {
 			{
@@ -281,11 +281,7 @@ local function applyPlayer(player: Player)
 		return
 	end
 	local existing = character:FindFirstChild(CUE_MODEL_NAME)
-	if
-		existing ~= nil
-		and existing:IsA("Model")
-		and existing:GetAttribute("MarkerKindId") == result.markerKindId
-	then
+	if existing ~= nil and existing:IsA("Model") and existing:GetAttribute("MarkerKindId") == result.markerKindId then
 		updateCue(existing, result)
 		return
 	end

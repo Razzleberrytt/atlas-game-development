@@ -99,4 +99,6 @@ local mutationSucceeded = pcall(function()
 end)
 assert(not mutationSucceeded, "resolver outputs must remain immutable")
 
-print("OperativeLifePresentationResolver: hidden, downed, revive, solo recovery, death, precedence, and immutability passed")
+print(
+	"OperativeLifePresentationResolver: hidden, downed, revive, solo recovery, death, precedence, and immutability passed"
+)

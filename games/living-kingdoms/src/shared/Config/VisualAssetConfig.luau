@@ -309,9 +309,9 @@ local Registry = table.freeze({
 		Keys.InterfaceLifeState,
 		FamilyIds.Interface,
 		StatusIds.TemporaryPresentation,
-		"src/client/Controllers/OperativeLifeController.luau",
-		"Life, incapacitation, revive, and death display is functional temporary UI.",
-		"LifeStateInterface",
+		"src/client/Controllers/OperativeLifeWorldPresentationController.luau",
+		"The temporary local life UI remains, and authoritative incapacitated, revive-progress, solo-recovery, and death states now receive client-local world-space geometry and text cues from server-disclosed Player attributes.",
+		"OperativeLifeWorldCue",
 		{},
 		"operative.life",
 		false

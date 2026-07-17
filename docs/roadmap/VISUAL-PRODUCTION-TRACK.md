@@ -44,7 +44,8 @@ Weapon meshes do not own shooting. Enemy rigs do not own health, targeting, atta
   - A client-local procedural shared armor base plus geometry-distinct Combat Specialist, Medic, and Engineer equipment silhouettes now attach to R6 or R15 torsos from the existing validated server-safe class roster.
   - Each fallback is capped at ten massless, non-collidable, non-touchable, non-queryable parts; duplicate classes intentionally share the same geometry and color remains supplemental.
   - The presentation adds zero remotes, server runtime, timers, or frame loops and never changes class assignment, movement, collision, health, weapons, ammunition, objectives, or mission state.
-  - Still required: canonical shared operative rig, firearm carry integration, locomotion and life-state poses, class-action cues after their gameplay contracts exist, Studio gameplay-camera approval, avatar-scale coverage, and representative squad performance evidence.
+  - Existing server-disclosed life attributes now drive occlusion-respecting world cues: rescue-cross plus `DOWNED`, authoritative revive percentage, upward-chevron plus `SELF RECOVERY`, and X plus `KIA`. Each visible cue uses two non-colliding parts, geometry plus text rather than color alone, two global connections, two connections per player, and no frame loop or timer.
+  - Still required: canonical shared operative rig, firearm carry integration, locomotion/body life-state poses, class-action cues after their gameplay contracts exist, Studio gameplay-camera approval, avatar-scale coverage, and representative squad performance evidence.
 - [ ] **VIS-0105 — Replace world, supply, and objective placeholders.**
   - Produce authored landmarks, environmental dressing, caches, depletion state, objective equipment, extraction presentation, route cues, temporary defensive positions, lighting, fog, and ambience.
   - Objective art follows the P8 authored chain and may not disclose hidden or inactive truth.

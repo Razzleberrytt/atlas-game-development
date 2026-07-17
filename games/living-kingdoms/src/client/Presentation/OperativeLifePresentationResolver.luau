@@ -68,12 +68,7 @@ function Resolver.resolve(facts: LifePresentationFacts): LifePresentation
 		and facts.reviveTargetOperativeEntityId == facts.operativeEntityId
 	if isTargetedRevive and isFiniteNumber(facts.reviveProgress) then
 		local progress = math.clamp(facts.reviveProgress :: number, 0, 1)
-		return presentation(
-			"Reviving",
-			"RescueCross",
-			string.format("REVIVING %.0f%%", progress * 100),
-			progress
-		)
+		return presentation("Reviving", "RescueCross", string.format("REVIVING %.0f%%", progress * 100), progress)
 	end
 	return presentation("Downed", "RescueCross", "DOWNED", nil)
 end

@@ -9,6 +9,7 @@ local AmmunitionCachePresentationController = require(script.Controllers.Ammunit
 local ClassSelectionController = require(script.Controllers.ClassSelectionController)
 local ClassSilhouetteController = require(script.Controllers.ClassSilhouetteController)
 local OperativeLifeController = require(script.Controllers.OperativeLifeController)
+local OperativeLifeWorldPresentationController = require(script.Controllers.OperativeLifeWorldPresentationController)
 local PersonalFlashlightController = require(script.Controllers.PersonalFlashlightController)
 local SquadPingController = require(script.Controllers.SquadPingController)
 local EnvironmentAmbienceController = require(script.Controllers.EnvironmentAmbienceController)
@@ -34,5 +35,6 @@ MissionController.start()
 -- Mission presentation starts first; class selection then requests authoritative state.
 ClassSelectionController.start()
 ClassSilhouetteController.start()
+OperativeLifeWorldPresentationController.start()
 
 print("[Living Kingdoms] Client bootstrap started")
