@@ -1,0 +1,12 @@
+
+===== games/living-kingdoms/tests/P7ClassSelectionSourceAudit.test.luau =====
+/home/runner/work/atlas-game-development/atlas-game-development/games/living-kingdoms/tests/P7ClassSelectionSourceAudit.test:88: pure resolver must not contain RemoteEvent
+[Stack Begin]
+    Script '[C]' - function 'error'
+    Script '/home/runner/work/atlas-game-development/atlas-game-development/games/living-kingdoms/tests/P7ClassSelectionSourceAudit.test', Line 7
+    Script '/home/runner/work/atlas-game-development/atlas-game-development/games/living-kingdoms/tests/P7ClassSelectionSourceAudit.test', Line 88
+[Stack End]
+
+exit_status=1
+
+overall_exit_status=1
