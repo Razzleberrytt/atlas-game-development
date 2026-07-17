@@ -1,0 +1,58 @@
+name: Exclusion Walker diagnostic
+
+on:
+  push:
+    branches:
+      - feat/exclusion-walker-presentation
+
+permissions:
+  contents: read
+
+jobs:
+  exclusion-walker-audit:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+      - run: lune run games/living-kingdoms/tests/ExclusionWalkerPresentationSourceAudit.test.luau
+
+  visual-registry-audit:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+      - run: lune run games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau
+
+  weapon-presentation-audit:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+      - run: lune run games/living-kingdoms/tests/WeaponPresentationSourceAudit.test.luau
+
+  support-lmg-audit:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+      - run: lune run games/living-kingdoms/tests/SupportLmgAssetSourceAudit.test.luau
