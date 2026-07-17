@@ -40,10 +40,11 @@ Weapon meshes do not own shooting. Enemy rigs do not own health, targeting, atta
   - A stable presentation-only `AttackOrigin` locator remains available for later authored attack effects.
   - Windup is target-locked, stops Walker movement, cancels when the victim dies or leaves melee range, and commits damage only after the disclosed deadline; rejected commits retain the same windup.
   - Still required: Roblox Studio mesh import/canonical swap, effects, audio, bounded cosmetic variants, and representative horde performance evidence.
-- [ ] **VIS-0104 — Add operative and starting-class visual identity.**
-  - Add one shared operative rig plus Combat Specialist, Medic, and Engineer equipment silhouettes.
-  - Integrate firearm carry, locomotion, incapacitation, revive, death, and visible class-action cues only after their gameplay states exist.
-  - Duplicate-class squads and color-vision differences remain readable.
+- [~] **VIS-0104 — Add operative and starting-class visual identity.**
+  - A client-local procedural shared armor base plus geometry-distinct Combat Specialist, Medic, and Engineer equipment silhouettes now attach to R6 or R15 torsos from the existing validated server-safe class roster.
+  - Each fallback is capped at ten massless, non-collidable, non-touchable, non-queryable parts; duplicate classes intentionally share the same geometry and color remains supplemental.
+  - The presentation adds zero remotes, server runtime, timers, or frame loops and never changes class assignment, movement, collision, health, weapons, ammunition, objectives, or mission state.
+  - Still required: canonical shared operative rig, firearm carry integration, locomotion and life-state poses, class-action cues after their gameplay contracts exist, Studio gameplay-camera approval, avatar-scale coverage, and representative squad performance evidence.
 - [ ] **VIS-0105 — Replace world, supply, and objective placeholders.**
   - Produce authored landmarks, environmental dressing, caches, depletion state, objective equipment, extraction presentation, route cues, temporary defensive positions, lighting, fog, and ambience.
   - Objective art follows the P8 authored chain and may not disclose hidden or inactive truth.

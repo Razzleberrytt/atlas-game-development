@@ -62,6 +62,25 @@ assertThat(
 	config.ByKey[contracts.AssetKeys.OperativeBaseRig].statusId == contracts.StatusIds.DefaultAvatarPlaceholder,
 	"operative rig must remain honestly marked as the default-avatar placeholder"
 )
+for _, assetKey in
+	{
+		contracts.AssetKeys.ClassCombatSpecialistEquipment,
+		contracts.AssetKeys.ClassMedicEquipment,
+		contracts.AssetKeys.ClassEngineerEquipment,
+	}
+do
+	local entry = config.ByKey[assetKey]
+	assertThat(
+		entry.statusId == contracts.StatusIds.PrimitivePlaceholder,
+		"class equipment must record the procedural fallback"
+	)
+	assertThat(
+		entry.runtimeOwnerPath == "src/client/Controllers/ClassSilhouetteController.luau",
+		"class equipment runtime owner must be the silhouette controller"
+	)
+	assertThat(entry.expectedRootName == "OperativeClassSilhouette", "class equipment root contract drifted")
+	assertThat(#entry.requiredAttachmentNames == 0, "procedural class fallback must not claim an authored attachment")
+end
 assertThat(
 	config.ByKey[contracts.AssetKeys.EnemyStandardHostileModel].statusId == contracts.StatusIds.PrimitivePlaceholder,
 	"standard hostile must remain honestly marked as primitive geometry"
