@@ -81,13 +81,6 @@ SquadPingController: LK-0407 input, visual accessibility, reconciliation, and cl
 === games/living-kingdoms/tests/SquadPingService.test.luau ===
 SquadPingService: LK-0407 isolation, validation, limits, expiry, replication, and cleanup passed
 === games/living-kingdoms/tests/SquadWeaponMotionSourceAudit.test.luau ===
-/home/runner/work/atlas-game-development/atlas-game-development/games/living-kingdoms/tests/SquadWeaponMotionSourceAudit.test:60: local HUD must filter shot and all broadcast reload lifecycle messages
-[Stack Begin]
-    Script '[C]' - function 'error'
-    Script '/home/runner/work/atlas-game-development/atlas-game-development/games/living-kingdoms/tests/SquadWeaponMotionSourceAudit.test', Line 7
-    Script '/home/runner/work/atlas-game-development/atlas-game-development/games/living-kingdoms/tests/SquadWeaponMotionSourceAudit.test', Line 60
-[Stack End]
-
 === games/living-kingdoms/tests/TargetCandidateSelector.test.luau ===
 TargetCandidateSelector: priority, validation, determinism, threat, boundary, and immutability checks passed
 === games/living-kingdoms/tests/TargetCandidateValidator.test.luau ===
