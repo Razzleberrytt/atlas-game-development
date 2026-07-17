@@ -1,14 +1,13 @@
 --!strict
 
 --[[
-	P5-0103 authored values for the first playable operation. One objective, one
-	extraction clearing, and bounded placeholder timings. Positions reference the
-	P5-0102 authored landmarks in WorldFoundationConfig; the server remains the
-	only authority over every mission fact derived from these values.
+	P5-0103 authored values for the first playable operation, extended by
+	P5-0105 with bounded pressure pacing. Positions reference the P5-0102
+	authored landmarks; the server remains authoritative over every derived fact.
 ]]
 
 local MissionConfig = {
-	Version = "P5-0103-v1",
+	Version = "P5-0105-v1",
 	OperationId = "operation.blackwater-relay",
 	OperationDisplayName = "Operation Blackwater Relay",
 	InsertionHoldSeconds = 20,
@@ -30,6 +29,9 @@ local MissionConfig = {
 	}),
 	Escalation = table.freeze({
 		SecondWaveDelaySeconds = 45,
+		MaximumConcurrentEnemies = 5,
+		MinimumSecondsBetweenWaves = 12,
+		RecoverySecondsAfterWave = 10,
 		Waves = table.freeze({
 			-- Level 1: contacts on the descent between the lookout and the campground.
 			table.freeze({
@@ -82,9 +84,25 @@ assert(
 	"the holdout countdown must be a bounded positive duration"
 )
 assert(MissionConfig.Escalation.SecondWaveDelaySeconds > 0, "the second escalation wave requires a positive delay")
+assert(
+	MissionConfig.Escalation.MaximumConcurrentEnemies > 0,
+	"pressure pacing requires a positive concurrent-enemy budget"
+)
+assert(
+	MissionConfig.Escalation.MinimumSecondsBetweenWaves >= 0,
+	"the inter-wave interval must be bounded and non-negative"
+)
+assert(
+	MissionConfig.Escalation.RecoverySecondsAfterWave >= 0,
+	"the post-wave recovery window must be bounded and non-negative"
+)
 assert(#MissionConfig.Escalation.Waves == 3, "the prototype authored exactly three escalation waves")
 for _, wave in MissionConfig.Escalation.Waves do
 	assert(#wave > 0, "every escalation wave must author at least one hostile")
+	assert(
+		#wave <= MissionConfig.Escalation.MaximumConcurrentEnemies,
+		"an authored wave must fit inside the pressure budget"
+	)
 end
 
 return table.freeze(MissionConfig)

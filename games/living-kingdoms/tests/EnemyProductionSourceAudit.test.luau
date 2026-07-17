@@ -4,7 +4,7 @@ local fs = require("@lune/fs")
 
 local function assert(condition: unknown, message: string?)
 	if not condition then
-		error(message or "P5-0104 source audit assertion failed", 2)
+		error(message or "P5 production source audit assertion failed", 2)
 	end
 end
 
@@ -25,6 +25,14 @@ assert(combat:find("AutomaticFireResolver.resolve", 1, true) ~= nil)
 assert(combat:find("FirearmHitResolver.resolve", 1, true) ~= nil)
 assert(combat:find("TargetCandidateSelector.select", 1, true) ~= nil)
 assert(operation:find("OperativeLifeService.applyAuthoritativeDamage", 1, true) ~= nil)
+assert(operation:find("PressurePacingDomain.evaluate", 1, true) ~= nil)
+assert(operation:find("MaximumConcurrentEnemies", 1, true) ~= nil)
+assert(operation:find("MinimumSecondsBetweenWaves", 1, true) ~= nil)
+assert(operation:find("RecoverySecondsAfterWave", 1, true) ~= nil)
+assert(operation:find("releasedWaveCount + 1", 1, true) ~= nil, "waves must release sequentially")
+assert(operation:find("requestWaveMembers(waveIndex)", 1, true) ~= nil, "released partial waves must retry")
+assert(operation:find("table.clear(releasedWaves)", 1, true) ~= nil)
+assert(operation:find("recoveryUntilServerTimestamp = nil", 1, true) ~= nil)
 assert(operation:find("spawnMissionHostile", 1, true) == nil)
 assert(lifecycle:find("RemoteEvent", 1, true) == nil)
 assert(operation:find("RemoteEvent", 1, true) == nil)
