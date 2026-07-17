@@ -44,7 +44,21 @@ jobs:
         run: python3 .github/one-shot/fix_p6_patch.py
 
       - name: Apply anchored ammunition feedback patch
-        run: python3 .github/one-shot/p6_0105_patch.py
+        id: patch
+        shell: bash
+        run: |
+          set +e
+          python3 .github/one-shot/p6_0105_patch.py > /tmp/p6-patch.log 2>&1
+          status=$?
+          cat /tmp/p6-patch.log
+          exit "$status"
+
+      - name: Upload patch diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: p6-patch-log
+          path: /tmp/p6-patch.log
 
       - name: Format Luau source
         run: stylua games/living-kingdoms/src games/living-kingdoms/tests/P6AmmunitionPresentation.test.luau
