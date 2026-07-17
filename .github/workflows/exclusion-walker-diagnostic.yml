@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 jobs:
-  fixtures-a-f:
+  fixtures-g:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -22,13 +22,10 @@ jobs:
           set -euo pipefail
           while IFS= read -r -d '' fixture; do
             base="$(basename "$fixture")"
-            if [[ "$base" =~ ^[A-Fa-f] ]]; then
-              echo "Running $fixture"
-              lune run "$fixture"
-            fi
+            if [[ "$base" =~ ^[Gg] ]]; then echo "Running $fixture"; lune run "$fixture"; fi
           done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
 
-  fixtures-g-l:
+  fixtures-h:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -43,13 +40,10 @@ jobs:
           set -euo pipefail
           while IFS= read -r -d '' fixture; do
             base="$(basename "$fixture")"
-            if [[ "$base" =~ ^[G-Lg-l] ]]; then
-              echo "Running $fixture"
-              lune run "$fixture"
-            fi
+            if [[ "$base" =~ ^[Hh] ]]; then echo "Running $fixture"; lune run "$fixture"; fi
           done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
 
-  fixtures-m-r:
+  fixtures-i:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -64,13 +58,10 @@ jobs:
           set -euo pipefail
           while IFS= read -r -d '' fixture; do
             base="$(basename "$fixture")"
-            if [[ "$base" =~ ^[M-Rm-r] ]]; then
-              echo "Running $fixture"
-              lune run "$fixture"
-            fi
+            if [[ "$base" =~ ^[Ii] ]]; then echo "Running $fixture"; lune run "$fixture"; fi
           done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
 
-  fixtures-s-z:
+  fixtures-j:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -85,8 +76,41 @@ jobs:
           set -euo pipefail
           while IFS= read -r -d '' fixture; do
             base="$(basename "$fixture")"
-            if [[ "$base" =~ ^[S-Zs-z] ]]; then
-              echo "Running $fixture"
-              lune run "$fixture"
-            fi
+            if [[ "$base" =~ ^[Jj] ]]; then echo "Running $fixture"; lune run "$fixture"; fi
+          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+
+  fixtures-k:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+      - shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' fixture; do
+            base="$(basename "$fixture")"
+            if [[ "$base" =~ ^[Kk] ]]; then echo "Running $fixture"; lune run "$fixture"; fi
+          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+
+  fixtures-l:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+      - shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' fixture; do
+            base="$(basename "$fixture")"
+            if [[ "$base" =~ ^[Ll] ]]; then echo "Running $fixture"; lune run "$fixture"; fi
           done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
