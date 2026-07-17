@@ -16,8 +16,10 @@ local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 
 local REQUEST_COOLDOWN_SECONDS = 0.5
 local COMBAT_ENTITY_ID_ATTRIBUTE = "CombatEntityId"
+local SUPPLY_CACHE_ID_ATTRIBUTE = "SupplyCacheId"
+local CACHE_CONSUMED_PRESENTATION_KIND_ID = "AmmunitionCacheConsumed"
 
-type WeaponController = {
+ type WeaponController = {
 	init: () -> (),
 	start: () -> (),
 	stop: () -> (),
@@ -115,6 +117,36 @@ local function presentSelectedTarget(targetEntityId: string)
 	setStatus("Target acquired")
 end
 
+local function presentConsumedAmmunitionCache(cacheId: string)
+	for _, descendant in Workspace:GetDescendants() do
+		if descendant:IsA("BasePart") and descendant:GetAttribute(SUPPLY_CACHE_ID_ATTRIBUTE) == cacheId then
+			local cachePart = descendant :: BasePart
+			local prompt = cachePart:FindFirstChild("CollectPrompt")
+			if prompt ~= nil and prompt:IsA("ProximityPrompt") then
+				prompt.Enabled = false
+				prompt.ActionText = "Depleted"
+			end
+
+			cachePart.Color = Color3.fromRGB(48, 51, 47)
+			cachePart.Material = Enum.Material.SmoothPlastic
+			cachePart.Transparency = 0.35
+
+			if cachePart:FindFirstChild("ConsumedCacheHighlight") == nil then
+				local highlight = Instance.new("Highlight")
+				highlight.Name = "ConsumedCacheHighlight"
+				highlight.DepthMode = Enum.HighlightDepthMode.Occluded
+				highlight.FillColor = Color3.fromRGB(42, 45, 42)
+				highlight.FillTransparency = 0.65
+				highlight.OutlineColor = Color3.fromRGB(122, 128, 119)
+				highlight.OutlineTransparency = 0.2
+				highlight.Adornee = cachePart
+				highlight.Parent = cachePart
+			end
+			return
+		end
+	end
+end
+
 local function presentShot(shotId: string)
 	if state.presentedShotIds[shotId] then
 		return
@@ -208,6 +240,8 @@ local function onPresentationMessage(message: unknown)
 		then
 			setStatus("+" .. tostring(payload.grantedRounds) .. " rifle ammunition")
 		end
+	elseif kindId == CACHE_CONSUMED_PRESENTATION_KIND_ID and isNonEmptyString(payload.cacheId) then
+		presentConsumedAmmunitionCache(payload.cacheId)
 	end
 end
 
