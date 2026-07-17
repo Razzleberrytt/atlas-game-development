@@ -16,4 +16,14 @@ new = '''replace_once(
 '''
 if text.count(old) != 1:
     raise RuntimeError(f"expected one broad contract anchor, found {text.count(old)}")
-path.write_text(text.replace(old, new, 1))
+text = text.replace(old, new, 1)
+diagnostic_old = '''    text = file_path.read_text()
+    if text.count(old) != 1:
+'''
+diagnostic_new = '''    text = file_path.read_text()
+    print(f"PATCH {path}: {old[:80]!r}")
+    if text.count(old) != 1:
+'''
+if text.count(diagnostic_old) != 1:
+    raise RuntimeError(f"expected one diagnostic anchor, found {text.count(diagnostic_old)}")
+path.write_text(text.replace(diagnostic_old, diagnostic_new, 1))
