@@ -32,11 +32,13 @@ Weapon meshes do not own shooting. Enemy rigs do not own health, targeting, atta
   - Still required: Roblox Studio mesh import and canonical swap, grip/isometric readability review, production effects, audio, and representative performance evidence.
   - Existing server-owned cadence, ammunition, reload, targeting, hit, and damage boundaries remain unchanged.
 - [~] **VIS-0103 — Replace the standard hostile presentation.**
-  - A deterministic 18-component Exclusion Walker source candidate and matching replicated procedural fallback now replace the invisible/one-block silhouette with a broad torso, sensor face, long striking arms, claws, heavy feet, dorsal spine, and back canister.
+  - A deterministic 18-component Exclusion Walker source candidate and matching replicated procedural fallback replace the invisible/one-block silhouette with a broad torso, sensor face, long striking arms, claws, heavy feet, dorsal spine, and back canister.
+  - The fallback now exposes five presentation-only motors and a client-local pose controller for alternating roaming/pursuit stride, stationary threat-ready posture, authoritative-health-derived hit reaction, death, and stand-down readability.
+  - The pose layer uses one client frame connection, two folder lifecycle connections, zero per-enemy connections, zero remotes, and no root, Humanoid, health, attack, or cleanup mutation; motor writes occur only when the resolved pose ID changes.
   - The authoritative `HumanoidRootPart` remains exactly `3 x 5.6 x 3` studs and continues to own collision, movement, network ownership, targeting position, and gameplay footprint.
-  - One `EnemyEntities.ChildAdded` connection attaches the fixed presentation shell; there are zero per-enemy connections, new heartbeats, timers, remotes, or gameplay mutations.
-  - A stable presentation-only `AttackOrigin` locator is available for future authored attack effects.
-  - Still required: Roblox Studio mesh import/canonical swap, pursuit and attack animation states, active strike/recovery, hit reaction, death, stand-down, effects, audio, bounded cosmetic variants, and representative horde performance evidence.
+  - A stable presentation-only `AttackOrigin` locator remains available for later authored attack effects.
+  - Attack anticipation and server-confirmed committed strike/recovery remains pending because the current contact-damage contract has no windup disclosure; the presentation layer does not fabricate one from distance or motion.
+  - Still required: Roblox Studio mesh import/canonical swap, truthful attack anticipation/strike/recovery, effects, audio, bounded cosmetic variants, and representative horde performance evidence.
 - [ ] **VIS-0104 — Add operative and starting-class visual identity.**
   - Add one shared operative rig plus Combat Specialist, Medic, and Engineer equipment silhouettes.
   - Integrate firearm carry, locomotion, incapacitation, revive, death, and visible class-action cues only after their gameplay states exist.
