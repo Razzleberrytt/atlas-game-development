@@ -1,14 +1,22 @@
 {
   "assetKey": "world.landmark-accents",
-  "version": "VIS-0105-v1",
+  "version": "VIS-0105-v2",
   "sourceType": "project-original-procedural",
   "runtimeOwner": "src/client/Controllers/LandmarkAccentPresentationController.luau",
   "expectedRoot": "LandmarkSilhouettePresentation",
+  "materialLanguage": "src/shared/Config/WorldMaterialLanguageConfig.luau",
   "coveredLandmarks": [
     "RangerStation",
-    "MilitaryRoadblock"
+    "MilitaryRoadblock",
+    "Campground",
+    "CreekCrossing",
+    "RockyOverlook"
   ],
-  "maximumPresentationParts": 10,
+  "excludedLandmarks": [
+    "LookoutTower",
+    "ExtractionClearing"
+  ],
+  "maximumPresentationParts": 22,
   "connections": {
     "global": 2,
     "perLandmark": 0
