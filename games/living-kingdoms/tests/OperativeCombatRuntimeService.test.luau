@@ -620,9 +620,20 @@ local bootstrap = fs.readFile("games/living-kingdoms/src/server/init.server.luau
 assert(string.find(bootstrap, "OperativeCombatRuntimeService.start()", 1, true) ~= nil)
 assert(string.find(bootstrap, "AutomaticCombatDevelopmentHarness", 1, true) == nil)
 assert(string.find(source, "IsStudio", 1, true) == nil, "the production runtime must run everywhere")
-for _, prohibited in { "FireAllClients", "RemoteFunction", "InvokeClient", "math.random" } do
+for _, prohibited in { "RemoteFunction", "InvokeClient", "math.random" } do
 	assert(not string.find(source, prohibited, 1, true), "combat runtime must stay narrow: " .. prohibited)
 end
+local _, broadcastCount = string.gsub(source, "presentationRemote:FireAllClients", "")
+assert(broadcastCount == 1, "only accepted shot presentation may broadcast to the squad")
+assert(
+	string.find(
+		source,
+		"presentationRemote:FireAllClients({\n\t\tkindId = CombatContracts.PresentationMessageKindIds.ShotFired",
+		1,
+		true
+	) ~= nil,
+	"the one broadcast must remain the accepted ShotFired disclosure"
+)
 local _, listenerCount = string.gsub(source, "OnServerEvent:Connect", "")
 assert(listenerCount == 1, "reload intent must remain the only client combat input")
 local reviveSource = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeReviveSessionService.luau")

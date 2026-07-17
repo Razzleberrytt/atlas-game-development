@@ -29,13 +29,7 @@ MissionContracts: P5-0103 vocabulary, snapshot validation, and authored config p
 === games/living-kingdoms/tests/MissionDirectorService.test.luau ===
 MissionDirectorService: P5-0103 phases, objective, extraction, holdout, wipe, disconnect, and cleanup passed
 === games/living-kingdoms/tests/OperativeCombatRuntimeService.test.luau ===
-/home/runner/work/atlas-game-development/atlas-game-development/games/living-kingdoms/tests/OperativeCombatRuntimeService.test:624: combat runtime must stay narrow: FireAllClients
-[Stack Begin]
-    Script '[C]' - function 'error'
-    Script '/home/runner/work/atlas-game-development/atlas-game-development/games/living-kingdoms/tests/OperativeCombatRuntimeService.test', Line 13
-    Script '/home/runner/work/atlas-game-development/atlas-game-development/games/living-kingdoms/tests/OperativeCombatRuntimeService.test', Line 624
-[Stack End]
-
+OperativeCombatRuntimeService: P5-0106 visibility, budget, priority, fire pipeline, reload, revive, and audits passed
 === games/living-kingdoms/tests/OperativeHealthResolver.test.luau ===
 OperativeHealthResolver: health boundaries, incapacitation, authority, validation precedence, duplicates, determinism, and immutability passed
 === games/living-kingdoms/tests/OperativeIncapacitationResolver.test.luau ===
