@@ -1,9 +1,9 @@
 --!strict
 
--- P5-0101 authored-world constants. The geometry remains graybox, but these
--- stable IDs and positions establish the operation's traversal language.
+-- P5-0102 authored-world constants. Geometry remains replaceable graybox, but
+-- these stable routes and landmark IDs preserve the operation's visual language.
 local WorldFoundationConfig = {
-	Version = "P5-0101-v1",
+	Version = "P5-0102-v1",
 	Seed = 1847,
 	WorldRootName = "LivingKingdomsWorld",
 	PlayableHalfExtentStuds = 320,
@@ -25,18 +25,20 @@ local WorldFoundationConfig = {
 		}),
 	}),
 	Vegetation = table.freeze({
-		PineCount = 118,
-		HardwoodCount = 52,
-		FallenLogCount = 18,
-		BoulderCount = 58,
-		MinimumLandmarkClearanceStuds = 10,
+		PineCount = 104,
+		HardwoodCount = 44,
+		FallenLogCount = 15,
+		BoulderCount = 52,
+		MinimumLandmarkClearanceStuds = 14,
+		RouteClearanceStuds = 18,
 	}),
 	Lighting = table.freeze({
 		ClockTime = 2.15,
-		Brightness = 2.1,
-		ExposureCompensation = 0.08,
-		FogStart = 60,
-		FogEnd = 480,
+		GeographicLatitude = 38,
+		Brightness = 2.05,
+		ExposureCompensation = 0.12,
+		FogStart = 72,
+		FogEnd = 520,
 	}),
 }
 
