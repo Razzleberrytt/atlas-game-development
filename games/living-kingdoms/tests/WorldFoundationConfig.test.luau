@@ -8,7 +8,7 @@ local config = luau.load(source, {
 	injectGlobals = true,
 })()
 
-assert(config.Version == "P5-0101-v1", "world version changed")
+assert(config.Version == "P5-0102-v1", "world version changed")
 assert(config.PlayableHalfExtentStuds == 320, "playable extent changed")
 assert(config.Seed == 1847, "deterministic seed changed")
 assert(#config.Landmarks == 8, "required landmark count changed")
@@ -42,7 +42,14 @@ end
 assert(next(expectedIds) == nil, "all required landmarks must be present exactly once")
 assert(config.Vegetation.PineCount >= 100, "primary forest canopy is no longer dense")
 assert(config.Vegetation.HardwoodCount >= 40, "mixed hardwood layer is too sparse")
+assert(config.Vegetation.RouteClearanceStuds >= 16, "authored routes need camera-readable canopy clearance")
+assert(
+	config.Vegetation.PineCount + config.Vegetation.HardwoodCount <= 160,
+	"readability pass exceeded the prototype tree budget"
+)
 assert(config.Lighting.FogStart < config.Lighting.FogEnd, "fog bounds must be ordered")
+assert(config.Lighting.FogStart >= 60, "near-route fog should preserve gameplay-camera readability")
+assert(config.Lighting.FogEnd >= 500, "landmarks need a useful long-range reveal distance")
 assert(
 	config.InsertionPosition.x == -224 and config.InsertionPosition.z == -208,
 	"insertion must remain at the ranger station"
@@ -61,5 +68,28 @@ do
 	})
 	assert(type(loaded) == "function", "environment source must compile: " .. path)
 end
+
+local worldSource = fs.readFile("games/living-kingdoms/src/server/Systems/WorldFoundationService.luau")
+for _, requiredIdentity in
+	{
+		"RangerGenerator",
+		"RadioMast",
+		"AbandonedLogLoader",
+		"AviationWarningLight",
+		"PicnicTableTop",
+		"ShallowCrossingRock",
+		"DistantTownLight",
+		"CheckpointFloodlight",
+		"DormantFlarePosition",
+		"ApproachCorridorCenterline",
+	}
+do
+	assert(
+		string.find(worldSource, requiredIdentity, 1, true) ~= nil,
+		"missing landmark identity: " .. requiredIdentity
+	)
+end
+assert(string.find(worldSource, "ROUTE_CORRIDORS", 1, true) ~= nil, "route-aware vegetation clearance is missing")
+assert(string.find(worldSource, "buildEvacuationStory", 1, true) ~= nil, "evacuation storytelling pass is missing")
 
 print("WorldFoundationConfig fixtures passed")

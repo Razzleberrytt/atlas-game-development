@@ -1,7 +1,7 @@
 --!strict
 
 --[[
-	Builds the deterministic P5-0101 environment graybox. This service owns
+	Builds the deterministic P5-0102 environment readability pass. This service owns
 	only static world presentation and collision: no objectives, extraction
 	state, enemies, hazards, loot, or mission scripting are created here.
 ]]
@@ -33,6 +33,9 @@ local COLORS = table.freeze({
 	water = Color3.fromRGB(47, 77, 83),
 	emergency = Color3.fromRGB(184, 41, 29),
 	tape = Color3.fromRGB(225, 187, 51),
+	utility = Color3.fromRGB(139, 118, 70),
+	medical = Color3.fromRGB(183, 194, 181),
+	mud = Color3.fromRGB(48, 40, 32),
 })
 
 local started = false
@@ -120,6 +123,17 @@ local function addPointLight(part: BasePart, color: Color3, range: number, brigh
 		part:SetAttribute("BaseLightBrightness", brightness)
 		CollectionService:AddTag(part, "LK_EnvironmentFlicker")
 	end
+end
+
+local function addSpotLight(part: BasePart, color: Color3, range: number, brightness: number, angle: number)
+	local light = Instance.new("SpotLight")
+	light.Face = Enum.NormalId.Front
+	light.Color = color
+	light.Range = range
+	light.Brightness = brightness
+	light.Angle = angle
+	light.Shadows = false
+	light.Parent = part
 end
 
 local function addLabel(parent: Instance, text: string, cframe: CFrame, size: Vector3)
@@ -245,6 +259,20 @@ local function buildTerrain(parent: Folder)
 		)
 		water.Transparency = 0.18
 		water.Reflectance = 0.08
+		for side = -1, 1, 2 do
+			local bankOffset = Vector3.new(side * 11, 0.35, 0)
+			makeSegment(
+				terrain,
+				"CreekBank" .. index .. "_" .. side,
+				creekPoints[index] + bankOffset,
+				creekPoints[index + 1] + bankOffset,
+				5,
+				1.2,
+				COLORS.soil,
+				Enum.Material.Mud,
+				true
+			)
+		end
 	end
 
 	-- Switchback trail and logging road give strong navigation lines.
@@ -257,7 +285,7 @@ local function buildTerrain(parent: Folder)
 		Vector3.new(315, 0.55, -195),
 	}
 	for index = 1, #roadPoints - 1 do
-		makeSegment(
+		local road = makeSegment(
 			terrain,
 			"LoggingRoad" .. index,
 			roadPoints[index],
@@ -268,6 +296,21 @@ local function buildTerrain(parent: Folder)
 			Enum.Material.Ground,
 			true
 		)
+		for side = -1, 1, 2 do
+			local track = makeSegment(
+				terrain,
+				"MuddyTireTrack" .. index .. "_" .. side,
+				roadPoints[index] + Vector3.new(side * 6, 0.62, 0),
+				roadPoints[index + 1] + Vector3.new(side * 6, 0.62, 0),
+				2.1,
+				0.12,
+				COLORS.mud,
+				Enum.Material.Mud,
+				false
+			)
+			track.CastShadow = false
+		end
+		road:SetAttribute("PrimaryNavigationRoute", true)
 	end
 	local trailPoints = {
 		Vector3.new(-205, 14.55, 170),
@@ -279,7 +322,7 @@ local function buildTerrain(parent: Folder)
 		Vector3.new(158, 22.55, 176),
 	}
 	for index = 1, #trailPoints - 1 do
-		makeSegment(
+		local trail = makeSegment(
 			terrain,
 			"SwitchbackTrail" .. index,
 			trailPoints[index],
@@ -290,6 +333,19 @@ local function buildTerrain(parent: Folder)
 			Enum.Material.Ground,
 			true
 		)
+		trail:SetAttribute("PrimaryNavigationRoute", true)
+		if index > 1 and index < #trailPoints - 1 then
+			local turn = trailPoints[index]
+			makePart(
+				terrain,
+				"SwitchbackCairn" .. index,
+				Vector3.new(3.5, 2 + index * 0.25, 3.5),
+				CFrame.new(turn + Vector3.new(0, 1.2, 0)),
+				COLORS.rock,
+				Enum.Material.Slate,
+				false
+			)
+		end
 	end
 end
 
@@ -342,6 +398,55 @@ local function buildRangerStation(parent: Folder)
 		false
 	)
 	addPointLight(emergencyLamp, Color3.fromRGB(255, 65, 42), 24, 1.4, true)
+	local generator = makePart(
+		model,
+		"RangerGenerator",
+		Vector3.new(7, 4.5, 5),
+		CFrame.new(-198, 2.6, -210),
+		COLORS.utility,
+		Enum.Material.Metal
+	)
+	local workLamp = makePart(
+		model,
+		"GeneratorWorkLamp",
+		Vector3.new(1.5, 1.5, 1.5),
+		generator.CFrame * CFrame.new(0, 4.5, 0),
+		Color3.fromRGB(245, 205, 132),
+		Enum.Material.Neon,
+		false
+	)
+	addPointLight(workLamp, Color3.fromRGB(255, 220, 163), 36, 2, true)
+	makeSegment(
+		model,
+		"RadioMast",
+		Vector3.new(-239, 1, -180),
+		Vector3.new(-239, 39, -180),
+		1.1,
+		1.1,
+		COLORS.structure,
+		Enum.Material.Metal,
+		true
+	)
+	for height = 11, 35, 12 do
+		makePart(
+			model,
+			"RadioMastCrossbar",
+			Vector3.new(9, 0.7, 0.7),
+			CFrame.new(-239, height, -180),
+			COLORS.structure,
+			Enum.Material.Metal,
+			false
+		)
+	end
+	local storage = makePart(
+		model,
+		"EquipmentStorage",
+		Vector3.new(14, 8, 10),
+		CFrame.new(-185, 4.5, -184),
+		Color3.fromRGB(66, 75, 68),
+		Enum.Material.CorrodedMetal
+	)
+	addLabel(model, "EQUIPMENT", storage.CFrame * CFrame.new(0, 1, -5.1), Vector3.new(9, 2, 0.3))
 
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "SquadInsertion"
@@ -419,6 +524,16 @@ local function buildLookout(parent: Folder)
 			)
 		end
 	end
+	for _, diagonal in
+		{
+			{ Vector3.new(-214, 18, 161), Vector3.new(-196, 43, 179) },
+			{ Vector3.new(-196, 18, 161), Vector3.new(-214, 43, 179) },
+			{ Vector3.new(-214, 18, 179), Vector3.new(-196, 43, 161) },
+			{ Vector3.new(-196, 18, 179), Vector3.new(-214, 43, 161) },
+		}
+	do
+		makeSegment(model, "WeatheredBrace", diagonal[1], diagonal[2], 0.7, 0.7, COLORS.wood, Enum.Material.Wood, false)
+	end
 	makePart(
 		model,
 		"Platform",
@@ -436,6 +551,18 @@ local function buildLookout(parent: Folder)
 		Enum.Material.WoodPlanks
 	)
 	makePart(model, "Roof", Vector3.new(24, 1.5, 24), CFrame.new(-205, 58, 170), COLORS.rockDark, Enum.Material.Metal)
+	local aviationLight = makePart(
+		model,
+		"AviationWarningLight",
+		Vector3.new(1.8, 1.8, 1.8),
+		CFrame.new(-205, 60, 170),
+		COLORS.emergency,
+		Enum.Material.Neon,
+		false
+	)
+	addPointLight(aviationLight, Color3.fromRGB(255, 48, 34), 48, 2.5, false)
+	aviationLight:SetAttribute("BaseLightBrightness", 2.5)
+	CollectionService:AddTag(aviationLight, "LK_EnvironmentBlink")
 	makeSegment(
 		model,
 		"Stairs",
@@ -502,6 +629,44 @@ local function buildCampground(parent: Folder)
 			Enum.Material.Fabric
 		)
 	end
+	for tableIndex, position in { Vector3.new(-118, 1.8, 54), Vector3.new(-68, 1.8, 38) } do
+		makePart(
+			model,
+			"PicnicTableTop" .. tableIndex,
+			Vector3.new(11, 0.8, 5),
+			CFrame.new(position) * CFrame.Angles(0, math.rad(tableIndex * 28), 0),
+			COLORS.wood,
+			Enum.Material.WoodPlanks
+		)
+		for side = -1, 1, 2 do
+			makePart(
+				model,
+				"PicnicBench",
+				Vector3.new(11, 0.6, 1.5),
+				CFrame.new(position + Vector3.new(0, -0.4, side * 4)) * CFrame.Angles(0, math.rad(tableIndex * 28), 0),
+				COLORS.wood,
+				Enum.Material.WoodPlanks
+			)
+		end
+	end
+	makePart(
+		model,
+		"AbandonedBackpack",
+		Vector3.new(3.5, 4, 2),
+		CFrame.new(-84, 2, 67) * CFrame.Angles(math.rad(8), math.rad(-22), math.rad(75)),
+		Color3.fromRGB(83, 91, 66),
+		Enum.Material.Fabric,
+		false
+	)
+	makePart(
+		model,
+		"OpenMedicalKit",
+		Vector3.new(4, 1, 3),
+		CFrame.new(-79, 0.7, 64) * CFrame.Angles(0, math.rad(16), 0),
+		COLORS.medical,
+		Enum.Material.SmoothPlastic,
+		false
+	)
 	addLabel(
 		model,
 		"CAMPSITES 1–6",
@@ -516,14 +681,16 @@ local function buildCreekCrossing(parent: Folder)
 	model.Parent = parent
 	markLandmark(model, "CreekCrossing", "Creek Crossing")
 	for index = -3, 3 do
-		makePart(
-			model,
-			"BridgePlank",
-			Vector3.new(5, 0.8, 13),
-			CFrame.new(25 + index * 5, 2.1, 12) * CFrame.Angles(0, math.rad(90), 0),
-			COLORS.wood,
-			Enum.Material.WoodPlanks
-		)
+		if index ~= 1 then
+			makePart(
+				model,
+				"BridgePlank",
+				Vector3.new(5, 0.8, 13),
+				CFrame.new(25 + index * 5, 2.1, 12) * CFrame.Angles(0, math.rad(90), 0),
+				COLORS.wood,
+				Enum.Material.WoodPlanks
+			)
+		end
 	end
 	for side = -1, 1, 2 do
 		makeSegment(
@@ -538,6 +705,41 @@ local function buildCreekCrossing(parent: Folder)
 			true
 		)
 	end
+	makePart(
+		model,
+		"CollapsedBridgeRail",
+		Vector3.new(18, 0.8, 0.8),
+		CFrame.new(36, 1.4, 19) * CFrame.Angles(0, math.rad(9), math.rad(18)),
+		COLORS.wood,
+		Enum.Material.Wood,
+		false
+	)
+	for index, position in
+		{
+			Vector3.new(17, 1.25, -1),
+			Vector3.new(25, 1.1, -3),
+			Vector3.new(34, 1.2, -1),
+		}
+	do
+		local rock = makePart(
+			model,
+			"ShallowCrossingRock" .. index,
+			Vector3.new(6, 2, 5),
+			CFrame.new(position) * CFrame.Angles(0, math.rad(index * 23), 0),
+			COLORS.rock,
+			Enum.Material.Slate
+		)
+		rock.Shape = Enum.PartType.Ball
+	end
+	local fallenTree = makePart(
+		model,
+		"FallenCreekTree",
+		Vector3.new(30, 3, 3),
+		CFrame.new(29, 2, 31) * CFrame.Angles(0, math.rad(64), math.rad(90)),
+		COLORS.trunk,
+		Enum.Material.Wood
+	)
+	fallenTree.Shape = Enum.PartType.Cylinder
 	makePart(
 		model,
 		"WashedOutWarning",
@@ -577,6 +779,29 @@ local function buildOverlook(parent: Folder)
 		1,
 		Color3.fromRGB(119, 112, 96),
 		Enum.Material.Metal,
+		true
+	)
+	for index = 1, 8 do
+		local townLight = makePart(
+			model,
+			"DistantTownLight" .. index,
+			Vector3.new(0.7, 0.7, 0.7),
+			CFrame.new(230 + index * 9, 5 + (index % 3) * 2, 286 + math.sin(index * 1.7) * 15),
+			if index % 3 == 0 then Color3.fromRGB(255, 161, 88) else Color3.fromRGB(237, 210, 151),
+			Enum.Material.Neon,
+			false
+		)
+		townLight.CastShadow = false
+	end
+	makeSegment(
+		model,
+		"ReadableCliffEdge",
+		Vector3.new(119, 27, 217),
+		Vector3.new(181, 29, 223),
+		3,
+		2,
+		COLORS.rockDark,
+		Enum.Material.Slate,
 		true
 	)
 	addLabel(
@@ -630,6 +855,55 @@ local function buildRoadblock(parent: Folder)
 		false
 	)
 	addPointLight(lamp, Color3.fromRGB(255, 54, 35), 34, 2.1, true)
+	for vehicleIndex, position in
+		{
+			Vector3.new(225, 3, -177),
+			Vector3.new(135, 3, -194),
+		}
+	do
+		local vehicle = Instance.new("Model")
+		vehicle.Name = "AbandonedMilitaryVehicle" .. vehicleIndex
+		vehicle.Parent = model
+		makePart(
+			vehicle,
+			"Body",
+			Vector3.new(10, 4, 19),
+			CFrame.new(position) * CFrame.Angles(0, math.rad(-14 + vehicleIndex * 25), 0),
+			COLORS.military,
+			Enum.Material.Metal
+		)
+		makePart(
+			vehicle,
+			"Cab",
+			Vector3.new(9, 5, 7),
+			CFrame.new(position + Vector3.new(0, 3, -5)) * CFrame.Angles(0, math.rad(-14 + vehicleIndex * 25), 0),
+			COLORS.military,
+			Enum.Material.Metal
+		)
+	end
+	for side = -1, 1, 2 do
+		local floodlight = makePart(
+			model,
+			"CheckpointFloodlight",
+			Vector3.new(3, 2, 1),
+			CFrame.lookAt(Vector3.new(180 + side * 32, 13, -150), Vector3.new(180, 0, -178)),
+			Color3.fromRGB(235, 222, 181),
+			Enum.Material.Neon,
+			false
+		)
+		addSpotLight(floodlight, Color3.fromRGB(255, 234, 190), 55, 2.4, 58)
+		makeSegment(
+			model,
+			"FloodlightStand",
+			Vector3.new(180 + side * 32, 0, -150),
+			Vector3.new(180 + side * 32, 12, -150),
+			0.7,
+			0.7,
+			COLORS.structure,
+			Enum.Material.Metal,
+			true
+		)
+	end
 	addLabel(model, "QUARANTINE — NO ENTRY", CFrame.new(180, 8, -181), Vector3.new(26, 4, 0.5))
 	for index = 1, 5 do
 		makeSegment(
@@ -725,6 +999,52 @@ local function buildExtraction(parent: Folder)
 		false
 	)
 	addPointLight(generatorLamp, Color3.fromRGB(255, 220, 160), 38, 2.2, true)
+	for index, position in
+		{
+			Vector3.new(258, 2, 72),
+			Vector3.new(255, 2, 80),
+			Vector3.new(249, 2, 86),
+			Vector3.new(184, 2, 24),
+		}
+	do
+		makePart(
+			model,
+			"TemporaryEquipmentCase" .. index,
+			Vector3.new(6, 3, 4),
+			CFrame.new(position) * CFrame.Angles(0, math.rad(index * 17), 0),
+			COLORS.military,
+			Enum.Material.Metal
+		)
+	end
+	for index, position in
+		{
+			Vector3.new(218, 0.8, -5),
+			Vector3.new(198, 0.8, 0),
+			Vector3.new(238, 0.8, 0),
+		}
+	do
+		local flare = makePart(
+			model,
+			"DormantFlarePosition" .. index,
+			Vector3.new(2.4, 0.4, 2.4),
+			CFrame.new(position),
+			Color3.fromRGB(135, 59, 38),
+			Enum.Material.Metal,
+			false
+		)
+		flare:SetAttribute("FutureFlarePosition", true)
+	end
+	makeSegment(
+		model,
+		"ApproachCorridorCenterline",
+		Vector3.new(218, 0.58, -52),
+		Vector3.new(218, 0.58, 20),
+		3,
+		0.15,
+		Color3.fromRGB(120, 113, 92),
+		Enum.Material.Ground,
+		false
+	)
 end
 
 local function buildLoggingDetails(parent: Folder)
@@ -754,6 +1074,82 @@ local function buildLoggingDetails(parent: Folder)
 		Color3.fromRGB(75, 57, 41),
 		Enum.Material.Wood
 	)
+	local loader = Instance.new("Model")
+	loader.Name = "AbandonedLogLoader"
+	loader.Parent = model
+	makePart(loader, "Chassis", Vector3.new(10, 4, 15), CFrame.new(45, 3, -91), COLORS.utility, Enum.Material.Metal)
+	makePart(loader, "Cab", Vector3.new(8, 7, 7), CFrame.new(45, 7, -95), COLORS.utility, Enum.Material.Metal)
+	makeSegment(
+		loader,
+		"LoaderBoom",
+		Vector3.new(45, 8, -87),
+		Vector3.new(58, 16, -77),
+		2,
+		2,
+		COLORS.utility,
+		Enum.Material.Metal,
+		true
+	)
+	for index = 1, 5 do
+		local fencePost = Vector3.new(-55 + index * 9, 3, -125 + (index % 2) * 2)
+		makePart(
+			model,
+			"BrokenFencePost" .. index,
+			Vector3.new(1, 6, 1),
+			CFrame.new(fencePost) * CFrame.Angles(0, 0, math.rad(if index == 3 then 34 else 0)),
+			COLORS.wood,
+			Enum.Material.Wood
+		)
+		if index < 5 and index ~= 3 then
+			makeSegment(
+				model,
+				"BrokenFenceRail",
+				fencePost + Vector3.new(0, 1, 0),
+				fencePost + Vector3.new(9, 1 + (index % 2), 1),
+				0.6,
+				0.6,
+				COLORS.wood,
+				Enum.Material.Wood,
+				false
+			)
+		end
+	end
+end
+
+local ROUTE_CORRIDORS = table.freeze({
+	-- Ranger insertion to roadblock.
+	table.freeze({ -315, -238, -215, -190 }),
+	table.freeze({ -215, -190, -92, -150 }),
+	table.freeze({ -92, -150, 30, -112 }),
+	table.freeze({ 30, -112, 178, -178 }),
+	-- Camp, crossing, lookout, and overlook switchbacks.
+	table.freeze({ -220, -190, -92, 45 }),
+	table.freeze({ -92, 45, 25, 12 }),
+	table.freeze({ 25, 12, 104, 94 }),
+	table.freeze({ 104, 94, 158, 176 }),
+	table.freeze({ -92, 45, -175, 82 }),
+	table.freeze({ -175, 82, -142, 124 }),
+	table.freeze({ -142, 124, -205, 170 }),
+	-- Creek crossing to extraction and its southern air approach.
+	table.freeze({ 25, 12, 128, 38 }),
+	table.freeze({ 128, 38, 218, 58 }),
+	table.freeze({ 218, -52, 218, 58 }),
+})
+
+local function distanceToSegmentSquared(x: number, z: number, segment: { number }): number
+	local ax = segment[1]
+	local az = segment[2]
+	local bx = segment[3]
+	local bz = segment[4]
+	local dx = bx - ax
+	local dz = bz - az
+	local lengthSquared = dx * dx + dz * dz
+	local t = if lengthSquared == 0 then 0 else math.clamp(((x - ax) * dx + (z - az) * dz) / lengthSquared, 0, 1)
+	local nearestX = ax + dx * t
+	local nearestZ = az + dz * t
+	local offsetX = x - nearestX
+	local offsetZ = z - nearestZ
+	return offsetX * offsetX + offsetZ * offsetZ
 end
 
 local function isInsideClearance(x: number, z: number): boolean
@@ -765,12 +1161,11 @@ local function isInsideClearance(x: number, z: number): boolean
 			return true
 		end
 	end
-	-- Preserve the road, creek, and an insertion-to-camp navigation corridor.
-	if math.abs(z - (-205 + (x + 220) * 0.42)) < 14 and x < -70 then
-		return true
-	end
-	if math.abs(x - 18) < 18 then
-		return true
+	local routeClearanceSquared = Config.Vegetation.RouteClearanceStuds * Config.Vegetation.RouteClearanceStuds
+	for _, segment in ROUTE_CORRIDORS do
+		if distanceToSegmentSquared(x, z, segment) < routeClearanceSquared then
+			return true
+		end
 	end
 	return false
 end
@@ -784,6 +1179,83 @@ local function randomOpenPosition(random: Random): Vector3
 		end
 	end
 	return Vector3.new(random:NextNumber(-300, 300), 0, random:NextNumber(-300, 300))
+end
+
+local function buildEvacuationStory(parent: Folder)
+	local story = makeFolder("EvacuationStory", parent)
+	for index, position in
+		{
+			Vector3.new(-150, 9, -171),
+			Vector3.new(-74, 9, -144),
+			Vector3.new(25, 9, -116),
+			Vector3.new(108, 9, -145),
+		}
+	do
+		local lean = if index == 3 then math.rad(14) else math.rad((index % 2) * 2 - 1)
+		makePart(
+			story,
+			"DamagedUtilityPole" .. index,
+			Vector3.new(1.5, 18, 1.5),
+			CFrame.new(position) * CFrame.Angles(0, 0, lean),
+			COLORS.trunk,
+			Enum.Material.Wood
+		)
+	end
+	local civilianCar = Instance.new("Model")
+	civilianCar.Name = "AbandonedCivilianVehicle"
+	civilianCar.Parent = story
+	makePart(
+		civilianCar,
+		"Body",
+		Vector3.new(8, 3, 15),
+		CFrame.new(102, 2.4, -125) * CFrame.Angles(0, math.rad(31), math.rad(4)),
+		Color3.fromRGB(78, 86, 91),
+		Enum.Material.Metal
+	)
+	makePart(
+		civilianCar,
+		"Cab",
+		Vector3.new(7, 3, 7),
+		CFrame.new(100, 4.3, -128) * CFrame.Angles(0, math.rad(31), math.rad(4)),
+		Color3.fromRGB(64, 73, 79),
+		Enum.Material.Glass
+	)
+	for index, position in
+		{
+			Vector3.new(91, 0.8, -122),
+			Vector3.new(95, 0.8, -118),
+			Vector3.new(88, 0.8, -115),
+		}
+	do
+		makePart(
+			story,
+			"DiscardedEvacuationSupply" .. index,
+			Vector3.new(3 + index % 2, 1.4, 2.5),
+			CFrame.new(position) * CFrame.Angles(0, math.rad(index * 41), math.rad(index * 5)),
+			if index == 2 then COLORS.medical else Color3.fromRGB(105, 87, 65),
+			if index == 2 then Enum.Material.SmoothPlastic else Enum.Material.Fabric,
+			false
+		)
+	end
+	addLabel(
+		story,
+		"EMERGENCY ROUTE  ←",
+		CFrame.new(82, 5, -135) * CFrame.Angles(0, math.rad(-18), math.rad(-6)),
+		Vector3.new(18, 3, 0.4)
+	)
+	for index = 1, 3 do
+		makeSegment(
+			story,
+			"LooseCautionTape" .. index,
+			Vector3.new(84 + index * 5, 2 + index, -132),
+			Vector3.new(89 + index * 5, 2.4 + index, -129),
+			0.25,
+			0.25,
+			COLORS.tape,
+			Enum.Material.Neon,
+			false
+		)
+	end
 end
 
 local function buildVegetation(parent: Folder)
@@ -883,15 +1355,16 @@ end
 
 local function configureLighting()
 	Lighting.ClockTime = Config.Lighting.ClockTime
+	Lighting.GeographicLatitude = Config.Lighting.GeographicLatitude
 	Lighting.Brightness = Config.Lighting.Brightness
 	Lighting.ExposureCompensation = Config.Lighting.ExposureCompensation
-	Lighting.Ambient = Color3.fromRGB(61, 70, 82)
-	Lighting.OutdoorAmbient = Color3.fromRGB(70, 81, 94)
+	Lighting.Ambient = Color3.fromRGB(59, 69, 82)
+	Lighting.OutdoorAmbient = Color3.fromRGB(72, 84, 99)
 	Lighting.EnvironmentDiffuseScale = 0.48
 	Lighting.EnvironmentSpecularScale = 0.25
 	Lighting.GlobalShadows = true
-	Lighting.ShadowSoftness = 0.65
-	Lighting.FogColor = Color3.fromRGB(83, 95, 103)
+	Lighting.ShadowSoftness = 0.58
+	Lighting.FogColor = Color3.fromRGB(79, 92, 102)
 	Lighting.FogStart = Config.Lighting.FogStart
 	Lighting.FogEnd = Config.Lighting.FogEnd
 
@@ -905,16 +1378,16 @@ local function configureLighting()
 	atmosphere.Name = "LivingKingdomsAtmosphere"
 	atmosphere.Color = Color3.fromRGB(126, 142, 151)
 	atmosphere.Decay = Color3.fromRGB(47, 57, 65)
-	atmosphere.Density = 0.32
-	atmosphere.Offset = 0.08
+	atmosphere.Density = 0.28
+	atmosphere.Offset = 0.1
 	atmosphere.Glare = 0.03
-	atmosphere.Haze = 2.1
+	atmosphere.Haze = 1.8
 	atmosphere.Parent = Lighting
 	local grade = Instance.new("ColorCorrectionEffect")
 	grade.Name = "LivingKingdomsColorGrade"
 	grade.Brightness = 0.02
-	grade.Contrast = 0.11
-	grade.Saturation = -0.24
+	grade.Contrast = 0.14
+	grade.Saturation = -0.2
 	grade.TintColor = Color3.fromRGB(205, 216, 221)
 	grade.Parent = Lighting
 	local existingClouds = Workspace.Terrain:FindFirstChild("LivingKingdomsClouds")
@@ -923,8 +1396,8 @@ local function configureLighting()
 	end
 	local clouds = Instance.new("Clouds")
 	clouds.Name = "LivingKingdomsClouds"
-	clouds.Cover = 0.74
-	clouds.Density = 0.68
+	clouds.Cover = 0.68
+	clouds.Density = 0.62
 	clouds.Color = Color3.fromRGB(88, 97, 104)
 	clouds.Parent = Workspace.Terrain
 end
@@ -953,6 +1426,7 @@ function WorldFoundationService.start()
 	buildOverlook(landmarks)
 	buildRoadblock(landmarks)
 	buildExtraction(landmarks)
+	buildEvacuationStory(worldRoot)
 	buildVegetation(worldRoot)
 	local generatedSpawn = worldRoot:FindFirstChild("SquadInsertion", true)
 	assert(generatedSpawn ~= nil and generatedSpawn:IsA("SpawnLocation"), "world insertion spawn was not generated")

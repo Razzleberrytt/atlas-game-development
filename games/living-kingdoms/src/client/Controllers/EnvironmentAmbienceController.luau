@@ -10,7 +10,7 @@ local EnvironmentAmbienceController = {}
 
 local UPDATE_INTERVAL_SECONDS = 0.1
 local WIND_SPEED = 0.7
-local WIND_TILT_RADIANS = math.rad(1.6)
+local WIND_TILT_RADIANS = math.rad(1.85)
 
 local started = false
 local destroyed = false
@@ -58,6 +58,20 @@ local function updateFlicker()
 	end
 end
 
+local function updateAviationBlink()
+	local lit = elapsed % 2.4 < 0.18
+	for _, instance in CollectionService:GetTagged("LK_EnvironmentBlink") do
+		if instance:IsA("BasePart") and instance.Parent ~= nil then
+			local light = instance:FindFirstChildOfClass("PointLight")
+			local baseBrightness = instance:GetAttribute("BaseLightBrightness")
+			if light ~= nil and typeof(baseBrightness) == "number" then
+				light.Brightness = if lit then baseBrightness else 0
+				instance.Transparency = if lit then 0 else 0.45
+			end
+		end
+	end
+end
+
 function EnvironmentAmbienceController.init()
 	-- No external assets or authoritative state are required.
 end
@@ -76,6 +90,7 @@ function EnvironmentAmbienceController.start()
 		accumulated = 0
 		updateWind()
 		updateFlicker()
+		updateAviationBlink()
 	end)
 end
 
@@ -91,6 +106,16 @@ function EnvironmentAmbienceController.stop()
 	for part, base in baseCFrames do
 		if part.Parent ~= nil then
 			part.CFrame = base
+		end
+	end
+	for _, instance in CollectionService:GetTagged("LK_EnvironmentBlink") do
+		if instance:IsA("BasePart") and instance.Parent ~= nil then
+			local light = instance:FindFirstChildOfClass("PointLight")
+			local baseBrightness = instance:GetAttribute("BaseLightBrightness")
+			if light ~= nil and typeof(baseBrightness) == "number" then
+				light.Brightness = baseBrightness
+				instance.Transparency = 0
+			end
 		end
 	end
 	table.clear(baseCFrames)
