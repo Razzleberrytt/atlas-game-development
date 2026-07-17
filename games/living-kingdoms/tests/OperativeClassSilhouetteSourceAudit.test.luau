@@ -16,6 +16,7 @@ local readme = fs.readFile("games/living-kingdoms/assets/visual/operative/class-
 
 for _, required in {
 	'AssetKey = "visual.operative.class-silhouette.fallback"',
+	'PresentationModelName = "OperativeClassSilhouette"',
 	"MaximumPartsPerOperative = 10",
 	"CombatSpecialistSilhouette",
 	"MedicSilhouette",
@@ -41,7 +42,7 @@ for _, required in {
 	"part.CanTouch = false",
 	"part.CanQuery = false",
 	"part.CFrame = torso.CFrame",
-	"OperativeClassSilhouette",
+	"PRESENTATION_MODEL_NAME = ClassSilhouetteConfig.PresentationModelName",
 } do
 	assertThat(string.find(controller, required, 1, true) ~= nil, "class silhouette controller missing: " .. required)
 end
