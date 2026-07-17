@@ -24,11 +24,11 @@ Weapon meshes do not own shooting. Enemy rigs do not own health, targeting, atta
   - Inventories current primitive weapons, enemies, operatives, interactables, world props, effects, sounds, ambience, and temporary UI in `visual-placeholder-inventory.md`.
   - All current records remain honestly classified as primitive, default-avatar, missing, or temporary; no production asset is falsely approved.
   - Declarations load no assets, register no numeric IDs, create no runtime owner, and change no gameplay behavior.
-- [ ] **VIS-0102 — Replace the basic firearm presentation.**
-  - Approve a reference board and representative firearm concept.
-  - Add the canonical firearm model, attachment points, magazine state, fire/reload/empty animation compatibility, muzzle/impact effects, and sound set.
-  - Preserve existing server-owned cadence, ammunition, reload, targeting, hit, and damage boundaries.
-  - Add missing-asset fallback and Studio readability/performance evidence.
+- [~] **VIS-0102 — Replace the basic firearm presentation.**
+  - Source creation is in progress through the original Blackwater Service Carbine candidate: deterministic 19-component model generator, five attachment transforms, and explicit `Fire`, `Reload`, and `Empty` animation curves.
+  - The candidate is project-original and contains no uploaded asset ID or gameplay mutation.
+  - Still required: Roblox Studio import, canonical runtime model/attachment integration, muzzle/impact effects, audio, missing-asset fallback, and elevated-isometric readability/performance evidence.
+  - Existing server-owned cadence, ammunition, reload, targeting, hit, and damage boundaries remain unchanged.
 - [ ] **VIS-0103 — Replace the standard hostile presentation.**
   - Add one canonical horde rig and bounded cosmetic variants.
   - Support pursuit, attack anticipation, active strike, recovery, hit reaction, death, and stand-down.
