@@ -2,126 +2,99 @@
 
 ## Purpose
 
-This is the cross-cutting production-art roadmap for replacing functional placeholders with readable, performant, production-ready visual and audio assets.
+Replace functional placeholders with readable, performant, source-tracked production assets without changing gameplay authority, tuning, hitboxes, interaction bounds, hidden information, or unfinished feature contracts.
 
-It does not change the P6–P12 gameplay dependency chain. Visual work may proceed in parallel only when it does not alter gameplay authority, tuning, hitboxes, interaction bounds, hidden information, or an unfinished feature contract.
+**Core rule:** gameplay truth stabilizes first; presentation attaches second.
 
-Canonical specification: `docs/specifications/visual-asset-production.md`.
+Canonical specification: `docs/specifications/visual-asset-production.md`  
+Detailed current inventory: `docs/specifications/visual-placeholder-inventory.md`
 
-## Core rule
+## Status summary
 
-**Gameplay truth is stable first; presentation attaches second.**
+| ID | Status | Outcome / remaining gate |
+|---|---|---|
+| VIS-PLAN-001 | Complete | Visual target, authority rules, budgets, sourcing, fallbacks, and review gates defined. |
+| VIS-0101 | Complete | Registry and placeholder inventory established; no asset is falsely marked production-approved. |
+| VIS-0102 | In progress | Firearm model, state motion, and temporary shot effects exist. Needs Studio import/readability review, final effects/audio, and performance evidence. |
+| VIS-0103 | In progress | Exclusion Walker silhouette, disclosed-state poses, and attack readability exist. Needs canonical swap, effects/audio, and horde performance evidence. |
+| VIS-0104 | In progress | Operative/class silhouettes, life-state cues, and carry poses exist. Needs canonical rig/animation, class-action cues, avatar-scale review, and squad performance evidence. |
+| VIS-0105 | In progress — review gate | Cache, relay, extraction, routes, five safe landmarks, and shared world-material language exist. Needs Studio visual/accessibility/performance review before more geometry. |
+| VIS-0106 | Blocked by P9 | Special-enemy and boss package waits for stable encounter contracts. |
+| VIS-0107 | Blocked by canonical assets/P11 | Small cosmetic system waits for canonical fallbacks and persistence ownership. |
+| VIS-0108 | Blocked by P12 | Release-candidate visual, audio, accessibility, and performance closure. |
 
-Weapon meshes do not own shooting. Enemy rigs do not own health, targeting, attacks, or hit volume. Operative outfits do not own class state. Objective props do not own objective position or completion. Skins never own statistics.
+## Current decision gate
 
-## Current status
+**Do not add another broad procedural-geometry pass before Roblox Studio review.**
 
-- [x] **VIS-PLAN-001 — Define the visual asset production specification.**
-  - Defines the visual target, placeholder policy, authority boundary, asset families, cosmetic policy, source/license requirements, provisional budgets, review gates, and ordered production tasks.
-  - Planning and documentation only.
-- [x] **VIS-0101 — Define the visual asset registry and placeholder inventory.**
-  - Adds 28 stable visual asset keys with family/version metadata, expected roots/attachments, gameplay-footprint references, cosmetic eligibility, and source/runtime-owner records.
-  - Inventories current primitive weapons, enemies, operatives, interactables, world props, effects, sounds, ambience, and temporary UI in `visual-placeholder-inventory.md`.
-  - All current records remain honestly classified as primitive, default-avatar, missing, or temporary; no production asset is falsely approved.
-  - Declarations load no assets, register no numeric IDs, create no runtime owner, and change no gameplay behavior.
-- [~] **VIS-0102 — Replace the basic firearm presentation.**
-  - The current project-original Blackwater Support LMG procedural fallback provides a belt feed, ammunition box, carry handle, long barrel, heat shield, bipod, stable attachment locators, and deterministic 45-component import source; the earlier Blackwater Service Carbine source remains available for comparison and rollback.
-  - Local and squad-visible bolt, ammunition-box, empty-state, and reload motion follows only server-disclosed shot and reload lifecycle messages; teammate ammunition counts remain private.
-  - Accepted shots drive temporary muzzle flash, casing, hit-confirmed tracer, and authoritative damage-impact presentation.
-  - Hit-confirmed tracer policy remains implemented: only server-confirmed damaging shots with an authoritative impact position display the short-lived tracer.
-  - Still required: Roblox Studio mesh import and canonical swap, grip/isometric readability review, production effects, audio, and representative performance evidence.
-  - Existing server-owned cadence, ammunition, reload, targeting, hit, and damage boundaries remain unchanged.
-- [~] **VIS-0103 — Replace the standard hostile presentation.**
-  - A deterministic 18-component Exclusion Walker source candidate and matching replicated procedural fallback replace the invisible/one-block silhouette with a broad torso, sensor face, long striking arms, claws, heavy feet, dorsal spine, and back canister.
-  - The fallback exposes five presentation-only motors and a client-local pose controller for alternating roaming/pursuit stride, stationary threat-ready posture, confirmed hit reaction, death, and stand-down readability.
-  - Nine server-authored model attributes disclose exact behavior/life state, a cancelable 0.6-second server-owned windup, and confirmed attack/hit sequences and timestamps; alternating left/right early/late anticipation flows into matching committed strike/recovery poses.
-  - The pose layer uses one client frame connection, two folder lifecycle connections, zero per-enemy connections, zero remotes, and no root, Humanoid, health, attack, or cleanup mutation; attribute writes occur only on committed changes and motor writes only when the pose ID changes.
-  - The authoritative `HumanoidRootPart` remains exactly `3 x 5.6 x 3` studs and continues to own collision, movement, network ownership, targeting position, and gameplay footprint.
-  - A stable presentation-only `AttackOrigin` locator remains available for later authored attack effects.
-  - Windup is target-locked, stops Walker movement, cancels when the victim dies or leaves melee range, and commits damage only after the disclosed deadline; rejected commits retain the same windup.
-  - Still required: Roblox Studio mesh import/canonical swap, effects, audio, bounded cosmetic variants, and representative horde performance evidence.
-- [~] **VIS-0104 — Add operative and starting-class visual identity.**
-  - A client-local procedural shared armor base plus geometry-distinct Combat Specialist, Medic, and Engineer equipment silhouettes now attach to R6 or R15 torsos from the existing validated server-safe class roster.
-  - Each fallback is capped at ten massless, non-collidable, non-touchable, non-queryable parts; duplicate classes intentionally share the same geometry and color remains supplemental.
-  - The presentation adds zero remotes, server runtime, timers, or frame loops and never changes class assignment, movement, collision, health, weapons, ammunition, objectives, or mission state.
-  - Existing server-disclosed life attributes now drive occlusion-respecting world cues: rescue-cross plus `DOWNED`, authoritative revive percentage, upward-chevron plus `SELF RECOVERY`, and X plus `KIA`. Each visible cue uses two non-colliding parts, geometry plus text rather than color alone, two global connections, two connections per player, and no frame loop or timer.
-  - Existing `WeaponGrip` and R6/R15 shoulder motors now receive event-driven upper-body carry poses for ready, authoritative reviver, incapacitated, and dead states. The controller writes at most three captured Motor6D baselines per event, restores every baseline on cleanup, and adds no frame loop, timer, remote, or server runtime.
-  - `WeaponPresentationController` now destroys its stored grip motor and any stale hand-level `WeaponGrip` before replacement, preventing rebind accumulation.
-  - Still required: canonical shared operative rig, authored locomotion and body-pose animation, class-action cues after their gameplay contracts exist, Studio gameplay-camera and animation-interaction approval, avatar-scale coverage, and representative squad performance evidence.
-- [~] **VIS-0105 — Replace world, supply, and objective placeholders.**
-  - The authored rifle-ammunition cache now receives a 13-part client-local procedural supply case with rails, latches, handle, signal band, surface label, empty tray, and one motorized lid around the unchanged server-owned `3.6 x 1.8 x 2.6` collidable root.
-  - Existing per-operative consumed disclosure opens and darkens only that player's case, exposes the empty tray, changes the label from `RIFLE AMMO` to `EMPTY`, and disables only the local prompt; consumed messages are remembered before cache lookup for streaming safety.
-  - The authoritative relay console now receives an eleven-part client-local shell with geometry-plus-text standby, restore, and online states. The authoritative extraction beacon receives a twelve-part base, mast-fin, crown, lens, direction-panel, and label package only after the server has already created the unlocked beacon.
-  - Validated monotonic safe mission snapshots drive relay inactive/active/completed and extraction exfiltration/holdout/success/failure presentation. Inconsistent facts restore the primitive server objects instead of fabricating mission truth.
-  - The mission-object layer uses three global connections, zero per-object connections, zero frame loops, zero timers, zero new remotes, and no server runtime change. Cleanup restores primitive root visibility, lights, and marker UI.
-  - Existing `LoggingRoad*` and `SwitchbackTrail*` parts now receive two client-local guide posts per segment, capped at 22 parts across the current eleven authored segments. Creek pieces, landmarks, objectives, and the extraction clearing are explicitly excluded; no destination text or future-state cue is created.
-  - The route-guide layer uses two global workspace connections, zero per-segment connections, zero frame loops, zero timers, zero remotes, and no server runtime change.
-  - Ranger Station, Military Roadblock, Campground, Creek Crossing, and Rocky Overlook now share a bounded client-local landmark accent system. The lookout objective area and extraction clearing remain explicitly excluded.
-  - The landmark-accent layer uses two global workspace connections, zero per-landmark connections, zero frame loops, zero timers, zero remotes, and no server runtime change. Its current five-landmark maximum is 22 welded, massless, non-collidable, non-touchable, and non-queryable parts.
-  - `WorldMaterialLanguageConfig` now defines ten immutable semantic roles for infrastructure, security, camp, crossing, and overlook presentation plus explicit no-authority, no-destination, no-hidden-state, geometry-plus-material, and production-approval rules.
-  - Still required: Studio gameplay-camera, terrain-clipping, prompt, extraction-zone, and long-distance review; final authored world/interactable materials, effects, and audio; lighting, fog, ambience, accessibility, and representative performance evidence.
-  - Objective art follows the P8 authored chain and may not disclose hidden or inactive truth.
-- [ ] **VIS-0106 — Produce the special enemy and boss visual package.**
-  - Runs with P9 after the special-enemy and boss contracts are stable.
-  - Includes canonical rigs, phase/vulnerability states, attacks, accessible telegraphs, effects, audio, death, and performance validation.
-- [ ] **VIS-0107 — Add the bounded cosmetic skin system.**
-  - Begins only after canonical models, persistence ownership, readability, and fallback rules are stable.
-  - Approved cosmetic IDs only; no arbitrary client asset references, stat changes, silhouette advantages, paid power, or battle pass.
-  - Prefer a very small earned/default MVP set over a broad catalog.
-- [ ] **VIS-0108 — Complete release-candidate visual, audio, and performance polish.**
-  - Runs with P12 accessibility and performance work.
-  - Replaces all release-blocking placeholders, consolidates materials/effects/audio, validates low-quality settings, verifies cleanup, and records known cosmetic limitations.
+Review the existing VIS-0102–VIS-0105 presentation from the actual gameplay camera:
 
-## Execution order
+- silhouette and state readability at normal combat distance;
+- terrain, avatar, prop, and UI clipping;
+- prompt and interaction clarity;
+- extraction and objective hidden-information behavior;
+- low-quality graphics and dark/fog conditions;
+- color-independent critical cues;
+- representative squad, hostile, route, and landmark performance;
+- cleanup during streaming, respawn, phase changes, and match end.
 
-`VIS-PLAN-001` → `VIS-0101` → (`VIS-0102` + `VIS-0103`, one PR at a time) → `VIS-0104` → `VIS-0105` → `VIS-0106` → `VIS-0107` → `VIS-0108`.
+Record defects as bounded follow-up tasks. Only approved shapes/material roles should move into canonical authored assets.
 
-Dependencies override the apparent order:
+## Completed VIS-0105 scope
 
-- `VIS-0102` may begin after the current firearm gameplay contract is considered stable enough for presentation attachment.
-- `VIS-0104` action-specific cues wait for the corresponding P7 action state.
-- `VIS-0105` objective-specific assets wait for P8 authored objective definitions.
-- `VIS-0106` waits for P9 encounter contracts.
-- `VIS-0107` waits for canonical assets and the appropriate P11 persistence/ownership boundary.
-- `VIS-0108` is part of P12 release-candidate closure.
+- Ammunition cache: local available/consumed presentation around the unchanged server-owned cache and prompt.
+- Relay and extraction: client presentation driven only by validated server disclosures; inconsistent state restores primitive fallbacks.
+- Routes: paired edge guides on authored road/trail segments with no destination or extraction hints.
+- Safe landmarks: Ranger Station, Military Roadblock, Campground, Creek Crossing, and Rocky Overlook.
+- Explicit exclusions: Lookout Tower objective area and Extraction Clearing remain behind their mission-state boundaries.
+- Shared material language: immutable semantic roles for infrastructure, security, camp, crossing, and overlook treatment.
 
-## Production asset priorities
+All current world additions remain presentation-only: no gameplay ownership, new remotes, server-state mutation, collision authority, or production approval.
 
-The recommended first production replacements are:
+## Dependency rules
 
-1. basic firearm;
-2. standard hostile;
-3. operative/class silhouettes;
-4. ammunition cache and interaction state;
-5. objective and extraction props;
-6. major landmarks and environment pass;
-7. special enemy and boss;
-8. cosmetic variants.
+Execution order:
 
-This order improves what players see most often before spending effort on optional skins.
+`VIS-PLAN-001` → `VIS-0101` → (`VIS-0102` + `VIS-0103`) → `VIS-0104` → `VIS-0105` → `VIS-0106` → `VIS-0107` → `VIS-0108`
 
-## What can proceed while P6 Studio evidence is deferred
+Dependencies override order:
 
-The following visual work is evidence-independent and may proceed under a focused PR:
+- action-specific class cues wait for their gameplay contracts;
+- objective/extraction art may reveal only validated server-disclosed truth;
+- boss visuals wait for P9 encounter contracts;
+- cosmetics wait for canonical fallbacks and P11 ownership;
+- release closure runs with P12 accessibility and performance work.
 
-- reference board and concept decisions;
-- placeholder inventory;
-- asset key/fallback/source contracts;
-- offline model or texture exploration that is not yet merged as production gameplay content;
-- canonical firearm and enemy presentation integration only when their existing gameplay footprints remain unchanged and Studio review is available.
+## Production replacement priority
 
-Class-effect animation, engineer resupply presentation, objective-specific production art, boss art, and cosmetic ownership runtime remain dependent on their corresponding gameplay milestones.
+1. Firearm model, effects, and audio.
+2. Standard hostile model, animation, effects, and audio.
+3. Operative rig, class equipment, and animation.
+4. Cache, relay, extraction, and major world props/materials.
+5. Special enemy and boss.
+6. Optional cosmetic variants.
+7. Release-candidate UI, ambience, accessibility, and polish.
 
-## Visual exit criteria for MVP
+## Safe parallel work before Studio approval
 
-The MVP visual track exits when:
+- reference boards and authored concept exploration;
+- source/license documentation;
+- offline mesh, texture, and audio candidates;
+- material prototypes that do not enter gameplay runtime;
+- test plans and performance budgets.
 
-- no release-blocking primitive or debug placeholder remains;
-- the firearm, operatives, classes, standard hostile, special enemy, boss, caches, objectives, extraction, and major landmarks are recognizable and coherent;
-- critical combat, rescue, scarcity, class, objective, boss, and result states are readable from the gameplay camera;
-- every asset preserves server authority and the canonical gameplay footprint;
-- representative horde and boss load meets the P12 performance budget;
+Do not merge canonical replacements without preserving gameplay footprints, fallback behavior, cleanup, accessibility, rights, and performance evidence.
+
+## MVP visual exit criteria
+
+The track exits when:
+
+- no release-blocking primitive/debug placeholder remains;
+- primary characters, weapons, enemies, interactables, objectives, extraction, and landmarks are coherent and recognizable;
+- combat, rescue, scarcity, class, objective, boss, and result states read from the gameplay camera;
+- server authority and canonical gameplay footprints remain intact;
+- representative horde/boss load meets P12 budgets;
 - critical information is not color-only or audio-only;
 - missing assets fail safely to approved fallbacks;
-- imported asset rights and sources are recorded;
-- skins, if included, are cosmetic only.
+- all imported sources and rights are recorded;
+- cosmetics, if included, remain cosmetic only.
