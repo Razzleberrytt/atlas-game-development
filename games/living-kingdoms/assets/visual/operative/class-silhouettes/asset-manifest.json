@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "assetKey": "visual.operative.class-silhouette.fallback",
+  "candidateId": "operative-class-silhouettes.v1",
+  "status": "procedural-fallback-not-runtime-approved",
+  "sourceKind": "ProjectOriginal",
+  "sourceLicense": "Original project asset; all project rights retained",
+  "runtimeOwner": "ClassSilhouetteController",
+  "authoritativeClassSource": "ClassService SafeClassSelectionSnapshot",
+  "presentationModelName": "OperativeClassSilhouette",
+  "supportedAvatarRigs": ["R6", "R15"],
+  "sharedPartCount": 4,
+  "classPartCount": 6,
+  "maximumPartsPerOperative": 10,
+  "classKits": {
+    "class.combat-specialist": {
+      "modelName": "CombatSpecialistSilhouette",
+      "primaryGeometryCue": "broad shoulders and paired ammunition cases"
+    },
+    "class.medic": {
+      "modelName": "MedicSilhouette",
+      "primaryGeometryCue": "twin tall canisters and round beacon"
+    },
+    "class.engineer": {
+      "modelName": "EngineerSilhouette",
+      "primaryGeometryCue": "wide utility frame and asymmetric antenna"
+    }
+  },
+  "accessibility": {
+    "colorOnly": false,
+    "duplicateClassesSupported": true,
+    "geometryDistinct": true
+  },
+  "runtimeBounds": {
+    "globalConnections": 3,
+    "connectionsPerPlayer": 2,
+    "frameConnections": 0,
+    "timersPerPlayer": 0,
+    "newRemoteCount": 0,
+    "serverRuntimeChanges": 0
+  },
+  "gameplayAuthority": {
+    "classAssignment": "server",
+    "movement": "server",
+    "collision": "unchanged avatar",
+    "health": "server",
+    "weapon": "server",
+    "ammunition": "server",
+    "classActions": "server when implemented"
+  },
+  "studioGate": {
+    "studioApproved": false,
+    "gameplayCameraReviewPassed": false,
+    "r6ReviewPassed": false,
+    "r15ReviewPassed": false,
+    "duplicateClassReadabilityPassed": false,
+    "colorVisionReviewPassed": false,
+    "representativeSquadPerformancePassed": false
+  }
+}
