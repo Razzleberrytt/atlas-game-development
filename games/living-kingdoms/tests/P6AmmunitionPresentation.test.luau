@@ -23,3 +23,5 @@ check(string.find(controller, "presentAmmunitionPayload", 1, true) ~= nil)
 check(string.find(controller, "FireServer", 1, true) ~= nil)
 check(string.find(controller, "reserveRounds =", 1, true) == nil, "client must not assign authoritative reserve rounds")
 check(string.find(controller, "loadedRounds =", 1, true) == nil, "client must not assign authoritative loaded rounds")
+
+print("P6 ammunition presentation source audit passed")
