@@ -154,12 +154,12 @@ Create darkness, limited information, and selected squad navigation aids that pr
 - [x] **LK-0406 — Add one approved flashlight or personal-light vertical slice.**
   - **Work type:** Focused tool/runtime and presentation work.
   - **Acceptance:** one production-connected personal flashlight has boolean-only server-validated intent, deterministic operative-owned LK-0401 light registration, bounded cone coverage without LOS/discovery/targeting authority, owner-only revision reconciliation, responsive accessible local presentation, P3 life-state shutdown, deterministic cleanup, focused fixtures, and two-client Studio validation; alternative tools and remote-operative cosmetics remain deferred.
-- [ ] **LK-0407 — Add the selected squad-navigation aid slice.**
+- [x] **LK-0407 — Add the selected squad-navigation aid slice.**
   - **Work type:** Focused tool/disclosure work.
-  - **Acceptance:** next and unstarted; one playtested aid (for example a limited ping or compass policy) communicates only permitted teammate/objective information, is rate/expiry bounded with non-audio equivalence, and does not introduce a minimap or global hostile awareness.
+  - **Acceptance:** one production-connected Location-only squad ping accepts category plus candidate position only, derives identity/recipients/time/limits on the server, quantizes within 120 studs, replaces at one active per sender, caps four per squad, expires after six seconds through one deterministic scheduler, replicates revisioned safe snapshots only to current squadmates, supports G/middle-mouse, D-pad Up, and touch with text/shape non-audio presentation, and cleans up on life, roster, squad, expiry, and teardown transitions without discovery, hostile, targeting, minimap, compass, or tracking authority.
 - [ ] **LK-0408 — Complete P4 security, performance, and integration validation.**
   - **Work type:** Validation and focused defect repair only.
-  - **Acceptance:** adversarial clients cannot alter visibility, discovery, lights, memory, or targeting; 1–4 player representative budget measurements cover lights/particles/shadows/rays/checks; selected aid feel/accessibility is documented; P1–P3 and P2 regression suites pass; any repair is minimal and P4-only.
+  - **Acceptance:** next and unstarted; adversarial clients cannot alter visibility, discovery, lights, memory, or targeting; 1–4 player representative budget measurements cover lights/particles/shadows/rays/checks; selected aid feel/accessibility is documented; P1–P3 and P2 regression suites pass; any repair is minimal and P4-only.
 
 ### P4 execution order
 
