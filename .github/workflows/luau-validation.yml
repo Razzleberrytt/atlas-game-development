@@ -49,11 +49,14 @@ jobs:
       - name: Run Selene
         run: selene games/living-kingdoms/src
 
-      - name: Run focused landmark fixtures
-        run: |
-          lune run games/living-kingdoms/tests/LandmarkAccentPresentationResolver.test.luau
-          lune run games/living-kingdoms/tests/LandmarkAccentPresentationSourceAudit.test.luau
-          lune run games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau
+      - name: Run landmark resolver fixture
+        run: lune run games/living-kingdoms/tests/LandmarkAccentPresentationResolver.test.luau
+
+      - name: Run landmark source audit
+        run: lune run games/living-kingdoms/tests/LandmarkAccentPresentationSourceAudit.test.luau
+
+      - name: Run visual registry fixture
+        run: lune run games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau
 
       - name: Run complete Lune fixtures
         shell: bash
