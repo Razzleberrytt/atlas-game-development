@@ -28,12 +28,23 @@ local function copyState(state: ScarcityAmmunitionState): ScarcityAmmunitionStat
 	})
 end
 
-local function rejected(state: ScarcityAmmunitionState, reasonId: string): CollectionResult
+local function invalidStateSnapshot(): ScarcityAmmunitionState
+	return table.freeze({
+		weaponId = "",
+		loadedRounds = 0,
+		reserveRounds = 0,
+		magazineCapacity = 0,
+		maximumReserveRounds = 0,
+		processedSupplyIds = {},
+	})
+end
+
+local function rejected(stateAfter: ScarcityAmmunitionState, reasonId: string): CollectionResult
 	return table.freeze({
 		didCollect = false,
 		grantedRounds = 0,
 		rejectionReasonId = reasonId,
-		stateAfter = copyState(state),
+		stateAfter = stateAfter,
 	})
 end
 
@@ -73,17 +84,18 @@ end
 
 function Resolver.collect(state: ScarcityAmmunitionState, supply: AmmunitionSupply): CollectionResult
 	if not validState(state) then
-		return rejected(state, RejectionIds.InvalidState)
+		return rejected(invalidStateSnapshot(), RejectionIds.InvalidState)
 	end
+	local currentState = copyState(state)
 	if not validSupply(supply, state.weaponId) then
-		return rejected(state, RejectionIds.InvalidSupply)
+		return rejected(currentState, RejectionIds.InvalidSupply)
 	end
 	if state.processedSupplyIds[supply.supplyId] then
-		return rejected(state, RejectionIds.DuplicateCollection)
+		return rejected(currentState, RejectionIds.DuplicateCollection)
 	end
 	local capacity = state.maximumReserveRounds - state.reserveRounds
 	if capacity <= 0 then
-		return rejected(state, RejectionIds.NoCapacity)
+		return rejected(currentState, RejectionIds.NoCapacity)
 	end
 	local grantedRounds = math.min(capacity, supply.availableRounds)
 	local processedSupplyIds = copySet(state.processedSupplyIds)
