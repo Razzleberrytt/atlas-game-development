@@ -1,0 +1,18 @@
+{
+  "assetKey": "world.material-language",
+  "version": "VIS-0105-world-material-v1",
+  "sourceType": "project-original-planning-contract",
+  "runtimeOwner": "src/shared/Config/WorldMaterialLanguageConfig.luau",
+  "consumer": "src/client/Presentation/LandmarkAccentPresentationFactory.luau",
+  "semanticRoleCount": 10,
+  "rules": {
+    "noGameplayAuthority": true,
+    "noDestinationEncoding": true,
+    "noHiddenMissionState": true,
+    "geometryPlusMaterialRequired": true,
+    "productionApprovalRequiredForReplacement": true
+  },
+  "numericAssetIds": 0,
+  "serverRuntimeChanges": 0,
+  "studioApproval": false
+}
