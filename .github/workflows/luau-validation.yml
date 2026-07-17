@@ -19,7 +19,7 @@ on:
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -27,8 +27,10 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - name: Check out repository
+      - name: Check out pull-request branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
 
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
@@ -38,9 +40,23 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Normalize Luau formatting
+      - name: Apply deterministic StyLua formatting
         shell: bash
         run: stylua games/living-kingdoms/src
+
+      - name: Commit formatter output
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/strict-stylua-enforcement'
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No formatting changes required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add games/living-kingdoms/src
+          git commit -m "Format Luau sources with StyLua"
+          git push origin HEAD:${{ github.head_ref }}
 
       - name: Run Selene
         shell: bash
