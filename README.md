@@ -32,9 +32,10 @@ Read these files in order:
 2. `docs/bible/01-mvp.md`
 3. `docs/architecture/technical-blueprint.md`
 4. `docs/roadmap/MASTER-ROADMAP.md`
-5. `docs/decisions/0001-cooperative-survival-pivot.md`
-6. `docs/decisions/0002-automatic-combat-targeting.md`
-7. `prompts/codex-master-prompt.md`
+5. `docs/roadmap/P6-P12-EXECUTION-ROADMAP.md`
+6. `docs/decisions/0001-cooperative-survival-pivot.md`
+7. `docs/decisions/0002-automatic-combat-targeting.md`
+8. `prompts/codex-master-prompt.md`
 
 For Windows installation and Roblox Studio synchronization, follow the [Windows local setup guide](docs/production/LOCAL-SETUP.md).
 For Luau formatting and static analysis, follow the [Luau tooling guide](docs/production/LUAU-TOOLING.md).
@@ -43,8 +44,8 @@ For the reusable Studio launch check and first successful result, see the [smoke
 ## Project status
 
 **Atlas version:** 0.1  
-**Living Kingdoms phase:** P5 complete — enemy spawning, pursuit, and horde pressure delivered on the first playable operation
+**Living Kingdoms phase:** P6 implementation and telemetry complete; controlled 1/2/4-operative scarcity validation and evidence-based tuning remain before P6 sign-off
 
-**Next planned milestone:** P6 ammunition scarcity and supply collection
+**Prepared next milestone:** P7 planning is complete in `docs/specifications/mvp-specialist-classes.md`. P7 gameplay begins with shared class contracts and configuration after P6 sign-off.
 
 Final public branding is unresolved. Living Kingdoms remains the working title and internal project identifier; naming work is outside the current scope.

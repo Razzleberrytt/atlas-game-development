@@ -1,7 +1,8 @@
 # Ammunition Scarcity and Supply
 
-**Status:** P6 implementation and balance validation in progress  
-**Current task:** P6-0107 — sampled scarcity telemetry and one/two/four-operative validation
+**Status:** P6 implementation complete; balance validation and tuning in progress  
+**Current task:** P6-0108 — controlled one/two/four-operative evidence matrix  
+**Execution roadmap:** `docs/roadmap/P6-P12-EXECUTION-ROADMAP.md`
 
 ## Goal
 
@@ -43,7 +44,7 @@ These values remain testable starting points, not final tuning.
 7. Record the server-owned collection identity and exact granted amount.
 8. Disclose ammunition and per-operative cache depletion only after commit succeeds.
 
-## P6-0107 telemetry
+## P6 telemetry
 
 Telemetry is sampled only when an authorized Studio tester invokes the validation probe. It adds no heartbeat, timer, task loop, production remote, client authority, or gameplay mutation.
 
@@ -70,15 +71,78 @@ The server creates `ServerStorage.LivingKingdomsAmmunitionValidation` only in St
 - `ResetSampling:Invoke()` clears telemetry history before a new run.
 - `ReadSnapshot:Invoke()` takes one explicit sample and returns the frozen snapshot.
 
-Capture snapshots at minimum:
+From the Studio **Server** command bar:
 
-1. operation start
-2. first objective completion
-3. escalation or mid-operation relocation
-4. holdout start
-5. operation success or failure
+```luau
+local probe = game:GetService("ServerStorage"):WaitForChild("LivingKingdomsAmmunitionValidation")
+probe.ResetSampling:Invoke()
+```
 
-Run the protocol with one, two, and four operatives. Do not compare runs that used different enemy tuning or operation paths without recording that difference.
+At each capture point:
+
+```luau
+local probe = game:GetService("ServerStorage"):WaitForChild("LivingKingdomsAmmunitionValidation")
+print(probe.ReadSnapshot:Invoke())
+```
+
+Use the server output to copy the aggregate and per-operative facts into the evidence record. Do not invoke the probe from a client command bar.
+
+## P6-0108 controlled evidence process
+
+Complete these steps separately for one, two, and four operatives.
+
+### Before each run
+
+1. Confirm the branch/build contains the same firearm, cache, enemy, and mission configuration for every comparable run.
+2. Start a fresh Studio Server & Clients session with the required operative count.
+3. Confirm every client has spawned, can move, sees authoritative ammunition, and has not consumed a cache.
+4. Invoke `ResetSampling` once from the server command bar.
+5. Record the run ID, date, operative count, configuration commit, intended route, and any known test limitation.
+6. Invoke `ReadSnapshot` and record the **operation-start** baseline.
+
+### During each run
+
+7. Follow the same intended route and objective order where practical.
+8. Play normally enough to expose real automatic-fire, reload, movement, rescue, cache, and pressure behavior; do not deliberately waste ammunition unless the run is explicitly labeled a stress probe.
+9. Record route deviations, missed caches, deaths, disconnects, unusual enemy behavior, or developer intervention immediately.
+10. Capture and record snapshots at:
+   - first objective completion;
+   - mid-operation escalation or major relocation;
+   - holdout start;
+   - terminal success or failure.
+11. For each cache collection, note which operative collected it, whether the grant was clamped by capacity, and whether the world feedback became locally depleted only for that operative.
+12. When an operative reaches loaded plus reserve equal to zero, record whether meaningful unconsumed cache opportunities remained and whether the operative could reasonably reach them.
+
+### After each run
+
+13. Record terminal outcome, duration, objective reached, deaths/incapacitations, and whether the run ended through ordinary play or a defect.
+14. Verify the final aggregate accepted-shot count reconciles with starting ammunition, exact grants, and final ammunition.
+15. Verify consumed cache identities and remaining opportunities match observed play for every operative.
+16. Classify the run only after reviewing the facts:
+   - **oversupplied candidate**;
+   - **healthy tension candidate**;
+   - **starvation candidate**;
+   - **invalid for balance comparison** because of a defect, route/config mismatch, or developer intervention.
+17. Stop the session and confirm no telemetry claim is carried into the next run; the next run must begin with a fresh session and `ResetSampling`.
+
+## Required evidence table
+
+Create one row for every captured run. Add per-operative detail beneath the row when players diverge materially.
+
+| Run ID | Commit/config | Operatives | Route/objective order | Duration | Outcome | Accepted shots | Cache collections | Exact rounds granted | Final loaded | Final reserve | Minimum ammo observed | Dry transitions | Remaining opportunities | Deaths/incapacitations | Classification | Deviations/notes |
+| --- | --- | ---: | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
+| P6-1P-01 |  | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| P6-2P-01 |  | 2 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| P6-4P-01 |  | 4 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+
+Recommended minimum before tuning:
+
+- at least two comparable valid one-operative runs;
+- at least two comparable valid two-operative runs;
+- at least two comparable valid four-operative runs;
+- one additional stress probe only when a repeated pattern needs clarification.
+
+A single run may expose a defect, but it cannot justify a balance tune by itself.
 
 ## Balance interpretation
 
@@ -88,11 +152,44 @@ Likely oversupply is indicated when operatives finish with high totals, consume 
 
 Likely unavoidable starvation is indicated when dry transitions occur repeatedly despite collecting most available opportunities and otherwise competent play. A dry transition while many opportunities remain is not automatically a tuning defect; it may indicate route choice, missed relocation, or poor distribution.
 
-No ammunition value should change from a single run. Tune only after comparable one/two/four-operative evidence shows a repeated pattern.
+Do not compare runs that used different enemy tuning, firearm configuration, cache definitions, mission path, or intentional waste behavior without recording and separating that difference.
+
+## P6-0109 tuning process
+
+1. Group only comparable valid runs by operative count.
+2. Identify a repeated pattern across more than one run; do not tune from an isolated outcome.
+3. Choose the smallest configuration-backed lever that addresses the evidence:
+   - initial reserve;
+   - cache grant size;
+   - cache location;
+   - maximum reserve capacity;
+   - only when necessary, enemy/operation pressure owned by its own milestone configuration.
+4. Change one logical lever per tuning pass where practical.
+5. Record the hypothesis before changing the value.
+6. Re-run the affected operative-count scenarios using the same capture protocol.
+7. Reject the change if it merely moves the problem to another squad size or removes meaningful cache/route decisions.
+8. Keep the tune only when the repeated evidence moves toward healthy tension without introducing oversupply or unavoidable starvation.
+9. Run the full automated validation gate after every committed tuning change.
+10. Record final values, evidence, known limitations, and remaining P12 balance questions.
+
+## P6 sign-off checklist
+
+P6 may be marked complete only when:
+
+- valid comparable one-, two-, and four-operative evidence is recorded;
+- telemetry conservation and cache identity facts match observed play;
+- no collection, per-operative depletion, HUD, revive-preservation, or replay defect remains;
+- tuning changes, if any, are supported by repeated evidence and revalidated;
+- careful runs can avoid predetermined starvation;
+- ammunition and cache decisions still materially affect route, timing, and safety;
+- malicious clients still cannot set ammunition, grants, collection truth, supply identity, or another operative's cache history;
+- StyLua, Selene, every Living Kingdoms Lune fixture, and Rojo build pass;
+- Studio findings and limitations are recorded in the smoke-test/evidence record;
+- the roadmap is updated from P6 in progress to P6 complete.
 
 ## Remaining P6 work
 
-1. Complete and record comparable one-, two-, and four-operative Studio runs.
-2. Repair only telemetry or collection defects exposed by those runs.
-3. Adjust prototype values only when repeated evidence distinguishes oversupply from unavoidable starvation.
-4. Close P6 with multiplayer security, regression, and documented balance findings.
+1. Complete and record the controlled one-, two-, and four-operative Studio evidence matrix (`P6-0108`).
+2. Repair only telemetry, presentation, collection, or integration defects exposed by those runs.
+3. Adjust prototype values only when repeated evidence distinguishes oversupply from unavoidable starvation (`P6-0109`).
+4. Revalidate the affected scenarios and close P6 with documented security, regression, and balance findings.
