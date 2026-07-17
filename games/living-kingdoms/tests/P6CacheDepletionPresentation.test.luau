@@ -44,14 +44,16 @@ check(string.find(controller, "Workspace.DescendantAdded:Connect", 1, true) ~= n
 check(string.find(controller, "Workspace.DescendantRemoving:Connect", 1, true) ~= nil)
 check(string.find(controller, "root.LocalTransparencyModifier = 1", 1, true) ~= nil)
 check(
-	string.find(controller, "root.LocalTransparencyModifier = binding.originalLocalTransparencyModifier", 1, true) ~= nil,
+	string.find(controller, "root.LocalTransparencyModifier = binding.originalLocalTransparencyModifier", 1, true)
+		~= nil,
 	"local cache root rendering must restore on cleanup"
 )
 check(string.find(controller, "prompt.Enabled = if consumed then false", 1, true) ~= nil)
 check(string.find(controller, "prompt.Enabled = binding.promptWasEnabled", 1, true) ~= nil)
 
 local rememberPosition = string.find(controller, "consumedCacheIds[cacheId] = true", 1, true)
-local bindingLookupPosition = string.find(controller, "local binding = bindingsByCacheId[cacheId]", rememberPosition or 1, true)
+local bindingLookupPosition =
+	string.find(controller, "local binding = bindingsByCacheId[cacheId]", rememberPosition or 1, true)
 check(
 	rememberPosition ~= nil and bindingLookupPosition ~= nil and rememberPosition < bindingLookupPosition,
 	"consumed disclosure must survive cache streaming order"

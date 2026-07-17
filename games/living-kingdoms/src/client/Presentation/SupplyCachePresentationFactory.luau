@@ -72,11 +72,7 @@ local function configurePart(part: BasePart, name: string)
 	part.BottomSurface = Enum.SurfaceType.Smooth
 end
 
-local function createStaticPart(
-	root: BasePart,
-	model: Model,
-	definition: PartDefinition
-): Part
+local function createStaticPart(root: BasePart, model: Model, definition: PartDefinition): Part
 	local part = Instance.new("Part")
 	configurePart(part, definition.name)
 	part.Size = vector3(definition.size)
@@ -111,7 +107,7 @@ local function createLid(root: BasePart, model: Model): (Part, Motor6D, CFrame, 
 	motor.Part1 = lid
 	motor.C0 = closedC0
 	motor.C1 = CFrame.identity
-	motor.Parent = root
+	motor.Parent = lid
 	return lid, motor, closedC0, consumedC0
 end
 
@@ -148,10 +144,10 @@ function Factory.create(root: BasePart): SupplyCachePresentationRig
 
 	local parts = {}
 	local availableColors = {}
-	local signalBand = nil
-	local emptyTray = nil
-	local latches = {}
-	local frontPanel = nil
+	local signalBand: BasePart? = nil
+	local emptyTray: BasePart? = nil
+	local latches: { BasePart } = {}
+	local frontPanel: BasePart? = nil
 	for _, definition in SupplyCachePresentationConfig.Parts do
 		local part = createStaticPart(root, model, definition)
 		table.insert(parts, part)
@@ -170,7 +166,10 @@ function Factory.create(root: BasePart): SupplyCachePresentationRig
 	local lid, lidMotor, lidClosedC0, lidConsumedC0 = createLid(root, model)
 	table.insert(parts, lid)
 	availableColors[lid] = lid.Color
-	assert(signalBand ~= nil and emptyTray ~= nil and frontPanel ~= nil and #latches == 2, "supply cache visual definitions incomplete")
+	assert(
+		signalBand ~= nil and emptyTray ~= nil and frontPanel ~= nil and #latches == 2,
+		"supply cache visual definitions incomplete"
+	)
 	local label = createLabel(frontPanel)
 	model.Parent = root
 
@@ -198,12 +197,12 @@ function Factory.applyState(rig: SupplyCachePresentationRig, stateId: string)
 		local availableColor = rig.availableColors[part]
 		if consumed then
 			part.Color = if part.Name == "SupplyCacheLeftRail"
-				or part.Name == "SupplyCacheRightRail"
-				or string.find(part.Name, "Handle", 1, true) ~= nil
-			then CONSUMED_RAIL_COLOR
-			else CONSUMED_COLOR
+					or part.Name == "SupplyCacheRightRail"
+					or string.find(part.Name, "Handle", 1, true) ~= nil
+				then CONSUMED_RAIL_COLOR
+				else CONSUMED_COLOR
 		else
-			part.Color = availableColor
+			part.Color = availableColor or PALETTE.Body
 		end
 	end
 	rig.signalBand.Transparency = if consumed then 0.72 else 0.04

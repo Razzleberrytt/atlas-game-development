@@ -24,7 +24,7 @@ The registry is descriptive only. It does not load assets or change gameplay.
 | Class equipment | Medic equipment | Primitive placeholder | `ClassSilhouetteController`; compact pack, twin tall canisters, paired satchels, and round beacon from the validated class roster | VIS-0104 |
 | Class equipment | Engineer equipment | Primitive placeholder | `ClassSilhouetteController`; wide utility pack, squared tool cases, frame bar, and asymmetric antenna from the validated class roster | VIS-0104 |
 | Enemy | Exclusion Walker model | Primitive placeholder | `EnemyPresentationService` plus `EnemyPresentationController`; motorized 18-part shell with server-authored behavior/life/windup/attack/hit disclosure and local roaming, pursuit, threat-ready, early/late windup, confirmed strike/recovery, hit, stand-down, and death poses attached to the unchanged authoritative `3 x 5.6 x 3` root | VIS-0103 |
-| Supply | Ammunition cache | Primitive placeholder | `AmmunitionCacheService`; one green metal Part and ProximityPrompt | VIS-0105 |
+| Supply | Ammunition cache | Primitive placeholder | `AmmunitionCacheService` retains the authoritative root/prompt; `SupplyCachePresentationFactory` and `AmmunitionCachePresentationController` add a 13-part available/locally-consumed procedural case | VIS-0105 |
 | Objective | Relay console | Primitive placeholder | `MissionDirectorService`; primitive console, lamp, and ProximityPrompt | VIS-0105 / P8 |
 | Extraction | Extraction beacon | Primitive placeholder | `MissionDirectorService`; neon signal pillar, light, and billboard | VIS-0105 / P10 |
 | World | Blackwater world foundation | Primitive placeholder | `WorldFoundationService`; deterministic Part-based terrain, routes, vegetation, structures, and props | VIS-0105 |
@@ -82,4 +82,4 @@ When canonical production assets begin entering the registry:
 
 ## Next task
 
-Continue VIS-0104 with canonical rig and authored animation planning while keeping class-action cues, gameplay-camera and animation-interaction approval, avatar-scale coverage, and representative squad performance evidence pending.
+Continue VIS-0105 with objective, extraction, and major-world readability while keeping Studio cache review, final cache materials/effects/audio, canonical operative art, class-action cues, avatar-scale coverage, and representative performance evidence pending.

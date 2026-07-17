@@ -61,17 +61,94 @@ local Config = {
 	}),
 	Parts = table.freeze({
 		part("SupplyCacheBody", vector(3.54, 1.54, 2.54), vector(0, -0.10, 0), vector(0, 0, 0), "Metal", "Body"),
-		part("SupplyCacheFrontPanel", vector(3.10, 0.92, 0.12), vector(0, -0.06, -1.33), vector(0, 0, 0), "Metal", "Panel"),
-		part("SupplyCacheRearPanel", vector(3.10, 0.92, 0.12), vector(0, -0.06, 1.33), vector(0, 0, 0), "Metal", "Panel"),
-		part("SupplyCacheLeftRail", vector(0.18, 1.72, 2.66), vector(-1.77, -0.02, 0), vector(0, 0, 0), "Metal", "Rail"),
-		part("SupplyCacheRightRail", vector(0.18, 1.72, 2.66), vector(1.77, -0.02, 0), vector(0, 0, 0), "Metal", "Rail"),
-		part("SupplyCacheLatchLeft", vector(0.34, 0.42, 0.18), vector(-0.90, 0.42, -1.43), vector(0, 0, 0), "Metal", "Latch"),
-		part("SupplyCacheLatchRight", vector(0.34, 0.42, 0.18), vector(0.90, 0.42, -1.43), vector(0, 0, 0), "Metal", "Latch"),
-		part("SupplyCacheSignalBand", vector(2.36, 0.18, 0.14), vector(0, 0.12, -1.43), vector(0, 0, 0), "SmoothPlastic", "Signal"),
-		part("SupplyCacheHandleBaseLeft", vector(0.18, 0.48, 0.18), vector(-0.56, 1.06, 0), vector(0, 0, 0), "Metal", "Rail"),
-		part("SupplyCacheHandleBaseRight", vector(0.18, 0.48, 0.18), vector(0.56, 1.06, 0), vector(0, 0, 0), "Metal", "Rail"),
-		part("SupplyCacheHandleBar", vector(1.30, 0.18, 0.24), vector(0, 1.28, 0), vector(0, 0, 0), "SmoothPlastic", "Rail"),
-		part("SupplyCacheEmptyTray", vector(3.12, 0.12, 2.10), vector(0, 0.55, 0), vector(0, 0, 0), "Metal", "Interior"),
+		part(
+			"SupplyCacheFrontPanel",
+			vector(3.10, 0.92, 0.12),
+			vector(0, -0.06, -1.33),
+			vector(0, 0, 0),
+			"Metal",
+			"Panel"
+		),
+		part(
+			"SupplyCacheRearPanel",
+			vector(3.10, 0.92, 0.12),
+			vector(0, -0.06, 1.33),
+			vector(0, 0, 0),
+			"Metal",
+			"Panel"
+		),
+		part(
+			"SupplyCacheLeftRail",
+			vector(0.18, 1.72, 2.66),
+			vector(-1.77, -0.02, 0),
+			vector(0, 0, 0),
+			"Metal",
+			"Rail"
+		),
+		part(
+			"SupplyCacheRightRail",
+			vector(0.18, 1.72, 2.66),
+			vector(1.77, -0.02, 0),
+			vector(0, 0, 0),
+			"Metal",
+			"Rail"
+		),
+		part(
+			"SupplyCacheLatchLeft",
+			vector(0.34, 0.42, 0.18),
+			vector(-0.90, 0.42, -1.43),
+			vector(0, 0, 0),
+			"Metal",
+			"Latch"
+		),
+		part(
+			"SupplyCacheLatchRight",
+			vector(0.34, 0.42, 0.18),
+			vector(0.90, 0.42, -1.43),
+			vector(0, 0, 0),
+			"Metal",
+			"Latch"
+		),
+		part(
+			"SupplyCacheSignalBand",
+			vector(2.36, 0.18, 0.14),
+			vector(0, 0.12, -1.43),
+			vector(0, 0, 0),
+			"SmoothPlastic",
+			"Signal"
+		),
+		part(
+			"SupplyCacheHandleBaseLeft",
+			vector(0.18, 0.48, 0.18),
+			vector(-0.56, 1.06, 0),
+			vector(0, 0, 0),
+			"Metal",
+			"Rail"
+		),
+		part(
+			"SupplyCacheHandleBaseRight",
+			vector(0.18, 0.48, 0.18),
+			vector(0.56, 1.06, 0),
+			vector(0, 0, 0),
+			"Metal",
+			"Rail"
+		),
+		part(
+			"SupplyCacheHandleBar",
+			vector(1.30, 0.18, 0.24),
+			vector(0, 1.28, 0),
+			vector(0, 0, 0),
+			"SmoothPlastic",
+			"Rail"
+		),
+		part(
+			"SupplyCacheEmptyTray",
+			vector(3.12, 0.12, 2.10),
+			vector(0, 0.55, 0),
+			vector(0, 0, 0),
+			"Metal",
+			"Interior"
+		),
 	}),
 }
 

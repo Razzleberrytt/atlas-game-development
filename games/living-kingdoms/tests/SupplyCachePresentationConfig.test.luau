@@ -9,13 +9,11 @@ local function assertThat(condition: unknown, message: string)
 	end
 end
 
-local config = luau.load(
-	fs.readFile("games/living-kingdoms/src/client/Presentation/SupplyCachePresentationConfig.luau"),
-	{
+local config =
+	luau.load(fs.readFile("games/living-kingdoms/src/client/Presentation/SupplyCachePresentationConfig.luau"), {
 		debugName = "SupplyCachePresentationConfig",
 		injectGlobals = true,
-	}
-)()
+	})()
 
 assertThat(config.Version == "VIS-0105-supply-cache-v1", "supply cache visual version drifted")
 assertThat(config.PresentationModelName == "SupplyCachePresentation", "supply cache model name drifted")
@@ -38,13 +36,15 @@ for _, definition in config.Parts do
 	assertThat(definition.size.x > 0 and definition.size.y > 0 and definition.size.z > 0, "part size must be positive")
 end
 
-for _, vector in {
-	config.Lid.Size,
-	config.Lid.ClosedOffset,
-	config.Lid.ClosedRotationDegrees,
-	config.Lid.ConsumedOffset,
-	config.Lid.ConsumedRotationDegrees,
-} do
+for _, vector in
+	{
+		config.Lid.Size,
+		config.Lid.ClosedOffset,
+		config.Lid.ClosedRotationDegrees,
+		config.Lid.ConsumedOffset,
+		config.Lid.ConsumedRotationDegrees,
+	}
+do
 	assertThat(isFinite(vector.x) and isFinite(vector.y) and isFinite(vector.z), "lid vectors must be finite")
 end
 assertThat(config.Lid.ConsumedRotationDegrees.x ~= config.Lid.ClosedRotationDegrees.x, "consumed lid must visibly open")
@@ -54,4 +54,6 @@ local mutationSucceeded = pcall(function()
 end)
 assertThat(not mutationSucceeded, "supply cache visual definitions must be immutable")
 
-print("SupplyCachePresentationConfig: budget, states, finite geometry, uniqueness, lid readability, and immutability passed")
+print(
+	"SupplyCachePresentationConfig: budget, states, finite geometry, uniqueness, lid readability, and immutability passed"
+)
