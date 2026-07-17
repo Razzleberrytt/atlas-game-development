@@ -4,10 +4,22 @@ on:
   pull_request:
     paths:
       - "games/living-kingdoms/**"
+      - "rokit.toml"
+      - "stylua.toml"
+      - "selene.toml"
+      - ".github/workflows/luau-validation.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "games/living-kingdoms/**"
+      - "rokit.toml"
+      - "stylua.toml"
+      - "selene.toml"
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate:
@@ -15,10 +27,8 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Check out PR branch
+      - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
@@ -28,33 +38,31 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Capture Lune output
+      - name: Check Luau formatting
         shell: bash
-        run: |
-          mkdir -p docs/validation
-          : > docs/validation/P7-LUNE-DIAGNOSTIC.txt
-          overall=0
-          while IFS= read -r -d '' fixture; do
-            printf '\n===== %s =====\n' "$fixture" >> docs/validation/P7-LUNE-DIAGNOSTIC.txt
-            set +e
-            lune run "$fixture" >> docs/validation/P7-LUNE-DIAGNOSTIC.txt 2>&1
-            status=$?
-            set -e
-            printf 'exit_status=%s\n' "$status" >> docs/validation/P7-LUNE-DIAGNOSTIC.txt
-            if [ "$status" -ne 0 ]; then
-              overall=$status
-              break
-            fi
-          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
-          printf '\noverall_exit_status=%s\n' "$overall" >> docs/validation/P7-LUNE-DIAGNOSTIC.txt
+        run: stylua --check games/living-kingdoms/src
 
-      - name: Restore normal workflow and commit diagnostic
+      - name: Run Selene
+        shell: bash
+        run: selene games/living-kingdoms/src
+
+      - name: Run Lune fixtures
         shell: bash
         run: |
-          git fetch origin main --depth=1
-          git checkout origin/main -- .github/workflows/luau-validation.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/workflows/luau-validation.yml docs/validation/P7-LUNE-DIAGNOSTIC.txt
-          git commit -m "Capture P7 Lune diagnostic"
-          git push
+          set -euo pipefail
+          fixture_count=0
+          while IFS= read -r -d '' fixture; do
+            echo "::group::Lune fixture: $fixture"
+            lune run "$fixture"
+            echo "::endgroup::"
+            fixture_count=$((fixture_count + 1))
+          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          if [ "$fixture_count" -eq 0 ]; then
+            echo "No Living Kingdoms fixtures were discovered." >&2
+            exit 1
+          fi
+          echo "Executed $fixture_count Living Kingdoms fixtures."
+
+      - name: Build Rojo project
+        shell: bash
+        run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
