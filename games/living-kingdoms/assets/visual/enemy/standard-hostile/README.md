@@ -16,11 +16,21 @@ The design is an original grounded biomechanical horde enemy. It uses a broad ar
 
 ## Runtime fallback
 
-`EnemyPresentationService` attaches an 18-part procedural fallback named `ExclusionWalkerPresentation` to each replicated Exclusion Walker model.
+`EnemyPresentationService` attaches an 18-part procedural fallback named `ExclusionWalkerPresentation` to each replicated Exclusion Walker model. Five presentation-only Motor6Ds expose the torso, forearms, and legs without changing the authoritative root.
 
-The existing authoritative `HumanoidRootPart` remains exactly `3 x 5.6 x 3` studs and continues to own collision, movement, network ownership, targeting position, and gameplay footprint. The fallback parts are massless, non-collidable, non-touchable, and non-queryable. A stable `AttackOrigin` attachment is added for future presentation effects only.
+The existing authoritative `HumanoidRootPart` remains exactly `3 x 5.6 x 3` studs and continues to own collision, movement, network ownership, targeting position, and gameplay footprint. The fallback parts are massless, non-collidable, non-touchable, and non-queryable. A stable `AttackOrigin` attachment is retained for future presentation effects only.
 
-The runtime owner uses one `EnemyEntities.ChildAdded` connection, no per-enemy connections, no heartbeat, no timer, no remote, and a fixed part count.
+`EnemyPresentationController` is a client-local pose controller. It reads only replicated movement speed, movement direction, the existing health label, and anchored death/stand-down state. It provides:
+
+- alternating roaming and pursuit stride poses;
+- a raised non-strike threat-ready pose when a pursuit-speed Walker is stationary;
+- a brief hit reaction after the authoritative health label decreases;
+- distinct stand-down and death silhouettes;
+- sensor brightness changes that supplement, but do not replace, the pose cues.
+
+The server runtime owner uses one `EnemyEntities.ChildAdded` connection. The client state layer uses one `RenderStepped` connection plus two folder-level lifecycle connections. Both layers use zero per-enemy connections, zero remotes, and zero per-enemy timers. Motor writes occur only when the resolved pose ID changes.
+
+This slice does **not** claim an attack telegraph or committed strike. The current enemy contract applies authoritative contact damage immediately, so anticipation and server-confirmed strike/recovery presentation remain pending rather than being fabricated from proximity.
 
 ## Generate the import files
 
@@ -36,14 +46,15 @@ python games/living-kingdoms/assets/visual/enemy/standard-hostile/generate_exclu
 2. In Studio, choose **File → Import** and select the OBJ.
 3. Preserve the named component objects rather than flattening the hierarchy.
 4. Wrap the imported components in a canonical model named `ExclusionWalker` bound to the stable `HumanoidRootPart`.
-5. Create `AttackOrigin` using the transform in `asset-manifest.json`.
+5. Preserve the five stable motor names and create `AttackOrigin` using the transform in `asset-manifest.json`.
 6. Compare the imported candidate against the procedural fallback from the gameplay camera with representative 1-, 2-, and 4-operative horde counts.
-7. Do not mark the candidate production-approved until movement, pursuit, attack anticipation/strike/recovery, hit reaction, death, stand-down, cleanup, and performance gates pass.
+7. Verify roaming, pursuit, threat-ready, hit, stand-down, and death readability without relying on sensor color alone.
+8. Do not mark the candidate production-approved until attack anticipation/strike/recovery, effects, audio, cleanup, and representative performance gates pass.
 
 ## Authority boundary
 
-The model and future animation clips are presentation only. Geometry, attachments, animation markers, particles, and sounds cannot spawn enemies, steer movement, choose targets, commit attacks, change health, redefine hit volume, cause death, or delay cleanup.
+The model, motors, pose resolver, and future animation clips are presentation only. Geometry, attachments, animation markers, particles, and sounds cannot spawn enemies, steer movement, choose targets, commit attacks, change health, redefine hit volume, cause death, or delay cleanup.
 
 ## Current status
 
-The deterministic source and static procedural fallback are implemented. Imported mesh review, state animation, attack/death effects, audio, accessible telegraphs, cosmetic variants, and representative horde performance evidence remain pending.
+The deterministic source, motorized procedural fallback, and client-local replicated-state pose layer are implemented. Imported mesh review, server-confirmed attack presentation, effects, audio, accessible anticipation, cosmetic variants, and representative horde performance evidence remain pending.
