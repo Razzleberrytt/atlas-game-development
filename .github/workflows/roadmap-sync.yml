@@ -1,10 +1,9 @@
 name: Roadmap synchronization
 
 on:
-  pull_request:
-    paths:
-      - "docs/roadmap/**"
-      - ".github/workflows/roadmap-sync.yml"
+  push:
+    branches:
+      - agent/roadmap-p6-p12-execution
 
 permissions:
   contents: write
@@ -15,10 +14,8 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - name: Check out PR branch
+      - name: Check out branch
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Synchronize master roadmap summary
         shell: bash
