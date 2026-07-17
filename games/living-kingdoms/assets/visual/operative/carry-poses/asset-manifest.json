@@ -1,0 +1,36 @@
+{
+  "packageId": "operative-firearm-carry-poses.v1",
+  "trackId": "VIS-0104",
+  "sourceKind": "ProjectOriginalProceduralFallback",
+  "registryAssetKeys": [
+    "visual.operative.base-rig",
+    "visual.weapon.basic-firearm.model"
+  ],
+  "runtimeOwner": "src/client/Controllers/OperativeCarryPresentationController.luau",
+  "truthSources": [
+    "LK_P3_OperativeEntityId",
+    "LK_P3_LifeState",
+    "LK_P3_ReviveStatus",
+    "LK_P3_ReviveReviver"
+  ],
+  "supportedRigIds": [
+    "R6",
+    "R15"
+  ],
+  "visiblePoseIds": [
+    "Ready",
+    "Reviving",
+    "Incapacitated",
+    "Dead"
+  ],
+  "maximumMotorWritesPerOperative": 3,
+  "globalConnections": 2,
+  "connectionsPerPlayer": 3,
+  "connectionsPerCharacter": 2,
+  "frameConnections": 0,
+  "timers": 0,
+  "newRemoteCount": 0,
+  "serverRuntimeChanges": 0,
+  "studioApproved": false,
+  "productionApproved": false
+}
