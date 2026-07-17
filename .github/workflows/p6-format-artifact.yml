@@ -1,0 +1,39 @@
+name: P6 formatting artifact
+
+on:
+  pull_request:
+    paths:
+      - "games/living-kingdoms/src/**"
+      - ".github/workflows/p6-format-artifact.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Format changed source
+        shell: bash
+        run: stylua games/living-kingdoms/src
+
+      - name: Upload formatted source
+        uses: actions/upload-artifact@v4
+        with:
+          name: p6-formatted-source
+          path: games/living-kingdoms/src
+          if-no-files-found: error
+          retention-days: 1
