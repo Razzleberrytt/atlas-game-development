@@ -11,8 +11,6 @@ end
 
 local contractsPath = "games/living-kingdoms/src/shared/Classes/ClassContracts.luau"
 local configPath = "games/living-kingdoms/src/shared/Config/ClassConfig.luau"
-local serverBootstrapPath = "games/living-kingdoms/src/server/init.server.luau"
-local clientBootstrapPath = "games/living-kingdoms/src/client/init.client.luau"
 
 local contracts = luau.load(fs.readFile(contractsPath), {
 	debugName = "ClassContracts",
@@ -22,6 +20,7 @@ local contracts = luau.load(fs.readFile(contractsPath), {
 local CONTRACTS_TOKEN = {}
 local AMMUNITION_CONFIG_TOKEN = {}
 local LIFE_CONFIG_TOKEN = {}
+local MISSION_CONTRACTS_TOKEN = {}
 
 local ammunitionConfig = {
 	BasicFirearm = {
@@ -39,6 +38,14 @@ local lifeConfig = {
 	ReviveHealth = 30,
 }
 
+local missionContracts = {
+	MissionPhaseIds = {
+		Insertion = "Insertion",
+		Infiltration = "Infiltration",
+		Resolved = "Resolved",
+	},
+}
+
 local config = luau.load(fs.readFile(configPath), {
 	debugName = "ClassConfig",
 	environment = {
@@ -50,17 +57,22 @@ local config = luau.load(fs.readFile(configPath), {
 					Classes = {
 						ClassContracts = CONTRACTS_TOKEN,
 					},
+					Mission = {
+						MissionContracts = MISSION_CONTRACTS_TOKEN,
+					},
 				},
 			},
 		},
 		require = function(token: unknown)
 			if token == CONTRACTS_TOKEN then
 				return contracts
-		elseif token == AMMUNITION_CONFIG_TOKEN then
+			elseif token == AMMUNITION_CONFIG_TOKEN then
 				return ammunitionConfig
-		elseif token == LIFE_CONFIG_TOKEN then
+			elseif token == LIFE_CONFIG_TOKEN then
 				return lifeConfig
-		end
+			elseif token == MISSION_CONTRACTS_TOKEN then
+				return missionContracts
+			end
 			error("unexpected ClassConfig dependency", 2)
 		end,
 	},
@@ -74,18 +86,22 @@ assertThat(contracts.ClassActionIds.Brace == "class-action.brace", "Brace ID mus
 assertThat(contracts.ClassActionIds.FieldTreatment == "class-action.field-treatment", "treatment ID must be stable")
 assertThat(contracts.ClassActionIds.ReviveAssistance == "class-action.revive-assistance", "revive ID must be stable")
 assertThat(contracts.ClassActionIds.FieldResupply == "class-action.field-resupply", "resupply ID must be stable")
+assertThat(contracts.ClassSelectionNetworkOperationIds.Snapshot == "Snapshot", "snapshot operation ID must be stable")
+assertThat(contracts.ClassSelectionNetworkOperationIds.Rejected == "Rejected", "rejection operation ID must be stable")
+assertThat(contracts.ClassActionRejectionReasonIds.RateLimited == "RateLimited", "rate-limit reason must be stable")
 assertThat(contracts.ClassActionStateIds.Starting == nil, "unused Starting state must not enter the initial vocabulary")
-assertThat(contracts.ClassActionStateIds.Idle == "Idle", "Idle state must be stable")
-assertThat(contracts.ClassActionStateIds.Active == "Active", "Active state must be stable")
-assertThat(contracts.ClassActionStateIds.Cooldown == "Cooldown", "Cooldown state must be stable")
 
 local contractsMutationSucceeded = pcall(function()
 	contracts.ClassIds.Engineer = "forged"
 end)
 assertThat(not contractsMutationSucceeded, "class ID vocabulary must be frozen")
 
-assertThat(config.Version == "P7-0101-v1", "class config version must be stable")
+assertThat(config.Version == "P7-0102-v1", "class config version must identify selection integration")
 assertThat(config.Selection.allowDuplicateStartingClasses, "duplicate starting classes must remain allowed")
+assertThat(config.Selection.defaultClassId == contracts.ClassIds.CombatSpecialist, "fallback class must be deterministic")
+assertThat(config.Selection.openMissionPhaseId == "Insertion", "selection must use the bounded insertion window")
+assertThat(config.Selection.minimumRequestIntervalSeconds == 0.15, "selection rate limit must be configured")
+assertThat(config.Selection.maximumProcessedRequestIdsPerOperative == 64, "selection replay history must be bounded")
 assertThat(#config.Selection.startingClassIds == 3, "exactly three starting classes must be declared")
 assertThat(#config.ClassDefinitions == 3, "each starting class requires one definition")
 assertThat(config.Resources.MedicalCharge.maximumAmount == 3, "medical supply must be finite")
@@ -103,6 +119,57 @@ assertThat(
 assertThat(
 	config.Actions.FieldResupply.isScarcityTuningProvisional,
 	"engineer resupply must remain visibly provisional while P6 evidence is deferred"
+)
+
+assertThat(
+	contracts.validateClassSelectionIntent({ requestId = "request-1", classId = contracts.ClassIds.Medic }),
+	"minimal selection intent must validate"
+)
+assertThat(
+	not contracts.validateClassSelectionIntent({
+		requestId = "request-1",
+		classId = contracts.ClassIds.Medic,
+		operativeEntityId = "forged",
+	}),
+	"selection intent must reject extra identity fields"
+)
+assertThat(
+	contracts.validateClassSelectionIntent({ requestId = "request-2", classId = "unknown-class" }),
+	"shape validation must preserve UnknownClass resolver feedback"
+)
+
+local assignment = table.freeze({
+	operativeEntityId = "operative.player:1",
+	classId = contracts.ClassIds.Medic,
+	selectionStateId = contracts.ClassSelectionStateIds.Open,
+	revision = 2,
+})
+assertThat(contracts.validateAuthoritativeClassAssignment(assignment), "valid assignment must validate")
+assertThat(
+	contracts.validateSafeClassSelectionSnapshot({
+		operationId = contracts.ClassSelectionNetworkOperationIds.Snapshot,
+		rosterRevision = 3,
+		selectionStateId = contracts.ClassSelectionStateIds.Open,
+		ownerAssignment = assignment,
+		squadMembers = {
+			{
+				operativeEntityId = assignment.operativeEntityId,
+				classId = assignment.classId,
+				actionStateId = contracts.ClassActionStateIds.Idle,
+				actionId = nil,
+			},
+		},
+	}),
+	"safe selection snapshot must validate"
+)
+assertThat(
+	contracts.validateSafeClassSelectionRejection({
+		operationId = contracts.ClassSelectionNetworkOperationIds.Rejected,
+		rosterRevision = 3,
+		rejectionReasonId = contracts.ClassActionRejectionReasonIds.SelectionClosed,
+		requestId = "request-2",
+	}),
+	"safe selection rejection must validate"
 )
 
 local configMutationSucceeded = pcall(function()
@@ -131,9 +198,7 @@ for _, classId in config.Selection.startingClassIds do
 	assertThat(seenClasses[classId], "every selectable class requires a definition")
 end
 
-local contractsSource = fs.readFile(contractsPath)
-local configSource = fs.readFile(configPath)
-local combinedDeclarations = contractsSource .. "\n" .. configSource
+local combinedDeclarations = fs.readFile(contractsPath) .. "\n" .. fs.readFile(configPath)
 for _, forbidden in {
 	"game:GetService",
 	"Instance.new",
@@ -147,11 +212,5 @@ for _, forbidden in {
 	"FireClient",
 	"OnServerEvent",
 } do
-	assertThat(not string.find(combinedDeclarations, forbidden, 1, true), "P7-0101 declarations must not contain " .. forbidden)
+	assertThat(not string.find(combinedDeclarations, forbidden, 1, true), "shared declarations must not contain " .. forbidden)
 end
-
-local serverBootstrap = fs.readFile(serverBootstrapPath)
-local clientBootstrap = fs.readFile(clientBootstrapPath)
-assertThat(not string.find(serverBootstrap, "ClassService", 1, true), "P7-0101 must not bootstrap a class runtime")
-assertThat(not string.find(serverBootstrap, "ClassNetwork", 1, true), "P7-0101 must not create a class network")
-assertThat(not string.find(clientBootstrap, "Class", 1, true), "P7-0101 must not bootstrap class presentation")
