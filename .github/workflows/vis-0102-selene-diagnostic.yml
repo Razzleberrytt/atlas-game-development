@@ -26,18 +26,41 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
+      - name: Collapse duplicate ammunition branch
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau")
+          source = path.read_text()
+          before = '''\telseif kindId == CombatContracts.PresentationMessageKindIds.AmmunitionState then
+          \t\tpresentAmmunitionPayload(payload)
+          \telseif kindId == CombatContracts.PresentationMessageKindIds.AmmunitionCollected then
+          \t\tpresentAmmunitionPayload(payload)
+          '''
+          after = '''\telseif
+          \t\tkindId == CombatContracts.PresentationMessageKindIds.AmmunitionState
+          \t\tor kindId == CombatContracts.PresentationMessageKindIds.AmmunitionCollected
+          \tthen
+          \t\tpresentAmmunitionPayload(payload)
+          '''
+          if before not in source:
+              raise SystemExit("expected duplicate ammunition branch not found")
+          path.write_text(source.replace(before, after, 1))
+          PY
+          stylua games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau
+
       - name: Capture Selene output
         run: |
           mkdir -p .diagnostics
           selene games/living-kingdoms/src > .diagnostics/vis-0102-selene.txt 2>&1 || true
 
-      - name: Commit diagnostic
+      - name: Commit patch and diagnostic
         run: |
-          if [ -z "$(git status --porcelain -- .diagnostics/vis-0102-selene.txt)" ]; then
+          if [ -z "$(git status --porcelain -- games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau .diagnostics/vis-0102-selene.txt)" ]; then
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .diagnostics/vis-0102-selene.txt
-          git commit -m "Capture VIS-0102 Selene diagnostic"
+          git add games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau .diagnostics/vis-0102-selene.txt
+          git commit -m "Fix carbine ammunition presentation lint"
           git push
