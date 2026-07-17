@@ -70,22 +70,19 @@ local function tryCollect(player: Player, definition)
 	local weaponState = combatState.weaponState
 	local ammunition = weaponState.ammunition
 	local processed = processedSetFor(player)
-	local result = AmmunitionSupplyResolver.collect(
-		{
-			weaponId = ammunition.weaponId,
-			loadedRounds = ammunition.loadedRounds,
-			reserveRounds = ammunition.reserveRounds,
-			magazineCapacity = ammunition.magazineCapacity,
-			maximumReserveRounds = FirearmConfig.BasicFirearm.MaximumReserveRounds,
-			processedSupplyIds = processed,
-		},
-		{
-			supplyId = definition.cacheId,
-			sourceId = SourceIds.AuthoredCache,
-			weaponId = definition.weaponId,
-			availableRounds = definition.rounds,
-		}
-	)
+	local result = AmmunitionSupplyResolver.collect({
+		weaponId = ammunition.weaponId,
+		loadedRounds = ammunition.loadedRounds,
+		reserveRounds = ammunition.reserveRounds,
+		magazineCapacity = ammunition.magazineCapacity,
+		maximumReserveRounds = FirearmConfig.BasicFirearm.MaximumReserveRounds,
+		processedSupplyIds = processed,
+	}, {
+		supplyId = definition.cacheId,
+		sourceId = SourceIds.AuthoredCache,
+		weaponId = definition.weaponId,
+		availableRounds = definition.rounds,
+	})
 	if not result.didCollect then
 		return
 	end
@@ -117,9 +114,12 @@ local function createCache(definition, parent: Folder)
 	prompt.MaxActivationDistance = CacheConfig.Interaction.MaximumDistanceStuds
 	prompt.RequiresLineOfSight = true
 	prompt.Parent = part
-	table.insert(promptConnections, prompt.Triggered:Connect(function(player)
-		tryCollect(player, definition)
-	end))
+	table.insert(
+		promptConnections,
+		prompt.Triggered:Connect(function(player)
+			tryCollect(player, definition)
+		end)
+	)
 end
 
 function AmmunitionCacheService.start()
