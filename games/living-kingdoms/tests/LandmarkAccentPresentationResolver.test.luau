@@ -17,7 +17,11 @@ local resolver = luau.load(fs.readFile(path), {
 
 check(resolver.resolve("RangerStation", "RangerStation", true) == resolver.StyleIds.RangerStation)
 check(resolver.resolve("MilitaryRoadblock", "MilitaryRoadblock", true) == resolver.StyleIds.MilitaryRoadblock)
+check(resolver.resolve("Campground", "Campground", true) == resolver.StyleIds.Campground)
+check(resolver.resolve("CreekCrossing", "CreekCrossing", true) == resolver.StyleIds.CreekCrossing)
+check(resolver.resolve("RockyOverlook", "RockyOverlook", true) == resolver.StyleIds.RockyOverlook)
 check(resolver.resolve("RangerStation", "MilitaryRoadblock", true) == nil, "mismatched identity must hide")
+check(resolver.resolve("Campground", "CreekCrossing", true) == nil, "safe landmark identities must not cross-bind")
 check(resolver.resolve("MilitaryRoadblock", "RangerStation", true) == nil, "mismatched identity must hide")
 check(resolver.resolve("RangerStation", "RangerStation", false) == nil, "non-graybox model must hide")
 check(resolver.resolve("LookoutTower", "LookoutTower", true) == nil, "objective-area landmark must stay excluded")
