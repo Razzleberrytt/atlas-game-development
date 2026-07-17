@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 jobs:
-  exclusion-walker-audit:
+  fixtures-a-f:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -17,9 +17,18 @@ jobs:
           path: .
           cache: false
           token: ${{ github.token }}
-      - run: lune run games/living-kingdoms/tests/ExclusionWalkerPresentationSourceAudit.test.luau
+      - shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' fixture; do
+            base="$(basename "$fixture")"
+            if [[ "$base" =~ ^[A-Fa-f] ]]; then
+              echo "Running $fixture"
+              lune run "$fixture"
+            fi
+          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
 
-  visual-registry-audit:
+  fixtures-g-l:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -29,9 +38,18 @@ jobs:
           path: .
           cache: false
           token: ${{ github.token }}
-      - run: lune run games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau
+      - shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' fixture; do
+            base="$(basename "$fixture")"
+            if [[ "$base" =~ ^[G-Lg-l] ]]; then
+              echo "Running $fixture"
+              lune run "$fixture"
+            fi
+          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
 
-  weapon-presentation-audit:
+  fixtures-m-r:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -41,9 +59,18 @@ jobs:
           path: .
           cache: false
           token: ${{ github.token }}
-      - run: lune run games/living-kingdoms/tests/WeaponPresentationSourceAudit.test.luau
+      - shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' fixture; do
+            base="$(basename "$fixture")"
+            if [[ "$base" =~ ^[M-Rm-r] ]]; then
+              echo "Running $fixture"
+              lune run "$fixture"
+            fi
+          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
 
-  support-lmg-audit:
+  fixtures-s-z:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -53,4 +80,13 @@ jobs:
           path: .
           cache: false
           token: ${{ github.token }}
-      - run: lune run games/living-kingdoms/tests/SupportLmgAssetSourceAudit.test.luau
+      - shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' fixture; do
+            base="$(basename "$fixture")"
+            if [[ "$base" =~ ^[S-Zs-z] ]]; then
+              echo "Running $fixture"
+              lune run "$fixture"
+            fi
+          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
