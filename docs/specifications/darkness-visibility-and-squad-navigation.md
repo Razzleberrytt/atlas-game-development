@@ -1,6 +1,6 @@
 # P4 — Darkness, limited vision, and squad navigation
 
-**Implementation status:** LK-0401 through LK-0405 complete; LK-0406 is next and remains unstarted.
+**Implementation status:** LK-0401 through LK-0406 complete; LK-0407 is next and remains unstarted.
 
 ## Scope and outcome
 
@@ -130,7 +130,17 @@ One cancellable earliest-expiry timer owns all timed lights. It selects equal de
 
 The runtime applies `GameplayLightingConfig.MaximumActiveGameplayLocalizedLightsPerClientView` as a conservative global active gameplay-light ceiling until a later spatial/client-view owner exists. The ninth active light is rejected deterministically with `BudgetExceeded`; refreshes never consume another slot and there is no overflow path. Registration, activation, deactivation, expiration, refresh/replacement, and removal increment revision only when copied consumer-visible state changes. Equivalent replay, duplicate activation, duplicate deactivation, and repeated expiry cleanup do not advance revisions or notify subscribers.
 
-LK-0405 performs no coverage evaluation and does not call LK-0403 or LK-0404. Rendering, Roblox light instances, visibility integration, consequential line of sight and raycasts, discovery, replication, flashlight behavior, temporary item spawning, particles, targeting, AI, combat, and bootstrap ownership remain deferred. LK-0406 is next and remains unstarted.
+LK-0405 itself performs no coverage evaluation and does not call LK-0403 or LK-0404. LK-0406 supplies the first narrow production consumer described below; consequential line of sight, discovery, targeting, temporary item spawning, particles, AI, combat, and broader lighting integration remain deferred.
+
+### Approved personal flashlight slice
+
+LK-0406 production-connects exactly one manually toggled personal flashlight. `PersonalFlashlightService` owns operative/player association, eligibility, deterministic `personal-flashlight:<operativeEntityId>` light identity, validation, cooldown, revision, life-state shutdown, and cleanup. It registers one LK-0401 `ApprovedPersonal`/`Lit`/`ForwardCone` descriptor per eligible operative through `GameplayLightingService`; prototype tuning is centralized at 48 studs, 50 degrees, and a 0.25-second toggle cooldown. The only client intent is one boolean requested state. The server derives operative identity, ownership, life state, time, descriptor, light identity, and budget outcome; malformed or extra payloads fail closed.
+
+The server-only coverage helper uses authoritative character-root position and facing plus the canonical descriptor. Its pure point qualification means only “inside the active bounded cone.” It performs no raycast and creates no line of sight, observation, disclosure, discovery, hostile identity, or target eligibility. Rendered beam pixels and camera direction are absent from gameplay authority. VisibilityResolver and DiscoveryMemoryService integration remain deferred.
+
+The owner client predicts presentation immediately on F, gamepad Y, or the readable touch action, then reconciles to an owner-only safe state/revision payload; stale revisions and malformed payloads are ignored, while rejection restores authority without flashing. A local-only attachment and shadow-disabled SpotLight provide restrained cosmetics, an ON/OFF text label avoids color-only communication, and `ReducedPresentationIntensityScale` provides a bounded reduced-intensity path. No other operative state is broadcast because P4 does not yet have disclosure-aware teammate replication; remote-player flashlight cosmetics are deferred.
+
+Incapacitation and death force authoritative deactivation, removal/disconnect and squad failure remove the gameplay light, revival never reactivates it, and teardown disconnects listeners and destroys the local presentation plus the Studio-only read harness. The harness lives only in ServerStorage and has no mutation or client route. Two-client Studio validation directly observed two inactive registrations, Player1-only activation at revision 1, exactly one active gameplay light, Player2 remaining inactive, malformed cross-operative/geometry/target payload rejection without revision change, forced inactive revision 2 on incapacitation, zero active contribution afterward, local ON/OFF presentation, and clean final client/server startup logs. Two live revive attempts missed the P3 completion window and reached Dead; the deterministic fixture, not a claimed live observation, verifies that a valid revival leaves the flashlight off pending a new toggle. Disconnect and replacement cleanup remain fixture-validated in this slice.
 
 ## Perception and discovery
 
