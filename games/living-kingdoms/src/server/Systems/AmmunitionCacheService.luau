@@ -19,7 +19,7 @@ local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local SourceIds = Contracts.SupplySourceIds
 local CACHE_FOLDER_NAME = "AmmunitionCaches"
 local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
-local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: RemoteEvent
+local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: any
 
 local AmmunitionCacheService = {}
 local started = false
