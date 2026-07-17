@@ -9,73 +9,53 @@ local function assertThat(condition: unknown, message: string)
 	end
 end
 
-local resolver = luau.load(
-	fs.readFile("games/living-kingdoms/src/client/Presentation/OperativeCarryPoseResolver.luau"),
-	{
+local resolver =
+	luau.load(fs.readFile("games/living-kingdoms/src/client/Presentation/OperativeCarryPoseResolver.luau"), {
 		debugName = "OperativeCarryPoseResolver",
 		injectGlobals = true,
-	}
-)()
+	})()
 
-assertThat(
-	resolver.resolve({
-		operativeEntityId = "operative.player:1",
-		lifeStateId = "Alive",
-		reviveStatus = nil,
-		reviveReviverOperativeEntityId = nil,
-	}) == "Ready",
-	"alive operatives must use the ready carry pose"
-)
+assertThat(resolver.resolve({
+	operativeEntityId = "operative.player:1",
+	lifeStateId = "Alive",
+	reviveStatus = nil,
+	reviveReviverOperativeEntityId = nil,
+}) == "Ready", "alive operatives must use the ready carry pose")
 
-assertThat(
-	resolver.resolve({
-		operativeEntityId = "operative.player:1",
-		lifeStateId = "Alive",
-		reviveStatus = "Active",
-		reviveReviverOperativeEntityId = "operative.player:1",
-	}) == "Reviving",
-	"the authoritative reviver must lower into the revive pose"
-)
+assertThat(resolver.resolve({
+	operativeEntityId = "operative.player:1",
+	lifeStateId = "Alive",
+	reviveStatus = "Active",
+	reviveReviverOperativeEntityId = "operative.player:1",
+}) == "Reviving", "the authoritative reviver must lower into the revive pose")
 
-assertThat(
-	resolver.resolve({
-		operativeEntityId = "operative.player:1",
-		lifeStateId = "Alive",
-		reviveStatus = "Active",
-		reviveReviverOperativeEntityId = "operative.player:2",
-	}) == "Ready",
-	"the revive target disclosure must not make another alive operative pose as reviver"
-)
+assertThat(resolver.resolve({
+	operativeEntityId = "operative.player:1",
+	lifeStateId = "Alive",
+	reviveStatus = "Active",
+	reviveReviverOperativeEntityId = "operative.player:2",
+}) == "Ready", "the revive target disclosure must not make another alive operative pose as reviver")
 
-assertThat(
-	resolver.resolve({
-		operativeEntityId = "operative.player:1",
-		lifeStateId = "Incapacitated",
-		reviveStatus = "Active",
-		reviveReviverOperativeEntityId = "operative.player:1",
-	}) == "Incapacitated",
-	"incapacitation must override stale revive disclosure"
-)
+assertThat(resolver.resolve({
+	operativeEntityId = "operative.player:1",
+	lifeStateId = "Incapacitated",
+	reviveStatus = "Active",
+	reviveReviverOperativeEntityId = "operative.player:1",
+}) == "Incapacitated", "incapacitation must override stale revive disclosure")
 
-assertThat(
-	resolver.resolve({
-		operativeEntityId = "operative.player:1",
-		lifeStateId = "Dead",
-		reviveStatus = "Active",
-		reviveReviverOperativeEntityId = "operative.player:1",
-	}) == "Dead",
-	"death must have first precedence"
-)
+assertThat(resolver.resolve({
+	operativeEntityId = "operative.player:1",
+	lifeStateId = "Dead",
+	reviveStatus = "Active",
+	reviveReviverOperativeEntityId = "operative.player:1",
+}) == "Dead", "death must have first precedence")
 
-assertThat(
-	resolver.resolve({
-		operativeEntityId = "operative.player:1",
-		lifeStateId = "Forged",
-		reviveStatus = nil,
-		reviveReviverOperativeEntityId = nil,
-	}) == "Hidden",
-	"unknown life state must fail closed"
-)
+assertThat(resolver.resolve({
+	operativeEntityId = "operative.player:1",
+	lifeStateId = "Forged",
+	reviveStatus = nil,
+	reviveReviverOperativeEntityId = nil,
+}) == "Hidden", "unknown life state must fail closed")
 
 local function isFinite(value: unknown): boolean
 	return type(value) == "number" and value == value and value ~= math.huge and value ~= -math.huge
@@ -95,12 +75,14 @@ for _, rigId in { "R6", "R15" } do
 	for poseId, definition in definitions do
 		poseCount += 1
 		assertThat(expectedPoseIds[poseId] == true, "unexpected carry pose definition: " .. tostring(poseId))
-		for _, vector in {
-			definition.rightShoulderRotationDegrees,
-			definition.leftShoulderRotationDegrees,
-			definition.gripOffset,
-			definition.gripRotationDegrees,
-		} do
+		for _, vector in
+			{
+				definition.rightShoulderRotationDegrees,
+				definition.leftShoulderRotationDegrees,
+				definition.gripOffset,
+				definition.gripRotationDegrees,
+			}
+		do
 			assertThat(isFinite(vector.x) and isFinite(vector.y) and isFinite(vector.z), "pose vectors must be finite")
 		end
 		assertThat(resolver.definitionFor(rigId, poseId) == definition, "definition lookup must be deterministic")

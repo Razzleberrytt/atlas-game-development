@@ -62,11 +62,7 @@ local playerAddedConnection: RBXScriptConnection? = nil
 local playerRemovingConnection: RBXScriptConnection? = nil
 
 local function rotation(rotationDegrees: OperativeCarryPoseResolver.VectorDefinition): CFrame
-	return CFrame.Angles(
-		math.rad(rotationDegrees.x),
-		math.rad(rotationDegrees.y),
-		math.rad(rotationDegrees.z)
-	)
+	return CFrame.Angles(math.rad(rotationDegrees.x), math.rad(rotationDegrees.y), math.rad(rotationDegrees.z))
 end
 
 local function resolvePose(player: Player): PoseId
@@ -149,7 +145,11 @@ local function captureGrip(binding: CharacterBinding)
 	binding.gripBaseC0 = if gripMotor == nil then nil else gripMotor.C0
 end
 
-local function applyMotorPose(motor: Motor6D?, baseC0: CFrame?, rotationDegrees: OperativeCarryPoseResolver.VectorDefinition)
+local function applyMotorPose(
+	motor: Motor6D?,
+	baseC0: CFrame?,
+	rotationDegrees: OperativeCarryPoseResolver.VectorDefinition
+)
 	if motor == nil or motor.Parent == nil or baseC0 == nil then
 		return
 	end
@@ -163,9 +163,7 @@ local function applyGripPose(binding: CharacterBinding, definition: PoseDefiniti
 		return
 	end
 	local offset = definition.gripOffset
-	gripMotor.C0 = baseC0
-		* CFrame.new(offset.x, offset.y, offset.z)
-		* rotation(definition.gripRotationDegrees)
+	gripMotor.C0 = baseC0 * CFrame.new(offset.x, offset.y, offset.z) * rotation(definition.gripRotationDegrees)
 end
 
 local function applyBinding(player: Player, binding: CharacterBinding)

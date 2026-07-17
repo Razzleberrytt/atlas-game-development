@@ -18,8 +18,8 @@ The registry is descriptive only. It does not load assets or change gameplay.
 
 | Family | Asset | Current state | Current owner / evidence | Replacement track |
 |---|---|---|---|---|
-| Weapon | Basic firearm model | Missing production presentation | `BasicFirearmPresentationFactory`; project-original Blackwater Support LMG procedural fallback and deterministic source candidate | VIS-0102 |
-| Operative | Base operative rig | Default-avatar placeholder | `OperativeLifeService`; Roblox character shell remains authoritative, with a client-local four-part procedural armor overlay from `ClassSilhouetteController` | VIS-0104 |
+| Weapon | Basic firearm model | Missing production presentation | `BasicFirearmPresentationFactory` plus `WeaponPresentationController`; project-original Blackwater Support LMG procedural fallback with deterministic source candidate, stale-grip cleanup, and event-driven carry integration | VIS-0102 / VIS-0104 |
+| Operative | Base operative rig | Default-avatar placeholder | `OperativeLifeService`; Roblox character shell remains authoritative, with `ClassSilhouetteController` armor and `OperativeCarryPresentationController` R6/R15 ready, reviver, incapacitated, and dead upper-body fallbacks | VIS-0104 |
 | Class equipment | Combat Specialist equipment | Primitive placeholder | `ClassSilhouetteController`; broad reinforced shoulders, paired ammunition cases, back roll, and diagonal chest band from the validated class roster | VIS-0104 |
 | Class equipment | Medic equipment | Primitive placeholder | `ClassSilhouetteController`; compact pack, twin tall canisters, paired satchels, and round beacon from the validated class roster | VIS-0104 |
 | Class equipment | Engineer equipment | Primitive placeholder | `ClassSilhouetteController`; wide utility pack, squared tool cases, frame bar, and asymmetric antenna from the validated class roster | VIS-0104 |
@@ -82,4 +82,4 @@ When canonical production assets begin entering the registry:
 
 ## Next task
 
-Continue VIS-0104 with firearm carry and body-pose integration while keeping canonical rig import, gameplay-camera approval, class-action cues, avatar-scale coverage, and representative squad performance evidence pending.
+Continue VIS-0104 with canonical rig and authored animation planning while keeping class-action cues, gameplay-camera and animation-interaction approval, avatar-scale coverage, and representative squad performance evidence pending.

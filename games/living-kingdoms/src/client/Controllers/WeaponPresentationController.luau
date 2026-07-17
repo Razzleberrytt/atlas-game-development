@@ -34,6 +34,7 @@ type State = {
 	presentationConnection: RBXScriptConnection?,
 	bindings: { [Player]: PlayerBinding },
 	rigs: { [Player]: BasicFirearmPresentationRig },
+	gripMotors: { [Player]: Motor6D },
 	activeTweens: { [string]: Tween },
 	presentedShotIds: { [string]: boolean },
 	presentedShotOrder: { string },
@@ -59,6 +60,7 @@ local state: State = {
 	presentationConnection = nil,
 	bindings = {},
 	rigs = {},
+	gripMotors = {},
 	activeTweens = {},
 	presentedShotIds = {},
 	presentedShotOrder = {},
@@ -138,6 +140,13 @@ end
 
 local function destroyRig(player: Player)
 	RemoteWeaponMotionPresenter.cleanupPlayer(player)
+	local gripMotor = state.gripMotors[player]
+	if gripMotor ~= nil then
+		if gripMotor.Parent ~= nil then
+			gripMotor:Destroy()
+		end
+		state.gripMotors[player] = nil
+	end
 	if player == Players.LocalPlayer then
 		state.shotGeneration += 1
 		state.reloadGeneration += 1
@@ -181,6 +190,10 @@ local function attachRig(player: Player, character: Model)
 	if hand == nil or not state.started or character.Parent == nil then
 		return
 	end
+	local staleGrip = hand:FindFirstChild("WeaponGrip")
+	if staleGrip ~= nil then
+		staleGrip:Destroy()
+	end
 	local existing = character:FindFirstChild(MODEL_NAME)
 	if existing ~= nil then
 		existing:Destroy()
@@ -199,6 +212,7 @@ local function attachRig(player: Player, character: Model)
 	gripMotor.Parent = hand
 
 	state.rigs[player] = rig
+	state.gripMotors[player] = gripMotor
 end
 
 local function unbindPlayer(player: Player)
