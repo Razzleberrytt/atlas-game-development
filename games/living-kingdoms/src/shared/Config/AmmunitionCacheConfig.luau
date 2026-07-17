@@ -45,8 +45,14 @@ for _, definition in Config.Caches do
 	assert(not seenIds[definition.cacheId], "ammunition cache IDs must be unique")
 	seenIds[definition.cacheId] = true
 	assert(definition.rounds > 0, "ammunition caches must grant positive rounds")
-	assert(math.abs(definition.position.x) <= WorldFoundationConfig.PlayableHalfExtentStuds)
-	assert(math.abs(definition.position.z) <= WorldFoundationConfig.PlayableHalfExtentStuds)
+	assert(
+		math.abs(definition.position.x) <= WorldFoundationConfig.PlayableHalfExtentStuds,
+		"ammunition cache X position must remain inside the playable world"
+	)
+	assert(
+		math.abs(definition.position.z) <= WorldFoundationConfig.PlayableHalfExtentStuds,
+		"ammunition cache Z position must remain inside the playable world"
+	)
 	local landmark = landmarkById(definition.landmarkId)
 	local dx = definition.position.x - landmark.x
 	local dz = definition.position.z - landmark.z
