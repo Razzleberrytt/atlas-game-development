@@ -20,9 +20,7 @@ export type Snapshot = {
 	ownedModels: number,
 	ownedBaseParts: number,
 	selectedTargets: number,
-	lifecycleUpdateConnections: number,
-	operationUpdateConnections: number,
-	totalEnemyUpdateConnections: number,
+	authorizedSchedulerConnectionBudget: number,
 }
 
 local Service = {}
@@ -71,9 +69,7 @@ function Service.read(): Snapshot
 		ownedModels = ownedModels,
 		ownedBaseParts = ownedBaseParts,
 		selectedTargets = selectedTargets,
-		lifecycleUpdateConnections = 1,
-		operationUpdateConnections = 1,
-		totalEnemyUpdateConnections = 2,
+		authorizedSchedulerConnectionBudget = 2,
 	})
 end
 
