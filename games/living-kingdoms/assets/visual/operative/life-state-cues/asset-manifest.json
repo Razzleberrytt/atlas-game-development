@@ -1,0 +1,28 @@
+{
+  "assetKey": "visual.interface.life-state",
+  "sourceKind": "ProjectPlaceholder",
+  "presentationRoot": "OperativeLifeWorldCue",
+  "truthSource": "ServerDisclosedPlayerAttributes",
+  "cueIds": [
+    "Downed",
+    "Reviving",
+    "SoloRecovery",
+    "Dead"
+  ],
+  "markerKindIds": [
+    "RescueCross",
+    "RecoveryChevron",
+    "DeathX"
+  ],
+  "maximumCuePartsPerOperative": 2,
+  "globalConnections": 2,
+  "connectionsPerPlayer": 2,
+  "frameConnections": 0,
+  "perPlayerTimers": 0,
+  "newRemoteCount": 0,
+  "serverRuntimeChanges": 0,
+  "alwaysOnTop": false,
+  "maximumDisplayDistanceStuds": 90,
+  "studioApproved": false,
+  "productionApproved": false
+}
