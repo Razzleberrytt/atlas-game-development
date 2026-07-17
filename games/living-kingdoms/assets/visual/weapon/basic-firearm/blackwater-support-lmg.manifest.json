@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "assetKey": "visual.weapon.basic-firearm.model",
+  "candidateId": "blackwater-support-lmg.v1",
+  "status": "source-candidate-not-runtime-approved",
+  "sourceKind": "ProjectOriginal",
+  "sourceLicense": "Original project asset; all project rights retained",
+  "generatorFile": "generate_blackwater_support_lmg.py",
+  "generatedModelFile": "blackwater_support_lmg.obj",
+  "generatedPreviewFile": "blackwater_support_lmg_preview.svg",
+  "animationFile": "blackwater_support_lmg.animations.json",
+  "format": "Generated OBJ multi-object source with vertex colors; animation curves in companion JSON",
+  "designIntent": "Original belt-fed squad support weapon with a readable LMG silhouette; not a replica of a branded real-world firearm",
+  "orientation": {
+    "forward": "+X",
+    "up": "+Z"
+  },
+  "sourceRootName": "WeaponRoot (integration wrapper)",
+  "robloxModelName": "BasicFirearm",
+  "componentMeshCount": 45,
+  "attachmentLocators": {
+    "RightGripAttachment": [-0.045, 0.0, -0.2],
+    "LeftGripAttachment": [0.48, 0.0, -0.03],
+    "Muzzle": [1.31, 0.0, 0.04],
+    "Magazine": [0.14, 0.0, -0.275],
+    "Ejection": [0.095, -0.13, 0.04]
+  },
+  "animationClips": [
+    {
+      "name": "Fire",
+      "durationSeconds": 0.11,
+      "targetNode": "Bolt"
+    },
+    {
+      "name": "Reload",
+      "durationSeconds": 1.35,
+      "targetNode": "Magazine"
+    },
+    {
+      "name": "Empty",
+      "durationSeconds": 0.22,
+      "targetNode": "Bolt"
+    }
+  ],
+  "gameplayAuthority": {
+    "cadence": "server",
+    "ammunition": "server",
+    "reloadAcceptance": "server",
+    "targeting": "server",
+    "hitValidation": "server",
+    "damage": "server"
+  },
+  "studioGate": {
+    "imported": false,
+    "visualReviewPassed": false,
+    "animationImportVerified": false,
+    "isometricReadabilityVerified": false,
+    "performanceVerified": false
+  }
+}
