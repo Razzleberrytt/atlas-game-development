@@ -13,7 +13,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ClassContracts = require(ReplicatedStorage.Shared.Classes.ClassContracts)
 local ClassConfig = require(ReplicatedStorage.Shared.Config.ClassConfig)
 
-local NetworkOperationIds = ClassContracts.ClassSelectionNetworkOperationIds
 local SelectionStateIds = ClassContracts.ClassSelectionStateIds
 
 local localPlayer = Players.LocalPlayer
