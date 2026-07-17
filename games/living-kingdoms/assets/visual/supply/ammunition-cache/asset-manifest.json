@@ -1,0 +1,25 @@
+{
+  "packageId": "authored-supply-cache.v1",
+  "trackId": "VIS-0105",
+  "sourceKind": "ProjectOriginalProceduralFallback",
+  "registryAssetKey": "visual.supply.ammunition-cache.model",
+  "runtimeOwner": "src/client/Controllers/AmmunitionCachePresentationController.luau",
+  "authoritativeRootOwner": "src/server/Systems/AmmunitionCacheService.luau",
+  "authoritativeRootSizeStuds": [3.6, 1.8, 2.6],
+  "presentationModelName": "SupplyCachePresentation",
+  "presentationStateIds": [
+    "Available",
+    "Consumed"
+  ],
+  "maximumPartsPerCache": 13,
+  "presentationMotorsPerCache": 1,
+  "globalConnections": 3,
+  "connectionsPerCache": 0,
+  "frameConnections": 0,
+  "timers": 0,
+  "newRemoteCount": 0,
+  "serverRuntimeChanges": 0,
+  "perOperativeDepletion": true,
+  "studioApproved": false,
+  "productionApproved": false
+}

@@ -81,6 +81,14 @@ do
 	assertThat(entry.expectedRootName == "OperativeClassSilhouette", "class equipment root contract drifted")
 	assertThat(#entry.requiredAttachmentNames == 0, "procedural class fallback must not claim an authored attachment")
 end
+local supplyCache = config.ByKey[contracts.AssetKeys.SupplyAmmunitionCacheModel]
+assertThat(supplyCache.statusId == contracts.StatusIds.PrimitivePlaceholder, "supply cache must remain primitive")
+assertThat(
+	supplyCache.runtimeOwnerPath == "src/client/Controllers/AmmunitionCachePresentationController.luau",
+	"supply cache registry must name the presentation owner"
+)
+assertThat(supplyCache.expectedRootName == "SupplyCachePresentation", "supply cache root contract drifted")
+assertThat(#supplyCache.requiredAttachmentNames == 0, "procedural supply cache must not claim authored attachments")
 assertThat(
 	config.ByKey[contracts.AssetKeys.EnemyStandardHostileModel].statusId == contracts.StatusIds.PrimitivePlaceholder,
 	"standard hostile must remain honestly marked as primitive geometry"

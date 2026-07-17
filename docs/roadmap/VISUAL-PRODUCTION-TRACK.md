@@ -48,8 +48,11 @@ Weapon meshes do not own shooting. Enemy rigs do not own health, targeting, atta
   - Existing `WeaponGrip` and R6/R15 shoulder motors now receive event-driven upper-body carry poses for ready, authoritative reviver, incapacitated, and dead states. The controller writes at most three captured Motor6D baselines per event, restores every baseline on cleanup, and adds no frame loop, timer, remote, or server runtime.
   - `WeaponPresentationController` now destroys its stored grip motor and any stale hand-level `WeaponGrip` before replacement, preventing rebind accumulation.
   - Still required: canonical shared operative rig, authored locomotion and body-pose animation, class-action cues after their gameplay contracts exist, Studio gameplay-camera and animation-interaction approval, avatar-scale coverage, and representative squad performance evidence.
-- [ ] **VIS-0105 — Replace world, supply, and objective placeholders.**
-  - Produce authored landmarks, environmental dressing, caches, depletion state, objective equipment, extraction presentation, route cues, temporary defensive positions, lighting, fog, and ambience.
+- [~] **VIS-0105 — Replace world, supply, and objective placeholders.**
+  - The authored rifle-ammunition cache now receives a 13-part client-local procedural supply case with rails, latches, handle, signal band, surface label, empty tray, and one motorized lid around the unchanged server-owned `3.6 x 1.8 x 2.6` collidable root.
+  - Existing per-operative consumed disclosure opens and darkens only that player's case, exposes the empty tray, changes the label from `RIFLE AMMO` to `EMPTY`, and disables only the local prompt; consumed messages are remembered before cache lookup for streaming safety.
+  - The cache layer uses three global connections, zero per-cache connections, zero frame loops, zero timers, zero new remotes, and no server runtime change. Cleanup restores local root visibility and prompt state.
+  - Still required: Studio gameplay-camera and interaction review, final cache materials/effects/audio, world dressing, landmarks, objective equipment, extraction presentation, route cues, lighting, fog, ambience, and representative performance evidence.
   - Objective art follows the P8 authored chain and may not disclose hidden or inactive truth.
 - [ ] **VIS-0106 — Produce the special enemy and boss visual package.**
   - Runs with P9 after the special-enemy and boss contracts are stable.
