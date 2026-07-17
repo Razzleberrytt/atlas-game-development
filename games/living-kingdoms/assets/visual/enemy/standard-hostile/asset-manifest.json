@@ -32,9 +32,21 @@
     "PursuingA",
     "PursuingB",
     "ThreatReady",
+    "StrikeActiveLeft",
+    "StrikeActiveRight",
+    "StrikeRecoveryLeft",
+    "StrikeRecoveryRight",
     "HitReaction",
     "StandDown",
     "Dead"
+  ],
+  "replicatedPresentationAttributes": [
+    "EnemyPresentationBehaviorStateId",
+    "EnemyPresentationLifeStateId",
+    "EnemyPresentationAttackSequence",
+    "EnemyPresentationAttackServerTimestamp",
+    "EnemyPresentationHitSequence",
+    "EnemyPresentationHitServerTimestamp"
   ],
   "attachmentLocators": {
     "AttackOrigin": [0.0, -0.52, 0.27]
@@ -58,6 +70,7 @@
   "runtimeBounds": {
     "fixedVisualPartCount": 18,
     "presentationMotorCount": 5,
+    "serverPresentationAttributeCount": 6,
     "connectionsPerEnemy": 0,
     "serverFolderConnections": 1,
     "clientFolderConnections": 2,
