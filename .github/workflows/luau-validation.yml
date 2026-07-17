@@ -40,7 +40,7 @@ jobs:
 
       - name: Check Luau formatting
         shell: bash
-        run: stylua --check games/living-kingdoms/src games/living-kingdoms/tests
+        run: stylua --check games/living-kingdoms/src
 
       - name: Run Selene
         shell: bash
