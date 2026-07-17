@@ -7,74 +7,68 @@ permissions:
   contents: read
 
 jobs:
-  fixtures-ha-hf:
+  fixtures-hg:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: CompeyDev/setup-rokit@v0.1.2
-        with:
-          version: v1.2.0
-          path: .
-          cache: false
-          token: ${{ github.token }}
+        with: { version: v1.2.0, path: ., cache: false, token: "${{ github.token }}" }
       - shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r -d '' fixture; do
-            base="$(basename "$fixture")"
-            if [[ "$base" =~ ^[Hh][A-Fa-f] ]]; then echo "Running $fixture"; lune run "$fixture"; fi
-          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Hh][Gg] ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
 
-  fixtures-hg-hl:
+  fixtures-hh:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: CompeyDev/setup-rokit@v0.1.2
-        with:
-          version: v1.2.0
-          path: .
-          cache: false
-          token: ${{ github.token }}
+        with: { version: v1.2.0, path: ., cache: false, token: "${{ github.token }}" }
       - shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r -d '' fixture; do
-            base="$(basename "$fixture")"
-            if [[ "$base" =~ ^[Hh][G-Lg-l] ]]; then echo "Running $fixture"; lune run "$fixture"; fi
-          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Hh][Hh] ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
 
-  fixtures-hm-hr:
+  fixtures-hi:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: CompeyDev/setup-rokit@v0.1.2
-        with:
-          version: v1.2.0
-          path: .
-          cache: false
-          token: ${{ github.token }}
+        with: { version: v1.2.0, path: ., cache: false, token: "${{ github.token }}" }
       - shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r -d '' fixture; do
-            base="$(basename "$fixture")"
-            if [[ "$base" =~ ^[Hh][M-Rm-r] ]]; then echo "Running $fixture"; lune run "$fixture"; fi
-          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Hh][Ii] ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
 
-  fixtures-hs-hz:
+  fixtures-hj:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - uses: CompeyDev/setup-rokit@v0.1.2
-        with:
-          version: v1.2.0
-          path: .
-          cache: false
-          token: ${{ github.token }}
+        with: { version: v1.2.0, path: ., cache: false, token: "${{ github.token }}" }
       - shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r -d '' fixture; do
-            base="$(basename "$fixture")"
-            if [[ "$base" =~ ^[Hh][S-Zs-z] ]]; then echo "Running $fixture"; lune run "$fixture"; fi
-          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Hh][Jj] ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+
+  fixtures-hk:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CompeyDev/setup-rokit@v0.1.2
+        with: { version: v1.2.0, path: ., cache: false, token: "${{ github.token }}" }
+      - shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Hh][Kk] ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+
+  fixtures-hl:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CompeyDev/setup-rokit@v0.1.2
+        with: { version: v1.2.0, path: ., cache: false, token: "${{ github.token }}" }
+      - shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Hh][Ll] ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
