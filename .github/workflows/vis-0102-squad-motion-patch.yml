@@ -1,0 +1,506 @@
+name: VIS-0102 squad weapon motion patch
+
+on:
+  push:
+    branches:
+      - "agent/vis-0102-squad-weapon-motion"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/vis-0102-squad-weapon-motion
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Apply squad weapon motion patch
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path_string: str, before: str, after: str) -> None:
+              path = Path(path_string)
+              source = path.read_text()
+              count = source.count(before)
+              if count != 1:
+                  raise SystemExit(f"expected exactly one match in {path_string}: {count}")
+              path.write_text(source.replace(before, after, 1))
+
+          contracts = "games/living-kingdoms/src/shared/Combat/CombatContracts.luau"
+          replace_once(
+              contracts,
+              '''export type ReloadStartedPresentationMessage = {
+          \tkindId: "ReloadStarted",
+          \tweaponId: WeaponId,
+          \tcompletionServerTimestamp: number,
+          }
+
+          export type ReloadCompletedPresentationMessage = {
+          \tkindId: "ReloadCompleted",
+          \tweaponId: WeaponId,
+          }
+
+          export type ReloadInterruptedPresentationMessage = {
+          \tkindId: "ReloadInterrupted",
+          \tweaponId: WeaponId,
+          }
+          ''',
+              '''export type ReloadStartedPresentationMessage = {
+          \tkindId: "ReloadStarted",
+          \toperativeEntityId: CombatEntityId,
+          \tweaponId: WeaponId,
+          \tcompletionServerTimestamp: number,
+          }
+
+          export type ReloadCompletedPresentationMessage = {
+          \tkindId: "ReloadCompleted",
+          \toperativeEntityId: CombatEntityId,
+          \tweaponId: WeaponId,
+          }
+
+          export type ReloadInterruptedPresentationMessage = {
+          \tkindId: "ReloadInterrupted",
+          \toperativeEntityId: CombatEntityId,
+          \tweaponId: WeaponId,
+          }
+          ''',
+          )
+
+          runtime = "games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau"
+          replace_once(
+              runtime,
+              '''local function resolveAcceptedShot(
+          ''',
+              '''local function broadcastReloadPresentation(
+          \tplayerState: PlayerCombatState,
+          \tkindId: CombatContracts.CombatPresentationMessageKindId,
+          \tcompletionServerTimestamp: number?
+          )
+          \tlocal payload: any = {
+          \t\tkindId = kindId,
+          \t\toperativeEntityId = playerState.operativeState.entityId,
+          \t\tweaponId = FirearmConfig.BasicFirearm.WeaponId,
+          \t}
+          \tif completionServerTimestamp ~= nil then
+          \t\tpayload.completionServerTimestamp = completionServerTimestamp
+          \tend
+          \tpresentationRemote:FireAllClients(payload)
+          end
+
+          local function resolveAcceptedShot(
+          ''',
+          )
+          replace_once(
+              runtime,
+              '''\tif resolution.didComplete then
+          \t\tpresentationRemote:FireClient(player, {
+          \t\t\tkindId = CombatContracts.PresentationMessageKindIds.ReloadCompleted,
+          \t\t\tweaponId = FirearmConfig.BasicFirearm.WeaponId,
+          \t\t})
+          \telseif resolution.wasInterrupted then
+          \t\tpresentationRemote:FireClient(player, {
+          \t\t\tkindId = CombatContracts.PresentationMessageKindIds.ReloadInterrupted,
+          \t\t\tweaponId = FirearmConfig.BasicFirearm.WeaponId,
+          \t\t})
+          \tend
+          ''',
+              '''\tif resolution.didComplete then
+          \t\tbroadcastReloadPresentation(
+          \t\t\tplayerState,
+          \t\t\tCombatContracts.PresentationMessageKindIds.ReloadCompleted,
+          \t\t\tnil
+          \t\t)
+          \telseif resolution.wasInterrupted then
+          \t\tbroadcastReloadPresentation(
+          \t\t\tplayerState,
+          \t\t\tCombatContracts.PresentationMessageKindIds.ReloadInterrupted,
+          \t\t\tnil
+          \t\t)
+          \tend
+          ''',
+          )
+          replace_once(
+              runtime,
+              '''\tpresentationRemote:FireClient(player, {
+          \t\tkindId = CombatContracts.PresentationMessageKindIds.ReloadStarted,
+          \t\tweaponId = FirearmConfig.BasicFirearm.WeaponId,
+          \t\tcompletionServerTimestamp = reloadState.completionServerTimestamp,
+          \t})
+          ''',
+              '''\tbroadcastReloadPresentation(
+          \t\tplayerState,
+          \t\tCombatContracts.PresentationMessageKindIds.ReloadStarted,
+          \t\treloadState.completionServerTimestamp
+          \t)
+          ''',
+          )
+          replace_once(
+              runtime,
+              '''\tif wasReloading and restricted.weaponState.reloadState == nil then
+          \t\tpresentationRemote:FireClient(player, {
+          \t\t\tkindId = CombatContracts.PresentationMessageKindIds.ReloadInterrupted,
+          \t\t\tweaponId = FirearmConfig.BasicFirearm.WeaponId,
+          \t\t})
+          \tend
+          ''',
+              '''\tif wasReloading and restricted.weaponState.reloadState == nil then
+          \t\tbroadcastReloadPresentation(
+          \t\t\trestricted,
+          \t\t\tCombatContracts.PresentationMessageKindIds.ReloadInterrupted,
+          \t\t\tnil
+          \t\t)
+          \tend
+          ''',
+          )
+
+          controller = "games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau"
+          replace_once(
+              controller,
+              '''local BasicFirearmPresentationFactory = require(script.Parent.Parent.Presentation.BasicFirearmPresentationFactory)
+          local WeaponShotEffectPresenter = require(script.Parent.Parent.Presentation.WeaponShotEffectPresenter)
+          ''',
+              '''local BasicFirearmPresentationFactory = require(script.Parent.Parent.Presentation.BasicFirearmPresentationFactory)
+          local RemoteWeaponMotionPresenter = require(script.Parent.Parent.Presentation.RemoteWeaponMotionPresenter)
+          local WeaponShotEffectPresenter = require(script.Parent.Parent.Presentation.WeaponShotEffectPresenter)
+          ''',
+          )
+          replace_once(
+              controller,
+              '''local function destroyRig(player: Player)
+          \tif player == Players.LocalPlayer then
+          ''',
+              '''local function destroyRig(player: Player)
+          \tRemoteWeaponMotionPresenter.cleanupPlayer(player)
+          \tif player == Players.LocalPlayer then
+          ''',
+          )
+          replace_once(
+              controller,
+              '''\tWeaponShotEffectPresenter.present(rig, shotId, didApplyDamage, impactWorldPosition)
+          \tif shooter ~= Players.LocalPlayer then
+          \t\treturn
+          \tend
+          ''',
+              '''\tWeaponShotEffectPresenter.present(rig, shotId, didApplyDamage, impactWorldPosition)
+          \tif shooter ~= Players.LocalPlayer then
+          \t\tRemoteWeaponMotionPresenter.presentShot(shooter, rig)
+          \t\treturn
+          \tend
+          ''',
+          )
+          replace_once(
+              controller,
+              '''local function playReload(completionServerTimestamp: number)
+          \tlocal rig = localRig()
+          \tif rig == nil then
+          \t\treturn
+          \tend
+          ''',
+              '''local function playReload(operativeEntityId: string, completionServerTimestamp: number)
+          \tlocal player = playerForOperativeEntityId(operativeEntityId)
+          \tif player == nil then
+          \t\treturn
+          \tend
+          \tlocal rig = state.rigs[player]
+          \tif rig == nil then
+          \t\treturn
+          \tend
+          \tif player ~= Players.LocalPlayer then
+          \t\tRemoteWeaponMotionPresenter.presentReloadStarted(player, rig, completionServerTimestamp)
+          \t\treturn
+          \tend
+          ''',
+          )
+          replace_once(
+              controller,
+              '''local function finishReload()
+          \tstate.reloadGeneration += 1
+          ''',
+              '''local function finishReload(operativeEntityId: string)
+          \tlocal player = playerForOperativeEntityId(operativeEntityId)
+          \tif player == nil then
+          \t\treturn
+          \tend
+          \tlocal rig = state.rigs[player]
+          \tif rig == nil then
+          \t\treturn
+          \tend
+          \tif player ~= Players.LocalPlayer then
+          \t\tRemoteWeaponMotionPresenter.presentReloadCompleted(player, rig)
+          \t\treturn
+          \tend
+          \tstate.reloadGeneration += 1
+          ''',
+          )
+          replace_once(
+              controller,
+              '''local function interruptReload()
+          \tstate.reloadGeneration += 1
+          ''',
+              '''local function interruptReload(operativeEntityId: string)
+          \tlocal player = playerForOperativeEntityId(operativeEntityId)
+          \tif player == nil then
+          \t\treturn
+          \tend
+          \tlocal rig = state.rigs[player]
+          \tif rig == nil then
+          \t\treturn
+          \tend
+          \tif player ~= Players.LocalPlayer then
+          \t\tRemoteWeaponMotionPresenter.presentReloadInterrupted(player, rig)
+          \t\treturn
+          \tend
+          \tstate.reloadGeneration += 1
+          ''',
+          )
+          replace_once(
+              controller,
+              '''\telseif kindId == CombatContracts.PresentationMessageKindIds.ReloadStarted then
+          \t\tif
+          \t\t\tpayload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+          \t\t\tand isFiniteNumber(payload.completionServerTimestamp)
+          \t\tthen
+          \t\t\tplayReload(payload.completionServerTimestamp)
+          \t\tend
+          \telseif kindId == CombatContracts.PresentationMessageKindIds.ReloadCompleted then
+          \t\tif payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
+          \t\t\tfinishReload()
+          \t\tend
+          \telseif kindId == CombatContracts.PresentationMessageKindIds.ReloadInterrupted then
+          \t\tif payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
+          \t\t\tinterruptReload()
+          \t\tend
+          ''',
+              '''\telseif kindId == CombatContracts.PresentationMessageKindIds.ReloadStarted then
+          \t\tif
+          \t\t\tisNonEmptyString(payload.operativeEntityId)
+          \t\t\tand payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+          \t\t\tand isFiniteNumber(payload.completionServerTimestamp)
+          \t\tthen
+          \t\t\tplayReload(payload.operativeEntityId, payload.completionServerTimestamp)
+          \t\tend
+          \telseif kindId == CombatContracts.PresentationMessageKindIds.ReloadCompleted then
+          \t\tif
+          \t\t\tisNonEmptyString(payload.operativeEntityId)
+          \t\t\tand payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+          \t\tthen
+          \t\t\tfinishReload(payload.operativeEntityId)
+          \t\tend
+          \telseif kindId == CombatContracts.PresentationMessageKindIds.ReloadInterrupted then
+          \t\tif
+          \t\t\tisNonEmptyString(payload.operativeEntityId)
+          \t\t\tand payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+          \t\tthen
+          \t\t\tinterruptReload(payload.operativeEntityId)
+          \t\tend
+          ''',
+          )
+          replace_once(
+              controller,
+              '''\tfor key in state.activeTweens do
+          \t\tcancelTween(key)
+          \tend
+          \ttable.clear(state.presentedShotIds)
+          ''',
+              '''\tfor key in state.activeTweens do
+          \t\tcancelTween(key)
+          \tend
+          \tRemoteWeaponMotionPresenter.stop()
+          \ttable.clear(state.presentedShotIds)
+          ''',
+          )
+
+          hud = "games/living-kingdoms/src/client/Controllers/WeaponController.luau"
+          replace_once(
+              hud,
+              '''\telseif kindId == CombatContracts.PresentationMessageKindIds.ReloadStarted then
+          \t\tif
+          \t\t\tpayload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+          \t\t\tand isFiniteNumber(payload.completionServerTimestamp)
+          \t\tthen
+          \t\t\tsetStatus("Reloading")
+          \t\tend
+          \telseif kindId == CombatContracts.PresentationMessageKindIds.ReloadCompleted then
+          \t\tif payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
+          \t\t\tsetStatus("Reload complete")
+          \t\tend
+          \telseif kindId == CombatContracts.PresentationMessageKindIds.ReloadInterrupted then
+          \t\tif payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
+          \t\t\tsetStatus("Reload interrupted")
+          \t\tend
+          ''',
+              '''\telseif kindId == CombatContracts.PresentationMessageKindIds.ReloadStarted then
+          \t\tif
+          \t\t\tisLocalOperativeEntityId(payload.operativeEntityId)
+          \t\t\tand payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+          \t\t\tand isFiniteNumber(payload.completionServerTimestamp)
+          \t\tthen
+          \t\t\tsetStatus("Reloading")
+          \t\tend
+          \telseif kindId == CombatContracts.PresentationMessageKindIds.ReloadCompleted then
+          \t\tif
+          \t\t\tisLocalOperativeEntityId(payload.operativeEntityId)
+          \t\t\tand payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+          \t\tthen
+          \t\t\tsetStatus("Reload complete")
+          \t\tend
+          \telseif kindId == CombatContracts.PresentationMessageKindIds.ReloadInterrupted then
+          \t\tif
+          \t\t\tisLocalOperativeEntityId(payload.operativeEntityId)
+          \t\t\tand payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+          \t\tthen
+          \t\t\tsetStatus("Reload interrupted")
+          \t\tend
+          ''',
+          )
+
+          runtime_test = "games/living-kingdoms/tests/OperativeCombatRuntimeService.test.luau"
+          replace_once(
+              runtime_test,
+              '''local _, broadcastCount = string.gsub(source, "presentationRemote:FireAllClients", "")
+          assert(broadcastCount == 1, "only accepted shot presentation may broadcast to the squad")
+          assert(
+          \tstring.find(
+          \t\tsource,
+          \t\t"presentationRemote:FireAllClients({\\n\\t\\tkindId = CombatContracts.PresentationMessageKindIds.ShotFired",
+          \t\t1,
+          \t\ttrue
+          \t) ~= nil,
+          \t"the one broadcast must remain the accepted ShotFired disclosure"
+          )
+          ''',
+              '''local _, broadcastCount = string.gsub(source, "presentationRemote:FireAllClients", "")
+          assert(broadcastCount == 2, "only accepted shots and reload lifecycle may broadcast to the squad")
+          assert(
+          \tstring.find(
+          \t\tsource,
+          \t\t"presentationRemote:FireAllClients({\\n\\t\\tkindId = CombatContracts.PresentationMessageKindIds.ShotFired",
+          \t\t1,
+          \t\ttrue
+          \t) ~= nil,
+          \t"accepted ShotFired disclosure must remain squad-visible"
+          )
+          assert(
+          \tstring.find(source, "local function broadcastReloadPresentation", 1, true) ~= nil,
+          \t"reload lifecycle must use one bounded squad broadcast helper"
+          )
+          ''',
+          )
+          replace_once(
+              runtime_test,
+              '''local startedReload = messagesOfKind("ReloadStarted")
+          assert(#startedReload == 1, "an empty magazine must accept reload intent")
+          assert(startedReload[1].payload.completionServerTimestamp == now + firearmConfig.BasicFirearm.ReloadDurationSeconds)
+          ''',
+              '''local startedReload = messagesOfKind("ReloadStarted")
+          assert(#startedReload == 1, "an empty magazine must accept reload intent")
+          assert(startedReload[1].player == "all", "accepted reload start must be squad-visible")
+          assert(startedReload[1].payload.operativeEntityId == "operative.player:1")
+          assert(startedReload[1].payload.completionServerTimestamp == now + firearmConfig.BasicFirearm.ReloadDurationSeconds)
+          ''',
+          )
+          replace_once(
+              runtime_test,
+              '''assert(#messagesOfKind("ReloadCompleted") == 1, "the scheduled completion must transfer ammunition")
+          ''',
+              '''local completedReload = messagesOfKind("ReloadCompleted")
+          assert(#completedReload == 1, "the scheduled completion must transfer ammunition")
+          assert(completedReload[1].player == "all", "authoritative reload completion must be squad-visible")
+          assert(completedReload[1].payload.operativeEntityId == "operative.player:1")
+          ''',
+          )
+
+          hud_test = "games/living-kingdoms/tests/WeaponController.test.luau"
+          replace_once(
+              hud_test,
+              '''presentationEvent:Fire({
+          \tkindId = "ReloadStarted",
+          \tweaponId = "weapon.basic_firearm",
+          \tcompletionServerTimestamp = 12,
+          })
+          assert(statusLabel.Text == "Reloading", "reload start was not presented")
+          presentationEvent:Fire({ kindId = "ReloadCompleted", weaponId = "weapon.basic_firearm" })
+          assert(statusLabel.Text == "Reload complete", "reload completion was not presented")
+          presentationEvent:Fire({ kindId = "ReloadInterrupted", weaponId = "weapon.basic_firearm" })
+          assert(statusLabel.Text == "Reload interrupted", "reload interruption was not presented")
+          ''',
+              '''local statusBeforeRemoteReload = statusLabel.Text
+          presentationEvent:Fire({
+          \tkindId = "ReloadStarted",
+          \toperativeEntityId = "operative.player:99",
+          \tweaponId = "weapon.basic_firearm",
+          \tcompletionServerTimestamp = 12,
+          })
+          assert(statusLabel.Text == statusBeforeRemoteReload, "squadmate reload changed the local HUD")
+          presentationEvent:Fire({
+          \tkindId = "ReloadStarted",
+          \toperativeEntityId = "operative.player:42",
+          \tweaponId = "weapon.basic_firearm",
+          \tcompletionServerTimestamp = 12,
+          })
+          assert(statusLabel.Text == "Reloading", "reload start was not presented")
+          presentationEvent:Fire({
+          \tkindId = "ReloadCompleted",
+          \toperativeEntityId = "operative.player:42",
+          \tweaponId = "weapon.basic_firearm",
+          })
+          assert(statusLabel.Text == "Reload complete", "reload completion was not presented")
+          presentationEvent:Fire({
+          \tkindId = "ReloadInterrupted",
+          \toperativeEntityId = "operative.player:42",
+          \tweaponId = "weapon.basic_firearm",
+          })
+          assert(statusLabel.Text == "Reload interrupted", "reload interruption was not presented")
+          ''',
+          )
+
+          roadmap = "docs/roadmap/VISUAL-PRODUCTION-TRACK.md"
+          replace_once(
+              roadmap,
+              '''  - The local operative's bolt and magazine move only from server-disclosed `ShotFired`, reload deadline/completion/interruption, and ammunition-state messages.
+            - Accepted shots are now disclosed squad-wide for temporary muzzle flash and casing presentation; an impact spark appears only when the server confirms that damage was applied and supplies the impact position.
+            - The candidate is project-original and contains no uploaded asset ID or gameplay mutation.
+            - Still required: Roblox Studio mesh import and canonical swap, grip/isometric readability review, full remote bolt/reload animation policy, tracer policy, production effects, audio, and representative performance evidence.
+          ''',
+              '''  - Local bolt, magazine, empty-state, and reload motion follows server-disclosed shot, reload deadline/completion/interruption, and private ammunition-state messages.
+            - Accepted shots and authoritative reload lifecycle are disclosed squad-wide so every visible operative's bolt and magazine move from the correct server-owned action; teammate ammunition counts remain private.
+            - Accepted shots also drive temporary muzzle flash and casing presentation; an impact spark appears only when the server confirms that damage was applied and supplies the impact position.
+            - The candidate is project-original and contains no uploaded asset ID or gameplay mutation.
+            - Still required: Roblox Studio mesh import and canonical swap, grip/isometric readability review, tracer policy, production effects, audio, and representative performance evidence.
+          ''',
+          )
+          PY
+
+          stylua \
+            games/living-kingdoms/src/shared/Combat/CombatContracts.luau \
+            games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau \
+            games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau \
+            games/living-kingdoms/src/client/Controllers/WeaponController.luau \
+            games/living-kingdoms/src/client/Presentation/RemoteWeaponMotionPresenter.luau \
+            games/living-kingdoms/tests/OperativeCombatRuntimeService.test.luau \
+            games/living-kingdoms/tests/WeaponController.test.luau \
+            games/living-kingdoms/tests/SquadWeaponMotionSourceAudit.test.luau
+
+      - name: Commit patch
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add games/living-kingdoms docs/roadmap/VISUAL-PRODUCTION-TRACK.md
+          git commit -m "Add squad-visible weapon motion"
+          git push
