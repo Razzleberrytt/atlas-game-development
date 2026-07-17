@@ -30,41 +30,22 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install Rokit
-        shell: bash
-        run: |
-          curl -sSf https://raw.githubusercontent.com/rojo-rbx/rokit/main/scripts/install.sh | bash
-          echo "$HOME/.rokit/bin" >> "$GITHUB_PATH"
-
-      - name: Configure Rokit authentication
-        shell: bash
-        env:
-          ROKIT_GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          mkdir -p "$HOME/.rokit"
-          printf 'github = "%s"\n' "$ROKIT_GITHUB_TOKEN" > "$HOME/.rokit/auth.toml"
-          chmod 600 "$HOME/.rokit/auth.toml"
-
-      - name: Trust pinned tool sources
-        shell: bash
-        run: |
-          printf 'y\n' | "$HOME/.rokit/bin/rokit" add rojo-rbx/rojo
-          printf 'y\n' | "$HOME/.rokit/bin/rokit" add Kampfkarren/selene
-          printf 'y\n' | "$HOME/.rokit/bin/rokit" add JohnnyMorganz/StyLua
-          git checkout -- rokit.toml
-
-      - name: Install pinned tools
-        shell: bash
-        run: "$HOME/.rokit/bin/rokit install"
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
 
       - name: Check Luau formatting
         shell: bash
-        run: "$HOME/.rokit/bin/stylua --check games/living-kingdoms/src"
+        run: stylua --check games/living-kingdoms/src
 
       - name: Run Selene
         shell: bash
-        run: "$HOME/.rokit/bin/selene games/living-kingdoms/src"
+        run: selene games/living-kingdoms/src
 
       - name: Build Rojo project
         shell: bash
-        run: "$HOME/.rokit/bin/rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx"
+        run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
