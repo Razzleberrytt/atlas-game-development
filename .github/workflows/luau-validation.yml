@@ -24,7 +24,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Check out repository
@@ -45,6 +45,23 @@ jobs:
       - name: Run Selene
         shell: bash
         run: selene games/living-kingdoms/src
+
+      - name: Run Lune fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture_count=0
+          while IFS= read -r -d '' fixture; do
+            echo "::group::Lune fixture: $fixture"
+            lune run "$fixture"
+            echo "::endgroup::"
+            fixture_count=$((fixture_count + 1))
+          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          if [ "$fixture_count" -eq 0 ]; then
+            echo "No Living Kingdoms fixtures were discovered." >&2
+            exit 1
+          fi
+          echo "Executed $fixture_count Living Kingdoms fixtures."
 
       - name: Build Rojo project
         shell: bash
