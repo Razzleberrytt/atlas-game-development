@@ -22,7 +22,12 @@ export type VisualAssetFamilyId =
 	| "Audio"
 	| "Interface"
 
-export type VisualAssetStatusId = "PrimitivePlaceholder" | "DefaultAvatarPlaceholder" | "MissingPresentation" | "TemporaryPresentation" | "ProductionApproved"
+export type VisualAssetStatusId =
+	"PrimitivePlaceholder"
+	| "DefaultAvatarPlaceholder"
+	| "MissingPresentation"
+	| "TemporaryPresentation"
+	| "ProductionApproved"
 
 export type VisualAssetSourceKindId = "ProjectPlaceholder" | "ProjectOriginal" | "Commissioned" | "LicensedLibrary"
 
@@ -162,7 +167,10 @@ function VisualAssetContracts.validateRecord(value: unknown): boolean
 	if not isNonEmptyString(record.sourceReference) or not isNonEmptyString(record.runtimeOwnerPath) then
 		return false
 	end
-	if record.canonicalFallbackAssetKey ~= nil and not VisualAssetContracts.isKnownAssetKey(record.canonicalFallbackAssetKey) then
+	if
+		record.canonicalFallbackAssetKey ~= nil
+		and not VisualAssetContracts.isKnownAssetKey(record.canonicalFallbackAssetKey)
+	then
 		return false
 	end
 	if record.expectedRootName ~= nil and not isNonEmptyString(record.expectedRootName) then

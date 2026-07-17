@@ -73,9 +73,18 @@ assertThat(
 
 for _, entry in config.Registry do
 	assertThat(contracts.validateRecord(entry), "every registry entry must satisfy the shared contract")
-	assertThat(entry.statusId ~= contracts.StatusIds.ProductionApproved, "VIS-0101 must not falsely approve production art")
-	assertThat(not string.find(entry.sourceReference, "rbxassetid://", 1, true), "registry must not contain numeric asset IDs")
-	assertThat(not string.find(entry.runtimeOwnerPath, "..", 1, true), "runtime owner paths must not traverse directories")
+	assertThat(
+		entry.statusId ~= contracts.StatusIds.ProductionApproved,
+		"VIS-0101 must not falsely approve production art"
+	)
+	assertThat(
+		not string.find(entry.sourceReference, "rbxassetid://", 1, true),
+		"registry must not contain numeric asset IDs"
+	)
+	assertThat(
+		not string.find(entry.runtimeOwnerPath, "..", 1, true),
+		"runtime owner paths must not traverse directories"
+	)
 	if entry.allowsCosmeticVariants then
 		assertThat(
 			entry.familyId == contracts.FamilyIds.Weapon
@@ -98,19 +107,24 @@ end)
 assertThat(not configMutationSucceeded, "visual asset registry records must be frozen")
 
 local combinedDeclarations = fs.readFile(contractsPath) .. "\n" .. fs.readFile(configPath)
-for _, forbidden in {
-	"game:GetService",
-	"Instance.new",
-	"RemoteEvent",
-	"RemoteFunction",
-	"FireServer",
-	"FireClient",
-	"OnServerEvent",
-	"task.delay",
-	"task.spawn",
-	"rbxassetid://",
-} do
-	assertThat(not string.find(combinedDeclarations, forbidden, 1, true), "VIS-0101 declarations must not contain " .. forbidden)
+for _, forbidden in
+	{
+		"game:GetService",
+		"Instance.new",
+		"RemoteEvent",
+		"RemoteFunction",
+		"FireServer",
+		"FireClient",
+		"OnServerEvent",
+		"task.delay",
+		"task.spawn",
+		"rbxassetid://",
+	}
+do
+	assertThat(
+		not string.find(combinedDeclarations, forbidden, 1, true),
+		"VIS-0101 declarations must not contain " .. forbidden
+	)
 end
 
 local enemySource = fs.readFile(enemyPath)
@@ -123,7 +137,7 @@ assertThat(
 	"enemy placeholder inventory must remain grounded in the current graybox body"
 )
 assertThat(
-	string.find(enemySource, "billboard.Name = \"EnemyLabel\"", 1, true) ~= nil,
+	string.find(enemySource, 'billboard.Name = "EnemyLabel"', 1, true) ~= nil,
 	"enemy placeholder inventory must account for the temporary health billboard"
 )
 assertThat(
@@ -131,10 +145,10 @@ assertThat(
 	"cache placeholder inventory must remain grounded in the current primitive cache"
 )
 assertThat(
-	string.find(worldSource, "model:SetAttribute(\"Graybox\", true)", 1, true) ~= nil,
+	string.find(worldSource, 'model:SetAttribute("Graybox", true)', 1, true) ~= nil,
 	"world placeholder inventory must remain grounded in explicit graybox landmarks"
 )
 assertThat(
-	string.find(missionSource, "pillar.Name = \"SignalPillar\"", 1, true) ~= nil,
+	string.find(missionSource, 'pillar.Name = "SignalPillar"', 1, true) ~= nil,
 	"extraction placeholder inventory must account for the current signal pillar"
 )

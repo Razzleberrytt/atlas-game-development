@@ -151,24 +151,204 @@ local Registry = table.freeze({
 		"world.blackwater",
 		false
 	),
-	record(Keys.WorldRangerStation, FamilyIds.World, StatusIds.PrimitivePlaceholder, "src/server/Systems/WorldFoundationService.luau", "Ranger Station landmark is generated from Parts and graybox signage.", "RangerStation", {}, "RangerStation", false),
-	record(Keys.WorldLoggingRoad, FamilyIds.World, StatusIds.PrimitivePlaceholder, "src/server/Systems/WorldFoundationService.luau", "Logging Road is a sequence of primitive route segments and tire tracks.", "LoggingRoad", {}, "LoggingRoad", false),
-	record(Keys.WorldLookoutTower, FamilyIds.World, StatusIds.PrimitivePlaceholder, "src/server/Systems/WorldFoundationService.luau", "Lookout Tower is generated from primitive structural Parts.", "LookoutTower", {}, "LookoutTower", false),
-	record(Keys.WorldCampground, FamilyIds.World, StatusIds.PrimitivePlaceholder, "src/server/Systems/WorldFoundationService.luau", "Campground is generated from primitive shelter, campsite, and prop geometry.", "Campground", {}, "Campground", false),
-	record(Keys.WorldCreekCrossing, FamilyIds.World, StatusIds.PrimitivePlaceholder, "src/server/Systems/WorldFoundationService.luau", "Creek Crossing uses primitive water, bank, bridge, and route geometry.", "CreekCrossing", {}, "CreekCrossing", false),
-	record(Keys.WorldRockyOverlook, FamilyIds.World, StatusIds.PrimitivePlaceholder, "src/server/Systems/WorldFoundationService.luau", "Rocky Overlook is generated from primitive rock and plateau geometry.", "RockyOverlook", {}, "RockyOverlook", false),
-	record(Keys.WorldMilitaryRoadblock, FamilyIds.World, StatusIds.PrimitivePlaceholder, "src/server/Systems/WorldFoundationService.luau", "Military Roadblock is generated from primitive vehicle, barrier, light, and prop geometry.", "MilitaryRoadblock", {}, "MilitaryRoadblock", false),
-	record(Keys.WorldExtractionClearing, FamilyIds.World, StatusIds.PrimitivePlaceholder, "src/server/Systems/WorldFoundationService.luau", "Extraction Clearing is a primitive authored landmark awaiting the final extraction package.", "ExtractionClearing", {}, "ExtractionClearing", false),
-	record(Keys.EffectBasicFirearmFire, FamilyIds.Effect, StatusIds.MissingPresentation, "src/client/Controllers/WeaponController.luau", "No approved muzzle flash, casing, tracer, or impact effect set is registered.", "BasicFirearmFireEffects", { "Muzzle" }, "weapon.basic-firearm", false),
-	record(Keys.EffectStandardHostileAttack, FamilyIds.Effect, StatusIds.MissingPresentation, "src/server/Systems/EnemyDirectorService.luau", "Enemy melee commits authoritatively without an approved anticipation, strike, or impact effect set.", "StandardHostileAttackEffects", { "AttackOrigin" }, "enemy.exclusion_walker", false),
-	record(Keys.AudioBasicFirearm, FamilyIds.Audio, StatusIds.MissingPresentation, "src/client/Controllers/WeaponController.luau", "No approved firearm fire, reload, empty, or handling sound set is registered.", "BasicFirearmAudio", {}, "weapon.basic-firearm", false),
-	record(Keys.AudioStandardHostile, FamilyIds.Audio, StatusIds.MissingPresentation, "src/server/Systems/EnemyDirectorService.luau", "No approved hostile alert, pursuit, attack, hit, or death sound set is registered.", "StandardHostileAudio", {}, "enemy.exclusion_walker", false),
-	record(Keys.AudioBlackwaterAmbience, FamilyIds.Audio, StatusIds.TemporaryPresentation, "src/client/Controllers/EnvironmentAmbienceController.luau", "Current environment ambience is a temporary code-driven presentation pass.", "BlackwaterAmbience", {}, "world.blackwater", false),
-	record(Keys.InterfaceAmmunition, FamilyIds.Interface, StatusIds.TemporaryPresentation, "src/client/Controllers/WeaponController.luau", "Ammunition display is functional temporary UI.", "AmmunitionInterface", {}, "weapon.basic-firearm", false),
-	record(Keys.InterfaceLifeState, FamilyIds.Interface, StatusIds.TemporaryPresentation, "src/client/Controllers/OperativeLifeController.luau", "Life, incapacitation, revive, and death display is functional temporary UI.", "LifeStateInterface", {}, "operative.life", false),
-	record(Keys.InterfaceMission, FamilyIds.Interface, StatusIds.TemporaryPresentation, "src/client/Controllers/MissionController.luau", "Mission objective, radio, countdown, and outcome display is explicitly temporary UI.", "MissionInterface", {}, "mission.blackwater-relay", false),
-	record(Keys.InterfaceClassSelection, FamilyIds.Interface, StatusIds.TemporaryPresentation, "src/client/Controllers/ClassSelectionController.luau", "Starting-class selection is a functional temporary three-button panel.", "ClassSelectionInterface", {}, "class.selection", false),
-	record(Keys.InterfaceSquadPing, FamilyIds.Interface, StatusIds.TemporaryPresentation, "src/client/Controllers/SquadPingController.luau", "Squad ping markers are functional temporary presentation.", "SquadPingInterface", {}, "squad.ping", false),
+	record(
+		Keys.WorldRangerStation,
+		FamilyIds.World,
+		StatusIds.PrimitivePlaceholder,
+		"src/server/Systems/WorldFoundationService.luau",
+		"Ranger Station landmark is generated from Parts and graybox signage.",
+		"RangerStation",
+		{},
+		"RangerStation",
+		false
+	),
+	record(
+		Keys.WorldLoggingRoad,
+		FamilyIds.World,
+		StatusIds.PrimitivePlaceholder,
+		"src/server/Systems/WorldFoundationService.luau",
+		"Logging Road is a sequence of primitive route segments and tire tracks.",
+		"LoggingRoad",
+		{},
+		"LoggingRoad",
+		false
+	),
+	record(
+		Keys.WorldLookoutTower,
+		FamilyIds.World,
+		StatusIds.PrimitivePlaceholder,
+		"src/server/Systems/WorldFoundationService.luau",
+		"Lookout Tower is generated from primitive structural Parts.",
+		"LookoutTower",
+		{},
+		"LookoutTower",
+		false
+	),
+	record(
+		Keys.WorldCampground,
+		FamilyIds.World,
+		StatusIds.PrimitivePlaceholder,
+		"src/server/Systems/WorldFoundationService.luau",
+		"Campground is generated from primitive shelter, campsite, and prop geometry.",
+		"Campground",
+		{},
+		"Campground",
+		false
+	),
+	record(
+		Keys.WorldCreekCrossing,
+		FamilyIds.World,
+		StatusIds.PrimitivePlaceholder,
+		"src/server/Systems/WorldFoundationService.luau",
+		"Creek Crossing uses primitive water, bank, bridge, and route geometry.",
+		"CreekCrossing",
+		{},
+		"CreekCrossing",
+		false
+	),
+	record(
+		Keys.WorldRockyOverlook,
+		FamilyIds.World,
+		StatusIds.PrimitivePlaceholder,
+		"src/server/Systems/WorldFoundationService.luau",
+		"Rocky Overlook is generated from primitive rock and plateau geometry.",
+		"RockyOverlook",
+		{},
+		"RockyOverlook",
+		false
+	),
+	record(
+		Keys.WorldMilitaryRoadblock,
+		FamilyIds.World,
+		StatusIds.PrimitivePlaceholder,
+		"src/server/Systems/WorldFoundationService.luau",
+		"Military Roadblock is generated from primitive vehicle, barrier, light, and prop geometry.",
+		"MilitaryRoadblock",
+		{},
+		"MilitaryRoadblock",
+		false
+	),
+	record(
+		Keys.WorldExtractionClearing,
+		FamilyIds.World,
+		StatusIds.PrimitivePlaceholder,
+		"src/server/Systems/WorldFoundationService.luau",
+		"Extraction Clearing is a primitive authored landmark awaiting the final extraction package.",
+		"ExtractionClearing",
+		{},
+		"ExtractionClearing",
+		false
+	),
+	record(
+		Keys.EffectBasicFirearmFire,
+		FamilyIds.Effect,
+		StatusIds.MissingPresentation,
+		"src/client/Controllers/WeaponController.luau",
+		"No approved muzzle flash, casing, tracer, or impact effect set is registered.",
+		"BasicFirearmFireEffects",
+		{ "Muzzle" },
+		"weapon.basic-firearm",
+		false
+	),
+	record(
+		Keys.EffectStandardHostileAttack,
+		FamilyIds.Effect,
+		StatusIds.MissingPresentation,
+		"src/server/Systems/EnemyDirectorService.luau",
+		"Enemy melee commits authoritatively without an approved anticipation, strike, or impact effect set.",
+		"StandardHostileAttackEffects",
+		{ "AttackOrigin" },
+		"enemy.exclusion_walker",
+		false
+	),
+	record(
+		Keys.AudioBasicFirearm,
+		FamilyIds.Audio,
+		StatusIds.MissingPresentation,
+		"src/client/Controllers/WeaponController.luau",
+		"No approved firearm fire, reload, empty, or handling sound set is registered.",
+		"BasicFirearmAudio",
+		{},
+		"weapon.basic-firearm",
+		false
+	),
+	record(
+		Keys.AudioStandardHostile,
+		FamilyIds.Audio,
+		StatusIds.MissingPresentation,
+		"src/server/Systems/EnemyDirectorService.luau",
+		"No approved hostile alert, pursuit, attack, hit, or death sound set is registered.",
+		"StandardHostileAudio",
+		{},
+		"enemy.exclusion_walker",
+		false
+	),
+	record(
+		Keys.AudioBlackwaterAmbience,
+		FamilyIds.Audio,
+		StatusIds.TemporaryPresentation,
+		"src/client/Controllers/EnvironmentAmbienceController.luau",
+		"Current environment ambience is a temporary code-driven presentation pass.",
+		"BlackwaterAmbience",
+		{},
+		"world.blackwater",
+		false
+	),
+	record(
+		Keys.InterfaceAmmunition,
+		FamilyIds.Interface,
+		StatusIds.TemporaryPresentation,
+		"src/client/Controllers/WeaponController.luau",
+		"Ammunition display is functional temporary UI.",
+		"AmmunitionInterface",
+		{},
+		"weapon.basic-firearm",
+		false
+	),
+	record(
+		Keys.InterfaceLifeState,
+		FamilyIds.Interface,
+		StatusIds.TemporaryPresentation,
+		"src/client/Controllers/OperativeLifeController.luau",
+		"Life, incapacitation, revive, and death display is functional temporary UI.",
+		"LifeStateInterface",
+		{},
+		"operative.life",
+		false
+	),
+	record(
+		Keys.InterfaceMission,
+		FamilyIds.Interface,
+		StatusIds.TemporaryPresentation,
+		"src/client/Controllers/MissionController.luau",
+		"Mission objective, radio, countdown, and outcome display is explicitly temporary UI.",
+		"MissionInterface",
+		{},
+		"mission.blackwater-relay",
+		false
+	),
+	record(
+		Keys.InterfaceClassSelection,
+		FamilyIds.Interface,
+		StatusIds.TemporaryPresentation,
+		"src/client/Controllers/ClassSelectionController.luau",
+		"Starting-class selection is a functional temporary three-button panel.",
+		"ClassSelectionInterface",
+		{},
+		"class.selection",
+		false
+	),
+	record(
+		Keys.InterfaceSquadPing,
+		FamilyIds.Interface,
+		StatusIds.TemporaryPresentation,
+		"src/client/Controllers/SquadPingController.luau",
+		"Squad ping markers are functional temporary presentation.",
+		"SquadPingInterface",
+		{},
+		"squad.ping",
+		false
+	),
 })
 
 local byKey = {}
@@ -180,7 +360,10 @@ end
 for _, entry in Registry do
 	assert(VisualAssetContracts.validateRecord(entry), "visual asset registry contains an invalid record")
 	assert(byKey[entry.assetKey] == nil, "visual asset keys must be unique")
-	assert(not string.find(entry.sourceReference, "rbxassetid://", 1, true), "VIS-0101 must not register numeric assets")
+	assert(
+		not string.find(entry.sourceReference, "rbxassetid://", 1, true),
+		"VIS-0101 must not register numeric assets"
+	)
 	byKey[entry.assetKey] = entry
 end
 
