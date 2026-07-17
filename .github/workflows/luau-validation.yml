@@ -47,7 +47,7 @@ jobs:
 
       - name: Install pinned tools
         shell: bash
-        run: "$HOME/.rokit/bin/rokit install --verbose"
+        run: "$HOME/.rokit/bin/rokit install"
 
       - name: Check Luau formatting
         shell: bash
