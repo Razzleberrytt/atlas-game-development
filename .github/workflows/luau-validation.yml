@@ -38,7 +38,9 @@ jobs:
 
       - name: Install pinned tools
         shell: bash
-        run: "$HOME/.rokit/bin/rokit install"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: "$HOME/.rokit/bin/rokit install --verbose"
 
       - name: Check Luau formatting
         shell: bash
