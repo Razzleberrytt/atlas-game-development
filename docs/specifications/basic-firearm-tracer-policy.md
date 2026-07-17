@@ -4,6 +4,8 @@
 
 Temporary VIS-0102 presentation policy for the Blackwater Service Carbine.
 
+Runtime owner: `src/client/Presentation/WeaponShotEffectPresenter.luau`.
+
 ## Purpose
 
 The elevated isometric camera benefits from a very short visual connection between a visible operative's muzzle and a server-confirmed damage endpoint. The tracer is a readability cue, not a projectile, hit resolver, or source of gameplay truth.
