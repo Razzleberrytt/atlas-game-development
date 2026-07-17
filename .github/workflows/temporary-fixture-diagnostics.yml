@@ -1,0 +1,54 @@
+name: Temporary fixture diagnostics
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/temporary-fixture-diagnostics.yml"
+      - ".github/one-shot/p6_0105_patch.py"
+      - ".github/one-shot/fix_p6_patch.py"
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostics:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - run: python3 .github/one-shot/fix_p6_patch.py
+      - run: python3 .github/one-shot/p6_0105_patch.py
+      - run: stylua games/living-kingdoms/src games/living-kingdoms/tests/P6AmmunitionPresentation.test.luau
+
+      - name: Execute fixtures
+        shell: bash
+        run: |
+          set +e
+          {
+            set -euo pipefail
+            fixture_count=0
+            while IFS= read -r -d '' fixture; do
+              echo "FIXTURE $fixture"
+              lune run "$fixture"
+              fixture_count=$((fixture_count + 1))
+            done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+            echo "Executed $fixture_count fixtures."
+          } > /tmp/fixture-output.txt 2>&1
+          status=$?
+          cat /tmp/fixture-output.txt
+          exit "$status"
+
+      - name: Upload fixture output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fixture-output
+          path: /tmp/fixture-output.txt
