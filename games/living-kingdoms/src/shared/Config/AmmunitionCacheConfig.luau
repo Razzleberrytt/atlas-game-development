@@ -1,8 +1,6 @@
 --!strict
 
--- P6-0103 authored ammunition-cache identity and placement. These records are
--- inert configuration only: no prompt, instance, collection, replication, or
--- ammunition mutation is created here.
+-- P6 authored ammunition-cache identity, placement, and bounded interaction.
 local ScarcityConfig = require(script.Parent.AmmunitionScarcityConfig)
 local WorldFoundationConfig = require(script.Parent.WorldFoundationConfig)
 
@@ -32,7 +30,11 @@ local function cache(cacheId: string, landmarkId: string, offsetX: number, offse
 end
 
 local Config = {
-	Version = "P6-0103-v1",
+	Version = "P6-0104-v1",
+	Interaction = table.freeze({
+		MaximumDistanceStuds = 10,
+		HoldDurationSeconds = 0.65,
+	}),
 	Caches = table.freeze({
 		cache("ammo-cache.campground-medical-tent", "Campground", 14, -10),
 		cache("ammo-cache.military-roadblock-checkpoint", "MilitaryRoadblock", -18, 12),
@@ -40,6 +42,8 @@ local Config = {
 	}),
 }
 
+assert(Config.Interaction.MaximumDistanceStuds > 0, "cache interaction distance must be positive")
+assert(Config.Interaction.HoldDurationSeconds >= 0, "cache hold duration must be nonnegative")
 local seenIds = {}
 for _, definition in Config.Caches do
 	assert(not seenIds[definition.cacheId], "ammunition cache IDs must be unique")
