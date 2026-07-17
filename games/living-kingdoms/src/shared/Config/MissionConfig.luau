@@ -41,11 +41,14 @@ local MissionConfig = {
 				table.freeze({ id = "hostile.p50103.creek-a", name = "Exclusion Hostile", x = 52, y = 3, z = 18 }),
 				table.freeze({ id = "hostile.p50103.creek-b", name = "Exclusion Hostile", x = 118, y = 6, z = 52 }),
 			}),
-			-- Level 3: the clearing perimeter during holdout.
+			-- Level 3: converging on the clearing during holdout. Positions sit
+			-- outside the P5 fair-spawn floor around the extraction zone so the
+			-- wave spawns immediately and pursues in rather than deferring while
+			-- the squad holds the center.
 			table.freeze({
-				table.freeze({ id = "hostile.p50103.clearing-a", name = "Exclusion Hostile", x = 218, y = 4, z = 8 }),
-				table.freeze({ id = "hostile.p50103.clearing-b", name = "Exclusion Hostile", x = 256, y = 4, z = 84 }),
-				table.freeze({ id = "hostile.p50103.clearing-c", name = "Exclusion Hostile", x = 176, y = 4, z = 92 }),
+				table.freeze({ id = "hostile.p50103.clearing-a", name = "Exclusion Hostile", x = 218, y = 4, z = -30 }),
+				table.freeze({ id = "hostile.p50103.clearing-b", name = "Exclusion Hostile", x = 300, y = 4, z = 110 }),
+				table.freeze({ id = "hostile.p50103.clearing-c", name = "Exclusion Hostile", x = 130, y = 4, z = 120 }),
 			}),
 		}),
 	}),

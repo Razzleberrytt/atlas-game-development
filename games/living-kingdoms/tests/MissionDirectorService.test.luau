@@ -89,6 +89,9 @@ local scheduled = {}
 local broadcasts = {}
 local directMessages = {}
 local spawnedHostiles = {}
+local spawnedWaveIndexes = {}
+local pressureBeginCalls = 0
+local pressureEndCalls = 0
 local beginOperationCalls = 0
 
 local workspaceMock = {
@@ -131,7 +134,7 @@ local missionNetwork = {
 
 local CONFIG_TOKEN = {}
 local CONTRACTS_TOKEN = {}
-local HARNESS_TOKEN = {}
+local ENEMY_TOKEN = {}
 local LIFE_TOKEN = {}
 local FAILURE_TOKEN = {}
 local replicatedStorage = {
@@ -188,10 +191,19 @@ local failureService = {
 		return failureSignal:Connect(callback)
 	end,
 }
-local harness = {
-	spawnMissionHostile = function(definition)
-		table.insert(spawnedHostiles, definition)
-		return true
+local enemyDirector = {
+	spawnAuthoredWave = function(waveIndex, definitions)
+		table.insert(spawnedWaveIndexes, waveIndex)
+		for _, definition in definitions do
+			table.insert(spawnedHostiles, definition)
+		end
+		return #definitions
+	end,
+	beginOperationPressure = function()
+		pressureBeginCalls += 1
+	end,
+	endOperationPressure = function()
+		pressureEndCalls += 1
 	end,
 }
 
@@ -220,7 +232,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 		},
 		script = {
 			Parent = {
-				AutomaticCombatDevelopmentHarness = HARNESS_TOKEN,
+				EnemyDirectorService = ENEMY_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 				SquadFailureService = FAILURE_TOKEN,
 			},
@@ -230,8 +242,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return config
 			elseif token == CONTRACTS_TOKEN then
 				return contracts
-			elseif token == HARNESS_TOKEN then
-				return harness
+			elseif token == ENEMY_TOKEN then
+				return enemyDirector
 			elseif token == LIFE_TOKEN then
 				return lifeService
 			elseif token == FAILURE_TOKEN then
@@ -316,8 +328,11 @@ local function reset()
 	table.clear(broadcasts)
 	table.clear(directMessages)
 	table.clear(spawnedHostiles)
+	table.clear(spawnedWaveIndexes)
 	table.clear(scheduled)
 	table.clear(createdInstances)
+	pressureBeginCalls = 0
+	pressureEndCalls = 0
 	beginOperationCalls = 0
 	now = 0
 	service.start()
@@ -359,6 +374,7 @@ assert(service.evaluateTimersAt(now).didChange)
 assert(service.read().phaseId == "Infiltration")
 assert(service.read().objectiveStateId == "Active")
 assert(beginOperationCalls == 1, "infiltration must freeze the operation roster exactly once")
+assert(pressureBeginCalls == 1, "infiltration must begin roaming pressure exactly once")
 assert(findCreated("RestoreRelayPrompt").Enabled == true)
 assert(latestBroadcast().radio.lineId == "ProceedToObjective")
 assert(contracts.validateSafeMissionSnapshot(latestBroadcast()))
@@ -392,7 +408,8 @@ assert(afterObjective.escalationLevel == 1)
 assert(afterObjective.objectiveCompletedByOperativeEntityId == "operative:alpha")
 assert(afterObjective.objectiveCompletedAtServerTimestamp == now)
 assert(#spawnedHostiles == 2, "objective completion spawns the first escalation wave")
-assert(spawnedHostiles[1].entityId == config.Escalation.Waves[1][1].id)
+assert(spawnedHostiles[1].id == config.Escalation.Waves[1][1].id)
+assert(spawnedWaveIndexes[1] == 1, "the first wave must carry its escalation index to the director")
 assert(latestBroadcast().radio.lineId == "ObjectiveComplete")
 assert(latestBroadcast().extractionUnlocked == true)
 assert(latestBroadcast().objectiveText == config.ObjectiveTextByPhase.Exfiltration)
@@ -443,6 +460,7 @@ now = holdoutDeadline
 assert(service.evaluateTimersAt(now).didChange)
 local resolved = service.read()
 assert(resolved.phaseId == "Resolved" and resolved.outcomeId == "Success")
+assert(pressureEndCalls == 1, "resolution must stand enemy pressure down exactly once")
 assert(latestBroadcast().outcomeId == "Success")
 assert(latestBroadcast().radio.lineId == "MissionSuccess")
 assert(contracts.validateSafeMissionSnapshot(latestBroadcast()))

@@ -20,6 +20,30 @@ end
 local contracts = loadSimple("games/living-kingdoms/src/shared/Mission/MissionContracts.luau", "MissionContracts")
 local config = loadSimple("games/living-kingdoms/src/shared/Config/MissionConfig.luau", "MissionConfig")
 local world = loadSimple("games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "WorldFoundationConfig")
+local enemyContracts = loadSimple("games/living-kingdoms/src/shared/Combat/EnemyContracts.luau", "EnemyContracts")
+local ENEMY_CONTRACTS_TOKEN = {}
+local WORLD_TOKEN = {}
+local enemyConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/EnemyConfig.luau"), {
+	debugName = "EnemyConfig",
+	environment = {
+		script = {
+			Parent = {
+				WorldFoundationConfig = WORLD_TOKEN,
+				Parent = { Combat = { EnemyContracts = ENEMY_CONTRACTS_TOKEN } },
+			},
+		},
+		require = function(token: unknown)
+			if token == ENEMY_CONTRACTS_TOKEN then
+				return enemyContracts
+			end
+			if token == WORLD_TOKEN then
+				return world
+			end
+			error("unexpected EnemyConfig dependency")
+		end,
+	},
+	injectGlobals = true,
+})()
 
 -- Stable identifier vocabulary.
 for _, phaseId in { "Insertion", "Infiltration", "Exfiltration", "Holdout", "Resolved" } do
@@ -145,6 +169,18 @@ for _, wave in config.Escalation.Waves do
 		assert(math.abs(hostile.x) <= world.PlayableHalfExtentStuds)
 		assert(math.abs(hostile.z) <= world.PlayableHalfExtentStuds)
 	end
+end
+
+-- The holdout wave must clear the fair-spawn floor around the extraction zone,
+-- or its spawns would defer for as long as the squad holds the center.
+local fairSpawnFloor = enemyConfig.FairSpawn.MinimumOperativeDistanceStuds
+for _, hostile in config.Escalation.Waves[3] do
+	local dx = hostile.x - config.Extraction.Position.x
+	local dz = hostile.z - config.Extraction.Position.z
+	assert(
+		dx * dx + dz * dz >= fairSpawnFloor * fairSpawnFloor,
+		"holdout wave position " .. hostile.id .. " sits inside the fair-spawn floor"
+	)
 end
 
 -- The insertion regroup and the extraction countdown stay inside the intended
