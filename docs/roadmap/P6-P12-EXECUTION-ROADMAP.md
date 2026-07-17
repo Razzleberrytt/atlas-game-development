@@ -6,6 +6,8 @@ This document is the executable continuation of `MASTER-ROADMAP.md` for the rema
 
 No task is complete merely because code exists. The repository Definition of Done still applies: focused scope, server authority, automated checks where feasible, written manual verification, accurate roadmap status, and one coherent pull request.
 
+Status markers follow the master-roadmap legend: `[ ]` not started, `[~]` in progress or deferred mid-task, `[x]` complete, `[!]` blocked on an unmet gate.
+
 ## Standard process for every task
 
 Every task below follows the same completion process unless its acceptance criteria explicitly narrow it.
@@ -65,7 +67,7 @@ Replace prototype ammunition with finite server-owned resources, authored risky 
   - Record operative count, duration, accepted shots, exact grants, consumed/remaining caches, minimum ammunition, true dry transitions, deaths, and outcome.
   - Use the same route and objective order where possible; record deviations rather than hiding them.
   - **Manual gate:** requires Roblox Studio Server & Clients playthroughs. No balance claim is allowed until the evidence table is populated.
-- [ ] **P6-0109 — Tune scarcity from evidence and sign off P6.**
+- [!] **P6-0109 — Tune scarcity from evidence and sign off P6.**
   - Change only configuration values supported by the P6-0108 evidence.
   - Prefer the smallest adjustment among starting reserve, cache grants, cache placement, or reserve cap.
   - Re-run the affected 1/2/4 scenarios after tuning.
@@ -99,26 +101,28 @@ Canonical specification: `docs/specifications/mvp-specialist-classes.md`.
 - [x] **P7-PLAN-001 — Specify and decompose the three starting classes.**
   - Lock role philosophy, duplicate-class policy, solo policy, selection timing, class-lock timing, shared action lifecycle, trust boundaries, resource ownership, interaction expectations, observability, accessibility, performance budgets, ordered implementation tasks, and explicit deferrals.
   - No P7 gameplay source changes.
-- [ ] **P7-0101 — Define shared class contracts and configuration.**
+- [x] **P7-0101 — Define shared class contracts and configuration.**
   - Stable class IDs, action IDs, action states, target kinds, rejection reasons, selection records, resource records, cooldown/channel descriptors, and safe presentation snapshots.
   - All starting classes are unlocked by default; the P11 unlockable class remains absent.
   - Class values live in shared configuration; fixtures verify frozen vocabulary and invariants.
   - No runtime owner, remote, UI, ability effect, healing, ammunition grant, or objective repair.
-- [ ] **P7-0102 — Implement server-owned class selection and assignment.**
+  - Complete through PR #71 under the bounded `SEQUENCING-EXCEPTION-P6-P7.md` (declarations and invariant fixtures only).
+- [x] **P7-0102 — Implement server-owned class selection and assignment.**
   - Players may select an unlocked starting class during briefing only; insertion locks the selection for the run.
   - Duplicate classes are allowed, roster storage is keyed by operative identity rather than fixed slots, and late/stale/cross-player requests fail closed.
   - One small request/state network exposes only validated selection and safe roster snapshots.
   - Disconnect, reconnect policy, operation restart, and teardown are deterministic.
-- [ ] **P7-0103 — Add the combat specialist vertical slice.**
+  - Complete through PR #72 under the bounded sequencing exception; no consequential class effect exists yet.
+- [!] **P7-0103 — Add the combat specialist vertical slice.**
   - Implement one frequent position-stabilizing combat action from the canonical spec.
   - The action cannot create ammunition, bypass target visibility, hit validation, cadence authority, life restrictions, or operation state.
   - Cost, cooldown, channel/stance interruption, and effect bounds are server-validated and configuration-driven.
   - Presentation makes activation, active duration, interruption, and cooldown legible without revealing hidden enemies.
-- [ ] **P7-0104 — Add the medic vertical slice.**
+- [!] **P7-0104 — Add the medic vertical slice.**
   - Implement finite field treatment for an alive injured teammate and the approved bounded revive benefit.
   - The medic cannot self-revive, revive Dead operatives, fabricate health, ignore range/line of sight, erase repeated mistakes, or bypass the existing P3 commit/revision boundary.
   - Healing resources are personal, finite, server-owned, preserved or reset only according to the operation lifecycle, and visibly disclosed to the owner.
-- [ ] **P7-0105 — Add the engineer vertical slice.**
+- [!] **P7-0105 — Add the engineer vertical slice.**
   - Implement finite nearby field resupply using a configured operation-issued resource budget.
   - Grants commit through the existing ammunition authority boundary, obey weapon compatibility and reserve caps, and never create unlimited or recyclable ammunition.
   - Objective-equipment repair remains P8 integration; P7 may define the interface but may not scaffold an unused objective runtime.
@@ -135,11 +139,15 @@ Canonical specification: `docs/specifications/mvp-specialist-classes.md`.
 
 `P7-PLAN-001` → `P7-0101` → `P7-0102` → (`P7-0103` + `P7-0104` + `P7-0105`, one PR at a time) → `P7-0106` → `P7-0107`.
 
-P7 implementation begins only after P6-0109. The class vertical slices share contracts and assignment but do not depend on one another's runtime implementation.
+`P7-0101` and `P7-0102` are complete under the bounded `SEQUENCING-EXCEPTION-P6-P7.md`. Every consequential class effect (`P7-0103` onward) begins only after P6-0109 sign-off. The class vertical slices share contracts and assignment but do not depend on one another's runtime implementation.
 
 ### P7 exit criteria
 
 Players choose and retain a server-owned starting class for the run. Each class contributes frequently, has a meaningful limitation and finite resource/cooldown, interacts with another role, and remains secure under multiplayer abuse. Any class composition can attempt the operation, while a balanced squad has more resilient options.
+
+### Current P7 status
+
+Planning, shared contracts, and server-owned selection/assignment are complete (`P7-PLAN-001`, `P7-0101`, `P7-0102`); the class vertical slices and everything after remain **blocked** behind the P6 evidence matrix and sign-off.
 
 ---
 
@@ -367,6 +375,7 @@ The complete MVP operation is difficult, readable, learnable, secure, bounded, r
 
 ## Immediate next actions
 
-1. Complete **P6-0108** with controlled 1/2/4-operative Studio runs and populate the evidence table in `docs/specifications/ammunition-scarcity-and-supply.md` or the smoke-test record.
-2. Complete **P6-0109** using only evidence-supported tuning changes and revalidation.
-3. Begin **P7-0101** immediately after P6 sign-off; the P7 plan/specification is complete and no further broad planning pass is required.
+1. Complete **P6-0108** with controlled 1/2/4-operative Studio runs and populate the evidence table in `docs/specifications/ammunition-scarcity-and-supply.md` or the smoke-test record. This is the single gate holding everything else.
+2. Complete **P6-0109** using only evidence-supported tuning changes and revalidation, then record P6 sign-off.
+3. Begin **P7-0103** (combat specialist vertical slice) immediately after P6 sign-off; `P7-0101` contracts and `P7-0102` selection/assignment are already complete under the bounded sequencing exception, so no further class scaffolding is required first.
+4. In parallel where evidence-independent: finish the **VIS-0102** firearm presentation integration per `VISUAL-PRODUCTION-TRACK.md`, and run the outstanding P5 pressure-loop Studio playthrough recorded in the smoke test.

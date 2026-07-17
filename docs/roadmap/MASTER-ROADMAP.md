@@ -10,6 +10,28 @@
 
 Milestones are ordered. Work begins only after prerequisites are met, and later milestones do not authorize speculative scaffolding in earlier pull requests.
 
+## Current milestone status
+
+Snapshot as of 2026-07-17. Task-level detail and acceptance gates for unfinished P6–P12 work live in [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md), which controls those tasks per the [roadmap index](README.md); the cross-cutting art sequence lives in [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md).
+
+| Milestone | Status | Summary |
+| --- | --- | --- |
+| M0/M1 foundation | Complete | Rojo scaffold, toolchain, camera foundation preserved through the pivot. |
+| P0 — Survival pivot | Complete | Canonical charter, MVP, blueprint, and roadmap reframed. |
+| P1 — Movement | Complete | Camera-relative operative control with a server sanity boundary. |
+| P2 — Automatic combat | Complete | Pure server targeting/fire/hit/damage/reload pipeline and contracts. |
+| P3 — Health and life state | Complete | Server-owned Alive/Incapacitated/Dead, revive, solo recovery, squad failure. |
+| P4 — Darkness and navigation | Complete | Visibility/perception contracts, discovery memory, flashlight, squad ping. |
+| P5 — Enemy pressure | Complete | Production enemy lifecycle, fair spawns, pursuit, attacks, waves, roaming, production automatic combat. Live Studio pressure-loop playthrough remains the outstanding manual check (smoke test). |
+| P6 — Ammunition scarcity | In progress | `P6-0101`–`P6-0107` implementation and telemetry complete; `P6-0108` 1/2/4 evidence matrix deferred; `P6-0109` tuning/sign-off blocked on that evidence. |
+| P7 — MVP classes | Partially complete (bounded exception) | `P7-PLAN-001`, `P7-0101` contracts, and `P7-0102` selection/assignment complete under [`SEQUENCING-EXCEPTION-P6-P7.md`](SEQUENCING-EXCEPTION-P6-P7.md); all class-effect runtime (`P7-0103`+) blocked until P6 sign-off. |
+| P8 — Authored objectives | Not started | Fully planned; begins after P7. |
+| P9 — Special enemy and boss | Not started | Fully planned; begins after P8. |
+| P10 — Match loop and replay | Not started | Fully planned; begins after P9. |
+| P11 — Persistence and unlock | Not started | Fully planned; begins after P10. |
+| P12 — Release candidate | Not started | Fully planned; closes the MVP. |
+| VIS — Visual production track | In progress | `VIS-PLAN-001` and `VIS-0101` complete; `VIS-0102` firearm presentation in progress; later entries gated by their gameplay milestones. |
+
 ## Preserved foundation history
 
 ### Former M0 — Repository and Roblox foundation
@@ -211,31 +233,172 @@ One to four operatives experience server-owned enemy pressure across the authore
 
 ## P6 — Ammunition scarcity and supply collection
 
-Replace temporary firearm resources with server-owned finite ammunition, supply caches at authored risky locations, collection rules, clear inventory feedback, and balance telemetry sufficient to distinguish tension from unavoidable starvation.
+Replace temporary firearm resources with server-owned finite ammunition, supply caches at authored risky locations, collection rules, clear inventory feedback, and balance telemetry sufficient to distinguish tension from unavoidable starvation. Canonical specification: `docs/specifications/ammunition-scarcity-and-supply.md`. Full acceptance gates: [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md).
+
+- [x] **P6-0101 — Define ammunition scarcity contracts and configuration.** Stable supply/collection/ammunition/rejection vocabulary and canonical finite values in shared configuration; pure declarations and fixtures only.
+- [x] **P6-0102 — Replace temporary production ammunition with finite configured state.** Production combat initializes from the canonical finite values; fire, reload, revive, restriction, and respawn paths cannot refill or forge ammunition.
+- [x] **P6-0103 — Author risky ammunition-cache locations.** Deterministic configuration-driven cache identity, compatibility, grant size, and world position creating route decisions without hidden random supply.
+- [x] **P6-0104 — Implement server-owned cache collection.** The server derives identity, distance, life eligibility, capacity, duplicate history, grant, and commit; one collection per cache per operative with independent squadmate access.
+- [x] **P6-0105 — Add authoritative ammunition HUD feedback.** Personal loaded/reserve state and collection grants presented without client ammunition authority.
+- [x] **P6-0106 — Add per-operative cache depletion feedback.** Consumed caches stop prompting only for the collecting operative; server-owned collection history stays authoritative.
+- [x] **P6-0107 — Add sampled scarcity telemetry and a Studio validation probe.** Conservation-derived accepted-shot accounting with read-only, Studio-only, scheduler-free snapshots of grants, cache use, minimums, dry transitions, and roster.
+- [~] **P6-0108 — Run the controlled 1/2/4-operative evidence matrix.** Comparable Studio playthroughs populating the scarcity evidence table. **Deferred** while the required Studio workflow is unavailable; no balance claim is permitted until populated.
+- [!] **P6-0109 — Tune scarcity from evidence and sign off P6.** Smallest evidence-supported configuration adjustments, re-runs, and locked final values. **Blocked** on the P6-0108 evidence matrix.
+
+### P6 execution order
+
+`P6-0101` → `P6-0102` → `P6-0103` → `P6-0104` → `P6-0105` → `P6-0106` → `P6-0107` → `P6-0108` → `P6-0109`.
+
+### P6 exit criteria
+
+One to four operatives use finite server-owned ammunition and independently consume authored risky caches with clear personal feedback. Comparable Studio evidence shows that careful play creates pressure and recovery decisions without predetermined starvation, and P6 values are tuned from measurements rather than intuition.
+
+**P6 status:** Implementation and instrumentation complete (`P6-0101`–`P6-0107`). The milestone remains in progress until the deferred manual evidence matrix and evidence-based tuning/sign-off complete. Current scarcity values are provisional.
 
 ## P7 — Three interdependent MVP classes
 
-Implement combat specialist, medic, and engineer responsibilities, limitations, cross-class interactions, class choice, and multiplayer verification. The engineer may restore ammunition only within strict scarcity constraints.
+Implement combat specialist, medic, and engineer responsibilities, limitations, cross-class interactions, class choice, and multiplayer verification. The engineer may restore ammunition only within strict scarcity constraints. Canonical specification: `docs/specifications/mvp-specialist-classes.md`.
+
+- [x] **P7-PLAN-001 — Specify and decompose the three starting classes.** Role philosophy, duplicate/solo policy, selection and lock timing, action lifecycle, trust boundaries, resource ownership, observability, accessibility, budgets, ordered tasks, and deferrals.
+- [x] **P7-0101 — Define shared class contracts and configuration.** Stable class/action/state/target/rejection vocabulary, selection and resource records, cooldown/channel descriptors, safe snapshots, and fixture-verified configuration; no runtime effects. Completed under the bounded [P6/P7 sequencing exception](SEQUENCING-EXCEPTION-P6-P7.md).
+- [x] **P7-0102 — Implement server-owned class selection and assignment.** Briefing-only selection of unlocked starting classes, insertion lock, duplicate-class support, identity-keyed roster, fail-closed stale/cross-player requests, one narrow request/state network, deterministic lifecycle. Completed under the same bounded exception.
+- [!] **P7-0103 — Add the combat specialist vertical slice.** One frequent server-validated position-stabilizing action with configured cost/cooldown/interruption that cannot create ammunition or bypass combat/life/operation authority. **Blocked** until P6-0109 sign-off.
+- [!] **P7-0104 — Add the medic vertical slice.** Finite server-owned field treatment and the approved bounded revive benefit through the existing P3 commit boundary; no self-revive, dead-revive, or fabricated health. **Blocked** until P6-0109 sign-off.
+- [!] **P7-0105 — Add the engineer vertical slice.** Finite operation-issued resupply committed through the existing ammunition authority within compatibility and reserve caps; objective repair remains a P8 integration. **Blocked** until P6-0109 sign-off.
+- [ ] **P7-0106 — Integrate cross-class interactions and squad presentation.** Readable class identity, resources, cooldowns, teammate cues, and concise failure reasons proving the intended cooperation loop without color- or audio-only signals.
+- [ ] **P7-0107 — Complete class security, scaling, and multiplayer validation.** Adversarial fixtures plus solo, duplicate-class, and 2/3/4-operative Studio evidence for contribution frequency, viability without a role, and balanced-squad advantage.
+
+### P7 execution order
+
+`P7-PLAN-001` → `P7-0101` → `P7-0102` → (`P7-0103` + `P7-0104` + `P7-0105`, one PR at a time) → `P7-0106` → `P7-0107`. Contracts and selection are complete under the bounded sequencing exception; every consequential class effect waits for P6 sign-off.
+
+### P7 exit criteria
+
+Players choose and retain a server-owned starting class for the run. Each class contributes frequently, has a meaningful limitation and finite resource/cooldown, interacts with another role, and remains secure under multiplayer abuse. Any composition can attempt the operation while a balanced squad has more resilient options.
+
+**P7 status:** Planning, contracts, and selection/assignment complete (`P7-PLAN-001`, `P7-0101`, `P7-0102`). All class-effect runtime is blocked behind P6 evidence and sign-off.
 
 ## P8 — Authored operation objectives
 
-Build one operation flow with two or three authored objectives, forced relocation, useful temporary defensive positions, failure rules, and objective state readable to the squad.
+Expand Operation Blackwater Relay from its single relay interaction into a complete two-or-three-objective route that forces relocation, creates temporary defensive value, and communicates objective truth clearly.
+
+- [ ] **P8-PLAN-001 — Specify the authored objective chain.** Exact objectives, locations, order/branching, interactions, class opportunities, failure conditions, escalation effects, defensive value, and relocation pressure mapped to existing landmarks and mission phases.
+- [ ] **P8-0101 — Define objective contracts and authored configuration.** Stable objective/step/interaction/progress/failure/completion vocabulary with versioned authored definitions and pure validation fixtures.
+- [ ] **P8-0102 — Implement the generic server-owned objective runtime.** One owner validates phase, revision, identity, state, class, range, line of sight, continuity, prerequisites, and replay before committing progress; clients declare nothing.
+- [ ] **P8-0103 — Replace the placeholder relay interaction with objective one.** First authored objective delivered through the generic runtime and existing mission authority without a parallel state machine.
+- [ ] **P8-0104 — Add objective two and the optional third objective.** Each objective teaches or tests a different cooperation/resource behavior with deterministic order and prerequisites.
+- [ ] **P8-0105 — Add relocation pressure and temporary defensive-position value.** Timing, pressure, approaches, and resources make at least one hold position temporarily useful but never indefinitely optimal; no base building or barricade economy.
+- [ ] **P8-0106 — Integrate class opportunities without class gates.** Meaningful moments for every starting class, including the engineer's approved objective-equipment repair; no required objective becomes impossible without a class.
+- [ ] **P8-0107 — Add objective and route presentation.** Squad UI for current objective, P4-permitted guidance, progress, interruption, completion, failure, and next destination without disclosing hidden threats or distant supply.
+- [ ] **P8-0108 — Complete objective-chain security and 1/2/4-player validation.** Replay/spam/phase/class/distance/revision/disconnect/wipe/teardown coverage plus Studio proof of the full chain, forced relocation, temporary defense, and bounded runtime work.
+
+### P8 execution order
+
+`P8-PLAN-001` → `P8-0101` → `P8-0102` → `P8-0103` → `P8-0104` → (`P8-0105` + `P8-0106`) → `P8-0107` → `P8-0108`.
+
+### P8 exit criteria
+
+The squad completes a readable two-or-three-objective authored route that uses existing landmarks, forces movement, rewards temporary defense and class cooperation, and remains fully server-authoritative from interaction through escalation and failure.
+
+**P8 status:** Not started; begins after P7 completes.
 
 ## P9 — Special enemy and boss encounter
 
 Add one special enemy that disrupts a reliable tactic and one readable boss climax that demands coordination and tests lessons taught earlier in the operation.
 
+- [ ] **P9-PLAN-001 — Specify the special enemy and boss encounter.** The disrupted tactic, counterplay, telegraphs, phases, arena, objective connection, class contributions, failure readability, accessibility, spawn policy, and performance budgets.
+- [ ] **P9-0101 — Define special-enemy contracts, configuration, and pure decisions.** Stable archetype/action/state/rejection vocabulary, tuning values, and a pure resolver for targeting, legal ability use, cooldowns, interruption, death inertness, and tie-breaks.
+- [ ] **P9-0102 — Integrate the special enemy into the production director.** Reuse the existing enemy identity/health/spawn/damage/cleanup/stand-down owner and bounded evaluation; no per-enemy scheduler or client authority.
+- [ ] **P9-0103 — Define boss contracts, configuration, and phase resolver.** Stable phase/transition/vulnerability/attack/summon/objective/outcome vocabulary with pure deterministic phase transitions from server-owned facts.
+- [ ] **P9-0104 — Implement the boss runtime and authored arena integration.** One boss instance owned through production enemy/operation boundaries with revision-safe, bounded, cleaned-up phases, attacks, adds, and terminal state.
+- [ ] **P9-0105 — Add readable telegraphs and accessible presentation.** Redundant position/timing/shape/text/animation/audio cues for every dangerous action without early disclosure or client-legalized hits.
+- [ ] **P9-0106 — Complete encounter security, performance, and class-composition validation.** Forged-fact/stale/disconnect/wipe/replay/cleanup coverage, representative 1/2/4 horde-plus-boss profiling, and Studio proof that counterplay is attributable.
+
+### P9 execution order
+
+`P9-PLAN-001` → `P9-0101` → `P9-0102` → `P9-0103` → `P9-0104` → `P9-0105` → `P9-0106`.
+
+### P9 exit criteria
+
+The special enemy clearly disrupts one dominant tactic with learnable counterplay. The boss provides a readable coordinated climax, accepts contributions from all starting classes, respects prior resource decisions, and runs within bounded server performance.
+
+**P9 status:** Not started; begins after P8 completes.
+
 ## P10 — Match completion, failure, and extraction
 
-Implement final extraction or holdout, full-squad success and failure resolution, result screens, cleanup, replay flow, and safe handling of leave/disconnect cases.
+Turn the existing mission terminal state into a complete player-facing match loop: final extraction or holdout, authoritative success/failure, understandable results, deterministic cleanup, and a safe replay path.
+
+- [ ] **P10-PLAN-001 — Specify terminal operation flow and result semantics.** Success/failure causes, extraction rules, result and contribution facts (for P11), cleanup ownership, replay behavior, leave/disconnect/rejoin policy, and disclosure.
+- [ ] **P10-0101 — Define match-result and extraction contracts/configuration.** Stable result/cause/extraction/readiness/cleanup/replay vocabulary and safe result snapshots containing only server-authored operation facts.
+- [ ] **P10-0102 — Implement one authoritative terminal-result resolver.** Every terminal cause converges on one first-commit-wins boundary; duplicates and races cannot produce multiple results.
+- [ ] **P10-0103 — Integrate the final extraction or holdout sequence.** Server-read, revision-safe presence, timing, prerequisites, and pressure with explicit late-entry/departure/incapacitation/disconnect behavior.
+- [ ] **P10-0104 — Add result presentation.** Success/failure screens explaining cause, key events, contribution facts, and next action; no XP or unlock promises before P11 commits them.
+- [ ] **P10-0105 — Implement deterministic match cleanup and replay.** Documented stop order across every runtime owner; replay creates a fresh operation identity with zero stale timers, connections, revisions, histories, resources, enemies, or results.
+- [ ] **P10-0106 — Complete leave, disconnect, rejoin, and shutdown handling.** Explicit session-retention, resume, and abandonment rules; no disconnect duplicates contribution, resources, life, credit, or rewards.
+- [ ] **P10-0107 — Validate the full non-persistent match loop.** Automated coverage of every terminal cause, race, replay, and cleanup owner plus 1/2/4-operative Studio runs across success, failures, abandonment, and replay without developer intervention.
+
+### P10 execution order
+
+`P10-PLAN-001` → `P10-0101` → `P10-0102` → `P10-0103` → `P10-0104` → (`P10-0105` + `P10-0106`) → `P10-0107`.
+
+### P10 exit criteria
+
+A complete operation ends once in an understandable success or failure, cleans up every runtime owner, and can begin a fresh replay without stale state. The loop works for one to four operatives and safely handles leave/disconnect edge cases.
+
+**P10 status:** Not started; begins after P9 completes.
 
 ## P11 — Persistent XP, ranks, and class unlock
 
-Implement server-owned XP awards for victory and limited meaningful participation on failure, a small military-style rank ladder, reliable persistence, anti-idle safeguards, and at least one side-grade specialist class unlock. Do not add paid power or material permanent stat inflation.
+Implement server-owned XP awards for victory and limited meaningful participation on failure, a small military-style rank ladder, reliable persistence, anti-idle safeguards, and at least one side-grade specialist class unlock. No paid power or material permanent stat inflation.
+
+- [ ] **P11-PLAN-001 — Specify progression, persistence, and the unlockable class.** XP sources, contribution vocabulary, weighting, anti-idle rules, rank ladder, unlock identity and rank, schema/versioning, retry policy, observability, privacy, and migration.
+- [ ] **P11-0101 — Define progression contracts and configuration.** Stable profile/rank/XP-event/contribution/award/unlock/load-save/rejection vocabulary with configuration-driven, fixture-tested curves and caps.
+- [ ] **P11-0102 — Implement a persistence adapter with versioning and failure recovery.** Server-only DataStore access, session ownership, schema validation/migration, bounded retry, update-safe writes; match correctness never depends on persistence availability.
+- [ ] **P11-0103 — Implement pure contribution and XP award resolution.** Awards derive only from P10 terminal facts and server-recorded contribution; duplicates, invalid values, client-authored contribution, and failure farming are impossible.
+- [ ] **P11-0104 — Integrate the military-style rank ladder.** XP applies once, rank derives deterministically, and progress is disclosed without material permanent stat power.
+- [ ] **P11-0105 — Implement the unlockable side-grade specialist.** One distinct approved capability at an attainable rank, reusing P7 class boundaries, proven to be a side-grade rather than a stronger replacement.
+- [ ] **P11-0106 — Add anti-idle and abuse safeguards.** Bounds on low-effort farming, duplicate sessions, reconnect replay, result spoofing, and save/load races without punishing legitimate support play.
+- [ ] **P11-0107 — Add progression and persistence presentation.** Loaded/offline/error state, XP/rank, earned breakdown, unlock progress, and new-unlock disclosure that never claims an unconfirmed save.
+- [ ] **P11-0108 — Complete persistence failure, migration, and multiplayer validation.** Corruption/old-version/timeout/throttling/duplicate/shutdown/reconnect coverage plus verified awards, rank-up, unlock, reload, and safe degraded operation.
+
+### P11 execution order
+
+`P11-PLAN-001` → `P11-0101` → `P11-0102` → `P11-0103` → `P11-0104` → `P11-0105` → (`P11-0106` + `P11-0107`) → `P11-0108`.
+
+### P11 exit criteria
+
+Players earn server-owned, duplicate-safe XP from complete matches, advance through a small rank ladder, and unlock one side-grade class. Persistence is versioned, recoverable, observable, and unable to corrupt match authority or grant paid or material permanent power.
+
+**P11 status:** Not started; begins after P10 completes.
 
 ## P12 — Cooperative balance, performance, and polish
 
 Tune difficulty for high but learnable failure, class dependence, scarcity, relocation pressure, solo-to-four-player scaling, horde performance, accessibility, feedback, and operation readability. Validate that architecture has no fixed four-player assumptions before expanding toward eight-player support.
+
+- [ ] **P12-PLAN-001 — Define the release-candidate validation matrix and target experience.** Target duration, success/failure bands, scarcity/rescue/class/pacing/boss/performance goals, supported controls and accessibility scope, and release-blocking severity rules.
+- [ ] **P12-0101 — Consolidate end-to-end telemetry and baseline the current build.** Comparable 1/2/3/4-operative reports across pacing, combat, scarcity, life, class, boss, results, budgets, and cleanup residue; telemetry stays read-only.
+- [ ] **P12-0102 — Tune solo-to-four-player pressure scaling.** Evidence-supported configuration adjustments only, avoiding fixed player slots and preserving compatibility with a later maximum of eight.
+- [ ] **P12-0103 — Tune class dependence and composition resilience.** Balanced squads gain materially better options while solo and duplicate-role squads keep a difficult but possible path; no new classes or inflation.
+- [ ] **P12-0104 — Tune scarcity, relocation, and operation pacing.** Aligned ammunition, medical, objective, recovery, defense, disruption, and climax pacing without dominant camping routes or predetermined starvation.
+- [ ] **P12-0105 — Profile and optimize horde, special-enemy, boss, visibility, and UI load.** Measure first, then focused changes to cadence, budgets, instances, replication, rendering, and cleanup; no speculative rewrite.
+- [ ] **P12-0106 — Complete the accessibility and readability pass.** Redundant text/shape/position/timing cues, readable contrast, understandable controls, and non-audio-only warnings across every critical state.
+- [ ] **P12-0107 — Audit and remove fixed-four-player assumptions.** Search every contract, roster, spawn, UI, scaling, result, persistence, and cleanup path for fixed slots; add synthetic-identity tests beyond four.
+- [ ] **P12-0108 — Complete the full security and regression audit.** Re-run every client abuse case across all systems; prove no client can establish consequential state and no owner leaks after replay or shutdown.
+- [ ] **P12-0109 — Run release-candidate playthroughs and close the MVP.** Repeated 1/2/3/4-operative runs across compositions and outcomes with recorded limitations, blockers, evidence, and one synchronized release-candidate status across the canon.
+
+### P12 execution order
+
+`P12-PLAN-001` → `P12-0101` → (`P12-0102` + `P12-0103` + `P12-0104`, evidence-driven, one PR at a time) → `P12-0105` → `P12-0106` → `P12-0107` → `P12-0108` → `P12-0109`.
+
+### P12 exit criteria
+
+The complete MVP operation is difficult, readable, learnable, secure, bounded, replayable, persistent, and repeatedly completable for one to four operatives without fixed-four-player architecture, paid power, or unresolved release-blocking defects.
+
+**P12 status:** Not started; closes the MVP after P11.
+
+## Cross-cutting visual production track
+
+Production art replaces placeholders in parallel with P6–P12 under the rule that gameplay truth is stable first and presentation attaches second; it may not change authority, tuning, hitboxes, or hidden information. Canonical sequence and status: [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md) (`VIS-PLAN-001` and `VIS-0101` complete; `VIS-0102` firearm presentation in progress; later entries gated by their corresponding gameplay milestones).
 
 ## Superseded RTS roadmap
 

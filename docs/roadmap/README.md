@@ -2,8 +2,8 @@
 
 Use the roadmap documents in this order:
 
-1. [`MASTER-ROADMAP.md`](MASTER-ROADMAP.md) — completed milestone history, preserved foundation work, and high-level P0–P12 sequence.
-2. [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md) — current status and the canonical PR-sized process for completing every remaining MVP gameplay task.
+1. [`MASTER-ROADMAP.md`](MASTER-ROADMAP.md) — the per-milestone status table, completed milestone history, preserved foundation work, and the full P0–P12 sequence with task-level breakdowns for every milestone.
+2. [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md) — the canonical PR-sized process, full acceptance gates, and controlling status for every remaining P6–P12 gameplay task. The master roadmap mirrors these tasks for one-document readability; when they drift, this file wins for unfinished work.
 3. [`SEQUENCING-EXCEPTION-P6-P7.md`](SEQUENCING-EXCEPTION-P6-P7.md) — temporary narrow exception allowing completed `P7-0101` declarations and `P7-0102` class selection/assignment while P6 Studio evidence is deferred; all consequential class-effect runtime remains blocked.
 4. [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md) — cross-cutting production-art sequence for replacing placeholder weapons, operatives, enemies, world objects, effects, audio, and optional cosmetic skins without changing gameplay authority.
 
