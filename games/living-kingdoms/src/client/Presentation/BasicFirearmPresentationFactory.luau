@@ -22,6 +22,8 @@ export type BasicFirearmPresentationRig = {
 	rightGripAttachment: Attachment,
 	leftGripAttachment: Attachment,
 	ejectionAttachment: Attachment,
+	muzzleFlash: BasePart,
+	muzzleLight: PointLight,
 }
 
 local BasicFirearmPresentationFactory = {}
@@ -318,6 +320,28 @@ function BasicFirearmPresentationFactory.create(): BasicFirearmPresentationRig
 	makeAttachment(root, "Magazine", Vector3.new(0.57, 0, -0.69))
 	local ejectionAttachment = makeAttachment(root, "Ejection", Vector3.new(0.24, -0.345, 0.105))
 
+	local muzzleFlash = makeBox(
+		model,
+		root,
+		"MuzzleFlash",
+		Vector3.new(0.42, 0.42, 0.42),
+		CFrame.new(3.45, 0, 0.09),
+		Color3.fromRGB(255, 205, 92),
+		Enum.Material.Neon
+	)
+	muzzleFlash.Shape = Enum.PartType.Ball
+	muzzleFlash.Transparency = 1
+	muzzleFlash.CastShadow = false
+
+	local muzzleLight = Instance.new("PointLight")
+	muzzleLight.Name = "MuzzleLight"
+	muzzleLight.Color = Color3.fromRGB(255, 190, 90)
+	muzzleLight.Brightness = 2.2
+	muzzleLight.Range = 7
+	muzzleLight.Shadows = false
+	muzzleLight.Enabled = false
+	muzzleLight.Parent = muzzleAttachment
+
 	return table.freeze({
 		model = model,
 		root = root,
@@ -329,6 +353,8 @@ function BasicFirearmPresentationFactory.create(): BasicFirearmPresentationRig
 		rightGripAttachment = rightGripAttachment,
 		leftGripAttachment = leftGripAttachment,
 		ejectionAttachment = ejectionAttachment,
+		muzzleFlash = muzzleFlash,
+		muzzleLight = muzzleLight,
 	})
 end
 

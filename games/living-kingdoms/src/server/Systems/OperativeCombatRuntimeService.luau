@@ -367,12 +367,14 @@ local function resolveAcceptedShot(
 		damageResolution.targetHealthStateAfter,
 		nowTimestamp
 	)
-	presentationRemote:FireClient(player, {
+	presentationRemote:FireAllClients({
 		kindId = CombatContracts.PresentationMessageKindIds.ShotFired,
 		shotId = shotId,
 		operativeEntityId = playerState.operativeState.entityId,
 		weaponId = FirearmConfig.BasicFirearm.WeaponId,
 		targetEntityId = targetEntityId,
+		didApplyDamage = damageResolution.didApplyDamage,
+		impactWorldPosition = if damageResolution.didApplyDamage then fact.worldPosition else nil,
 		serverTimestamp = nowTimestamp,
 	})
 end

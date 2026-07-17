@@ -242,11 +242,11 @@ local Registry = table.freeze({
 	record(
 		Keys.EffectBasicFirearmFire,
 		FamilyIds.Effect,
-		StatusIds.MissingPresentation,
-		"src/client/Controllers/WeaponController.luau",
-		"No approved muzzle flash, casing, tracer, or impact effect set is registered.",
+		StatusIds.TemporaryPresentation,
+		"src/client/Presentation/WeaponShotEffectPresenter.luau",
+		"Accepted shots now drive temporary code-built muzzle flash, casing ejection, and authoritative damage-impact presentation; tracer and production effects remain pending.",
 		"BasicFirearmFireEffects",
-		{ "Muzzle" },
+		{ "Muzzle", "Ejection" },
 		"weapon.basic-firearm",
 		false
 	),

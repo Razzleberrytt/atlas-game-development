@@ -16,6 +16,7 @@ local Workspace = game:GetService("Workspace")
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local BasicFirearmPresentationFactory = require(script.Parent.Parent.Presentation.BasicFirearmPresentationFactory)
+local WeaponShotEffectPresenter = require(script.Parent.Parent.Presentation.WeaponShotEffectPresenter)
 
 type BasicFirearmPresentationRig = BasicFirearmPresentationFactory.BasicFirearmPresentationRig
 
@@ -79,6 +80,19 @@ end
 
 local function isWholeNonnegative(value: unknown): boolean
 	return isFiniteNumber(value) and value >= 0 and value % 1 == 0
+end
+
+local function operativeEntityIdForPlayer(player: Player): string
+	return "operative.player:" .. tostring(player.UserId)
+end
+
+local function playerForOperativeEntityId(operativeEntityId: string): Player?
+	for _, player in Players:GetPlayers() do
+		if operativeEntityIdForPlayer(player) == operativeEntityId then
+			return player
+		end
+	end
+	return nil
 end
 
 local function cancelTween(key: string)
@@ -260,12 +274,25 @@ local function lockBoltOpen(durationSeconds: number)
 	)
 end
 
-local function playShot(shotId: string)
+local function playShot(
+	shotId: string,
+	operativeEntityId: string,
+	didApplyDamage: boolean,
+	impactWorldPosition: Vector3?
+)
 	if not rememberShot(shotId) then
 		return
 	end
-	local rig = localRig()
+	local shooter = playerForOperativeEntityId(operativeEntityId)
+	if shooter == nil then
+		return
+	end
+	local rig = state.rigs[shooter]
 	if rig == nil then
+		return
+	end
+	WeaponShotEffectPresenter.present(rig, shotId, didApplyDamage, impactWorldPosition)
+	if shooter ~= Players.LocalPlayer then
 		return
 	end
 	state.shotGeneration += 1
@@ -393,9 +420,11 @@ local function onPresentationMessage(message: unknown)
 			and isNonEmptyString(payload.operativeEntityId)
 			and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
 			and isNonEmptyString(payload.targetEntityId)
+			and type(payload.didApplyDamage) == "boolean"
+			and ((payload.didApplyDamage and typeof(payload.impactWorldPosition) == "Vector3") or (not payload.didApplyDamage and payload.impactWorldPosition == nil))
 			and isFiniteNumber(payload.serverTimestamp)
 		then
-			playShot(payload.shotId)
+			playShot(payload.shotId, payload.operativeEntityId, payload.didApplyDamage, payload.impactWorldPosition)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadStarted then
 		if
