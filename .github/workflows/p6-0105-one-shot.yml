@@ -1,0 +1,44 @@
+name: P6 ammunition feedback patch
+
+on:
+  push:
+    branches:
+      - agent/p6-0105-ammunition-feedback
+    paths:
+      - ".github/one-shot/p6_0105_patch.py"
+      - ".github/workflows/p6-0105-one-shot.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/p6-0105-ammunition-feedback
+          fetch-depth: 0
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Apply anchored patch
+        run: python3 .github/one-shot/p6_0105_patch.py
+
+      - name: Format changed Luau
+        run: stylua games/living-kingdoms/src games/living-kingdoms/tests/P6AmmunitionPresentation.test.luau
+
+      - name: Commit permanent files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add authoritative ammunition feedback"
+          git push origin HEAD:agent/p6-0105-ammunition-feedback
