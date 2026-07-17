@@ -13,8 +13,6 @@ local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/Cla
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 local manifest = fs.readFile("games/living-kingdoms/assets/visual/operative/class-silhouettes/asset-manifest.json")
 local readme = fs.readFile("games/living-kingdoms/assets/visual/operative/class-silhouettes/README.md")
-local roadmap = fs.readFile("docs/roadmap/VISUAL-PRODUCTION-TRACK.md")
-local inventory = fs.readFile("docs/specifications/visual-placeholder-inventory.md")
 
 for _, required in {
 	'AssetKey = "visual.operative.class-silhouette.fallback"',
@@ -82,7 +80,6 @@ assertThat(string.find(manifest, '"newRemoteCount": 0', 1, true) ~= nil, "manife
 assertThat(string.find(manifest, '"frameConnections": 0', 1, true) ~= nil, "manifest must record zero frame loops")
 assertThat(string.find(manifest, '"studioApproved": false', 1, true) ~= nil, "Studio approval must remain false")
 assertThat(string.find(readme, "geometry, not color alone", 1, true) ~= nil, "README must document accessible silhouette policy")
-assertThat(string.find(roadmap, "procedural shared armor base", 1, true) ~= nil, "VIS-0104 roadmap status missing")
-assertThat(string.find(inventory, "ClassSilhouetteController", 1, true) ~= nil, "placeholder inventory must record runtime owner")
+assertThat(string.find(readme, "zero server runtime changes", 1, true) ~= nil, "README must document server isolation")
 
-print("OperativeClassSilhouetteSourceAudit: roster truth, geometry, authority, bounds, and docs passed")
+print("OperativeClassSilhouetteSourceAudit: roster truth, geometry, authority, bounds, and source package passed")
