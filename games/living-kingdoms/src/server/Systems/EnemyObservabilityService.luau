@@ -90,7 +90,10 @@ function Service.resetSampling()
 end
 
 function Service.sample(serverTimestamp: number)
-	assert(serverTimestamp == serverTimestamp and serverTimestamp >= 0 and serverTimestamp < math.huge, "invalid sample time")
+	assert(
+		serverTimestamp == serverTimestamp and serverTimestamp >= 0 and serverTimestamp < math.huge,
+		"invalid sample time"
+	)
 	local currentTargetsByEntityId: { [string]: string? } = {}
 	local currentPositionsByEntityId: { [string]: Vector3 } = {}
 
