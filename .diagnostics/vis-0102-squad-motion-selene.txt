@@ -1,0 +1,10 @@
+warning[unused_variable]: ReplicatedStorage is assigned a value, but never used
+   ┌─ games/living-kingdoms/src/client/Presentation/RemoteWeaponMotionPresenter.luau:10:7
+   │
+10 │ local ReplicatedStorage = game:GetService("ReplicatedStorage")
+   │       ^^^^^^^^^^^^^^^^^
+
+Results:
+0 errors
+1 warnings
+0 parse errors
