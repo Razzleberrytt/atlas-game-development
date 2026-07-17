@@ -21,15 +21,19 @@ local function loadSimple(path: string, debugName: string)
 	})()
 end
 
-local missionContracts = loadSimple("games/living-kingdoms/src/shared/Mission/MissionContracts.luau", "MissionContracts")
+local missionContracts =
+	loadSimple("games/living-kingdoms/src/shared/Mission/MissionContracts.luau", "MissionContracts")
 local missionConfig = loadSimple("games/living-kingdoms/src/shared/Config/MissionConfig.luau", "MissionConfig")
 local enemyContracts = loadSimple("games/living-kingdoms/src/shared/Combat/EnemyContracts.luau", "EnemyContracts")
+local presentationContracts =
+	loadSimple("games/living-kingdoms/src/shared/Visual/EnemyPresentationContracts.luau", "EnemyPresentationContracts")
 local worldConfig =
 	loadSimple("games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "WorldFoundationConfig")
 
 local ENEMY_CONTRACTS_TOKEN = {}
 local WORLD_TOKEN = {}
 local ENEMY_CONFIG_TOKEN = {}
+local PRESENTATION_TOKEN = {}
 local MISSION_CONFIG_TOKEN = {}
 local MISSION_CONTRACTS_TOKEN = {}
 local RESOLVER_TOKEN = {}
@@ -68,6 +72,7 @@ local sharedReplicatedStorage = {
 			MissionConfig = MISSION_CONFIG_TOKEN,
 		},
 		Mission = { MissionContracts = MISSION_CONTRACTS_TOKEN },
+		Visual = { EnemyPresentationContracts = PRESENTATION_TOKEN },
 	},
 }
 
@@ -257,6 +262,8 @@ local enemyDirector = luau.load(fs.readFile("games/living-kingdoms/src/server/Sy
 				return enemyConfig
 			elseif token == ENEMY_CONTRACTS_TOKEN then
 				return enemyContracts
+			elseif token == PRESENTATION_TOKEN then
+				return presentationContracts
 			elseif token == WORLD_TOKEN then
 				return worldConfig
 			elseif token == RESOLVER_TOKEN then
@@ -440,22 +447,20 @@ assert(mission.requestObjectiveInteraction(alpha).didChange)
 assert(enemyDirector.readActiveEnemyCount() == #missionConfig.Escalation.Waves[1], "wave 1 must spawn immediately")
 assert(enemyDirector.readPressureState().escalationLevel == 1)
 assert(
-	enemyDirector.readPressureState().recoveryWindowEndServerTimestamp == now + enemyConfig.Pressure.RecoveryWindowSeconds,
+	enemyDirector.readPressureState().recoveryWindowEndServerTimestamp
+		== now + enemyConfig.Pressure.RecoveryWindowSeconds,
 	"authored waves must open the recovery window"
 )
 
 -- Wave 2 on its deadline.
 now += missionConfig.Escalation.SecondWaveDelaySeconds
 assert(mission.evaluateTimersAt(now).didChange)
-assert(
-	enemyDirector.readActiveEnemyCount() == #missionConfig.Escalation.Waves[1] + #missionConfig.Escalation.Waves[2]
-)
+assert(enemyDirector.readActiveEnemyCount() == #missionConfig.Escalation.Waves[1] + #missionConfig.Escalation.Waves[2])
 assert(enemyDirector.readPressureState().escalationLevel == 2)
 
 -- Holdout begins when a survivor stands in the clearing; wave 3 spawns fairly
 -- outside the darkness radius and immediately.
-alphaRoot.Position =
-	roblox.Vector3.new(missionConfig.Extraction.Position.x, 3, missionConfig.Extraction.Position.z)
+alphaRoot.Position = roblox.Vector3.new(missionConfig.Extraction.Position.x, 3, missionConfig.Extraction.Position.z)
 bravoRoot.Position = roblox.Vector3.new(-224, 2, -200)
 now += 5
 assert(mission.evaluateExtractionPresenceAt(now).didChange)
@@ -539,4 +544,6 @@ mission.stop()
 enemyDirector.stop()
 assert(heartbeatSignal:count() == 0 and missionHeartbeat:count() == 0)
 
-print("P5IntegrationValidation: P5-0107 mission-driven pressure, waves, holdout fairness, stand-down, and audits passed")
+print(
+	"P5IntegrationValidation: P5-0107 mission-driven pressure, waves, holdout fairness, stand-down, and audits passed"
+)

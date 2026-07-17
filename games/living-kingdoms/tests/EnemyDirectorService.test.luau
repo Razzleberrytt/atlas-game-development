@@ -22,12 +22,15 @@ local function loadSimple(path: string, debugName: string)
 end
 
 local contracts = loadSimple("games/living-kingdoms/src/shared/Combat/EnemyContracts.luau", "EnemyContracts")
+local presentationContracts =
+	loadSimple("games/living-kingdoms/src/shared/Visual/EnemyPresentationContracts.luau", "EnemyPresentationContracts")
 local worldConfig =
 	loadSimple("games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "WorldFoundationConfig")
 
 local CONTRACTS_TOKEN = {}
 local WORLD_TOKEN = {}
 local CONFIG_TOKEN = {}
+local PRESENTATION_TOKEN = {}
 local RESOLVER_TOKEN = {}
 local LIFE_TOKEN = {}
 
@@ -57,6 +60,7 @@ local sharedReplicatedStorage = {
 	Shared = {
 		Combat = { EnemyContracts = CONTRACTS_TOKEN },
 		Config = { EnemyConfig = CONFIG_TOKEN, WorldFoundationConfig = WORLD_TOKEN },
+		Visual = { EnemyPresentationContracts = PRESENTATION_TOKEN },
 	},
 }
 
@@ -268,6 +272,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return config
 			elseif token == CONTRACTS_TOKEN then
 				return contracts
+			elseif token == PRESENTATION_TOKEN then
+				return presentationContracts
 			elseif token == WORLD_TOKEN then
 				return worldConfig
 			elseif token == RESOLVER_TOKEN then
@@ -344,6 +350,13 @@ assert(#facts == 1 and facts[1].entityId == "enemy.a" and facts[1].isAlive)
 assert(facts[1].worldPosition.Y == 6, "bodies must spawn lifted above the authored ground point")
 local walkerModel = findCreated("Test Walker")
 assert(walkerModel ~= nil and walkerModel:GetAttribute("CombatEntityId") == "enemy.a")
+local presentationAttributes = presentationContracts.AttributeNames
+assert(walkerModel:GetAttribute(presentationAttributes.BehaviorStateId) == "Roaming")
+assert(walkerModel:GetAttribute(presentationAttributes.LifeStateId) == presentationContracts.LifeStateIds.Alive)
+assert(walkerModel:GetAttribute(presentationAttributes.AttackSequence) == 0)
+assert(walkerModel:GetAttribute(presentationAttributes.AttackServerTimestamp) == 0)
+assert(walkerModel:GetAttribute(presentationAttributes.HitSequence) == 0)
+assert(walkerModel:GetAttribute(presentationAttributes.HitServerTimestamp) == 0)
 
 -- Unfair authored spawn defers, then lands once the operative moves away.
 local victim, victimRoot = addOperative("operative.player:1", 100, 0)
@@ -360,16 +373,13 @@ assert(retried.spawnedCount == 1 and service.readPressureState().pendingSpawnCou
 assert(service.readActiveEnemyCount() == 2)
 
 -- Roaming spawn proposals never defer.
-local unfairRoam =
-	service.spawnEnemy(request("enemy.roam-unfair", 250 + minimumSpawn - 1, 250, "RoamingPressure"))
+local unfairRoam = service.spawnEnemy(request("enemy.roam-unfair", 250 + minimumSpawn - 1, 250, "RoamingPressure"))
 assert(not unfairRoam.didSpawn and not unfairRoam.wasDeferred)
 
 -- Population caps: representative 1/2/4-operative caps, then cap deferral.
 assert(service.readPressureState().activeEnemyCount == 2)
-local capForOne = math.min(
-	config.Population.AbsoluteMaximumConcurrent,
-	config.Population.MaximumConcurrentPerOperative * 1
-)
+local capForOne =
+	math.min(config.Population.AbsoluteMaximumConcurrent, config.Population.MaximumConcurrentPerOperative * 1)
 for index = service.readActiveEnemyCount() + 1, capForOne do
 	assert(service.spawnEnemy(request("enemy.fill:" .. index, -200 + index * 8, -200)).didSpawn)
 end
@@ -401,6 +411,8 @@ assert(hunterHumanoid.WalkSpeed == walker.PursuitSpeedStudsPerSecond)
 reset()
 local target, targetRoot = addOperative("operative.player:7", 300, 300)
 assert(service.spawnEnemy(request("enemy.biter", 0, 0)).didSpawn)
+local attackModel = findCreated("Test Walker")
+assert(attackModel ~= nil)
 targetRoot.Position = roblox.Vector3.new(3, 2, 0)
 now = 10
 local swing = service.evaluateAt(now)
@@ -411,17 +423,28 @@ assert(damageCalls[1].damage.damageEventId == "enemyattack:enemy.biter:operative
 assert(damageCalls[1].damage.damageAmount == walker.AttackDamage)
 assert(damageCalls[1].damage.sourceEntityId == "enemy.biter")
 assert(damageCalls[1].damage.serverTimestamp == 10)
+assert(attackModel:GetAttribute(presentationAttributes.BehaviorStateId) == "Attacking")
+assert(attackModel:GetAttribute(presentationAttributes.AttackSequence) == 1)
+assert(attackModel:GetAttribute(presentationAttributes.AttackServerTimestamp) == 10)
 now = 10 + walker.AttackCooldownSeconds - 0.01
 assert(service.evaluateAt(now).attackCommittedCount == 0, "cooldown must block the second swing")
 now = 10 + walker.AttackCooldownSeconds
 assert(service.evaluateAt(now).attackCommittedCount == 1)
 assert(#damageCalls == 2)
+assert(attackModel:GetAttribute(presentationAttributes.AttackSequence) == 2)
+assert(attackModel:GetAttribute(presentationAttributes.AttackServerTimestamp) == now)
 -- A rejected life commit leaves the cooldown unarmed so the swing retries.
 rejectNextDamage = true
 now += walker.AttackCooldownSeconds
 assert(service.evaluateAt(now).attackCommittedCount == 0)
+assert(
+	attackModel:GetAttribute(presentationAttributes.AttackSequence) == 2,
+	"rejected damage must not disclose an attack"
+)
 now += 0.2
 assert(service.evaluateAt(now).attackCommittedCount == 1, "rejected commits must not consume the cooldown")
+assert(attackModel:GetAttribute(presentationAttributes.AttackSequence) == 3)
+assert(attackModel:GetAttribute(presentationAttributes.AttackServerTimestamp) == now)
 -- Downed operatives are not attacked.
 target.snapshot.lifeStateId = "Incapacitated"
 now += walker.AttackCooldownSeconds
@@ -432,26 +455,22 @@ assert(service.evaluateAt(now).attackCommittedCount == 0, "only Alive operatives
 reset()
 addOperative("operative.player:1", 300, 300)
 assert(service.spawnEnemy(request("enemy.mark", 0, 0)).didSpawn)
+local markModel = findCreated("Test Walker")
+assert(markModel ~= nil)
 local read = service.readHealthState("enemy.mark")
 assert(read ~= nil and read.revision == 1 and read.isAlive)
 assert(read.healthState.currentHealth == walker.MaximumHealth)
 assert(service.readHealthState("enemy.unknown") == nil)
-assert(
-	not service.commitHealthState("enemy.mark", 99, {
-		entityId = "enemy.mark",
-		currentHealth = 40,
-		processedShotIds = {},
-	}, 5),
-	"stale revisions must be rejected"
-)
-assert(
-	not service.commitHealthState("enemy.mark", read.revision, {
-		entityId = "enemy.mark",
-		currentHealth = walker.MaximumHealth + 10,
-		processedShotIds = {},
-	}, 5),
-	"enemy health must never increase"
-)
+assert(not service.commitHealthState("enemy.mark", 99, {
+	entityId = "enemy.mark",
+	currentHealth = 40,
+	processedShotIds = {},
+}, 5), "stale revisions must be rejected")
+assert(not service.commitHealthState("enemy.mark", read.revision, {
+	entityId = "enemy.mark",
+	currentHealth = walker.MaximumHealth + 10,
+	processedShotIds = {},
+}, 5), "enemy health must never increase")
 assert(service.commitHealthState("enemy.mark", read.revision, {
 	entityId = "enemy.mark",
 	currentHealth = 40,
@@ -459,14 +478,13 @@ assert(service.commitHealthState("enemy.mark", read.revision, {
 }, 5))
 local afterHit = service.readHealthState("enemy.mark")
 assert(afterHit ~= nil and afterHit.revision == 2 and afterHit.healthState.currentHealth == 40)
-assert(
-	not service.commitHealthState("enemy.mark", afterHit.revision, {
-		entityId = "enemy.mark",
-		currentHealth = 20,
-		processedShotIds = {},
-	}, 6),
-	"processed ShotIds must be retained across commits"
-)
+assert(markModel:GetAttribute(presentationAttributes.HitSequence) == 1)
+assert(markModel:GetAttribute(presentationAttributes.HitServerTimestamp) == 5)
+assert(not service.commitHealthState("enemy.mark", afterHit.revision, {
+	entityId = "enemy.mark",
+	currentHealth = 20,
+	processedShotIds = {},
+}, 6), "processed ShotIds must be retained across commits")
 assert(service.commitHealthState("enemy.mark", afterHit.revision, {
 	entityId = "enemy.mark",
 	currentHealth = 0,
@@ -474,9 +492,12 @@ assert(service.commitHealthState("enemy.mark", afterHit.revision, {
 }, 7))
 local dead = service.readHealthState("enemy.mark")
 assert(dead ~= nil and not dead.isAlive)
+assert(markModel:GetAttribute(presentationAttributes.HitSequence) == 2)
+assert(markModel:GetAttribute(presentationAttributes.HitServerTimestamp) == 7)
+assert(markModel:GetAttribute(presentationAttributes.LifeStateId) == presentationContracts.LifeStateIds.Dead)
+assert(markModel:GetAttribute(presentationAttributes.BehaviorStateId) == "Dead")
 assert(service.readActiveEnemyCount() == 0, "death must free population capacity")
 assert(#service.readEnemyCombatFacts() == 0, "dead enemies are no longer combat facts")
-local markModel = findCreated("Test Walker")
 assert(markModel ~= nil and not markModel._destroyed, "the corpse must persist through the cleanup window")
 now = 7 + config.Cleanup.CorpseCleanupSeconds - 0.01
 assert(service.evaluateAt(now).cleanedCount == 0)
@@ -566,7 +587,18 @@ assert(standTarget.snapshot.lifeStateId == "Alive")
 assert(heartbeatSignal:count() == 1, "the director must own exactly one heartbeat connection")
 local directorSource = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau")
 for _, prohibited in
-	{ "task.delay", "task.spawn", "task.defer", "Raycast", "OnServerEvent", "FireClient", "FireAllClients", "RemoteEvent", "math.random", "Random.new" }
+	{
+		"task.delay",
+		"task.spawn",
+		"task.defer",
+		"Raycast",
+		"OnServerEvent",
+		"FireClient",
+		"FireAllClients",
+		"RemoteEvent",
+		"math.random",
+		"Random.new",
+	}
 do
 	assert(
 		not string.find(directorSource, prohibited, 1, true),
@@ -618,6 +650,11 @@ local bootstrap = fs.readFile("games/living-kingdoms/src/server/init.server.luau
 local directorStart = string.find(bootstrap, "EnemyDirectorService.start()", 1, true)
 local missionStart = string.find(bootstrap, "MissionDirectorService.start()", 1, true)
 assert(directorStart ~= nil and missionStart ~= nil, "both directors must be bootstrapped")
-assert((directorStart :: number) < (missionStart :: number), "the enemy director must start before the mission director")
+assert(
+	(directorStart :: number) < (missionStart :: number),
+	"the enemy director must start before the mission director"
+)
 
-print("EnemyDirectorService: P5-0105 fair spawns, waves, roaming, recovery, attacks, health, cleanup, and bounds passed")
+print(
+	"EnemyDirectorService: P5-0105 fair spawns, waves, roaming, recovery, attacks, health, cleanup, and bounds passed"
+)
