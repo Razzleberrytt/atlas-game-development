@@ -11,7 +11,7 @@ local EnemyContracts = require(script.Parent.Parent.Combat.EnemyContracts)
 local WorldFoundationConfig = require(script.Parent.WorldFoundationConfig)
 
 local EnemyConfig = {
-	Version = "P5-0104-v1",
+	Version = "P5-0104-v2",
 	Walker = table.freeze({
 		ArchetypeId = EnemyContracts.EnemyArchetypeIds.ExclusionWalker,
 		DisplayName = "Exclusion Walker",
@@ -22,6 +22,7 @@ local EnemyConfig = {
 		PursuitDropRadiusStuds = 95,
 		AttackRangeStuds = 6,
 		AttackDamage = 12,
+		AttackWindupSeconds = 0.6,
 		AttackCooldownSeconds = 1.6,
 		RoamWanderRadiusStuds = 24,
 		RoamRetargetIntervalSeconds = 6,
@@ -85,6 +86,11 @@ assert(
 	"pursuit drop hysteresis must exceed detection"
 )
 assert(EnemyConfig.Walker.AttackDamage > 0, "attack damage must be positive")
+assert(
+	EnemyConfig.Walker.AttackWindupSeconds >= EnemyConfig.EvaluationIntervalSeconds
+		and EnemyConfig.Walker.AttackWindupSeconds < EnemyConfig.Walker.AttackCooldownSeconds,
+	"attack windup must be visible, bounded, and shorter than the cooldown"
+)
 assert(EnemyConfig.Walker.AttackCooldownSeconds > 0, "attack cooldown must be positive")
 assert(
 	EnemyConfig.FairSpawn.MinimumOperativeDistanceStuds > EnemyConfig.Combat.GameplayVisibilityRadiusStuds,

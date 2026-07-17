@@ -34,6 +34,7 @@ local STRIDES_PER_SECOND = 3
 local SENSOR_COLORS = table.freeze({
 	Normal = Color3.fromRGB(218, 78, 53),
 	Alert = Color3.fromRGB(255, 145, 54),
+	Windup = Color3.fromRGB(255, 176, 48),
 	Strike = Color3.fromRGB(255, 204, 74),
 	Hit = Color3.fromRGB(255, 245, 210),
 	Dim = Color3.fromRGB(105, 74, 62),
@@ -43,6 +44,7 @@ local SENSOR_COLORS = table.freeze({
 local SENSOR_TRANSPARENCY = table.freeze({
 	Normal = 0,
 	Alert = 0,
+	Windup = 0,
 	Strike = 0,
 	Hit = 0,
 	Dim = 0.35,
@@ -63,6 +65,9 @@ type Record = {
 	rightArmBaseC0: CFrame,
 	leftLegBaseC0: CFrame,
 	rightLegBaseC0: CFrame,
+	windupSequence: number,
+	windupStartedServerTimestamp: number?,
+	windupCommitServerTimestamp: number?,
 	attackSequence: number,
 	attackServerTimestamp: number?,
 	hitSequence: number,
@@ -156,11 +161,24 @@ local function trackModel(model: Model)
 		return
 	end
 
+	local windupSequence = readNumberAttribute(model, PresentationAttributeNames.WindupSequence)
+	local windupStartedServerTimestamp =
+		readNumberAttribute(model, PresentationAttributeNames.WindupStartedServerTimestamp)
+	local windupCommitServerTimestamp =
+		readNumberAttribute(model, PresentationAttributeNames.WindupCommitServerTimestamp)
 	local attackSequence = readNumberAttribute(model, PresentationAttributeNames.AttackSequence)
 	local attackServerTimestamp = readNumberAttribute(model, PresentationAttributeNames.AttackServerTimestamp)
 	local hitSequence = readNumberAttribute(model, PresentationAttributeNames.HitSequence)
 	local hitServerTimestamp = readNumberAttribute(model, PresentationAttributeNames.HitServerTimestamp)
-	if attackSequence == nil or attackServerTimestamp == nil or hitSequence == nil or hitServerTimestamp == nil then
+	if
+		windupSequence == nil
+		or windupStartedServerTimestamp == nil
+		or windupCommitServerTimestamp == nil
+		or attackSequence == nil
+		or attackServerTimestamp == nil
+		or hitSequence == nil
+		or hitServerTimestamp == nil
+	then
 		return
 	end
 
@@ -178,6 +196,14 @@ local function trackModel(model: Model)
 		rightArmBaseC0 = rightArmMotor.C0,
 		leftLegBaseC0 = leftLegMotor.C0,
 		rightLegBaseC0 = rightLegMotor.C0,
+		windupSequence = windupSequence,
+		windupStartedServerTimestamp = if windupSequence > 0 and windupStartedServerTimestamp > 0
+			then windupStartedServerTimestamp
+			else nil,
+		windupCommitServerTimestamp = if windupSequence > 0
+				and windupCommitServerTimestamp > windupStartedServerTimestamp
+			then windupCommitServerTimestamp
+			else nil,
 		attackSequence = attackSequence,
 		attackServerTimestamp = if attackSequence > 0 and attackServerTimestamp > 0 then attackServerTimestamp else nil,
 		hitSequence = hitSequence,
@@ -226,13 +252,32 @@ local function applyPose(record: Record, pose: EnemyPresentationPoseResolver.Pos
 end
 
 local function updateRecord(model: Model, record: Record, serverTimestamp: number)
+	local windupSequence = readNumberAttribute(model, PresentationAttributeNames.WindupSequence)
+	local windupStartedServerTimestamp =
+		readNumberAttribute(model, PresentationAttributeNames.WindupStartedServerTimestamp)
+	local windupCommitServerTimestamp =
+		readNumberAttribute(model, PresentationAttributeNames.WindupCommitServerTimestamp)
+	local currentWindupStartedAt = record.windupStartedServerTimestamp or 0
+	if
+		windupSequence ~= nil
+		and windupStartedServerTimestamp ~= nil
+		and windupCommitServerTimestamp ~= nil
+		and windupSequence >= record.windupSequence
+		and windupStartedServerTimestamp > currentWindupStartedAt
+		and windupCommitServerTimestamp > windupStartedServerTimestamp
+	then
+		record.windupSequence = windupSequence
+		record.windupStartedServerTimestamp = windupStartedServerTimestamp
+		record.windupCommitServerTimestamp = windupCommitServerTimestamp
+	end
+
 	local attackSequence = readNumberAttribute(model, PresentationAttributeNames.AttackSequence)
 	local attackServerTimestamp = readNumberAttribute(model, PresentationAttributeNames.AttackServerTimestamp)
 	if
 		attackSequence ~= nil
 		and attackServerTimestamp ~= nil
-		and attackSequence > record.attackSequence
-		and attackServerTimestamp > 0
+		and attackSequence >= record.attackSequence
+		and attackServerTimestamp > (record.attackServerTimestamp or 0)
 	then
 		record.attackSequence = attackSequence
 		record.attackServerTimestamp = attackServerTimestamp
@@ -243,8 +288,8 @@ local function updateRecord(model: Model, record: Record, serverTimestamp: numbe
 	if
 		hitSequence ~= nil
 		and hitServerTimestamp ~= nil
-		and hitSequence > record.hitSequence
-		and hitServerTimestamp > 0
+		and hitSequence >= record.hitSequence
+		and hitServerTimestamp > (record.hitServerTimestamp or 0)
 	then
 		record.hitSequence = hitSequence
 		record.hitServerTimestamp = hitServerTimestamp
@@ -256,14 +301,23 @@ local function updateRecord(model: Model, record: Record, serverTimestamp: numbe
 		return
 	end
 
+	local windupStartedAt = record.windupStartedServerTimestamp
+	local windupCommitAt = record.windupCommitServerTimestamp
 	local attackAt = record.attackServerTimestamp
 	local hitAt = record.hitServerTimestamp
 	local secondsSinceAttack = if attackAt == nil then nil else serverTimestamp - attackAt
 	local secondsSinceHit = if hitAt == nil then nil else serverTimestamp - hitAt
 	local isDead = lifeStateId == PresentationLifeStateIds.Dead
 	local isStoodDown = behaviorStateId == BehaviorStateIds.StandDown
+	local isWindingUp = behaviorStateId == BehaviorStateIds.WindingUp
+	local windupProgress = nil
+	if isWindingUp and windupStartedAt ~= nil and windupCommitAt ~= nil and windupCommitAt > windupStartedAt then
+		windupProgress = math.clamp((serverTimestamp - windupStartedAt) / (windupCommitAt - windupStartedAt), 0, 1)
+	end
 	local isMoving = record.humanoid.MoveDirection.Magnitude > MOVEMENT_THRESHOLD
-	local isPursuing = behaviorStateId == BehaviorStateIds.Pursuing or behaviorStateId == BehaviorStateIds.Attacking
+	local isPursuing = behaviorStateId == BehaviorStateIds.Pursuing
+		or behaviorStateId == BehaviorStateIds.WindingUp
+		or behaviorStateId == BehaviorStateIds.Attacking
 	local strideIndex = math.floor((serverTimestamp + record.phaseOffsetSeconds) * STRIDES_PER_SECOND) % 2
 
 	local pose = EnemyPresentationPoseResolver.resolve({
@@ -271,6 +325,9 @@ local function updateRecord(model: Model, record: Record, serverTimestamp: numbe
 		isStoodDown = isStoodDown,
 		isMoving = isMoving,
 		isPursuing = isPursuing,
+		isWindingUp = isWindingUp,
+		windupSequence = record.windupSequence,
+		windupProgress = windupProgress,
 		attackSequence = record.attackSequence,
 		secondsSinceAttack = secondsSinceAttack,
 		secondsSinceHit = secondsSinceHit,

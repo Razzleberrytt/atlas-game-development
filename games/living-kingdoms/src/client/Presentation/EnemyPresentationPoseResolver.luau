@@ -13,6 +13,10 @@ local PoseIds = table.freeze({
 	PursuingA = "PursuingA",
 	PursuingB = "PursuingB",
 	ThreatReady = "ThreatReady",
+	WindupEarlyLeft = "WindupEarlyLeft",
+	WindupEarlyRight = "WindupEarlyRight",
+	WindupLateLeft = "WindupLateLeft",
+	WindupLateRight = "WindupLateRight",
 	StrikeActiveLeft = "StrikeActiveLeft",
 	StrikeActiveRight = "StrikeActiveRight",
 	StrikeRecoveryLeft = "StrikeRecoveryLeft",
@@ -25,6 +29,7 @@ local PoseIds = table.freeze({
 local SensorModes = table.freeze({
 	Normal = "Normal",
 	Alert = "Alert",
+	Windup = "Windup",
 	Strike = "Strike",
 	Hit = "Hit",
 	Dim = "Dim",
@@ -33,6 +38,7 @@ local SensorModes = table.freeze({
 
 local Timing = table.freeze({
 	HitReactionSeconds = 0.28,
+	WindupLateProgress = 0.55,
 	AttackActiveSeconds = 0.16,
 	AttackRecoverySeconds = 0.52,
 })
@@ -42,6 +48,9 @@ export type PoseInput = {
 	isStoodDown: boolean,
 	isMoving: boolean,
 	isPursuing: boolean,
+	isWindingUp: boolean,
+	windupSequence: number,
+	windupProgress: number?,
 	attackSequence: number,
 	secondsSinceAttack: number?,
 	secondsSinceHit: number?,
@@ -89,6 +98,10 @@ end
 
 local IDLE = pose(PoseIds.Idle, 0, 0, 5, -5, 4, -4, 0, 0, SensorModes.Normal)
 local THREAT_READY = pose(PoseIds.ThreatReady, -8, 0, -38, -38, 12, -12, 5, -5, SensorModes.Alert)
+local WINDUP_EARLY_LEFT = pose(PoseIds.WindupEarlyLeft, 8, 7, 22, -54, -14, -18, -5, 5, SensorModes.Windup)
+local WINDUP_EARLY_RIGHT = pose(PoseIds.WindupEarlyRight, 8, -7, -54, 22, 18, 14, 5, -5, SensorModes.Windup)
+local WINDUP_LATE_LEFT = pose(PoseIds.WindupLateLeft, 15, 13, 48, -86, -25, -32, -10, 10, SensorModes.Windup)
+local WINDUP_LATE_RIGHT = pose(PoseIds.WindupLateRight, 15, -13, -86, 48, 32, 25, 10, -10, SensorModes.Windup)
 local STRIKE_ACTIVE_LEFT = pose(PoseIds.StrikeActiveLeft, -21, -11, -92, -24, -31, -6, 15, -15, SensorModes.Strike)
 local STRIKE_ACTIVE_RIGHT = pose(PoseIds.StrikeActiveRight, -21, 11, -24, -92, 6, 31, -15, 15, SensorModes.Strike)
 local STRIKE_RECOVERY_LEFT = pose(PoseIds.StrikeRecoveryLeft, 3, 6, -18, -42, 13, -16, -7, 7, SensorModes.Alert)
@@ -115,6 +128,15 @@ function EnemyPresentationPoseResolver.resolve(input: PoseInput): Pose
 
 	if input.isStoodDown then
 		return STAND_DOWN
+	end
+
+	local windupProgress = input.windupProgress
+	if input.isWindingUp and windupProgress ~= nil and windupProgress >= 0 and windupProgress <= 1 then
+		local usesLeftArm = input.windupSequence % 2 == 1
+		if windupProgress < Timing.WindupLateProgress then
+			return if usesLeftArm then WINDUP_EARLY_LEFT else WINDUP_EARLY_RIGHT
+		end
+		return if usesLeftArm then WINDUP_LATE_LEFT else WINDUP_LATE_RIGHT
 	end
 
 	local secondsSinceAttack = input.secondsSinceAttack

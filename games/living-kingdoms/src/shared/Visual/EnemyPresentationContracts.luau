@@ -2,13 +2,17 @@
 
 --[[
 	Replicated, presentation-only disclosure names for server-owned enemies.
-	These attributes describe already-committed gameplay truth. They do not
-	request attacks, select targets, apply damage, change health, or own death.
+	These attributes describe authoritative state, windup intent, and committed
+	events. They do not request attacks, select targets, apply damage, change
+	health, or own death.
 ]]
 
 local AttributeNames = table.freeze({
 	BehaviorStateId = "EnemyPresentationBehaviorStateId",
 	LifeStateId = "EnemyPresentationLifeStateId",
+	WindupSequence = "EnemyPresentationWindupSequence",
+	WindupStartedServerTimestamp = "EnemyPresentationWindupStartedServerTimestamp",
+	WindupCommitServerTimestamp = "EnemyPresentationWindupCommitServerTimestamp",
 	AttackSequence = "EnemyPresentationAttackSequence",
 	AttackServerTimestamp = "EnemyPresentationAttackServerTimestamp",
 	HitSequence = "EnemyPresentationHitSequence",
