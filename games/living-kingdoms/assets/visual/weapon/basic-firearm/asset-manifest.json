@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "assetKey": "visual.weapon.basic-firearm.model",
+  "candidateId": "blackwater-service-carbine.v1",
+  "status": "source-candidate-not-runtime-approved",
+  "sourceKind": "ProjectOriginal",
+  "sourceLicense": "Original project asset; all project rights retained",
+  "format": "OBJ multi-object source with vertex colors; animation curves in companion JSON",
+  "modelFile": "blackwater_service_carbine.obj",
+  "animationFile": "blackwater_service_carbine.animations.json",
+  "orientation": {
+    "forward": "+X",
+    "up": "+Z"
+  },
+  "sourceRootName": "WeaponRoot (integration wrapper)",
+  "robloxModelName": "BasicFirearm",
+  "componentMeshCount": 19,
+  "attachmentLocators": {
+    "RightGripAttachment": [-0.04, 0.0, -0.18],
+    "LeftGripAttachment": [0.43, 0.0, -0.02],
+    "Muzzle": [1.09, 0.0, 0.03],
+    "Magazine": [0.19, 0.0, -0.23],
+    "Ejection": [0.08, -0.115, 0.035]
+  },
+  "animationClips": [
+    { "name": "Fire", "durationSeconds": 0.11, "targetNode": "Bolt" },
+    { "name": "Reload", "durationSeconds": 1.35, "targetNode": "Magazine" },
+    { "name": "Empty", "durationSeconds": 0.22, "targetNode": "Bolt" }
+  ],
+  "gameplayAuthority": {
+    "cadence": "server",
+    "ammunition": "server",
+    "reloadAcceptance": "server",
+    "targeting": "server",
+    "hitValidation": "server",
+    "damage": "server"
+  },
+  "studioGate": {
+    "imported": false,
+    "visualReviewPassed": false,
+    "animationImportVerified": false,
+    "isometricReadabilityVerified": false,
+    "performanceVerified": false
+  }
+}
