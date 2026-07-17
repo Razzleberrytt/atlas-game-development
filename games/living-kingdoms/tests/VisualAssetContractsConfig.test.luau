@@ -107,18 +107,23 @@ end)
 assertThat(not configMutationSucceeded, "visual asset registry records must be frozen")
 
 local combinedDeclarations = fs.readFile(contractsPath) .. "\n" .. fs.readFile(configPath)
-for _, forbidden in {
-	"game:GetService",
-	"Instance.new",
-	"RemoteEvent",
-	"RemoteFunction",
-	"FireServer",
-	"FireClient",
-	"OnServerEvent",
-	"task.delay",
-	"task.spawn",
-} do
-	assertThat(not string.find(combinedDeclarations, forbidden, 1, true), "VIS-0101 declarations must not contain " .. forbidden)
+for _, forbidden in
+	{
+		"game:GetService",
+		"Instance.new",
+		"RemoteEvent",
+		"RemoteFunction",
+		"FireServer",
+		"FireClient",
+		"OnServerEvent",
+		"task.delay",
+		"task.spawn",
+	}
+do
+	assertThat(
+		not string.find(combinedDeclarations, forbidden, 1, true),
+		"VIS-0101 declarations must not contain " .. forbidden
+	)
 end
 
 local enemySource = fs.readFile(enemyPath)
