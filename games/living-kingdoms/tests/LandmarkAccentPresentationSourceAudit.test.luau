@@ -24,7 +24,10 @@ check(
 
 check(string.find(factory, 'PresentationModelName = "LandmarkSilhouettePresentation"', 1, true) ~= nil)
 check(string.find(factory, "MaximumPresentationParts = 22", 1, true) ~= nil)
-check(string.find(factory, "WorldMaterialLanguageConfig", 1, true) ~= nil, "factory must use the shared material language")
+check(
+	string.find(factory, "WorldMaterialLanguageConfig", 1, true) ~= nil,
+	"factory must use the shared material language"
+)
 for _, anchorName in
 	{
 		"Roof",

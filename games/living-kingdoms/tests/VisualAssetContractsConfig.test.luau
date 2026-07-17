@@ -120,6 +120,9 @@ for _, assetKey in
 	{
 		contracts.AssetKeys.WorldRangerStation,
 		contracts.AssetKeys.WorldMilitaryRoadblock,
+		contracts.AssetKeys.WorldCampground,
+		contracts.AssetKeys.WorldCreekCrossing,
+		contracts.AssetKeys.WorldRockyOverlook,
 	}
 do
 	local landmark = config.ByKey[assetKey]
