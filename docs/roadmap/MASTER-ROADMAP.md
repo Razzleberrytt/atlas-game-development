@@ -175,6 +175,10 @@ One to four operatives can navigate, regroup, and use only the selected bounded 
 
 Implement basic enemy lifecycle, fair spawn rules, pursuit, attacks, authored waves, roaming pressure, escalation triggers, recovery windows, and representative performance measurement.
 
+- [x] **P5-0101 — Establish the Living Kingdoms world foundation.**
+  - **Work type:** Environment, atmosphere, and documentation only.
+  - **Acceptance:** one deterministic 640 × 640 stud Appalachian exclusion-zone graybox is immediately walkable from the ranger-station insertion; dense mixed forest, terrain elevation, ridges, ravine/creek, trails, logging road, rocks, fallen timber, clearings, and natural choke points establish navigation language; all eight requested landmarks are recognizable and attributed; moonlight, readable fog, sparse emergency/generator illumination, local wind, and power fluctuation establish atmosphere; evacuation evidence communicates recent abandonment; camera bounds contain the operation; no enemy, weapon, mechanic, inventory, crafting, progression, extraction logic, or story scripting is introduced; configuration fixtures and repository tooling pass; final visual Studio review remains required and is documented honestly.
+
 ## P6 — Ammunition scarcity and supply collection
 
 Replace temporary firearm resources with server-owned finite ammunition, supply caches at authored risky locations, collection rules, clear inventory feedback, and balance telemetry sufficient to distinguish tension from unavoidable starvation.
