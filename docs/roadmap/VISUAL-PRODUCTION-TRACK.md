@@ -30,8 +30,9 @@ Weapon meshes do not own shooting. Enemy rigs do not own health, targeting, atta
   - Local bolt, magazine, empty-state, and reload motion follows server-disclosed shot, reload deadline/completion/interruption, and private ammunition-state messages.
   - Accepted shots and authoritative reload lifecycle are disclosed squad-wide so every visible operative's bolt and magazine move from the correct server-owned action; teammate ammunition counts remain private.
   - Accepted shots also drive temporary muzzle flash and casing presentation; an impact spark appears only when the server confirms that damage was applied and supplies the impact position.
+  - Hit-confirmed tracer policy now permits one 0.055-second presentation-only streak from the correct visible muzzle to the server-disclosed damage endpoint; blocked and non-damaging shots display no tracer.
   - The candidate is project-original and contains no uploaded asset ID or gameplay mutation.
-  - Still required: Roblox Studio mesh import and canonical swap, grip/isometric readability review, tracer policy, production effects, audio, and representative performance evidence.
+  - Still required: Roblox Studio mesh import and canonical swap, grip/isometric readability review, production effects, audio, and representative performance evidence.
   - Existing server-owned cadence, ammunition, reload, targeting, hit, and damage boundaries remain unchanged.
 - [ ] **VIS-0103 — Replace the standard hostile presentation.**
   - Add one canonical horde rig and bounded cosmetic variants.
@@ -78,34 +79,6 @@ The recommended first production replacements are:
 3. operative/class silhouettes;
 4. ammunition cache and interaction state;
 5. objective and extraction props;
-6. major landmarks and environment pass;
+6. world landmarks and atmosphere;
 7. special enemy and boss;
 8. cosmetic variants.
-
-This order improves what players see most often before spending effort on optional skins.
-
-## What can proceed while P6 Studio evidence is deferred
-
-The following visual work is evidence-independent and may proceed under a focused PR:
-
-- reference board and concept decisions;
-- placeholder inventory;
-- asset key/fallback/source contracts;
-- offline model or texture exploration that is not yet merged as production gameplay content;
-- canonical firearm and enemy presentation integration only when their existing gameplay footprints remain unchanged and Studio review is available.
-
-Class-effect animation, engineer resupply presentation, objective-specific production art, boss art, and cosmetic ownership runtime remain dependent on their corresponding gameplay milestones.
-
-## Visual exit criteria for MVP
-
-The MVP visual track exits when:
-
-- no release-blocking primitive or debug placeholder remains;
-- the firearm, operatives, classes, standard hostile, special enemy, boss, caches, objectives, extraction, and major landmarks are recognizable and coherent;
-- critical combat, rescue, scarcity, class, objective, boss, and result states are readable from the gameplay camera;
-- every asset preserves server authority and the canonical gameplay footprint;
-- representative horde and boss load meets the P12 performance budget;
-- critical information is not color-only or audio-only;
-- missing assets fail safely to approved fallbacks;
-- imported asset rights and sources are recorded;
-- skins, if included, are cosmetic only.
