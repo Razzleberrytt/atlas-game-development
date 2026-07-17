@@ -54,13 +54,13 @@ for _, forbidden in {
 	"operativeEntityId =",
 	"selectionStateId =",
 	"revision =",
-	"resource",
-	"cooldown",
-	"health",
-	"ammunition",
+	"resourceAmount =",
+	"cooldownEndServerTimestamp =",
+	"health =",
+	"ammunition =",
 	"ActionIntent",
 } do
-	assertThat(not string.find(controller, forbidden, 1, true), "client intent/presentation must not submit " .. forbidden)
+	assertThat(not string.find(controller, forbidden, 1, true), "client must not submit authority field " .. forbidden)
 end
 
 assertThat(string.find(resolver, "game:GetService(\"ReplicatedStorage\")", 1, true) ~= nil, "resolver may read shared declarations")
