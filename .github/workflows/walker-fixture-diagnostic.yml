@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 jobs:
-  fixtures-p-numbered:
+  fixtures-p0-p4:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -16,9 +16,9 @@ jobs:
       - shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Pp][0-9] ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Pp][0-4] ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
 
-  fixtures-pa-pf:
+  fixtures-p5:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -27,9 +27,9 @@ jobs:
       - shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Pp][A-Fa-f] ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Pp]5 ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
 
-  fixtures-pg-pl:
+  fixtures-p6:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -38,9 +38,9 @@ jobs:
       - shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Pp][G-Lg-l] ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Pp]6 ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
 
-  fixtures-pm-pr:
+  fixtures-p7:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -49,9 +49,9 @@ jobs:
       - shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Pp][M-Rm-r] ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Pp]7 ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
 
-  fixtures-ps-pz:
+  fixtures-p8:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -60,4 +60,15 @@ jobs:
       - shell: bash
         run: |
           set -euo pipefail
-          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Pp][S-Zs-z] ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Pp]8 ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+
+  fixtures-p9:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: CompeyDev/setup-rokit@v0.1.2
+        with: { version: v1.2.0, path: ., cache: false, token: "${{ github.token }}" }
+      - shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' fixture; do base="$(basename "$fixture")"; if [[ "$base" =~ ^[Pp]9 ]]; then echo "Running $fixture"; lune run "$fixture"; fi; done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
