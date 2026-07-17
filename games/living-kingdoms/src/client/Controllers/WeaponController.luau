@@ -35,6 +35,7 @@ type LifecycleState = {
 	presentationConnection: RBXScriptConnection?,
 	screenGui: ScreenGui?,
 	statusLabel: TextLabel?,
+	ammunitionLabel: TextLabel?,
 	targetHighlight: Highlight?,
 }
 
@@ -50,6 +51,7 @@ local state: LifecycleState = {
 	presentationConnection = nil,
 	screenGui = nil,
 	statusLabel = nil,
+	ammunitionLabel = nil,
 	targetHighlight = nil,
 }
 
@@ -62,6 +64,14 @@ local function setStatus(text: string)
 	if statusLabel ~= nil then
 		statusLabel.Text = text
 		statusLabel.Visible = text ~= ""
+	end
+end
+
+local function presentAmmunition(loadedRounds: number, reserveRounds: number, magazineCapacity: number)
+	local ammunitionLabel = state.ammunitionLabel
+	if ammunitionLabel ~= nil then
+		ammunitionLabel.Text = string.format("%d / %d   RESERVE %d", loadedRounds, magazineCapacity, reserveRounds)
+		ammunitionLabel.Visible = true
 	end
 end
 
@@ -122,6 +132,27 @@ local function isFiniteNumber(value: unknown): boolean
 	return type(value) == "number" and value == value and math.abs(value) < math.huge
 end
 
+local function isWholeNonnegative(value: unknown): boolean
+	return isFiniteNumber(value) and value >= 0 and value % 1 == 0
+end
+
+local function presentAmmunitionPayload(payload: any): boolean
+	if
+		payload.weaponId ~= FirearmConfig.BasicFirearm.WeaponId
+		or not isWholeNonnegative(payload.loadedRounds)
+		or not isWholeNonnegative(payload.reserveRounds)
+		or not isWholeNonnegative(payload.magazineCapacity)
+		or payload.magazineCapacity <= 0
+		or payload.loadedRounds > payload.magazineCapacity
+		or not isWholeNonnegative(payload.maximumReserveRounds)
+		or payload.reserveRounds > payload.maximumReserveRounds
+	then
+		return false
+	end
+	presentAmmunition(payload.loadedRounds, payload.reserveRounds, payload.magazineCapacity)
+	return true
+end
+
 local function onPresentationMessage(message: unknown)
 	if type(message) ~= "table" then
 		return
@@ -167,6 +198,16 @@ local function onPresentationMessage(message: unknown)
 		if payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
 			setStatus("Reload interrupted")
 		end
+	elseif kindId == CombatContracts.PresentationMessageKindIds.AmmunitionState then
+		presentAmmunitionPayload(payload)
+	elseif kindId == CombatContracts.PresentationMessageKindIds.AmmunitionCollected then
+		if
+			presentAmmunitionPayload(payload)
+			and isWholeNonnegative(payload.grantedRounds)
+			and payload.grantedRounds > 0
+		then
+			setStatus("+" .. tostring(payload.grantedRounds) .. " rifle ammunition")
+		end
 	end
 end
 
@@ -210,9 +251,25 @@ local function createStatusGui()
 	statusLabel.Visible = false
 	statusLabel.Parent = screenGui
 
+	local ammunitionLabel = Instance.new("TextLabel")
+	ammunitionLabel.Name = "Ammunition"
+	ammunitionLabel.AnchorPoint = Vector2.new(1, 1)
+	ammunitionLabel.Position = UDim2.new(1, -28, 1, -28)
+	ammunitionLabel.Size = UDim2.fromOffset(280, 42)
+	ammunitionLabel.BackgroundColor3 = Color3.fromRGB(20, 22, 26)
+	ammunitionLabel.BackgroundTransparency = 0.2
+	ammunitionLabel.BorderSizePixel = 0
+	ammunitionLabel.Font = Enum.Font.GothamBold
+	ammunitionLabel.Text = ""
+	ammunitionLabel.TextColor3 = Color3.fromRGB(245, 245, 245)
+	ammunitionLabel.TextSize = 18
+	ammunitionLabel.Visible = false
+	ammunitionLabel.Parent = screenGui
+
 	screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
 	state.screenGui = screenGui
 	state.statusLabel = statusLabel
+	state.ammunitionLabel = ammunitionLabel
 end
 
 function WeaponController.init()
@@ -260,6 +317,7 @@ function WeaponController.stop()
 		state.screenGui = nil
 	end
 	state.statusLabel = nil
+	state.ammunitionLabel = nil
 	table.clear(state.presentedShotIds)
 	state.started = false
 end
