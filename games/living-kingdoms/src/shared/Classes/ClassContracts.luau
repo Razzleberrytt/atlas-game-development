@@ -20,12 +20,7 @@ export type ClassActionStateId = "Idle" | "Active" | "Cooldown"
 export type ClassActionPhaseId = "Begin" | "End" | "Cancel"
 export type ClassSelectionStateId = "Open" | "Locked"
 
-export type ClassTargetKindId =
-	"None"
-	| "Self"
-	| "AliveTeammate"
-	| "IncapacitatedTeammate"
-	| "SelfOrAliveTeammate"
+export type ClassTargetKindId = "None" | "Self" | "AliveTeammate" | "IncapacitatedTeammate" | "SelfOrAliveTeammate"
 
 export type ClassResourceId = "class-resource.medical-charge" | "class-resource.resupply-charge"
 
