@@ -68,8 +68,8 @@ for _, forbidden in {
 	"JumpPower",
 	"JumpHeight",
 	"TakeDamage",
-	"currentHealth =",
-	"lifeStateId =",
+	"player:SetAttribute(LIFE_STATE_ATTRIBUTE",
+	"player:SetAttribute(OPERATIVE_ID_ATTRIBUTE",
 	"reloadState =",
 	"selectedTargetEntityId =",
 } do
