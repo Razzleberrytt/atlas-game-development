@@ -6,10 +6,10 @@ on:
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  publish-supply-cache-visuals:
+  diagnose-supply-cache-fixtures:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-22.04
     timeout-minutes: 15
@@ -28,11 +28,11 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Apply supply cache integration
-        run: python .github/scripts/apply_supply_cache_visuals.py
-
-      - name: Format changed Luau
+      - name: Capture first failing fixture
+        shell: bash
         run: |
+          set -euo pipefail
+          python .github/scripts/apply_supply_cache_visuals.py
           stylua \
             games/living-kingdoms/src/client/Presentation/SupplyCachePresentationConfig.luau \
             games/living-kingdoms/src/client/Presentation/SupplyCachePresentationFactory.luau \
@@ -41,52 +41,25 @@ jobs:
             games/living-kingdoms/tests/SupplyCachePresentationConfig.test.luau \
             games/living-kingdoms/tests/SupplyCacheVisualReadabilitySourceAudit.test.luau \
             games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau
-
-      - name: Check Luau formatting
-        run: stylua --check games/living-kingdoms/src
-
-      - name: Run Selene
-        run: selene games/living-kingdoms/src
-
-      - name: Run focused supply cache fixtures
-        run: |
-          lune run games/living-kingdoms/tests/SupplyCachePresentationConfig.test.luau
-          lune run games/living-kingdoms/tests/SupplyCacheVisualReadabilitySourceAudit.test.luau
-          lune run games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau
-
-      - name: Run complete Lune fixtures
-        shell: bash
-        run: |
-          set -euo pipefail
-          fixture_count=0
+          : > fixture-failure.txt
+          failure=0
           while IFS= read -r -d '' fixture; do
-            echo "::group::Lune fixture: $fixture"
-            lune run "$fixture"
-            echo "::endgroup::"
-            fixture_count=$((fixture_count + 1))
+            set +e
+            output=$(lune run "$fixture" 2>&1)
+            status=$?
+            set -e
+            if [ "$status" -ne 0 ]; then
+              printf 'FIXTURE: %s\nSTATUS: %s\n\n%s\n' "$fixture" "$status" "$output" > fixture-failure.txt
+              failure=1
+              break
+            fi
           done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
-          if [ "$fixture_count" -eq 0 ]; then
-            exit 1
+          if [ "$failure" -eq 0 ]; then
+            echo 'NO_FAILURE' > fixture-failure.txt
           fi
 
-      - name: Build Rojo project
-        run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
-
-      - name: Commit only validated product files
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add \
-            games/living-kingdoms/src/client/Presentation/SupplyCachePresentationConfig.luau \
-            games/living-kingdoms/src/client/Presentation/SupplyCachePresentationFactory.luau \
-            games/living-kingdoms/src/client/Controllers/AmmunitionCachePresentationController.luau \
-            games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau \
-            games/living-kingdoms/tests/SupplyCachePresentationConfig.test.luau \
-            games/living-kingdoms/tests/SupplyCacheVisualReadabilitySourceAudit.test.luau \
-            games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau \
-            games/living-kingdoms/assets/visual/supply/ammunition-cache/README.md \
-            games/living-kingdoms/assets/visual/supply/ammunition-cache/asset-manifest.json \
-            docs/roadmap/VISUAL-PRODUCTION-TRACK.md \
-            docs/specifications/visual-placeholder-inventory.md
-          git commit -m "feat: add supply cache visual readability"
-          git push origin HEAD:feat/supply-cache-visual-readability
+      - name: Upload fixture failure
+        uses: actions/upload-artifact@v4
+        with:
+          name: supply-cache-fixture-failure
+          path: fixture-failure.txt
