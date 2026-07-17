@@ -15,6 +15,7 @@ local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local EnemyContracts = require(ReplicatedStorage.Shared.Enemy.EnemyContracts)
 local MissionConfig = require(ReplicatedStorage.Shared.Config.MissionConfig)
 local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.OperativeLifeContracts)
+local AutomaticCombatDevelopmentHarness = require(script.Parent.AutomaticCombatDevelopmentHarness)
 local EnemyLifecycleService = require(script.Parent.EnemyLifecycleService)
 local MissionDirectorService = require(script.Parent.MissionDirectorService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
@@ -26,6 +27,7 @@ local updateConnection: RBXScriptConnection? = nil
 local requestedWaves: { [number]: boolean } = {}
 local lastAttackByEnemyId: { [string]: number } = {}
 local attackSequenceByEnemyId: { [string]: number } = {}
+local legacySpawnMissionHostile = AutomaticCombatDevelopmentHarness.spawnMissionHostile
 
 local function now(): number
 	return Workspace:GetServerTimeNow()
@@ -75,7 +77,7 @@ local function enemyPosition(entityId: string): Vector3?
 	return if root ~= nil and root:IsA("BasePart") then (root :: BasePart).Position else nil
 end
 
-local function contactBlocked(enemyEntityId: string, origin: Vector3, target: Vector3): boolean
+local function contactBlocked(origin: Vector3, target: Vector3): boolean
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	local exclusions = {}
@@ -110,7 +112,7 @@ local function evaluateAttack(enemySnapshot, serverTimestamp: number)
 	if lastAttack ~= nil and serverTimestamp < lastAttack + EnemyConfig.AttackCadenceSeconds then
 		return
 	end
-	if contactBlocked(enemySnapshot.entityId, sourcePosition + Vector3.new(0, 1.5, 0), targetPosition) then
+	if contactBlocked(sourcePosition + Vector3.new(0, 1.5, 0), targetPosition) then
 		return
 	end
 	local sequence = (attackSequenceByEnemyId[enemySnapshot.entityId] or 0) + 1
@@ -148,6 +150,12 @@ function Service.start()
 		return
 	end
 	started = true
+	-- MissionDirectorService still contains the P5-0103 Studio fixture call.
+	-- Disable only that legacy adapter while this production integration owns
+	-- authored waves; the harness keeps its two isolated P2 fixtures.
+	AutomaticCombatDevelopmentHarness.spawnMissionHostile = function(): boolean
+		return false
+	end
 	accumulatedSeconds = 0
 	updateConnection = RunService.Heartbeat:Connect(function(deltaSeconds)
 		accumulatedSeconds += deltaSeconds
@@ -164,6 +172,7 @@ function Service.stop()
 		return
 	end
 	started = false
+	AutomaticCombatDevelopmentHarness.spawnMissionHostile = legacySpawnMissionHostile
 	if updateConnection ~= nil then
 		updateConnection:Disconnect()
 		updateConnection = nil
