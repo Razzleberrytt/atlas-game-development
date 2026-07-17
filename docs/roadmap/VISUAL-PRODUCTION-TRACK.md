@@ -34,12 +34,12 @@ Weapon meshes do not own shooting. Enemy rigs do not own health, targeting, atta
 - [~] **VIS-0103 — Replace the standard hostile presentation.**
   - A deterministic 18-component Exclusion Walker source candidate and matching replicated procedural fallback replace the invisible/one-block silhouette with a broad torso, sensor face, long striking arms, claws, heavy feet, dorsal spine, and back canister.
   - The fallback exposes five presentation-only motors and a client-local pose controller for alternating roaming/pursuit stride, stationary threat-ready posture, confirmed hit reaction, death, and stand-down readability.
-  - Six server-authored model attributes disclose exact behavior/life state plus confirmed attack and hit sequences/timestamps; alternating left/right active-strike and recovery poses begin only after authoritative damage commits.
+  - Nine server-authored model attributes disclose exact behavior/life state, a cancelable 0.6-second server-owned windup, and confirmed attack/hit sequences and timestamps; alternating left/right early/late anticipation flows into matching committed strike/recovery poses.
   - The pose layer uses one client frame connection, two folder lifecycle connections, zero per-enemy connections, zero remotes, and no root, Humanoid, health, attack, or cleanup mutation; attribute writes occur only on committed changes and motor writes only when the pose ID changes.
   - The authoritative `HumanoidRootPart` remains exactly `3 x 5.6 x 3` studs and continues to own collision, movement, network ownership, targeting position, and gameplay footprint.
   - A stable presentation-only `AttackOrigin` locator remains available for later authored attack effects.
-  - Attack anticipation remains pending because the contact-damage contract has no windup disclosure; the presentation layer never predicts a strike from distance or motion.
-  - Still required: Roblox Studio mesh import/canonical swap, truthful attack anticipation, effects, audio, bounded cosmetic variants, and representative horde performance evidence.
+  - Windup is target-locked, stops Walker movement, cancels when the victim dies or leaves melee range, and commits damage only after the disclosed deadline; rejected commits retain the same windup.
+  - Still required: Roblox Studio mesh import/canonical swap, effects, audio, bounded cosmetic variants, and representative horde performance evidence.
 - [ ] **VIS-0104 — Add operative and starting-class visual identity.**
   - Add one shared operative rig plus Combat Specialist, Medic, and Engineer equipment silhouettes.
   - Integrate firearm carry, locomotion, incapacitation, revive, death, and visible class-action cues only after their gameplay states exist.

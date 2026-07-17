@@ -32,6 +32,7 @@ type EnemySpawnRequest = EnemyContracts.EnemySpawnRequest
 type EnemyWorldPosition = EnemyContracts.EnemyWorldPosition
 
 local BehaviorStateIds = EnemyContracts.EnemyBehaviorStateIds
+local AttackWindupActionIds = EnemyContracts.EnemyAttackWindupActionIds
 local PresentationAttributeNames = EnemyPresentationContracts.AttributeNames
 local PresentationLifeStateIds = EnemyPresentationContracts.LifeStateIds
 local SpawnSourceIds = EnemyContracts.EnemySpawnSourceIds
@@ -87,6 +88,10 @@ type EnemyEntry = {
 	behaviorStateId: string,
 	targetOperativeEntityId: string?,
 	lastAttackServerTimestamp: number?,
+	attackAttemptSequence: number,
+	attackWindupTargetOperativeEntityId: string?,
+	attackWindupStartedServerTimestamp: number?,
+	attackWindupPresentationSequence: number?,
 	attackPresentationSequence: number,
 	hitPresentationSequence: number,
 	healthRevision: number,
@@ -156,22 +161,44 @@ end
 local function initializePresentationAttributes(entry: EnemyEntry)
 	entry.model:SetAttribute(PresentationAttributeNames.BehaviorStateId, entry.behaviorStateId)
 	entry.model:SetAttribute(PresentationAttributeNames.LifeStateId, PresentationLifeStateIds.Alive)
+	entry.model:SetAttribute(PresentationAttributeNames.WindupSequence, 0)
+	entry.model:SetAttribute(PresentationAttributeNames.WindupStartedServerTimestamp, 0)
+	entry.model:SetAttribute(PresentationAttributeNames.WindupCommitServerTimestamp, 0)
 	entry.model:SetAttribute(PresentationAttributeNames.AttackSequence, 0)
 	entry.model:SetAttribute(PresentationAttributeNames.AttackServerTimestamp, 0)
 	entry.model:SetAttribute(PresentationAttributeNames.HitSequence, 0)
 	entry.model:SetAttribute(PresentationAttributeNames.HitServerTimestamp, 0)
 end
 
-local function discloseCommittedAttack(entry: EnemyEntry, serverTimestamp: number)
-	entry.attackPresentationSequence += 1
-	entry.model:SetAttribute(PresentationAttributeNames.AttackSequence, entry.attackPresentationSequence)
+local function clearAttackWindup(entry: EnemyEntry)
+	entry.attackWindupTargetOperativeEntityId = nil
+	entry.attackWindupStartedServerTimestamp = nil
+	entry.attackWindupPresentationSequence = nil
+end
+
+local function beginAttackWindup(entry: EnemyEntry, targetOperativeEntityId: string, serverTimestamp: number)
+	entry.attackAttemptSequence += 1
+	entry.attackWindupTargetOperativeEntityId = targetOperativeEntityId
+	entry.attackWindupStartedServerTimestamp = serverTimestamp
+	entry.attackWindupPresentationSequence = entry.attackAttemptSequence
+	entry.model:SetAttribute(PresentationAttributeNames.WindupStartedServerTimestamp, serverTimestamp)
+	entry.model:SetAttribute(
+		PresentationAttributeNames.WindupCommitServerTimestamp,
+		serverTimestamp + EnemyConfig.Walker.AttackWindupSeconds
+	)
+	entry.model:SetAttribute(PresentationAttributeNames.WindupSequence, entry.attackAttemptSequence)
+end
+
+local function discloseCommittedAttack(entry: EnemyEntry, serverTimestamp: number, presentationSequence: number)
+	entry.attackPresentationSequence = presentationSequence
 	entry.model:SetAttribute(PresentationAttributeNames.AttackServerTimestamp, serverTimestamp)
+	entry.model:SetAttribute(PresentationAttributeNames.AttackSequence, presentationSequence)
 end
 
 local function discloseCommittedHit(entry: EnemyEntry, serverTimestamp: number)
 	entry.hitPresentationSequence += 1
-	entry.model:SetAttribute(PresentationAttributeNames.HitSequence, entry.hitPresentationSequence)
 	entry.model:SetAttribute(PresentationAttributeNames.HitServerTimestamp, serverTimestamp)
+	entry.model:SetAttribute(PresentationAttributeNames.HitSequence, entry.hitPresentationSequence)
 end
 
 local function readOperativeFacts(): { EnemyOperativeFact }
@@ -280,6 +307,10 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 		behaviorStateId = if isStoodDown then BehaviorStateIds.StandDown else BehaviorStateIds.Roaming,
 		targetOperativeEntityId = nil,
 		lastAttackServerTimestamp = nil,
+		attackAttemptSequence = 0,
+		attackWindupTargetOperativeEntityId = nil,
+		attackWindupStartedServerTimestamp = nil,
+		attackWindupPresentationSequence = nil,
 		attackPresentationSequence = 0,
 		hitPresentationSequence = 0,
 		healthRevision = 1,
@@ -398,6 +429,7 @@ function EnemyDirectorService.endOperationPressure()
 	table.clear(pendingSpawns)
 	for _, entry in entries do
 		if entry.isAlive then
+			clearAttackWindup(entry)
 			setPresentationBehaviorState(entry, BehaviorStateIds.StandDown)
 			entry.targetOperativeEntityId = nil
 			entry.humanoid.WalkSpeed = 0
@@ -439,6 +471,7 @@ end
 
 local function applyDeath(entry: EnemyEntry, serverTimestamp: number)
 	entry.isAlive = false
+	clearAttackWindup(entry)
 	setPresentationBehaviorState(entry, BehaviorStateIds.Dead)
 	entry.model:SetAttribute(PresentationAttributeNames.LifeStateId, PresentationLifeStateIds.Dead)
 	entry.targetOperativeEntityId = nil
@@ -610,12 +643,30 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 		position = { x = entry.root.Position.X, y = entry.root.Position.Y, z = entry.root.Position.Z },
 		targetOperativeEntityId = entry.targetOperativeEntityId,
 		lastAttackServerTimestamp = entry.lastAttackServerTimestamp,
+		attackWindupTargetOperativeEntityId = entry.attackWindupTargetOperativeEntityId,
+		attackWindupStartedServerTimestamp = entry.attackWindupStartedServerTimestamp,
 	}, operativeFacts, serverTimestamp)
 	if decision.rejectionReasonId ~= nil then
 		return 0
 	end
 	setPresentationBehaviorState(entry, decision.behaviorStateIdAfter)
 	entry.targetOperativeEntityId = decision.targetOperativeEntityId
+
+	local windupActionId = decision.attackWindupActionId
+	if windupActionId == AttackWindupActionIds.Begin then
+		local targetId = decision.targetOperativeEntityId
+		if targetId == nil then
+			return 0
+		end
+		beginAttackWindup(entry, targetId, serverTimestamp)
+		entry.humanoid.WalkSpeed = 0
+		return 0
+	elseif windupActionId == AttackWindupActionIds.Continue then
+		entry.humanoid.WalkSpeed = 0
+		return 0
+	elseif windupActionId == AttackWindupActionIds.Cancel then
+		clearAttackWindup(entry)
+	end
 
 	if decision.behaviorStateIdAfter == BehaviorStateIds.Pursuing then
 		local targetId = decision.targetOperativeEntityId
@@ -641,30 +692,40 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 		end
 		return 0
 	end
-	if decision.behaviorStateIdAfter ~= BehaviorStateIds.Attacking then
+
+	if decision.behaviorStateIdAfter == BehaviorStateIds.WindingUp then
+		entry.humanoid.WalkSpeed = 0
+		local attack = decision.attack
+		if windupActionId ~= AttackWindupActionIds.Commit or not decision.shouldAttack or attack == nil then
+			return 0
+		end
+		local targetRead = OperativeLifeService.readByOperativeEntityId(attack.targetEntityId)
+		if targetRead == nil or targetRead.snapshot.lifeStateId ~= "Alive" then
+			return 0
+		end
+		local commit = OperativeLifeService.applyAuthoritativeDamage(attack.targetEntityId, targetRead.revision, {
+			damageEventId = attack.damageEventId,
+			sourceEntityId = attack.sourceEntityId,
+			targetEntityId = attack.targetEntityId,
+			damageAmount = attack.damageAmount,
+			serverTimestamp = attack.serverTimestamp,
+		})
+		if commit.didCommit then
+			local presentationSequence = entry.attackWindupPresentationSequence
+			if presentationSequence == nil then
+				return 0
+			end
+			entry.lastAttackServerTimestamp = attack.serverTimestamp
+			clearAttackWindup(entry)
+			setPresentationBehaviorState(entry, BehaviorStateIds.Attacking)
+			discloseCommittedAttack(entry, attack.serverTimestamp, presentationSequence)
+			return 1
+		end
 		return 0
 	end
 
-	entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond
-	local attack = decision.attack
-	if not decision.shouldAttack or attack == nil then
-		return 0
-	end
-	local targetRead = OperativeLifeService.readByOperativeEntityId(attack.targetEntityId)
-	if targetRead == nil or targetRead.snapshot.lifeStateId ~= "Alive" then
-		return 0
-	end
-	local commit = OperativeLifeService.applyAuthoritativeDamage(attack.targetEntityId, targetRead.revision, {
-		damageEventId = attack.damageEventId,
-		sourceEntityId = attack.sourceEntityId,
-		targetEntityId = attack.targetEntityId,
-		damageAmount = attack.damageAmount,
-		serverTimestamp = attack.serverTimestamp,
-	})
-	if commit.didCommit then
-		entry.lastAttackServerTimestamp = attack.serverTimestamp
-		discloseCommittedAttack(entry, attack.serverTimestamp)
-		return 1
+	if decision.behaviorStateIdAfter == BehaviorStateIds.Attacking then
+		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond
 	end
 	return 0
 end

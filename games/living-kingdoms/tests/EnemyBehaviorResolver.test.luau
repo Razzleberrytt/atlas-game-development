@@ -131,16 +131,14 @@ assert(legal.isLegal and legal.rejectionReasonId == nil)
 
 -- Stable first-failure order: duplicate precedes cap, cap precedes extent,
 -- extent precedes fairness.
-assert(
-	resolver.resolveSpawn(
-		spawnRequest(),
-		spawnFacts({
-			existingEnemyEntityIds = { ["enemy.test.alpha"] = true },
-			activeEnemyCount = 24,
-			alivePositions = { { x = 0, y = 0, z = 0 } },
-		})
-	).rejectionReasonId == "DuplicateEntityId"
-)
+assert(resolver.resolveSpawn(
+	spawnRequest(),
+	spawnFacts({
+		existingEnemyEntityIds = { ["enemy.test.alpha"] = true },
+		activeEnemyCount = 24,
+		alivePositions = { { x = 0, y = 0, z = 0 } },
+	})
+).rejectionReasonId == "DuplicateEntityId")
 assert(
 	resolver.resolveSpawn(
 		spawnRequest({ position = { x = halfExtent + 1, y = 3, z = 0 } }),
@@ -155,18 +153,20 @@ assert(
 )
 
 -- Extent boundary is inclusive.
-assert(resolver.resolveSpawn(spawnRequest({ position = { x = halfExtent, y = 3, z = -halfExtent } }), spawnFacts()).isLegal)
+assert(
+	resolver.resolveSpawn(spawnRequest({ position = { x = halfExtent, y = 3, z = -halfExtent } }), spawnFacts()).isLegal
+)
 
 -- Fairness distance is horizontal and inclusive at exactly the minimum.
 assert(
-	resolver
-		.resolveSpawn(spawnRequest(), spawnFacts({ alivePositions = { { x = minimumSpawn, y = 500, z = 0 } } }))
-		.isLegal,
+	resolver.resolveSpawn(spawnRequest(), spawnFacts({ alivePositions = { { x = minimumSpawn, y = 500, z = 0 } } })).isLegal,
 	"exactly the fair-spawn distance must be legal regardless of elevation"
 )
 assert(
-	resolver.resolveSpawn(spawnRequest(), spawnFacts({ alivePositions = { { x = minimumSpawn - 0.01, y = 0, z = 0 } } })).rejectionReasonId
-		== "TooCloseToOperative"
+	resolver.resolveSpawn(
+		spawnRequest(),
+		spawnFacts({ alivePositions = { { x = minimumSpawn - 0.01, y = 0, z = 0 } } })
+	).rejectionReasonId == "TooCloseToOperative"
 )
 assert(
 	resolver.resolveSpawn(
@@ -185,6 +185,8 @@ local function enemyFacts(overrides: { [string]: any }?)
 		position = { x = 0, y = 3, z = 0 },
 		targetOperativeEntityId = nil,
 		lastAttackServerTimestamp = nil,
+		attackWindupTargetOperativeEntityId = nil,
+		attackWindupStartedServerTimestamp = nil,
 	}
 	for key, value in overrides or {} do
 		facts[key] = value
@@ -200,7 +202,9 @@ local function operative(id: string, x: number, z: number, isAlive: boolean?)
 end
 
 assert(resolver.resolveBehavior(nil :: any, {}, 10).rejectionReasonId == "InvalidFacts")
-assert(resolver.resolveBehavior(enemyFacts({ behaviorStateId = "Sprinting" }), {}, 10).rejectionReasonId == "InvalidFacts")
+assert(
+	resolver.resolveBehavior(enemyFacts({ behaviorStateId = "Sprinting" }), {}, 10).rejectionReasonId == "InvalidFacts"
+)
 local badTime = resolver.resolveBehavior(enemyFacts({ behaviorStateId = "Pursuing" }), {}, 0 / 0)
 assert(badTime.rejectionReasonId == "InvalidTimestamp" and badTime.behaviorStateIdAfter == "Pursuing")
 assert(resolver.resolveBehavior(enemyFacts(), {}, -1).rejectionReasonId == "InvalidTimestamp")
@@ -213,7 +217,8 @@ local stood =
 assert(stood.behaviorStateIdAfter == "StandDown" and not stood.shouldAttack)
 
 -- No operative in detection: roam.
-local roaming = resolver.resolveBehavior(enemyFacts(), { operative("operative:a", walker.DetectionRadiusStuds + 1, 0) }, 10)
+local roaming =
+	resolver.resolveBehavior(enemyFacts(), { operative("operative:a", walker.DetectionRadiusStuds + 1, 0) }, 10)
 assert(roaming.behaviorStateIdAfter == "Roaming" and roaming.targetOperativeEntityId == nil)
 
 -- Dead operatives are never targets.
@@ -265,29 +270,62 @@ local committed = resolver.resolveBehavior(
 )
 assert(committed.targetOperativeEntityId == "operative:chased")
 
--- Attack range is inclusive; the first swing needs no elapsed cooldown.
-local firstSwing = resolver.resolveBehavior(enemyFacts(), { operative("operative:a", walker.AttackRangeStuds, 0) }, 10)
-assert(firstSwing.behaviorStateIdAfter == "Attacking" and firstSwing.shouldAttack)
-local attack = firstSwing.attack
+-- Attack range is inclusive, but damage begins with a real server-owned windup.
+local beginWindup = resolver.resolveBehavior(enemyFacts(), { operative("operative:a", walker.AttackRangeStuds, 0) }, 10)
+assert(beginWindup.behaviorStateIdAfter == "WindingUp")
+assert(beginWindup.attackWindupActionId == "Begin" and not beginWindup.shouldAttack and beginWindup.attack == nil)
+
+local windingFacts = enemyFacts({
+	behaviorStateId = "WindingUp",
+	targetOperativeEntityId = "operative:a",
+	attackWindupTargetOperativeEntityId = "operative:a",
+	attackWindupStartedServerTimestamp = 10,
+})
+local continuing =
+	resolver.resolveBehavior(windingFacts, { operative("operative:a", 2, 0) }, 10 + walker.AttackWindupSeconds - 0.01)
+assert(continuing.behaviorStateIdAfter == "WindingUp" and continuing.attackWindupActionId == "Continue")
+assert(not continuing.shouldAttack and continuing.attack == nil)
+local commit =
+	resolver.resolveBehavior(windingFacts, { operative("operative:a", 2, 0) }, 10 + walker.AttackWindupSeconds)
+assert(commit.behaviorStateIdAfter == "WindingUp" and commit.attackWindupActionId == "Commit" and commit.shouldAttack)
+local attack = commit.attack
 assert(attack ~= nil)
 assert(attack.damageEventId == "enemyattack:enemy.test.alpha:operative:a:10")
 assert(attack.sourceEntityId == "enemy.test.alpha" and attack.targetEntityId == "operative:a")
-assert(attack.damageAmount == walker.AttackDamage and attack.serverTimestamp == 10)
+assert(attack.damageAmount == walker.AttackDamage and attack.serverTimestamp == 10 + walker.AttackWindupSeconds)
 
--- Cooldown gate: just before is blocked but still Attacking; exactly at the
--- deadline swings again.
+local canceled =
+	resolver.resolveBehavior(windingFacts, { operative("operative:a", walker.AttackRangeStuds + 0.01, 0) }, 10.2)
+assert(canceled.behaviorStateIdAfter == "Pursuing" and canceled.attackWindupActionId == "Cancel")
+assert(not canceled.shouldAttack and canceled.attack == nil)
+
+-- Partial or fabricated windup facts are invalid.
+assert(
+	resolver.resolveBehavior(enemyFacts({ behaviorStateId = "WindingUp" }), { operative("operative:a", 2, 0) }, 10).rejectionReasonId
+		== "InvalidFacts"
+)
+assert(
+	resolver.resolveBehavior(
+		enemyFacts({ attackWindupTargetOperativeEntityId = "operative:a" }),
+		{ operative("operative:a", 2, 0) },
+		10
+	).rejectionReasonId == "InvalidFacts"
+)
+
+-- Cooldown gate: just before is blocked; exactly at the deadline starts the next windup.
 local blocked = resolver.resolveBehavior(
 	enemyFacts({ lastAttackServerTimestamp = 10 }),
 	{ operative("operative:a", 2, 0) },
 	10 + walker.AttackCooldownSeconds - 0.01
 )
-assert(blocked.behaviorStateIdAfter == "Attacking" and not blocked.shouldAttack and blocked.attack == nil)
-local secondSwing = resolver.resolveBehavior(
+assert(blocked.behaviorStateIdAfter == "Attacking" and blocked.attackWindupActionId == "None")
+assert(not blocked.shouldAttack and blocked.attack == nil)
+local secondWindup = resolver.resolveBehavior(
 	enemyFacts({ lastAttackServerTimestamp = 10 }),
 	{ operative("operative:a", 2, 0) },
 	10 + walker.AttackCooldownSeconds
 )
-assert(secondSwing.shouldAttack and secondSwing.attack ~= nil)
+assert(secondWindup.behaviorStateIdAfter == "WindingUp" and secondWindup.attackWindupActionId == "Begin")
 
 -- Just outside melee range pursues instead of attacking.
 assert(
@@ -303,8 +341,10 @@ local frozenOperatives = table.freeze({
 })
 local first = resolver.resolveBehavior(frozenEnemy, frozenOperatives, 25)
 local second = resolver.resolveBehavior(frozenEnemy, frozenOperatives, 25)
-assert(first.shouldAttack == second.shouldAttack)
-assert((first.attack :: any).damageEventId == (second.attack :: any).damageEventId)
+assert(first.shouldAttack == second.shouldAttack and not first.shouldAttack)
+assert(first.behaviorStateIdAfter == second.behaviorStateIdAfter and first.behaviorStateIdAfter == "WindingUp")
+assert(first.attackWindupActionId == second.attackWindupActionId and first.attackWindupActionId == "Begin")
+assert(first.attack == nil and second.attack == nil)
 local frozenRequest = table.freeze(spawnRequest({ position = table.freeze({ x = 0, y = 3, z = 0 }) }))
 local frozenFacts = table.freeze(spawnFacts({
 	existingEnemyEntityIds = table.freeze({}),

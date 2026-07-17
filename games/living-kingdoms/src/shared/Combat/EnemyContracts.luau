@@ -12,7 +12,9 @@ local EnemyContracts = {}
 
 export type EnemyArchetypeId = "enemy.exclusion_walker"
 
-export type EnemyBehaviorStateId = "Roaming" | "Pursuing" | "Attacking" | "StandDown" | "Dead"
+export type EnemyBehaviorStateId = "Roaming" | "Pursuing" | "WindingUp" | "Attacking" | "StandDown" | "Dead"
+
+export type EnemyAttackWindupActionId = "None" | "Begin" | "Continue" | "Cancel" | "Commit"
 
 export type EnemySpawnSourceId = "AuthoredWave" | "RoamingPressure"
 
@@ -69,6 +71,8 @@ export type EnemyBehaviorFacts = {
 	position: EnemyWorldPosition,
 	targetOperativeEntityId: string?,
 	lastAttackServerTimestamp: number?,
+	attackWindupTargetOperativeEntityId: string?,
+	attackWindupStartedServerTimestamp: number?,
 }
 
 -- One authoritative melee swing derived entirely from server-owned facts.
@@ -84,6 +88,7 @@ export type AuthoritativeEnemyAttack = {
 export type EnemyBehaviorDecision = {
 	behaviorStateIdAfter: EnemyBehaviorStateId,
 	targetOperativeEntityId: string?,
+	attackWindupActionId: EnemyAttackWindupActionId,
 	shouldAttack: boolean,
 	attack: AuthoritativeEnemyAttack?,
 	rejectionReasonId: EnemyBehaviorRejectionReasonId?,
@@ -96,9 +101,18 @@ EnemyContracts.EnemyArchetypeIds = table.freeze({
 EnemyContracts.EnemyBehaviorStateIds = table.freeze({
 	Roaming = "Roaming" :: EnemyBehaviorStateId,
 	Pursuing = "Pursuing" :: EnemyBehaviorStateId,
+	WindingUp = "WindingUp" :: EnemyBehaviorStateId,
 	Attacking = "Attacking" :: EnemyBehaviorStateId,
 	StandDown = "StandDown" :: EnemyBehaviorStateId,
 	Dead = "Dead" :: EnemyBehaviorStateId,
+})
+
+EnemyContracts.EnemyAttackWindupActionIds = table.freeze({
+	None = "None" :: EnemyAttackWindupActionId,
+	Begin = "Begin" :: EnemyAttackWindupActionId,
+	Continue = "Continue" :: EnemyAttackWindupActionId,
+	Cancel = "Cancel" :: EnemyAttackWindupActionId,
+	Commit = "Commit" :: EnemyAttackWindupActionId,
 })
 
 EnemyContracts.EnemySpawnSourceIds = table.freeze({

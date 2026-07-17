@@ -10,6 +10,8 @@ end
 
 local serverPresenter = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyPresentationService.luau")
 local director = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau")
+local behaviorResolver = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyBehaviorResolver.luau")
+local enemyConfig = fs.readFile("games/living-kingdoms/src/shared/Config/EnemyConfig.luau")
 local contracts = fs.readFile("games/living-kingdoms/src/shared/Visual/EnemyPresentationContracts.luau")
 local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/EnemyPresentationController.luau")
 local resolver = fs.readFile("games/living-kingdoms/src/client/Presentation/EnemyPresentationPoseResolver.luau")
@@ -36,6 +38,9 @@ for _, attributeName in
 	{
 		"EnemyPresentationBehaviorStateId",
 		"EnemyPresentationLifeStateId",
+		"EnemyPresentationWindupSequence",
+		"EnemyPresentationWindupStartedServerTimestamp",
+		"EnemyPresentationWindupCommitServerTimestamp",
 		"EnemyPresentationAttackSequence",
 		"EnemyPresentationAttackServerTimestamp",
 		"EnemyPresentationHitSequence",
@@ -47,10 +52,29 @@ end
 
 for _, required in
 	{
+		"AttackWindupSeconds = 0.6",
+		"AttackWindupActionIds.Begin",
+		"AttackWindupActionIds.Continue",
+		"AttackWindupActionIds.Cancel",
+		"AttackWindupActionIds.Commit",
+		"serverTimestamp < commitAt",
+		"windupTargetDistanceSquared <= attackRangeSquared",
+	}
+do
+	assertThat(
+		string.find(behaviorResolver .. enemyConfig, required, 1, true) ~= nil,
+		"windup contract missing: " .. required
+	)
+end
+
+for _, required in
+	{
 		"initializePresentationAttributes(entry)",
-		"setPresentationBehaviorState(entry, decision.behaviorStateIdAfter)",
-		"discloseCommittedAttack(entry, attack.serverTimestamp)",
+		"beginAttackWindup(entry, targetId, serverTimestamp)",
+		"clearAttackWindup(entry)",
+		"discloseCommittedAttack(entry, attack.serverTimestamp, presentationSequence)",
 		"discloseCommittedHit(entry, serverTimestamp)",
+		"PresentationAttributeNames.WindupSequence",
 		"PresentationAttributeNames.AttackSequence",
 		"PresentationAttributeNames.HitSequence",
 		"PresentationLifeStateIds.Dead",
@@ -65,11 +89,9 @@ for _, required in
 		"folder.DescendantAdded:Connect",
 		"folder.ChildRemoved:Connect",
 		"Workspace:GetServerTimeNow()",
-		"EnemyPresentationContracts.AttributeNames",
-		"PresentationAttributeNames.BehaviorStateId",
-		"PresentationAttributeNames.AttackServerTimestamp",
-		"PresentationAttributeNames.HitServerTimestamp",
-		"record.humanoid.MoveDirection.Magnitude",
+		"PresentationAttributeNames.WindupStartedServerTimestamp",
+		"PresentationAttributeNames.WindupCommitServerTimestamp",
+		"behaviorStateId == BehaviorStateIds.WindingUp",
 		"EnemyPresentationPoseResolver.resolve",
 		"record.torsoMotor.C0 =",
 		"record.sensor.Color =",
@@ -117,14 +139,16 @@ end
 
 for _, required in
 	{
+		'WindupEarlyLeft = "WindupEarlyLeft"',
+		'WindupEarlyRight = "WindupEarlyRight"',
+		'WindupLateLeft = "WindupLateLeft"',
+		'WindupLateRight = "WindupLateRight"',
+		"WindupLateProgress = 0.55",
 		'StrikeActiveLeft = "StrikeActiveLeft"',
-		'StrikeActiveRight = "StrikeActiveRight"',
-		'StrikeRecoveryLeft = "StrikeRecoveryLeft"',
 		'StrikeRecoveryRight = "StrikeRecoveryRight"',
 		"AttackActiveSeconds = 0.16",
 		"AttackRecoverySeconds = 0.52",
 		'HitReaction = "HitReaction"',
-		'ThreatReady = "ThreatReady"',
 		'StandDown = "StandDown"',
 		'Dead = "Dead"',
 		"if input.isDead then",
@@ -137,32 +161,12 @@ local requireIndex = string.find(bootstrap, "local EnemyPresentationController =
 local startIndex = string.find(bootstrap, "EnemyPresentationController.start()", 1, true)
 assertThat(
 	requireIndex ~= nil and startIndex ~= nil and requireIndex < startIndex,
-	"client bootstrap must require and start Walker state presentation"
+	"client bootstrap must start presentation"
 )
+assertThat(string.find(manifest, '"serverPresentationAttributeCount": 9', 1, true) ~= nil, "manifest attribute count")
+assertThat(string.find(manifest, '"clientFrameConnections": 1', 1, true) ~= nil, "manifest frame connection")
+assertThat(string.find(manifest, '"connectionsPerEnemy": 0', 1, true) ~= nil, "manifest per-enemy connections")
+assertThat(string.find(readme, "0.6-second server-owned windup", 1, true) ~= nil, "README windup contract")
+assertThat(string.find(roadmap, "cancelable 0.6-second server-owned windup", 1, true) ~= nil, "roadmap windup")
 
-assertThat(
-	string.find(manifest, '"serverPresentationAttributeCount": 6', 1, true) ~= nil,
-	"Walker manifest must record the six server presentation attributes"
-)
-assertThat(
-	string.find(manifest, '"clientFrameConnections": 1', 1, true) ~= nil,
-	"Walker manifest must record the one client frame connection"
-)
-assertThat(
-	string.find(manifest, '"connectionsPerEnemy": 0', 1, true) ~= nil,
-	"Walker manifest must preserve zero per-enemy connections"
-)
-assertThat(
-	string.find(readme, "six ordinary replicated model attributes", 1, true) ~= nil,
-	"Walker README must document the server disclosure contract"
-)
-assertThat(
-	string.find(roadmap, "alternating left/right active-strike and recovery poses", 1, true) ~= nil,
-	"VIS-0103 roadmap must record confirmed strike/recovery"
-)
-assertThat(
-	string.find(roadmap, "Attack anticipation remains pending", 1, true) ~= nil,
-	"roadmap must not falsely claim an attack windup"
-)
-
-print("ExclusionWalkerStateReadabilitySourceAudit: disclosure, strike/recovery, lifecycle, authority, and docs passed")
+print("ExclusionWalkerStateReadabilitySourceAudit: windup, disclosure, poses, authority, bounds, and docs passed")

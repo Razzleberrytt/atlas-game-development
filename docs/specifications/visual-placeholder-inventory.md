@@ -23,7 +23,7 @@ The registry is descriptive only. It does not load assets or change gameplay.
 | Class equipment | Combat Specialist equipment | Missing presentation | Text-only class selection | VIS-0104 |
 | Class equipment | Medic equipment | Missing presentation | Text-only class selection | VIS-0104 |
 | Class equipment | Engineer equipment | Missing presentation | Text-only class selection | VIS-0104 |
-| Enemy | Exclusion Walker model | Primitive placeholder | `EnemyPresentationService` plus `EnemyPresentationController`; motorized 18-part shell with server-authored behavior/life/attack/hit disclosure and local roaming, pursuit, threat-ready, confirmed strike/recovery, hit, stand-down, and death poses attached to the unchanged authoritative `3 x 5.6 x 3` root | VIS-0103 |
+| Enemy | Exclusion Walker model | Primitive placeholder | `EnemyPresentationService` plus `EnemyPresentationController`; motorized 18-part shell with server-authored behavior/life/windup/attack/hit disclosure and local roaming, pursuit, threat-ready, early/late windup, confirmed strike/recovery, hit, stand-down, and death poses attached to the unchanged authoritative `3 x 5.6 x 3` root | VIS-0103 |
 | Supply | Ammunition cache | Primitive placeholder | `AmmunitionCacheService`; one green metal Part and ProximityPrompt | VIS-0105 |
 | Objective | Relay console | Primitive placeholder | `MissionDirectorService`; primitive console, lamp, and ProximityPrompt | VIS-0105 / P8 |
 | Extraction | Extraction beacon | Primitive placeholder | `MissionDirectorService`; neon signal pillar, light, and billboard | VIS-0105 / P10 |
@@ -37,7 +37,7 @@ The registry is descriptive only. It does not load assets or change gameplay.
 | Landmark | Military Roadblock | Primitive placeholder | Primitive barriers, vehicle, light, and props | VIS-0105 |
 | Landmark | Extraction Clearing | Primitive placeholder | Authored primitive clearing awaiting final extraction package | VIS-0105 |
 | Effect | Basic firearm fire/impact set | Temporary presentation | Code-built muzzle flash, casing, hit-confirmed tracer, and authoritative impact cue | VIS-0102 |
-| Effect | Standard hostile attack set | Temporary presentation | Server-confirmed active-strike/recovery and hit pose cues exist; anticipation, authored particles, impact effects, and production audio remain missing | VIS-0103 |
+| Effect | Standard hostile attack set | Temporary presentation | Cancelable server-owned windup plus confirmed active-strike/recovery and hit pose cues exist; authored particles, impact effects, and production audio remain missing | VIS-0103 |
 | Audio | Basic firearm set | Missing presentation | No approved fire, reload, empty, or handling set | VIS-0102 |
 | Audio | Standard hostile set | Missing presentation | No approved alert, pursuit, attack, hit, or death set | VIS-0103 |
 | Audio | Blackwater ambience | Temporary presentation | `EnvironmentAmbienceController` code-driven ambience | VIS-0105 / VIS-0108 |
@@ -82,4 +82,4 @@ When canonical production assets begin entering the registry:
 
 ## Next task
 
-Keep VIS-0103 honest by adding a server-confirmed attack presentation fact before any strike/recovery animation, or move to the evidence-independent operative/class silhouette slice while Studio import and horde performance review remain pending.
+Complete VIS-0103 with Studio import/readability evidence, authored attack effects/audio, and representative horde performance review; otherwise move to the evidence-independent operative/class silhouette slice.

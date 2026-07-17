@@ -17,6 +17,9 @@ local contracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Visual
 local expected = {
 	"EnemyPresentationBehaviorStateId",
 	"EnemyPresentationLifeStateId",
+	"EnemyPresentationWindupSequence",
+	"EnemyPresentationWindupStartedServerTimestamp",
+	"EnemyPresentationWindupCommitServerTimestamp",
 	"EnemyPresentationAttackSequence",
 	"EnemyPresentationAttackServerTimestamp",
 	"EnemyPresentationHitSequence",
@@ -34,8 +37,8 @@ end
 assertThat(contracts.LifeStateIds.Alive == "Alive" and contracts.LifeStateIds.Dead == "Dead", "life IDs drifted")
 
 local mutationSucceeded = pcall(function()
-	contracts.AttributeNames.AttackSequence = "mutated"
+	contracts.AttributeNames.WindupSequence = "mutated"
 end)
 assertThat(not mutationSucceeded, "presentation contracts must be immutable")
 
-print("EnemyPresentationContracts: six unique immutable disclosure attributes passed")
+print("EnemyPresentationContracts: nine unique immutable disclosure attributes passed")

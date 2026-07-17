@@ -406,15 +406,24 @@ local lastMove = hunterHumanoid.movedTo[#hunterHumanoid.movedTo]
 assert(lastMove.X == 66 and lastMove.Z == 0, "pursuit must move toward the server-read operative position")
 assert(hunterHumanoid.WalkSpeed == walker.PursuitSpeedStudsPerSecond)
 
--- Attacks: in range, cooldown-gated, deterministic event IDs, Alive-only.
+-- Attacks: a server-owned windup precedes every commit and can be canceled.
 -- The spawn is fair; the operative then walks into melee range.
 reset()
 local target, targetRoot = addOperative("operative.player:7", 300, 300)
 assert(service.spawnEnemy(request("enemy.biter", 0, 0)).didSpawn)
-local attackModel = findCreated("Test Walker")
-assert(attackModel ~= nil)
 targetRoot.Position = roblox.Vector3.new(3, 2, 0)
+local biterModel = findCreated("Test Walker")
+assert(biterModel ~= nil)
 now = 10
+local windup = service.evaluateAt(now)
+assert(windup.attackCommittedCount == 0 and #damageCalls == 0)
+assert(biterModel:GetAttribute("EnemyPresentationBehaviorStateId") == "WindingUp")
+assert(biterModel:GetAttribute("EnemyPresentationWindupSequence") == 1)
+assert(biterModel:GetAttribute("EnemyPresentationWindupStartedServerTimestamp") == 10)
+assert(biterModel:GetAttribute("EnemyPresentationWindupCommitServerTimestamp") == 10 + walker.AttackWindupSeconds)
+now = 10 + walker.AttackWindupSeconds - 0.01
+assert(service.evaluateAt(now).attackCommittedCount == 0 and #damageCalls == 0)
+now = 10 + walker.AttackWindupSeconds
 local swing = service.evaluateAt(now)
 assert(swing.attackCommittedCount == 1 and #damageCalls == 1)
 assert(damageCalls[1].operativeEntityId == "operative.player:7")
@@ -422,30 +431,53 @@ assert(damageCalls[1].expectedRevision == 0)
 assert(damageCalls[1].damage.damageEventId == "enemyattack:enemy.biter:operative.player:7:10")
 assert(damageCalls[1].damage.damageAmount == walker.AttackDamage)
 assert(damageCalls[1].damage.sourceEntityId == "enemy.biter")
-assert(damageCalls[1].damage.serverTimestamp == 10)
-assert(attackModel:GetAttribute(presentationAttributes.BehaviorStateId) == "Attacking")
-assert(attackModel:GetAttribute(presentationAttributes.AttackSequence) == 1)
-assert(attackModel:GetAttribute(presentationAttributes.AttackServerTimestamp) == 10)
-now = 10 + walker.AttackCooldownSeconds - 0.01
-assert(service.evaluateAt(now).attackCommittedCount == 0, "cooldown must block the second swing")
-now = 10 + walker.AttackCooldownSeconds
-assert(service.evaluateAt(now).attackCommittedCount == 1)
-assert(#damageCalls == 2)
-assert(attackModel:GetAttribute(presentationAttributes.AttackSequence) == 2)
-assert(attackModel:GetAttribute(presentationAttributes.AttackServerTimestamp) == now)
--- A rejected life commit leaves the cooldown unarmed so the swing retries.
-rejectNextDamage = true
-now += walker.AttackCooldownSeconds
+assert(damageCalls[1].damage.serverTimestamp == now)
+assert(biterModel:GetAttribute("EnemyPresentationAttackSequence") == 1)
+assert(biterModel:GetAttribute("EnemyPresentationAttackServerTimestamp") == now)
+assert(biterModel:GetAttribute("EnemyPresentationBehaviorStateId") == "Attacking")
+
+-- Leaving melee range during windup cancels damage and resumes pursuit.
+reset()
+target, targetRoot = addOperative("operative.player:7", 300, 300)
+assert(service.spawnEnemy(request("enemy.cancel", 0, 0)).didSpawn)
+targetRoot.Position = roblox.Vector3.new(3, 2, 0)
+now = 20
 assert(service.evaluateAt(now).attackCommittedCount == 0)
-assert(
-	attackModel:GetAttribute(presentationAttributes.AttackSequence) == 2,
-	"rejected damage must not disclose an attack"
-)
+local cancelModel = findCreated("Test Walker")
+assert(cancelModel ~= nil and cancelModel:GetAttribute("EnemyPresentationWindupSequence") == 1)
+targetRoot.Position = roblox.Vector3.new(walker.AttackRangeStuds + 1, 2, 0)
 now += 0.2
-assert(service.evaluateAt(now).attackCommittedCount == 1, "rejected commits must not consume the cooldown")
-assert(attackModel:GetAttribute(presentationAttributes.AttackSequence) == 3)
-assert(attackModel:GetAttribute(presentationAttributes.AttackServerTimestamp) == now)
--- Downed operatives are not attacked.
+assert(service.evaluateAt(now).attackCommittedCount == 0 and #damageCalls == 0)
+assert(cancelModel:GetAttribute("EnemyPresentationBehaviorStateId") == "Pursuing")
+assert(cancelModel:GetAttribute("EnemyPresentationAttackSequence") == 0)
+
+-- Cooldown starts at the committed strike, then another complete windup is required.
+reset()
+target, targetRoot = addOperative("operative.player:7", 300, 300)
+assert(service.spawnEnemy(request("enemy.retry", 0, 0)).didSpawn)
+targetRoot.Position = roblox.Vector3.new(3, 2, 0)
+now = 30
+service.evaluateAt(now)
+now += walker.AttackWindupSeconds
+assert(service.evaluateAt(now).attackCommittedCount == 1)
+local firstCommitAt = now
+now = firstCommitAt + walker.AttackCooldownSeconds - 0.01
+assert(service.evaluateAt(now).attackCommittedCount == 0, "cooldown must block a new windup")
+now = firstCommitAt + walker.AttackCooldownSeconds
+assert(service.evaluateAt(now).attackCommittedCount == 0, "cooldown deadline starts a windup, not instant damage")
+local retryModel = findCreated("Test Walker")
+assert(retryModel ~= nil and retryModel:GetAttribute("EnemyPresentationWindupSequence") == 2)
+
+-- A rejected life commit keeps the same windup pending and retries without a hidden instant attack.
+rejectNextDamage = true
+now += walker.AttackWindupSeconds
+assert(service.evaluateAt(now).attackCommittedCount == 0)
+assert(retryModel:GetAttribute("EnemyPresentationBehaviorStateId") == "WindingUp")
+assert(retryModel:GetAttribute("EnemyPresentationAttackSequence") == 1)
+now += 0.2
+assert(service.evaluateAt(now).attackCommittedCount == 1, "rejected commits must retry the disclosed windup")
+assert(retryModel:GetAttribute("EnemyPresentationAttackSequence") == 2)
+-- Downed operatives never begin a windup.
 target.snapshot.lifeStateId = "Incapacitated"
 now += walker.AttackCooldownSeconds
 assert(service.evaluateAt(now).attackCommittedCount == 0, "only Alive operatives receive enemy damage")
@@ -579,7 +611,11 @@ assert(service.readEnemyCombatFacts()[1].targetOperativeEntityId == nil)
 -- Pressure can begin again (a fresh operation) and enemies wake.
 service.beginOperationPressure()
 now = 501
-assert(service.evaluateAt(now).attackCommittedCount == 1, "pressure restart must wake stood-down enemies")
+assert(service.evaluateAt(now).attackCommittedCount == 0, "pressure restart must begin a disclosed windup")
+local wokeModel = findCreated("Test Walker")
+assert(wokeModel ~= nil and wokeModel:GetAttribute(presentationAttributes.BehaviorStateId) == "WindingUp")
+now += walker.AttackWindupSeconds
+assert(service.evaluateAt(now).attackCommittedCount == 1, "woken enemies commit only after windup")
 assert(standTarget.snapshot.lifeStateId == "Alive")
 
 -- Performance bounds: one heartbeat connection, no timers, no raycasts, no

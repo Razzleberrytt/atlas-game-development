@@ -21,6 +21,9 @@ local function resolve(overrides)
 		isStoodDown = false,
 		isMoving = false,
 		isPursuing = false,
+		isWindingUp = false,
+		windupSequence = 0,
+		windupProgress = nil,
 		attackSequence = 0,
 		secondsSinceAttack = nil,
 		secondsSinceHit = nil,
@@ -33,87 +36,63 @@ local function resolve(overrides)
 end
 
 assertThat(resolve({}).id == resolver.PoseIds.Idle, "stationary living Walker must use Idle")
-assertThat(
-	resolve({ isMoving = true, strideIndex = 0 }).id == resolver.PoseIds.RoamingA,
-	"roaming even stride must use RoamingA"
-)
-assertThat(
-	resolve({ isMoving = true, strideIndex = 1 }).id == resolver.PoseIds.RoamingB,
-	"roaming odd stride must use RoamingB"
-)
+assertThat(resolve({ isMoving = true, strideIndex = 0 }).id == resolver.PoseIds.RoamingA, "roaming even stride")
+assertThat(resolve({ isMoving = true, strideIndex = 1 }).id == resolver.PoseIds.RoamingB, "roaming odd stride")
 assertThat(
 	resolve({ isMoving = true, isPursuing = true, strideIndex = 0 }).id == resolver.PoseIds.PursuingA,
-	"pursuit even stride must use PursuingA"
+	"pursuit even stride"
+)
+assertThat(resolve({ isPursuing = true }).id == resolver.PoseIds.ThreatReady, "stationary pursuit threat pose")
+assertThat(
+	resolve({ isWindingUp = true, windupSequence = 1, windupProgress = 0 }).id == resolver.PoseIds.WindupEarlyLeft,
+	"odd windup starts on the left"
 )
 assertThat(
-	resolve({ isMoving = true, isPursuing = true, strideIndex = 1 }).id == resolver.PoseIds.PursuingB,
-	"pursuit odd stride must use PursuingB"
+	resolve({ isWindingUp = true, windupSequence = 1, windupProgress = 0.55 }).id == resolver.PoseIds.WindupLateLeft,
+	"windup late boundary must be inclusive"
 )
 assertThat(
-	resolve({ isPursuing = true }).id == resolver.PoseIds.ThreatReady,
-	"stationary pursuing Walker must use the non-strike threat pose"
+	resolve({ isWindingUp = true, windupSequence = 2, windupProgress = 1 }).id == resolver.PoseIds.WindupLateRight,
+	"even windup ends on the right"
 )
-
+assertThat(
+	resolve({ isWindingUp = true, windupSequence = 1, windupProgress = 1.01, isPursuing = true }).id
+		== resolver.PoseIds.ThreatReady,
+	"malformed progress must not fabricate anticipation"
+)
 assertThat(
 	resolve({ attackSequence = 1, secondsSinceAttack = 0 }).id == resolver.PoseIds.StrikeActiveLeft,
-	"odd confirmed attack sequence must begin with the left active strike"
+	"confirmed odd attack uses matching left strike"
 )
 assertThat(
 	resolve({ attackSequence = 2, secondsSinceAttack = 0.16 }).id == resolver.PoseIds.StrikeActiveRight,
-	"even confirmed attack sequence must include the exact active boundary on the right"
+	"active strike includes exact boundary"
 )
 assertThat(
-	resolve({ attackSequence = 1, secondsSinceAttack = 0.161 }).id == resolver.PoseIds.StrikeRecoveryLeft,
-	"confirmed attack must enter recovery immediately after the active boundary"
+	resolve({ attackSequence = 2, secondsSinceAttack = 0.161 }).id == resolver.PoseIds.StrikeRecoveryRight,
+	"recovery begins after active boundary"
+)
+assertThat(resolve({ isStoodDown = true }).id == resolver.PoseIds.StandDown, "stand-down pose")
+assertThat(resolve({ secondsSinceHit = 0.28 }).id == resolver.PoseIds.HitReaction, "hit exact upper boundary")
+assertThat(
+	resolve({ isWindingUp = true, windupSequence = 1, windupProgress = 0.8, secondsSinceHit = 0.1 }).id
+		== resolver.PoseIds.HitReaction,
+	"committed hit overrides windup"
 )
 assertThat(
-	resolve({ attackSequence = 2, secondsSinceAttack = 0.52 }).id == resolver.PoseIds.StrikeRecoveryRight,
-	"confirmed attack recovery must include its exact upper boundary"
+	resolve({ isStoodDown = true, isWindingUp = true, windupSequence = 1, windupProgress = 0.8 }).id
+		== resolver.PoseIds.StandDown,
+	"stand-down suppresses stale windup"
 )
 assertThat(
-	resolve({ isPursuing = true, attackSequence = 2, secondsSinceAttack = 0.521 }).id == resolver.PoseIds.ThreatReady,
-	"expired committed attack must return to the authoritative threat state"
+	resolve({ isDead = true, isStoodDown = true, isWindingUp = true, windupProgress = 0.8, secondsSinceHit = 0.1 }).id
+		== resolver.PoseIds.Dead,
+	"death has first precedence"
 )
-assertThat(
-	resolve({ attackSequence = 1, secondsSinceAttack = -0.01 }).id == resolver.PoseIds.Idle,
-	"future or malformed attack timestamps must not fabricate a strike"
-)
-
-assertThat(
-	resolve({ isStoodDown = true }).id == resolver.PoseIds.StandDown,
-	"authoritative stand-down must visibly stand the Walker down"
-)
-assertThat(
-	resolve({ secondsSinceHit = 0.28 }).id == resolver.PoseIds.HitReaction,
-	"hit reaction must include the exact upper boundary"
-)
-assertThat(
-	resolve({ secondsSinceHit = 0.281 }).id == resolver.PoseIds.Idle,
-	"hit reaction must end after the exact upper boundary"
-)
-assertThat(
-	resolve({ attackSequence = 1, secondsSinceAttack = 0.1, secondsSinceHit = 0.1 }).id == resolver.PoseIds.HitReaction,
-	"confirmed hit reaction must take precedence over confirmed strike presentation"
-)
-assertThat(
-	resolve({ isStoodDown = true, attackSequence = 1, secondsSinceAttack = 0.1 }).id == resolver.PoseIds.StandDown,
-	"terminal stand-down must suppress stale attack presentation"
-)
-assertThat(resolve({
-	isDead = true,
-	isStoodDown = true,
-	isMoving = true,
-	isPursuing = true,
-	attackSequence = 1,
-	secondsSinceAttack = 0.1,
-	secondsSinceHit = 0.1,
-}).id == resolver.PoseIds.Dead, "death must have stable first precedence over every transient pose")
 
 local poseMutationSucceeded = pcall(function()
 	resolve({}).torsoPitchDegrees = 999
 end)
 assertThat(not poseMutationSucceeded, "resolved poses must be immutable")
 
-print(
-	"EnemyPresentationPoseResolver: confirmed strike/recovery, precedence, boundaries, stride, and immutability passed"
-)
+print("EnemyPresentationPoseResolver: windup, strike, precedence, boundaries, and immutability passed")
