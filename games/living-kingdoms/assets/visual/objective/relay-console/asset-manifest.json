@@ -1,0 +1,19 @@
+{
+  "assetKey": "objective.relay-console.model",
+  "candidateId": "relay-console-procedural.v1",
+  "status": "PrimitivePlaceholder",
+  "runtimeOwner": "src/client/Controllers/MissionObjectPresentationController.luau",
+  "presentationRoot": "RelayConsolePresentation",
+  "authoritativeRoot": "RelayConsole/ConsoleBody",
+  "truthSource": "ValidatedSafeMissionSnapshot",
+  "maximumPresentationParts": 11,
+  "globalConnections": 3,
+  "perObjectConnections": 0,
+  "frameConnections": 0,
+  "timerCount": 0,
+  "newRemoteCount": 0,
+  "serverRuntimeChanges": 0,
+  "changesPrompt": false,
+  "changesCollision": false,
+  "studioApproved": false
+}

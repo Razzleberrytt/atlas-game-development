@@ -1,0 +1,19 @@
+{
+  "assetKey": "extraction.beacon.model",
+  "candidateId": "extraction-beacon-procedural.v1",
+  "status": "PrimitivePlaceholder",
+  "runtimeOwner": "src/client/Controllers/MissionObjectPresentationController.luau",
+  "presentationRoot": "ExtractionBeaconPresentation",
+  "authoritativeRoot": "ExtractionBeacon/SignalPillar",
+  "truthSource": "ValidatedSafeMissionSnapshotAndServerObjectExistence",
+  "maximumPresentationParts": 12,
+  "globalConnections": 3,
+  "perObjectConnections": 0,
+  "frameConnections": 0,
+  "timerCount": 0,
+  "newRemoteCount": 0,
+  "serverRuntimeChanges": 0,
+  "changesExtractionRadius": false,
+  "changesOutcome": false,
+  "studioApproved": false
+}
