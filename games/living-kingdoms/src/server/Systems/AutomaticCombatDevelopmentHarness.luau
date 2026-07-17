@@ -52,12 +52,19 @@ type PlayerCombatState = {
 	processedShotIds: { [string]: boolean },
 }
 
+export type MissionHostileDefinition = {
+	entityId: string,
+	name: string,
+	position: Vector3,
+}
+
 type AutomaticCombatDevelopmentHarness = {
 	start: () -> (),
 	stop: () -> (),
 	readReviveCombatState: (player: Player) -> any?,
 	commitReviveCombatState: (player: Player, expectedGeneration: number, combatState: any) -> boolean,
 	readDevelopmentCombatState: (player: Player) -> any?,
+	spawnMissionHostile: (definition: MissionHostileDefinition) -> boolean,
 }
 
 local FIXTURE_FOLDER_NAME = "LK0207CombatFixtures"
@@ -261,6 +268,34 @@ local function createFixtures()
 		table.insert(hostileFixtures, fixture)
 		hostileByEntityId[fixture.entityId] = fixture
 	end
+end
+
+-- P5-0103 escalation reuses these exact stationary fixtures instead of a new
+-- enemy archetype. Outside Studio the harness never starts, so this returns
+-- false and the mission continues without combat pressure.
+function AutomaticCombatDevelopmentHarness.spawnMissionHostile(definition: MissionHostileDefinition): boolean
+	local folder = fixtureFolder
+	if
+		not started
+		or folder == nil
+		or type(definition) ~= "table"
+		or type(definition.entityId) ~= "string"
+		or definition.entityId == ""
+		or type(definition.name) ~= "string"
+		or definition.name == ""
+		or typeof(definition.position) ~= "Vector3"
+		or hostileByEntityId[definition.entityId] ~= nil
+	then
+		return false
+	end
+	local fixture = createHostileFixture(folder, {
+		entityId = definition.entityId,
+		name = definition.name,
+		position = definition.position,
+	})
+	table.insert(hostileFixtures, fixture)
+	hostileByEntityId[fixture.entityId] = fixture
+	return true
 end
 
 local function getOperativePosition(player: Player): Vector3?

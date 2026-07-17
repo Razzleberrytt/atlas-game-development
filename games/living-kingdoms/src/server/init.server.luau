@@ -48,8 +48,30 @@ local function ensureSquadPingNetwork()
 	end
 end
 
+local function ensureMissionNetwork()
+	local existingNetwork = ReplicatedStorage:FindFirstChild("MissionNetwork")
+	local network: Folder
+	if existingNetwork == nil then
+		network = Instance.new("Folder")
+		network.Name = "MissionNetwork"
+		network.Parent = ReplicatedStorage
+	else
+		assert(existingNetwork:IsA("Folder"), "MissionNetwork must be a Folder")
+		network = existingNetwork
+	end
+	local existingRemote = network:FindFirstChild("State")
+	if existingRemote == nil then
+		local remote = Instance.new("RemoteEvent")
+		remote.Name = "State"
+		remote.Parent = network
+	else
+		assert(existingRemote:IsA("RemoteEvent"), "State must be a RemoteEvent")
+	end
+end
+
 ensureFlashlightNetwork()
 ensureSquadPingNetwork()
+ensureMissionNetwork()
 
 local MovementValidationSystem = require(script.Systems.MovementValidationSystem)
 local MovementStateReplicationSystem = require(script.Systems.MovementStateReplicationSystem)
@@ -62,6 +84,7 @@ local SquadFailureService = require(script.Systems.SquadFailureService)
 local PersonalFlashlightService = require(script.Systems.PersonalFlashlightService)
 local SquadPingService = require(script.Systems.SquadPingService)
 local WorldFoundationService = require(script.Systems.WorldFoundationService)
+local MissionDirectorService = require(script.Systems.MissionDirectorService)
 
 WorldFoundationService.start()
 OperativeLifeService.start()
@@ -74,5 +97,6 @@ OperativeLifeDevelopmentHarness.start()
 MovementValidationSystem.start()
 MovementStateReplicationSystem.start()
 AutomaticCombatDevelopmentHarness.start()
+MissionDirectorService.start()
 
 print("[Living Kingdoms] Server bootstrap started")
