@@ -1,0 +1,361 @@
+name: VIS-0102 authoritative shot effects patch
+
+on:
+  push:
+    branches:
+      - "agent/vis-0102-authoritative-shot-effects"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/vis-0102-authoritative-shot-effects
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Apply authoritative shot presentation patch
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path_string: str, before: str, after: str) -> None:
+              path = Path(path_string)
+              source = path.read_text()
+              if source.count(before) != 1:
+                  raise SystemExit(f"expected exactly one match in {path_string}: {source.count(before)}")
+              path.write_text(source.replace(before, after, 1))
+
+          replace_once(
+              "games/living-kingdoms/src/shared/Combat/CombatContracts.luau",
+              '''export type ShotFiredPresentationMessage = {
+          \tkindId: "ShotFired",
+          \tshotId: ShotId,
+          \toperativeEntityId: CombatEntityId,
+          \tweaponId: WeaponId,
+          \ttargetEntityId: CombatEntityId,
+          \tserverTimestamp: number,
+          }
+          ''',
+              '''export type ShotFiredPresentationMessage = {
+          \tkindId: "ShotFired",
+          \tshotId: ShotId,
+          \toperativeEntityId: CombatEntityId,
+          \tweaponId: WeaponId,
+          \ttargetEntityId: CombatEntityId,
+          \tdidApplyDamage: boolean,
+          \timpactWorldPosition: Vector3?,
+          \tserverTimestamp: number,
+          }
+          ''',
+          )
+
+          replace_once(
+              "games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau",
+              '''\tpresentationRemote:FireClient(player, {
+          \t\tkindId = CombatContracts.PresentationMessageKindIds.ShotFired,
+          \t\tshotId = shotId,
+          \t\toperativeEntityId = playerState.operativeState.entityId,
+          \t\tweaponId = FirearmConfig.BasicFirearm.WeaponId,
+          \t\ttargetEntityId = targetEntityId,
+          \t\tserverTimestamp = nowTimestamp,
+          \t})
+          ''',
+              '''\tpresentationRemote:FireAllClients({
+          \t\tkindId = CombatContracts.PresentationMessageKindIds.ShotFired,
+          \t\tshotId = shotId,
+          \t\toperativeEntityId = playerState.operativeState.entityId,
+          \t\tweaponId = FirearmConfig.BasicFirearm.WeaponId,
+          \t\ttargetEntityId = targetEntityId,
+          \t\tdidApplyDamage = damageResolution.didApplyDamage,
+          \t\timpactWorldPosition = if damageResolution.didApplyDamage then fact.worldPosition else nil,
+          \t\tserverTimestamp = nowTimestamp,
+          \t})
+          ''',
+          )
+
+          replace_once(
+              "games/living-kingdoms/src/client/Presentation/BasicFirearmPresentationFactory.luau",
+              '''\tejectionAttachment: Attachment,
+          }
+          ''',
+              '''\tejectionAttachment: Attachment,
+          \tmuzzleFlash: BasePart,
+          \tmuzzleLight: PointLight,
+          }
+          ''',
+          )
+          replace_once(
+              "games/living-kingdoms/src/client/Presentation/BasicFirearmPresentationFactory.luau",
+              '''\tlocal ejectionAttachment = makeAttachment(root, "Ejection", Vector3.new(0.24, -0.345, 0.105))
+          
+          \treturn table.freeze({
+          ''',
+              '''\tlocal ejectionAttachment = makeAttachment(root, "Ejection", Vector3.new(0.24, -0.345, 0.105))
+          
+          \tlocal muzzleFlash = makeBox(
+          \t\tmodel,
+          \t\troot,
+          \t\t"MuzzleFlash",
+          \t\tVector3.new(0.42, 0.42, 0.42),
+          \t\tCFrame.new(3.45, 0, 0.09),
+          \t\tColor3.fromRGB(255, 205, 92),
+          \t\tEnum.Material.Neon
+          \t)
+          \tmuzzleFlash.Shape = Enum.PartType.Ball
+          \tmuzzleFlash.Transparency = 1
+          \tmuzzleFlash.CastShadow = false
+          
+          \tlocal muzzleLight = Instance.new("PointLight")
+          \tmuzzleLight.Name = "MuzzleLight"
+          \tmuzzleLight.Color = Color3.fromRGB(255, 190, 90)
+          \tmuzzleLight.Brightness = 2.2
+          \tmuzzleLight.Range = 7
+          \tmuzzleLight.Shadows = false
+          \tmuzzleLight.Enabled = false
+          \tmuzzleLight.Parent = muzzleAttachment
+          
+          \treturn table.freeze({
+          ''',
+          )
+          replace_once(
+              "games/living-kingdoms/src/client/Presentation/BasicFirearmPresentationFactory.luau",
+              '''\t\tejectionAttachment = ejectionAttachment,
+          \t})
+          ''',
+              '''\t\tejectionAttachment = ejectionAttachment,
+          \t\tmuzzleFlash = muzzleFlash,
+          \t\tmuzzleLight = muzzleLight,
+          \t})
+          ''',
+          )
+
+          replace_once(
+              "games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau",
+              '''local BasicFirearmPresentationFactory = require(script.Parent.Parent.Presentation.BasicFirearmPresentationFactory)
+          ''',
+              '''local BasicFirearmPresentationFactory = require(script.Parent.Parent.Presentation.BasicFirearmPresentationFactory)
+          local WeaponShotEffectPresenter = require(script.Parent.Parent.Presentation.WeaponShotEffectPresenter)
+          ''',
+          )
+          replace_once(
+              "games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau",
+              '''local function isWholeNonnegative(value: unknown): boolean
+          \treturn isFiniteNumber(value) and value >= 0 and value % 1 == 0
+          end
+          ''',
+              '''local function isWholeNonnegative(value: unknown): boolean
+          \treturn isFiniteNumber(value) and value >= 0 and value % 1 == 0
+          end
+          
+          local function operativeEntityIdForPlayer(player: Player): string
+          \treturn "operative.player:" .. tostring(player.UserId)
+          end
+          
+          local function playerForOperativeEntityId(operativeEntityId: string): Player?
+          \tfor _, player in Players:GetPlayers() do
+          \t\tif operativeEntityIdForPlayer(player) == operativeEntityId then
+          \t\t\treturn player
+          \t\tend
+          \tend
+          \treturn nil
+          end
+          ''',
+          )
+          replace_once(
+              "games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau",
+              '''local function playShot(shotId: string)
+          \tif not rememberShot(shotId) then
+          \t\treturn
+          \tend
+          \tlocal rig = localRig()
+          \tif rig == nil then
+          \t\treturn
+          \tend
+          \tstate.shotGeneration += 1
+          \tlocal generation = state.shotGeneration
+          \tlocal backTween = playMotorTween(
+          \t\t"Bolt",
+          \t\trig.boltMotor,
+          \t\t0.045,
+          \t\trig.boltRestC0 * BOLT_BACK_OFFSET,
+          \t\tEnum.EasingStyle.Quad,
+          \t\tEnum.EasingDirection.Out
+          \t)
+          \tbackTween.Completed:Once(function(playbackState)
+          \t\tif playbackState ~= Enum.PlaybackState.Completed or generation ~= state.shotGeneration then
+          \t\t\treturn
+          \t\tend
+          \t\tif state.lastLoadedRounds == 0 then
+          \t\t\tlockBoltOpen(0.06)
+          \t\telse
+          \t\t\tresetBolt(0.065)
+          \t\tend
+          \tend)
+          end
+          ''',
+              '''local function playShot(
+          \tshotId: string,
+          \toperativeEntityId: string,
+          \tdidApplyDamage: boolean,
+          \timpactWorldPosition: Vector3?
+          )
+          \tif not rememberShot(shotId) then
+          \t\treturn
+          \tend
+          \tlocal shooter = playerForOperativeEntityId(operativeEntityId)
+          \tif shooter == nil then
+          \t\treturn
+          \tend
+          \tlocal rig = state.rigs[shooter]
+          \tif rig == nil then
+          \t\treturn
+          \tend
+          \tWeaponShotEffectPresenter.present(rig, shotId, didApplyDamage, impactWorldPosition)
+          \tif shooter ~= Players.LocalPlayer then
+          \t\treturn
+          \tend
+          \tstate.shotGeneration += 1
+          \tlocal generation = state.shotGeneration
+          \tlocal backTween = playMotorTween(
+          \t\t"Bolt",
+          \t\trig.boltMotor,
+          \t\t0.045,
+          \t\trig.boltRestC0 * BOLT_BACK_OFFSET,
+          \t\tEnum.EasingStyle.Quad,
+          \t\tEnum.EasingDirection.Out
+          \t)
+          \tbackTween.Completed:Once(function(playbackState)
+          \t\tif playbackState ~= Enum.PlaybackState.Completed or generation ~= state.shotGeneration then
+          \t\t\treturn
+          \t\tend
+          \t\tif state.lastLoadedRounds == 0 then
+          \t\t\tlockBoltOpen(0.06)
+          \t\telse
+          \t\t\tresetBolt(0.065)
+          \t\tend
+          \tend)
+          end
+          ''',
+          )
+          replace_once(
+              "games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau",
+              '''\t\t\tand isNonEmptyString(payload.targetEntityId)
+          \t\t\tand isFiniteNumber(payload.serverTimestamp)
+          \t\tthen
+          \t\t\tplayShot(payload.shotId)
+          ''',
+              '''\t\t\tand isNonEmptyString(payload.targetEntityId)
+          \t\t\tand type(payload.didApplyDamage) == "boolean"
+          \t\t\tand (
+          \t\t\t\t(payload.didApplyDamage and typeof(payload.impactWorldPosition) == "Vector3")
+          \t\t\t\tor (not payload.didApplyDamage and payload.impactWorldPosition == nil)
+          \t\t\t)
+          \t\t\tand isFiniteNumber(payload.serverTimestamp)
+          \t\tthen
+          \t\t\tplayShot(
+          \t\t\t\tpayload.shotId,
+          \t\t\t\tpayload.operativeEntityId,
+          \t\t\t\tpayload.didApplyDamage,
+          \t\t\t\tpayload.impactWorldPosition
+          \t\t\t)
+          ''',
+          )
+
+          replace_once(
+              "games/living-kingdoms/src/client/Controllers/WeaponController.luau",
+              '''local COMBAT_ENTITY_ID_ATTRIBUTE = "CombatEntityId"
+          ''',
+              '''local COMBAT_ENTITY_ID_ATTRIBUTE = "CombatEntityId"
+          
+          local function isLocalOperativeEntityId(value: unknown): boolean
+          \tlocal localPlayer = Players.LocalPlayer
+          \treturn localPlayer ~= nil and value == "operative.player:" .. tostring(localPlayer.UserId)
+          end
+          ''',
+          )
+          replace_once(
+              "games/living-kingdoms/src/client/Controllers/WeaponController.luau",
+              '''\t\t\tisNonEmptyString(payload.shotId)
+          \t\t\tand isNonEmptyString(payload.operativeEntityId)
+          \t\t\tand payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+          ''',
+              '''\t\t\tisNonEmptyString(payload.shotId)
+          \t\t\tand isLocalOperativeEntityId(payload.operativeEntityId)
+          \t\t\tand payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+          ''',
+          )
+
+          replace_once(
+              "games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau",
+              '''\trecord(
+          \t\tKeys.EffectBasicFirearmFire,
+          \t\tFamilyIds.Effect,
+          \t\tStatusIds.MissingPresentation,
+          \t\t"src/client/Controllers/WeaponController.luau",
+          \t\t"No approved muzzle flash, casing, tracer, or impact effect set is registered.",
+          \t\t"BasicFirearmFireEffects",
+          \t\t{ "Muzzle" },
+          \t\t"weapon.basic-firearm",
+          \t\tfalse
+          \t),
+          ''',
+              '''\trecord(
+          \t\tKeys.EffectBasicFirearmFire,
+          \t\tFamilyIds.Effect,
+          \t\tStatusIds.TemporaryPresentation,
+          \t\t"src/client/Presentation/WeaponShotEffectPresenter.luau",
+          \t\t"Accepted shots now drive temporary code-built muzzle flash, casing ejection, and authoritative damage-impact presentation; tracer and production effects remain pending.",
+          \t\t"BasicFirearmFireEffects",
+          \t\t{ "Muzzle", "Ejection" },
+          \t\t"weapon.basic-firearm",
+          \t\tfalse
+          \t),
+          ''',
+          )
+
+          replace_once(
+              "docs/roadmap/VISUAL-PRODUCTION-TRACK.md",
+              '''  - The local operative's bolt and magazine move only from server-disclosed `ShotFired`, reload deadline/completion/interruption, and ammunition-state messages; remote operatives currently carry the static fallback because combat presentation is recipient-specific.
+            - The candidate is project-original and contains no uploaded asset ID or gameplay mutation.
+            - Still required: Roblox Studio mesh import and canonical swap, grip/isometric readability review, remote action presentation policy, muzzle/impact effects, audio, and representative performance evidence.
+          ''',
+              '''  - The local operative's bolt and magazine move only from server-disclosed `ShotFired`, reload deadline/completion/interruption, and ammunition-state messages.
+            - Accepted shots are now disclosed squad-wide for temporary muzzle flash and casing presentation; an impact spark appears only when the server confirms that damage was applied and supplies the impact position.
+            - The candidate is project-original and contains no uploaded asset ID or gameplay mutation.
+            - Still required: Roblox Studio mesh import and canonical swap, grip/isometric readability review, full remote bolt/reload animation policy, tracer policy, production effects, audio, and representative performance evidence.
+          ''',
+          )
+          PY
+
+          stylua \
+            games/living-kingdoms/src/shared/Combat/CombatContracts.luau \
+            games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau \
+            games/living-kingdoms/src/client/Presentation/BasicFirearmPresentationFactory.luau \
+            games/living-kingdoms/src/client/Presentation/WeaponShotEffectPresenter.luau \
+            games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau \
+            games/living-kingdoms/src/client/Controllers/WeaponController.luau \
+            games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau
+
+      - name: Commit patched presentation
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add games/living-kingdoms/src docs/roadmap/VISUAL-PRODUCTION-TRACK.md
+          git commit -m "Add authoritative firearm shot effects"
+          git push
