@@ -3,22 +3,32 @@ name: Luau validation
 on:
   pull_request:
     paths:
+      - "games/living-kingdoms/**"
+      - "rokit.toml"
+      - "stylua.toml"
+      - "selene.toml"
+      - ".github/workflows/luau-validation.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "games/living-kingdoms/**"
+      - "rokit.toml"
+      - "stylua.toml"
+      - "selene.toml"
       - ".github/workflows/luau-validation.yml"
 
 permissions:
   contents: read
 
 jobs:
-  package-visual-registry-sync:
-    if: github.actor != 'github-actions[bot]'
+  validate:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
 
     steps:
-      - name: Check out synchronization branch
+      - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: chore/sync-operative-visual-registry
 
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
@@ -28,42 +38,31 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Build and validate synchronized files
+      - name: Check Luau formatting
+        shell: bash
+        run: stylua --check games/living-kingdoms/src
+
+      - name: Run Selene
+        shell: bash
+        run: selene games/living-kingdoms/src
+
+      - name: Run Lune fixtures
         shell: bash
         run: |
           set -euo pipefail
-          python .github/scripts/sync_visual_status.py
-          python .github/scripts/sync_visual_registry_fixture.py
-          stylua \
-            games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau \
-            games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau
-          stylua --check games/living-kingdoms/src
-          selene games/living-kingdoms/src
           fixture_count=0
           while IFS= read -r -d '' fixture; do
+            echo "::group::Lune fixture: $fixture"
             lune run "$fixture"
+            echo "::endgroup::"
             fixture_count=$((fixture_count + 1))
           done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
           if [ "$fixture_count" -eq 0 ]; then
+            echo "No Living Kingdoms fixtures were discovered." >&2
             exit 1
           fi
-          rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
+          echo "Executed $fixture_count Living Kingdoms fixtures."
 
-      - name: Stage validated product files
-        run: |
-          mkdir -p visual-registry-package
-          while IFS= read -r path; do
-            mkdir -p "visual-registry-package/$(dirname "$path")"
-            cp "$path" "visual-registry-package/$path"
-          done <<'EOF'
-          games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau
-          games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau
-          docs/roadmap/VISUAL-PRODUCTION-TRACK.md
-          docs/specifications/visual-placeholder-inventory.md
-          EOF
-
-      - name: Upload validated product files
-        uses: actions/upload-artifact@v4
-        with:
-          name: operative-visual-registry-sync
-          path: visual-registry-package
+      - name: Build Rojo project
+        shell: bash
+        run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx

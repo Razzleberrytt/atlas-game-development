@@ -19,10 +19,10 @@ The registry is descriptive only. It does not load assets or change gameplay.
 | Family | Asset | Current state | Current owner / evidence | Replacement track |
 |---|---|---|---|---|
 | Weapon | Basic firearm model | Missing production presentation | `BasicFirearmPresentationFactory`; project-original Blackwater Support LMG procedural fallback and deterministic source candidate | VIS-0102 |
-| Operative | Base operative rig | Default-avatar placeholder | `OperativeLifeService`; Roblox character shell bound through `HumanoidRootPart` | VIS-0104 |
-| Class equipment | Combat Specialist equipment | Missing presentation | Text-only class selection | VIS-0104 |
-| Class equipment | Medic equipment | Missing presentation | Text-only class selection | VIS-0104 |
-| Class equipment | Engineer equipment | Missing presentation | Text-only class selection | VIS-0104 |
+| Operative | Base operative rig | Default-avatar placeholder | `OperativeLifeService`; Roblox character shell remains authoritative, with a client-local four-part procedural armor overlay from `ClassSilhouetteController` | VIS-0104 |
+| Class equipment | Combat Specialist equipment | Primitive placeholder | `ClassSilhouetteController`; broad reinforced shoulders, paired ammunition cases, back roll, and diagonal chest band from the validated class roster | VIS-0104 |
+| Class equipment | Medic equipment | Primitive placeholder | `ClassSilhouetteController`; compact pack, twin tall canisters, paired satchels, and round beacon from the validated class roster | VIS-0104 |
+| Class equipment | Engineer equipment | Primitive placeholder | `ClassSilhouetteController`; wide utility pack, squared tool cases, frame bar, and asymmetric antenna from the validated class roster | VIS-0104 |
 | Enemy | Exclusion Walker model | Primitive placeholder | `EnemyPresentationService` plus `EnemyPresentationController`; motorized 18-part shell with server-authored behavior/life/windup/attack/hit disclosure and local roaming, pursuit, threat-ready, early/late windup, confirmed strike/recovery, hit, stand-down, and death poses attached to the unchanged authoritative `3 x 5.6 x 3` root | VIS-0103 |
 | Supply | Ammunition cache | Primitive placeholder | `AmmunitionCacheService`; one green metal Part and ProximityPrompt | VIS-0105 |
 | Objective | Relay console | Primitive placeholder | `MissionDirectorService`; primitive console, lamp, and ProximityPrompt | VIS-0105 / P8 |
@@ -82,4 +82,4 @@ When canonical production assets begin entering the registry:
 
 ## Next task
 
-Complete VIS-0103 with Studio import/readability evidence, authored attack effects/audio, and representative horde performance review; otherwise move to the evidence-independent operative/class silhouette slice.
+Continue VIS-0104 with authoritative operative life-state presentation while keeping canonical rig import, gameplay-camera approval, class-action cues, avatar-scale coverage, and representative squad performance evidence pending.
