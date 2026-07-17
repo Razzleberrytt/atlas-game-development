@@ -3,22 +3,32 @@ name: Luau validation
 on:
   pull_request:
     paths:
+      - "games/living-kingdoms/**"
+      - "rokit.toml"
+      - "stylua.toml"
+      - "selene.toml"
+      - ".github/workflows/luau-validation.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "games/living-kingdoms/**"
+      - "rokit.toml"
+      - "stylua.toml"
+      - "selene.toml"
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  publish-operative-life-world-cues:
-    if: github.actor != 'github-actions[bot]'
+  validate:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
 
     steps:
-      - name: Check out life cue branch
+      - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: feat/operative-life-world-cues
 
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
@@ -28,46 +38,31 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Build and validate operative life cues
+      - name: Check Luau formatting
+        shell: bash
+        run: stylua --check games/living-kingdoms/src
+
+      - name: Run Selene
+        shell: bash
+        run: selene games/living-kingdoms/src
+
+      - name: Run Lune fixtures
         shell: bash
         run: |
           set -euo pipefail
-          python .github/scripts/apply_operative_life_world_cues.py
-          stylua \
-            games/living-kingdoms/src/client/Presentation/OperativeLifePresentationResolver.luau \
-            games/living-kingdoms/src/client/Controllers/OperativeLifeWorldPresentationController.luau \
-            games/living-kingdoms/src/client/init.client.luau \
-            games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau \
-            games/living-kingdoms/tests/OperativeLifePresentationResolver.test.luau \
-            games/living-kingdoms/tests/OperativeLifeWorldPresentationSourceAudit.test.luau \
-            games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau
-          stylua --check games/living-kingdoms/src
-          selene games/living-kingdoms/src
           fixture_count=0
           while IFS= read -r -d '' fixture; do
+            echo "::group::Lune fixture: $fixture"
             lune run "$fixture"
+            echo "::endgroup::"
             fixture_count=$((fixture_count + 1))
           done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
           if [ "$fixture_count" -eq 0 ]; then
+            echo "No Living Kingdoms fixtures were discovered." >&2
             exit 1
           fi
-          rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
+          echo "Executed $fixture_count Living Kingdoms fixtures."
 
-      - name: Commit only validated product files
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add \
-            games/living-kingdoms/src/client/Presentation/OperativeLifePresentationResolver.luau \
-            games/living-kingdoms/src/client/Controllers/OperativeLifeWorldPresentationController.luau \
-            games/living-kingdoms/src/client/init.client.luau \
-            games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau \
-            games/living-kingdoms/tests/OperativeLifePresentationResolver.test.luau \
-            games/living-kingdoms/tests/OperativeLifeWorldPresentationSourceAudit.test.luau \
-            games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau \
-            games/living-kingdoms/assets/visual/operative/life-state-cues/README.md \
-            games/living-kingdoms/assets/visual/operative/life-state-cues/asset-manifest.json \
-            docs/roadmap/VISUAL-PRODUCTION-TRACK.md \
-            docs/specifications/visual-placeholder-inventory.md
-          git commit -m "feat: add authoritative operative life-state world cues"
-          git push origin HEAD:feat/operative-life-world-cues
+      - name: Build Rojo project
+        shell: bash
+        run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
