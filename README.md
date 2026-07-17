@@ -44,8 +44,8 @@ For the reusable Studio launch check and first successful result, see the [smoke
 ## Project status
 
 **Atlas version:** 0.1  
-**Living Kingdoms phase:** P6 implementation and telemetry complete; controlled 1/2/4-operative scarcity validation and evidence-based tuning remain before P6 sign-off
+**Living Kingdoms phase:** P6 implementation and telemetry complete (`P6-0101`–`P6-0107`); the controlled 1/2/4-operative scarcity evidence matrix (`P6-0108`) and evidence-based tuning/sign-off (`P6-0109`) remain the gate. P7 contracts and server-owned class selection (`P7-0101`/`P7-0102`) are already complete under the bounded P6/P7 sequencing exception; all class-effect runtime stays blocked until P6 sign-off.
 
-**Prepared next milestone:** P7 planning is complete in `docs/specifications/mvp-specialist-classes.md`. P7 gameplay begins with shared class contracts and configuration after P6 sign-off.
+**Next actions:** the per-milestone status table and the detailed P6–P12 task breakdown live in `docs/roadmap/MASTER-ROADMAP.md`, with canonical acceptance gates in `docs/roadmap/P6-P12-EXECUTION-ROADMAP.md`. The immediate gate is the P6-0108 Studio evidence matrix; the first post-sign-off gameplay task is `P7-0103` (combat specialist vertical slice). The visual production track (`VIS-0102` firearm presentation) proceeds in parallel.
 
 Final public branding is unresolved. Living Kingdoms remains the working title and internal project identifier; naming work is outside the current scope.
