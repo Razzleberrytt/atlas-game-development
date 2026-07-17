@@ -21,12 +21,18 @@ local CACHE_FOLDER_NAME = "AmmunitionCaches"
 local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
 local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: any
 
+export type CollectionState = {
+	processedCacheIds: { [string]: boolean },
+	grantedRoundsByCacheId: { [string]: number },
+}
+
 local AmmunitionCacheService = {}
 local started = false
 local cacheFolder: Folder? = nil
 local promptConnections: { RBXScriptConnection } = {}
 local playerRemovingConnection: RBXScriptConnection? = nil
 local processedByPlayer: { [Player]: { [string]: boolean } } = {}
+local grantedRoundsByPlayer: { [Player]: { [string]: number } } = {}
 
 local function horizontalDistance(a: Vector3, b: Vector3): number
 	local dx = a.X - b.X
@@ -50,6 +56,16 @@ local function processedSetFor(player: Player): { [string]: boolean }
 	end
 	local created = {}
 	processedByPlayer[player] = created
+	return created
+end
+
+local function grantedSetFor(player: Player): { [string]: number }
+	local existing = grantedRoundsByPlayer[player]
+	if existing ~= nil then
+		return existing
+	end
+	local created = {}
+	grantedRoundsByPlayer[player] = created
 	return created
 end
 
@@ -105,9 +121,19 @@ local function tryCollect(player: Player, definition)
 		return
 	end
 	processedByPlayer[player] = table.clone(stateAfter.processedSupplyIds)
+	grantedSetFor(player)[definition.cacheId] = result.grantedRounds
 	presentationRemote:FireClient(player, {
 		kindId = CachePresentationContracts.MessageKindIds.Consumed,
 		cacheId = definition.cacheId,
+	})
+end
+
+function AmmunitionCacheService.readCollectionState(player: Player): CollectionState
+	local processed = processedByPlayer[player] or {}
+	local granted = grantedRoundsByPlayer[player] or {}
+	return table.freeze({
+		processedCacheIds = table.freeze(table.clone(processed)),
+		grantedRoundsByCacheId = table.freeze(table.clone(granted)),
 	})
 end
 
@@ -157,6 +183,7 @@ function AmmunitionCacheService.start()
 	end
 	playerRemovingConnection = Players.PlayerRemoving:Connect(function(player)
 		processedByPlayer[player] = nil
+		grantedRoundsByPlayer[player] = nil
 	end)
 end
 
@@ -174,6 +201,7 @@ function AmmunitionCacheService.stop()
 		playerRemovingConnection = nil
 	end
 	table.clear(processedByPlayer)
+	table.clear(grantedRoundsByPlayer)
 	local folder = cacheFolder
 	if folder ~= nil then
 		folder:Destroy()
