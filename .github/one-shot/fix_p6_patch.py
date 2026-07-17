@@ -17,6 +17,21 @@ new = '''replace_once(
 if text.count(old) != 1:
     raise RuntimeError(f"expected one broad contract anchor, found {text.count(old)}")
 text = text.replace(old, new, 1)
+id_old = '''replace_once(
+    contracts,
+    '\\tReloadInterrupted = "ReloadInterrupted",\\n',
+    '\\tReloadInterrupted = "ReloadInterrupted",\\n\\tAmmunitionState = "AmmunitionState",\\n\\tAmmunitionCollected = "AmmunitionCollected",\\n',
+)
+'''
+id_new = '''replace_once(
+    contracts,
+    'CombatContracts.PresentationMessageKindIds = table.freeze({\\n\\tTargetSelected = "TargetSelected",\\n\\tTargetCleared = "TargetCleared",\\n\\tShotFired = "ShotFired",\\n\\tReloadStarted = "ReloadStarted",\\n\\tReloadCompleted = "ReloadCompleted",\\n\\tReloadInterrupted = "ReloadInterrupted",\\n})',
+    'CombatContracts.PresentationMessageKindIds = table.freeze({\\n\\tTargetSelected = "TargetSelected",\\n\\tTargetCleared = "TargetCleared",\\n\\tShotFired = "ShotFired",\\n\\tReloadStarted = "ReloadStarted",\\n\\tReloadCompleted = "ReloadCompleted",\\n\\tReloadInterrupted = "ReloadInterrupted",\\n\\tAmmunitionState = "AmmunitionState",\\n\\tAmmunitionCollected = "AmmunitionCollected",\\n})',
+)
+'''
+if text.count(id_old) != 1:
+    raise RuntimeError(f"expected one broad presentation ID anchor, found {text.count(id_old)}")
+text = text.replace(id_old, id_new, 1)
 diagnostic_old = '''    text = file_path.read_text()
     if text.count(old) != 1:
 '''
