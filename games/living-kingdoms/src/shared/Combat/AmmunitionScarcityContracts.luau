@@ -11,6 +11,9 @@ local Contracts = {
 		DuplicateCollection = "DuplicateCollection",
 		NoCapacity = "NoCapacity",
 	}),
+	PresentationMessageKindIds = table.freeze({
+		AmmunitionCacheConsumed = "AmmunitionCacheConsumed",
+	}),
 }
 
 export type ScarcityAmmunitionState = {
@@ -34,6 +37,11 @@ export type CollectionResult = {
 	grantedRounds: number,
 	rejectionReasonId: string?,
 	stateAfter: ScarcityAmmunitionState,
+}
+
+export type AmmunitionCacheConsumedPresentationMessage = {
+	kindId: "AmmunitionCacheConsumed",
+	cacheId: string,
 }
 
 return table.freeze(Contracts)
