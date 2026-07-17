@@ -3,6 +3,7 @@
 local CameraController = require(script.Controllers.CameraController)
 local SurvivorController = require(script.Controllers.SurvivorController)
 local WeaponController = require(script.Controllers.WeaponController)
+local WeaponPresentationController = require(script.Controllers.WeaponPresentationController)
 local AmmunitionCachePresentationController = require(script.Controllers.AmmunitionCachePresentationController)
 local ClassSelectionController = require(script.Controllers.ClassSelectionController)
 local OperativeLifeController = require(script.Controllers.OperativeLifeController)
@@ -19,6 +20,7 @@ SurvivorController.start()
 
 WeaponController.init()
 WeaponController.start()
+WeaponPresentationController.start()
 AmmunitionCachePresentationController.start()
 
 OperativeLifeController.start()
