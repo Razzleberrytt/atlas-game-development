@@ -326,7 +326,6 @@ local function discloseTarget(
 end
 
 local function resolveAcceptedShot(
-	player: Player,
 	playerState: PlayerCombatState,
 	operativePosition: Vector3,
 	fireResult: CombatContracts.AuthoritativeFireResult,
@@ -367,12 +366,14 @@ local function resolveAcceptedShot(
 		damageResolution.targetHealthStateAfter,
 		nowTimestamp
 	)
-	presentationRemote:FireClient(player, {
+	presentationRemote:FireAllClients({
 		kindId = CombatContracts.PresentationMessageKindIds.ShotFired,
 		shotId = shotId,
 		operativeEntityId = playerState.operativeState.entityId,
 		weaponId = FirearmConfig.BasicFirearm.WeaponId,
 		targetEntityId = targetEntityId,
+		didApplyDamage = damageResolution.didApplyDamage,
+		impactWorldPosition = if damageResolution.didApplyDamage then fact.worldPosition else nil,
 		serverTimestamp = nowTimestamp,
 	})
 end
@@ -407,7 +408,7 @@ local function evaluatePlayer(player: Player, playerState: PlayerCombatState, no
 	}, selectedTarget, playerState.weaponState, nowTimestamp)
 	playerState.weaponState = fireResolution.weaponStateAfter
 	if fireResolution.decision.shouldFire then
-		resolveAcceptedShot(player, playerState, operativePosition, fireResolution.fireResult, nowTimestamp)
+		resolveAcceptedShot(playerState, operativePosition, fireResolution.fireResult, nowTimestamp)
 		OperativeCombatRuntimeService.publishAmmunitionState(player)
 	end
 end

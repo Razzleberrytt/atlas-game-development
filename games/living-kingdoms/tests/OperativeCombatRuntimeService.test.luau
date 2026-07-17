@@ -70,7 +70,12 @@ local firearmConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Co
 })()
 
 local sharedReplicatedStorage
-local function loadProduction(path: string, debugName: string, scriptParent: { [string]: unknown }?, extraRequire: ((unknown) -> any)?)
+local function loadProduction(
+	path: string,
+	debugName: string,
+	scriptParent: { [string]: unknown }?,
+	extraRequire: ((unknown) -> any)?
+)
 	local loader = luau.load(fs.readFile(path), {
 		debugName = debugName,
 		environment = {
@@ -110,10 +115,8 @@ sharedReplicatedStorage = {
 	},
 }
 
-local validator = loadProduction(
-	"games/living-kingdoms/src/server/Systems/TargetCandidateValidator.luau",
-	"TargetCandidateValidator"
-)
+local validator =
+	loadProduction("games/living-kingdoms/src/server/Systems/TargetCandidateValidator.luau", "TargetCandidateValidator")
 local selector = loadProduction(
 	"games/living-kingdoms/src/server/Systems/TargetCandidateSelector.luau",
 	"TargetCandidateSelector",
@@ -311,6 +314,9 @@ local presentationRemote = {
 	FireClient = function(_, player, payload)
 		table.insert(presentationMessages, { player = player, payload = payload })
 	end,
+	FireAllClients = function(_, payload)
+		table.insert(presentationMessages, { player = "all", payload = payload })
+	end,
 }
 local reloadIntentRemote = { OnServerEvent = reloadIntentSignal }
 local combatNetwork = {
@@ -483,7 +489,8 @@ assert(#shotMessages == 1, "a loaded weapon must fire at the acquired target")
 assert(#commitCalls == 1 and commitCalls[1].entityId == "enemy.close")
 assert(commitCalls[1].expectedRevision == 1)
 assert(
-	commitCalls[1].healthStateAfter.currentHealth == enemyConfig.Walker.MaximumHealth - firearmConfig.BasicFirearm.DamagePerHit,
+	commitCalls[1].healthStateAfter.currentHealth
+		== enemyConfig.Walker.MaximumHealth - firearmConfig.BasicFirearm.DamagePerHit,
 	"one hit must apply exactly the configured firearm damage"
 )
 local firstShotId = shotMessages[1].payload.shotId
@@ -581,14 +588,20 @@ scheduled[1].callback()
 assert(#messagesOfKind("ReloadCompleted") == 1, "the scheduled completion must transfer ammunition")
 now += firearmConfig.BasicFirearm.CadenceSeconds
 service.evaluateAt(now)
-assert(#messagesOfKind("ShotFired") == firearmConfig.BasicFirearm.MagazineCapacity + 1, "a completed reload must restore fire")
+assert(
+	#messagesOfKind("ShotFired") == firearmConfig.BasicFirearm.MagazineCapacity + 1,
+	"a completed reload must restore fire"
+)
 
 -- Revive combat-state boundary.
 local read = service.readReviveCombatState(operativeA)
 assert(read ~= nil and type(read.generation) == "number")
 assert(read.combatState.selectedTargetState == nil)
 assert(type(read.combatState.weaponState) == "table" and type(read.combatState.processedShotIds) == "table")
-assert(not service.commitReviveCombatState(operativeA, read.generation + 1, read.combatState), "stale generations must fail")
+assert(
+	not service.commitReviveCombatState(operativeA, read.generation + 1, read.combatState),
+	"stale generations must fail"
+)
 assert(service.commitReviveCombatState(operativeA, read.generation, read.combatState))
 assert(service.readReviveCombatState({ UserId = 999 }) == nil, "unknown players expose no combat state")
 
@@ -607,9 +620,20 @@ local bootstrap = fs.readFile("games/living-kingdoms/src/server/init.server.luau
 assert(string.find(bootstrap, "OperativeCombatRuntimeService.start()", 1, true) ~= nil)
 assert(string.find(bootstrap, "AutomaticCombatDevelopmentHarness", 1, true) == nil)
 assert(string.find(source, "IsStudio", 1, true) == nil, "the production runtime must run everywhere")
-for _, prohibited in { "FireAllClients", "RemoteFunction", "InvokeClient", "math.random" } do
+for _, prohibited in { "RemoteFunction", "InvokeClient", "math.random" } do
 	assert(not string.find(source, prohibited, 1, true), "combat runtime must stay narrow: " .. prohibited)
 end
+local _, broadcastCount = string.gsub(source, "presentationRemote:FireAllClients", "")
+assert(broadcastCount == 1, "only accepted shot presentation may broadcast to the squad")
+assert(
+	string.find(
+		source,
+		"presentationRemote:FireAllClients({\n\t\tkindId = CombatContracts.PresentationMessageKindIds.ShotFired",
+		1,
+		true
+	) ~= nil,
+	"the one broadcast must remain the accepted ShotFired disclosure"
+)
 local _, listenerCount = string.gsub(source, "OnServerEvent:Connect", "")
 assert(listenerCount == 1, "reload intent must remain the only client combat input")
 local reviveSource = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeReviveSessionService.luau")
@@ -618,4 +642,6 @@ assert(
 	"revive coordination must use the production combat owner"
 )
 
-print("OperativeCombatRuntimeService: P5-0106 visibility, budget, priority, fire pipeline, reload, revive, and audits passed")
+print(
+	"OperativeCombatRuntimeService: P5-0106 visibility, budget, priority, fire pipeline, reload, revive, and audits passed"
+)

@@ -17,6 +17,11 @@ local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local REQUEST_COOLDOWN_SECONDS = 0.5
 local COMBAT_ENTITY_ID_ATTRIBUTE = "CombatEntityId"
 
+local function isLocalOperativeEntityId(value: unknown): boolean
+	local localPlayer = Players.LocalPlayer
+	return localPlayer ~= nil and value == "operative.player:" .. tostring(localPlayer.UserId)
+end
+
 type WeaponController = {
 	init: () -> (),
 	start: () -> (),
@@ -176,7 +181,7 @@ local function onPresentationMessage(message: unknown)
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ShotFired then
 		if
 			isNonEmptyString(payload.shotId)
-			and isNonEmptyString(payload.operativeEntityId)
+			and isLocalOperativeEntityId(payload.operativeEntityId)
 			and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
 			and isNonEmptyString(payload.targetEntityId)
 			and isFiniteNumber(payload.serverTimestamp)
