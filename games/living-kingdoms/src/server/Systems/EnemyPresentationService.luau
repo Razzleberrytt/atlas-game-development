@@ -93,23 +93,176 @@ local function createPresentation(root: BasePart): Model
 		Enum.Material.Slate,
 		nil
 	)
-	makePart(presentation, root, "RibCage", Vector3.new(2.25, 0.42, 1.30), CFrame.new(0, 0.95, 0), COLORS.armor, Enum.Material.Metal, nil)
-	makePart(presentation, root, "ChestPlate", Vector3.new(1.55, 0.50, 1.05), CFrame.new(0, 1.42, -0.04), COLORS.armorDark, Enum.Material.Metal, nil)
-	makePart(presentation, root, "Head", Vector3.new(0.95, 0.62, 0.90), CFrame.new(0, 2.05, -0.10), COLORS.bone, Enum.Material.Slate, nil)
-	makePart(presentation, root, "Sensor", Vector3.new(0.56, 0.18, 0.30), CFrame.new(0, 2.10, -0.50), COLORS.sensor, Enum.Material.Neon, nil)
-	makePart(presentation, root, "DorsalSpine", Vector3.new(1.05, 0.36, 0.36), CFrame.new(0, 1.95, 0.25) * CFrame.Angles(0, 0, math.rad(90)), COLORS.claw, Enum.Material.Metal, Enum.PartType.Cylinder)
-	makePart(presentation, root, "ShoulderLeft", Vector3.new(0.65, 0.65, 0.80), CFrame.new(-1.35, 1.02, 0), COLORS.armor, Enum.Material.Metal, nil)
-	makePart(presentation, root, "ShoulderRight", Vector3.new(0.65, 0.65, 0.80), CFrame.new(1.35, 1.02, 0), COLORS.armor, Enum.Material.Metal, nil)
-	makePart(presentation, root, "ForearmLeft", Vector3.new(0.46, 1.55, 0.50), CFrame.new(-1.45, 0.05, 0) * CFrame.Angles(0, 0, math.rad(7)), COLORS.bone, Enum.Material.Slate, nil)
-	makePart(presentation, root, "ForearmRight", Vector3.new(0.46, 1.55, 0.50), CFrame.new(1.45, 0.05, 0) * CFrame.Angles(0, 0, math.rad(-7)), COLORS.bone, Enum.Material.Slate, nil)
-	makePart(presentation, root, "ClawLeft", Vector3.new(0.34, 0.78, 0.32), CFrame.new(-1.55, -0.95, -0.12) * CFrame.Angles(math.rad(12), 0, math.rad(6)), COLORS.claw, Enum.Material.Metal, nil)
-	makePart(presentation, root, "ClawRight", Vector3.new(0.34, 0.78, 0.32), CFrame.new(1.55, -0.95, -0.12) * CFrame.Angles(math.rad(12), 0, math.rad(-6)), COLORS.claw, Enum.Material.Metal, nil)
-	makePart(presentation, root, "HipGuard", Vector3.new(1.35, 0.52, 0.92), CFrame.new(0, -0.95, 0), COLORS.armorDark, Enum.Material.Metal, nil)
-	makePart(presentation, root, "LegLeft", Vector3.new(0.55, 1.65, 0.68), CFrame.new(-0.52, -2.00, 0.05) * CFrame.Angles(0, 0, math.rad(2)), COLORS.bone, Enum.Material.Slate, nil)
-	makePart(presentation, root, "LegRight", Vector3.new(0.55, 1.65, 0.68), CFrame.new(0.52, -2.00, 0.05) * CFrame.Angles(0, 0, math.rad(-2)), COLORS.bone, Enum.Material.Slate, nil)
-	makePart(presentation, root, "FootLeft", Vector3.new(0.70, 0.34, 1.25), CFrame.new(-0.52, -3.00, -0.28), COLORS.armor, Enum.Material.Metal, nil)
-	makePart(presentation, root, "FootRight", Vector3.new(0.70, 0.34, 1.25), CFrame.new(0.52, -3.00, -0.28), COLORS.armor, Enum.Material.Metal, nil)
-	makePart(presentation, root, "BackCanister", Vector3.new(0.95, 0.64, 0.64), CFrame.new(0, 0.28, 0.72) * CFrame.Angles(0, 0, math.rad(90)), COLORS.canister, Enum.Material.Metal, Enum.PartType.Cylinder)
+	makePart(
+		presentation,
+		root,
+		"RibCage",
+		Vector3.new(2.25, 0.42, 1.30),
+		CFrame.new(0, 0.95, 0),
+		COLORS.armor,
+		Enum.Material.Metal,
+		nil
+	)
+	makePart(
+		presentation,
+		root,
+		"ChestPlate",
+		Vector3.new(1.55, 0.50, 1.05),
+		CFrame.new(0, 1.42, -0.04),
+		COLORS.armorDark,
+		Enum.Material.Metal,
+		nil
+	)
+	makePart(
+		presentation,
+		root,
+		"Head",
+		Vector3.new(0.95, 0.62, 0.90),
+		CFrame.new(0, 2.05, -0.10),
+		COLORS.bone,
+		Enum.Material.Slate,
+		nil
+	)
+	makePart(
+		presentation,
+		root,
+		"Sensor",
+		Vector3.new(0.56, 0.18, 0.30),
+		CFrame.new(0, 2.10, -0.50),
+		COLORS.sensor,
+		Enum.Material.Neon,
+		nil
+	)
+	makePart(
+		presentation,
+		root,
+		"DorsalSpine",
+		Vector3.new(1.05, 0.36, 0.36),
+		CFrame.new(0, 1.95, 0.25) * CFrame.Angles(0, 0, math.rad(90)),
+		COLORS.claw,
+		Enum.Material.Metal,
+		Enum.PartType.Cylinder
+	)
+	makePart(
+		presentation,
+		root,
+		"ShoulderLeft",
+		Vector3.new(0.65, 0.65, 0.80),
+		CFrame.new(-1.35, 1.02, 0),
+		COLORS.armor,
+		Enum.Material.Metal,
+		nil
+	)
+	makePart(
+		presentation,
+		root,
+		"ShoulderRight",
+		Vector3.new(0.65, 0.65, 0.80),
+		CFrame.new(1.35, 1.02, 0),
+		COLORS.armor,
+		Enum.Material.Metal,
+		nil
+	)
+	makePart(
+		presentation,
+		root,
+		"ForearmLeft",
+		Vector3.new(0.46, 1.55, 0.50),
+		CFrame.new(-1.45, 0.05, 0) * CFrame.Angles(0, 0, math.rad(7)),
+		COLORS.bone,
+		Enum.Material.Slate,
+		nil
+	)
+	makePart(
+		presentation,
+		root,
+		"ForearmRight",
+		Vector3.new(0.46, 1.55, 0.50),
+		CFrame.new(1.45, 0.05, 0) * CFrame.Angles(0, 0, math.rad(-7)),
+		COLORS.bone,
+		Enum.Material.Slate,
+		nil
+	)
+	makePart(
+		presentation,
+		root,
+		"ClawLeft",
+		Vector3.new(0.34, 0.78, 0.32),
+		CFrame.new(-1.55, -0.95, -0.12) * CFrame.Angles(math.rad(12), 0, math.rad(6)),
+		COLORS.claw,
+		Enum.Material.Metal,
+		nil
+	)
+	makePart(
+		presentation,
+		root,
+		"ClawRight",
+		Vector3.new(0.34, 0.78, 0.32),
+		CFrame.new(1.55, -0.95, -0.12) * CFrame.Angles(math.rad(12), 0, math.rad(-6)),
+		COLORS.claw,
+		Enum.Material.Metal,
+		nil
+	)
+	makePart(
+		presentation,
+		root,
+		"HipGuard",
+		Vector3.new(1.35, 0.52, 0.92),
+		CFrame.new(0, -0.95, 0),
+		COLORS.armorDark,
+		Enum.Material.Metal,
+		nil
+	)
+	makePart(
+		presentation,
+		root,
+		"LegLeft",
+		Vector3.new(0.55, 1.65, 0.68),
+		CFrame.new(-0.52, -2.00, 0.05) * CFrame.Angles(0, 0, math.rad(2)),
+		COLORS.bone,
+		Enum.Material.Slate,
+		nil
+	)
+	makePart(
+		presentation,
+		root,
+		"LegRight",
+		Vector3.new(0.55, 1.65, 0.68),
+		CFrame.new(0.52, -2.00, 0.05) * CFrame.Angles(0, 0, math.rad(-2)),
+		COLORS.bone,
+		Enum.Material.Slate,
+		nil
+	)
+	makePart(
+		presentation,
+		root,
+		"FootLeft",
+		Vector3.new(0.70, 0.34, 1.25),
+		CFrame.new(-0.52, -3.00, -0.28),
+		COLORS.armor,
+		Enum.Material.Metal,
+		nil
+	)
+	makePart(
+		presentation,
+		root,
+		"FootRight",
+		Vector3.new(0.70, 0.34, 1.25),
+		CFrame.new(0.52, -3.00, -0.28),
+		COLORS.armor,
+		Enum.Material.Metal,
+		nil
+	)
+	makePart(
+		presentation,
+		root,
+		"BackCanister",
+		Vector3.new(0.95, 0.64, 0.64),
+		CFrame.new(0, 0.28, 0.72) * CFrame.Angles(0, 0, math.rad(90)),
+		COLORS.canister,
+		Enum.Material.Metal,
+		Enum.PartType.Cylinder
+	)
 
 	presentation.PrimaryPart = torso
 	return presentation
