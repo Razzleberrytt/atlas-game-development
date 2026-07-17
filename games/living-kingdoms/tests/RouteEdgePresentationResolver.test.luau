@@ -9,10 +9,11 @@ local function assertThat(condition: unknown, message: string)
 	end
 end
 
-local resolver = luau.load(fs.readFile("games/living-kingdoms/src/client/Presentation/RouteEdgePresentationResolver.luau"), {
-	debugName = "RouteEdgePresentationResolver",
-	injectGlobals = true,
-})()
+local resolver =
+	luau.load(fs.readFile("games/living-kingdoms/src/client/Presentation/RouteEdgePresentationResolver.luau"), {
+		debugName = "RouteEdgePresentationResolver",
+		injectGlobals = true,
+	})()
 
 local road = resolver.resolve({
 	segmentName = "LoggingRoad3",
@@ -34,13 +35,15 @@ assertThat(trail.leftOffsetX == -5.3 and trail.rightOffsetX == 5.3, "trail edge 
 assertThat(trail.markerWidth == 0.9 and trail.markerDepth == 0.9, "trail guide footprint drifted")
 assertThat(trail.markerCenterY == 0.97, "trail guide vertical placement drifted")
 
-for _, facts in {
-	{ segmentName = "Creek1", widthStuds = 15, heightStuds = 0.5 },
-	{ segmentName = "ExtractionClearing", widthStuds = 20, heightStuds = 1 },
-	{ segmentName = "", widthStuds = 26, heightStuds = 1 },
-	{ segmentName = "LoggingRoad1", widthStuds = 0, heightStuds = 1 },
-	{ segmentName = "SwitchbackTrail1", widthStuds = 9, heightStuds = 0 / 0 },
-} do
+for _, facts in
+	{
+		{ segmentName = "Creek1", widthStuds = 15, heightStuds = 0.5 },
+		{ segmentName = "ExtractionClearing", widthStuds = 20, heightStuds = 1 },
+		{ segmentName = "", widthStuds = 26, heightStuds = 1 },
+		{ segmentName = "LoggingRoad1", widthStuds = 0, heightStuds = 1 },
+		{ segmentName = "SwitchbackTrail1", widthStuds = 9, heightStuds = 0 / 0 },
+	}
+do
 	local hidden = resolver.resolve(facts)
 	assertThat(hidden.styleId == "Hidden", "non-route or malformed facts must remain hidden")
 end
