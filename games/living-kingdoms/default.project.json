@@ -4,6 +4,15 @@
     "$className": "DataModel",
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
+      "SquadPingNetwork": {
+        "$className": "Folder",
+        "Intent": {
+          "$className": "RemoteEvent"
+        },
+        "State": {
+          "$className": "RemoteEvent"
+        }
+      },
       "FlashlightNetwork": {
         "$className": "Folder",
         "ToggleIntent": {
