@@ -1,40 +1,45 @@
-name: Walker StyLua artifact
+name: Walker StyLua apply
 
 on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   format:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
       - uses: CompeyDev/setup-rokit@v0.1.2
         with:
           version: v1.2.0
           path: .
           cache: false
           token: ${{ github.token }}
-      - name: Format touched Walker sources
+      - name: Apply pinned StyLua
         run: |
           stylua \
             games/living-kingdoms/src/client/Controllers/EnemyPresentationController.luau \
             games/living-kingdoms/src/client/Presentation/EnemyPresentationPoseResolver.luau \
             games/living-kingdoms/src/client/init.client.luau \
             games/living-kingdoms/src/server/Systems/EnemyPresentationService.luau
-      - name: Stage formatted files
+      - name: Commit formatter output
+        shell: bash
         run: |
-          mkdir -p /tmp/walker-stylua
-          cp --parents \
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "StyLua made no changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
             games/living-kingdoms/src/client/Controllers/EnemyPresentationController.luau \
             games/living-kingdoms/src/client/Presentation/EnemyPresentationPoseResolver.luau \
             games/living-kingdoms/src/client/init.client.luau \
-            games/living-kingdoms/src/server/Systems/EnemyPresentationService.luau \
-            /tmp/walker-stylua
-      - uses: actions/upload-artifact@v4
-        with:
-          name: walker-stylua
-          path: /tmp/walker-stylua
-          if-no-files-found: error
+            games/living-kingdoms/src/server/Systems/EnemyPresentationService.luau
+          git commit -m "style(living-kingdoms): apply pinned StyLua"
+          git push origin HEAD:${{ github.head_ref }}
