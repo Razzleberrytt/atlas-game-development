@@ -28,6 +28,7 @@ Weapon meshes do not own shooting. Enemy rigs do not own health, targeting, atta
   - The current project-original Blackwater Support LMG procedural fallback provides a belt feed, ammunition box, carry handle, long barrel, heat shield, bipod, stable attachment locators, and deterministic 45-component import source; the earlier Blackwater Service Carbine source remains available for comparison and rollback.
   - Local and squad-visible bolt, ammunition-box, empty-state, and reload motion follows only server-disclosed shot and reload lifecycle messages; teammate ammunition counts remain private.
   - Accepted shots drive temporary muzzle flash, casing, hit-confirmed tracer, and authoritative damage-impact presentation.
+  - Hit-confirmed tracer policy remains implemented: only server-confirmed damaging shots with an authoritative impact position display the short-lived tracer.
   - Still required: Roblox Studio mesh import and canonical swap, grip/isometric readability review, production effects, audio, and representative performance evidence.
   - Existing server-owned cadence, ammunition, reload, targeting, hit, and damage boundaries remain unchanged.
 - [~] **VIS-0103 — Replace the standard hostile presentation.**
