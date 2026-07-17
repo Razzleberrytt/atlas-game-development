@@ -1,10 +1,4 @@
-warning[unused_variable]: player is defined, but never used
-    ┌─ games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau:329:2
-    │
-329 │     player: Player,
-    │     ^^^^^^
-
 Results:
 0 errors
-1 warnings
+0 warnings
 0 parse errors

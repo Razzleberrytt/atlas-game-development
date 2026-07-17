@@ -326,7 +326,6 @@ local function discloseTarget(
 end
 
 local function resolveAcceptedShot(
-	player: Player,
 	playerState: PlayerCombatState,
 	operativePosition: Vector3,
 	fireResult: CombatContracts.AuthoritativeFireResult,
@@ -409,7 +408,7 @@ local function evaluatePlayer(player: Player, playerState: PlayerCombatState, no
 	}, selectedTarget, playerState.weaponState, nowTimestamp)
 	playerState.weaponState = fireResolution.weaponStateAfter
 	if fireResolution.decision.shouldFire then
-		resolveAcceptedShot(player, playerState, operativePosition, fireResolution.fireResult, nowTimestamp)
+		resolveAcceptedShot(playerState, operativePosition, fireResolution.fireResult, nowTimestamp)
 		OperativeCombatRuntimeService.publishAmmunitionState(player)
 	end
 end
