@@ -16,9 +16,7 @@ local resolver = luau.load(fs.readFile(path), {
 })()
 
 check(resolver.resolve("RangerStation", "RangerStation", true) == resolver.StyleIds.RangerStation)
-check(
-	resolver.resolve("MilitaryRoadblock", "MilitaryRoadblock", true) == resolver.StyleIds.MilitaryRoadblock
-)
+check(resolver.resolve("MilitaryRoadblock", "MilitaryRoadblock", true) == resolver.StyleIds.MilitaryRoadblock)
 check(resolver.resolve("RangerStation", "MilitaryRoadblock", true) == nil, "mismatched identity must hide")
 check(resolver.resolve("MilitaryRoadblock", "RangerStation", true) == nil, "mismatched identity must hide")
 check(resolver.resolve("RangerStation", "RangerStation", false) == nil, "non-graybox model must hide")

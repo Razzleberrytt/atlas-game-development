@@ -8,15 +8,9 @@ local function check(condition: unknown, message: string?)
 	end
 end
 
-local resolver = fs.readFile(
-	"games/living-kingdoms/src/client/Presentation/LandmarkAccentPresentationResolver.luau"
-)
-local factory = fs.readFile(
-	"games/living-kingdoms/src/client/Presentation/LandmarkAccentPresentationFactory.luau"
-)
-local controller = fs.readFile(
-	"games/living-kingdoms/src/client/Controllers/LandmarkAccentPresentationController.luau"
-)
+local resolver = fs.readFile("games/living-kingdoms/src/client/Presentation/LandmarkAccentPresentationResolver.luau")
+local factory = fs.readFile("games/living-kingdoms/src/client/Presentation/LandmarkAccentPresentationFactory.luau")
+local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/LandmarkAccentPresentationController.luau")
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 
 check(string.find(resolver, 'RangerStation = "RangerStation"', 1, true) ~= nil)
