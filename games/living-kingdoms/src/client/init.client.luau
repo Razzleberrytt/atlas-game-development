@@ -7,6 +7,7 @@ local OperativeLifeController = require(script.Controllers.OperativeLifeControll
 local PersonalFlashlightController = require(script.Controllers.PersonalFlashlightController)
 local SquadPingController = require(script.Controllers.SquadPingController)
 local EnvironmentAmbienceController = require(script.Controllers.EnvironmentAmbienceController)
+local MissionController = require(script.Controllers.MissionController)
 
 CameraController.init()
 CameraController.start()
@@ -21,5 +22,6 @@ OperativeLifeController.start()
 PersonalFlashlightController.start()
 SquadPingController.start()
 EnvironmentAmbienceController.start()
+MissionController.start()
 
 print("[Living Kingdoms] Client bootstrap started")
