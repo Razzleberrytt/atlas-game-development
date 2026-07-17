@@ -5,9 +5,11 @@
   "status": "source-candidate-not-runtime-approved",
   "sourceKind": "ProjectOriginal",
   "sourceLicense": "Original project asset; all project rights retained",
-  "format": "OBJ multi-object source with vertex colors; animation curves in companion JSON",
-  "modelFile": "blackwater_service_carbine.obj",
+  "generatorFile": "generate_blackwater_carbine.py",
+  "generatedModelFile": "blackwater_service_carbine.obj",
+  "generatedPreviewFile": "blackwater_service_carbine_preview.svg",
   "animationFile": "blackwater_service_carbine.animations.json",
+  "format": "Generated OBJ multi-object source with vertex colors; animation curves in companion JSON",
   "orientation": {
     "forward": "+X",
     "up": "+Z"
