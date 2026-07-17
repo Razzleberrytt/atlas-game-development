@@ -6,10 +6,10 @@ on:
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  package-operative-life-world-cues:
+  publish-operative-life-world-cues:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-22.04
     timeout-minutes: 15
@@ -53,28 +53,21 @@ jobs:
           fi
           rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
 
-      - name: Stage validated product files
+      - name: Commit only validated product files
         run: |
-          mkdir -p operative-life-cue-package
-          while IFS= read -r path; do
-            mkdir -p "operative-life-cue-package/$(dirname "$path")"
-            cp "$path" "operative-life-cue-package/$path"
-          done <<'EOF'
-          games/living-kingdoms/src/client/Presentation/OperativeLifePresentationResolver.luau
-          games/living-kingdoms/src/client/Controllers/OperativeLifeWorldPresentationController.luau
-          games/living-kingdoms/src/client/init.client.luau
-          games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau
-          games/living-kingdoms/tests/OperativeLifePresentationResolver.test.luau
-          games/living-kingdoms/tests/OperativeLifeWorldPresentationSourceAudit.test.luau
-          games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau
-          games/living-kingdoms/assets/visual/operative/life-state-cues/README.md
-          games/living-kingdoms/assets/visual/operative/life-state-cues/asset-manifest.json
-          docs/roadmap/VISUAL-PRODUCTION-TRACK.md
-          docs/specifications/visual-placeholder-inventory.md
-          EOF
-
-      - name: Upload validated product files
-        uses: actions/upload-artifact@v4
-        with:
-          name: operative-life-world-cues
-          path: operative-life-cue-package
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add \
+            games/living-kingdoms/src/client/Presentation/OperativeLifePresentationResolver.luau \
+            games/living-kingdoms/src/client/Controllers/OperativeLifeWorldPresentationController.luau \
+            games/living-kingdoms/src/client/init.client.luau \
+            games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau \
+            games/living-kingdoms/tests/OperativeLifePresentationResolver.test.luau \
+            games/living-kingdoms/tests/OperativeLifeWorldPresentationSourceAudit.test.luau \
+            games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau \
+            games/living-kingdoms/assets/visual/operative/life-state-cues/README.md \
+            games/living-kingdoms/assets/visual/operative/life-state-cues/asset-manifest.json \
+            docs/roadmap/VISUAL-PRODUCTION-TRACK.md \
+            docs/specifications/visual-placeholder-inventory.md
+          git commit -m "feat: add authoritative operative life-state world cues"
+          git push origin HEAD:feat/operative-life-world-cues
