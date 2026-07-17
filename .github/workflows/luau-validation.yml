@@ -45,12 +45,17 @@ jobs:
           printf 'github = "%s"\n' "$ROKIT_GITHUB_TOKEN" > "$HOME/.rokit/auth.toml"
           chmod 600 "$HOME/.rokit/auth.toml"
 
-      - name: Trust and install pinned tools
+      - name: Trust pinned tool sources
         shell: bash
         run: |
-          "$HOME/.rokit/bin/rokit" add rojo-rbx/rojo@7.7.0
-          "$HOME/.rokit/bin/rokit" add Kampfkarren/selene@0.31.0
-          "$HOME/.rokit/bin/rokit" add JohnnyMorganz/StyLua@2.5.2
+          "$HOME/.rokit/bin/rokit" add rojo-rbx/rojo
+          "$HOME/.rokit/bin/rokit" add Kampfkarren/selene
+          "$HOME/.rokit/bin/rokit" add JohnnyMorganz/StyLua
+          git checkout -- rokit.toml
+
+      - name: Install pinned tools
+        shell: bash
+        run: "$HOME/.rokit/bin/rokit install"
 
       - name: Check Luau formatting
         shell: bash
