@@ -244,7 +244,7 @@ local Registry = table.freeze({
 		FamilyIds.Effect,
 		StatusIds.TemporaryPresentation,
 		"src/client/Presentation/WeaponShotEffectPresenter.luau",
-		"Accepted shots now drive temporary code-built muzzle flash, casing ejection, and authoritative damage-impact presentation; tracer and production effects remain pending.",
+		"Accepted shots now drive temporary code-built muzzle flash, casing ejection, hit-confirmed tracer, and authoritative damage-impact presentation; production effects remain pending.",
 		"BasicFirearmFireEffects",
 		{ "Muzzle", "Ejection" },
 		"weapon.basic-firearm",
