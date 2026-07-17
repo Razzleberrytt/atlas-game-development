@@ -26,7 +26,9 @@ type WeaponShotEffectPresenter = {
 local EFFECTS_FOLDER_NAME = "LivingKingdomsPresentationEffects"
 local MUZZLE_FLASH_SECONDS = 0.045
 local CASING_LIFETIME_SECONDS = 1.25
+local TRACER_LIFETIME_SECONDS = 0.055
 local IMPACT_LIFETIME_SECONDS = 0.12
+local MINIMUM_TRACER_DISTANCE_STUDS = 0.5
 
 local WeaponShotEffectPresenter: WeaponShotEffectPresenter = {} :: WeaponShotEffectPresenter
 
@@ -81,6 +83,32 @@ local function spawnCasing(rig: BasicFirearmPresentationRig, shotId: string)
 	Debris:AddItem(casing, CASING_LIFETIME_SECONDS)
 end
 
+local function spawnDamageTracer(rig: BasicFirearmPresentationRig, shotId: string, impactWorldPosition: Vector3)
+	local muzzleWorldPosition = rig.muzzleAttachment.WorldPosition
+	local displacement = impactWorldPosition - muzzleWorldPosition
+	local distance = displacement.Magnitude
+	if distance < MINIMUM_TRACER_DISTANCE_STUDS then
+		return
+	end
+
+	local tracer = Instance.new("Part")
+	tracer.Name = "AuthoritativeDamageTracer"
+	tracer:SetAttribute("SourceShotId", shotId)
+	tracer:SetAttribute("PresentationOnly", true)
+	tracer.Size = Vector3.new(0.055, 0.055, distance)
+	tracer.Color = Color3.fromRGB(255, 214, 120)
+	tracer.Material = Enum.Material.Neon
+	tracer.Transparency = 0.22
+	tracer.Anchored = true
+	tracer.CanCollide = false
+	tracer.CanTouch = false
+	tracer.CanQuery = false
+	tracer.CastShadow = false
+	tracer.CFrame = CFrame.lookAt(muzzleWorldPosition:Lerp(impactWorldPosition, 0.5), impactWorldPosition)
+	tracer.Parent = effectsFolder()
+	Debris:AddItem(tracer, TRACER_LIFETIME_SECONDS)
+end
+
 local function spawnDamageImpact(impactWorldPosition: Vector3)
 	local impact = Instance.new("Part")
 	impact.Name = "AuthoritativeDamageImpact"
@@ -117,6 +145,7 @@ function WeaponShotEffectPresenter.present(
 	presentMuzzleFlash(rig)
 	spawnCasing(rig, shotId)
 	if didApplyDamage and impactWorldPosition ~= nil then
+		spawnDamageTracer(rig, shotId, impactWorldPosition)
 		spawnDamageImpact(impactWorldPosition)
 	end
 end
