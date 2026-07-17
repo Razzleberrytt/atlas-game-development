@@ -26,18 +26,43 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
+      - name: Remove obsolete player parameter
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau")
+          source = path.read_text()
+          signature_before = '''local function resolveAcceptedShot(
+          \tplayer: Player,
+          \tplayerState: PlayerCombatState,
+          '''
+          signature_after = '''local function resolveAcceptedShot(
+          \tplayerState: PlayerCombatState,
+          '''
+          call_before = '''\t\tresolveAcceptedShot(player, playerState, operativePosition, fireResolution.fireResult, nowTimestamp)
+          '''
+          call_after = '''\t\tresolveAcceptedShot(playerState, operativePosition, fireResolution.fireResult, nowTimestamp)
+          '''
+          if source.count(signature_before) != 1 or source.count(call_before) != 1:
+              raise SystemExit("expected obsolete resolveAcceptedShot parameter/call not found")
+          source = source.replace(signature_before, signature_after, 1)
+          source = source.replace(call_before, call_after, 1)
+          path.write_text(source)
+          PY
+          stylua games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau
+
       - name: Capture Selene output
         run: |
           mkdir -p .diagnostics
           selene games/living-kingdoms/src > .diagnostics/vis-0102-shot-effects-selene.txt 2>&1 || true
 
-      - name: Commit diagnostic
+      - name: Commit fix and diagnostic
         run: |
-          if [ -z "$(git status --porcelain -- .diagnostics/vis-0102-shot-effects-selene.txt)" ]; then
+          if [ -z "$(git status --porcelain -- games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau .diagnostics/vis-0102-shot-effects-selene.txt)" ]; then
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .diagnostics/vis-0102-shot-effects-selene.txt
-          git commit -m "Capture shot effects Selene diagnostic"
+          git add games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau .diagnostics/vis-0102-shot-effects-selene.txt
+          git commit -m "Fix shot disclosure lint"
           git push
