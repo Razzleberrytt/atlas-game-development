@@ -23,5 +23,7 @@ check(string.find(controller, "presentAmmunitionPayload", 1, true) ~= nil)
 check(string.find(controller, "FireServer", 1, true) ~= nil)
 check(string.find(controller, "reserveRounds =", 1, true) == nil, "client must not assign authoritative reserve rounds")
 check(string.find(controller, "loadedRounds =", 1, true) == nil, "client must not assign authoritative loaded rounds")
+check(string.find(cache, "RemoteEvent", 1, true) == nil, "cache collection must not add a new remote")
+check(string.find(runtime, "RemoteFunction", 1, true) == nil, "ammunition feedback must remain disclosure-only")
 
 print("P6 ammunition presentation source audit passed")
