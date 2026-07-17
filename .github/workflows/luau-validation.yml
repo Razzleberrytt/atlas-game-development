@@ -8,6 +8,7 @@ on:
       - "stylua.toml"
       - "selene.toml"
       - ".github/workflows/luau-validation.yml"
+      - ".github/one-shot/p6_0105_patch.py"
   push:
     branches:
       - main
@@ -38,12 +39,24 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Check Luau formatting
-        shell: bash
-        run: stylua --check games/living-kingdoms/src
+      - name: Apply anchored ammunition feedback patch
+        run: python3 .github/one-shot/p6_0105_patch.py
+
+      - name: Format Luau source
+        run: stylua games/living-kingdoms/src games/living-kingdoms/tests/P6AmmunitionPresentation.test.luau
+
+      - name: Upload patched source
+        uses: actions/upload-artifact@v4
+        with:
+          name: p6-ammunition-feedback-source
+          path: |
+            games/living-kingdoms/src/shared/Combat/CombatContracts.luau
+            games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau
+            games/living-kingdoms/src/server/Systems/AmmunitionCacheService.luau
+            games/living-kingdoms/src/client/Controllers/WeaponController.luau
+            games/living-kingdoms/tests/P6AmmunitionPresentation.test.luau
 
       - name: Run Selene
-        shell: bash
         run: selene games/living-kingdoms/src
 
       - name: Run Lune fixtures
@@ -64,5 +77,4 @@ jobs:
           echo "Executed $fixture_count Living Kingdoms fixtures."
 
       - name: Build Rojo project
-        shell: bash
         run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
