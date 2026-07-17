@@ -6,8 +6,10 @@
 	model without changing the authoritative HumanoidRootPart footprint, Humanoid,
 	movement, targeting, health, attacks, cleanup, or network ownership.
 
-	Bounded by construction: one EnemyEntities.ChildAdded connection, no heartbeat,
-	no per-enemy connections, no timers, no remotes, and a fixed part count.
+	Five presentation-only Motor6Ds expose the torso, arms, and legs to the local
+	client pose controller. The server owner remains bounded by one
+	EnemyEntities.ChildAdded connection, no heartbeat, no per-enemy connections,
+	no timers, no remotes, and a fixed part count.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -48,12 +50,12 @@ local function configurePart(part: BasePart, name: string, color: Color3, materi
 	part.BottomSurface = Enum.SurfaceType.Smooth
 end
 
-local function makePart(
+local function createPart(
 	presentation: Model,
-	root: BasePart,
+	authoritativeRoot: BasePart,
 	name: string,
 	size: Vector3,
-	localCFrame: CFrame,
+	rootLocalCFrame: CFrame,
 	color: Color3,
 	material: Enum.Material,
 	shape: Enum.PartType?
@@ -64,14 +66,50 @@ local function makePart(
 	if shape ~= nil then
 		part.Shape = shape
 	end
-	part.CFrame = root.CFrame * localCFrame
+	part.CFrame = authoritativeRoot.CFrame * rootLocalCFrame
 	part.Parent = presentation
+	return part
+end
 
+local function makeRigidPart(
+	presentation: Model,
+	authoritativeRoot: BasePart,
+	weldParent: BasePart,
+	name: string,
+	size: Vector3,
+	rootLocalCFrame: CFrame,
+	color: Color3,
+	material: Enum.Material,
+	shape: Enum.PartType?
+): Part
+	local part = createPart(presentation, authoritativeRoot, name, size, rootLocalCFrame, color, material, shape)
 	local weld = Instance.new("WeldConstraint")
 	weld.Name = name .. "Weld"
-	weld.Part0 = root
+	weld.Part0 = weldParent
 	weld.Part1 = part
-	weld.Parent = root
+	weld.Parent = weldParent
+	return part
+end
+
+local function makeMotorPart(
+	presentation: Model,
+	authoritativeRoot: BasePart,
+	motorParent: BasePart,
+	name: string,
+	motorName: string,
+	size: Vector3,
+	rootLocalCFrame: CFrame,
+	color: Color3,
+	material: Enum.Material
+): Part
+	local part = createPart(presentation, authoritativeRoot, name, size, rootLocalCFrame, color, material, nil)
+	local motor = Instance.new("Motor6D")
+	motor.Name = motorName
+	motor.Part0 = motorParent
+	motor.Part1 = part
+	motor.C0 = motorParent.CFrame:ToObjectSpace(part.CFrame)
+	motor.C1 = CFrame.new()
+	motor.Parent = motorParent
 	return part
 end
 
@@ -82,20 +120,23 @@ local function createPresentation(root: BasePart): Model
 	presentation:SetAttribute("VisualCandidateId", "exclusion-walker.v1")
 	presentation:SetAttribute("VisualStatus", "ProceduralFallback")
 	presentation:SetAttribute("GameplayFootprintId", "enemy.exclusion_walker")
+	presentation:SetAttribute("PresentationMotorCount", 5)
 
-	local torso = makePart(
+	local torso = makeMotorPart(
 		presentation,
 		root,
+		root,
 		"TorsoCore",
+		"TorsoMotor",
 		Vector3.new(1.75, 2.20, 1.15),
 		CFrame.new(0, 0.35, 0),
 		COLORS.flesh,
-		Enum.Material.Slate,
-		nil
+		Enum.Material.Slate
 	)
-	makePart(
+	makeRigidPart(
 		presentation,
 		root,
+		torso,
 		"RibCage",
 		Vector3.new(2.25, 0.42, 1.30),
 		CFrame.new(0, 0.95, 0),
@@ -103,9 +144,10 @@ local function createPresentation(root: BasePart): Model
 		Enum.Material.Metal,
 		nil
 	)
-	makePart(
+	makeRigidPart(
 		presentation,
 		root,
+		torso,
 		"ChestPlate",
 		Vector3.new(1.55, 0.50, 1.05),
 		CFrame.new(0, 1.42, -0.04),
@@ -113,9 +155,10 @@ local function createPresentation(root: BasePart): Model
 		Enum.Material.Metal,
 		nil
 	)
-	makePart(
+	makeRigidPart(
 		presentation,
 		root,
+		torso,
 		"Head",
 		Vector3.new(0.95, 0.62, 0.90),
 		CFrame.new(0, 2.05, -0.10),
@@ -123,9 +166,10 @@ local function createPresentation(root: BasePart): Model
 		Enum.Material.Slate,
 		nil
 	)
-	makePart(
+	makeRigidPart(
 		presentation,
 		root,
+		torso,
 		"Sensor",
 		Vector3.new(0.56, 0.18, 0.30),
 		CFrame.new(0, 2.10, -0.50),
@@ -133,9 +177,10 @@ local function createPresentation(root: BasePart): Model
 		Enum.Material.Neon,
 		nil
 	)
-	makePart(
+	makeRigidPart(
 		presentation,
 		root,
+		torso,
 		"DorsalSpine",
 		Vector3.new(1.05, 0.36, 0.36),
 		CFrame.new(0, 1.95, 0.25) * CFrame.Angles(0, 0, math.rad(90)),
@@ -143,9 +188,10 @@ local function createPresentation(root: BasePart): Model
 		Enum.Material.Metal,
 		Enum.PartType.Cylinder
 	)
-	makePart(
+	makeRigidPart(
 		presentation,
 		root,
+		torso,
 		"ShoulderLeft",
 		Vector3.new(0.65, 0.65, 0.80),
 		CFrame.new(-1.35, 1.02, 0),
@@ -153,9 +199,10 @@ local function createPresentation(root: BasePart): Model
 		Enum.Material.Metal,
 		nil
 	)
-	makePart(
+	makeRigidPart(
 		presentation,
 		root,
+		torso,
 		"ShoulderRight",
 		Vector3.new(0.65, 0.65, 0.80),
 		CFrame.new(1.35, 1.02, 0),
@@ -163,29 +210,33 @@ local function createPresentation(root: BasePart): Model
 		Enum.Material.Metal,
 		nil
 	)
-	makePart(
+
+	local forearmLeft = makeMotorPart(
 		presentation,
 		root,
+		torso,
 		"ForearmLeft",
+		"ForearmLeftMotor",
 		Vector3.new(0.46, 1.55, 0.50),
 		CFrame.new(-1.45, 0.05, 0) * CFrame.Angles(0, 0, math.rad(7)),
 		COLORS.bone,
-		Enum.Material.Slate,
-		nil
+		Enum.Material.Slate
 	)
-	makePart(
+	local forearmRight = makeMotorPart(
 		presentation,
 		root,
+		torso,
 		"ForearmRight",
+		"ForearmRightMotor",
 		Vector3.new(0.46, 1.55, 0.50),
 		CFrame.new(1.45, 0.05, 0) * CFrame.Angles(0, 0, math.rad(-7)),
 		COLORS.bone,
-		Enum.Material.Slate,
-		nil
+		Enum.Material.Slate
 	)
-	makePart(
+	makeRigidPart(
 		presentation,
 		root,
+		forearmLeft,
 		"ClawLeft",
 		Vector3.new(0.34, 0.78, 0.32),
 		CFrame.new(-1.55, -0.95, -0.12) * CFrame.Angles(math.rad(12), 0, math.rad(6)),
@@ -193,9 +244,10 @@ local function createPresentation(root: BasePart): Model
 		Enum.Material.Metal,
 		nil
 	)
-	makePart(
+	makeRigidPart(
 		presentation,
 		root,
+		forearmRight,
 		"ClawRight",
 		Vector3.new(0.34, 0.78, 0.32),
 		CFrame.new(1.55, -0.95, -0.12) * CFrame.Angles(math.rad(12), 0, math.rad(-6)),
@@ -203,9 +255,10 @@ local function createPresentation(root: BasePart): Model
 		Enum.Material.Metal,
 		nil
 	)
-	makePart(
+	makeRigidPart(
 		presentation,
 		root,
+		torso,
 		"HipGuard",
 		Vector3.new(1.35, 0.52, 0.92),
 		CFrame.new(0, -0.95, 0),
@@ -213,29 +266,33 @@ local function createPresentation(root: BasePart): Model
 		Enum.Material.Metal,
 		nil
 	)
-	makePart(
+
+	local legLeft = makeMotorPart(
 		presentation,
 		root,
+		root,
 		"LegLeft",
+		"LegLeftMotor",
 		Vector3.new(0.55, 1.65, 0.68),
 		CFrame.new(-0.52, -2.00, 0.05) * CFrame.Angles(0, 0, math.rad(2)),
 		COLORS.bone,
-		Enum.Material.Slate,
-		nil
+		Enum.Material.Slate
 	)
-	makePart(
+	local legRight = makeMotorPart(
 		presentation,
 		root,
+		root,
 		"LegRight",
+		"LegRightMotor",
 		Vector3.new(0.55, 1.65, 0.68),
 		CFrame.new(0.52, -2.00, 0.05) * CFrame.Angles(0, 0, math.rad(-2)),
 		COLORS.bone,
-		Enum.Material.Slate,
-		nil
+		Enum.Material.Slate
 	)
-	makePart(
+	makeRigidPart(
 		presentation,
 		root,
+		legLeft,
 		"FootLeft",
 		Vector3.new(0.70, 0.34, 1.25),
 		CFrame.new(-0.52, -3.00, -0.28),
@@ -243,9 +300,10 @@ local function createPresentation(root: BasePart): Model
 		Enum.Material.Metal,
 		nil
 	)
-	makePart(
+	makeRigidPart(
 		presentation,
 		root,
+		legRight,
 		"FootRight",
 		Vector3.new(0.70, 0.34, 1.25),
 		CFrame.new(0.52, -3.00, -0.28),
@@ -253,9 +311,10 @@ local function createPresentation(root: BasePart): Model
 		Enum.Material.Metal,
 		nil
 	)
-	makePart(
+	makeRigidPart(
 		presentation,
 		root,
+		torso,
 		"BackCanister",
 		Vector3.new(0.95, 0.64, 0.64),
 		CFrame.new(0, 0.28, 0.72) * CFrame.Angles(0, 0, math.rad(90)),

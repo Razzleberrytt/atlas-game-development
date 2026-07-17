@@ -23,7 +23,7 @@ The registry is descriptive only. It does not load assets or change gameplay.
 | Class equipment | Combat Specialist equipment | Missing presentation | Text-only class selection | VIS-0104 |
 | Class equipment | Medic equipment | Missing presentation | Text-only class selection | VIS-0104 |
 | Class equipment | Engineer equipment | Missing presentation | Text-only class selection | VIS-0104 |
-| Enemy | Exclusion Walker model | Primitive placeholder | `EnemyPresentationService`; fixed 18-part procedural shell attached to the unchanged authoritative `3 x 5.6 x 3` root | VIS-0103 |
+| Enemy | Exclusion Walker model | Primitive placeholder | `EnemyPresentationService` plus `EnemyPresentationController`; motorized 18-part shell with client-local roaming, pursuit, threat-ready, hit, stand-down, and death poses attached to the unchanged authoritative `3 x 5.6 x 3` root | VIS-0103 |
 | Supply | Ammunition cache | Primitive placeholder | `AmmunitionCacheService`; one green metal Part and ProximityPrompt | VIS-0105 |
 | Objective | Relay console | Primitive placeholder | `MissionDirectorService`; primitive console, lamp, and ProximityPrompt | VIS-0105 / P8 |
 | Extraction | Extraction beacon | Primitive placeholder | `MissionDirectorService`; neon signal pillar, light, and billboard | VIS-0105 / P10 |
@@ -32,12 +32,12 @@ The registry is descriptive only. It does not load assets or change gameplay.
 | Landmark | Logging Road | Primitive placeholder | Segmented road and tire-track geometry | VIS-0105 |
 | Landmark | Lookout Tower | Primitive placeholder | Part-built tower, platform, cabin, stairs, and warning light | VIS-0105 |
 | Landmark | Campground | Primitive placeholder | Part-built shelters, campsite, and props | VIS-0105 |
-| Landmark | Creek Crossing | Primitive placeholder | Part-built water, banks, bridge, and route | VIS-0105 |
+| Landmark | Creek Crossing | Primitive placeholder | Part-built water, banks, bridge, and route geometry | VIS-0105 |
 | Landmark | Rocky Overlook | Primitive placeholder | Primitive plateau and rock composition | VIS-0105 |
 | Landmark | Military Roadblock | Primitive placeholder | Primitive barriers, vehicle, light, and props | VIS-0105 |
 | Landmark | Extraction Clearing | Primitive placeholder | Authored primitive clearing awaiting final extraction package | VIS-0105 |
 | Effect | Basic firearm fire/impact set | Temporary presentation | Code-built muzzle flash, casing, hit-confirmed tracer, and authoritative impact cue | VIS-0102 |
-| Effect | Standard hostile attack set | Missing presentation | Authoritative melee exists without approved anticipation/strike effects | VIS-0103 |
+| Effect | Standard hostile attack set | Missing presentation | Authoritative melee exists without an approved anticipation or server-confirmed strike/recovery presentation fact | VIS-0103 |
 | Audio | Basic firearm set | Missing presentation | No approved fire, reload, empty, or handling set | VIS-0102 |
 | Audio | Standard hostile set | Missing presentation | No approved alert, pursuit, attack, hit, or death set | VIS-0103 |
 | Audio | Blackwater ambience | Temporary presentation | `EnvironmentAmbienceController` code-driven ambience | VIS-0105 / VIS-0108 |
@@ -82,4 +82,4 @@ When canonical production assets begin entering the registry:
 
 ## Next task
 
-Continue the two active vertical slices through their honest remaining gates: Roblox Studio review for the Blackwater Support LMG and Exclusion Walker, then authored hostile state animation/effects and operative/class silhouettes when their gameplay states are ready.
+Keep VIS-0103 honest by adding a server-confirmed attack presentation fact before any strike/recovery animation, or move to the evidence-independent operative/class silhouette slice while Studio import and horde performance review remain pending.
