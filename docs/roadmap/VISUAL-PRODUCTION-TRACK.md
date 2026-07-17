@@ -25,9 +25,11 @@ Weapon meshes do not own shooting. Enemy rigs do not own health, targeting, atta
   - All current records remain honestly classified as primitive, default-avatar, missing, or temporary; no production asset is falsely approved.
   - Declarations load no assets, register no numeric IDs, create no runtime owner, and change no gameplay behavior.
 - [~] **VIS-0102 — Replace the basic firearm presentation.**
-  - Source creation is in progress through the original Blackwater Service Carbine candidate: deterministic 19-component model generator, five attachment transforms, and explicit `Fire`, `Reload`, and `Empty` animation curves.
+  - Source creation is complete for the original Blackwater Service Carbine candidate: deterministic 19-component model generator, five attachment transforms, and explicit `Fire`, `Reload`, and `Empty` animation curves.
+  - A client-only 19-part procedural fallback now attaches to every operative so the game no longer presents an invisible firearm while the imported mesh remains unapproved.
+  - The local operative's bolt and magazine move only from server-disclosed `ShotFired`, reload deadline/completion/interruption, and ammunition-state messages; remote operatives currently carry the static fallback because combat presentation is recipient-specific.
   - The candidate is project-original and contains no uploaded asset ID or gameplay mutation.
-  - Still required: Roblox Studio import, canonical runtime model/attachment integration, muzzle/impact effects, audio, missing-asset fallback, and elevated-isometric readability/performance evidence.
+  - Still required: Roblox Studio mesh import and canonical swap, grip/isometric readability review, remote action presentation policy, muzzle/impact effects, audio, and representative performance evidence.
   - Existing server-owned cadence, ammunition, reload, targeting, hit, and damage boundaries remain unchanged.
 - [ ] **VIS-0103 — Replace the standard hostile presentation.**
   - Add one canonical horde rig and bounded cosmetic variants.
