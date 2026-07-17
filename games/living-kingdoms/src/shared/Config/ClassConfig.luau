@@ -1,9 +1,9 @@
 --!strict
 
 --[[
-	P7-0101 declaration-only starting values for the three MVP specialist
-	classes. Runtime tasks may tune these configuration-backed values, but this
-	module owns no assignment, action, health, ammunition, timer, or network state.
+	Configuration-backed values for the three MVP specialist classes. P7-0102
+	adds only selection-window, fallback-assignment, request-bound, and roster
+	limits. Class actions remain unimplemented.
 
 	Engineer resupply values remain provisional while the deferred P6 Studio
 	evidence matrix is unavailable. They must be revisited before P7 gameplay
@@ -11,6 +11,7 @@
 ]]
 
 local ClassContracts = require(script.Parent.Parent.Classes.ClassContracts)
+local MissionContracts = require(script.Parent.Parent.Mission.MissionContracts)
 local AmmunitionScarcityConfig = require(script.Parent.AmmunitionScarcityConfig)
 local OperativeLifeConfig = require(script.Parent.OperativeLifeConfig)
 
@@ -109,9 +110,13 @@ local ClassDefinitions = table.freeze({
 })
 
 local Config = {
-	Version = "P7-0101-v1",
+	Version = "P7-0102-v1",
 	Selection = table.freeze({
 		allowDuplicateStartingClasses = true,
+		defaultClassId = ClassIds.CombatSpecialist,
+		openMissionPhaseId = MissionContracts.MissionPhaseIds.Insertion,
+		minimumRequestIntervalSeconds = 0.15,
+		maximumProcessedRequestIdsPerOperative = 64,
 		startingClassIds = table.freeze({
 			ClassIds.CombatSpecialist,
 			ClassIds.Medic,
@@ -147,6 +152,22 @@ for _, classId in Config.Selection.startingClassIds do
 end
 
 assert(Config.Selection.allowDuplicateStartingClasses, "MVP starting-class duplication must remain allowed")
+assert(seenClassIds[Config.Selection.defaultClassId], "default class must be a selectable starting class")
+assert(
+	Config.Selection.openMissionPhaseId == MissionContracts.MissionPhaseIds.Insertion,
+	"prototype selection must use the bounded insertion window"
+)
+assert(
+	isFinitePositive(Config.Selection.minimumRequestIntervalSeconds)
+		and Config.Selection.minimumRequestIntervalSeconds <= 1,
+	"selection request interval must be bounded and responsive"
+)
+assert(
+	isNonnegativeInteger(Config.Selection.maximumProcessedRequestIdsPerOperative)
+		and Config.Selection.maximumProcessedRequestIdsPerOperative > 0
+		and Config.Selection.maximumProcessedRequestIdsPerOperative <= 256,
+	"processed selection request history must be bounded"
+)
 
 assert(isFinitePositive(Actions.Brace.durationSeconds), "Brace duration must be finite and positive")
 assert(isFinitePositive(Actions.Brace.cooldownSeconds), "Brace cooldown must be finite and positive")
