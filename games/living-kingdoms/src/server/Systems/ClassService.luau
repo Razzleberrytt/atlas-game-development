@@ -29,7 +29,6 @@ local selectionIntentRemote = classNetwork:WaitForChild("SelectionIntent") :: Re
 local stateRemote = classNetwork:WaitForChild("State") :: RemoteEvent
 local readStateFunction = classNetwork:WaitForChild("ReadState") :: RemoteFunction
 
-type ClassId = ClassContracts.ClassId
 type ClassSelectionStateId = ClassContracts.ClassSelectionStateId
 type AuthoritativeClassAssignment = ClassContracts.AuthoritativeClassAssignment
 type ListenerConnection = { Disconnect: (self: ListenerConnection) -> () }
@@ -379,9 +378,7 @@ function Service.start()
 	readStateFunction.OnServerInvoke = function(player: Player)
 		return safeSnapshotForPlayer(player)
 	end
-	if selectionStateId == SelectionStateIds.Open and deadline ~= nil then
-		scheduleLock(deadline)
-	end
+	synchronizeSelectionWindow()
 	publishAll()
 end
 
