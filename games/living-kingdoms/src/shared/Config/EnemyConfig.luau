@@ -1,12 +1,12 @@
 --!strict
 
-local WorldFoundationConfig = require(script.Parent.WorldFoundationConfig)
-
 local EnemyConfig = {
 	Version = "P5-0104-v1",
 	ArchetypeId = "Shambler",
 	ModelFolderName = "ProductionEnemies",
-	PlayableHalfExtentStuds = WorldFoundationConfig.PlayableHalfExtentStuds,
+	-- Must remain synchronized with WorldFoundationConfig.PlayableHalfExtentStuds;
+	-- the focused fixture verifies the authored-world invariant.
+	PlayableHalfExtentStuds = 320,
 	MaximumHealth = 100,
 	WalkSpeedStudsPerSecond = 9,
 	AcquisitionRadiusStuds = 150,
