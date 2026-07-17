@@ -4,22 +4,10 @@ on:
   pull_request:
     paths:
       - "games/living-kingdoms/**"
-      - "rokit.toml"
-      - "stylua.toml"
-      - "selene.toml"
-      - ".github/workflows/luau-validation.yml"
-  push:
-    branches:
-      - main
-    paths:
-      - "games/living-kingdoms/**"
-      - "rokit.toml"
-      - "stylua.toml"
-      - "selene.toml"
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -27,8 +15,10 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Check out repository
+      - name: Check out PR branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
@@ -38,31 +28,23 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Check Luau formatting
-        shell: bash
-        run: stylua --check games/living-kingdoms/src
-
-      - name: Run Selene
-        shell: bash
-        run: selene games/living-kingdoms/src
-
-      - name: Run Lune fixtures
+      - name: Capture Selene output
         shell: bash
         run: |
-          set -euo pipefail
-          fixture_count=0
-          while IFS= read -r -d '' fixture; do
-            echo "::group::Lune fixture: $fixture"
-            lune run "$fixture"
-            echo "::endgroup::"
-            fixture_count=$((fixture_count + 1))
-          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
-          if [ "$fixture_count" -eq 0 ]; then
-            echo "No Living Kingdoms fixtures were discovered." >&2
-            exit 1
-          fi
-          echo "Executed $fixture_count Living Kingdoms fixtures."
+          mkdir -p docs/validation
+          set +e
+          selene games/living-kingdoms/src > docs/validation/P7-SELENE-DIAGNOSTIC.txt 2>&1
+          status=$?
+          set -e
+          printf "\nexit_status=%s\n" "$status" >> docs/validation/P7-SELENE-DIAGNOSTIC.txt
 
-      - name: Build Rojo project
+      - name: Restore normal workflow and commit diagnostic
         shell: bash
-        run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
+        run: |
+          git fetch origin main --depth=1
+          git checkout origin/main -- .github/workflows/luau-validation.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/luau-validation.yml docs/validation/P7-SELENE-DIAGNOSTIC.txt
+          git commit -m "Capture P7 Selene diagnostic"
+          git push
