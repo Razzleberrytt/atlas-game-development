@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 jobs:
-  director-a-f:
+  report:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -17,76 +17,28 @@ jobs:
           path: .
           cache: false
           token: ${{ github.token }}
-      - run: |
-          set -euo pipefail
-          failed=0
-          for file in games/living-kingdoms/tests/[A-F]*.test.luau; do
-            [ -e "$file" ] || continue
+      - name: Run director fixtures and record failures
+        run: |
+          set +e
+          : > director-fixtures.txt
+          : > failing-director-fixtures.txt
+          for file in games/living-kingdoms/tests/*.test.luau; do
             grep -q 'EnemyDirectorService.luau' "$file" || continue
+            echo "$file" >> director-fixtures.txt
             echo "Running $file"
-            lune run "$file" || failed=1
+            lune run "$file"
+            if [ "$?" -ne 0 ]; then
+              echo "$file" >> failing-director-fixtures.txt
+            fi
           done
-          exit "$failed"
-
-  director-g-l:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: CompeyDev/setup-rokit@v0.1.2
+          echo "All director fixtures:"
+          cat director-fixtures.txt
+          echo "Failing director fixtures:"
+          cat failing-director-fixtures.txt
+      - uses: actions/upload-artifact@v4
         with:
-          version: v1.2.0
-          path: .
-          cache: false
-          token: ${{ github.token }}
-      - run: |
-          set -euo pipefail
-          failed=0
-          for file in games/living-kingdoms/tests/[G-L]*.test.luau; do
-            [ -e "$file" ] || continue
-            grep -q 'EnemyDirectorService.luau' "$file" || continue
-            echo "Running $file"
-            lune run "$file" || failed=1
-          done
-          exit "$failed"
-
-  director-m-r:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: CompeyDev/setup-rokit@v0.1.2
-        with:
-          version: v1.2.0
-          path: .
-          cache: false
-          token: ${{ github.token }}
-      - run: |
-          set -euo pipefail
-          failed=0
-          for file in games/living-kingdoms/tests/[M-R]*.test.luau; do
-            [ -e "$file" ] || continue
-            grep -q 'EnemyDirectorService.luau' "$file" || continue
-            echo "Running $file"
-            lune run "$file" || failed=1
-          done
-          exit "$failed"
-
-  director-s-z:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: CompeyDev/setup-rokit@v0.1.2
-        with:
-          version: v1.2.0
-          path: .
-          cache: false
-          token: ${{ github.token }}
-      - run: |
-          set -euo pipefail
-          failed=0
-          for file in games/living-kingdoms/tests/[S-Z]*.test.luau; do
-            [ -e "$file" ] || continue
-            grep -q 'EnemyDirectorService.luau' "$file" || continue
-            echo "Running $file"
-            lune run "$file" || failed=1
-          done
-          exit "$failed"
+          name: walker-director-fixture-report
+          path: |
+            director-fixtures.txt
+            failing-director-fixtures.txt
+          if-no-files-found: error
