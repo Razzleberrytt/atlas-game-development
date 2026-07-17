@@ -9,7 +9,8 @@ This exception changes sequencing only. It does **not** convert missing evidence
 Current exception state:
 
 - `P7-0101` shared contracts and configuration are complete through PR #71.
-- `P7-0102` is the next planned class task but remains blocked.
+- `P7-0102` class selection and assignment are complete through PR #72.
+- All class effects remain blocked.
 
 ## P6 status
 
@@ -20,27 +21,30 @@ Current exception state:
 
 ## Narrow P7 exception
 
-`P7-0101` shared contracts and configuration were permitted because they are declaration-only work:
+`P7-0101` was permitted because it contains declarations and invariant fixtures only.
 
-- stable IDs and strict copied shapes;
-- configuration-backed starting values;
-- frozen vocabulary and invariant fixtures;
-- no runtime owner;
-- no remote or client input;
-- no class assignment;
-- no healing, revive mutation, weapon effect, ammunition grant, objective repair, timer, or UI.
+`P7-0102` was also permitted because class selection and assignment are independent of P6 balance:
 
-The engineer's Field Resupply values are marked provisional and must not be treated as scarcity-balanced.
+- the three starting classes are already universally available;
+- duplicate roles remain legal;
+- the server owns a temporary insertion selection window, deterministic fallback assignment, lock state, revisions, and safe roster disclosure;
+- the client submits only a bounded request ID and known class ID;
+- no class action is activated;
+- no health, revive, combat, ammunition, objective, resource, cooldown, or persistence state is mutated;
+- the Engineer's provisional resupply numbers are not read by selection runtime.
+
+The current mission has no separate Briefing phase. Until P10 introduces the final match shell, the bounded 20-second `Insertion` phase is the temporary selection window. The server locks assignment at the exact authoritative insertion deadline.
 
 ## Still blocked
 
-The following remain blocked until P6 evidence and sign-off resume:
+The following remain blocked until P6 evidence and sign-off resume or a separately documented evidence-independent exception is approved:
 
-- `P7-0102` class selection and assignment runtime;
 - `P7-0103` Combat Specialist Brace runtime;
 - `P7-0104` Medic treatment/revive runtime;
 - `P7-0105` Engineer Field Resupply runtime;
-- all later P7 integration, presentation, tuning, and Studio validation.
+- all later P7 class-effect integration, tuning, and Studio balance validation.
+
+In particular, Engineer Field Resupply must not be implemented while its scarcity relationship remains unvalidated.
 
 ## Resume rule
 
@@ -52,4 +56,4 @@ When the Studio validation workflow becomes available:
 4. Revisit Engineer Field Resupply charges and rounds before any ammunition-grant runtime is implemented.
 5. Remove or close this exception when normal milestone sequencing is restored.
 
-This document temporarily overrides only the statement that no P7 work may begin before P6 exit. The exception applies solely to `P7-0101`; all consequential P7 runtime work remains gated.
+This document temporarily overrides only the blanket statement that no P7 work may begin before P6 exit. The exception currently applies to completed tasks `P7-0101` and `P7-0102`; all consequential class-effect work remains gated.

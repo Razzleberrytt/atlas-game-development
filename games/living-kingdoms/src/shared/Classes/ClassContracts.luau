@@ -1,9 +1,10 @@
 --!strict
 
 --[[
-	P7-0101 shared specialist-class declarations. These IDs and copied shapes
-	are safe to require on either side of the boundary and create no runtime
-	owner, network surface, action effect, healing, ammunition grant, or timer.
+	P7 shared specialist-class declarations. These IDs and copied shapes are
+	safe to require on either side of the boundary. P7-0102 adds only the
+	selection/assignment network vocabulary and validators; class actions,
+	healing, ammunition grants, objective effects, and timers remain absent.
 ]]
 
 local ClassContracts = {}
@@ -19,13 +20,15 @@ export type ClassActionId =
 export type ClassActionStateId = "Idle" | "Active" | "Cooldown"
 export type ClassActionPhaseId = "Begin" | "End" | "Cancel"
 export type ClassSelectionStateId = "Open" | "Locked"
+export type ClassSelectionNetworkOperationId = "Snapshot" | "Rejected"
 
 export type ClassTargetKindId = "None" | "Self" | "AliveTeammate" | "IncapacitatedTeammate" | "SelfOrAliveTeammate"
 
 export type ClassResourceId = "class-resource.medical-charge" | "class-resource.resupply-charge"
 
 export type ClassActionRejectionReasonId =
-	"InvalidIntent"
+	"ServiceStopped"
+	| "InvalidIntent"
 	| "UnknownClass"
 	| "UnknownAction"
 	| "UnknownTarget"
@@ -51,6 +54,7 @@ export type ClassActionRejectionReasonId =
 	| "DamageInterrupted"
 	| "StaleRevision"
 	| "DuplicateRequest"
+	| "RateLimited"
 	| "EffectCommitRejected"
 
 export type AuthoritativeClassAssignment = {
@@ -101,6 +105,21 @@ export type ClassSquadMemberPresentationSnapshot = {
 	actionId: ClassActionId?,
 }
 
+export type SafeClassSelectionSnapshot = {
+	operationId: ClassSelectionNetworkOperationId,
+	rosterRevision: number,
+	selectionStateId: ClassSelectionStateId,
+	ownerAssignment: AuthoritativeClassAssignment?,
+	squadMembers: { ClassSquadMemberPresentationSnapshot },
+}
+
+export type SafeClassSelectionRejection = {
+	operationId: ClassSelectionNetworkOperationId,
+	rosterRevision: number,
+	rejectionReasonId: ClassActionRejectionReasonId,
+	requestId: string?,
+}
+
 ClassContracts.ClassIds = table.freeze({
 	CombatSpecialist = "class.combat-specialist",
 	Medic = "class.medic",
@@ -131,6 +150,11 @@ ClassContracts.ClassSelectionStateIds = table.freeze({
 	Locked = "Locked",
 })
 
+ClassContracts.ClassSelectionNetworkOperationIds = table.freeze({
+	Snapshot = "Snapshot",
+	Rejected = "Rejected",
+})
+
 ClassContracts.ClassTargetKindIds = table.freeze({
 	None = "None",
 	Self = "Self",
@@ -145,6 +169,7 @@ ClassContracts.ClassResourceIds = table.freeze({
 })
 
 ClassContracts.ClassActionRejectionReasonIds = table.freeze({
+	ServiceStopped = "ServiceStopped",
 	InvalidIntent = "InvalidIntent",
 	UnknownClass = "UnknownClass",
 	UnknownAction = "UnknownAction",
@@ -171,7 +196,163 @@ ClassContracts.ClassActionRejectionReasonIds = table.freeze({
 	DamageInterrupted = "DamageInterrupted",
 	StaleRevision = "StaleRevision",
 	DuplicateRequest = "DuplicateRequest",
+	RateLimited = "RateLimited",
 	EffectCommitRejected = "EffectCommitRejected",
 })
+
+local function isNonEmptyBoundedString(value: unknown, maximumLength: number): boolean
+	return type(value) == "string" and value ~= "" and #value <= maximumLength
+end
+
+local function isNonnegativeInteger(value: unknown): boolean
+	return type(value) == "number"
+		and value == value
+		and value ~= math.huge
+		and value ~= -math.huge
+		and value >= 0
+		and value % 1 == 0
+end
+
+local function containsValue(values: { [string]: string }, candidate: unknown): boolean
+	if type(candidate) ~= "string" then
+		return false
+	end
+	for _, value in values do
+		if value == candidate then
+			return true
+		end
+	end
+	return false
+end
+
+local function hasOnlyKeys(value: { [any]: any }, permittedKeys: { [string]: boolean }): boolean
+	for key in value do
+		if type(key) ~= "string" or permittedKeys[key] ~= true then
+			return false
+		end
+	end
+	return true
+end
+
+function ClassContracts.isKnownClassId(value: unknown): boolean
+	return containsValue(ClassContracts.ClassIds, value)
+end
+
+function ClassContracts.validateClassSelectionIntent(value: unknown): boolean
+	if type(value) ~= "table" then
+		return false
+	end
+	local intent = value :: { [any]: any }
+	if not hasOnlyKeys(intent, { requestId = true, classId = true }) then
+		return false
+	end
+	return isNonEmptyBoundedString(intent.requestId, 128) and isNonEmptyBoundedString(intent.classId, 64)
+end
+
+function ClassContracts.validateAuthoritativeClassAssignment(value: unknown): boolean
+	if type(value) ~= "table" then
+		return false
+	end
+	local assignment = value :: { [any]: any }
+	if
+		not hasOnlyKeys(assignment, {
+			operativeEntityId = true,
+			classId = true,
+			selectionStateId = true,
+			revision = true,
+		})
+	then
+		return false
+	end
+	return isNonEmptyBoundedString(assignment.operativeEntityId, 128)
+		and ClassContracts.isKnownClassId(assignment.classId)
+		and containsValue(ClassContracts.ClassSelectionStateIds, assignment.selectionStateId)
+		and isNonnegativeInteger(assignment.revision)
+end
+
+local function validateSquadMember(value: unknown): boolean
+	if type(value) ~= "table" then
+		return false
+	end
+	local member = value :: { [any]: any }
+	if
+		not hasOnlyKeys(member, {
+			operativeEntityId = true,
+			classId = true,
+			actionStateId = true,
+			actionId = true,
+		})
+	then
+		return false
+	end
+	return isNonEmptyBoundedString(member.operativeEntityId, 128)
+		and ClassContracts.isKnownClassId(member.classId)
+		and containsValue(ClassContracts.ClassActionStateIds, member.actionStateId)
+		and (member.actionId == nil or containsValue(ClassContracts.ClassActionIds, member.actionId))
+end
+
+function ClassContracts.validateSafeClassSelectionSnapshot(value: unknown): boolean
+	if type(value) ~= "table" then
+		return false
+	end
+	local snapshot = value :: { [any]: any }
+	if
+		not hasOnlyKeys(snapshot, {
+			operationId = true,
+			rosterRevision = true,
+			selectionStateId = true,
+			ownerAssignment = true,
+			squadMembers = true,
+		})
+	then
+		return false
+	end
+	if snapshot.operationId ~= ClassContracts.ClassSelectionNetworkOperationIds.Snapshot then
+		return false
+	end
+	if
+		not isNonnegativeInteger(snapshot.rosterRevision)
+		or not containsValue(ClassContracts.ClassSelectionStateIds, snapshot.selectionStateId)
+		or (snapshot.ownerAssignment ~= nil and not ClassContracts.validateAuthoritativeClassAssignment(
+			snapshot.ownerAssignment
+		))
+		or type(snapshot.squadMembers) ~= "table"
+	then
+		return false
+	end
+	local seenOperativeIds = {}
+	for index, member in snapshot.squadMembers :: { [any]: any } do
+		if type(index) ~= "number" or index % 1 ~= 0 or index < 1 or not validateSquadMember(member) then
+			return false
+		end
+		local operativeEntityId = member.operativeEntityId
+		if seenOperativeIds[operativeEntityId] then
+			return false
+		end
+		seenOperativeIds[operativeEntityId] = true
+	end
+	return true
+end
+
+function ClassContracts.validateSafeClassSelectionRejection(value: unknown): boolean
+	if type(value) ~= "table" then
+		return false
+	end
+	local rejection = value :: { [any]: any }
+	if
+		not hasOnlyKeys(rejection, {
+			operationId = true,
+			rosterRevision = true,
+			rejectionReasonId = true,
+			requestId = true,
+		})
+	then
+		return false
+	end
+	return rejection.operationId == ClassContracts.ClassSelectionNetworkOperationIds.Rejected
+		and isNonnegativeInteger(rejection.rosterRevision)
+		and containsValue(ClassContracts.ClassActionRejectionReasonIds, rejection.rejectionReasonId)
+		and (rejection.requestId == nil or isNonEmptyBoundedString(rejection.requestId, 128))
+end
 
 return table.freeze(ClassContracts)
