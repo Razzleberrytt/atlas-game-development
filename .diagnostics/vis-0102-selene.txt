@@ -1,0 +1,13 @@
+error[if_same_then_else]: this has the same block as a previous if
+    ┌─ games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau:418:3
+    │
+416 │         presentAmmunitionPayload(payload)
+    │         --------------------------------- note: same as this
+417 │     elseif kindId == CombatContracts.PresentationMessageKindIds.AmmunitionCollected then
+418 │         presentAmmunitionPayload(payload)
+    │         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Results:
+1 errors
+0 warnings
+0 parse errors
