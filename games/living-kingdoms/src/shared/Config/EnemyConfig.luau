@@ -44,8 +44,14 @@ assert(EnemyConfig.AttackRangeStuds > 0, "AttackRangeStuds must be positive")
 assert(EnemyConfig.AttackDamage > 0, "AttackDamage must be positive")
 assert(EnemyConfig.AttackCadenceSeconds > 0, "AttackCadenceSeconds must be positive")
 assert(EnemyConfig.PathRefreshIntervalSeconds >= EnemyConfig.SimulationIntervalSeconds, "Path refresh must be bounded")
-assert(EnemyConfig.DirectMoveRefreshIntervalSeconds >= EnemyConfig.SimulationIntervalSeconds, "Move refresh must be bounded")
-assert(EnemyConfig.MinimumFairSpawnDistanceStuds > EnemyConfig.AttackRangeStuds, "Spawn distance must exceed attack range")
+assert(
+	EnemyConfig.DirectMoveRefreshIntervalSeconds >= EnemyConfig.SimulationIntervalSeconds,
+	"Move refresh must be bounded"
+)
+assert(
+	EnemyConfig.MinimumFairSpawnDistanceStuds > EnemyConfig.AttackRangeStuds,
+	"Spawn distance must exceed attack range"
+)
 assert(EnemyConfig.MaximumActiveEnemies >= 1, "MaximumActiveEnemies must allow at least one enemy")
 assert(EnemyConfig.CorpseLifetimeSeconds >= 0, "CorpseLifetimeSeconds must be non-negative")
 assert(EnemyConfig.SimulationIntervalSeconds >= 0.1, "Production enemy simulation may not exceed 10 Hz")

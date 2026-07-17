@@ -144,7 +144,10 @@ function EnemyContracts.validateSnapshot(value: unknown): boolean
 	if not isNonEmptyString(snapshot.entityId) then
 		return false
 	end
-	if not isNonEmptyString(snapshot.archetypeId) or EnemyContracts.ArchetypeIds[snapshot.archetypeId :: string] == nil then
+	if
+		not isNonEmptyString(snapshot.archetypeId)
+		or EnemyContracts.ArchetypeIds[snapshot.archetypeId :: string] == nil
+	then
 		return false
 	end
 	if
@@ -175,13 +178,19 @@ function EnemyContracts.validateSnapshot(value: unknown): boolean
 	end
 	if
 		snapshot.lastAttackServerTimestamp ~= nil
-		and (not isFiniteNumber(snapshot.lastAttackServerTimestamp) or (snapshot.lastAttackServerTimestamp :: number) < 0)
+		and (
+			not isFiniteNumber(snapshot.lastAttackServerTimestamp)
+			or (snapshot.lastAttackServerTimestamp :: number) < 0
+		)
 	then
 		return false
 	end
 	if
 		snapshot.cleanupDeadlineServerTimestamp ~= nil
-		and (not isFiniteNumber(snapshot.cleanupDeadlineServerTimestamp) or (snapshot.cleanupDeadlineServerTimestamp :: number) < 0)
+		and (
+			not isFiniteNumber(snapshot.cleanupDeadlineServerTimestamp)
+			or (snapshot.cleanupDeadlineServerTimestamp :: number) < 0
+		)
 	then
 		return false
 	end

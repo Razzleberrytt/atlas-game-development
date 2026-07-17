@@ -38,9 +38,9 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Normalize Luau formatting
+      - name: Check Luau formatting
         shell: bash
-        run: stylua games/living-kingdoms/src
+        run: stylua --check games/living-kingdoms/src
 
       - name: Run Selene
         shell: bash

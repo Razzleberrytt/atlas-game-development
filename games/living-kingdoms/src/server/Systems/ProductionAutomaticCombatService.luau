@@ -125,7 +125,8 @@ local function createCandidates(operativeEntityId: string, origin: Vector3)
 					isVisible = visible,
 					hasLineOfSight = lineOfSight,
 					isActivelyThreatening = snapshot.selectedOperativeEntityId == operativeEntityId,
-					activelyThreateningOperativeEntityId = if snapshot.selectedOperativeEntityId == operativeEntityId
+					activelyThreateningOperativeEntityId = if snapshot.selectedOperativeEntityId
+							== operativeEntityId
 						then operativeEntityId
 						else nil,
 				})
@@ -140,19 +141,30 @@ local function discloseTarget(player: Player, state: any, targetEntityId: string
 		return
 	end
 	state.selectedTargetEntityId = targetEntityId
-	presentationRemote:FireClient(player, if targetEntityId == nil then {
-		kindId = CombatContracts.PresentationMessageKindIds.TargetCleared,
-		operativeEntityId = state.operativeState.entityId,
-		serverTimestamp = serverTimestamp,
-	} else {
-		kindId = CombatContracts.PresentationMessageKindIds.TargetSelected,
-		operativeEntityId = state.operativeState.entityId,
-		targetEntityId = targetEntityId,
-		serverTimestamp = serverTimestamp,
-	})
+	presentationRemote:FireClient(
+		player,
+		if targetEntityId == nil
+			then {
+				kindId = CombatContracts.PresentationMessageKindIds.TargetCleared,
+				operativeEntityId = state.operativeState.entityId,
+				serverTimestamp = serverTimestamp,
+			}
+			else {
+				kindId = CombatContracts.PresentationMessageKindIds.TargetSelected,
+				operativeEntityId = state.operativeState.entityId,
+				targetEntityId = targetEntityId,
+				serverTimestamp = serverTimestamp,
+			}
+	)
 end
 
-local function resolveAcceptedShot(player: Player, state: any, origin: Vector3, fireResult: any, serverTimestamp: number)
+local function resolveAcceptedShot(
+	player: Player,
+	state: any,
+	origin: Vector3,
+	fireResult: any,
+	serverTimestamp: number
+)
 	local entityId = fireResult.targetEntityId
 	local shotId = fireResult.shotId
 	if entityId == nil or shotId == nil then
@@ -254,7 +266,11 @@ local function onReloadIntent(player: Player, weaponId: unknown, ...: unknown)
 		return
 	end
 	local state = playerStates[player]
-	if state == nil or not OperativeLifeService.isCombatAllowed(player) or weaponId ~= state.operativeState.equippedWeaponId then
+	if
+		state == nil
+		or not OperativeLifeService.isCombatAllowed(player)
+		or weaponId ~= state.operativeState.equippedWeaponId
+	then
 		return
 	end
 	local serverTimestamp = Workspace:GetServerTimeNow()
@@ -313,7 +329,9 @@ function Service.stop()
 		return
 	end
 	started = false
-	for _, connection in { heartbeatConnection, playerAddedConnection, playerRemovingConnection, reloadIntentConnection } do
+	for _, connection in
+		{ heartbeatConnection, playerAddedConnection, playerRemovingConnection, reloadIntentConnection }
+	do
 		if connection ~= nil then
 			connection:Disconnect()
 		end
