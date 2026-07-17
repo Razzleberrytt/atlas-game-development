@@ -60,22 +60,34 @@ function Domain.validateFacts(facts: unknown): boolean
 	if not isNonNegativeInteger(value.activeEnemyCount) then
 		return false
 	end
-	if not isNonNegativeInteger(value.maximumConcurrentEnemies) or value.maximumConcurrentEnemies < 1 then
+	if
+		not isNonNegativeInteger(value.maximumConcurrentEnemies)
+		or value.maximumConcurrentEnemies < 1
+	then
 		return false
 	end
 	if not isFiniteNumber(value.serverTimestamp) or value.serverTimestamp < 0 then
 		return false
 	end
 	if value.lastWaveReleasedServerTimestamp ~= nil then
-		if not isFiniteNumber(value.lastWaveReleasedServerTimestamp) or value.lastWaveReleasedServerTimestamp < 0 then
+		if
+			not isFiniteNumber(value.lastWaveReleasedServerTimestamp)
+			or value.lastWaveReleasedServerTimestamp < 0
+		then
 			return false
 		end
 	end
-	if not isFiniteNumber(value.minimumSecondsBetweenWaves) or value.minimumSecondsBetweenWaves < 0 then
+	if
+		not isFiniteNumber(value.minimumSecondsBetweenWaves)
+		or value.minimumSecondsBetweenWaves < 0
+	then
 		return false
 	end
 	if value.recoveryUntilServerTimestamp ~= nil then
-		if not isFiniteNumber(value.recoveryUntilServerTimestamp) or value.recoveryUntilServerTimestamp < 0 then
+		if
+			not isFiniteNumber(value.recoveryUntilServerTimestamp)
+			or value.recoveryUntilServerTimestamp < 0
+		then
 			return false
 		end
 	end
