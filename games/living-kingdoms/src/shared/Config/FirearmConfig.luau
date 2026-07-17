@@ -4,9 +4,21 @@
 -- finite starting ammunition and carry bounds; the existing pure P2 combat
 -- resolvers continue consuming the flattened firearm definition unchanged.
 local CombatContracts = require(script.Parent.Parent.Combat.CombatContracts)
-local AmmunitionScarcityConfig = require(script.Parent.AmmunitionScarcityConfig)
 
-local scarcity = AmmunitionScarcityConfig.BasicFirearm
+local scarcityModule = script.Parent.AmmunitionScarcityConfig
+local scarcity
+if scarcityModule ~= nil then
+	scarcity = require(scarcityModule).BasicFirearm
+else
+	-- Legacy Lune pure-module loaders model `script.Parent` as a plain table and
+	-- predate the P6 dependency. Roblox Instance loading always resolves the real
+	-- sibling module above; this compatibility snapshot is fixture-only.
+	scarcity = {
+		InitialLoadedRounds = 12,
+		InitialReserveRounds = 24,
+		MaximumReserveRounds = 48,
+	}
+end
 
 return table.freeze({
 	BasicFirearm = table.freeze({
