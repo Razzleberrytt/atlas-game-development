@@ -61,7 +61,9 @@ local OperativeReviveSessionService = require(script.Systems.OperativeReviveSess
 local SquadFailureService = require(script.Systems.SquadFailureService)
 local PersonalFlashlightService = require(script.Systems.PersonalFlashlightService)
 local SquadPingService = require(script.Systems.SquadPingService)
+local WorldFoundationService = require(script.Systems.WorldFoundationService)
 
+WorldFoundationService.start()
 OperativeLifeService.start()
 SquadFailureService.start()
 PersonalFlashlightService.start()

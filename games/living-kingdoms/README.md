@@ -4,7 +4,7 @@ Living Kingdoms is the temporary working title and internal identifier for a bru
 
 ## Current stage
 
-P1, tactical player movement and character control, and P2, automatic targeting and basic firearm combat, are complete. The initial MVP targets 1–4 players, while architecture should permit later support for up to 8. Each player controls one specialist operative rather than an army.
+P1 through P4 are complete. P5-0101 adds the first deterministic, walkable Appalachian exclusion-zone graybox without expanding gameplay. The initial MVP targets 1–4 players, while architecture should permit later support for up to 8. Each player controls one specialist operative rather than an army.
 
 The existing client starts a fixed elevated tactical camera that smoothly follows the local player while Roblox's standard character moves relative to that camera. Mouse-wheel zoom and configurable world-space focus-point bounds remain active. Keyboard camera panning remains implemented but is disabled while survivor movement is active so one keypress cannot move both the character and camera.
 
@@ -75,7 +75,7 @@ There is no client movement-state remote and the server accepts no client-suppli
 
 The client bootstrap initializes and starts `CameraController`. The controller exposes `init()`, `start()`, `stop()`, and `destroy()`; repeated lifecycle calls are safe no-ops when the requested state is already satisfied, and destruction is terminal.
 
-The current view uses initial focus point `(0, 0, 0)`, pitch `-60` degrees, yaw `45` degrees, and height `80` studs. Mouse-wheel zoom changes height by `10` studs per wheel unit and clamps it from `40` to `160` studs. The focus point is clamped from `-128` to `128` on X and Z. Keyboard panning remains available to the camera controller at `48` studs per second, but `SurvivorController` disables it while active and restores it on stop.
+The current view uses initial focus point `(-224, 0, -208)` at the ranger-station insertion, pitch `-60` degrees, yaw `45` degrees, and height `92` studs. Mouse-wheel zoom changes height by `10` studs per wheel unit and clamps it from `40` to `160` studs. The focus point is clamped from `-320` to `320` on X and Z to contain the authored operation. Keyboard panning remains available to the camera controller at `48` studs per second, but `SurvivorController` disables it while active and restores it on stop.
 
 These values and controls are not the final survival-camera design. Survivor movement owns the shared movement keys while active. Bounds must later be adapted to one authored operation map. Working camera code remains intact unless a focused survival task demonstrates a change is needed.
 
@@ -83,7 +83,7 @@ These values and controls are not the final survival-camera design. Survivor mov
 
 While `SurvivorController` is active, it enables `CameraController` survivor-follow mode and disables keyboard camera panning. Stopping survivor control disables follow and restores keyboard panning. Movement retains sole ownership of W/A/S/D and arrow keys; mouse-wheel zoom remains available.
 
-The camera follows the local character's `HumanoidRootPart` on the horizontal XZ plane. `SurvivorFollowConfig` centralizes a world-space offset of `(0, 0, 0)`, responsiveness of `12` per second, a `0.05`-stud settle distance, and the `PreserveConfiguredFocusHeight` vertical policy. The follow target is `(root.X + offset.X, configuredFocusY + offset.Y, root.Z + offset.Z)`, clamped to the existing `-128` to `128` X/Z focus bounds.
+The camera follows the local character's `HumanoidRootPart` on the horizontal XZ plane. `SurvivorFollowConfig` centralizes a world-space offset of `(0, 0, 0)`, responsiveness of `12` per second, a `0.05`-stud settle distance, and the `PreserveConfiguredFocusHeight` vertical policy. The follow target is `(root.X + offset.X, configuredFocusY + offset.Y, root.Z + offset.Z)`, clamped to the authored operation's `-320` to `320` X/Z focus bounds.
 
 Each render step uses exponential smoothing with `alpha = 1 - exp(-responsiveness * deltaTime)` and interpolates the current focus toward the bounded target. Once the remaining distance is at most `0.05` studs, the focus is set to the target so it does not drift indefinitely. Root Y is intentionally ignored, so ordinary walking physics, animation, slopes, and jumping do not produce vertical camera bob. Pitch `-60` degrees, yaw `45` degrees, current zoom height, zoom limits `40` to `160`, and `Scriptable` mode are unchanged.
 
@@ -198,4 +198,4 @@ The client receives copied life, health, deadline, recovery, revive, and squad-f
 
 ## Next planned milestone
 
-P3 is complete. P4 — darkness, limited vision, and squad-location tools — is the next planned milestone and remains unstarted. Operation results, broader operation flow, persistence, enemies, scarcity pickups, production presentation, and all later gameplay systems remain deferred.
+P4 and the P5-0101 environment foundation are complete in source. The next planned work is P5 enemy lifecycle and pressure. Operation results, broader operation flow, persistence, scarcity pickups, production presentation, and all later gameplay systems remain deferred.

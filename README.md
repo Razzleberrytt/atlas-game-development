@@ -43,8 +43,8 @@ For the reusable Studio launch check and first successful result, see the [smoke
 ## Project status
 
 **Atlas version:** 0.1  
-**Living Kingdoms phase:** P3 complete — Health, incapacitation, revival, and death
+**Living Kingdoms phase:** P5 world foundation established after P4 completion
 
-**Next planned milestone:** P4 — Darkness, limited vision, and squad-location tools
+**Next planned milestone:** P5 enemy spawning, pursuit, and horde pressure
 
 Final public branding is unresolved. Living Kingdoms remains the working title and internal project identifier; naming work is outside the current scope.

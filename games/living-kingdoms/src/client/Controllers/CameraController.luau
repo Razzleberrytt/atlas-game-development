@@ -17,17 +17,17 @@ local Workspace = game:GetService("Workspace")
 local PAN_SPEED_STUDS_PER_SECOND = 48
 
 local CameraConfig = table.freeze({
-	FocusPoint = Vector3.new(0, 0, 0),
-	MinimumFocusX = -128,
-	MaximumFocusX = 128,
-	MinimumFocusZ = -128,
-	MaximumFocusZ = 128,
+	FocusPoint = Vector3.new(-224, 0, -208),
+	MinimumFocusX = -320,
+	MaximumFocusX = 320,
+	MinimumFocusZ = -320,
+	MaximumFocusZ = 320,
 	PitchDegrees = -60,
 	YawDegrees = 45,
 	MinimumHeight = 40,
 	MaximumHeight = 160,
 	ZoomSensitivity = 10,
-	InitialHeight = 80,
+	InitialHeight = 92,
 })
 
 local SurvivorFollowConfig = table.freeze({
