@@ -9,6 +9,7 @@ on:
       - "selene.toml"
       - ".github/workflows/luau-validation.yml"
       - ".github/one-shot/p6_0105_patch.py"
+      - ".github/one-shot/fix_p6_patch.py"
   push:
     branches:
       - main
@@ -38,6 +39,9 @@ jobs:
           path: .
           cache: false
           token: ${{ github.token }}
+
+      - name: Narrow presentation contract anchor
+        run: python3 .github/one-shot/fix_p6_patch.py
 
       - name: Apply anchored ammunition feedback patch
         run: python3 .github/one-shot/p6_0105_patch.py
