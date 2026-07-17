@@ -117,3 +117,4 @@ test_path.write_text('''--!strict\n\nlocal fs = require("@lune/fs")\n\nlocal fun
 
 Path(".github/workflows/p6-0105-one-shot.yml").unlink()
 Path(".github/one-shot/p6_0105_patch.py").unlink()
+# trigger
