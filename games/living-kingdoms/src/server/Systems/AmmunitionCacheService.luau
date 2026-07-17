@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
+local CachePresentationContracts = require(ReplicatedStorage.Shared.Combat.AmmunitionCachePresentationContracts)
 local Contracts = require(ReplicatedStorage.Shared.Combat.AmmunitionScarcityContracts)
 local CacheConfig = require(ReplicatedStorage.Shared.Config.AmmunitionCacheConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
@@ -17,6 +18,8 @@ local OperativeLifeService = require(script.Parent.OperativeLifeService)
 
 local SourceIds = Contracts.SupplySourceIds
 local CACHE_FOLDER_NAME = "AmmunitionCaches"
+local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
+local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: any
 
 local AmmunitionCacheService = {}
 local started = false
@@ -54,6 +57,10 @@ local function tryCollect(player: Player, definition)
 	if not started or not OperativeLifeService.isCombatAllowed(player) then
 		return
 	end
+	local processed = processedSetFor(player)
+	if processed[definition.cacheId] then
+		return
+	end
 	local position = operativePosition(player)
 	local cachePosition = Vector3.new(definition.position.x, definition.position.y, definition.position.z)
 	if
@@ -69,7 +76,6 @@ local function tryCollect(player: Player, definition)
 	local combatState = read.combatState
 	local weaponState = combatState.weaponState
 	local ammunition = weaponState.ammunition
-	local processed = processedSetFor(player)
 	local result = AmmunitionSupplyResolver.collect({
 		weaponId = ammunition.weaponId,
 		loadedRounds = ammunition.loadedRounds,
@@ -99,6 +105,10 @@ local function tryCollect(player: Player, definition)
 		return
 	end
 	processedByPlayer[player] = table.clone(stateAfter.processedSupplyIds)
+	presentationRemote:FireClient(player, {
+		kindId = CachePresentationContracts.MessageKindIds.Consumed,
+		cacheId = definition.cacheId,
+	})
 end
 
 local function createCache(definition, parent: Folder)
