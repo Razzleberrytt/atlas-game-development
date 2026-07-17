@@ -516,7 +516,18 @@ assert(not string.find(project, "EnemyNetwork", 1, true), "P5 must not add an en
 local _, projectRemoteCount = string.gsub(project, '"%$className"%s*:%s*"RemoteEvent"', "")
 assert(projectRemoteCount == 7, "the committed remote surface changed size")
 local clientBootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
-assert(not string.find(clientBootstrap, "Enemy", 1, true), "clients must not bootstrap enemy authority")
+assert(
+	string.find(clientBootstrap, "EnemyPresentationController.start()", 1, true) ~= nil,
+	"clients may bootstrap bounded enemy presentation"
+)
+for _, prohibitedClientAuthority in
+	{ "EnemyDirectorService", "EnemyBehaviorResolver", "EnemyCombatRuntime", "EnemyNetwork" }
+do
+	assert(
+		not string.find(clientBootstrap, prohibitedClientAuthority, 1, true),
+		"client bootstrap gained enemy authority: " .. prohibitedClientAuthority
+	)
+end
 local directorSource = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau")
 local missionSource = fs.readFile("games/living-kingdoms/src/server/Systems/MissionDirectorService.luau")
 for _, prohibited in { "OnServerEvent", "FireServer", "InvokeServer" } do
