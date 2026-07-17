@@ -33,7 +33,7 @@ jobs:
 
       - name: Commit diagnostic
         run: |
-          if git diff --quiet -- .diagnostics/vis-0102-selene.txt; then
+          if [ -z "$(git status --porcelain -- .diagnostics/vis-0102-selene.txt)" ]; then
             exit 0
           fi
           git config user.name "github-actions[bot]"
