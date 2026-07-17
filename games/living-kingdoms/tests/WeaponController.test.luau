@@ -40,12 +40,25 @@ local function fakeInstance(className: string)
 		ClassName = className,
 		destroyed = false,
 		textWrites = {},
+		children = {},
 	}
 	function instance:Destroy()
 		instance.destroyed = true
 	end
 	function instance:GetAttribute(attributeName: string)
 		return instance.attributes and instance.attributes[attributeName] or nil
+	end
+	function instance:IsA(expectedClassName: string)
+		return instance.ClassName == expectedClassName
+			or (instance.ClassName == "Part" and expectedClassName == "BasePart")
+	end
+	function instance:FindFirstChild(childName: string)
+		for _, child in instance.children do
+			if child.Name == childName and not child.destroyed then
+				return child
+			end
+		end
+		return nil
 	end
 	table.insert(createdInstances, instance)
 	return setmetatable(instance, {
@@ -59,6 +72,8 @@ local function fakeInstance(className: string)
 		__newindex = function(self, key, value)
 			if key == "Text" then
 				table.insert(self.textWrites, value)
+			elseif key == "Parent" and value ~= nil and value.children ~= nil then
+				table.insert(value.children, self)
 			end
 			properties[key] = value
 		end,
@@ -67,6 +82,15 @@ end
 
 local target = fakeInstance("Model")
 target.attributes = { CombatEntityId = "hostile.disclosed" }
+
+local cachePart = fakeInstance("Part")
+cachePart.Name = "ammo-cache.test"
+cachePart.attributes = { SupplyCacheId = "ammo-cache.test" }
+local cachePrompt = fakeInstance("ProximityPrompt")
+cachePrompt.Name = "CollectPrompt"
+cachePrompt.Enabled = true
+cachePrompt.ActionText = "Collect"
+cachePrompt.Parent = cachePart
 
 local reloadIntentRemote = {
 	FireServer = function(_self: unknown, ...: any)
@@ -86,11 +110,15 @@ local combatNetwork = {
 	end,
 }
 
+local CACHE_PRESENTATION_CONTRACTS_TOKEN = {}
 local CONTRACTS_TOKEN = {}
 local CONFIG_TOKEN = {}
 local replicatedStorage = {
 	Shared = {
-		Combat = { CombatContracts = CONTRACTS_TOKEN },
+		Combat = {
+			AmmunitionCachePresentationContracts = CACHE_PRESENTATION_CONTRACTS_TOKEN,
+			CombatContracts = CONTRACTS_TOKEN,
+		},
 		Config = { FirearmConfig = CONFIG_TOKEN },
 	},
 	WaitForChild = function(_self: unknown, name: string)
@@ -115,7 +143,7 @@ local userInputService = {
 }
 local workspace = {
 	GetDescendants = function()
-		return { target }
+		return { target, cachePart, cachePrompt }
 	end,
 }
 
@@ -126,6 +154,11 @@ local services = {
 	Workspace = workspace,
 }
 
+local cachePresentationContracts = {
+	MessageKindIds = table.freeze({
+		Consumed = "AmmunitionCacheConsumed",
+	}),
+}
 local contracts = {
 	PresentationMessageKindIds = table.freeze({
 		TargetSelected = "TargetSelected",
@@ -134,6 +167,8 @@ local contracts = {
 		ReloadStarted = "ReloadStarted",
 		ReloadCompleted = "ReloadCompleted",
 		ReloadInterrupted = "ReloadInterrupted",
+		AmmunitionState = "AmmunitionState",
+		AmmunitionCollected = "AmmunitionCollected",
 	}),
 }
 local config = { BasicFirearm = table.freeze({ WeaponId = "weapon.basic_firearm" }) }
@@ -148,6 +183,9 @@ local environment = {
 		end,
 	},
 	require = function(token: unknown)
+		if token == CACHE_PRESENTATION_CONTRACTS_TOKEN then
+			return cachePresentationContracts
+		end
 		if token == CONTRACTS_TOKEN then
 			return contracts
 		end
@@ -160,7 +198,11 @@ local environment = {
 	Enum = {
 		KeyCode = { R = keyCodeR },
 		HighlightDepthMode = { Occluded = "Occluded" },
-		Font = { GothamMedium = "GothamMedium" },
+		Font = {
+			GothamMedium = "GothamMedium",
+			GothamBold = "GothamBold",
+		},
+		Material = { SmoothPlastic = "SmoothPlastic" },
 	},
 	Color3 = {
 		fromRGB = function(r: number, g: number, b: number)
@@ -206,6 +248,20 @@ local function activeInstance(className: string, instanceName: string?)
 		end
 	end
 	return nil
+end
+
+local function countActiveInstances(className: string, instanceName: string?): number
+	local count = 0
+	for _, instance in createdInstances do
+		if
+			instance.ClassName == className
+			and not instance.destroyed
+			and (instanceName == nil or instance.Name == instanceName)
+		then
+			count += 1
+		end
+	end
+	return count
 end
 
 local function deepCopy(value: any): any
@@ -334,12 +390,30 @@ assert(statusLabel.Text == "Reload complete", "reload completion was not present
 presentationEvent:Fire({ kindId = "ReloadInterrupted", weaponId = "weapon.basic_firearm" })
 assert(statusLabel.Text == "Reload interrupted", "reload interruption was not presented")
 
+presentationEvent:Fire({ kindId = "AmmunitionCacheConsumed" })
+assert(cachePrompt.Enabled == true, "malformed cache disclosure disabled a prompt")
+local highlightsBeforeCache = countActiveInstances("Highlight", "ConsumedCacheHighlight")
+presentationEvent:Fire({ kindId = "AmmunitionCacheConsumed", cacheId = "ammo-cache.test" })
+assert(cachePrompt.Enabled == false, "consumed cache prompt remained enabled")
+assert(cachePrompt.ActionText == "Depleted", "consumed cache prompt did not show depletion")
+assert(cachePart.Material == "SmoothPlastic", "consumed cache material was not depleted")
+assert(cachePart.Transparency == 0.35, "consumed cache transparency was not depleted")
+assert(
+	countActiveInstances("Highlight", "ConsumedCacheHighlight") == highlightsBeforeCache + 1,
+	"consumed cache highlight was not created"
+)
+presentationEvent:Fire({ kindId = "AmmunitionCacheConsumed", cacheId = "ammo-cache.test" })
+assert(
+	countActiveInstances("Highlight", "ConsumedCacheHighlight") == highlightsBeforeCache + 1,
+	"duplicate cache disclosure created duplicate presentation"
+)
+
 controller.destroy()
 controller.destroy()
 controller.start()
 inputR(false)
 presentationEvent:Fire({ kindId = "TargetSelected", targetEntityId = "hostile.disclosed" })
 assert(#reloadRequests == 2, "destroyed controller retained input")
-assert(activeInstance("Highlight") == nil, "destroyed controller retained presentation")
+assert(activeInstance("Highlight", "DisclosedCombatTarget") == nil, "destroyed controller retained target presentation")
 
-print("WeaponController: reload input, cooldown, focus, lifecycle, disclosure, shot, and authority checks passed")
+print("WeaponController: input, lifecycle, combat disclosure, ammo, and cache presentation checks passed")
