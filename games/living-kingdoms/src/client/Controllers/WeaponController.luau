@@ -190,17 +190,24 @@ local function onPresentationMessage(message: unknown)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadStarted then
 		if
-			payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+			isLocalOperativeEntityId(payload.operativeEntityId)
+			and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
 			and isFiniteNumber(payload.completionServerTimestamp)
 		then
 			setStatus("Reloading")
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadCompleted then
-		if payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
+		if
+			isLocalOperativeEntityId(payload.operativeEntityId)
+			and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+		then
 			setStatus("Reload complete")
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadInterrupted then
-		if payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
+		if
+			isLocalOperativeEntityId(payload.operativeEntityId)
+			and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+		then
 			setStatus("Reload interrupted")
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.AmmunitionState then

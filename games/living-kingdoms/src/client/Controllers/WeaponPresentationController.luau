@@ -16,6 +16,7 @@ local Workspace = game:GetService("Workspace")
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local BasicFirearmPresentationFactory = require(script.Parent.Parent.Presentation.BasicFirearmPresentationFactory)
+local RemoteWeaponMotionPresenter = require(script.Parent.Parent.Presentation.RemoteWeaponMotionPresenter)
 local WeaponShotEffectPresenter = require(script.Parent.Parent.Presentation.WeaponShotEffectPresenter)
 
 type BasicFirearmPresentationRig = BasicFirearmPresentationFactory.BasicFirearmPresentationRig
@@ -136,6 +137,7 @@ local function localRig(): BasicFirearmPresentationRig?
 end
 
 local function destroyRig(player: Player)
+	RemoteWeaponMotionPresenter.cleanupPlayer(player)
 	if player == Players.LocalPlayer then
 		state.shotGeneration += 1
 		state.reloadGeneration += 1
@@ -293,6 +295,7 @@ local function playShot(
 	end
 	WeaponShotEffectPresenter.present(rig, shotId, didApplyDamage, impactWorldPosition)
 	if shooter ~= Players.LocalPlayer then
+		RemoteWeaponMotionPresenter.presentShot(shooter, rig)
 		return
 	end
 	state.shotGeneration += 1
@@ -332,9 +335,17 @@ local function resetMagazine(durationSeconds: number)
 	)
 end
 
-local function playReload(completionServerTimestamp: number)
-	local rig = localRig()
+local function playReload(operativeEntityId: string, completionServerTimestamp: number)
+	local player = playerForOperativeEntityId(operativeEntityId)
+	if player == nil then
+		return
+	end
+	local rig = state.rigs[player]
 	if rig == nil then
+		return
+	end
+	if player ~= Players.LocalPlayer then
+		RemoteWeaponMotionPresenter.presentReloadStarted(player, rig, completionServerTimestamp)
 		return
 	end
 	state.reloadGeneration += 1
@@ -367,7 +378,19 @@ local function playReload(completionServerTimestamp: number)
 	end)
 end
 
-local function finishReload()
+local function finishReload(operativeEntityId: string)
+	local player = playerForOperativeEntityId(operativeEntityId)
+	if player == nil then
+		return
+	end
+	local rig = state.rigs[player]
+	if rig == nil then
+		return
+	end
+	if player ~= Players.LocalPlayer then
+		RemoteWeaponMotionPresenter.presentReloadCompleted(player, rig)
+		return
+	end
 	state.reloadGeneration += 1
 	state.isReloading = false
 	resetMagazine(0.08)
@@ -376,7 +399,19 @@ local function finishReload()
 	end
 end
 
-local function interruptReload()
+local function interruptReload(operativeEntityId: string)
+	local player = playerForOperativeEntityId(operativeEntityId)
+	if player == nil then
+		return
+	end
+	local rig = state.rigs[player]
+	if rig == nil then
+		return
+	end
+	if player ~= Players.LocalPlayer then
+		RemoteWeaponMotionPresenter.presentReloadInterrupted(player, rig)
+		return
+	end
 	state.reloadGeneration += 1
 	state.isReloading = false
 	resetMagazine(0.12)
@@ -428,18 +463,19 @@ local function onPresentationMessage(message: unknown)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadStarted then
 		if
-			payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+			isNonEmptyString(payload.operativeEntityId)
+			and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
 			and isFiniteNumber(payload.completionServerTimestamp)
 		then
-			playReload(payload.completionServerTimestamp)
+			playReload(payload.operativeEntityId, payload.completionServerTimestamp)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadCompleted then
-		if payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
-			finishReload()
+		if isNonEmptyString(payload.operativeEntityId) and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
+			finishReload(payload.operativeEntityId)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadInterrupted then
-		if payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
-			interruptReload()
+		if isNonEmptyString(payload.operativeEntityId) and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
+			interruptReload(payload.operativeEntityId)
 		end
 	elseif
 		kindId == CombatContracts.PresentationMessageKindIds.AmmunitionState
@@ -485,6 +521,7 @@ function WeaponPresentationController.stop()
 	for key in state.activeTweens do
 		cancelTween(key)
 	end
+	RemoteWeaponMotionPresenter.stop()
 	table.clear(state.presentedShotIds)
 	table.clear(state.presentedShotOrder)
 	state.lastLoadedRounds = nil

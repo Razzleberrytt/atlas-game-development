@@ -325,6 +325,22 @@ local function discloseTarget(
 	})
 end
 
+local function broadcastReloadPresentation(
+	playerState: PlayerCombatState,
+	kindId: CombatContracts.CombatPresentationMessageKindId,
+	completionServerTimestamp: number?
+)
+	local payload: any = {
+		kindId = kindId,
+		operativeEntityId = playerState.operativeState.entityId,
+		weaponId = FirearmConfig.BasicFirearm.WeaponId,
+	}
+	if completionServerTimestamp ~= nil then
+		payload.completionServerTimestamp = completionServerTimestamp
+	end
+	presentationRemote:FireAllClients(payload)
+end
+
 local function resolveAcceptedShot(
 	playerState: PlayerCombatState,
 	operativePosition: Vector3,
@@ -446,15 +462,9 @@ local function completeReload(player: Player, expectedCompletionTimestamp: numbe
 		OperativeCombatRuntimeService.publishAmmunitionState(player)
 	end
 	if resolution.didComplete then
-		presentationRemote:FireClient(player, {
-			kindId = CombatContracts.PresentationMessageKindIds.ReloadCompleted,
-			weaponId = FirearmConfig.BasicFirearm.WeaponId,
-		})
+		broadcastReloadPresentation(playerState, CombatContracts.PresentationMessageKindIds.ReloadCompleted, nil)
 	elseif resolution.wasInterrupted then
-		presentationRemote:FireClient(player, {
-			kindId = CombatContracts.PresentationMessageKindIds.ReloadInterrupted,
-			weaponId = FirearmConfig.BasicFirearm.WeaponId,
-		})
+		broadcastReloadPresentation(playerState, CombatContracts.PresentationMessageKindIds.ReloadInterrupted, nil)
 	end
 end
 
@@ -483,11 +493,11 @@ local function onReloadIntent(player: Player, weaponId: unknown, ...: unknown)
 	end
 	local reloadState = resolution.weaponStateAfter.reloadState
 	assert(reloadState ~= nil, "accepted reload must include authoritative timing")
-	presentationRemote:FireClient(player, {
-		kindId = CombatContracts.PresentationMessageKindIds.ReloadStarted,
-		weaponId = FirearmConfig.BasicFirearm.WeaponId,
-		completionServerTimestamp = reloadState.completionServerTimestamp,
-	})
+	broadcastReloadPresentation(
+		playerState,
+		CombatContracts.PresentationMessageKindIds.ReloadStarted,
+		reloadState.completionServerTimestamp
+	)
 	local generation = playerState.generation
 	task.delay(FirearmConfig.BasicFirearm.ReloadDurationSeconds, function()
 		completeReload(player, reloadState.completionServerTimestamp, generation)
@@ -520,10 +530,7 @@ local function applyLifeStateRestriction(player: Player)
 	end
 	playerStates[player] = restricted
 	if wasReloading and restricted.weaponState.reloadState == nil then
-		presentationRemote:FireClient(player, {
-			kindId = CombatContracts.PresentationMessageKindIds.ReloadInterrupted,
-			weaponId = FirearmConfig.BasicFirearm.WeaponId,
-		})
+		broadcastReloadPresentation(restricted, CombatContracts.PresentationMessageKindIds.ReloadInterrupted, nil)
 	end
 end
 
