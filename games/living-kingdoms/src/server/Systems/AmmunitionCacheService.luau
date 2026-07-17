@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
+local CachePresentationContracts = require(ReplicatedStorage.Shared.Combat.AmmunitionCachePresentationContracts)
 local Contracts = require(ReplicatedStorage.Shared.Combat.AmmunitionScarcityContracts)
 local CacheConfig = require(ReplicatedStorage.Shared.Config.AmmunitionCacheConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
@@ -105,7 +106,7 @@ local function tryCollect(player: Player, definition)
 	end
 	processedByPlayer[player] = table.clone(stateAfter.processedSupplyIds)
 	presentationRemote:FireClient(player, {
-		kindId = Contracts.PresentationMessageKindIds.AmmunitionCacheConsumed,
+		kindId = CachePresentationContracts.MessageKindIds.Consumed,
 		cacheId = definition.cacheId,
 	})
 end
