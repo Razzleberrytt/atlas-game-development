@@ -56,7 +56,10 @@ local function tryCollect(player: Player, definition)
 	end
 	local position = operativePosition(player)
 	local cachePosition = Vector3.new(definition.position.x, definition.position.y, definition.position.z)
-	if position == nil or horizontalDistance(position, cachePosition) > CacheConfig.Interaction.MaximumDistanceStuds then
+	if
+		position == nil
+		or horizontalDistance(position, cachePosition) > CacheConfig.Interaction.MaximumDistanceStuds
+	then
 		return
 	end
 	local read = OperativeCombatRuntimeService.readReviveCombatState(player)
@@ -67,19 +70,22 @@ local function tryCollect(player: Player, definition)
 	local weaponState = combatState.weaponState
 	local ammunition = weaponState.ammunition
 	local processed = processedSetFor(player)
-	local result = AmmunitionSupplyResolver.collect({
-		weaponId = ammunition.weaponId,
-		loadedRounds = ammunition.loadedRounds,
-		reserveRounds = ammunition.reserveRounds,
-		magazineCapacity = ammunition.magazineCapacity,
-		maximumReserveRounds = FirearmConfig.BasicFirearm.MaximumReserveRounds,
-		processedSupplyIds = processed,
-	}, {
-		supplyId = definition.cacheId,
-		sourceId = SourceIds.AuthoredCache,
-		weaponId = definition.weaponId,
-		availableRounds = definition.rounds,
-	})
+	local result = AmmunitionSupplyResolver.collect(
+		{
+			weaponId = ammunition.weaponId,
+			loadedRounds = ammunition.loadedRounds,
+			reserveRounds = ammunition.reserveRounds,
+			magazineCapacity = ammunition.magazineCapacity,
+			maximumReserveRounds = FirearmConfig.BasicFirearm.MaximumReserveRounds,
+			processedSupplyIds = processed,
+		},
+		{
+			supplyId = definition.cacheId,
+			sourceId = SourceIds.AuthoredCache,
+			weaponId = definition.weaponId,
+			availableRounds = definition.rounds,
+		}
+	)
 	if not result.didCollect then
 		return
 	end
