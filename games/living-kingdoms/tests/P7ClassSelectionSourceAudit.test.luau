@@ -48,8 +48,16 @@ end
 
 assertThat(string.find(controller, "SelectionIntent", 1, true) ~= nil, "client must use the narrow selection intent")
 assertThat(string.find(controller, "ReadState", 1, true) ~= nil, "client must recover an initial safe snapshot")
-assertThat(string.find(controller, "requestId =", 1, true) ~= nil, "client request requires replay identity")
-assertThat(string.find(controller, "classId = classId", 1, true) ~= nil, "client request contains selected class")
+assertThat(not string.find(controller, "ActionIntent", 1, true), "P7-0102 client must not expose class actions")
+
+local payloadStart = string.find(controller, "selectionIntentRemote:FireServer({", 1, true)
+assertThat(payloadStart ~= nil, "client selection payload must exist")
+local payloadEnd = string.find(controller, "\n\t})", payloadStart :: number, true)
+assertThat(payloadEnd ~= nil, "client selection payload must have a bounded literal body")
+local selectionPayload = string.sub(controller, payloadStart :: number, (payloadEnd :: number) + 3)
+
+assertThat(string.find(selectionPayload, "requestId =", 1, true) ~= nil, "client request requires replay identity")
+assertThat(string.find(selectionPayload, "classId = classId", 1, true) ~= nil, "client request contains selected class")
 for _, forbidden in {
 	"operativeEntityId =",
 	"selectionStateId =",
@@ -58,9 +66,11 @@ for _, forbidden in {
 	"cooldownEndServerTimestamp =",
 	"health =",
 	"ammunition =",
-	"ActionIntent",
 } do
-	assertThat(not string.find(controller, forbidden, 1, true), "client must not submit authority field " .. forbidden)
+	assertThat(
+		not string.find(selectionPayload, forbidden, 1, true),
+		"client selection payload must not submit authority field " .. forbidden
+	)
 end
 
 assertThat(string.find(resolver, "game:GetService(\"ReplicatedStorage\")", 1, true) ~= nil, "resolver may read shared declarations")
