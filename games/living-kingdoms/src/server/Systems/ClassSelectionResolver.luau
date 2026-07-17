@@ -60,11 +60,7 @@ local function rejected(
 end
 
 local function isFiniteNonnegative(value: unknown): boolean
-	return type(value) == "number"
-		and value == value
-		and value ~= math.huge
-		and value ~= -math.huge
-		and value >= 0
+	return type(value) == "number" and value == value and value ~= math.huge and value ~= -math.huge and value >= 0
 end
 
 local function validFacts(facts: unknown): boolean
@@ -75,10 +71,9 @@ local function validFacts(facts: unknown): boolean
 	return type(candidate.isParticipant) == "boolean"
 		and type(candidate.missionPhaseId) == "string"
 		and isFiniteNonnegative(candidate.serverTimestamp)
-		and (
-			candidate.insertionDeadlineServerTimestamp == nil
-			or isFiniteNonnegative(candidate.insertionDeadlineServerTimestamp)
-		)
+		and (candidate.insertionDeadlineServerTimestamp == nil or isFiniteNonnegative(
+			candidate.insertionDeadlineServerTimestamp
+		))
 		and type(candidate.availableClassIds) == "table"
 		and type(candidate.isDuplicateRequest) == "boolean"
 		and type(candidate.isRateLimited) == "boolean"

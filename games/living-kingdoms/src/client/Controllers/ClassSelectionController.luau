@@ -39,7 +39,13 @@ for _, definition in ClassConfig.ClassDefinitions do
 	displayNameByClassId[definition.classId] = definition.displayName
 end
 
-local function createTextLabel(parent: Instance, name: string, position: UDim2, size: UDim2, textSize: number): TextLabel
+local function createTextLabel(
+	parent: Instance,
+	name: string,
+	position: UDim2,
+	size: UDim2,
+	textSize: number
+): TextLabel
 	local label = Instance.new("TextLabel")
 	label.Name = name
 	label.Position = position
@@ -75,7 +81,9 @@ local function updatePresentation()
 	end
 	local owner = snapshot.ownerAssignment
 	local selectedClassId = if owner == nil then nil else owner.classId
-	local selectedName = if selectedClassId == nil then "Unassigned" else displayNameByClassId[selectedClassId] or selectedClassId
+	local selectedName = if selectedClassId == nil
+		then "Unassigned"
+		else displayNameByClassId[selectedClassId] or selectedClassId
 	if snapshot.selectionStateId == SelectionStateIds.Open then
 		currentPanel.Visible = true
 		status.Text = "CHOOSE SPECIALIST — locks when insertion ends\nCurrent: " .. selectedName

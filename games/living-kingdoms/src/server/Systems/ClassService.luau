@@ -101,12 +101,15 @@ end
 local function sortedSquadMembers(): { ClassContracts.ClassSquadMemberPresentationSnapshot }
 	local members = {}
 	for _, entry in entriesByOperativeId do
-		table.insert(members, table.freeze({
-			operativeEntityId = entry.operativeEntityId,
-			classId = entry.assignment.classId,
-			actionStateId = ActionStateIds.Idle,
-			actionId = nil,
-		}))
+		table.insert(
+			members,
+			table.freeze({
+				operativeEntityId = entry.operativeEntityId,
+				classId = entry.assignment.classId,
+				actionStateId = ActionStateIds.Idle,
+				actionId = nil,
+			})
+		)
 	end
 	table.sort(members, function(left, right)
 		return left.operativeEntityId < right.operativeEntityId
@@ -347,8 +350,8 @@ function Service.start()
 	local mission = MissionDirectorService.read()
 	local deadline = mission.insertionDeadlineServerTimestamp
 	selectionStateId = if mission.phaseId == ClassConfig.Selection.openMissionPhaseId
-		and deadline ~= nil
-		and now() < deadline
+			and deadline ~= nil
+			and now() < deadline
 		then SelectionStateIds.Open
 		else SelectionStateIds.Locked
 	for _, read in OperativeLifeService.readAll() do

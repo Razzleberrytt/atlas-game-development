@@ -313,7 +313,9 @@ function ClassContracts.validateSafeClassSelectionSnapshot(value: unknown): bool
 	if
 		not isNonnegativeInteger(snapshot.rosterRevision)
 		or not containsValue(ClassContracts.ClassSelectionStateIds, snapshot.selectionStateId)
-		or (snapshot.ownerAssignment ~= nil and not ClassContracts.validateAuthoritativeClassAssignment(snapshot.ownerAssignment))
+		or (snapshot.ownerAssignment ~= nil and not ClassContracts.validateAuthoritativeClassAssignment(
+			snapshot.ownerAssignment
+		))
 		or type(snapshot.squadMembers) ~= "table"
 	then
 		return false
