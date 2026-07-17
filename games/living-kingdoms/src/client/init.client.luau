@@ -14,6 +14,7 @@ local OperativeLifeWorldPresentationController = require(script.Controllers.Oper
 local PersonalFlashlightController = require(script.Controllers.PersonalFlashlightController)
 local SquadPingController = require(script.Controllers.SquadPingController)
 local EnvironmentAmbienceController = require(script.Controllers.EnvironmentAmbienceController)
+local RouteGuidePresentationController = require(script.Controllers.RouteGuidePresentationController)
 local MissionController = require(script.Controllers.MissionController)
 local MissionObjectPresentationController = require(script.Controllers.MissionObjectPresentationController)
 
@@ -34,6 +35,7 @@ OperativeLifeController.start()
 PersonalFlashlightController.start()
 SquadPingController.start()
 EnvironmentAmbienceController.start()
+RouteGuidePresentationController.start()
 MissionController.start()
 MissionObjectPresentationController.start()
 -- Mission presentation starts first; class selection then requests authoritative state.

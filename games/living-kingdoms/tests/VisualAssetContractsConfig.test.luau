@@ -108,6 +108,14 @@ assertThat(
 )
 assertThat(extractionBeacon.expectedRootName == "ExtractionBeaconPresentation", "extraction presentation root drifted")
 assertThat(#extractionBeacon.requiredAttachmentNames == 0, "procedural extraction must not claim authored attachments")
+local loggingRoad = config.ByKey[contracts.AssetKeys.WorldLoggingRoad]
+assertThat(loggingRoad.statusId == contracts.StatusIds.PrimitivePlaceholder, "route guides must remain primitive")
+assertThat(
+	loggingRoad.runtimeOwnerPath == "src/client/Controllers/RouteGuidePresentationController.luau",
+	"logging-road registry must name the route-guide presentation owner"
+)
+assertThat(loggingRoad.expectedRootName == "RouteGuidePresentation", "route-guide root contract drifted")
+assertThat(#loggingRoad.requiredAttachmentNames == 0, "procedural route guides must not claim attachments")
 assertThat(
 	config.ByKey[contracts.AssetKeys.EnemyStandardHostileModel].statusId == contracts.StatusIds.PrimitivePlaceholder,
 	"standard hostile must remain honestly marked as primitive geometry"

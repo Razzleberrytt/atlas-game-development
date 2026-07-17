@@ -29,7 +29,7 @@ The registry is descriptive only. It does not load assets or change gameplay.
 | Extraction | Extraction beacon | Primitive placeholder | `MissionDirectorService` creates the authoritative beacon only after unlock; `MissionObjectPresentationFactory` and `MissionObjectPresentationController` add a twelve-part open/holdout/outcome procedural package | VIS-0105 / P10 |
 | World | Blackwater world foundation | Primitive placeholder | `WorldFoundationService`; deterministic Part-based terrain, routes, vegetation, structures, and props | VIS-0105 |
 | Landmark | Ranger Station | Primitive placeholder | Part-built cabin, equipment, mast, truck, cases, and signage | VIS-0105 |
-| Landmark | Logging Road | Primitive placeholder | Segmented road and tire-track geometry | VIS-0105 |
+| Landmark | Logging Road | Primitive placeholder | `WorldFoundationService` retains authored road/trail geometry and collision; `RouteGuidePresentationFactory` and `RouteGuidePresentationController` add paired client-local edge guides with no destination or extraction cue | VIS-0105 |
 | Landmark | Lookout Tower | Primitive placeholder | Part-built tower, platform, cabin, stairs, and warning light | VIS-0105 |
 | Landmark | Campground | Primitive placeholder | Part-built shelters, campsite, and props | VIS-0105 |
 | Landmark | Creek Crossing | Primitive placeholder | Part-built water, banks, bridge, and route geometry | VIS-0105 |
@@ -82,4 +82,4 @@ When canonical production assets begin entering the registry:
 
 ## Next task
 
-Continue VIS-0105 with major-world and route readability while keeping Studio cache/relay/extraction review, final interactable materials/effects/audio, canonical operative art, class-action cues, avatar-scale coverage, accessibility, and representative performance evidence pending.
+Continue VIS-0105 with major-landmark dressing and world-material planning while keeping Studio route/cache/relay/extraction review, final effects/audio, canonical operative art, class-action cues, avatar-scale coverage, accessibility, and representative performance evidence pending.

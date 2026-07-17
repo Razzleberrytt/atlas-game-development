@@ -166,9 +166,9 @@ local Registry = table.freeze({
 		Keys.WorldLoggingRoad,
 		FamilyIds.World,
 		StatusIds.PrimitivePlaceholder,
-		"src/server/Systems/WorldFoundationService.luau",
-		"Logging Road is a sequence of primitive route segments and tire tracks.",
-		"LoggingRoad",
+		"src/client/Controllers/RouteGuidePresentationController.luau",
+		"Existing authored logging-road and switchback-trail segments retain all server geometry and collision while paired client-local guide posts improve route-edge readability without destination labels or extraction cues.",
+		"RouteGuidePresentation",
 		{},
 		"LoggingRoad",
 		false

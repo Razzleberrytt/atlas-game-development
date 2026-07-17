@@ -54,7 +54,9 @@ Weapon meshes do not own shooting. Enemy rigs do not own health, targeting, atta
   - The authoritative relay console now receives an eleven-part client-local shell with geometry-plus-text standby, restore, and online states. The authoritative extraction beacon receives a twelve-part base, mast-fin, crown, lens, direction-panel, and label package only after the server has already created the unlocked beacon.
   - Validated monotonic safe mission snapshots drive relay inactive/active/completed and extraction exfiltration/holdout/success/failure presentation. Inconsistent facts restore the primitive server objects instead of fabricating mission truth.
   - The mission-object layer uses three global connections, zero per-object connections, zero frame loops, zero timers, zero new remotes, and no server runtime change. Cleanup restores primitive root visibility, lights, and marker UI.
-  - Still required: Studio gameplay-camera, prompt, extraction-zone, and long-distance review; final cache/objective/extraction materials, effects, and audio; world dressing, landmarks, route cues, lighting, fog, ambience, accessibility, and representative performance evidence.
+  - Existing `LoggingRoad*` and `SwitchbackTrail*` parts now receive two client-local guide posts per segment, capped at 22 parts across the current eleven authored segments. Creek pieces, landmarks, objectives, and the extraction clearing are explicitly excluded; no destination text or future-state cue is created.
+  - The route-guide layer uses two global workspace connections, zero per-segment connections, zero frame loops, zero timers, zero remotes, and no server runtime change.
+  - Still required: Studio gameplay-camera, terrain-clipping, prompt, extraction-zone, and long-distance review; final world/interactable materials, effects, and audio; landmark dressing, lighting, fog, ambience, accessibility, and representative performance evidence.
   - Objective art follows the P8 authored chain and may not disclose hidden or inactive truth.
 - [ ] **VIS-0106 — Produce the special enemy and boss visual package.**
   - Runs with P9 after the special-enemy and boss contracts are stable.
