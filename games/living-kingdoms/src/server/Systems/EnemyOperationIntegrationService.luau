@@ -1,9 +1,10 @@
 --!strict
 
 --[[
-	P5-0105 integration owner between Blackwater Relay, production enemies, P3
-	operative damage, and bounded pressure pacing. It keeps one service update
-	connection and introduces no client authority path or additional scheduler.
+	P5-0106 integration owner between Blackwater Relay, production enemies, P3
+	operative damage, bounded pressure pacing, and cumulative attack metrics. It
+	keeps one service update connection and introduces no client authority path
+	or additional scheduler.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -19,6 +20,11 @@ local EnemyLifecycleService = require(script.Parent.EnemyLifecycleService)
 local MissionDirectorService = require(script.Parent.MissionDirectorService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 
+export type Metrics = {
+	attackAttempts: number,
+	attackCommits: number,
+}
+
 local Service = {}
 local started = false
 local accumulatedSeconds = 0
@@ -30,6 +36,8 @@ local lastWaveReleasedServerTimestamp: number? = nil
 local recoveryUntilServerTimestamp: number? = nil
 local lastAttackByEnemyId: { [string]: number } = {}
 local attackSequenceByEnemyId: { [string]: number } = {}
+local attackAttempts = 0
+local attackCommits = 0
 
 local function now(): number
 	return Workspace:GetServerTimeNow()
@@ -167,6 +175,7 @@ local function evaluateAttack(enemySnapshot, serverTimestamp: number)
 	end
 	local sequence = (attackSequenceByEnemyId[enemySnapshot.entityId] or 0) + 1
 	local damageEventId = string.format("enemy-contact:%s:%d", enemySnapshot.entityId, sequence)
+	attackAttempts += 1
 	local result = OperativeLifeService.applyAuthoritativeDamage(operativeEntityId, targetRevision, {
 		damageEventId = damageEventId,
 		sourceEntityId = enemySnapshot.entityId,
@@ -175,9 +184,17 @@ local function evaluateAttack(enemySnapshot, serverTimestamp: number)
 		serverTimestamp = serverTimestamp,
 	})
 	if result.didCommit then
+		attackCommits += 1
 		attackSequenceByEnemyId[enemySnapshot.entityId] = sequence
 		lastAttackByEnemyId[enemySnapshot.entityId] = serverTimestamp
 	end
+end
+
+function Service.readMetrics(): Metrics
+	return table.freeze({
+		attackAttempts = attackAttempts,
+		attackCommits = attackCommits,
+	})
 end
 
 function Service.evaluateAt(serverTimestamp: number)
@@ -206,6 +223,8 @@ function Service.start()
 	end
 	started = true
 	accumulatedSeconds = 0
+	attackAttempts = 0
+	attackCommits = 0
 	updateConnection = RunService.Heartbeat:Connect(function(deltaSeconds)
 		accumulatedSeconds += deltaSeconds
 		if accumulatedSeconds < EnemyConfig.SimulationIntervalSeconds then
