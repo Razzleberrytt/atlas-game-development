@@ -1,0 +1,21 @@
+{
+  "assetKey": "world.landmark-accents",
+  "version": "VIS-0105-v1",
+  "sourceType": "project-original-procedural",
+  "runtimeOwner": "src/client/Controllers/LandmarkAccentPresentationController.luau",
+  "expectedRoot": "LandmarkSilhouettePresentation",
+  "coveredLandmarks": [
+    "RangerStation",
+    "MilitaryRoadblock"
+  ],
+  "maximumPresentationParts": 10,
+  "connections": {
+    "global": 2,
+    "perLandmark": 0
+  },
+  "frameLoops": 0,
+  "timers": 0,
+  "remotes": 0,
+  "serverRuntimeChanges": 0,
+  "studioApproval": false
+}
