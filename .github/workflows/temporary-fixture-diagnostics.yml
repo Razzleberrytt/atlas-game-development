@@ -6,6 +6,7 @@ on:
       - ".github/workflows/temporary-fixture-diagnostics.yml"
       - ".github/one-shot/p6_0105_patch.py"
       - ".github/one-shot/fix_p6_patch.py"
+      - ".github/one-shot/fix_weapon_controller_fixture.py"
 
 permissions:
   contents: read
@@ -26,7 +27,8 @@ jobs:
 
       - run: python3 .github/one-shot/fix_p6_patch.py
       - run: python3 .github/one-shot/p6_0105_patch.py
-      - run: stylua games/living-kingdoms/src games/living-kingdoms/tests/P6AmmunitionPresentation.test.luau
+      - run: python3 .github/one-shot/fix_weapon_controller_fixture.py
+      - run: stylua games/living-kingdoms/src games/living-kingdoms/tests/P6AmmunitionPresentation.test.luau games/living-kingdoms/tests/WeaponController.test.luau
 
       - name: Execute fixtures
         shell: bash
