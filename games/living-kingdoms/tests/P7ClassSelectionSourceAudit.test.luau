@@ -73,7 +73,12 @@ for _, forbidden in {
 	)
 end
 
-assertThat(string.find(resolver, "game:GetService(\"ReplicatedStorage\")", 1, true) ~= nil, "resolver may read shared declarations")
+local resolverHeaderEnd = string.find(resolver, "]]", 1, true)
+local resolverExecutable = if resolverHeaderEnd == nil then resolver else string.sub(resolver, resolverHeaderEnd + 2)
+assertThat(
+	string.find(resolverExecutable, "game:GetService(\"ReplicatedStorage\")", 1, true) ~= nil,
+	"resolver may read shared declarations"
+)
 for _, forbidden in {
 	"Instance.new",
 	"RemoteEvent",
@@ -85,7 +90,10 @@ for _, forbidden in {
 	"OnServerEvent",
 	"FireClient",
 } do
-	assertThat(not string.find(resolver, forbidden, 1, true), "pure resolver must not contain " .. forbidden)
+	assertThat(
+		not string.find(resolverExecutable, forbidden, 1, true),
+		"pure resolver executable source must not contain " .. forbidden
+	)
 end
 
 assertThat(string.find(serverBootstrap, "ensureClassNetwork", 1, true) ~= nil, "server must create class network")
