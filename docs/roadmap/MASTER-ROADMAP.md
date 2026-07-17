@@ -207,6 +207,8 @@ One to four operatives experience server-owned enemy pressure across the authore
 
 **P5 status:** Complete. A live multiplayer Studio playthrough of the full pressure loop remains the outstanding manual check and is documented in the smoke test. Special enemies, bosses, pathfinding around obstacles, enemy-versus-cover behavior, ammunition scarcity tuning, and final balance remain deferred to their planned milestones.
 
+**Superseded parallel P5 implementation:** a concurrent agent session merged an alternative P5-0104–P5-0106 enemy slice (`EnemyLifecycleService`, `EnemyAssemblyRuntimeService`, `ProductionAutomaticCombatService`, `EnemyOperationIntegrationService`, `PressurePacingDomain`, `EnemyObservabilityService`, and their specs/fixtures; PRs #58–#59). Two enemy runtimes cannot share the mission, `ReloadIntent`, and the hostile population, so that slice was removed when this milestone merged: it never rewired `MissionDirectorService` off the retired Studio-fixture path, left revive coordination on the Studio-only harness, and shipped without roadmap/spec updates. Its Lune CI workflow and pinned Lune toolchain entry were kept. The code remains available in Git history; its sampled observability counters are a candidate follow-up for the retained `EnemyDirectorService`.
+
 ## P6 — Ammunition scarcity and supply collection
 
 Replace temporary firearm resources with server-owned finite ammunition, supply caches at authored risky locations, collection rules, clear inventory feedback, and balance telemetry sufficient to distinguish tension from unavoidable starvation.
