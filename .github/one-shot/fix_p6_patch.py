@@ -32,6 +32,10 @@ id_new = '''replace_once(
 if text.count(id_old) != 1:
     raise RuntimeError(f"expected one broad presentation ID anchor, found {text.count(id_old)}")
 text = text.replace(id_old, id_new, 1)
+alignment = '\\tammunitionLabel.TextXAlignment = Enum.TextXAlignment.Center\\n'
+if text.count(alignment) != 1:
+    raise RuntimeError(f"expected one temporary alignment assignment, found {text.count(alignment)}")
+text = text.replace(alignment, "", 1)
 diagnostic_old = '''    text = file_path.read_text()
     if text.count(old) != 1:
 '''
