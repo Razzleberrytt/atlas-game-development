@@ -1,9 +1,7 @@
 name: Exclusion Walker diagnostic
 
 on:
-  push:
-    branches:
-      - feat/exclusion-walker-presentation
+  pull_request:
 
 permissions:
   contents: read
