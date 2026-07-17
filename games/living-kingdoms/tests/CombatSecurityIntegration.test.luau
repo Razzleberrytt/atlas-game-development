@@ -314,7 +314,10 @@ local serverSources = table.concat({
 	fs.readFile("games/living-kingdoms/src/server/init.server.luau"),
 }, "\n")
 local clientSource = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponController.luau")
-local _, remoteDefinitionCount = string.gsub(projectSource, '"%$className"%s*:%s*"RemoteEvent"', "")
+local combatNetworkStart = assert(string.find(projectSource, '"CombatNetwork"', 1, true))
+local combatNetworkEnd = assert(string.find(projectSource, '"Shared"', combatNetworkStart, true))
+local combatNetworkSource = string.sub(projectSource, combatNetworkStart, combatNetworkEnd - 1)
+local _, remoteDefinitionCount = string.gsub(combatNetworkSource, '"%$className"%s*:%s*"RemoteEvent"', "")
 assert(remoteDefinitionCount == 2, "combat remote surface changed")
 local _, serverListenerCount = string.gsub(serverSources, "OnServerEvent:Connect", "")
 assert(serverListenerCount == 1, "client-to-server combat listener surface changed")

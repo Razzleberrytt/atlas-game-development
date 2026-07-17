@@ -151,12 +151,12 @@ Create darkness, limited information, and selected squad navigation aids that pr
 - [x] **LK-0405 — Integrate bounded lighting-state runtime.**
   - **Work type:** Runtime server work.
   - **Acceptance:** one unbootstrapped server-only owner copies validated LK-0401 definitions, exposes flat copied activation records, supports permanent and bounded timed activation, owns one cancellable deterministic expiry timer, rejects stale transitions and active-light budget overflow, emits revisioned copied changes only for visible state mutations, and cleans up on expiration, removal, and teardown; coverage evaluation, visibility, discovery, rendering, Roblox light instances, remotes, tools, and AI remain deferred.
-- [ ] **LK-0406 — Add one approved flashlight or personal-light vertical slice.**
+- [x] **LK-0406 — Add one approved flashlight or personal-light vertical slice.**
   - **Work type:** Focused tool/runtime and presentation work.
-  - **Acceptance:** next and unstarted; the selected tool has server-validated intent and gameplay coverage, responsive local-only presentation, bounded activation, accessibility treatment, and cannot reveal/target undiscovered enemies; alternative tools remain deferred.
+  - **Acceptance:** one production-connected personal flashlight has boolean-only server-validated intent, deterministic operative-owned LK-0401 light registration, bounded cone coverage without LOS/discovery/targeting authority, owner-only revision reconciliation, responsive accessible local presentation, P3 life-state shutdown, deterministic cleanup, focused fixtures, and two-client Studio validation; alternative tools and remote-operative cosmetics remain deferred.
 - [ ] **LK-0407 — Add the selected squad-navigation aid slice.**
   - **Work type:** Focused tool/disclosure work.
-  - **Acceptance:** one playtested aid (for example a limited ping or compass policy) communicates only permitted teammate/objective information, is rate/expiry bounded with non-audio equivalence, and does not introduce a minimap or global hostile awareness.
+  - **Acceptance:** next and unstarted; one playtested aid (for example a limited ping or compass policy) communicates only permitted teammate/objective information, is rate/expiry bounded with non-audio equivalence, and does not introduce a minimap or global hostile awareness.
 - [ ] **LK-0408 — Complete P4 security, performance, and integration validation.**
   - **Work type:** Validation and focused defect repair only.
   - **Acceptance:** adversarial clients cannot alter visibility, discovery, lights, memory, or targeting; 1–4 player representative budget measurements cover lights/particles/shadows/rays/checks; selected aid feel/accessibility is documented; P1–P3 and P2 regression suites pass; any repair is minimal and P4-only.
