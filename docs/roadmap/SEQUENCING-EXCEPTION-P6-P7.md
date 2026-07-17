@@ -9,7 +9,7 @@ This exception changes sequencing only. It does **not** convert missing evidence
 Current exception state:
 
 - `P7-0101` shared contracts and configuration are complete through PR #71.
-- `P7-0102` class selection and assignment are permitted as the next independent runtime slice.
+- `P7-0102` class selection and assignment are complete through PR #72.
 - All class effects remain blocked.
 
 ## P6 status
@@ -23,12 +23,12 @@ Current exception state:
 
 `P7-0101` was permitted because it contains declarations and invariant fixtures only.
 
-`P7-0102` is also permitted because class selection and assignment are independent of P6 balance:
+`P7-0102` was also permitted because class selection and assignment are independent of P6 balance:
 
 - the three starting classes are already universally available;
 - duplicate roles remain legal;
-- the server may own a temporary insertion selection window, deterministic fallback assignment, lock state, revisions, and safe roster disclosure;
-- the client may submit only a bounded request ID and known class ID;
+- the server owns a temporary insertion selection window, deterministic fallback assignment, lock state, revisions, and safe roster disclosure;
+- the client submits only a bounded request ID and known class ID;
 - no class action is activated;
 - no health, revive, combat, ammunition, objective, resource, cooldown, or persistence state is mutated;
 - the Engineer's provisional resupply numbers are not read by selection runtime.
@@ -56,4 +56,4 @@ When the Studio validation workflow becomes available:
 4. Revisit Engineer Field Resupply charges and rounds before any ammunition-grant runtime is implemented.
 5. Remove or close this exception when normal milestone sequencing is restored.
 
-This document temporarily overrides only the blanket statement that no P7 work may begin before P6 exit. The exception currently applies to `P7-0101` and `P7-0102`; all consequential class-effect work remains gated.
+This document temporarily overrides only the blanket statement that no P7 work may begin before P6 exit. The exception currently applies to completed tasks `P7-0101` and `P7-0102`; all consequential class-effect work remains gated.
