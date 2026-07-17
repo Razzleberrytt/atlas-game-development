@@ -20,7 +20,7 @@ local Workspace = game:GetService("Workspace")
 
 local MissionConfig = require(ReplicatedStorage.Shared.Config.MissionConfig)
 local MissionContracts = require(ReplicatedStorage.Shared.Mission.MissionContracts)
-local AutomaticCombatDevelopmentHarness = require(script.Parent.AutomaticCombatDevelopmentHarness)
+local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local SquadFailureService = require(script.Parent.SquadFailureService)
 
@@ -153,18 +153,12 @@ local function spawnWave(waveIndex: number)
 	end
 	spawnedWaves[waveIndex] = true
 	escalationLevel = math.max(escalationLevel, waveIndex)
-	for _, definition in wave do
-		-- The Studio-only combat harness owns the only existing hostile
-		-- implementation; outside Studio this returns false and the mission
-		-- proceeds without combat pressure.
-		pcall(function()
-			AutomaticCombatDevelopmentHarness.spawnMissionHostile({
-				entityId = definition.id,
-				name = definition.name,
-				position = Vector3.new(definition.x, definition.y, definition.z),
-			})
-		end)
-	end
+	-- The production enemy director validates fairness, defers unfair
+	-- placements, raises its escalation level, and opens the authored-wave
+	-- recovery window.
+	pcall(function()
+		EnemyDirectorService.spawnAuthoredWave(waveIndex, wave)
+	end)
 end
 
 local function countAdmittedAliveInsideExtraction(): number
@@ -318,6 +312,9 @@ local function resolveMission(finalOutcomeId: MissionOutcomeId, serverTimestamp:
 	insertionDeadlineServerTimestamp = nil
 	secondWaveDeadlineServerTimestamp = nil
 	holdoutDeadlineServerTimestamp = nil
+	pcall(function()
+		EnemyDirectorService.endOperationPressure()
+	end)
 	setRadio(
 		if finalOutcomeId == OutcomeIds.Success then RadioLineIds.MissionSuccess else RadioLineIds.MissionFailure,
 		serverTimestamp
@@ -338,6 +335,9 @@ local function beginInfiltration(serverTimestamp: number)
 	-- Freeze the operation roster: squad viability and admission now cover
 	-- exactly the operatives who started this operation.
 	SquadFailureService.beginOperation()
+	pcall(function()
+		EnemyDirectorService.beginOperationPressure()
+	end)
 	setRadio(RadioLineIds.ProceedToObjective, serverTimestamp)
 	revision += 1
 	scheduleTimers()

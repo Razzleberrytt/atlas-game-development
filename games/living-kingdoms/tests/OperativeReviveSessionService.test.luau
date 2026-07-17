@@ -332,7 +332,7 @@ local loader = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/O
 		end,
 		script = {
 			Parent = {
-				AutomaticCombatDevelopmentHarness = COMBAT_TOKEN,
+				OperativeCombatRuntimeService = COMBAT_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 				OperativeReviveResolver = RESOLVER_TOKEN,
 				SquadFailureService = SQUAD_TOKEN,

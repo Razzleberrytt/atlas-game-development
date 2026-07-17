@@ -40,13 +40,13 @@ Objective completion unlocks extraction at the authored clearing (`ExtractionCle
 
 ## Escalation
 
-Pressure mounts in three authored waves that reuse the existing LK-0207 stationary hostile fixtures — no new enemy archetypes, bosses, or abilities:
+Pressure mounts in three authored waves — no bosses or special abilities:
 
 1. **Objective completed** — two hostiles on the descent between the lookout and the campground.
 2. **`SecondWaveDelaySeconds` (45 s) after completion** — two hostiles along the creek crossing and eastern approach, with a "pressure rising" transmission.
-3. **Holdout begins** — three hostiles around the clearing perimeter.
+3. **Holdout begins** — three hostiles converging on the clearing from outside the fair-spawn floor.
 
-Waves spawn exactly once each and escalation level is monotonic, even if a fast squad reaches holdout before wave 2's timer. `AutomaticCombatDevelopmentHarness.spawnMissionHostile` is the only addition to the combat harness; because that harness is Studio-only, escalation currently produces combat pressure only in Studio (a documented prototype limitation), and the mission flow is unaffected elsewhere.
+Waves spawn exactly once each and escalation level is monotonic, even if a fast squad reaches holdout before wave 2's timer. Since P5-0106, waves spawn production Exclusion Walkers through `EnemyDirectorService.spawnAuthoredWave` — fairness-validated, pursuing, and killable everywhere, not only in Studio. Infiltration additionally begins the director's roaming pressure and mission resolution stands all pressure down; see `docs/specifications/enemy-pressure-runtime.md`.
 
 ## Failure, death, and disconnects
 
@@ -79,8 +79,6 @@ A live Studio squad playthrough remains required for the actual "is it fun" answ
 
 ## Known limitations and future extension points
 
-- Hostile pressure exists only in Studio because the only hostile implementation is the Studio-only development harness; a production enemy lifecycle is the remaining P5 work.
-- Hostile fixtures are stationary and do not pursue — escalation is currently about presence and radio tension, not chasing pressure.
 - One mission per server lifetime: `Resolved` is terminal with no replay/reset flow (P10).
 - Placeholder timings, placeholder UI, and text-only radio; no audio assets.
 - Environmental escalation (power failures, deeper lighting shifts) is limited to radio urgency in this slice.

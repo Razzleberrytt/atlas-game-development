@@ -309,25 +309,36 @@ assert(reloadCompleteA.weaponStateAfter.ammunition.loadedRounds == 10, "reload t
 assert(reloadCompleteA.weaponStateAfter.ammunition.reserveRounds == 0, "reload reserve transfer was incorrect")
 
 local projectSource = fs.readFile("games/living-kingdoms/default.project.json")
-local serverSources = table.concat({
-	fs.readFile("games/living-kingdoms/src/server/Systems/AutomaticCombatDevelopmentHarness.luau"),
-	fs.readFile("games/living-kingdoms/src/server/init.server.luau"),
-}, "\n")
+local harnessSource = fs.readFile("games/living-kingdoms/src/server/Systems/AutomaticCombatDevelopmentHarness.luau")
+local productionCombatSource = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau")
+local bootstrapSource = fs.readFile("games/living-kingdoms/src/server/init.server.luau")
+local serverSources = table.concat({ harnessSource, productionCombatSource, bootstrapSource }, "\n")
 local clientSource = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponController.luau")
 local combatNetworkStart = assert(string.find(projectSource, '"CombatNetwork"', 1, true))
 local combatNetworkEnd = assert(string.find(projectSource, '"Shared"', combatNetworkStart, true))
 local combatNetworkSource = string.sub(projectSource, combatNetworkStart, combatNetworkEnd - 1)
 local _, remoteDefinitionCount = string.gsub(combatNetworkSource, '"%$className"%s*:%s*"RemoteEvent"', "")
 assert(remoteDefinitionCount == 2, "combat remote surface changed")
+-- The reload intent remains the only client-to-server combat listener: one in
+-- the bootstrapped production runtime and one in the Studio-only manual
+-- harness, which the bootstrap no longer starts.
 local _, serverListenerCount = string.gsub(serverSources, "OnServerEvent:Connect", "")
-assert(serverListenerCount == 1, "client-to-server combat listener surface changed")
+assert(serverListenerCount == 2, "client-to-server combat listener surface changed")
+for _, source in { harnessSource, productionCombatSource } do
+	assert(
+		string.find(source, "reloadIntentRemote.OnServerEvent:Connect", 1, true),
+		"reload intent listener missing"
+	)
+	assert(not string.find(source, "presentationRemote.OnServerEvent", 1, true), "presentation gained authority path")
+end
+assert(not string.find(bootstrapSource, "OnServerEvent", 1, true), "bootstrap gained a combat listener")
 assert(
-	string.find(serverSources, "reloadIntentRemote.OnServerEvent:Connect", 1, true),
-	"reload intent listener missing"
+	string.find(bootstrapSource, "OperativeCombatRuntimeService.start()", 1, true),
+	"production combat runtime is not bootstrapped"
 )
 assert(
-	not string.find(serverSources, "presentationRemote.OnServerEvent", 1, true),
-	"presentation gained authority path"
+	not string.find(bootstrapSource, "AutomaticCombatDevelopmentHarness", 1, true),
+	"the development harness must no longer be bootstrapped"
 )
 local _, fireServerCount = string.gsub(clientSource, ":FireServer", "")
 assert(fireServerCount == 1, "client gained another combat request path")
@@ -336,7 +347,7 @@ assert(
 	"reload request payload widened"
 )
 assert(
-	string.find(serverSources, "if started or not RunService:IsStudio() then", 1, true),
+	string.find(harnessSource, "if started or not RunService:IsStudio() then", 1, true),
 	"development harness is not Studio-gated"
 )
 

@@ -70,7 +70,8 @@ This is a boundary guide, not permission to scaffold every future module before 
 - `InventorySystem` — server-owned ammunition, recovery resources, and supply collection
 - `ClassSystem` — server-owned specialist eligibility and class actions
 - `VisibilitySystem` — gameplay-relevant discovery and squad-location rules
-- `EnemySystem` — enemy lifecycle, pursuit, attacks, horde pressure, and special behaviors
+- `EnemyDirectorService` — implemented P5 owner of enemy lifecycle, fair spawning, pursuit, attacks, horde pressure, recovery windows, and stand-down; special behaviors remain P9
+- `OperativeCombatRuntimeService` — implemented P5 production automatic-combat owner composing the pure P2 pipeline against director-owned enemies
 - `ObjectiveSystem` — authored objective state and interactions
 - `OperationService` — briefing, insertion, escalation, extraction, success, failure, and results
 - `ProgressionService` — persistent XP, ranks, class unlocks, and data-store recovery
@@ -137,4 +138,4 @@ LK-0308 adds one server life-runtime owner for finishing damage and the earliest
 
 ## Change policy
 
-Architecture exists to support the next playable milestone. A new abstraction must solve a present, demonstrated need or remove meaningful duplication. P1 through P4 are complete. P5-0101 adds a deterministic static-world builder, shared authored-world configuration, and presentation-only ambience controller; these create no new gameplay authority. Enemy lifecycle and horde pressure remain the next P5 gameplay work.
+Architecture exists to support the next playable milestone. A new abstraction must solve a present, demonstrated need or remove meaningful duplication. P1 through P5 are complete. P5 added the deterministic static world, the first playable operation, and the production enemy runtime: `EnemyDirectorService` owns every enemy fact behind a revisioned health boundary and the pure `EnemyBehaviorResolver`, while `OperativeCombatRuntimeService` replaces the Studio-only combat harness as the bootstrapped automatic-combat owner and now hosts the revive combat-state boundary. Neither adds a client remote; `ReloadIntent` remains the only client-to-server combat input. Ammunition scarcity (P6) is the next gameplay work.

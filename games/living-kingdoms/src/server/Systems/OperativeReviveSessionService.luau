@@ -13,7 +13,7 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.OperativeLifeContracts)
-local AutomaticCombatDevelopmentHarness = require(script.Parent.AutomaticCombatDevelopmentHarness)
+local OperativeCombatRuntimeService = require(script.Parent.OperativeCombatRuntimeService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local OperativeReviveResolver = require(script.Parent.OperativeReviveResolver)
 local SquadFailureService = require(script.Parent.SquadFailureService)
@@ -193,7 +193,7 @@ local function evaluateSession(session: Session, serverTimestamp: number)
 	local distanceStuds, hasLineOfSight = distanceAndLineOfSight(session.reviverPlayer, session.targetPlayer)
 	local movementRemainedValid = (reviverPosition - session.reviverStartPosition).Magnitude
 		<= MOVEMENT_INTERRUPTION_STUDS
-	local combatRead = AutomaticCombatDevelopmentHarness.readReviveCombatState(session.targetPlayer)
+	local combatRead = OperativeCombatRuntimeService.readReviveCombatState(session.targetPlayer)
 	if combatRead == nil then
 		cancelSession(session)
 		return
@@ -222,7 +222,7 @@ local function evaluateSession(session: Session, serverTimestamp: number)
 			local oldCombatState = combatRead.combatState
 			if
 				continued.combatStateAfter == nil
-				or not AutomaticCombatDevelopmentHarness.commitReviveCombatState(
+				or not OperativeCombatRuntimeService.commitReviveCombatState(
 					session.targetPlayer,
 					combatRead.generation,
 					continued.combatStateAfter
@@ -234,7 +234,7 @@ local function evaluateSession(session: Session, serverTimestamp: number)
 			local committed =
 				OperativeLifeService.commitAcceptedTransition(session.targetPlayer, targetRead.revision, continued)
 			if not committed.didCommit then
-				AutomaticCombatDevelopmentHarness.commitReviveCombatState(
+				OperativeCombatRuntimeService.commitReviveCombatState(
 					session.targetPlayer,
 					combatRead.generation,
 					oldCombatState
