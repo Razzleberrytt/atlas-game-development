@@ -12,6 +12,7 @@ local contracts = fs.readFile("games/living-kingdoms/src/shared/Combat/Ammunitio
 local cache = fs.readFile("games/living-kingdoms/src/server/Systems/AmmunitionCacheService.luau")
 local controller =
 	fs.readFile("games/living-kingdoms/src/client/Controllers/AmmunitionCachePresentationController.luau")
+local factory = fs.readFile("games/living-kingdoms/src/client/Presentation/SupplyCachePresentationFactory.luau")
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 
 check(string.find(contracts, 'Consumed = "AmmunitionCacheConsumed"', 1, true) ~= nil)
@@ -36,16 +37,36 @@ check(duplicateGuardPosition ~= nil and combatReadPosition ~= nil and duplicateG
 
 check(string.find(controller, 'WaitForChild("CombatPresentation")', 1, true) ~= nil)
 check(string.find(controller, "Contracts.MessageKindIds.Consumed", 1, true) ~= nil)
-check(string.find(controller, 'GetAttribute(SUPPLY_CACHE_ID_ATTRIBUTE)', 1, true) ~= nil)
-check(string.find(controller, "prompt.Enabled = false", 1, true) ~= nil)
-check(string.find(controller, "ConsumedCacheHighlight", 1, true) ~= nil)
-check(string.find(controller, "Enum.Material.SmoothPlastic", 1, true) ~= nil)
-check(string.find(controller, "cachePart.Transparency = 0.35", 1, true) ~= nil)
+check(string.find(controller, "GetAttribute(SUPPLY_CACHE_ID_ATTRIBUTE)", 1, true) ~= nil)
+check(string.find(controller, "SupplyCachePresentationFactory.create(root)", 1, true) ~= nil)
+check(string.find(controller, "SupplyCachePresentationFactory.applyState", 1, true) ~= nil)
+check(string.find(controller, "Workspace.DescendantAdded:Connect", 1, true) ~= nil)
+check(string.find(controller, "Workspace.DescendantRemoving:Connect", 1, true) ~= nil)
+check(string.find(controller, "root.LocalTransparencyModifier = 1", 1, true) ~= nil)
+check(
+	string.find(controller, "root.LocalTransparencyModifier = binding.originalLocalTransparencyModifier", 1, true) ~= nil,
+	"local cache root rendering must restore on cleanup"
+)
+check(string.find(controller, "prompt.Enabled = if consumed then false", 1, true) ~= nil)
+check(string.find(controller, "prompt.Enabled = binding.promptWasEnabled", 1, true) ~= nil)
+
+local rememberPosition = string.find(controller, "consumedCacheIds[cacheId] = true", 1, true)
+local bindingLookupPosition = string.find(controller, "local binding = bindingsByCacheId[cacheId]", rememberPosition or 1, true)
+check(
+	rememberPosition ~= nil and bindingLookupPosition ~= nil and rememberPosition < bindingLookupPosition,
+	"consumed disclosure must survive cache streaming order"
+)
+
+check(string.find(factory, 'motor.Name = "SupplyCacheLidMotor"', 1, true) ~= nil)
+check(string.find(factory, 'rig.label.Text = if consumed then "EMPTY" else "RIFLE AMMO"', 1, true) ~= nil)
+check(string.find(factory, "rig.emptyTray.Transparency = if consumed", 1, true) ~= nil)
+
 check(string.find(controller, "FireServer", 1, true) == nil, "presentation controller must not send authority input")
 check(string.find(controller, "Heartbeat", 1, true) == nil)
 check(string.find(controller, "RenderStepped", 1, true) == nil)
 check(string.find(controller, "task.", 1, true) == nil)
 check(string.find(controller, "while ", 1, true) == nil)
+check(string.find(controller, "prompt.Triggered", 1, true) == nil, "client presentation must not collect the cache")
 
 check(string.find(bootstrap, "AmmunitionCachePresentationController", 1, true) ~= nil)
 check(string.find(bootstrap, "AmmunitionCachePresentationController.start()", 1, true) ~= nil)
