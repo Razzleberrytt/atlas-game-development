@@ -116,6 +116,21 @@ assertThat(
 )
 assertThat(loggingRoad.expectedRootName == "RouteGuidePresentation", "route-guide root contract drifted")
 assertThat(#loggingRoad.requiredAttachmentNames == 0, "procedural route guides must not claim attachments")
+for _, assetKey in
+	{
+		contracts.AssetKeys.WorldRangerStation,
+		contracts.AssetKeys.WorldMilitaryRoadblock,
+	}
+do
+	local landmark = config.ByKey[assetKey]
+	assertThat(landmark.statusId == contracts.StatusIds.PrimitivePlaceholder, "landmark accents must remain primitive")
+	assertThat(
+		landmark.runtimeOwnerPath == "src/client/Controllers/LandmarkAccentPresentationController.luau",
+		"accented landmark must name the presentation owner"
+	)
+	assertThat(landmark.expectedRootName == "LandmarkSilhouettePresentation", "landmark accent root contract drifted")
+	assertThat(#landmark.requiredAttachmentNames == 0, "procedural landmark accents must not claim attachments")
+end
 assertThat(
 	config.ByKey[contracts.AssetKeys.EnemyStandardHostileModel].statusId == contracts.StatusIds.PrimitivePlaceholder,
 	"standard hostile must remain honestly marked as primitive geometry"

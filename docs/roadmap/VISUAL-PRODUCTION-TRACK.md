@@ -56,7 +56,9 @@ Weapon meshes do not own shooting. Enemy rigs do not own health, targeting, atta
   - The mission-object layer uses three global connections, zero per-object connections, zero frame loops, zero timers, zero new remotes, and no server runtime change. Cleanup restores primitive root visibility, lights, and marker UI.
   - Existing `LoggingRoad*` and `SwitchbackTrail*` parts now receive two client-local guide posts per segment, capped at 22 parts across the current eleven authored segments. Creek pieces, landmarks, objectives, and the extraction clearing are explicitly excluded; no destination text or future-state cue is created.
   - The route-guide layer uses two global workspace connections, zero per-segment connections, zero frame loops, zero timers, zero remotes, and no server runtime change.
-  - Still required: Studio gameplay-camera, terrain-clipping, prompt, extraction-zone, and long-distance review; final world/interactable materials, effects, and audio; landmark dressing, lighting, fog, ambience, accessibility, and representative performance evidence.
+  - Ranger Station now receives four client-local roof/mast silhouette accents and Military Roadblock receives six checkpoint/lamp accents. Both landmarks exist from world construction; the lookout objective area and extraction clearing remain explicitly excluded.
+  - The landmark-accent layer uses two global workspace connections, zero per-landmark connections, zero frame loops, zero timers, zero remotes, and no server runtime change. All ten parts are welded, massless, non-collidable, non-touchable, and non-queryable.
+  - Still required: Studio gameplay-camera, terrain-clipping, prompt, extraction-zone, and long-distance review; final world/interactable materials, effects, and audio; remaining landmark dressing, lighting, fog, ambience, accessibility, and representative performance evidence.
   - Objective art follows the P8 authored chain and may not disclose hidden or inactive truth.
 - [ ] **VIS-0106 — Produce the special enemy and boss visual package.**
   - Runs with P9 after the special-enemy and boss contracts are stable.
