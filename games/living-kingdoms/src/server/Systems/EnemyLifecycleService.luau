@@ -320,7 +320,13 @@ function Service.applyAuthoritativeDamage(
 	if record.processedDamageCorrelations[correlationId] then
 		return damageRejected(DamageReasons.DuplicateCorrelation)
 	end
-	local result = EnemyDomain.applyDamage(record.snapshot, correlationId, damage, serverTimestamp, record.processedDamageCorrelations)
+	local result = EnemyDomain.applyDamage(
+		record.snapshot,
+		correlationId,
+		damage,
+		serverTimestamp,
+		record.processedDamageCorrelations
+	)
 	if not result.didCommit or result.snapshot == nil then
 		return damageRejected(result.rejectionReasonId or DamageReasons.InvalidRequest)
 	end
@@ -371,7 +377,8 @@ end
 local function evaluateCleanup(serverTimestamp: number)
 	for entityId, record in records do
 		local snapshot = record.snapshot
-		if snapshot.lifecycleStateId == LifecycleIds.Dead
+		if
+			snapshot.lifecycleStateId == LifecycleIds.Dead
 			and snapshot.cleanupDeadlineServerTimestamp ~= nil
 			and serverTimestamp >= snapshot.cleanupDeadlineServerTimestamp
 		then
@@ -413,7 +420,8 @@ local function evaluateActive(record: EnemyRecord, serverTimestamp: number)
 		removeRecord(record.snapshot.entityId, record)
 		return
 	end
-	local targetId, targetPosition = nearestLivingTarget(record.rootPart.Position, record.snapshot.selectedOperativeEntityId)
+	local targetId, targetPosition =
+		nearestLivingTarget(record.rootPart.Position, record.snapshot.selectedOperativeEntityId)
 	local activityId = ActivityIds.Idle
 	if targetId ~= nil and targetPosition ~= nil then
 		local distance = (targetPosition - record.rootPart.Position).Magnitude

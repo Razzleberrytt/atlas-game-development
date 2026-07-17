@@ -127,7 +127,13 @@ function EnemyDomain.applyAuthorizedDamage(
 	damage: number,
 	expectedRevision: number?
 ): (boolean, string?, EnemyDamageState)
-	if type(correlationId) ~= "string" or correlationId == "" or type(damage) ~= "number" or damage <= 0 or damage ~= damage then
+	if
+		type(correlationId) ~= "string"
+		or correlationId == ""
+		or type(damage) ~= "number"
+		or damage <= 0
+		or damage ~= damage
+	then
 		return false, EnemyContracts.DamageRejectionReasonIds.InvalidRequest, state
 	end
 	if state.lifecycleStateId ~= EnemyContracts.LifecycleStateIds.Active then
