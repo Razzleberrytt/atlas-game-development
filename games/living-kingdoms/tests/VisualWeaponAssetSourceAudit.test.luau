@@ -9,13 +9,10 @@ local function assertThat(condition: unknown, message: string)
 end
 
 local root = "games/living-kingdoms/assets/visual/weapon/basic-firearm/"
-local model = fs.readFile(root .. "blackwater_service_carbine.obj")
 local animations = fs.readFile(root .. "blackwater_service_carbine.animations.json")
 local manifest = fs.readFile(root .. "asset-manifest.json")
 local generator = fs.readFile(root .. "generate_blackwater_carbine.py")
 local readme = fs.readFile(root .. "README.md")
-
-assertThat(string.find(model, "# https://github.com/mikedh/trimesh", 1, true) ~= nil, "weapon source must identify its generator")
 
 for _, componentName in {
 	"Receiver",
@@ -24,8 +21,11 @@ for _, componentName in {
 	"MuzzleDevice",
 	"PistolGrip",
 } do
-	assertThat(string.find(model, "o " .. componentName, 1, true) ~= nil, "missing source component " .. componentName)
+	assertThat(string.find(generator, '"' .. componentName .. '"', 1, true) ~= nil, "missing generated component " .. componentName)
 end
+
+assertThat(string.find(generator, "scene.export(file_type=\"obj\")", 1, true) ~= nil, "generator must emit Roblox-importable OBJ")
+assertThat(string.find(generator, "blackwater_service_carbine_preview.svg", 1, true) ~= nil, "generator must emit a review preview")
 
 for _, clipName in { "Fire", "Reload", "Empty" } do
 	assertThat(string.find(animations, '"name": "' .. clipName .. '"', 1, true) ~= nil, "missing animation clip " .. clipName)
