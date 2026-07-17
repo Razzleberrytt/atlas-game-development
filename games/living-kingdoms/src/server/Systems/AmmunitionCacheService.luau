@@ -17,6 +17,8 @@ local OperativeLifeService = require(script.Parent.OperativeLifeService)
 
 local SourceIds = Contracts.SupplySourceIds
 local CACHE_FOLDER_NAME = "AmmunitionCaches"
+local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
+local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: RemoteEvent
 
 local AmmunitionCacheService = {}
 local started = false
@@ -54,6 +56,10 @@ local function tryCollect(player: Player, definition)
 	if not started or not OperativeLifeService.isCombatAllowed(player) then
 		return
 	end
+	local processed = processedSetFor(player)
+	if processed[definition.cacheId] then
+		return
+	end
 	local position = operativePosition(player)
 	local cachePosition = Vector3.new(definition.position.x, definition.position.y, definition.position.z)
 	if
@@ -69,7 +75,6 @@ local function tryCollect(player: Player, definition)
 	local combatState = read.combatState
 	local weaponState = combatState.weaponState
 	local ammunition = weaponState.ammunition
-	local processed = processedSetFor(player)
 	local result = AmmunitionSupplyResolver.collect({
 		weaponId = ammunition.weaponId,
 		loadedRounds = ammunition.loadedRounds,
@@ -99,6 +104,10 @@ local function tryCollect(player: Player, definition)
 		return
 	end
 	processedByPlayer[player] = table.clone(stateAfter.processedSupplyIds)
+	presentationRemote:FireClient(player, {
+		kindId = Contracts.PresentationMessageKindIds.AmmunitionCacheConsumed,
+		cacheId = definition.cacheId,
+	})
 end
 
 local function createCache(definition, parent: Folder)
