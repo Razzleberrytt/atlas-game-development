@@ -140,25 +140,177 @@ function BasicFirearmPresentationFactory.create(): BasicFirearmPresentationRig
 	root.Parent = model
 	model.PrimaryPart = root
 
-	makeBox(model, root, "Receiver", Vector3.new(1.26, 0.48, 0.6), CFrame.new(0.15, 0, 0), COLORS.charcoal, Enum.Material.Metal)
-	makeBox(model, root, "Handguard", Vector3.new(1.14, 0.42, 0.48), CFrame.new(1.29, 0, 0.03), COLORS.oliveDark, Enum.Material.Metal)
-	makeBox(model, root, "StockCore", Vector3.new(0.78, 0.36, 0.39), CFrame.new(-0.84, 0, 0.045), COLORS.olive, Enum.Material.SmoothPlastic)
-	makeBox(model, root, "Buttstock", Vector3.new(0.66, 0.42, 0.66), CFrame.new(-1.41, 0, 0.015) * CFrame.Angles(0, math.rad(-4), 0), COLORS.olive, Enum.Material.SmoothPlastic)
-	makeCylinder(model, root, "Barrel", Vector3.new(1.29, 0.228, 0.228), CFrame.new(2.28, 0, 0.09), COLORS.dark, Enum.Material.Metal)
-	makeCylinder(model, root, "MuzzleDevice", Vector3.new(0.3, 0.312, 0.312), CFrame.new(3.075, 0, 0.09), COLORS.steel, Enum.Material.Metal)
-	makeBox(model, root, "PistolGrip", Vector3.new(0.3, 0.27, 0.72), CFrame.new(-0.06, 0, -0.6) * CFrame.Angles(0, math.rad(8), 0), COLORS.rubber, Enum.Material.SmoothPlastic)
-	local _, magazineMotor = makeMotorPart(model, root, "Magazine", Vector3.new(0.51, 0.315, 0.78), CFrame.new(0.57, 0, -0.69) * CFrame.Angles(0, math.rad(-7), 0), COLORS.olive, Enum.Material.Metal)
-	local _, boltMotor = makeMotorPart(model, root, "Bolt", Vector3.new(0.51, 0.075, 0.18), CFrame.new(0.21, -0.285, 0.06), COLORS.steel, Enum.Material.Metal)
-	makeBox(model, root, "TopRail", Vector3.new(0.93, 0.09, 0.075), CFrame.new(0.21, 0, 0.375), COLORS.dark, Enum.Material.Metal)
-	makeBox(model, root, "RearSight", Vector3.new(0.21, 0.21, 0.285), CFrame.new(0.63, 0, 0.57), COLORS.dark, Enum.Material.Metal)
-	makeBox(model, root, "FrontSight", Vector3.new(0.165, 0.195, 0.33), CFrame.new(2.16, 0, 0.48), COLORS.dark, Enum.Material.Metal)
-	makeCylinder(model, root, "TriggerGuardFront", Vector3.new(0.105, 0.315, 0.315), CFrame.new(0.06, 0, -0.39) * CFrame.Angles(0, 0, math.rad(90)), COLORS.dark, Enum.Material.Metal)
-	makeBox(model, root, "Trigger", Vector3.new(0.075, 0.06, 0.24), CFrame.new(0.06, 0, -0.36), COLORS.brass, Enum.Material.Metal)
-	makeBox(model, root, "StockLatch", Vector3.new(0.15, 0.105, 0.105), CFrame.new(-1.11, 0, 0.3), COLORS.steel, Enum.Material.Metal)
-	makeBox(model, root, "HandStop", Vector3.new(0.18, 0.105, 0.105), CFrame.new(1.65, 0, -0.225), COLORS.rubber, Enum.Material.SmoothPlastic)
-	makeBox(model, root, "WarningStripe", Vector3.new(0.12, 0.066, 0.3), CFrame.new(1.2, 0.243, 0.045), COLORS.warning, Enum.Material.SmoothPlastic)
-	makeCylinder(model, root, "RearSlingMount", Vector3.new(0.105, 0.144, 0.144), CFrame.new(-1.59, 0, -0.24) * CFrame.Angles(0, 0, math.rad(90)), COLORS.steel, Enum.Material.Metal)
-	makeCylinder(model, root, "FrontSlingMount", Vector3.new(0.105, 0.132, 0.132), CFrame.new(1.77, 0, -0.18) * CFrame.Angles(0, 0, math.rad(90)), COLORS.steel, Enum.Material.Metal)
+	makeBox(
+		model,
+		root,
+		"Receiver",
+		Vector3.new(1.26, 0.48, 0.6),
+		CFrame.new(0.15, 0, 0),
+		COLORS.charcoal,
+		Enum.Material.Metal
+	)
+	makeBox(
+		model,
+		root,
+		"Handguard",
+		Vector3.new(1.14, 0.42, 0.48),
+		CFrame.new(1.29, 0, 0.03),
+		COLORS.oliveDark,
+		Enum.Material.Metal
+	)
+	makeBox(
+		model,
+		root,
+		"StockCore",
+		Vector3.new(0.78, 0.36, 0.39),
+		CFrame.new(-0.84, 0, 0.045),
+		COLORS.olive,
+		Enum.Material.SmoothPlastic
+	)
+	makeBox(
+		model,
+		root,
+		"Buttstock",
+		Vector3.new(0.66, 0.42, 0.66),
+		CFrame.new(-1.41, 0, 0.015) * CFrame.Angles(0, math.rad(-4), 0),
+		COLORS.olive,
+		Enum.Material.SmoothPlastic
+	)
+	makeCylinder(
+		model,
+		root,
+		"Barrel",
+		Vector3.new(1.29, 0.228, 0.228),
+		CFrame.new(2.28, 0, 0.09),
+		COLORS.dark,
+		Enum.Material.Metal
+	)
+	makeCylinder(
+		model,
+		root,
+		"MuzzleDevice",
+		Vector3.new(0.3, 0.312, 0.312),
+		CFrame.new(3.075, 0, 0.09),
+		COLORS.steel,
+		Enum.Material.Metal
+	)
+	makeBox(
+		model,
+		root,
+		"PistolGrip",
+		Vector3.new(0.3, 0.27, 0.72),
+		CFrame.new(-0.06, 0, -0.6) * CFrame.Angles(0, math.rad(8), 0),
+		COLORS.rubber,
+		Enum.Material.SmoothPlastic
+	)
+	local _, magazineMotor = makeMotorPart(
+		model,
+		root,
+		"Magazine",
+		Vector3.new(0.51, 0.315, 0.78),
+		CFrame.new(0.57, 0, -0.69) * CFrame.Angles(0, math.rad(-7), 0),
+		COLORS.olive,
+		Enum.Material.Metal
+	)
+	local _, boltMotor = makeMotorPart(
+		model,
+		root,
+		"Bolt",
+		Vector3.new(0.51, 0.075, 0.18),
+		CFrame.new(0.21, -0.285, 0.06),
+		COLORS.steel,
+		Enum.Material.Metal
+	)
+	makeBox(
+		model,
+		root,
+		"TopRail",
+		Vector3.new(0.93, 0.09, 0.075),
+		CFrame.new(0.21, 0, 0.375),
+		COLORS.dark,
+		Enum.Material.Metal
+	)
+	makeBox(
+		model,
+		root,
+		"RearSight",
+		Vector3.new(0.21, 0.21, 0.285),
+		CFrame.new(0.63, 0, 0.57),
+		COLORS.dark,
+		Enum.Material.Metal
+	)
+	makeBox(
+		model,
+		root,
+		"FrontSight",
+		Vector3.new(0.165, 0.195, 0.33),
+		CFrame.new(2.16, 0, 0.48),
+		COLORS.dark,
+		Enum.Material.Metal
+	)
+	makeCylinder(
+		model,
+		root,
+		"TriggerGuardFront",
+		Vector3.new(0.105, 0.315, 0.315),
+		CFrame.new(0.06, 0, -0.39) * CFrame.Angles(0, 0, math.rad(90)),
+		COLORS.dark,
+		Enum.Material.Metal
+	)
+	makeBox(
+		model,
+		root,
+		"Trigger",
+		Vector3.new(0.075, 0.06, 0.24),
+		CFrame.new(0.06, 0, -0.36),
+		COLORS.brass,
+		Enum.Material.Metal
+	)
+	makeBox(
+		model,
+		root,
+		"StockLatch",
+		Vector3.new(0.15, 0.105, 0.105),
+		CFrame.new(-1.11, 0, 0.3),
+		COLORS.steel,
+		Enum.Material.Metal
+	)
+	makeBox(
+		model,
+		root,
+		"HandStop",
+		Vector3.new(0.18, 0.105, 0.105),
+		CFrame.new(1.65, 0, -0.225),
+		COLORS.rubber,
+		Enum.Material.SmoothPlastic
+	)
+	makeBox(
+		model,
+		root,
+		"WarningStripe",
+		Vector3.new(0.12, 0.066, 0.3),
+		CFrame.new(1.2, 0.243, 0.045),
+		COLORS.warning,
+		Enum.Material.SmoothPlastic
+	)
+	makeCylinder(
+		model,
+		root,
+		"RearSlingMount",
+		Vector3.new(0.105, 0.144, 0.144),
+		CFrame.new(-1.59, 0, -0.24) * CFrame.Angles(0, 0, math.rad(90)),
+		COLORS.steel,
+		Enum.Material.Metal
+	)
+	makeCylinder(
+		model,
+		root,
+		"FrontSlingMount",
+		Vector3.new(0.105, 0.132, 0.132),
+		CFrame.new(1.77, 0, -0.18) * CFrame.Angles(0, 0, math.rad(90)),
+		COLORS.steel,
+		Enum.Material.Metal
+	)
 
 	local rightGripAttachment = makeAttachment(root, "RightGripAttachment", Vector3.new(-0.12, 0, -0.54))
 	local leftGripAttachment = makeAttachment(root, "LeftGripAttachment", Vector3.new(1.29, 0, -0.06))

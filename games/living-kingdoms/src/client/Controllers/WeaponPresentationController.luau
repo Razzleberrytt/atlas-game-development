@@ -138,7 +138,9 @@ end
 
 local function resolveRightHand(character: Model): BasePart?
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	local preferredName = if humanoid ~= nil and humanoid.RigType == Enum.HumanoidRigType.R6 then "Right Arm" else "RightHand"
+	local preferredName = if humanoid ~= nil and humanoid.RigType == Enum.HumanoidRigType.R6
+		then "Right Arm"
+		else "RightHand"
 	local preferred = character:FindFirstChild(preferredName)
 	if preferred == nil then
 		preferred = character:WaitForChild(preferredName, 3)
@@ -233,7 +235,14 @@ local function resetBolt(durationSeconds: number)
 	if rig == nil then
 		return
 	end
-	playMotorTween("Bolt", rig.boltMotor, durationSeconds, rig.boltRestC0, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	playMotorTween(
+		"Bolt",
+		rig.boltMotor,
+		durationSeconds,
+		rig.boltRestC0,
+		Enum.EasingStyle.Quad,
+		Enum.EasingDirection.Out
+	)
 end
 
 local function lockBoltOpen(durationSeconds: number)
