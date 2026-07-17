@@ -89,6 +89,25 @@ assertThat(
 )
 assertThat(supplyCache.expectedRootName == "SupplyCachePresentation", "supply cache root contract drifted")
 assertThat(#supplyCache.requiredAttachmentNames == 0, "procedural supply cache must not claim authored attachments")
+local relayConsole = config.ByKey[contracts.AssetKeys.ObjectiveRelayConsoleModel]
+assertThat(relayConsole.statusId == contracts.StatusIds.PrimitivePlaceholder, "relay console must remain primitive")
+assertThat(
+	relayConsole.runtimeOwnerPath == "src/client/Controllers/MissionObjectPresentationController.luau",
+	"relay console registry must name the mission-object presentation owner"
+)
+assertThat(relayConsole.expectedRootName == "RelayConsolePresentation", "relay presentation root drifted")
+assertThat(#relayConsole.requiredAttachmentNames == 0, "procedural relay must not claim authored attachments")
+local extractionBeacon = config.ByKey[contracts.AssetKeys.ExtractionBeaconModel]
+assertThat(
+	extractionBeacon.statusId == contracts.StatusIds.PrimitivePlaceholder,
+	"extraction beacon must remain primitive"
+)
+assertThat(
+	extractionBeacon.runtimeOwnerPath == "src/client/Controllers/MissionObjectPresentationController.luau",
+	"extraction registry must name the mission-object presentation owner"
+)
+assertThat(extractionBeacon.expectedRootName == "ExtractionBeaconPresentation", "extraction presentation root drifted")
+assertThat(#extractionBeacon.requiredAttachmentNames == 0, "procedural extraction must not claim authored attachments")
 assertThat(
 	config.ByKey[contracts.AssetKeys.EnemyStandardHostileModel].statusId == contracts.StatusIds.PrimitivePlaceholder,
 	"standard hostile must remain honestly marked as primitive geometry"

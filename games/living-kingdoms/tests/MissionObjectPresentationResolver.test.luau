@@ -9,13 +9,11 @@ local function assertThat(condition: unknown, message: string)
 	end
 end
 
-local resolver = luau.load(
-	fs.readFile("games/living-kingdoms/src/client/Presentation/MissionObjectPresentationResolver.luau"),
-	{
+local resolver =
+	luau.load(fs.readFile("games/living-kingdoms/src/client/Presentation/MissionObjectPresentationResolver.luau"), {
 		debugName = "MissionObjectPresentationResolver",
 		injectGlobals = true,
-	}
-)()
+	})()
 
 local function resolve(phaseId: unknown, objectiveStateId: unknown, extractionUnlocked: unknown, outcomeId: unknown)
 	return resolver.resolve({
@@ -52,13 +50,15 @@ local failure = resolve("Resolved", "Completed", true, "Failure")
 assertThat(failure.extraction.stateId == "Failure", "failure must be disclosed at extraction")
 assertThat(failure.extraction.labelText == "EXTRACTION LOST", "failure label drifted")
 
-for _, inconsistent in {
-	resolve("Insertion", "Active", false, nil),
-	resolve("Infiltration", "Completed", false, nil),
-	resolve("Holdout", "Completed", false, nil),
-	resolve("Resolved", "Completed", true, nil),
-	resolve("Unknown", "Unknown", true, "Success"),
-} do
+for _, inconsistent in
+	{
+		resolve("Insertion", "Active", false, nil),
+		resolve("Infiltration", "Completed", false, nil),
+		resolve("Holdout", "Completed", false, nil),
+		resolve("Resolved", "Completed", true, nil),
+		resolve("Unknown", "Unknown", true, "Success"),
+	}
+do
 	if inconsistent.relay.stateId ~= "Completed" then
 		assertThat(
 			inconsistent.relay.stateId == "Hidden",

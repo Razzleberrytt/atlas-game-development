@@ -133,17 +133,129 @@ function Factory.createRelay(root: BasePart): RelayRig
 
 	local visualParts: { BasePart } = {}
 	local baseTransparencyByPart: { [BasePart]: number } = {}
-	makePart(model, root, visualParts, baseTransparencyByPart, "BasePlinth", Vector3.new(4.6, 0.35, 3.6), CFrame.new(0, -2.35, 0), COLORS.structureDark, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "LeftShell", Vector3.new(0.35, 4.6, 3.3), CFrame.new(-2.15, 0, 0), COLORS.structure, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "RightShell", Vector3.new(0.35, 4.6, 3.3), CFrame.new(2.15, 0, 0), COLORS.structure, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "FrontPanel", Vector3.new(3.8, 3.8, 0.28), CFrame.new(0, -0.1, -1.64), COLORS.panel, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "TopHousing", Vector3.new(4.2, 0.55, 3.3), CFrame.new(0, 2.25, 0), COLORS.structureDark, Enum.Material.Metal)
-	local screen = makePart(model, root, visualParts, baseTransparencyByPart, "RelayScreen", Vector3.new(2.35, 1.22, 0.12), CFrame.new(-0.25, 0.45, -1.84), COLORS.standby, Enum.Material.Neon, 0.05)
-	local lens = makePart(model, root, visualParts, baseTransparencyByPart, "StatusLens", Vector3.new(0.55, 0.55, 0.22), CFrame.new(1.45, 1.52, -1.84), COLORS.standby, Enum.Material.Neon, 0.02)
-	makePart(model, root, visualParts, baseTransparencyByPart, "LeftAntenna", Vector3.new(0.18, 1.6, 0.18), CFrame.new(-1.35, 3.15, 0.55) * CFrame.Angles(0, 0, math.rad(-8)), COLORS.steel, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "RightAntenna", Vector3.new(0.18, 1.6, 0.18), CFrame.new(-0.85, 3.15, 0.55) * CFrame.Angles(0, 0, math.rad(8)), COLORS.steel, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "CableBox", Vector3.new(0.7, 1.15, 0.5), CFrame.new(1.5, -1.25, -1.75), COLORS.structureDark, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "ScreenGuard", Vector3.new(3.45, 0.18, 0.18), CFrame.new(-0.15, 1.55, -1.96), COLORS.steel, Enum.Material.Metal)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"BasePlinth",
+		Vector3.new(4.6, 0.35, 3.6),
+		CFrame.new(0, -2.35, 0),
+		COLORS.structureDark,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"LeftShell",
+		Vector3.new(0.35, 4.6, 3.3),
+		CFrame.new(-2.15, 0, 0),
+		COLORS.structure,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"RightShell",
+		Vector3.new(0.35, 4.6, 3.3),
+		CFrame.new(2.15, 0, 0),
+		COLORS.structure,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"FrontPanel",
+		Vector3.new(3.8, 3.8, 0.28),
+		CFrame.new(0, -0.1, -1.64),
+		COLORS.panel,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"TopHousing",
+		Vector3.new(4.2, 0.55, 3.3),
+		CFrame.new(0, 2.25, 0),
+		COLORS.structureDark,
+		Enum.Material.Metal
+	)
+	local screen = makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"RelayScreen",
+		Vector3.new(2.35, 1.22, 0.12),
+		CFrame.new(-0.25, 0.45, -1.84),
+		COLORS.standby,
+		Enum.Material.Neon,
+		0.05
+	)
+	local lens = makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"StatusLens",
+		Vector3.new(0.55, 0.55, 0.22),
+		CFrame.new(1.45, 1.52, -1.84),
+		COLORS.standby,
+		Enum.Material.Neon,
+		0.02
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"LeftAntenna",
+		Vector3.new(0.18, 1.6, 0.18),
+		CFrame.new(-1.35, 3.15, 0.55) * CFrame.Angles(0, 0, math.rad(-8)),
+		COLORS.steel,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"RightAntenna",
+		Vector3.new(0.18, 1.6, 0.18),
+		CFrame.new(-0.85, 3.15, 0.55) * CFrame.Angles(0, 0, math.rad(8)),
+		COLORS.steel,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"CableBox",
+		Vector3.new(0.7, 1.15, 0.5),
+		CFrame.new(1.5, -1.25, -1.75),
+		COLORS.structureDark,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"ScreenGuard",
+		Vector3.new(3.45, 0.18, 0.18),
+		CFrame.new(-0.15, 1.55, -1.96),
+		COLORS.steel,
+		Enum.Material.Metal
+	)
 
 	local label = createSurfaceLabel(screen, "RelayStateLabel")
 	local light = Instance.new("PointLight")
@@ -194,18 +306,140 @@ function Factory.createExtraction(root: BasePart): ExtractionRig
 
 	local visualParts: { BasePart } = {}
 	local baseTransparencyByPart: { [BasePart]: number } = {}
-	makePart(model, root, visualParts, baseTransparencyByPart, "CenterBase", Vector3.new(5.4, 0.55, 5.4), CFrame.new(0, -44.35, 0), COLORS.structureDark, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "NorthPad", Vector3.new(3.4, 0.3, 5.2), CFrame.new(0, -44.7, -4.6), COLORS.panel, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "SouthPad", Vector3.new(3.4, 0.3, 5.2), CFrame.new(0, -44.7, 4.6), COLORS.panel, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "EastPad", Vector3.new(5.2, 0.3, 3.4), CFrame.new(4.6, -44.7, 0), COLORS.panel, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "WestPad", Vector3.new(5.2, 0.3, 3.4), CFrame.new(-4.6, -44.7, 0), COLORS.panel, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "LowerFinX", Vector3.new(0.28, 13, 4.4), CFrame.new(0, -35, 0), COLORS.structure, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "LowerFinZ", Vector3.new(4.4, 13, 0.28), CFrame.new(0, -35, 0), COLORS.structure, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "UpperFinX", Vector3.new(0.22, 12, 4), CFrame.new(0, 30, 0), COLORS.structure, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "UpperFinZ", Vector3.new(4, 12, 0.22), CFrame.new(0, 30, 0), COLORS.structure, Enum.Material.Metal)
-	makePart(model, root, visualParts, baseTransparencyByPart, "Crown", Vector3.new(5.2, 0.55, 5.2), CFrame.new(0, 44.1, 0), COLORS.structureDark, Enum.Material.Metal)
-	local beaconLens = makePart(model, root, visualParts, baseTransparencyByPart, "BeaconLens", Vector3.new(2.5, 2.5, 2.5), CFrame.new(0, 42.6, 0), COLORS.extraction, Enum.Material.Neon, 0.12)
-	local directionPanel = makePart(model, root, visualParts, baseTransparencyByPart, "DirectionPanel", Vector3.new(6.2, 1.45, 0.24), CFrame.new(0, -41.6, -5.25), COLORS.extraction, Enum.Material.Neon, 0.04)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"CenterBase",
+		Vector3.new(5.4, 0.55, 5.4),
+		CFrame.new(0, -44.35, 0),
+		COLORS.structureDark,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"NorthPad",
+		Vector3.new(3.4, 0.3, 5.2),
+		CFrame.new(0, -44.7, -4.6),
+		COLORS.panel,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"SouthPad",
+		Vector3.new(3.4, 0.3, 5.2),
+		CFrame.new(0, -44.7, 4.6),
+		COLORS.panel,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"EastPad",
+		Vector3.new(5.2, 0.3, 3.4),
+		CFrame.new(4.6, -44.7, 0),
+		COLORS.panel,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"WestPad",
+		Vector3.new(5.2, 0.3, 3.4),
+		CFrame.new(-4.6, -44.7, 0),
+		COLORS.panel,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"LowerFinX",
+		Vector3.new(0.28, 13, 4.4),
+		CFrame.new(0, -35, 0),
+		COLORS.structure,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"LowerFinZ",
+		Vector3.new(4.4, 13, 0.28),
+		CFrame.new(0, -35, 0),
+		COLORS.structure,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"UpperFinX",
+		Vector3.new(0.22, 12, 4),
+		CFrame.new(0, 30, 0),
+		COLORS.structure,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"UpperFinZ",
+		Vector3.new(4, 12, 0.22),
+		CFrame.new(0, 30, 0),
+		COLORS.structure,
+		Enum.Material.Metal
+	)
+	makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"Crown",
+		Vector3.new(5.2, 0.55, 5.2),
+		CFrame.new(0, 44.1, 0),
+		COLORS.structureDark,
+		Enum.Material.Metal
+	)
+	local beaconLens = makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"BeaconLens",
+		Vector3.new(2.5, 2.5, 2.5),
+		CFrame.new(0, 42.6, 0),
+		COLORS.extraction,
+		Enum.Material.Neon,
+		0.12
+	)
+	local directionPanel = makePart(
+		model,
+		root,
+		visualParts,
+		baseTransparencyByPart,
+		"DirectionPanel",
+		Vector3.new(6.2, 1.45, 0.24),
+		CFrame.new(0, -41.6, -5.25),
+		COLORS.extraction,
+		Enum.Material.Neon,
+		0.04
+	)
 
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "ExtractionStateBillboard"
