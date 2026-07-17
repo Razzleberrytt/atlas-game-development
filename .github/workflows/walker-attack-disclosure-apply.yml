@@ -1,0 +1,1089 @@
+name: Walker attack disclosure apply
+
+on:
+  push:
+    branches:
+      - feat/exclusion-walker-attack-disclosure
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/exclusion-walker-attack-disclosure
+      - uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+      - name: Add presentation contract and consumers
+        run: |
+          mkdir -p games/living-kingdoms/src/shared/Visual
+          cat > games/living-kingdoms/src/shared/Visual/EnemyPresentationContracts.luau <<'EOF'
+          --!strict
+
+          --[[
+          	Replicated, presentation-only disclosure names for server-owned enemies.
+          	These attributes describe already-committed gameplay truth. They do not
+          	request attacks, select targets, apply damage, change health, or own death.
+          ]]
+
+          local AttributeNames = table.freeze({
+          	BehaviorStateId = "EnemyPresentationBehaviorStateId",
+          	LifeStateId = "EnemyPresentationLifeStateId",
+          	AttackSequence = "EnemyPresentationAttackSequence",
+          	AttackServerTimestamp = "EnemyPresentationAttackServerTimestamp",
+          	HitSequence = "EnemyPresentationHitSequence",
+          	HitServerTimestamp = "EnemyPresentationHitServerTimestamp",
+          })
+
+          local LifeStateIds = table.freeze({
+          	Alive = "Alive",
+          	Dead = "Dead",
+          })
+
+          return table.freeze({
+          	AttributeNames = AttributeNames,
+          	LifeStateIds = LifeStateIds,
+          })
+          EOF
+
+          cat > games/living-kingdoms/src/client/Presentation/EnemyPresentationPoseResolver.luau <<'EOF'
+          --!strict
+
+          --[[
+          	VIS-0103 pure pose selection for the Exclusion Walker procedural fallback.
+          	Inputs are replicated presentation facts. The resolver cannot move an enemy,
+          	choose a target, apply damage, change health, or alter death and cleanup.
+          ]]
+
+          local PoseIds = table.freeze({
+          	Idle = "Idle",
+          	RoamingA = "RoamingA",
+          	RoamingB = "RoamingB",
+          	PursuingA = "PursuingA",
+          	PursuingB = "PursuingB",
+          	ThreatReady = "ThreatReady",
+          	StrikeActiveLeft = "StrikeActiveLeft",
+          	StrikeActiveRight = "StrikeActiveRight",
+          	StrikeRecoveryLeft = "StrikeRecoveryLeft",
+          	StrikeRecoveryRight = "StrikeRecoveryRight",
+          	HitReaction = "HitReaction",
+          	StandDown = "StandDown",
+          	Dead = "Dead",
+          })
+
+          local SensorModes = table.freeze({
+          	Normal = "Normal",
+          	Alert = "Alert",
+          	Strike = "Strike",
+          	Hit = "Hit",
+          	Dim = "Dim",
+          	Dead = "Dead",
+          })
+
+          local Timing = table.freeze({
+          	HitReactionSeconds = 0.28,
+          	AttackActiveSeconds = 0.16,
+          	AttackRecoverySeconds = 0.52,
+          })
+
+          export type PoseInput = {
+          	isDead: boolean,
+          	isStoodDown: boolean,
+          	isMoving: boolean,
+          	isPursuing: boolean,
+          	attackSequence: number,
+          	secondsSinceAttack: number?,
+          	secondsSinceHit: number?,
+          	strideIndex: number,
+          }
+
+          export type Pose = {
+          	id: string,
+          	torsoPitchDegrees: number,
+          	torsoRollDegrees: number,
+          	leftArmPitchDegrees: number,
+          	rightArmPitchDegrees: number,
+          	leftArmRollDegrees: number,
+          	rightArmRollDegrees: number,
+          	leftLegPitchDegrees: number,
+          	rightLegPitchDegrees: number,
+          	sensorMode: string,
+          }
+
+          local function pose(
+          	id: string,
+          	torsoPitchDegrees: number,
+          	torsoRollDegrees: number,
+          	leftArmPitchDegrees: number,
+          	rightArmPitchDegrees: number,
+          	leftArmRollDegrees: number,
+          	rightArmRollDegrees: number,
+          	leftLegPitchDegrees: number,
+          	rightLegPitchDegrees: number,
+          	sensorMode: string
+          ): Pose
+          	return table.freeze({
+          		id = id,
+          		torsoPitchDegrees = torsoPitchDegrees,
+          		torsoRollDegrees = torsoRollDegrees,
+          		leftArmPitchDegrees = leftArmPitchDegrees,
+          		rightArmPitchDegrees = rightArmPitchDegrees,
+          		leftArmRollDegrees = leftArmRollDegrees,
+          		rightArmRollDegrees = rightArmRollDegrees,
+          		leftLegPitchDegrees = leftLegPitchDegrees,
+          		rightLegPitchDegrees = rightLegPitchDegrees,
+          		sensorMode = sensorMode,
+          	})
+          end
+
+          local IDLE = pose(PoseIds.Idle, 0, 0, 5, -5, 4, -4, 0, 0, SensorModes.Normal)
+          local THREAT_READY = pose(PoseIds.ThreatReady, -8, 0, -38, -38, 12, -12, 5, -5, SensorModes.Alert)
+          local STRIKE_ACTIVE_LEFT =
+          	pose(PoseIds.StrikeActiveLeft, -21, -11, -92, -24, -31, -6, 15, -15, SensorModes.Strike)
+          local STRIKE_ACTIVE_RIGHT =
+          	pose(PoseIds.StrikeActiveRight, -21, 11, -24, -92, 6, 31, -15, 15, SensorModes.Strike)
+          local STRIKE_RECOVERY_LEFT =
+          	pose(PoseIds.StrikeRecoveryLeft, 3, 6, -18, -42, 13, -16, -7, 7, SensorModes.Alert)
+          local STRIKE_RECOVERY_RIGHT =
+          	pose(PoseIds.StrikeRecoveryRight, 3, -6, -42, -18, 16, -13, 7, -7, SensorModes.Alert)
+          local HIT_REACTION = pose(PoseIds.HitReaction, 16, 9, 26, -34, -18, 20, -8, 8, SensorModes.Hit)
+          local STAND_DOWN = pose(PoseIds.StandDown, 19, 0, 38, 38, 12, -12, 0, 0, SensorModes.Dim)
+          local DEAD = pose(PoseIds.Dead, 72, 13, 66, 58, 24, -28, -18, 22, SensorModes.Dead)
+
+          local EnemyPresentationPoseResolver = {
+          	PoseIds = PoseIds,
+          	SensorModes = SensorModes,
+          	Timing = Timing,
+          }
+
+          function EnemyPresentationPoseResolver.resolve(input: PoseInput): Pose
+          	if input.isDead then
+          		return DEAD
+          	end
+
+          	local secondsSinceHit = input.secondsSinceHit
+          	if
+          		secondsSinceHit ~= nil
+          		and secondsSinceHit >= 0
+          		and secondsSinceHit <= Timing.HitReactionSeconds
+          	then
+          		return HIT_REACTION
+          	end
+
+          	if input.isStoodDown then
+          		return STAND_DOWN
+          	end
+
+          	local secondsSinceAttack = input.secondsSinceAttack
+          	if secondsSinceAttack ~= nil and secondsSinceAttack >= 0 then
+          		local strikeUsesLeftArm = input.attackSequence % 2 == 1
+          		if secondsSinceAttack <= Timing.AttackActiveSeconds then
+          			return if strikeUsesLeftArm then STRIKE_ACTIVE_LEFT else STRIKE_ACTIVE_RIGHT
+          		end
+          		if secondsSinceAttack <= Timing.AttackRecoverySeconds then
+          			return if strikeUsesLeftArm then STRIKE_RECOVERY_LEFT else STRIKE_RECOVERY_RIGHT
+          		end
+          	end
+
+          	local strideIsEven = input.strideIndex % 2 == 0
+          	if input.isMoving and input.isPursuing then
+          		if strideIsEven then
+          			return pose(PoseIds.PursuingA, -16, -2, -34, 26, 7, -7, 24, -24, SensorModes.Alert)
+          		end
+          		return pose(PoseIds.PursuingB, -16, 2, 26, -34, 7, -7, -24, 24, SensorModes.Alert)
+          	end
+
+          	if input.isMoving then
+          		if strideIsEven then
+          			return pose(PoseIds.RoamingA, -6, -1, -16, 12, 5, -5, 13, -13, SensorModes.Normal)
+          		end
+          		return pose(PoseIds.RoamingB, -6, 1, 12, -16, 5, -5, -13, 13, SensorModes.Normal)
+          	end
+
+          	if input.isPursuing then
+          		return THREAT_READY
+          	end
+
+          	return IDLE
+          end
+
+          return table.freeze(EnemyPresentationPoseResolver)
+          EOF
+
+          cat > games/living-kingdoms/src/client/Controllers/EnemyPresentationController.luau <<'EOF'
+          --!strict
+
+          --[[
+          	VIS-0103 client-local state readability for the Exclusion Walker fallback.
+          	One RenderStepped connection reads server-authored presentation attributes
+          	and changes only Motor6D poses plus the sensor appearance. It does not send
+          	a remote, move an enemy root, select a target, predict an attack, apply
+          	damage, change health, or alter death and cleanup.
+
+          	The controller uses two folder-level lifecycle connections and zero per-enemy
+          	connections. Motor writes occur only when a resolved pose ID changes.
+          ]]
+
+          local ReplicatedStorage = game:GetService("ReplicatedStorage")
+          local RunService = game:GetService("RunService")
+          local Workspace = game:GetService("Workspace")
+
+          local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
+          local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)
+          local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
+          local EnemyPresentationPoseResolver = require(script.Parent.Parent.Presentation.EnemyPresentationPoseResolver)
+
+          local EnemyPresentationController = {}
+
+          local BehaviorStateIds = EnemyContracts.EnemyBehaviorStateIds
+          local PresentationAttributeNames = EnemyPresentationContracts.AttributeNames
+          local PresentationLifeStateIds = EnemyPresentationContracts.LifeStateIds
+
+          local ENEMY_FOLDER_NAME = "EnemyEntities"
+          local PRESENTATION_MODEL_NAME = "ExclusionWalkerPresentation"
+          local MOVEMENT_THRESHOLD = 0.05
+          local STRIDES_PER_SECOND = 3
+
+          local SENSOR_COLORS = table.freeze({
+          	Normal = Color3.fromRGB(218, 78, 53),
+          	Alert = Color3.fromRGB(255, 145, 54),
+          	Strike = Color3.fromRGB(255, 204, 74),
+          	Hit = Color3.fromRGB(255, 245, 210),
+          	Dim = Color3.fromRGB(105, 74, 62),
+          	Dead = Color3.fromRGB(48, 28, 28),
+          })
+
+          local SENSOR_TRANSPARENCY = table.freeze({
+          	Normal = 0,
+          	Alert = 0,
+          	Strike = 0,
+          	Hit = 0,
+          	Dim = 0.35,
+          	Dead = 0.55,
+          })
+
+          type Record = {
+          	root: BasePart,
+          	humanoid: Humanoid,
+          	sensor: BasePart,
+          	torsoMotor: Motor6D,
+          	leftArmMotor: Motor6D,
+          	rightArmMotor: Motor6D,
+          	leftLegMotor: Motor6D,
+          	rightLegMotor: Motor6D,
+          	torsoBaseC0: CFrame,
+          	leftArmBaseC0: CFrame,
+          	rightArmBaseC0: CFrame,
+          	leftLegBaseC0: CFrame,
+          	rightLegBaseC0: CFrame,
+          	attackSequence: number,
+          	attackServerTimestamp: number?,
+          	hitSequence: number,
+          	hitServerTimestamp: number?,
+          	phaseOffsetSeconds: number,
+          	poseId: string,
+          }
+
+          local started = false
+          local enemyFolder: Folder? = nil
+          local descendantAddedConnection: RBXScriptConnection? = nil
+          local childRemovedConnection: RBXScriptConnection? = nil
+          local renderConnection: RBXScriptConnection? = nil
+          local records: { [Model]: Record } = {}
+
+          local function readNumberAttribute(model: Model, attributeName: string): number?
+          	local value = model:GetAttribute(attributeName)
+          	return if type(value) == "number" then value else nil
+          end
+
+          local function readStringAttribute(model: Model, attributeName: string): string?
+          	local value = model:GetAttribute(attributeName)
+          	return if type(value) == "string" then value else nil
+          end
+
+          local function stablePhaseOffset(model: Model): number
+          	local entityId = model:GetAttribute("CombatEntityId")
+          	if type(entityId) ~= "string" then
+          		return 0
+          	end
+          	local hash = 0
+          	for index = 1, #entityId do
+          		hash = (hash + string.byte(entityId, index) * index) % 997
+          	end
+          	return hash / 997
+          end
+
+          local function findMotor(model: Model, name: string): Motor6D?
+          	local instance = model:FindFirstChild(name, true)
+          	if instance ~= nil and instance:IsA("Motor6D") then
+          		return instance
+          	end
+          	return nil
+          end
+
+          local function findEnemyModel(instance: Instance): Model?
+          	local folder = enemyFolder
+          	local current: Instance? = instance
+          	while current ~= nil and current ~= folder do
+          		if current:IsA("Model") and current:GetAttribute("EnemyArchetypeId") == EnemyConfig.Walker.ArchetypeId then
+          			return current
+          		end
+          		current = current.Parent
+          	end
+          	return nil
+          end
+
+          local function trackModel(model: Model)
+          	if records[model] ~= nil or model:GetAttribute("EnemyArchetypeId") ~= EnemyConfig.Walker.ArchetypeId then
+          		return
+          	end
+
+          	local presentation = model:FindFirstChild(PRESENTATION_MODEL_NAME)
+          	local root = model:FindFirstChild("HumanoidRootPart")
+          	local humanoid = model:FindFirstChildOfClass("Humanoid")
+          	if
+          		presentation == nil
+          		or not presentation:IsA("Model")
+          		or root == nil
+          		or not root:IsA("BasePart")
+          		or humanoid == nil
+          	then
+          		return
+          	end
+
+          	local sensor = presentation:FindFirstChild("Sensor", true)
+          	local torsoMotor = findMotor(model, "TorsoMotor")
+          	local leftArmMotor = findMotor(model, "ForearmLeftMotor")
+          	local rightArmMotor = findMotor(model, "ForearmRightMotor")
+          	local leftLegMotor = findMotor(model, "LegLeftMotor")
+          	local rightLegMotor = findMotor(model, "LegRightMotor")
+          	if
+          		sensor == nil
+          		or not sensor:IsA("BasePart")
+          		or torsoMotor == nil
+          		or leftArmMotor == nil
+          		or rightArmMotor == nil
+          		or leftLegMotor == nil
+          		or rightLegMotor == nil
+          	then
+          		return
+          	end
+
+          	local attackSequence = readNumberAttribute(model, PresentationAttributeNames.AttackSequence)
+          	local attackServerTimestamp = readNumberAttribute(model, PresentationAttributeNames.AttackServerTimestamp)
+          	local hitSequence = readNumberAttribute(model, PresentationAttributeNames.HitSequence)
+          	local hitServerTimestamp = readNumberAttribute(model, PresentationAttributeNames.HitServerTimestamp)
+          	if
+          		attackSequence == nil
+          		or attackServerTimestamp == nil
+          		or hitSequence == nil
+          		or hitServerTimestamp == nil
+          	then
+          		return
+          	end
+
+          	records[model] = {
+          		root = root,
+          		humanoid = humanoid,
+          		sensor = sensor,
+          		torsoMotor = torsoMotor,
+          		leftArmMotor = leftArmMotor,
+          		rightArmMotor = rightArmMotor,
+          		leftLegMotor = leftLegMotor,
+          		rightLegMotor = rightLegMotor,
+          		torsoBaseC0 = torsoMotor.C0,
+          		leftArmBaseC0 = leftArmMotor.C0,
+          		rightArmBaseC0 = rightArmMotor.C0,
+          		leftLegBaseC0 = leftLegMotor.C0,
+          		rightLegBaseC0 = rightLegMotor.C0,
+          		attackSequence = attackSequence,
+          		attackServerTimestamp = if attackSequence > 0 and attackServerTimestamp > 0
+          			then attackServerTimestamp
+          			else nil,
+          		hitSequence = hitSequence,
+          		hitServerTimestamp = if hitSequence > 0 and hitServerTimestamp > 0 then hitServerTimestamp else nil,
+          		phaseOffsetSeconds = stablePhaseOffset(model),
+          		poseId = "",
+          	}
+          end
+
+          local function restoreRecord(record: Record)
+          	record.torsoMotor.C0 = record.torsoBaseC0
+          	record.leftArmMotor.C0 = record.leftArmBaseC0
+          	record.rightArmMotor.C0 = record.rightArmBaseC0
+          	record.leftLegMotor.C0 = record.leftLegBaseC0
+          	record.rightLegMotor.C0 = record.rightLegBaseC0
+          	record.sensor.Color = SENSOR_COLORS.Normal
+          	record.sensor.Transparency = SENSOR_TRANSPARENCY.Normal
+          end
+
+          local function untrackModel(model: Model)
+          	local record = records[model]
+          	if record == nil then
+          		return
+          	end
+          	restoreRecord(record)
+          	records[model] = nil
+          end
+
+          local function applyPose(record: Record, pose: EnemyPresentationPoseResolver.Pose)
+          	record.torsoMotor.C0 = record.torsoBaseC0
+          		* CFrame.Angles(math.rad(pose.torsoPitchDegrees), 0, math.rad(pose.torsoRollDegrees))
+          	record.leftArmMotor.C0 = record.leftArmBaseC0
+          		* CFrame.Angles(math.rad(pose.leftArmPitchDegrees), 0, math.rad(pose.leftArmRollDegrees))
+          	record.rightArmMotor.C0 = record.rightArmBaseC0
+          		* CFrame.Angles(math.rad(pose.rightArmPitchDegrees), 0, math.rad(pose.rightArmRollDegrees))
+          	record.leftLegMotor.C0 = record.leftLegBaseC0 * CFrame.Angles(math.rad(pose.leftLegPitchDegrees), 0, 0)
+          	record.rightLegMotor.C0 = record.rightLegBaseC0 * CFrame.Angles(math.rad(pose.rightLegPitchDegrees), 0, 0)
+
+          	local color = SENSOR_COLORS[pose.sensorMode]
+          	local transparency = SENSOR_TRANSPARENCY[pose.sensorMode]
+          	if color ~= nil and transparency ~= nil then
+          		record.sensor.Color = color
+          		record.sensor.Transparency = transparency
+          	end
+          	record.poseId = pose.id
+          end
+
+          local function updateRecord(model: Model, record: Record, serverTimestamp: number)
+          	local attackSequence = readNumberAttribute(model, PresentationAttributeNames.AttackSequence)
+          	local attackServerTimestamp = readNumberAttribute(model, PresentationAttributeNames.AttackServerTimestamp)
+          	if
+          		attackSequence ~= nil
+          		and attackServerTimestamp ~= nil
+          		and attackSequence > record.attackSequence
+          		and attackServerTimestamp > 0
+          	then
+          		record.attackSequence = attackSequence
+          		record.attackServerTimestamp = attackServerTimestamp
+          	end
+
+          	local hitSequence = readNumberAttribute(model, PresentationAttributeNames.HitSequence)
+          	local hitServerTimestamp = readNumberAttribute(model, PresentationAttributeNames.HitServerTimestamp)
+          	if
+          		hitSequence ~= nil
+          		and hitServerTimestamp ~= nil
+          		and hitSequence > record.hitSequence
+          		and hitServerTimestamp > 0
+          	then
+          		record.hitSequence = hitSequence
+          		record.hitServerTimestamp = hitServerTimestamp
+          	end
+
+          	local behaviorStateId = readStringAttribute(model, PresentationAttributeNames.BehaviorStateId)
+          	local lifeStateId = readStringAttribute(model, PresentationAttributeNames.LifeStateId)
+          	if behaviorStateId == nil or lifeStateId == nil then
+          		return
+          	end
+
+          	local attackAt = record.attackServerTimestamp
+          	local hitAt = record.hitServerTimestamp
+          	local secondsSinceAttack = if attackAt == nil then nil else serverTimestamp - attackAt
+          	local secondsSinceHit = if hitAt == nil then nil else serverTimestamp - hitAt
+          	local isDead = lifeStateId == PresentationLifeStateIds.Dead
+          	local isStoodDown = behaviorStateId == BehaviorStateIds.StandDown
+          	local isMoving = record.humanoid.MoveDirection.Magnitude > MOVEMENT_THRESHOLD
+          	local isPursuing = behaviorStateId == BehaviorStateIds.Pursuing
+          		or behaviorStateId == BehaviorStateIds.Attacking
+          	local strideIndex = math.floor((serverTimestamp + record.phaseOffsetSeconds) * STRIDES_PER_SECOND) % 2
+
+          	local pose = EnemyPresentationPoseResolver.resolve({
+          		isDead = isDead,
+          		isStoodDown = isStoodDown,
+          		isMoving = isMoving,
+          		isPursuing = isPursuing,
+          		attackSequence = record.attackSequence,
+          		secondsSinceAttack = secondsSinceAttack,
+          		secondsSinceHit = secondsSinceHit,
+          		strideIndex = strideIndex,
+          	})
+          	if pose.id ~= record.poseId then
+          		applyPose(record, pose)
+          	end
+          end
+
+          function EnemyPresentationController.start()
+          	if started then
+          		return
+          	end
+          	started = true
+
+          	local folder = Workspace:WaitForChild(ENEMY_FOLDER_NAME)
+          	assert(folder:IsA("Folder"), "EnemyEntities must be a Folder")
+          	enemyFolder = folder
+          	for _, child in folder:GetChildren() do
+          		if child:IsA("Model") then
+          			trackModel(child)
+          		end
+          	end
+
+          	descendantAddedConnection = folder.DescendantAdded:Connect(function(descendant)
+          		local model = findEnemyModel(descendant)
+          		if model ~= nil then
+          			trackModel(model)
+          		end
+          	end)
+          	childRemovedConnection = folder.ChildRemoved:Connect(function(child)
+          		if child:IsA("Model") then
+          			untrackModel(child)
+          		end
+          	end)
+          	renderConnection = RunService.RenderStepped:Connect(function()
+          		local serverTimestamp = Workspace:GetServerTimeNow()
+          		for model, record in records do
+          			if model.Parent == nil then
+          				records[model] = nil
+          			else
+          				updateRecord(model, record, serverTimestamp)
+          			end
+          		end
+          	end)
+          end
+
+          function EnemyPresentationController.stop()
+          	if not started then
+          		return
+          	end
+          	started = false
+          	if descendantAddedConnection ~= nil then
+          		descendantAddedConnection:Disconnect()
+          		descendantAddedConnection = nil
+          	end
+          	if childRemovedConnection ~= nil then
+          		childRemovedConnection:Disconnect()
+          		childRemovedConnection = nil
+          	end
+          	if renderConnection ~= nil then
+          		renderConnection:Disconnect()
+          		renderConnection = nil
+          	end
+          	for model, record in records do
+          		restoreRecord(record)
+          		records[model] = nil
+          	end
+          	enemyFolder = nil
+          end
+
+          return table.freeze(EnemyPresentationController)
+          EOF
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file_path = Path(path)
+              text = file_path.read_text()
+              if text.count(old) != 1:
+                  raise SystemExit(f"expected exactly one match in {path}: {old[:80]!r}; found {text.count(old)}")
+              file_path.write_text(text.replace(old, new, 1))
+
+          director = "games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau"
+          replace_once(
+              director,
+              'local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)\nlocal WorldFoundationConfig = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)',
+              'local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)\nlocal EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)\nlocal WorldFoundationConfig = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)',
+          )
+          replace_once(
+              director,
+              'local BehaviorStateIds = EnemyContracts.EnemyBehaviorStateIds\nlocal SpawnSourceIds = EnemyContracts.EnemySpawnSourceIds',
+              'local BehaviorStateIds = EnemyContracts.EnemyBehaviorStateIds\nlocal PresentationAttributeNames = EnemyPresentationContracts.AttributeNames\nlocal PresentationLifeStateIds = EnemyPresentationContracts.LifeStateIds\nlocal SpawnSourceIds = EnemyContracts.EnemySpawnSourceIds',
+          )
+          replace_once(
+              director,
+              '\tlastAttackServerTimestamp: number?,\n\thealthRevision: number,',
+              '\tlastAttackServerTimestamp: number?,\n\tattackPresentationSequence: number,\n\thitPresentationSequence: number,\n\thealthRevision: number,',
+          )
+          replace_once(
+              director,
+              '''local function setHealthPresentation(entry: EnemyEntry)\n\tentry.healthLabel.Text =\n\t\tstring.format("%s\\nHealth: %d", entry.model.Name, math.max(0, entry.healthState.currentHealth))\n\tentry.root.Color = if entry.isAlive then Color3.fromRGB(126, 46, 46) else Color3.fromRGB(74, 74, 74)\nend\n''',
+              '''local function setHealthPresentation(entry: EnemyEntry)\n\tentry.healthLabel.Text =\n\t\tstring.format("%s\\nHealth: %d", entry.model.Name, math.max(0, entry.healthState.currentHealth))\n\tentry.root.Color = if entry.isAlive then Color3.fromRGB(126, 46, 46) else Color3.fromRGB(74, 74, 74)\nend\n\nlocal function setPresentationBehaviorState(entry: EnemyEntry, behaviorStateId: string)\n\tif entry.behaviorStateId == behaviorStateId then\n\t\treturn\n\tend\n\tentry.behaviorStateId = behaviorStateId\n\tentry.model:SetAttribute(PresentationAttributeNames.BehaviorStateId, behaviorStateId)\nend\n\nlocal function initializePresentationAttributes(entry: EnemyEntry)\n\tentry.model:SetAttribute(PresentationAttributeNames.BehaviorStateId, entry.behaviorStateId)\n\tentry.model:SetAttribute(PresentationAttributeNames.LifeStateId, PresentationLifeStateIds.Alive)\n\tentry.model:SetAttribute(PresentationAttributeNames.AttackSequence, 0)\n\tentry.model:SetAttribute(PresentationAttributeNames.AttackServerTimestamp, 0)\n\tentry.model:SetAttribute(PresentationAttributeNames.HitSequence, 0)\n\tentry.model:SetAttribute(PresentationAttributeNames.HitServerTimestamp, 0)\nend\n\nlocal function discloseCommittedAttack(entry: EnemyEntry, serverTimestamp: number)\n\tentry.attackPresentationSequence += 1\n\tentry.model:SetAttribute(PresentationAttributeNames.AttackSequence, entry.attackPresentationSequence)\n\tentry.model:SetAttribute(PresentationAttributeNames.AttackServerTimestamp, serverTimestamp)\nend\n\nlocal function discloseCommittedHit(entry: EnemyEntry, serverTimestamp: number)\n\tentry.hitPresentationSequence += 1\n\tentry.model:SetAttribute(PresentationAttributeNames.HitSequence, entry.hitPresentationSequence)\n\tentry.model:SetAttribute(PresentationAttributeNames.HitServerTimestamp, serverTimestamp)\nend\n''',
+          )
+          replace_once(
+              director,
+              '\t\tlastAttackServerTimestamp = nil,\n\t\thealthRevision = 1,',
+              '\t\tlastAttackServerTimestamp = nil,\n\t\tattackPresentationSequence = 0,\n\t\thitPresentationSequence = 0,\n\t\thealthRevision = 1,',
+          )
+          replace_once(
+              director,
+              '\tsetHealthPresentation(entry)\n\tmodel.Parent = folder',
+              '\tsetHealthPresentation(entry)\n\tinitializePresentationAttributes(entry)\n\tmodel.Parent = folder',
+          )
+          replace_once(
+              director,
+              '''\t\tif entry.isAlive and entry.behaviorStateId == BehaviorStateIds.StandDown then\n\t\t\tentry.behaviorStateId = BehaviorStateIds.Roaming\n\t\tend''',
+              '''\t\tif entry.isAlive and entry.behaviorStateId == BehaviorStateIds.StandDown then\n\t\t\tsetPresentationBehaviorState(entry, BehaviorStateIds.Roaming)\n\t\tend''',
+          )
+          replace_once(
+              director,
+              '''\t\tif entry.isAlive then\n\t\t\tentry.behaviorStateId = BehaviorStateIds.StandDown\n\t\t\tentry.targetOperativeEntityId = nil''',
+              '''\t\tif entry.isAlive then\n\t\t\tsetPresentationBehaviorState(entry, BehaviorStateIds.StandDown)\n\t\t\tentry.targetOperativeEntityId = nil''',
+          )
+          replace_once(
+              director,
+              '''local function applyDeath(entry: EnemyEntry, serverTimestamp: number)\n\tentry.isAlive = false\n\tentry.behaviorStateId = BehaviorStateIds.Dead\n\tentry.targetOperativeEntityId = nil''',
+              '''local function applyDeath(entry: EnemyEntry, serverTimestamp: number)\n\tentry.isAlive = false\n\tsetPresentationBehaviorState(entry, BehaviorStateIds.Dead)\n\tentry.model:SetAttribute(PresentationAttributeNames.LifeStateId, PresentationLifeStateIds.Dead)\n\tentry.targetOperativeEntityId = nil''',
+          )
+          replace_once(
+              director,
+              '''\tentry.healthState = {\n\t\tentityId = entityId,''',
+              '''\tlocal previousHealth = entry.healthState.currentHealth\n\tentry.healthState = {\n\t\tentityId = entityId,''',
+          )
+          replace_once(
+              director,
+              '''\tentry.healthRevision += 1\n\tif entry.healthState.currentHealth <= 0 then''',
+              '''\tentry.healthRevision += 1\n\tif entry.healthState.currentHealth < previousHealth then\n\t\tdiscloseCommittedHit(entry, serverTimestamp)\n\tend\n\tif entry.healthState.currentHealth <= 0 then''',
+          )
+          replace_once(
+              director,
+              '''\tentry.behaviorStateId = decision.behaviorStateIdAfter\n\tentry.targetOperativeEntityId = decision.targetOperativeEntityId''',
+              '''\tsetPresentationBehaviorState(entry, decision.behaviorStateIdAfter)\n\tentry.targetOperativeEntityId = decision.targetOperativeEntityId''',
+          )
+          replace_once(
+              director,
+              '''\tif commit.didCommit then\n\t\tentry.lastAttackServerTimestamp = attack.serverTimestamp\n\t\treturn 1''',
+              '''\tif commit.didCommit then\n\t\tentry.lastAttackServerTimestamp = attack.serverTimestamp\n\t\tdiscloseCommittedAttack(entry, attack.serverTimestamp)\n\t\treturn 1''',
+          )
+
+          readme = "games/living-kingdoms/assets/visual/enemy/standard-hostile/README.md"
+          replace_once(
+              readme,
+              '''`EnemyPresentationController` is a client-local pose controller. It reads only replicated movement speed, movement direction, the existing health label, and anchored death/stand-down state. It provides:\n\n- alternating roaming and pursuit stride poses;\n- a raised non-strike threat-ready pose when a pursuit-speed Walker is stationary;\n- a brief hit reaction after the authoritative health label decreases;\n- distinct stand-down and death silhouettes;\n- sensor brightness changes that supplement, but do not replace, the pose cues.\n\nThe server runtime owner uses one `EnemyEntities.ChildAdded` connection. The client state layer uses one `RenderStepped` connection plus two folder-level lifecycle connections. Both layers use zero per-enemy connections, zero remotes, and zero per-enemy timers. Motor writes occur only when the resolved pose ID changes.\n\nThis slice does **not** claim an attack telegraph or committed strike. The current enemy contract applies authoritative contact damage immediately, so anticipation and server-confirmed strike/recovery presentation remain pending rather than being fabricated from proximity.''',
+              '''`EnemyDirectorService` now writes six ordinary replicated model attributes for presentation only: exact behavior state, life state, confirmed attack sequence/timestamp, and confirmed hit sequence/timestamp. `EnemyPresentationController` consumes those server-authored facts plus replicated movement direction. It provides:\n\n- alternating roaming and pursuit stride poses;\n- a raised non-strike threat-ready pose while the authoritative state is `Pursuing` or `Attacking`;\n- alternating left/right active-strike and recovery poses only after authoritative damage commits;\n- a brief hit reaction only after authoritative enemy health decreases;\n- distinct stand-down and death silhouettes;\n- sensor brightness changes that supplement, but do not replace, the pose cues.\n\nThe server runtime owner uses one `EnemyEntities.ChildAdded` connection. The client state layer uses one `RenderStepped` connection plus two folder-level lifecycle connections. Both layers use zero per-enemy connections, zero remotes, and zero per-enemy timers. Attribute writes occur only on committed state/event changes, and motor writes occur only when the resolved pose ID changes.\n\nThis slice still does **not** claim attack anticipation. The current contact-damage contract has no windup phase, so the presentation begins only after the server confirms damage and never predicts a strike from proximity.''',
+          )
+          replace_once(
+              readme,
+              '7. Verify roaming, pursuit, threat-ready, hit, stand-down, and death readability without relying on sensor color alone.\n8. Do not mark the candidate production-approved until attack anticipation/strike/recovery, effects, audio, cleanup, and representative performance gates pass.',
+              '7. Verify roaming, pursuit, threat-ready, confirmed active-strike/recovery, hit, stand-down, and death readability without relying on sensor color alone.\n8. Do not mark the candidate production-approved until attack anticipation, effects, audio, cleanup, and representative performance gates pass.',
+          )
+          replace_once(
+              readme,
+              'The deterministic source, motorized procedural fallback, and client-local replicated-state pose layer are implemented. Imported mesh review, server-confirmed attack presentation, effects, audio, accessible anticipation, cosmetic variants, and representative horde performance evidence remain pending.',
+              'The deterministic source, motorized procedural fallback, server-authored presentation disclosure, and client-local confirmed strike/recovery, hit, locomotion, death, and stand-down poses are implemented. Imported mesh review, attack anticipation, effects, audio, cosmetic variants, and representative horde performance evidence remain pending.',
+          )
+
+          roadmap = "docs/roadmap/VISUAL-PRODUCTION-TRACK.md"
+          replace_once(
+              roadmap,
+              '  - The fallback now exposes five presentation-only motors and a client-local pose controller for alternating roaming/pursuit stride, stationary threat-ready posture, authoritative-health-derived hit reaction, death, and stand-down readability.\n  - The pose layer uses one client frame connection, two folder lifecycle connections, zero per-enemy connections, zero remotes, and no root, Humanoid, health, attack, or cleanup mutation; motor writes occur only when the resolved pose ID changes.\n  - The authoritative `HumanoidRootPart` remains exactly `3 x 5.6 x 3` studs and continues to own collision, movement, network ownership, targeting position, and gameplay footprint.\n  - A stable presentation-only `AttackOrigin` locator remains available for later authored attack effects.\n  - Attack anticipation and server-confirmed committed strike/recovery remains pending because the current contact-damage contract has no windup disclosure; the presentation layer does not fabricate one from distance or motion.\n  - Still required: Roblox Studio mesh import/canonical swap, truthful attack anticipation/strike/recovery, effects, audio, bounded cosmetic variants, and representative horde performance evidence.',
+              '  - The fallback exposes five presentation-only motors and a client-local pose controller for alternating roaming/pursuit stride, stationary threat-ready posture, confirmed hit reaction, death, and stand-down readability.\n  - Six server-authored model attributes disclose exact behavior/life state plus confirmed attack and hit sequences/timestamps; alternating left/right active-strike and recovery poses begin only after authoritative damage commits.\n  - The pose layer uses one client frame connection, two folder lifecycle connections, zero per-enemy connections, zero remotes, and no root, Humanoid, health, attack, or cleanup mutation; attribute writes occur only on committed changes and motor writes only when the pose ID changes.\n  - The authoritative `HumanoidRootPart` remains exactly `3 x 5.6 x 3` studs and continues to own collision, movement, network ownership, targeting position, and gameplay footprint.\n  - A stable presentation-only `AttackOrigin` locator remains available for later authored attack effects.\n  - Attack anticipation remains pending because the contact-damage contract has no windup disclosure; the presentation layer never predicts a strike from distance or motion.\n  - Still required: Roblox Studio mesh import/canonical swap, truthful attack anticipation, effects, audio, bounded cosmetic variants, and representative horde performance evidence.',
+          )
+
+          inventory = "docs/specifications/visual-placeholder-inventory.md"
+          replace_once(
+              inventory,
+              '| Enemy | Exclusion Walker model | Primitive placeholder | `EnemyPresentationService` plus `EnemyPresentationController`; motorized 18-part shell with client-local roaming, pursuit, threat-ready, hit, stand-down, and death poses attached to the unchanged authoritative `3 x 5.6 x 3` root | VIS-0103 |',
+              '| Enemy | Exclusion Walker model | Primitive placeholder | `EnemyPresentationService` plus `EnemyPresentationController`; motorized 18-part shell with server-authored behavior/life/attack/hit disclosure and local roaming, pursuit, threat-ready, confirmed strike/recovery, hit, stand-down, and death poses attached to the unchanged authoritative `3 x 5.6 x 3` root | VIS-0103 |',
+          )
+          replace_once(
+              inventory,
+              '| Effect | Standard hostile attack set | Missing presentation | Authoritative melee exists without an approved anticipation or server-confirmed strike/recovery presentation fact | VIS-0103 |',
+              '| Effect | Standard hostile attack set | Temporary presentation | Server-confirmed active-strike/recovery and hit pose cues exist; anticipation, authored particles, impact effects, and production audio remain missing | VIS-0103 |',
+          )
+
+          manifest = Path("games/living-kingdoms/assets/visual/enemy/standard-hostile/asset-manifest.json")
+          text = manifest.read_text()
+          text = text.replace(
+              '    "ThreatReady",\n    "HitReaction",',
+              '    "ThreatReady",\n    "StrikeActiveLeft",\n    "StrikeActiveRight",\n    "StrikeRecoveryLeft",\n    "StrikeRecoveryRight",\n    "HitReaction",',
+              1,
+          )
+          text = text.replace(
+              '  "attachmentLocators": {',
+              '  "replicatedPresentationAttributes": [\n    "EnemyPresentationBehaviorStateId",\n    "EnemyPresentationLifeStateId",\n    "EnemyPresentationAttackSequence",\n    "EnemyPresentationAttackServerTimestamp",\n    "EnemyPresentationHitSequence",\n    "EnemyPresentationHitServerTimestamp"\n  ],\n  "attachmentLocators": {',
+              1,
+          )
+          text = text.replace(
+              '    "presentationMotorCount": 5,',
+              '    "presentationMotorCount": 5,\n    "serverPresentationAttributeCount": 6,',
+              1,
+          )
+          manifest.write_text(text)
+          PY
+
+          cat > games/living-kingdoms/tests/EnemyPresentationPoseResolver.test.luau <<'EOF'
+          --!strict
+
+          local fs = require("@lune/fs")
+          local luau = require("@lune/luau")
+
+          local function assertThat(condition: unknown, message: string)
+          	if not condition then
+          		error(message, 2)
+          	end
+          end
+
+          local resolver = luau.load(
+          	fs.readFile("games/living-kingdoms/src/client/Presentation/EnemyPresentationPoseResolver.luau"),
+          	{
+          		debugName = "EnemyPresentationPoseResolver",
+          		injectGlobals = true,
+          	}
+          )()
+
+          local function resolve(overrides)
+          	local input = {
+          		isDead = false,
+          		isStoodDown = false,
+          		isMoving = false,
+          		isPursuing = false,
+          		attackSequence = 0,
+          		secondsSinceAttack = nil,
+          		secondsSinceHit = nil,
+          		strideIndex = 0,
+          	}
+          	for key, value in overrides do
+          		input[key] = value
+          	end
+          	return resolver.resolve(input)
+          end
+
+          assertThat(resolve({}).id == resolver.PoseIds.Idle, "stationary living Walker must use Idle")
+          assertThat(
+          	resolve({ isMoving = true, strideIndex = 0 }).id == resolver.PoseIds.RoamingA,
+          	"roaming even stride must use RoamingA"
+          )
+          assertThat(
+          	resolve({ isMoving = true, strideIndex = 1 }).id == resolver.PoseIds.RoamingB,
+          	"roaming odd stride must use RoamingB"
+          )
+          assertThat(
+          	resolve({ isMoving = true, isPursuing = true, strideIndex = 0 }).id == resolver.PoseIds.PursuingA,
+          	"pursuit even stride must use PursuingA"
+          )
+          assertThat(
+          	resolve({ isMoving = true, isPursuing = true, strideIndex = 1 }).id == resolver.PoseIds.PursuingB,
+          	"pursuit odd stride must use PursuingB"
+          )
+          assertThat(
+          	resolve({ isPursuing = true }).id == resolver.PoseIds.ThreatReady,
+          	"stationary pursuing Walker must use the non-strike threat pose"
+          )
+
+          assertThat(
+          	resolve({ attackSequence = 1, secondsSinceAttack = 0 }).id == resolver.PoseIds.StrikeActiveLeft,
+          	"odd confirmed attack sequence must begin with the left active strike"
+          )
+          assertThat(
+          	resolve({ attackSequence = 2, secondsSinceAttack = 0.16 }).id == resolver.PoseIds.StrikeActiveRight,
+          	"even confirmed attack sequence must include the exact active boundary on the right"
+          )
+          assertThat(
+          	resolve({ attackSequence = 1, secondsSinceAttack = 0.161 }).id == resolver.PoseIds.StrikeRecoveryLeft,
+          	"confirmed attack must enter recovery immediately after the active boundary"
+          )
+          assertThat(
+          	resolve({ attackSequence = 2, secondsSinceAttack = 0.52 }).id == resolver.PoseIds.StrikeRecoveryRight,
+          	"confirmed attack recovery must include its exact upper boundary"
+          )
+          assertThat(
+          	resolve({ isPursuing = true, attackSequence = 2, secondsSinceAttack = 0.521 }).id
+          		== resolver.PoseIds.ThreatReady,
+          	"expired committed attack must return to the authoritative threat state"
+          )
+          assertThat(
+          	resolve({ attackSequence = 1, secondsSinceAttack = -0.01 }).id == resolver.PoseIds.Idle,
+          	"future or malformed attack timestamps must not fabricate a strike"
+          )
+
+          assertThat(
+          	resolve({ isStoodDown = true }).id == resolver.PoseIds.StandDown,
+          	"authoritative stand-down must visibly stand the Walker down"
+          )
+          assertThat(
+          	resolve({ secondsSinceHit = 0.28 }).id == resolver.PoseIds.HitReaction,
+          	"hit reaction must include the exact upper boundary"
+          )
+          assertThat(
+          	resolve({ secondsSinceHit = 0.281 }).id == resolver.PoseIds.Idle,
+          	"hit reaction must end after the exact upper boundary"
+          )
+          assertThat(
+          	resolve({ attackSequence = 1, secondsSinceAttack = 0.1, secondsSinceHit = 0.1 }).id
+          		== resolver.PoseIds.HitReaction,
+          	"confirmed hit reaction must take precedence over confirmed strike presentation"
+          )
+          assertThat(
+          	resolve({ isStoodDown = true, attackSequence = 1, secondsSinceAttack = 0.1 }).id
+          		== resolver.PoseIds.StandDown,
+          	"terminal stand-down must suppress stale attack presentation"
+          )
+          assertThat(
+          	resolve({
+          		isDead = true,
+          		isStoodDown = true,
+          		isMoving = true,
+          		isPursuing = true,
+          		attackSequence = 1,
+          		secondsSinceAttack = 0.1,
+          		secondsSinceHit = 0.1,
+          	}).id == resolver.PoseIds.Dead,
+          	"death must have stable first precedence over every transient pose"
+          )
+
+          local poseMutationSucceeded = pcall(function()
+          	resolve({}).torsoPitchDegrees = 999
+          end)
+          assertThat(not poseMutationSucceeded, "resolved poses must be immutable")
+
+          print("EnemyPresentationPoseResolver: confirmed strike/recovery, precedence, boundaries, stride, and immutability passed")
+          EOF
+
+          cat > games/living-kingdoms/tests/EnemyPresentationContracts.test.luau <<'EOF'
+          --!strict
+
+          local fs = require("@lune/fs")
+          local luau = require("@lune/luau")
+
+          local function assertThat(condition: unknown, message: string)
+          	if not condition then
+          		error(message, 2)
+          	end
+          end
+
+          local contracts = luau.load(
+          	fs.readFile("games/living-kingdoms/src/shared/Visual/EnemyPresentationContracts.luau"),
+          	{
+          		debugName = "EnemyPresentationContracts",
+          		injectGlobals = true,
+          	}
+          )()
+
+          local expected = {
+          	"EnemyPresentationBehaviorStateId",
+          	"EnemyPresentationLifeStateId",
+          	"EnemyPresentationAttackSequence",
+          	"EnemyPresentationAttackServerTimestamp",
+          	"EnemyPresentationHitSequence",
+          	"EnemyPresentationHitServerTimestamp",
+          }
+          local observed = {}
+          for _, attributeName in contracts.AttributeNames do
+          	assertThat(type(attributeName) == "string" and attributeName ~= "", "attribute names must be non-empty strings")
+          	assertThat(not observed[attributeName], "presentation attribute names must be unique")
+          	observed[attributeName] = true
+          end
+          for _, attributeName in expected do
+          	assertThat(observed[attributeName] == true, "missing presentation attribute " .. attributeName)
+          end
+          assertThat(contracts.LifeStateIds.Alive == "Alive" and contracts.LifeStateIds.Dead == "Dead", "life IDs drifted")
+
+          local mutationSucceeded = pcall(function()
+          	contracts.AttributeNames.AttackSequence = "mutated"
+          end)
+          assertThat(not mutationSucceeded, "presentation contracts must be immutable")
+
+          print("EnemyPresentationContracts: six unique immutable disclosure attributes passed")
+          EOF
+
+          cat > games/living-kingdoms/tests/ExclusionWalkerStateReadabilitySourceAudit.test.luau <<'EOF'
+          --!strict
+
+          local fs = require("@lune/fs")
+
+          local function assertThat(condition: unknown, message: string)
+          	if not condition then
+          		error(message, 2)
+          	end
+          end
+
+          local serverPresenter =
+          	fs.readFile("games/living-kingdoms/src/server/Systems/EnemyPresentationService.luau")
+          local director = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau")
+          local contracts = fs.readFile("games/living-kingdoms/src/shared/Visual/EnemyPresentationContracts.luau")
+          local controller =
+          	fs.readFile("games/living-kingdoms/src/client/Controllers/EnemyPresentationController.luau")
+          local resolver =
+          	fs.readFile("games/living-kingdoms/src/client/Presentation/EnemyPresentationPoseResolver.luau")
+          local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
+          local manifest = fs.readFile("games/living-kingdoms/assets/visual/enemy/standard-hostile/asset-manifest.json")
+          local readme = fs.readFile("games/living-kingdoms/assets/visual/enemy/standard-hostile/README.md")
+          local roadmap = fs.readFile("docs/roadmap/VISUAL-PRODUCTION-TRACK.md")
+
+          for _, required in
+          	{
+          		'Instance.new("Motor6D")',
+          		'"TorsoMotor"',
+          		'"ForearmLeftMotor"',
+          		'"ForearmRightMotor"',
+          		'"LegLeftMotor"',
+          		'"LegRightMotor"',
+          		'presentation:SetAttribute("PresentationMotorCount", 5)',
+          	}
+          do
+          	assertThat(string.find(serverPresenter, required, 1, true) ~= nil, "motorized Walker rig missing: " .. required)
+          end
+
+          for _, attributeName in
+          	{
+          		"EnemyPresentationBehaviorStateId",
+          		"EnemyPresentationLifeStateId",
+          		"EnemyPresentationAttackSequence",
+          		"EnemyPresentationAttackServerTimestamp",
+          		"EnemyPresentationHitSequence",
+          		"EnemyPresentationHitServerTimestamp",
+          	}
+          do
+          	assertThat(string.find(contracts, attributeName, 1, true) ~= nil, "presentation contract missing " .. attributeName)
+          end
+
+          for _, required in
+          	{
+          		"initializePresentationAttributes(entry)",
+          		"setPresentationBehaviorState(entry, decision.behaviorStateIdAfter)",
+          		"discloseCommittedAttack(entry, attack.serverTimestamp)",
+          		"discloseCommittedHit(entry, serverTimestamp)",
+          		"PresentationAttributeNames.AttackSequence",
+          		"PresentationAttributeNames.HitSequence",
+          		"PresentationLifeStateIds.Dead",
+          	}
+          do
+          	assertThat(string.find(director, required, 1, true) ~= nil, "server disclosure missing: " .. required)
+          end
+
+          for _, required in
+          	{
+          		"RunService.RenderStepped:Connect",
+          		"folder.DescendantAdded:Connect",
+          		"folder.ChildRemoved:Connect",
+          		"Workspace:GetServerTimeNow()",
+          		"EnemyPresentationContracts.AttributeNames",
+          		"PresentationAttributeNames.BehaviorStateId",
+          		"PresentationAttributeNames.AttackServerTimestamp",
+          		"PresentationAttributeNames.HitServerTimestamp",
+          		"record.humanoid.MoveDirection.Magnitude",
+          		"EnemyPresentationPoseResolver.resolve",
+          		"record.torsoMotor.C0 =",
+          		"record.sensor.Color =",
+          	}
+          do
+          	assertThat(string.find(controller, required, 1, true) ~= nil, "Walker state controller missing: " .. required)
+          end
+
+          local _, renderConnectionCount = string.gsub(controller, "RenderStepped:Connect", "")
+          assertThat(renderConnectionCount == 1, "Walker state readability must use exactly one client frame connection")
+          local _, descendantConnectionCount = string.gsub(controller, "DescendantAdded:Connect", "")
+          assertThat(descendantConnectionCount == 1, "Walker state readability must use one folder descendant listener")
+          local _, removedConnectionCount = string.gsub(controller, "ChildRemoved:Connect", "")
+          assertThat(removedConnectionCount == 1, "Walker state readability must use one folder removal listener")
+
+          for _, forbidden in
+          	{
+          		"FireServer",
+          		"InvokeServer",
+          		"RemoteEvent",
+          		"RemoteFunction",
+          		"OnClientEvent",
+          		"GetPropertyChangedSignal",
+          		".Changed:Connect",
+          		"Humanoid:MoveTo",
+          		"TakeDamage",
+          		"applyAuthoritativeDamage",
+          		"SetNetworkOwner",
+          		"root.CFrame =",
+          		"root.Position =",
+          		"humanoid.WalkSpeed =",
+          		"healthLabel.Text =",
+          		"string.match",
+          		"Anchored =",
+          		"task.delay",
+          		"task.spawn",
+          	}
+          do
+          	assertThat(
+          		not string.find(controller, forbidden, 1, true),
+          		"Walker state controller must not contain network, scheduler, inference, or gameplay mutation token "
+          			.. forbidden
+          	)
+          end
+
+          for _, required in
+          	{
+          		'StrikeActiveLeft = "StrikeActiveLeft"',
+          		'StrikeActiveRight = "StrikeActiveRight"',
+          		'StrikeRecoveryLeft = "StrikeRecoveryLeft"',
+          		'StrikeRecoveryRight = "StrikeRecoveryRight"',
+          		"AttackActiveSeconds = 0.16",
+          		"AttackRecoverySeconds = 0.52",
+          		'HitReaction = "HitReaction"',
+          		'ThreatReady = "ThreatReady"',
+          		'StandDown = "StandDown"',
+          		'Dead = "Dead"',
+          		"if input.isDead then",
+          	}
+          do
+          	assertThat(string.find(resolver, required, 1, true) ~= nil, "Walker pose resolver missing: " .. required)
+          end
+
+          local requireIndex = string.find(bootstrap, "local EnemyPresentationController = require", 1, true)
+          local startIndex = string.find(bootstrap, "EnemyPresentationController.start()", 1, true)
+          assertThat(
+          	requireIndex ~= nil and startIndex ~= nil and requireIndex < startIndex,
+          	"client bootstrap must require and start Walker state presentation"
+          )
+
+          assertThat(
+          	string.find(manifest, '"serverPresentationAttributeCount": 6', 1, true) ~= nil,
+          	"Walker manifest must record the six server presentation attributes"
+          )
+          assertThat(
+          	string.find(manifest, '"clientFrameConnections": 1', 1, true) ~= nil,
+          	"Walker manifest must record the one client frame connection"
+          )
+          assertThat(
+          	string.find(manifest, '"connectionsPerEnemy": 0', 1, true) ~= nil,
+          	"Walker manifest must preserve zero per-enemy connections"
+          )
+          assertThat(
+          	string.find(readme, "six ordinary replicated model attributes", 1, true) ~= nil,
+          	"Walker README must document the server disclosure contract"
+          )
+          assertThat(
+          	string.find(roadmap, "alternating left/right active-strike and recovery poses", 1, true) ~= nil,
+          	"VIS-0103 roadmap must record confirmed strike/recovery"
+          )
+          assertThat(
+          	string.find(roadmap, "Attack anticipation remains pending", 1, true) ~= nil,
+          	"roadmap must not falsely claim an attack windup"
+          )
+
+          print("ExclusionWalkerStateReadabilitySourceAudit: disclosure, strike/recovery, lifecycle, authority, and docs passed")
+          EOF
+      - name: Format and validate focused slice
+        run: |
+          stylua \
+            games/living-kingdoms/src/shared/Visual/EnemyPresentationContracts.luau \
+            games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau \
+            games/living-kingdoms/src/client/Controllers/EnemyPresentationController.luau \
+            games/living-kingdoms/src/client/Presentation/EnemyPresentationPoseResolver.luau \
+            games/living-kingdoms/tests/EnemyPresentationContracts.test.luau \
+            games/living-kingdoms/tests/EnemyPresentationPoseResolver.test.luau \
+            games/living-kingdoms/tests/ExclusionWalkerStateReadabilitySourceAudit.test.luau
+          lune run games/living-kingdoms/tests/EnemyPresentationContracts.test.luau
+          lune run games/living-kingdoms/tests/EnemyPresentationPoseResolver.test.luau
+          lune run games/living-kingdoms/tests/ExclusionWalkerStateReadabilitySourceAudit.test.luau
+      - name: Commit slice
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            games/living-kingdoms/src/shared/Visual/EnemyPresentationContracts.luau \
+            games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau \
+            games/living-kingdoms/src/client/Controllers/EnemyPresentationController.luau \
+            games/living-kingdoms/src/client/Presentation/EnemyPresentationPoseResolver.luau \
+            games/living-kingdoms/tests/EnemyPresentationContracts.test.luau \
+            games/living-kingdoms/tests/EnemyPresentationPoseResolver.test.luau \
+            games/living-kingdoms/tests/ExclusionWalkerStateReadabilitySourceAudit.test.luau \
+            games/living-kingdoms/assets/visual/enemy/standard-hostile/README.md \
+            games/living-kingdoms/assets/visual/enemy/standard-hostile/asset-manifest.json \
+            docs/roadmap/VISUAL-PRODUCTION-TRACK.md \
+            docs/specifications/visual-placeholder-inventory.md
+          git commit -m "feat: disclose confirmed Walker presentation events"
+          git push origin HEAD:feat/exclusion-walker-attack-disclosure
