@@ -70,11 +70,7 @@ local firstSampleServerTimestamp: number? = nil
 local lastSampleServerTimestamp: number? = nil
 
 local function isWholeNonnegative(value: unknown): boolean
-	return type(value) == "number"
-		and value == value
-		and value < math.huge
-		and value >= 0
-		and value % 1 == 0
+	return type(value) == "number" and value == value and value < math.huge and value >= 0 and value % 1 == 0
 end
 
 local function countSet(values: { [string]: boolean }): number
@@ -219,19 +215,22 @@ function Service.read(): Snapshot
 	for _, tracked in trackedByUserId do
 		local consumedCacheIds = sortedCacheIds(tracked.consumedCacheIds)
 		table.freeze(consumedCacheIds)
-		table.insert(operatives, table.freeze({
-			userId = tracked.userId,
-			operativeEntityId = tracked.operativeEntityId,
-			isActive = tracked.isActive,
-			acceptedShotCount = tracked.acceptedShotCount,
-			cacheCollectionCount = tracked.cacheCollectionCount,
-			cacheRoundsGranted = tracked.cacheRoundsGranted,
-			dryAmmunitionTransitionCount = tracked.dryAmmunitionTransitionCount,
-			currentLoadedRounds = tracked.currentLoadedRounds,
-			currentReserveRounds = tracked.currentReserveRounds,
-			minimumTotalRoundsObserved = tracked.minimumTotalRoundsObserved,
-			consumedCacheIds = consumedCacheIds,
-		}))
+		table.insert(
+			operatives,
+			table.freeze({
+				userId = tracked.userId,
+				operativeEntityId = tracked.operativeEntityId,
+				isActive = tracked.isActive,
+				acceptedShotCount = tracked.acceptedShotCount,
+				cacheCollectionCount = tracked.cacheCollectionCount,
+				cacheRoundsGranted = tracked.cacheRoundsGranted,
+				dryAmmunitionTransitionCount = tracked.dryAmmunitionTransitionCount,
+				currentLoadedRounds = tracked.currentLoadedRounds,
+				currentReserveRounds = tracked.currentReserveRounds,
+				minimumTotalRoundsObserved = tracked.minimumTotalRoundsObserved,
+				consumedCacheIds = consumedCacheIds,
+			})
+		)
 		acceptedShotCount += tracked.acceptedShotCount
 		cacheCollectionCount += tracked.cacheCollectionCount
 		cacheRoundsGranted += tracked.cacheRoundsGranted
