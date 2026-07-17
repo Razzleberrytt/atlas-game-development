@@ -6,6 +6,11 @@ Approved temporary exception while the required Roblox Studio/Codex-assisted val
 
 This exception changes sequencing only. It does **not** convert missing evidence into a passing result.
 
+Current exception state:
+
+- `P7-0101` shared contracts and configuration are complete through PR #71.
+- `P7-0102` is the next planned class task but remains blocked.
+
 ## P6 status
 
 - `P6-0108` controlled one-, two-, and four-operative Studio evidence is **deferred**.
@@ -15,7 +20,7 @@ This exception changes sequencing only. It does **not** convert missing evidence
 
 ## Narrow P7 exception
 
-`P7-0101` shared contracts and configuration may proceed because it is declaration-only work:
+`P7-0101` shared contracts and configuration were permitted because they are declaration-only work:
 
 - stable IDs and strict copied shapes;
 - configuration-backed starting values;
@@ -25,7 +30,7 @@ This exception changes sequencing only. It does **not** convert missing evidence
 - no class assignment;
 - no healing, revive mutation, weapon effect, ammunition grant, objective repair, timer, or UI.
 
-The engineer's Field Resupply values must be marked provisional and must not be treated as scarcity-balanced.
+The engineer's Field Resupply values are marked provisional and must not be treated as scarcity-balanced.
 
 ## Still blocked
 
