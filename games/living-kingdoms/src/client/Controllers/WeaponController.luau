@@ -11,15 +11,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
+local CachePresentationContracts = require(ReplicatedStorage.Shared.Combat.AmmunitionCachePresentationContracts)
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 
 local REQUEST_COOLDOWN_SECONDS = 0.5
 local COMBAT_ENTITY_ID_ATTRIBUTE = "CombatEntityId"
 local SUPPLY_CACHE_ID_ATTRIBUTE = "SupplyCacheId"
-local CACHE_CONSUMED_PRESENTATION_KIND_ID = "AmmunitionCacheConsumed"
 
- type WeaponController = {
+type WeaponController = {
 	init: () -> (),
 	start: () -> (),
 	stop: () -> (),
@@ -240,7 +240,7 @@ local function onPresentationMessage(message: unknown)
 		then
 			setStatus("+" .. tostring(payload.grantedRounds) .. " rifle ammunition")
 		end
-	elseif kindId == CACHE_CONSUMED_PRESENTATION_KIND_ID and isNonEmptyString(payload.cacheId) then
+	elseif kindId == CachePresentationContracts.MessageKindIds.Consumed and isNonEmptyString(payload.cacheId) then
 		presentConsumedAmmunitionCache(payload.cacheId)
 	end
 end
