@@ -412,9 +412,10 @@ local function onPresentationMessage(message: unknown)
 		if payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
 			interruptReload()
 		end
-	elseif kindId == CombatContracts.PresentationMessageKindIds.AmmunitionState then
-		presentAmmunitionPayload(payload)
-	elseif kindId == CombatContracts.PresentationMessageKindIds.AmmunitionCollected then
+	elseif
+		kindId == CombatContracts.PresentationMessageKindIds.AmmunitionState
+		or kindId == CombatContracts.PresentationMessageKindIds.AmmunitionCollected
+	then
 		presentAmmunitionPayload(payload)
 	end
 end
