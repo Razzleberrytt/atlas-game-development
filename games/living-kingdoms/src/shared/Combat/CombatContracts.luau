@@ -262,17 +262,20 @@ export type ShotFiredPresentationMessage = {
 
 export type ReloadStartedPresentationMessage = {
 	kindId: "ReloadStarted",
+	operativeEntityId: CombatEntityId,
 	weaponId: WeaponId,
 	completionServerTimestamp: number,
 }
 
 export type ReloadCompletedPresentationMessage = {
 	kindId: "ReloadCompleted",
+	operativeEntityId: CombatEntityId,
 	weaponId: WeaponId,
 }
 
 export type ReloadInterruptedPresentationMessage = {
 	kindId: "ReloadInterrupted",
+	operativeEntityId: CombatEntityId,
 	weaponId: WeaponId,
 }
 

@@ -14,11 +14,13 @@ local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/Wea
 local hud = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponController.luau")
 local presenter = fs.readFile("games/living-kingdoms/src/client/Presentation/RemoteWeaponMotionPresenter.luau")
 
-for _, typeName in {
-	"ReloadStartedPresentationMessage",
-	"ReloadCompletedPresentationMessage",
-	"ReloadInterruptedPresentationMessage",
-} do
+for _, typeName in
+	{
+		"ReloadStartedPresentationMessage",
+		"ReloadCompletedPresentationMessage",
+		"ReloadInterruptedPresentationMessage",
+	}
+do
 	local startIndex = string.find(contracts, "export type " .. typeName, 1, true)
 	assertThat(startIndex ~= nil, "missing reload presentation type " .. typeName)
 	local endIndex = string.find(contracts, "}\n", startIndex :: number, true)
@@ -41,43 +43,49 @@ assertThat(
 	"ammunition state must remain private"
 )
 
-for _, required in {
-	"RemoteWeaponMotionPresenter.presentShot",
-	"RemoteWeaponMotionPresenter.presentReloadStarted",
-	"RemoteWeaponMotionPresenter.presentReloadCompleted",
-	"RemoteWeaponMotionPresenter.presentReloadInterrupted",
-	"RemoteWeaponMotionPresenter.cleanupPlayer",
-	"RemoteWeaponMotionPresenter.stop",
-} do
+for _, required in
+	{
+		"RemoteWeaponMotionPresenter.presentShot",
+		"RemoteWeaponMotionPresenter.presentReloadStarted",
+		"RemoteWeaponMotionPresenter.presentReloadCompleted",
+		"RemoteWeaponMotionPresenter.presentReloadInterrupted",
+		"RemoteWeaponMotionPresenter.cleanupPlayer",
+		"RemoteWeaponMotionPresenter.stop",
+	}
+do
 	assertThat(string.find(controller, required, 1, true) ~= nil, "missing squad motion routing " .. required)
 end
 
 local _, localReloadFilterCount = string.gsub(hud, "isLocalOperativeEntityId(payload.operativeEntityId)", "")
 assertThat(localReloadFilterCount >= 4, "local HUD must filter shot and all broadcast reload lifecycle messages")
 
-for _, required in {
-	"Workspace:GetServerTimeNow()",
-	"motionState.shotGeneration",
-	"motionState.reloadGeneration",
-	"motionState.isReloading",
-	"tween:Cancel()",
-	"states[player] = nil",
-} do
+for _, required in
+	{
+		"Workspace:GetServerTimeNow()",
+		"motionState.shotGeneration",
+		"motionState.reloadGeneration",
+		"motionState.isReloading",
+		"tween:Cancel()",
+		"states[player] = nil",
+	}
+do
 	assertThat(string.find(presenter, required, 1, true) ~= nil, "remote motion presenter missing " .. required)
 end
 
-for _, forbidden in {
-	"FireServer",
-	"InvokeServer",
-	"OnServerEvent",
-	"DamageResolver",
-	"FirearmHitResolver",
-	"loadedRounds",
-	"reserveRounds",
-	"DamagePerHit",
-	"CadenceSeconds",
-	"ReloadDurationSeconds",
-	"Humanoid:TakeDamage",
-} do
+for _, forbidden in
+	{
+		"FireServer",
+		"InvokeServer",
+		"OnServerEvent",
+		"DamageResolver",
+		"FirearmHitResolver",
+		"loadedRounds",
+		"reserveRounds",
+		"DamagePerHit",
+		"CadenceSeconds",
+		"ReloadDurationSeconds",
+		"Humanoid:TakeDamage",
+	}
+do
 	assertThat(not string.find(presenter, forbidden, 1, true), "remote motion presenter must not contain " .. forbidden)
 end

@@ -332,15 +332,32 @@ assert(shotWrites == 2, "disclosed ShotIds were not presented exactly once")
 assert(activeInstance("Highlight") == nil, "shot target created an undisclosed target indicator")
 assert(deepEqual(authoritativePayload, authoritativePayloadBefore), "presentation mutated ammo or health payload")
 
+local statusBeforeRemoteReload = statusLabel.Text
 presentationEvent:Fire({
 	kindId = "ReloadStarted",
+	operativeEntityId = "operative.player:99",
+	weaponId = "weapon.basic_firearm",
+	completionServerTimestamp = 12,
+})
+assert(statusLabel.Text == statusBeforeRemoteReload, "squadmate reload changed the local HUD")
+presentationEvent:Fire({
+	kindId = "ReloadStarted",
+	operativeEntityId = "operative.player:42",
 	weaponId = "weapon.basic_firearm",
 	completionServerTimestamp = 12,
 })
 assert(statusLabel.Text == "Reloading", "reload start was not presented")
-presentationEvent:Fire({ kindId = "ReloadCompleted", weaponId = "weapon.basic_firearm" })
+presentationEvent:Fire({
+	kindId = "ReloadCompleted",
+	operativeEntityId = "operative.player:42",
+	weaponId = "weapon.basic_firearm",
+})
 assert(statusLabel.Text == "Reload complete", "reload completion was not presented")
-presentationEvent:Fire({ kindId = "ReloadInterrupted", weaponId = "weapon.basic_firearm" })
+presentationEvent:Fire({
+	kindId = "ReloadInterrupted",
+	operativeEntityId = "operative.player:42",
+	weaponId = "weapon.basic_firearm",
+})
 assert(statusLabel.Text == "Reload interrupted", "reload interruption was not presented")
 
 controller.destroy()

@@ -577,6 +577,8 @@ assert(#messagesOfKind("ReloadStarted") == 0, "malformed reload intents must be 
 reloadIntentSignal:Fire(operativeA, firearmConfig.BasicFirearm.WeaponId)
 local startedReload = messagesOfKind("ReloadStarted")
 assert(#startedReload == 1, "an empty magazine must accept reload intent")
+assert(startedReload[1].player == "all", "accepted reload start must be squad-visible")
+assert(startedReload[1].payload.operativeEntityId == "operative.player:1")
 assert(startedReload[1].payload.completionServerTimestamp == now + firearmConfig.BasicFirearm.ReloadDurationSeconds)
 assert(#scheduled == 1 and scheduled[1].delaySeconds == firearmConfig.BasicFirearm.ReloadDurationSeconds)
 -- Rate limit: an immediate second intent is dropped.
@@ -585,7 +587,10 @@ assert(#messagesOfKind("ReloadStarted") == 1, "the server request cooldown must 
 -- Completion through the scheduled callback.
 now += firearmConfig.BasicFirearm.ReloadDurationSeconds
 scheduled[1].callback()
-assert(#messagesOfKind("ReloadCompleted") == 1, "the scheduled completion must transfer ammunition")
+local completedReload = messagesOfKind("ReloadCompleted")
+assert(#completedReload == 1, "the scheduled completion must transfer ammunition")
+assert(completedReload[1].player == "all", "authoritative reload completion must be squad-visible")
+assert(completedReload[1].payload.operativeEntityId == "operative.player:1")
 now += firearmConfig.BasicFirearm.CadenceSeconds
 service.evaluateAt(now)
 assert(
@@ -624,7 +629,7 @@ for _, prohibited in { "RemoteFunction", "InvokeClient", "math.random" } do
 	assert(not string.find(source, prohibited, 1, true), "combat runtime must stay narrow: " .. prohibited)
 end
 local _, broadcastCount = string.gsub(source, "presentationRemote:FireAllClients", "")
-assert(broadcastCount == 1, "only accepted shot presentation may broadcast to the squad")
+assert(broadcastCount == 2, "only accepted shots and reload lifecycle may broadcast to the squad")
 assert(
 	string.find(
 		source,
@@ -632,7 +637,11 @@ assert(
 		1,
 		true
 	) ~= nil,
-	"the one broadcast must remain the accepted ShotFired disclosure"
+	"accepted ShotFired disclosure must remain squad-visible"
+)
+assert(
+	string.find(source, "local function broadcastReloadPresentation", 1, true) ~= nil,
+	"reload lifecycle must use one bounded squad broadcast helper"
 )
 local _, listenerCount = string.gsub(source, "OnServerEvent:Connect", "")
 assert(listenerCount == 1, "reload intent must remain the only client combat input")
