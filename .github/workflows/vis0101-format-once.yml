@@ -1,0 +1,45 @@
+name: VIS-0101 formatter
+
+on:
+  push:
+    branches:
+      - "agent/vis-0101-asset-registry"
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/vis-0101-asset-registry
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Format VIS-0101 Luau
+        run: |
+          stylua \
+            games/living-kingdoms/src/shared/Visual/VisualAssetContracts.luau \
+            games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau \
+            games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau
+
+      - name: Commit pinned formatting
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add games/living-kingdoms/src/shared/Visual/VisualAssetContracts.luau games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau
+          git commit -m "Format VIS-0101 registry"
+          git push
