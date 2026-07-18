@@ -47,4 +47,22 @@ for file_name in SERVER_FILES + CLIENT_FILES:
     source = source.replace("FirearmConfig.isKnownWeaponId(", "isKnownWeaponId(")
     path.write_text(source, encoding="utf-8")
 
-print("Applied legacy fixture-compatible weapon definition fallback")
+security_path = Path("games/living-kingdoms/tests/CombatSecurityIntegration.test.luau")
+security_source = security_path.read_text(encoding="utf-8")
+old_assertion = '''assert(
+\tstring.find(clientSource, "reloadIntentRemote:FireServer(FirearmConfig.BasicFirearm.WeaponId)", 1, true),
+\t"reload request payload widened"
+)'''
+new_assertion = '''assert(
+\tstring.find(clientSource, "reloadIntentRemote:FireServer(state.currentWeaponId)", 1, true),
+\t"reload request must contain only the server-disclosed equipped weapon ID"
+)
+assert(
+\tnot string.find(clientSource, "reloadIntentRemote:FireServer(state.currentWeaponId,", 1, true),
+\t"reload request must not include ammunition, timing, or weapon statistics"
+)'''
+if security_source.count(old_assertion) != 1:
+    raise RuntimeError("combat security reload assertion anchor drifted")
+security_path.write_text(security_source.replace(old_assertion, new_assertion, 1), encoding="utf-8")
+
+print("Applied legacy fixture-compatible weapon definition fallback and reload audit update")
