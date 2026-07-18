@@ -74,10 +74,7 @@ local function findEnemyModel(instance: Instance): Model?
 	local folder = enemyFolder
 	local current: Instance? = instance
 	while current ~= nil and current ~= folder do
-		if
-			current:IsA("Model")
-			and current:GetAttribute("EnemyArchetypeId") == EnemyConfig.Walker.ArchetypeId
-		then
+		if current:IsA("Model") and current:GetAttribute("EnemyArchetypeId") == EnemyConfig.Walker.ArchetypeId then
 			return current
 		end
 		current = current.Parent
