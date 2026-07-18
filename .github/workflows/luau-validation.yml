@@ -40,20 +40,9 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Capture Luau formatting patch
+      - name: Check Luau formatting
         shell: bash
-        run: |
-          stylua games/living-kingdoms/src
-          git diff -- games/living-kingdoms/src > /tmp/default-helmet-stylua.patch
-          test ! -s /tmp/default-helmet-stylua.patch
-
-      - name: Upload formatting diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: default-helmet-stylua-patch
-          path: /tmp/default-helmet-stylua.patch
-          retention-days: 1
+        run: stylua --check games/living-kingdoms/src
 
       - name: Run Selene
         shell: bash
