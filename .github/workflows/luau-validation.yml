@@ -5,14 +5,13 @@ on:
     paths:
       - "games/living-kingdoms/**"
       - "docs/**"
-      - ".github/scripts/**"
       - "rokit.toml"
       - "stylua.toml"
       - "selene.toml"
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate:
@@ -20,10 +19,8 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: Check out feature branch
+      - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
 
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
@@ -32,29 +29,6 @@ jobs:
           path: .
           cache: false
           token: ${{ github.token }}
-
-      - name: Integrate canonical Field XP
-        if: github.actor != 'github-actions[bot]'
-        shell: bash
-        run: python .github/scripts/integrate_field_xp_horde.py
-
-      - name: Format Luau sources
-        shell: bash
-        run: stylua games/living-kingdoms/src
-
-      - name: Commit integration output
-        if: github.actor != 'github-actions[bot]'
-        shell: bash
-        run: |
-          if git diff --quiet; then
-            echo "No integration changes required."
-          else
-            git config user.name github-actions[bot]
-            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-            git add games/living-kingdoms docs
-            git commit -m "refactor: use canonical Field XP for horde upgrades"
-            git push origin HEAD:${{ github.head_ref }}
-          fi
 
       - name: Check Luau formatting
         shell: bash
