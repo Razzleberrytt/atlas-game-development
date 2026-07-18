@@ -14,10 +14,13 @@ on:
       - ".github/workflows/luau-validation.yml"
   push:
     branches:
-      - main
+      - feat/hroi-immediate-loot-drops
     paths:
       - "games/living-kingdoms/**"
       - "docs/**"
+      - "tools/hroi_loot_integration_patch.py"
+      - "tools/hroi_loot_patch_anchor_fix.py"
+      - "tools/hroi_loot_fixture_patch.py"
       - "rokit.toml"
       - "stylua.toml"
       - "selene.toml"
@@ -165,12 +168,84 @@ jobs:
       - name: Build Rojo project
         run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
 
-      - name: Commit validated integration source
-        if: github.event_name == 'pull_request' && github.head_ref == 'feat/hroi-immediate-loot-drops'
+      - name: Commit validated integration source and restore normal CI
+        if: github.event_name == 'push' && github.ref_name == 'feat/hroi-immediate-loot-drops'
         shell: bash
         run: |
           set -euo pipefail
           rm -f tools/hroi_loot_integration_patch.py tools/hroi_loot_patch_anchor_fix.py tools/hroi_loot_fixture_patch.py
+          cat > .github/workflows/luau-validation.yml <<'NORMAL_CI'
+          name: Luau validation
+
+          on:
+            pull_request:
+              paths:
+                - "games/living-kingdoms/**"
+                - "docs/**"
+                - "rokit.toml"
+                - "stylua.toml"
+                - "selene.toml"
+                - ".github/workflows/luau-validation.yml"
+            push:
+              branches:
+                - main
+              paths:
+                - "games/living-kingdoms/**"
+                - "docs/**"
+                - "rokit.toml"
+                - "stylua.toml"
+                - "selene.toml"
+                - ".github/workflows/luau-validation.yml"
+
+          permissions:
+            contents: read
+
+          jobs:
+            validate:
+              runs-on: ubuntu-22.04
+              timeout-minutes: 15
+
+              steps:
+                - name: Check out repository
+                  uses: actions/checkout@v4
+
+                - name: Install pinned Rokit tools
+                  uses: CompeyDev/setup-rokit@v0.1.2
+                  with:
+                    version: v1.2.0
+                    path: .
+                    cache: false
+                    token: ${{ github.token }}
+
+                - name: Check Luau formatting
+                  shell: bash
+                  run: stylua --check games/living-kingdoms/src
+
+                - name: Run Selene
+                  shell: bash
+                  run: selene games/living-kingdoms/src
+
+                - name: Run Lune fixtures
+                  shell: bash
+                  run: |
+                    set -euo pipefail
+                    fixture_count=0
+                    while IFS= read -r -d '' fixture; do
+                      echo "::group::Lune fixture: $fixture"
+                      lune run "$fixture"
+                      echo "::endgroup::"
+                      fixture_count=$((fixture_count + 1))
+                    done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+                    if [ "$fixture_count" -eq 0 ]; then
+                      echo "No Living Kingdoms fixtures were discovered." >&2
+                      exit 1
+                    fi
+                    echo "Executed $fixture_count Living Kingdoms fixtures."
+
+                - name: Build Rojo project
+                  shell: bash
+                  run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
+          NORMAL_CI
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
