@@ -101,4 +101,27 @@ if audio_source.count(old_audio) != 1:
     raise RuntimeError("firearm audio audit anchor drifted")
 audio_path.write_text(audio_source.replace(old_audio, new_audio, 1), encoding="utf-8")
 
-print("Applied fixture compatibility, safe attribute disclosure, and roster-aware authority audits")
+p4_path = Path("games/living-kingdoms/tests/P4IntegrationValidation.test.luau")
+p4_source = p4_path.read_text(encoding="utf-8")
+old_readiness = '''\tweaponReadiness = {
+\t\tweaponId = "weapon.basic",
+\t\treadinessStateId = "Ready",
+\t\tammunition = { loadedRounds = 1 },
+\t},'''
+new_readiness = '''\tweaponReadiness = {
+\t\tweaponId = "weapon.basic",
+\t\treadinessStateId = "Ready",
+\t\tammunition = { weaponId = "weapon.basic", loadedRounds = 1 },
+\t\tcadence = { weaponId = "weapon.basic" },
+\t},'''
+if p4_source.count(old_readiness) != 1:
+    raise RuntimeError("P4 weapon readiness fixture anchor drifted")
+p4_source = p4_source.replace(old_readiness, new_readiness, 1)
+p4_source = p4_source.replace(
+    'assert(not string.find(project, \'"RemoteFunction"\', 1, true), "P4 must not add RemoteFunctions")',
+    'assert(not string.find(p4NetworkSource, \'"RemoteFunction"\', 1, true), "P4 must not add RemoteFunctions")',
+    1,
+)
+p4_path.write_text(p4_source, encoding="utf-8")
+
+print("Applied fixture compatibility, safe disclosures, and roster-aware authority audits")
