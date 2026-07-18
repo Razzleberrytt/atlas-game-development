@@ -33,13 +33,11 @@ assert(
 	"run progression requires a bounded level ceiling"
 )
 assert(
-	RunProgressionConfig.EnemyScanIntervalSeconds >= 0.05
-		and RunProgressionConfig.EnemyScanIntervalSeconds <= 0.5,
+	RunProgressionConfig.EnemyScanIntervalSeconds >= 0.05 and RunProgressionConfig.EnemyScanIntervalSeconds <= 0.5,
 	"enemy-death observation must remain responsive and bounded"
 )
 assert(
-	RunProgressionConfig.MaximumTrackedEnemyModels >= 24
-		and RunProgressionConfig.MaximumTrackedEnemyModels <= 64,
+	RunProgressionConfig.MaximumTrackedEnemyModels >= 24 and RunProgressionConfig.MaximumTrackedEnemyModels <= 64,
 	"tracking must cover living enemies plus bounded corpse overlap"
 )
 assert(
