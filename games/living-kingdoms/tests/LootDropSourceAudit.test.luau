@@ -24,24 +24,39 @@ local contracts = luau.load(
 	fs.readFile("games/living-kingdoms/src/shared/Loot/LootDropContracts.luau"),
 	{ debugName = "LootDropContracts", injectGlobals = true }
 )()
+local config = fs.readFile("games/living-kingdoms/src/shared/Config/LootDropConfig.luau")
+local dropResolver = fs.readFile("games/living-kingdoms/src/server/Systems/LootDropResolver.luau")
 local service = fs.readFile("games/living-kingdoms/src/server/Systems/LootDropService.luau")
 local healingResolver = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeHealingResolver.luau")
 local lifeService = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeLifeService.luau")
 local progressionService = fs.readFile("games/living-kingdoms/src/server/Systems/RunProgressionService.luau")
 local bootstrap = fs.readFile("games/living-kingdoms/src/server/init.server.luau")
 
-assert(table.isfrozen(contracts))
+assert(table.isfrozen(contracts), "loot contracts must be immutable")
 assert(contracts.LootKindIds.AmmunitionBundle == "loot.ammunition_bundle")
 assert(contracts.LootKindIds.FieldDressing == "loot.field_dressing")
 assert(contracts.LootKindIds.FieldIntel == "loot.field_intel")
 
 for _, token in {
-	"ProximityPromptService.PromptTriggered:Connect",
-	"RunService.Heartbeat:Connect",
 	"MaximumTrackedEnemyModels",
 	"MaximumActiveDrops",
 	"DropLifetimeSeconds",
 	"PickupMaximumDistanceStuds",
+} do
+	assert(contains(config, token), "missing bounded loot config token: " .. token)
+end
+assert(
+	contains(dropResolver, "fact.activeDropCount >= LootDropConfig.MaximumActiveDrops"),
+	"the pure resolver must enforce the active-drop ceiling"
+)
+
+for _, token in {
+	"ProximityPromptService.PromptTriggered:Connect",
+	"RunService.Heartbeat:Connect",
+	"MaximumTrackedEnemyModels",
+	"DropLifetimeSeconds",
+	"PickupMaximumDistanceStuds",
+	"activeDropCount()",
 	"LootDropResolver.resolve",
 	"AmmunitionSupplyResolver.collect",
 	"OperativeLifeService.applyAuthoritativeHealing",
