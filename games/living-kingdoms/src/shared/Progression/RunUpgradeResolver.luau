@@ -28,11 +28,7 @@ for _, definition in RunProgressionConfig.UpgradeDefinitions do
 end
 
 local function copyStacks(stacks: UpgradeStacks): UpgradeStacks
-	local result = {}
-	for upgradeId, count in stacks do
-		result[upgradeId] = count
-	end
-	return result
+	return table.clone(stacks)
 end
 
 local function isValidStackCount(value: unknown): boolean
