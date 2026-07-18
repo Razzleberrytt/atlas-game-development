@@ -29,7 +29,9 @@ jobs:
           token: ${{ github.token }}
 
       - name: Integrate authoritative weapon patterns
-        run: python3 tools/apply_authoritative_weapon_patterns.py
+        run: |
+          python3 tools/apply_authoritative_weapon_patterns.py
+          python3 tools/update_authoritative_weapon_pattern_audits.py
 
       - name: Format focused diff
         run: |
@@ -41,6 +43,7 @@ jobs:
             games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau \
             games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau \
             games/living-kingdoms/src/client/Presentation/WeaponShotEffectPresenter.luau \
+            games/living-kingdoms/tests/AuthoritativeShotEffectsSourceAudit.test.luau \
             games/living-kingdoms/tests/WeaponPatternResolver.test.luau \
             games/living-kingdoms/tests/WeaponPatternSourceAudit.test.luau
 
@@ -93,6 +96,7 @@ jobs:
         run: |
           set -euo pipefail
           rm tools/apply_authoritative_weapon_patterns.py
+          rm tools/update_authoritative_weapon_pattern_audits.py
           rm .github/workflows/authoritative-weapon-patterns-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
