@@ -76,7 +76,11 @@ local function validSupply(supply: unknown, weaponId: string): boolean
 	local candidate = supply :: any
 	return type(candidate.supplyId) == "string"
 		and candidate.supplyId ~= ""
-		and (candidate.sourceId == SourceIds.AuthoredCache or candidate.sourceId == SourceIds.EngineerResupply)
+		and (
+			candidate.sourceId == SourceIds.AuthoredCache
+			or candidate.sourceId == SourceIds.EngineerResupply
+			or candidate.sourceId == SourceIds.EnemyLoot
+		)
 		and candidate.weaponId == weaponId
 		and isWholeNonnegative(candidate.availableRounds)
 		and candidate.availableRounds > 0
