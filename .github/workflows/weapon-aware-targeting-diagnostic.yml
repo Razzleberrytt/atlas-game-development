@@ -1,0 +1,50 @@
+name: Diagnose weapon-aware targeting once
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'feat/weapon-aware-auto-targeting-v1'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/weapon-aware-auto-targeting-v1
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Reproduce production wiring
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          source = Path('.github/workflows/weapon-aware-targeting-once.yml').read_text()
+          marker = '      - name: Wire weapon-aware targeting\n'
+          section = source.split(marker, 1)[1].split('\n\n      - name: Format focused Luau', 1)[0]
+          script = section.split('        run: |\n', 1)[1]
+          Path('/tmp/reproduce.sh').write_text(textwrap.dedent(script))
+          PY
+          bash /tmp/reproduce.sh
+
+      - name: Run selector behavior fixture
+        run: lune run games/living-kingdoms/tests/WeaponTargetSelector.test.luau
+
+      - name: Run selector source audit
+        run: lune run games/living-kingdoms/tests/WeaponTargetSelectorSourceAudit.test.luau
