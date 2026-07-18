@@ -4,8 +4,8 @@
 	Applies at most one configured damage event for a resolved ShotId. The caller
 	owns and commits targetHealthStateAfter, including its processed-ShotId set.
 	No hidden deduplication state, Humanoid mutation, death behavior, or
-	presentation is created here. A server-owned run-upgrade override may raise
-	damage within a strict multiple of the configured firearm value.
+	presentation is created here. Server-owned run modifiers may raise damage
+	within a strict multiple of the configured firearm value.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -56,22 +56,42 @@ local function withoutDamage(
 	}
 end
 
-local function resolveDamageAmount(override: number?): number?
+local function readProgressionNumber(attributeName: string, fallback: number): number
+	local storageAsAny = ReplicatedStorage :: any
+	if type(storageAsAny.FindFirstChild) ~= "function" then
+		return fallback
+	end
+	local network = storageAsAny:FindFirstChild("ProgressionNetwork")
+	if network == nil or type(network.GetAttribute) ~= "function" then
+		return fallback
+	end
+	local value = network:GetAttribute(attributeName)
+	return if type(value) == "number" and value == value then value else fallback
+end
+
+local function resolveDamageAmount(override: number?, currentHealth: number): number?
 	local configured = FirearmConfig.BasicFirearm.DamagePerHit
-	if override == nil then
-		return configured
+	local requested = override
+	if requested == nil then
+		local damageMultiplier = readProgressionNumber("RunDamageMultiplier", 1)
+		local cullMultiplier = 1
+		local cullThreshold = readProgressionNumber("RunCullHealthThreshold", 0)
+		if currentHealth <= cullThreshold then
+			cullMultiplier = readProgressionNumber("RunCullDamageMultiplier", 1)
+		end
+		requested = math.floor(configured * damageMultiplier * cullMultiplier + 0.5)
 	end
 	if
-		type(override) ~= "number"
-		or override ~= override
-		or override <= 0
-		or override % 1 ~= 0
-		or override < configured
-		or override > configured * 3
+		type(requested) ~= "number"
+		or requested ~= requested
+		or requested <= 0
+		or requested % 1 ~= 0
+		or requested < configured
+		or requested > configured * 3
 	then
 		return nil
 	end
-	return override
+	return requested
 end
 
 function DamageResolver.resolve(
@@ -102,7 +122,8 @@ function DamageResolver.resolve(
 		return withoutDamage(healthStateAfter, reasons.TargetMismatch)
 	end
 
-	local damageAmount = resolveDamageAmount(damageAmountOverride)
+	local healthBefore = math.max(0, targetHealthState.currentHealth)
+	local damageAmount = resolveDamageAmount(damageAmountOverride, healthBefore)
 	if
 		damageAmount == nil
 		or hitResolution.weaponId ~= FirearmConfig.BasicFirearm.WeaponId
@@ -111,7 +132,6 @@ function DamageResolver.resolve(
 		return withoutDamage(healthStateAfter, reasons.WeaponInvalid)
 	end
 
-	local healthBefore = math.max(0, targetHealthState.currentHealth)
 	healthStateAfter.currentHealth = math.max(0, healthBefore - damageAmount)
 	local becameDead = healthBefore > 0 and healthStateAfter.currentHealth == 0
 	local damageEvent = table.freeze({
