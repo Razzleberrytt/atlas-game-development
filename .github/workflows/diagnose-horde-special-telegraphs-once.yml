@@ -1,0 +1,51 @@
+name: Diagnose horde special telegraphs once
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'feat/horde-special-telegraphs-v1'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/horde-special-telegraphs-v1
+
+      - name: Replay integration and capture output
+        id: replay
+        continue-on-error: true
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          source = Path('.github/workflows/horde-special-telegraphs-once.yml').read_text()
+          marker = '      - name: Wire authoritative special telegraphs\n'
+          section = source.split(marker, 1)[1].split('\n\n      - name: Format focused Luau', 1)[0]
+          script = section.split('        run: |\n', 1)[1]
+          Path('/tmp/replay.sh').write_text(textwrap.dedent(script))
+          PY
+          set -o pipefail
+          bash /tmp/replay.sh 2>&1 | tee /tmp/horde-special-wire.log
+
+      - name: Upload integration diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: horde-special-wire-log
+          path: /tmp/horde-special-wire.log
+          retention-days: 1
+
+      - name: Enforce replay result
+        if: steps.replay.outcome == 'failure'
+        run: exit 1
