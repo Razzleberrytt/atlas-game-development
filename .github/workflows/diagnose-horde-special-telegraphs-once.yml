@@ -20,7 +20,7 @@ jobs:
         with:
           ref: feat/horde-special-telegraphs-v1
 
-      - name: Replay integration and capture output
+      - name: Replay final wrapper and capture output
         id: replay
         continue-on-error: true
         shell: bash
@@ -29,8 +29,8 @@ jobs:
           from pathlib import Path
           import textwrap
 
-          source = Path('.github/workflows/horde-special-telegraphs-once.yml').read_text()
-          marker = '      - name: Wire authoritative special telegraphs\n'
+          source = Path('.github/workflows/finalize-horde-special-telegraphs-v2.yml').read_text()
+          marker = '      - name: Apply corrected integration\n'
           section = source.split(marker, 1)[1].split('\n\n      - name: Format focused Luau', 1)[0]
           script = section.split('        run: |\n', 1)[1]
           Path('/tmp/replay.sh').write_text(textwrap.dedent(script))
