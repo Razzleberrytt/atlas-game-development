@@ -1,27 +1,25 @@
 --!strict
 
 --[[
-	P5-0104 shared balance home for the production enemy runtime. Prototype
-	values, not a balance promise. Every consequential enemy number lives here
-	rather than inside runtime logic; the server remains the only authority
-	over facts derived from these values.
+	Shared balance home for the production enemy runtime. This integrates the
+	validated Horde Pressure v1 time-to-contact and time-to-kill tuning with the
+	higher-density horde vertical-slice population and evaluation budgets. Every
+	consequential value remains server-owned and configuration-driven.
 ]]
 
 local EnemyContracts = require(script.Parent.Parent.Combat.EnemyContracts)
 local WorldFoundationConfig = require(script.Parent.WorldFoundationConfig)
 
 local EnemyConfig = {
-	Version = "P5-0104-v3-horde-pressure",
+	Version = "HORDE-VS-001-v2",
 	Walker = table.freeze({
 		ArchetypeId = EnemyContracts.EnemyArchetypeIds.ExclusionWalker,
-		DisplayName = "Exclusion Walker",
-		-- Faster time-to-kill keeps a larger enemy population satisfying rather
-		-- than turning every contact into a slow damage-sponge cleanup exercise.
+		DisplayName = "Hollow Infected",
+		-- Preserve PR #99's faster time-to-kill so larger populations remain
+		-- satisfying rather than becoming damage-sponge cleanup.
 		MaximumHealth = 45,
 		PursuitSpeedStudsPerSecond = 13,
 		RoamSpeedStudsPerSecond = 7.5,
-		-- The pressure ring now lands inside detection range, so fair off-screen
-		-- spawns become active threats instead of wandering harmlessly nearby.
 		DetectionRadiusStuds = 110,
 		PursuitDropRadiusStuds = 145,
 		AttackRangeStuds = 6,
@@ -32,49 +30,40 @@ local EnemyConfig = {
 		RoamRetargetIntervalSeconds = 4,
 	}),
 	FairSpawn = table.freeze({
-		-- Larger than the darkness engagement radius so spawns never pop into
-		-- an operative's validated sight or melee reach.
 		MinimumOperativeDistanceStuds = 64,
-		DeferredRetryIntervalSeconds = 2,
-		MaximumDeferredSpawns = 16,
+		DeferredRetryIntervalSeconds = 0.75,
+		MaximumDeferredSpawns = 64,
 	}),
 	Population = table.freeze({
-		-- Keep the already validated population budget. This pass raises pressure
-		-- by filling it quickly and consistently rather than increasing the worst-
-		-- case server load before representative Studio profiling.
-		MaximumConcurrentPerOperative = 6,
-		AbsoluteMaximumConcurrent = 24,
+		-- This is the explicit vertical-slice profiling budget, not a production
+		-- guarantee. Merge remains blocked on solo and two-client MicroProfiler
+		-- evidence at representative pressure.
+		MaximumConcurrentPerOperative = 28,
+		AbsoluteMaximumConcurrent = 112,
 	}),
 	Pressure = table.freeze({
-		-- Horde Pressure v1: contact begins in seconds, not minutes. Escalation
-		-- tightens cadence and raises the final burst while every proposal still
-		-- passes the existing population cap and fair-spawn validation.
+		-- Retains PR #99's contact-in-seconds principle while increasing the
+		-- population fill rate enough to support actual visible hordes.
 		RoamingByEscalationLevel = table.freeze({
-			[0] = table.freeze({ IntervalSeconds = 12, SpawnCount = 2 }),
-			[1] = table.freeze({ IntervalSeconds = 10, SpawnCount = 2 }),
-			[2] = table.freeze({ IntervalSeconds = 8, SpawnCount = 2 }),
-			[3] = table.freeze({ IntervalSeconds = 6, SpawnCount = 3 }),
+			[0] = table.freeze({ IntervalSeconds = 9, SpawnCount = 4 }),
+			[1] = table.freeze({ IntervalSeconds = 7, SpawnCount = 6 }),
+			[2] = table.freeze({ IntervalSeconds = 5, SpawnCount = 8 }),
+			[3] = table.freeze({ IntervalSeconds = 3.5, SpawnCount = 10 }),
 		}),
 		MaximumEscalationLevel = 3,
-		-- Preserve readable breathers without draining the world of urgency.
-		RecoveryWindowSeconds = 8,
+		RecoveryWindowSeconds = 6,
 		RoamingSpawnMinimumDistanceStuds = 68,
-		RoamingSpawnMaximumDistanceStuds = 96,
+		RoamingSpawnMaximumDistanceStuds = 118,
 	}),
 	Cleanup = table.freeze({
-		CorpseCleanupSeconds = 8,
+		CorpseCleanupSeconds = 5,
 	}),
 	Combat = table.freeze({
-		-- Darkness-bounded gameplay visibility for automatic targeting. This
-		-- prototype provider marks a hostile visible only inside this
-		-- horizontal radius; it is deliberately shorter than the 80-stud
-		-- firearm range so darkness, not range, is the engagement limit.
 		GameplayVisibilityRadiusStuds = 60,
-		EvaluationIntervalSeconds = 0.1,
-		-- Bounded per-operative line-of-sight budget for one evaluation pass.
-		MaximumLineOfSightRaycastsPerEvaluation = 3,
+		EvaluationIntervalSeconds = 0.08,
+		MaximumLineOfSightRaycastsPerEvaluation = 8,
 	}),
-	EvaluationIntervalSeconds = 0.2,
+	EvaluationIntervalSeconds = 0.1,
 }
 
 assert(EnemyConfig.Walker.MaximumHealth > 0, "walker health must be positive")
@@ -142,7 +131,7 @@ assert(
 assert(
 	EnemyConfig.Combat.MaximumLineOfSightRaycastsPerEvaluation > 0
 		and EnemyConfig.Combat.MaximumLineOfSightRaycastsPerEvaluation <= 8,
-	"the line-of-sight raycast budget must be small and positive"
+	"the line-of-sight raycast budget must remain bounded"
 )
 assert(
 	EnemyConfig.EvaluationIntervalSeconds > 0 and EnemyConfig.EvaluationIntervalSeconds <= 1,

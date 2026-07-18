@@ -2,18 +2,18 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local function ensureFlashlightNetwork()
-	local existingNetwork = ReplicatedStorage:FindFirstChild("FlashlightNetwork")
+local function ensureNetworkFolder(folderName: string, remoteNames: { string })
+	local existingNetwork = ReplicatedStorage:FindFirstChild(folderName)
 	local network: Folder
 	if existingNetwork == nil then
 		network = Instance.new("Folder")
-		network.Name = "FlashlightNetwork"
+		network.Name = folderName
 		network.Parent = ReplicatedStorage
 	else
-		assert(existingNetwork:IsA("Folder"), "FlashlightNetwork must be a Folder")
+		assert(existingNetwork:IsA("Folder"), folderName .. " must be a Folder")
 		network = existingNetwork
 	end
-	for _, remoteName in { "ToggleIntent", "State" } do
+	for _, remoteName in remoteNames do
 		local existingRemote = network:FindFirstChild(remoteName)
 		if existingRemote == nil then
 			local remote = Instance.new("RemoteEvent")
@@ -23,50 +23,22 @@ local function ensureFlashlightNetwork()
 			assert(existingRemote:IsA("RemoteEvent"), remoteName .. " must be a RemoteEvent")
 		end
 	end
+end
+
+local function ensureFlashlightNetwork()
+	ensureNetworkFolder("FlashlightNetwork", { "ToggleIntent", "State" })
 end
 
 local function ensureSquadPingNetwork()
-	local existingNetwork = ReplicatedStorage:FindFirstChild("SquadPingNetwork")
-	local network: Folder
-	if existingNetwork == nil then
-		network = Instance.new("Folder")
-		network.Name = "SquadPingNetwork"
-		network.Parent = ReplicatedStorage
-	else
-		assert(existingNetwork:IsA("Folder"), "SquadPingNetwork must be a Folder")
-		network = existingNetwork
-	end
-	for _, remoteName in { "Intent", "State" } do
-		local existingRemote = network:FindFirstChild(remoteName)
-		if existingRemote == nil then
-			local remote = Instance.new("RemoteEvent")
-			remote.Name = remoteName
-			remote.Parent = network
-		else
-			assert(existingRemote:IsA("RemoteEvent"), remoteName .. " must be a RemoteEvent")
-		end
-	end
+	ensureNetworkFolder("SquadPingNetwork", { "Intent", "State" })
 end
 
 local function ensureMissionNetwork()
-	local existingNetwork = ReplicatedStorage:FindFirstChild("MissionNetwork")
-	local network: Folder
-	if existingNetwork == nil then
-		network = Instance.new("Folder")
-		network.Name = "MissionNetwork"
-		network.Parent = ReplicatedStorage
-	else
-		assert(existingNetwork:IsA("Folder"), "MissionNetwork must be a Folder")
-		network = existingNetwork
-	end
-	local existingRemote = network:FindFirstChild("State")
-	if existingRemote == nil then
-		local remote = Instance.new("RemoteEvent")
-		remote.Name = "State"
-		remote.Parent = network
-	else
-		assert(existingRemote:IsA("RemoteEvent"), "State must be a RemoteEvent")
-	end
+	ensureNetworkFolder("MissionNetwork", { "State" })
+end
+
+local function ensureHordeNetwork()
+	ensureNetworkFolder("HordeNetwork", { "State", "ChooseUpgrade" })
 end
 
 local function ensureClassNetwork()
@@ -103,6 +75,7 @@ end
 ensureFlashlightNetwork()
 ensureSquadPingNetwork()
 ensureMissionNetwork()
+ensureHordeNetwork()
 ensureClassNetwork()
 
 local AmmunitionCacheService = require(script.Systems.AmmunitionCacheService)
@@ -113,6 +86,7 @@ local MovementStateReplicationSystem = require(script.Systems.MovementStateRepli
 local EnemyDirectorService = require(script.Systems.EnemyDirectorService)
 local EnemyPresentationService = require(script.Systems.EnemyPresentationService)
 local EnemyValidationProbeService = require(script.Systems.EnemyValidationProbeService)
+local HordeExperienceService = require(script.Systems.HordeExperienceService)
 local OperativeCombatRuntimeService = require(script.Systems.OperativeCombatRuntimeService)
 local OperativeLifeDevelopmentHarness = require(script.Systems.OperativeLifeDevelopmentHarness)
 local OperativeLifeService = require(script.Systems.OperativeLifeService)
@@ -140,7 +114,8 @@ EnemyValidationProbeService.start()
 OperativeCombatRuntimeService.start()
 AmmunitionCacheService.start()
 AmmunitionScarcityValidationProbeService.start()
+HordeExperienceService.start()
 MissionDirectorService.start()
 ClassService.start()
 
-print("[Living Kingdoms] Server bootstrap started")
+print("[Living Kingdoms] Server bootstrap started — horde vertical slice active")

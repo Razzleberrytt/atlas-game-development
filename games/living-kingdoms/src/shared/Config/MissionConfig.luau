@@ -1,18 +1,33 @@
 --!strict
 
 --[[
-	P5-0103 authored values for the first playable operation. One objective, one
-	extraction clearing, and bounded placeholder timings. Positions reference the
-	P5-0102 authored landmarks in WorldFoundationConfig; the server remains the
-	only authority over every mission fact derived from these values.
+	Authored values for the first horde-horror operation. The route remains
+	finite and authored, but regrouping is fast, escalation begins immediately
+	after the relay, and extraction ends in a two-minute horde holdout.
 ]]
 
+local function createRingWave(prefix: string, displayName: string, centerX: number, centerZ: number, count: number, radius: number)
+	local result = {}
+	for index = 1, count do
+		local angle = (index - 1) * math.pi * 2 / count
+		local distance = radius + ((index % 3) - 1) * 10
+		table.insert(result, table.freeze({
+			id = string.format("hostile.%s.%02d", prefix, index),
+			name = displayName,
+			x = centerX + math.cos(angle) * distance,
+			y = 4,
+			z = centerZ + math.sin(angle) * distance,
+		}))
+	end
+	return table.freeze(result)
+end
+
 local MissionConfig = {
-	Version = "P5-0103-v1",
+	Version = "HORDE-VS-001-v1",
 	OperationId = "operation.blackwater-relay",
 	OperationDisplayName = "Operation Blackwater Relay",
-	InsertionHoldSeconds = 20,
-	ExtractionPresenceIntervalSeconds = 0.5,
+	InsertionHoldSeconds = 8,
+	ExtractionPresenceIntervalSeconds = 0.25,
 	Objective = table.freeze({
 		ObjectiveId = "objective.restore-lookout-relay",
 		LandmarkId = "LookoutTower",
@@ -20,53 +35,37 @@ local MissionConfig = {
 		InteractionRadiusStuds = 14,
 		PromptActionText = "Restore Relay",
 		PromptObjectText = "Emergency Relay Console",
-		PromptHoldDurationSeconds = 1,
+		PromptHoldDurationSeconds = 0.75,
 	}),
 	Extraction = table.freeze({
 		LandmarkId = "ExtractionClearing",
 		Position = table.freeze({ x = 218, y = 1, z = 58 }),
 		RadiusStuds = 34,
-		ArrivalSeconds = 90,
+		ArrivalSeconds = 120,
 	}),
 	Escalation = table.freeze({
-		SecondWaveDelaySeconds = 45,
+		SecondWaveDelaySeconds = 20,
 		Waves = table.freeze({
-			-- Level 1: contacts on the descent between the lookout and the campground.
-			table.freeze({
-				table.freeze({ id = "hostile.p50103.descent-a", name = "Exclusion Hostile", x = -168, y = 5, z = 92 }),
-				table.freeze({ id = "hostile.p50103.descent-b", name = "Exclusion Hostile", x = -114, y = 3, z = 58 }),
-			}),
-			-- Level 2: pressure along the creek crossing and the eastern approach.
-			table.freeze({
-				table.freeze({ id = "hostile.p50103.creek-a", name = "Exclusion Hostile", x = 52, y = 3, z = 18 }),
-				table.freeze({ id = "hostile.p50103.creek-b", name = "Exclusion Hostile", x = 118, y = 6, z = 52 }),
-			}),
-			-- Level 3: converging on the clearing during holdout. Positions sit
-			-- outside the P5 fair-spawn floor around the extraction zone so the
-			-- wave spawns immediately and pursues in rather than deferring while
-			-- the squad holds the center.
-			table.freeze({
-				table.freeze({ id = "hostile.p50103.clearing-a", name = "Exclusion Hostile", x = 218, y = 4, z = -30 }),
-				table.freeze({ id = "hostile.p50103.clearing-b", name = "Exclusion Hostile", x = 300, y = 4, z = 110 }),
-				table.freeze({ id = "hostile.p50103.clearing-c", name = "Exclusion Hostile", x = 130, y = 4, z = 120 }),
-			}),
+			createRingWave("relay-collapse", "Relay Horde", -150, 95, 10, 78),
+			createRingWave("creek-swarm", "Creek Swarm", 65, 28, 14, 82),
+			createRingWave("extraction-nightmare", "Extraction Nightmare", 218, 58, 22, 94),
 		}),
 	}),
 	ObjectiveTextByPhase = table.freeze({
-		Insertion = "Regroup at the ranger station",
-		Infiltration = "Restore the communications relay at Lookout 7",
-		Exfiltration = "Reach the forest extraction clearing",
-		Holdout = "Hold the clearing until extraction arrives",
+		Insertion = "Regroup. Something in the forest has heard you.",
+		Infiltration = "Restore the relay before the signal dies",
+		Exfiltration = "Run for the extraction clearing",
+		Holdout = "Survive the horde until extraction arrives",
 		Resolved = "Operation resolved",
 	}),
 	RadioLines = table.freeze({
-		InsertionComplete = "Insertion complete. Regroup at the ranger station.",
-		ProceedToObjective = "Proceed to Lookout 7 and restore the emergency relay.",
-		ObjectiveComplete = "Relay restored. Extraction inbound at the forest clearing.",
-		PressureRising = "Command: hostile activity is rising. Keep moving.",
-		HoldPosition = "Extraction on approach. Hold your position.",
-		MissionSuccess = "Extraction complete. Good work, squad.",
-		MissionFailure = "Signal lost. Operation failed.",
+		InsertionComplete = "Insertion complete. Regroup now. Movement is converging on your position.",
+		ProceedToObjective = "Reach Lookout 7 and restore the emergency relay. Do not stop moving.",
+		ObjectiveComplete = "Relay restored. Every hostile in Blackwater just heard it. Extraction inbound.",
+		PressureRising = "Command: threat density is spiking. The forest is filling up.",
+		HoldPosition = "Extraction is two minutes out. Hold the clearing or die there.",
+		MissionSuccess = "Extraction complete. The horde is still following the signal.",
+		MissionFailure = "Signal lost. Blackwater has consumed the squad.",
 	}),
 }
 
@@ -85,9 +84,9 @@ assert(
 	"the holdout countdown must be a bounded positive duration"
 )
 assert(MissionConfig.Escalation.SecondWaveDelaySeconds > 0, "the second escalation wave requires a positive delay")
-assert(#MissionConfig.Escalation.Waves == 3, "the prototype authored exactly three escalation waves")
+assert(#MissionConfig.Escalation.Waves == 3, "the operation requires exactly three authored escalation waves")
 for _, wave in MissionConfig.Escalation.Waves do
-	assert(#wave > 0, "every escalation wave must author at least one hostile")
+	assert(#wave >= 10, "every horde wave must author substantial pressure")
 end
 
 return table.freeze(MissionConfig)
