@@ -116,22 +116,47 @@ jobs:
         if: steps.selene.outcome == 'failure'
         run: exit 1
 
-      - name: Run Lune fixtures
+      - name: Run Lune fixtures and capture diagnostics
+        id: lune
+        continue-on-error: true
         shell: bash
         run: |
-          set -euo pipefail
+          set +e
+          set -o pipefail
           fixture_count=0
+          status=0
+          : > /tmp/lune.log
           while IFS= read -r -d '' fixture; do
-            echo "::group::Lune fixture: $fixture"
-            lune run "$fixture"
-            echo "::endgroup::"
+            echo "===== $fixture =====" | tee -a /tmp/lune.log
+            lune run "$fixture" 2>&1 | tee -a /tmp/lune.log
+            fixture_status=${PIPESTATUS[0]}
             fixture_count=$((fixture_count + 1))
+            if [ "$fixture_status" -ne 0 ]; then
+              status="$fixture_status"
+              break
+            fi
           done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
           if [ "$fixture_count" -eq 0 ]; then
-            echo "No Living Kingdoms fixtures were discovered." >&2
-            exit 1
+            echo "No Living Kingdoms fixtures were discovered." | tee -a /tmp/lune.log
+            status=1
           fi
-          echo "Executed $fixture_count Living Kingdoms fixtures."
+          echo "Executed $fixture_count Living Kingdoms fixtures before exit." | tee -a /tmp/lune.log
+          echo "$status" > /tmp/lune-status
+          exit "$status"
+
+      - name: Upload Lune diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hroi-run-upgrade-lune-log
+          path: |
+            /tmp/lune.log
+            /tmp/lune-status
+          retention-days: 1
+
+      - name: Enforce Lune result
+        if: steps.lune.outcome == 'failure'
+        run: exit 1
 
       - name: Build Rojo project
         shell: bash
