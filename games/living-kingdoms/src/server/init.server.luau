@@ -69,6 +69,29 @@ local function ensureMissionNetwork()
 	end
 end
 
+local function ensureHordeNetwork()
+	local existingNetwork = ReplicatedStorage:FindFirstChild("HordeNetwork")
+	local network: Folder
+	if existingNetwork == nil then
+		network = Instance.new("Folder")
+		network.Name = "HordeNetwork"
+		network.Parent = ReplicatedStorage
+	else
+		assert(existingNetwork:IsA("Folder"), "HordeNetwork must be a Folder")
+		network = existingNetwork
+	end
+	for _, remoteName in { "State", "ChooseUpgrade" } do
+		local existingRemote = network:FindFirstChild(remoteName)
+		if existingRemote == nil then
+			local remote = Instance.new("RemoteEvent")
+			remote.Name = remoteName
+			remote.Parent = network
+		else
+			assert(existingRemote:IsA("RemoteEvent"), "HordeNetwork." .. remoteName .. " must be a RemoteEvent")
+		end
+	end
+end
+
 local function ensureClassNetwork()
 	local existingNetwork = ReplicatedStorage:FindFirstChild("ClassNetwork")
 	local network: Folder
@@ -132,6 +155,7 @@ end
 ensureFlashlightNetwork()
 ensureSquadPingNetwork()
 ensureMissionNetwork()
+ensureHordeNetwork()
 ensureClassNetwork()
 ensureProgressionNetwork()
 
@@ -143,6 +167,7 @@ local MovementStateReplicationSystem = require(script.Systems.MovementStateRepli
 local EnemyDirectorService = require(script.Systems.EnemyDirectorService)
 local EnemyPresentationService = require(script.Systems.EnemyPresentationService)
 local EnemyValidationProbeService = require(script.Systems.EnemyValidationProbeService)
+local HordeExperienceService = require(script.Systems.HordeExperienceService)
 local OperativeCombatRuntimeService = require(script.Systems.OperativeCombatRuntimeService)
 local OperativeLifeDevelopmentHarness = require(script.Systems.OperativeLifeDevelopmentHarness)
 local OperativeLifeService = require(script.Systems.OperativeLifeService)
@@ -172,7 +197,8 @@ EnemyValidationProbeService.start()
 OperativeCombatRuntimeService.start()
 AmmunitionCacheService.start()
 AmmunitionScarcityValidationProbeService.start()
+HordeExperienceService.start()
 MissionDirectorService.start()
 ClassService.start()
 
-print("[Living Kingdoms] Server bootstrap started")
+print("[Living Kingdoms] Server bootstrap started — Field XP + horde vertical slice active")
