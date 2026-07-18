@@ -38,27 +38,29 @@ assert(contains(controller, "GroupTransparency"))
 assert(contains(controller, "Workspace:GetServerTimeNow()"))
 assert(count(controller, "OnClientEvent:Connect") == 1, "crescendo must use one disclosure connection")
 assert(count(controller, "RenderStepped:Connect") == 1, "crescendo must use one frame connection")
-assert(count(controller, "Instance.new(\"Sound\")") == 1, "crescendo must construct one fixed stinger")
-assert(count(controller, "Instance.new(\"ScreenGui\")") == 1, "crescendo must construct one fixed screen surface")
+assert(count(controller, 'Instance.new("Sound")') == 1, "crescendo must construct one fixed stinger")
+assert(count(controller, 'Instance.new("ScreenGui")') == 1, "crescendo must construct one fixed screen surface")
 
-for _, prohibited in {
-	"FireServer",
-	"InvokeServer",
-	"OnServerEvent",
-	"RemoteFunction",
-	"DamageResolver",
-	"applyAuthoritativeDamage",
-	"commitHealthState",
-	"award",
-	"grant",
-	"spawnEnemy",
-	"Raycast",
-	"TweenService",
-	"task.spawn",
-	"task.delay",
-	"SetAttribute",
-	"DataStore",
-} do
+for _, prohibited in
+	{
+		"FireServer",
+		"InvokeServer",
+		"OnServerEvent",
+		"RemoteFunction",
+		"DamageResolver",
+		"applyAuthoritativeDamage",
+		"commitHealthState",
+		"award",
+		"grant",
+		"spawnEnemy",
+		"Raycast",
+		"TweenService",
+		"task.spawn",
+		"task.delay",
+		"SetAttribute",
+		"DataStore",
+	}
+do
 	assert(not contains(controller, prohibited), "crescendo must remain presentation-only: " .. prohibited)
 end
 

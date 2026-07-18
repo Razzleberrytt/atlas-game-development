@@ -190,7 +190,8 @@ local function applyState(payload: any)
 	end
 	lastRevision = revision
 
-	local streak = math.floor(math.clamp(readFiniteNumber(payload.streak, 0), 0, MassacreCrescendoConfig.MaximumPresentedStreak))
+	local streak =
+		math.floor(math.clamp(readFiniteNumber(payload.streak, 0), 0, MassacreCrescendoConfig.MaximumPresentedStreak))
 	local expiresAt = math.max(0, readFiniteNumber(payload.streakExpiresServerTimestamp, 0))
 	local tier, tierIndex = MassacreCrescendoConfig.tierForStreak(streak)
 
@@ -237,11 +238,8 @@ local function updatePresentation(deltaTime: number)
 
 	local serverTimestamp = Workspace:GetServerTimeNow()
 	local tier = MassacreCrescendoConfig.tierForStreak(currentStreak)
-	local remainingFraction = math.clamp(
-		(streakExpiresServerTimestamp - serverTimestamp) / MassacreCrescendoConfig.StreakWindowSeconds,
-		0,
-		1
-	)
+	local remainingFraction =
+		math.clamp((streakExpiresServerTimestamp - serverTimestamp) / MassacreCrescendoConfig.StreakWindowSeconds, 0, 1)
 	local shouldShow = tier ~= nil and remainingFraction > 0
 	local alphaStep = deltaTime / MassacreCrescendoConfig.FadeDurationSeconds
 	visibleAlpha = math.clamp(visibleAlpha + (if shouldShow then alphaStep else -alphaStep), 0, 1)
@@ -264,7 +262,8 @@ local function updatePresentation(deltaTime: number)
 	createdFill.Size = UDim2.fromScale(remainingFraction, 1)
 	createdStroke.Color = color
 
-	local pulseFraction = math.clamp(1 - (os.clock() - lastPulseClock) / MassacreCrescendoConfig.PulseDurationSeconds, 0, 1)
+	local pulseFraction =
+		math.clamp(1 - (os.clock() - lastPulseClock) / MassacreCrescendoConfig.PulseDurationSeconds, 0, 1)
 	local pulse = pulseFraction * pulseFraction
 	local breathing = if shouldShow then math.sin(os.clock() * 8) * 0.012 * remainingFraction else 0
 	createdScale.Scale = 1 + (tier.PulseScale - 1) * pulse + breathing

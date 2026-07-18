@@ -177,7 +177,6 @@ assertThat(not contains(hud, "MASSACRE x%d"), "the legacy static streak label mu
 
 for _, required in
 	{
-		"MASSACRE",
 		"streakExpiresServerTimestamp",
 		"MassacreCrescendoConfig.tierForStreak",
 		"HordeNetwork",
@@ -235,4 +234,6 @@ assertThat(not contains(weapon, "TemporaryCombatPresentation"), "old temporary c
 assertThat(not contains(life, "TemporaryP3Validation"), "old temporary life overlay must be removed")
 assertThat(not contains(mission, "TemporaryMissionUI"), "old temporary mission overlay must be removed")
 
-print("Horde vertical slice single-source-of-truth ownership, pacing bounds, unified HUD, and streak presentation audit passed")
+print(
+	"Horde vertical slice single-source-of-truth ownership, pacing bounds, unified HUD, and streak presentation audit passed"
+)

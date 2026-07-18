@@ -172,6 +172,9 @@ local function publishPlayer(player: Player, serverTimestamp: number)
 		revision = revision,
 		kills = state.kills,
 		streak = state.streak,
+		streakExpiresServerTimestamp = if state.streak >= 2
+			then state.lastKillServerTimestamp + HordeConfig.Streak.KillStreakWindowSeconds
+			else 0,
 		threat = value,
 		threatLabel = threatLabel(value),
 		activeEnemies = EnemyDirectorService.readActiveEnemyCount(),

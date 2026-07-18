@@ -104,13 +104,22 @@ local Config = {
 	tierForStreak = tierForStreak,
 }
 
-assert(Config.StreakWindowSeconds > 0 and Config.StreakWindowSeconds <= 10, "streak presentation window must stay bounded")
+assert(
+	Config.StreakWindowSeconds > 0 and Config.StreakWindowSeconds <= 10,
+	"streak presentation window must stay bounded"
+)
 assert(Config.MinimumVisibleStreak == Tiers[1].MinimumStreak, "first tier must match the visible streak floor")
-assert(Config.MaximumPresentedStreak >= 24 and Config.MaximumPresentedStreak <= 999, "presented streak count must stay bounded")
+assert(
+	Config.MaximumPresentedStreak >= 24 and Config.MaximumPresentedStreak <= 999,
+	"presented streak count must stay bounded"
+)
 assert(Config.PulseDurationSeconds > 0 and Config.PulseDurationSeconds <= 0.5, "streak pulse must stay brief")
 assert(Config.FadeDurationSeconds > 0 and Config.FadeDurationSeconds <= 0.5, "streak fade must stay brief")
 assert(Config.StingerMinimumIntervalSeconds > 0, "streak stinger requires a throttle")
-assert(type(Config.StingerSoundId) == "string" and string.sub(Config.StingerSoundId, 1, 13) == "rbxassetid://", "streak stinger must reuse a verified asset")
+assert(
+	type(Config.StingerSoundId) == "string" and string.sub(Config.StingerSoundId, 1, 13) == "rbxassetid://",
+	"streak stinger must reuse a verified asset"
+)
 
 local previousMinimum = 0
 for _, tier in Tiers do

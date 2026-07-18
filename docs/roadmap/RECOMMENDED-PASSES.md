@@ -90,6 +90,10 @@ VIS-0102–VIS-0105 output from the gameplay camera, not more generated geometry
   exact-radius Bloater disclosure, pooled world presentation, and role-specific
   warning audio for Screamer reinforcement, Bloater burst, and Brute phase two
   ([`../specifications/horde-special-role-telegraphs.md`](../specifications/horde-special-role-telegraphs.md)).
+- **Massacre crescendo pass** — escalating, non-rewarding kill-chain titles,
+  exact authoritative expiry, fixed audiovisual punch, and one verified tier
+  stinger without changing XP, loot, health, ammunition, or combat power
+  ([`../specifications/massacre-crescendo.md`](../specifications/massacre-crescendo.md)).
 
 ## C. Explicitly excluded
 
