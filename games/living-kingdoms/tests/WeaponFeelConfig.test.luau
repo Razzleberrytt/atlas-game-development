@@ -59,7 +59,10 @@ for _, weaponId in selectableWeaponIds do
 	assertThat(profile.CasingLength > 0 and profile.CasingDiameter > 0, "casing dimensions must be positive")
 	assertThat(profile.TracerWidth > 0, "tracer width must be positive")
 	assertThat(profile.ImpactDiameter > 0, "impact size must be positive")
-	assertThat(profile.AudioPitchMaximumMultiplier >= profile.AudioPitchMinimumMultiplier, "audio pitch must be ordered")
+	assertThat(
+		profile.AudioPitchMaximumMultiplier >= profile.AudioPitchMinimumMultiplier,
+		"audio pitch must be ordered"
+	)
 end
 
 local shotgun = config.get(weaponIds.BreachShotgun)
@@ -76,32 +79,41 @@ assertThat(shotgun.CasingKindId == "ShotgunShell", "shotgun must eject a readabl
 local source = fs.readFile("games/living-kingdoms/src/shared/Config/WeaponFeelConfig.luau")
 local effectSource = fs.readFile("games/living-kingdoms/src/client/Presentation/WeaponShotEffectPresenter.luau")
 local audioSource = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponAudioController.luau")
-local combined = source .. "\n" .. effectSource .. "\n" .. audioSource
+local motionSource = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau")
+local combined = source .. "\n" .. effectSource .. "\n" .. audioSource .. "\n" .. motionSource
 
-for _, token in {
-	"profile.MuzzleFlashDiameter",
-	"profile.CasingKindId",
-	"profile.TracerWidth",
-	"profile.ImpactDiameter",
-	"profile.AudioVolumeMultiplier",
-	"profile.AudioPitchMinimumMultiplier",
-	"profile.ReloadPlaybackSpeedMultiplier",
-} do
+for _, token in
+	{
+		"profile.MuzzleFlashDiameter",
+		"profile.CasingKindId",
+		"profile.TracerWidth",
+		"profile.ImpactDiameter",
+		"profile.AudioVolumeMultiplier",
+		"profile.AudioPitchMinimumMultiplier",
+		"profile.ReloadPlaybackSpeedMultiplier",
+		"profile.ShotBackSeconds",
+		"profile.ShotReturnSeconds",
+		"gripKickOffset(profile)",
+		"magazineOutOffset(profile)",
+	}
+do
 	assertThat(string.find(combined, token, 1, true) ~= nil, "missing weapon feel integration token: " .. token)
 end
 
-for _, prohibited in {
-	"FireServer",
-	"InvokeServer",
-	"OnServerEvent",
-	"DamagePerHit =",
-	"CadenceSeconds =",
-	"MagazineCapacity =",
-	"loadedRounds -=",
-	"reserveRounds -=",
-	"commitHealthState",
-	"Humanoid:TakeDamage",
-} do
+for _, prohibited in
+	{
+		"FireServer",
+		"InvokeServer",
+		"OnServerEvent",
+		"DamagePerHit =",
+		"CadenceSeconds =",
+		"MagazineCapacity =",
+		"loadedRounds -=",
+		"reserveRounds -=",
+		"commitHealthState",
+		"Humanoid:TakeDamage",
+	}
+do
 	assertThat(not string.find(combined, prohibited, 1, true), "presentation feel widened authority: " .. prohibited)
 end
 

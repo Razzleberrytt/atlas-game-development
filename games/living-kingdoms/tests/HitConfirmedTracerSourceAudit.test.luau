@@ -10,58 +10,78 @@ end
 
 local policy = fs.readFile("docs/specifications/basic-firearm-tracer-policy.md")
 local presenter = fs.readFile("games/living-kingdoms/src/client/Presentation/WeaponShotEffectPresenter.luau")
+local feelConfig = fs.readFile("games/living-kingdoms/src/shared/Config/WeaponFeelConfig.luau")
 local registry = fs.readFile("games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau")
 local roadmap = fs.readFile("docs/roadmap/VISUAL-PRODUCTION-TRACK.md")
 
-for _, required in {
-	"server confirmed that damage was applied",
-	"server disclosed an authoritative impact world position",
-	"Blocked, rejected, duplicate, or otherwise non-damaging shots must not display a tracer",
-	"approximately 0.055 seconds",
-	"Skip degenerate paths shorter than 0.5 studs",
-} do
+for _, required in
+	{
+		"server confirmed that damage was applied",
+		"server disclosed an authoritative impact world position",
+		"Blocked, rejected, duplicate, or otherwise non-damaging shots must not display a tracer",
+		"bounded profile for the disclosed configured firearm",
+		"approximately 0.035 seconds for the compact SMG to 0.12 seconds for the long-range sniper rifle",
+		"Skip degenerate paths shorter than 0.5 studs",
+	}
+do
 	assertThat(string.find(policy, required, 1, true) ~= nil, "tracer policy missing: " .. required)
 end
 
-for _, required in {
-	'local TRACER_LIFETIME_SECONDS = 0.055',
-	'local MINIMUM_TRACER_DISTANCE_STUDS = 0.5',
-	'rig.muzzleAttachment.WorldPosition',
-	'if distance < MINIMUM_TRACER_DISTANCE_STUDS then',
-	'tracer.Name = "AuthoritativeDamageTracer"',
-	'tracer:SetAttribute("SourceShotId", shotId)',
-	'tracer:SetAttribute("PresentationOnly", true)',
-	'tracer.CanCollide = false',
-	'tracer.CanTouch = false',
-	'tracer.CanQuery = false',
-	'Debris:AddItem(tracer, TRACER_LIFETIME_SECONDS)',
-	'if didApplyDamage and impactWorldPosition ~= nil then',
-	'spawnDamageTracer(rig, shotId, impactWorldPosition)',
-} do
+for _, required in
+	{
+		"local MINIMUM_TRACER_DISTANCE_STUDS = 0.5",
+		"rig.muzzleAttachment.WorldPosition",
+		"if distance < MINIMUM_TRACER_DISTANCE_STUDS then",
+		'tracer.Name = "AuthoritativeDamageTracer"',
+		'tracer:SetAttribute("SourceShotId", shotId)',
+		'tracer:SetAttribute("PresentationOnly", true)',
+		"tracer.CanCollide = false",
+		"tracer.CanTouch = false",
+		"tracer.CanQuery = false",
+		"Debris:AddItem(tracer, profile.TracerLifetimeSeconds)",
+		"profile.TracerWidth",
+		"profile.TracerTransparency",
+		"if didApplyDamage and impactWorldPosition ~= nil then",
+		"spawnDamageTracer(rig, shotId, impactWorldPosition, profile)",
+	}
+do
 	assertThat(string.find(presenter, required, 1, true) ~= nil, "tracer presenter missing: " .. required)
 end
 
+for _, required in
+	{
+		"TracerWidth = 0.03",
+		"TracerLifetimeSeconds = 0.035",
+		"TracerLifetimeSeconds = 0.12",
+		"assert(entry.TracerWidth > 0 and entry.TracerWidth <= 0.15",
+	}
+do
+	assertThat(string.find(feelConfig, required, 1, true) ~= nil, "tracer profile bounds missing: " .. required)
+end
+
 local gateIndex = string.find(presenter, "if didApplyDamage and impactWorldPosition ~= nil then", 1, true)
-local tracerCallIndex = string.find(presenter, "spawnDamageTracer(rig, shotId, impactWorldPosition)", 1, true)
+local tracerCallIndex = string.find(presenter, "spawnDamageTracer(rig, shotId, impactWorldPosition, profile)", 1, true)
 assertThat(
 	gateIndex ~= nil and tracerCallIndex ~= nil and gateIndex < tracerCallIndex,
 	"tracer creation must remain below the authoritative damage gate"
 )
 
-for _, forbidden in {
-	"FireServer",
-	"InvokeServer",
-	"OnServerEvent",
-	"DamageResolver",
-	"FirearmHitResolver",
-	"Humanoid:TakeDamage",
-	".Touched:Connect",
-	"Raycast(",
-	"loadedRounds",
-	"reserveRounds",
-	"CadenceSeconds",
-	"ReloadDurationSeconds",
-} do
+for _, forbidden in
+	{
+		"FireServer",
+		"InvokeServer",
+		"OnServerEvent",
+		"DamageResolver",
+		"FirearmHitResolver",
+		"Humanoid:TakeDamage",
+		".Touched:Connect",
+		"Raycast(",
+		"loadedRounds",
+		"reserveRounds",
+		"CadenceSeconds",
+		"ReloadDurationSeconds",
+	}
+do
 	assertThat(not string.find(presenter, forbidden, 1, true), "tracer presenter must not contain " .. forbidden)
 end
 
@@ -78,4 +98,4 @@ assertThat(
 	"roadmap must not leave tracer policy listed as pending"
 )
 
-print("HitConfirmedTracerSourceAudit: damage gating, muzzle origin, bounded cleanup, and authority checks passed")
+print("HitConfirmedTracerSourceAudit: damage gating, per-loadout bounds, muzzle origin, cleanup, and authority passed")
