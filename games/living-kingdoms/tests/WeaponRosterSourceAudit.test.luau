@@ -14,7 +14,10 @@ local serverInit = fs.readFile("games/living-kingdoms/src/server/init.server.lua
 
 assert(contains(runtime, "WeaponLoadoutService.read(player)"), "runtime must derive locked loadout from server service")
 assert(contains(runtime, 'assignment.selectionStateId ~= "Locked"'), "combat switch must wait for lock")
-assert(contains(runtime, "FirearmConfig.get(assignment.weaponId)"), "runtime must resolve server configuration")
+assert(
+	contains(runtime, "resolveWeaponDefinition(assignment.weaponId)"),
+	"runtime must resolve the server-selected weapon through configured definitions"
+)
 assert(contains(service, "selectionIntentRemote.OnServerEvent"), "selection must have one bounded server intent")
 assert(contains(service, "MissionDirectorService.read()"), "server must own insertion timing")
 assert(not contains(controller, "DamagePerHit ="), "client must not submit weapon damage")
