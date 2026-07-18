@@ -100,10 +100,40 @@ local function ensureClassNetwork()
 	end
 end
 
+local function ensureProgressionNetwork()
+	local existingNetwork = ReplicatedStorage:FindFirstChild("ProgressionNetwork")
+	local network: Folder
+	if existingNetwork == nil then
+		network = Instance.new("Folder")
+		network.Name = "ProgressionNetwork"
+		network.Parent = ReplicatedStorage
+	else
+		assert(existingNetwork:IsA("Folder"), "ProgressionNetwork must be a Folder")
+		network = existingNetwork
+	end
+	local existingState = network:FindFirstChild("State")
+	if existingState == nil then
+		local state = Instance.new("RemoteEvent")
+		state.Name = "State"
+		state.Parent = network
+	else
+		assert(existingState:IsA("RemoteEvent"), "ProgressionNetwork.State must be a RemoteEvent")
+	end
+	local existingReadState = network:FindFirstChild("ReadState")
+	if existingReadState == nil then
+		local readState = Instance.new("RemoteFunction")
+		readState.Name = "ReadState"
+		readState.Parent = network
+	else
+		assert(existingReadState:IsA("RemoteFunction"), "ProgressionNetwork.ReadState must be a RemoteFunction")
+	end
+end
+
 ensureFlashlightNetwork()
 ensureSquadPingNetwork()
 ensureMissionNetwork()
 ensureClassNetwork()
+ensureProgressionNetwork()
 
 local AmmunitionCacheService = require(script.Systems.AmmunitionCacheService)
 local AmmunitionScarcityValidationProbeService = require(script.Systems.AmmunitionScarcityValidationProbeService)
@@ -118,6 +148,7 @@ local OperativeLifeDevelopmentHarness = require(script.Systems.OperativeLifeDeve
 local OperativeLifeService = require(script.Systems.OperativeLifeService)
 local OperativeLifeRuntimeService = require(script.Systems.OperativeLifeRuntimeService)
 local OperativeReviveSessionService = require(script.Systems.OperativeReviveSessionService)
+local RunProgressionService = require(script.Systems.RunProgressionService)
 local SquadFailureService = require(script.Systems.SquadFailureService)
 local PersonalFlashlightService = require(script.Systems.PersonalFlashlightService)
 local SquadPingService = require(script.Systems.SquadPingService)
@@ -135,6 +166,7 @@ OperativeLifeDevelopmentHarness.start()
 MovementValidationSystem.start()
 MovementStateReplicationSystem.start()
 EnemyDirectorService.start()
+RunProgressionService.start()
 EnemyPresentationService.start()
 EnemyValidationProbeService.start()
 OperativeCombatRuntimeService.start()
