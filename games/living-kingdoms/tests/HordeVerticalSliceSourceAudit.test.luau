@@ -57,9 +57,11 @@ end
 
 for _, required in
 	{
-		"BaseSpawnIntervalSeconds = 7",
-		"MinimumSpawnIntervalSeconds = 2.4",
-		"MaximumSpawnCount = 16",
+		"WarmupSeconds = 12",
+		"BaseSpawnIntervalSeconds = 10",
+		"MinimumSpawnIntervalSeconds = 4",
+		"BaseSpawnCount = 3",
+		"MaximumSpawnCount = 10",
 		'Id = "horde.role.screamer"',
 		'Id = "horde.role.bloater"',
 		'Id = "horde.role.brute"',
