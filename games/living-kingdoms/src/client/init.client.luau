@@ -20,6 +20,7 @@ local LandmarkAccentPresentationController = require(script.Controllers.Landmark
 local MissionController = require(script.Controllers.MissionController)
 local MissionObjectPresentationController = require(script.Controllers.MissionObjectPresentationController)
 local RunProgressionHUDController = require(script.Controllers.RunProgressionHUDController)
+local RunUpgradeChoiceController = require(script.Controllers.RunUpgradeChoiceController)
 
 CameraController.init()
 CameraController.start()
@@ -44,6 +45,7 @@ LandmarkAccentPresentationController.start()
 MissionController.start()
 MissionObjectPresentationController.start()
 RunProgressionHUDController.start()
+RunUpgradeChoiceController.start()
 -- Mission presentation starts first; class selection then requests authoritative state.
 ClassSelectionController.start()
 ClassSilhouetteController.start()
