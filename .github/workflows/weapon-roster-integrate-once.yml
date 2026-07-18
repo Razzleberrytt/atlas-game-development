@@ -1,0 +1,84 @@
+name: Integrate weapon roster once
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: github.head_ref == 'feat/server-owned-weapon-roster-v1'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/server-owned-weapon-roster-v1
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Apply deterministic integration
+        id: patch
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 tools/weapon_roster_integration_patch.py 2>&1 | tee /tmp/weapon-roster-patch.log
+
+      - name: Upload patch diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weapon-roster-patch-log
+          path: /tmp/weapon-roster-patch.log
+          retention-days: 1
+
+      - name: Enforce patch result
+        if: steps.patch.outcome == 'failure'
+        run: exit 1
+
+      - name: Format Luau
+        run: stylua games/living-kingdoms/src games/living-kingdoms/tests
+
+      - name: Run Selene
+        run: selene games/living-kingdoms/src
+
+      - name: Run complete Lune fixture suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture_count=0
+          while IFS= read -r -d '' fixture; do
+            echo "::group::Lune fixture: $fixture"
+            lune run "$fixture"
+            echo "::endgroup::"
+            fixture_count=$((fixture_count + 1))
+          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          test "$fixture_count" -gt 0
+          echo "Executed $fixture_count fixtures."
+
+      - name: Build Rojo project
+        run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
+
+      - name: Commit validated integration and remove temporary helpers
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm tools/weapon_roster_integration_patch.py
+          rm .github/workflows/weapon-roster-integrate-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Integrate server-owned five-weapon roster"
+          git push origin HEAD:feat/server-owned-weapon-roster-v1
