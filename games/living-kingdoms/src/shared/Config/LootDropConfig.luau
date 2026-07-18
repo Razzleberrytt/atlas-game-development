@@ -63,8 +63,17 @@ for _, percent in LootDropConfig.DropRollPercentByKind do
 	totalPercent += percent
 end
 assert(totalPercent == 100, "loot probabilities must total exactly 100 percent")
-assert(LootDropConfig.Rewards.AmmunitionRounds > 0 and LootDropConfig.Rewards.AmmunitionRounds <= 24)
-assert(LootDropConfig.Rewards.HealingAmount > 0 and LootDropConfig.Rewards.HealingAmount <= 50)
-assert(LootDropConfig.Rewards.FieldIntelXp > 0 and LootDropConfig.Rewards.FieldIntelXp <= 100)
+assert(
+	LootDropConfig.Rewards.AmmunitionRounds > 0 and LootDropConfig.Rewards.AmmunitionRounds <= 24,
+	"ammunition drops require a positive bounded round grant"
+)
+assert(
+	LootDropConfig.Rewards.HealingAmount > 0 and LootDropConfig.Rewards.HealingAmount <= 50,
+	"field dressings require a positive bounded healing grant"
+)
+assert(
+	LootDropConfig.Rewards.FieldIntelXp > 0 and LootDropConfig.Rewards.FieldIntelXp <= 100,
+	"field intel requires a positive bounded run XP grant"
+)
 
 return table.freeze(LootDropConfig)
