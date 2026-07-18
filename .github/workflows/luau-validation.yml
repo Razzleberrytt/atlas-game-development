@@ -52,33 +52,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          log_file=/tmp/living-kingdoms-lune.log
-          : > "$log_file"
           fixture_count=0
           while IFS= read -r -d '' fixture; do
             echo "::group::Lune fixture: $fixture"
-            if ! lune run "$fixture" 2>&1 | tee -a "$log_file"; then
-              echo "FAILED_FIXTURE=$fixture" | tee -a "$log_file"
-              echo "::endgroup::"
-              exit 1
-            fi
+            lune run "$fixture"
             echo "::endgroup::"
             fixture_count=$((fixture_count + 1))
           done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
           if [ "$fixture_count" -eq 0 ]; then
-            echo "No Living Kingdoms fixtures were discovered." | tee -a "$log_file" >&2
+            echo "No Living Kingdoms fixtures were discovered." >&2
             exit 1
           fi
-          echo "Executed $fixture_count Living Kingdoms fixtures." | tee -a "$log_file"
-
-      - name: Upload Lune diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lune-fixture-diagnostics
-          path: /tmp/living-kingdoms-lune.log
-          if-no-files-found: ignore
-          retention-days: 1
+          echo "Executed $fixture_count Living Kingdoms fixtures."
 
       - name: Build Rojo project
         shell: bash
