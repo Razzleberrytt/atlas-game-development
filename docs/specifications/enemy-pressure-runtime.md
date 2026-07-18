@@ -37,7 +37,7 @@ No special enemy, boss, pathfinding around obstacles, enemy-versus-cover behavio
 | Fair-spawn minimum distance to any alive operative | 64 studs (inclusive) |
 | Deferred-spawn retry interval / queue bound | 2 s / 16 |
 | Population caps | 6 per operative, 24 absolute |
-| Roaming cadence by escalation level 0–3 | 12 s×2, 10 s×2, 8 s×3, 6 s×4 |
+| Roaming cadence by escalation level 0–3 | 12 s×2, 10 s×2, 8 s×2, 6 s×3 |
 | Recovery window after each authored wave | 8 s |
 | Roaming spawn ring | 68–96 studs from a squad anchor |
 | Corpse cleanup | 8 s |
