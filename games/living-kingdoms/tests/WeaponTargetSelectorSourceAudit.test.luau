@@ -17,18 +17,20 @@ local runtime = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeC
 local contracts = fs.readFile("games/living-kingdoms/src/shared/Combat/CombatContracts.luau")
 local enemyConfig = fs.readFile("games/living-kingdoms/src/shared/Config/EnemyConfig.luau")
 
-for _, token in {
-	"TargetCandidateSelector",
-	"TargetCandidateValidator",
-	"WeaponPatternConfig",
-	"WeaponPatternResolver",
-	"hasThreateningPrimary",
-	"WeaponPatternResolver.resolve",
-	"best.utilityCount <= 0",
-	"TargetCandidateSelector.select(operative, candidates)",
-	"ThreateningPatternUtility",
-	"ValidPatternUtility",
-} do
+for _, token in
+	{
+		"TargetCandidateSelector",
+		"TargetCandidateValidator",
+		"WeaponPatternConfig",
+		"WeaponPatternResolver",
+		"hasThreateningPrimary",
+		"WeaponPatternResolver.resolve",
+		"best.utilityCount <= 0",
+		"TargetCandidateSelector.select(operative, candidates)",
+		"ThreateningPatternUtility",
+		"ValidPatternUtility",
+	}
+do
 	assertThat(contains(selector, token), "weapon-aware selector missing " .. token)
 end
 
@@ -47,20 +49,22 @@ assertThat(
 	"valid primary evaluation must remain bounded by the existing LOS budget"
 )
 
-for _, forbidden in {
-	"Workspace:Raycast",
-	"FireServer",
-	"FireClient",
-	"FireAllClients",
-	"RemoteEvent",
-	"RemoteFunction",
-	"DamageResolver",
-	"commitHealthState",
-	"loadedRounds -=",
-	"TakeDamage",
-	"task.delay",
-	"task.spawn",
-} do
+for _, forbidden in
+	{
+		"Workspace:Raycast",
+		"FireServer",
+		"FireClient",
+		"FireAllClients",
+		"RemoteEvent",
+		"RemoteFunction",
+		"DamageResolver",
+		"commitHealthState",
+		"loadedRounds -=",
+		"TakeDamage",
+		"task.delay",
+		"task.spawn",
+	}
+do
 	assertThat(not contains(selector, forbidden), "selector cannot own side effects: " .. forbidden)
 end
 

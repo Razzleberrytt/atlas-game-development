@@ -287,7 +287,7 @@ assertSelected(
 
 local noPattern = {
 	candidate("hostile.far", 20, 0),
-	candidate("hostile.close", 6, 0),
+	candidate("hostile.close", 0, 6),
 }
 assertSelected(
 	selector.select(operative("weapon.light-machine-gun"), noPattern),
@@ -309,6 +309,8 @@ local invalidPatternPrimary = {
 	candidate("hostile.invalid-secondary-two", 25, -1),
 }
 invalidPatternPrimary[2].hasLineOfSight = false
+invalidPatternPrimary[3].hasLineOfSight = false
+invalidPatternPrimary[4].hasLineOfSight = false
 assertSelected(
 	selector.select(operative("weapon.breach-shotgun"), invalidPatternPrimary),
 	"hostile.valid-close",

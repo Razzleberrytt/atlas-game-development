@@ -2,7 +2,7 @@
 
 --[[
 	P5-0106 production automatic-combat owner. Composes the existing pure P2
-	pipeline — TargetCandidateSelector, AutomaticFireResolver,
+	pipeline — WeaponTargetSelector, AutomaticFireResolver,
 	FirearmHitResolver, DamageResolver, ReloadResolver — against
 	EnemyDirectorService-owned enemies for every operative, everywhere (not
 	only in Studio). It replaces the LK-0207 development harness as the
@@ -40,7 +40,7 @@ local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 local FirearmHitResolver = require(script.Parent.FirearmHitResolver)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local ReloadResolver = require(script.Parent.ReloadResolver)
-local TargetCandidateSelector = require(script.Parent.TargetCandidateSelector)
+local WeaponTargetSelector = require(script.Parent.WeaponTargetSelector)
 local WeaponPatternResolver = require(script.Parent.WeaponPatternResolver)
 local weaponLoadoutModule = script.Parent.WeaponLoadoutService
 local WeaponLoadoutService = if weaponLoadoutModule == nil
@@ -579,7 +579,7 @@ local function evaluatePlayer(player: Player, playerState: PlayerCombatState, no
 		combatStateId = playerState.operativeState.combatStateId,
 		weaponReadiness = playerState.weaponState,
 	}
-	local selectedTarget = TargetCandidateSelector.select(targetingState, candidates)
+	local selectedTarget = WeaponTargetSelector.select(targetingState, candidates)
 	local targetEntityId = if selectedTarget == nil then nil else selectedTarget.targetEntityId
 	discloseTarget(player, playerState, targetEntityId, nowTimestamp)
 	local fireResolution = AutomaticFireResolver.resolve({
