@@ -1,14 +1,45 @@
 --!strict
 
 --[[
-	HROI-0105 bounded run-only Field XP configuration. Field XP is shared by the
-	current squad, awarded only from server-observed authoritative enemy deaths,
-	and reset whenever the server starts a new operation session. No permanent
-	account progression is represented here.
+	HROI-0105 bounded run-only Field XP and squad-upgrade configuration. Field
+	XP is shared, upgrade offers are generated and validated by the server, and
+	all stacks reset whenever the server starts a new operation session. No
+	permanent account progression or monetized power is represented here.
 ]]
 
+local UpgradeDefinitions = table.freeze({
+	table.freeze({
+		Id = "upgrade.overpressure_rounds",
+		Name = "OVERPRESSURE ROUNDS",
+		Description = "+20% firearm damage per stack",
+		MaximumStacks = 4,
+		DamageMultiplierPerStack = 0.2,
+	}),
+	table.freeze({
+		Id = "upgrade.hair_trigger",
+		Name = "HAIR TRIGGER",
+		Description = "+12% automatic fire rate per stack",
+		MaximumStacks = 4,
+		CadenceReductionPerStack = 0.12,
+	}),
+	table.freeze({
+		Id = "upgrade.echo_chamber",
+		Name = "ECHO CHAMBER",
+		Description = "15% chance each shot consumes no ammunition per stack",
+		MaximumStacks = 3,
+		AmmoConservationChancePerStack = 0.15,
+	}),
+	table.freeze({
+		Id = "upgrade.cull_protocol",
+		Name = "CULL PROTOCOL",
+		Description = "+35% damage to enemies at 30 health or less per stack",
+		MaximumStacks = 3,
+		CullDamageMultiplierPerStack = 0.35,
+	}),
+})
+
 local RunProgressionConfig = {
-	Version = "HROI-0105-v1-field-xp",
+	Version = "HROI-0105-v2-squad-upgrades",
 	FieldXpPerConfirmedEnemyDeath = 20,
 	BaseXpToLevel = 100,
 	XpGrowthPerLevel = 1.3,
@@ -16,6 +47,13 @@ local RunProgressionConfig = {
 	EnemyScanIntervalSeconds = 0.1,
 	MaximumTrackedEnemyModels = 64,
 	GainDisplaySeconds = 1.2,
+	UpgradeChoiceCount = 3,
+	UpgradeRequestCooldownSeconds = 0.25,
+	MinimumCadenceMultiplier = 0.55,
+	MaximumAmmoConservationChance = 0.45,
+	CullHealthThreshold = 30,
+	MaximumDamageMultiplier = 3,
+	UpgradeDefinitions = UpgradeDefinitions,
 }
 
 assert(
@@ -44,5 +82,51 @@ assert(
 	RunProgressionConfig.GainDisplaySeconds > 0 and RunProgressionConfig.GainDisplaySeconds <= 2,
 	"Field XP gain feedback must remain brief"
 )
+assert(
+	RunProgressionConfig.UpgradeChoiceCount == 3
+		and RunProgressionConfig.UpgradeChoiceCount < #RunProgressionConfig.UpgradeDefinitions,
+	"the first upgrade pool must offer three choices from a larger bounded pool"
+)
+assert(
+	RunProgressionConfig.UpgradeRequestCooldownSeconds >= 0.1
+		and RunProgressionConfig.UpgradeRequestCooldownSeconds <= 1,
+	"upgrade requests require a short server-owned throttle"
+)
+assert(
+	RunProgressionConfig.MinimumCadenceMultiplier >= 0.4 and RunProgressionConfig.MinimumCadenceMultiplier <= 1,
+	"fire-rate upgrades require a bounded cadence floor"
+)
+assert(
+	RunProgressionConfig.MaximumAmmoConservationChance >= 0
+		and RunProgressionConfig.MaximumAmmoConservationChance <= 0.5,
+	"ammo conservation must preserve ammunition pressure"
+)
+assert(
+	RunProgressionConfig.CullHealthThreshold > 0 and RunProgressionConfig.CullHealthThreshold <= 60,
+	"cull protocol requires a bounded wounded-enemy threshold"
+)
+assert(
+	RunProgressionConfig.MaximumDamageMultiplier >= 1 and RunProgressionConfig.MaximumDamageMultiplier <= 3,
+	"run damage requires a strict multiplier ceiling"
+)
+
+local seenUpgradeIds = {}
+for _, definition in RunProgressionConfig.UpgradeDefinitions do
+	assert(type(definition.Id) == "string" and definition.Id ~= "", "upgrade ID must be non-empty")
+	assert(seenUpgradeIds[definition.Id] == nil, "upgrade IDs must be unique")
+	seenUpgradeIds[definition.Id] = true
+	assert(type(definition.Name) == "string" and definition.Name ~= "", "upgrade name must be non-empty")
+	assert(
+		type(definition.Description) == "string" and definition.Description ~= "",
+		"upgrade description must be non-empty"
+	)
+	assert(
+		type(definition.MaximumStacks) == "number"
+			and definition.MaximumStacks % 1 == 0
+			and definition.MaximumStacks >= 1
+			and definition.MaximumStacks <= 4,
+		"upgrade stack cap must be an integer from one through four"
+	)
+end
 
 return table.freeze(RunProgressionConfig)

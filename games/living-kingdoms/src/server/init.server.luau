@@ -111,13 +111,15 @@ local function ensureProgressionNetwork()
 		assert(existingNetwork:IsA("Folder"), "ProgressionNetwork must be a Folder")
 		network = existingNetwork
 	end
-	local existingState = network:FindFirstChild("State")
-	if existingState == nil then
-		local state = Instance.new("RemoteEvent")
-		state.Name = "State"
-		state.Parent = network
-	else
-		assert(existingState:IsA("RemoteEvent"), "ProgressionNetwork.State must be a RemoteEvent")
+	for _, remoteName in { "State", "ChooseUpgrade" } do
+		local existingRemote = network:FindFirstChild(remoteName)
+		if existingRemote == nil then
+			local remote = Instance.new("RemoteEvent")
+			remote.Name = remoteName
+			remote.Parent = network
+		else
+			assert(existingRemote:IsA("RemoteEvent"), "ProgressionNetwork." .. remoteName .. " must be a RemoteEvent")
+		end
 	end
 	local existingReadState = network:FindFirstChild("ReadState")
 	if existingReadState == nil then

@@ -1,10 +1,10 @@
 --!strict
 
 --[[
-	HROI-0105 read-only Field XP HUD. The controller renders only the server's
-	monotonic progression snapshot and sends no reward, XP, kill, or level input.
-	One read-only RemoteFunction call recovers initial state; later updates arrive
-	through the server-to-client State event.
+	HROI-0105 Field XP and squad-upgrade HUD. The controller renders only the
+	server's monotonic progression snapshot. Its sole mutation request is one
+	upgrade ID from the current server-authored offer; the server validates the
+	offer, stack cap, request shape, and winner before applying any modifier.
 ]]
 
 local Players = game:GetService("Players")
@@ -26,18 +26,32 @@ local levelLabel: TextLabel? = nil
 local xpLabel: TextLabel? = nil
 local barFill: Frame? = nil
 local gainLabel: TextLabel? = nil
+local choiceFrame: Frame? = nil
+local choiceButtons: { TextButton } = {}
+local choiceButtonConnections: { RBXScriptConnection } = {}
+local buttonUpgradeIds: { [number]: string } = {}
 local lastRevision = -1
 local lastGainSequence = 0
+local lastSelectionSequence = 0
 local gainExpiresAtServerTimestamp = 0
 
 local progressionNetwork = ReplicatedStorage:WaitForChild("ProgressionNetwork")
 local stateRemote = progressionNetwork:WaitForChild("State") :: RemoteEvent
 local readStateRemote = progressionNetwork:WaitForChild("ReadState") :: RemoteFunction
+local chooseUpgradeRemote = progressionNetwork:WaitForChild("ChooseUpgrade") :: RemoteEvent
 
 local function addCorner(parent: Instance, radius: number)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius)
 	corner.Parent = parent
+end
+
+local function addStroke(parent: Instance, color: Color3, transparency: number, thickness: number)
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color
+	stroke.Transparency = transparency
+	stroke.Thickness = thickness
+	stroke.Parent = parent
 end
 
 local function makeTextLabel(parent: Instance, name: string): TextLabel
@@ -51,6 +65,66 @@ local function makeTextLabel(parent: Instance, name: string): TextLabel
 	label.TextScaled = true
 	label.Parent = parent
 	return label
+end
+
+local function createChoicePanel(gui: ScreenGui)
+	local panel = Instance.new("Frame")
+	panel.Name = "UpgradeChoices"
+	panel.AnchorPoint = Vector2.new(0.5, 0.5)
+	panel.Position = UDim2.fromScale(0.5, 0.53)
+	panel.Size = UDim2.fromOffset(690, 270)
+	panel.BackgroundColor3 = Color3.fromRGB(13, 16, 17)
+	panel.BackgroundTransparency = 0.04
+	panel.BorderSizePixel = 0
+	panel.Visible = false
+	panel.Parent = gui
+	addCorner(panel, 14)
+	addStroke(panel, Color3.fromRGB(185, 133, 45), 0.08, 2)
+
+	local title = makeTextLabel(panel, "Title")
+	title.Position = UDim2.fromOffset(24, 15)
+	title.Size = UDim2.new(1, -48, 0, 34)
+	title.Text = "FIELD LEVEL UP — CHOOSE A SQUAD UPGRADE"
+	title.TextColor3 = Color3.fromRGB(255, 207, 90)
+
+	local subtitle = makeTextLabel(panel, "Subtitle")
+	subtitle.Position = UDim2.fromOffset(24, 51)
+	subtitle.Size = UDim2.new(1, -48, 0, 22)
+	subtitle.Font = Enum.Font.GothamMedium
+	subtitle.Text = "The first valid squad selection locks in for this run."
+	subtitle.TextColor3 = Color3.fromRGB(176, 182, 176)
+
+	for index = 1, RunProgressionConfig.UpgradeChoiceCount do
+		local button = Instance.new("TextButton")
+		button.Name = "Choice" .. tostring(index)
+		button.Position = UDim2.fromOffset(22 + (index - 1) * 222, 88)
+		button.Size = UDim2.fromOffset(202, 158)
+		button.BackgroundColor3 = Color3.fromRGB(27, 31, 31)
+		button.AutoButtonColor = true
+		button.BorderSizePixel = 0
+		button.Font = Enum.Font.GothamBold
+		button.TextColor3 = Color3.fromRGB(239, 238, 224)
+		button.TextSize = 17
+		button.TextWrapped = true
+		button.TextYAlignment = Enum.TextYAlignment.Center
+		button.Text = ""
+		button.Visible = false
+		button.Parent = panel
+		addCorner(button, 10)
+		addStroke(button, Color3.fromRGB(116, 96, 57), 0.18, 1.5)
+		table.insert(choiceButtons, button)
+		table.insert(
+			choiceButtonConnections,
+			button.Activated:Connect(function()
+				local upgradeId = buttonUpgradeIds[index]
+				if upgradeId ~= nil and upgradeId ~= "" then
+					chooseUpgradeRemote:FireServer(upgradeId)
+				end
+			end)
+		)
+	end
+
+	choiceFrame = panel
 end
 
 local function createGui()
@@ -78,12 +152,7 @@ local function createGui()
 	container.BorderSizePixel = 0
 	container.Parent = gui
 	addCorner(container, 10)
-
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(131, 105, 54)
-	stroke.Transparency = 0.18
-	stroke.Thickness = 1.5
-	stroke.Parent = container
+	addStroke(container, Color3.fromRGB(131, 105, 54), 0.18, 1.5)
 
 	local level = makeTextLabel(container, "Level")
 	level.Position = UDim2.fromOffset(14, 7)
@@ -120,12 +189,13 @@ local function createGui()
 	local gain = makeTextLabel(gui, "Gain")
 	gain.AnchorPoint = Vector2.new(0.5, 1)
 	gain.Position = UDim2.new(0.5, 0, 1, -92)
-	gain.Size = UDim2.fromOffset(350, 34)
+	gain.Size = UDim2.fromOffset(520, 34)
 	gain.TextColor3 = Color3.fromRGB(255, 207, 90)
 	gain.TextTransparency = 1
 	gain.TextStrokeTransparency = 1
 	gain.Text = ""
 
+	createChoicePanel(gui)
 	screenGui = gui
 	levelLabel = level
 	xpLabel = progressText
@@ -135,6 +205,65 @@ end
 
 local function isFiniteNumber(value: unknown): boolean
 	return type(value) == "number" and value == value and value ~= math.huge and value ~= -math.huge
+end
+
+local function showGain(text: string)
+	local gain = gainLabel
+	if gain == nil then
+		return
+	end
+	gain.Text = text
+	gain.TextTransparency = 0
+	gain.TextStrokeTransparency = 0.45
+	gainExpiresAtServerTimestamp = Workspace:GetServerTimeNow() + RunProgressionConfig.GainDisplaySeconds
+end
+
+local function updateChoicePanel(pendingChoices: unknown)
+	local panel = choiceFrame
+	if panel == nil then
+		return
+	end
+	table.clear(buttonUpgradeIds)
+	for _, button in choiceButtons do
+		button.Visible = false
+		button.Text = ""
+	end
+	if type(pendingChoices) ~= "table" then
+		panel.Visible = false
+		return
+	end
+
+	local validChoiceCount = 0
+	for index = 1, math.min(#pendingChoices, RunProgressionConfig.UpgradeChoiceCount) do
+		local choice = pendingChoices[index]
+		if type(choice) ~= "table" then
+			continue
+		end
+		local id = choice.id
+		local name = choice.name
+		local description = choice.description
+		local stacks = choice.stacks
+		local maximumStacks = choice.maximumStacks
+		if
+			type(id) ~= "string"
+			or type(name) ~= "string"
+			or type(description) ~= "string"
+			or not isFiniteNumber(stacks)
+			or not isFiniteNumber(maximumStacks)
+		then
+			continue
+		end
+		local button = choiceButtons[index]
+		if button == nil then
+			continue
+		end
+		validChoiceCount += 1
+		buttonUpgradeIds[index] = id
+		button.Text =
+			string.format("%s\n\n%s\n\nSTACK %d → %d / %d", name, description, stacks, stacks + 1, maximumStacks)
+		button.Visible = true
+	end
+	panel.Visible = validChoiceCount > 0
 end
 
 local function applySnapshot(snapshot: unknown)
@@ -148,6 +277,9 @@ local function applySnapshot(snapshot: unknown)
 	local gainAmount = snapshot.lastGainAmount
 	local gainSequence = snapshot.lastGainSequence
 	local levelsGained = snapshot.levelsGainedLastAward
+	local selectionSequence = snapshot.selectionSequence
+	local lastSelectedUpgradeName = snapshot.lastSelectedUpgradeName
+	local lastSelectedUpgradeStack = snapshot.lastSelectedUpgradeStack
 	if
 		not isFiniteNumber(revision)
 		or revision <= lastRevision
@@ -157,6 +289,9 @@ local function applySnapshot(snapshot: unknown)
 		or not isFiniteNumber(gainAmount)
 		or not isFiniteNumber(gainSequence)
 		or not isFiniteNumber(levelsGained)
+		or not isFiniteNumber(selectionSequence)
+		or type(lastSelectedUpgradeName) ~= "string"
+		or not isFiniteNumber(lastSelectedUpgradeStack)
 	then
 		return
 	end
@@ -177,17 +312,17 @@ local function applySnapshot(snapshot: unknown)
 		fill.Size = UDim2.fromScale(math.clamp(xp / xpForNextLevel, 0, 1), 1)
 	end
 
-	if gainSequence > lastGainSequence and gainAmount > 0 then
+	updateChoicePanel(snapshot.pendingChoices)
+	if selectionSequence > lastSelectionSequence and lastSelectedUpgradeName ~= "" then
+		lastSelectionSequence = selectionSequence
+		showGain(string.format("SQUAD UPGRADE: %s  •  STACK %d", lastSelectedUpgradeName, lastSelectedUpgradeStack))
+	elseif gainSequence > lastGainSequence and gainAmount > 0 then
 		lastGainSequence = gainSequence
-		local gain = gainLabel
-		if gain ~= nil then
-			gain.Text = if levelsGained > 0
+		showGain(
+			if levelsGained > 0
 				then string.format("LEVEL UP!  FIELD LEVEL %d", level)
 				else string.format("+%d FIELD XP", gainAmount)
-			gain.TextTransparency = 0
-			gain.TextStrokeTransparency = 0.45
-			gainExpiresAtServerTimestamp = Workspace:GetServerTimeNow() + RunProgressionConfig.GainDisplaySeconds
-		end
+		)
 	end
 end
 
@@ -198,7 +333,11 @@ function RunProgressionHUDController.start()
 	started = true
 	lastRevision = -1
 	lastGainSequence = 0
+	lastSelectionSequence = 0
 	gainExpiresAtServerTimestamp = 0
+	table.clear(choiceButtons)
+	table.clear(choiceButtonConnections)
+	table.clear(buttonUpgradeIds)
 	createGui()
 
 	stateConnection = stateRemote.OnClientEvent:Connect(applySnapshot)
@@ -242,6 +381,12 @@ function RunProgressionHUDController.stop()
 		renderConnection:Disconnect()
 		renderConnection = nil
 	end
+	for _, connection in choiceButtonConnections do
+		connection:Disconnect()
+	end
+	table.clear(choiceButtonConnections)
+	table.clear(choiceButtons)
+	table.clear(buttonUpgradeIds)
 	if screenGui ~= nil then
 		screenGui:Destroy()
 		screenGui = nil
@@ -250,8 +395,10 @@ function RunProgressionHUDController.stop()
 	xpLabel = nil
 	barFill = nil
 	gainLabel = nil
+	choiceFrame = nil
 	lastRevision = -1
 	lastGainSequence = 0
+	lastSelectionSequence = 0
 	gainExpiresAtServerTimestamp = 0
 end
 
