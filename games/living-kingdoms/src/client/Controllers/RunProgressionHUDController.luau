@@ -113,12 +113,15 @@ local function createChoicePanel(gui: ScreenGui)
 		addCorner(button, 10)
 		addStroke(button, Color3.fromRGB(116, 96, 57), 0.18, 1.5)
 		table.insert(choiceButtons, button)
-		table.insert(choiceButtonConnections, button.Activated:Connect(function()
-			local upgradeId = buttonUpgradeIds[index]
-			if upgradeId ~= nil and upgradeId ~= "" then
-				chooseUpgradeRemote:FireServer(upgradeId)
-			end
-		end))
+		table.insert(
+			choiceButtonConnections,
+			button.Activated:Connect(function()
+				local upgradeId = buttonUpgradeIds[index]
+				if upgradeId ~= nil and upgradeId ~= "" then
+					chooseUpgradeRemote:FireServer(upgradeId)
+				end
+			end)
+		)
 	end
 
 	choiceFrame = panel
@@ -256,14 +259,8 @@ local function updateChoicePanel(pendingChoices: unknown)
 		end
 		validChoiceCount += 1
 		buttonUpgradeIds[index] = id
-		button.Text = string.format(
-			"%s\n\n%s\n\nSTACK %d → %d / %d",
-			name,
-			description,
-			stacks,
-			stacks + 1,
-			maximumStacks
-		)
+		button.Text =
+			string.format("%s\n\n%s\n\nSTACK %d → %d / %d", name, description, stacks, stacks + 1, maximumStacks)
 		button.Visible = true
 	end
 	panel.Visible = validChoiceCount > 0
