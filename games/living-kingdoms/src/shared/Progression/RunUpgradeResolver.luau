@@ -7,7 +7,7 @@ export type UpgradeStacks = { [string]: number }
 export type CombatModifiers = {
 	damageMultiplier: number,
 	cadenceMultiplier: number,
-	reloadDurationMultiplier: number,
+	ammoConservationChance: number,
 	cullDamageMultiplier: number,
 	cullHealthThreshold: number,
 }
@@ -152,7 +152,7 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 		return table.freeze({
 			damageMultiplier = 1,
 			cadenceMultiplier = 1,
-			reloadDurationMultiplier = 1,
+			ammoConservationChance = 0,
 			cullDamageMultiplier = 1,
 			cullHealthThreshold = RunProgressionConfig.CullHealthThreshold,
 		})
@@ -160,7 +160,7 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 
 	local damageMultiplier = 1
 	local cadenceMultiplier = 1
-	local reloadDurationMultiplier = 1
+	local ammoConservationChance = 0
 	local cullDamageMultiplier = 1
 	for _, definition in RunProgressionConfig.UpgradeDefinitions do
 		local stackCount = stacks[definition.Id] or 0
@@ -170,8 +170,8 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 		if definition.CadenceReductionPerStack ~= nil then
 			cadenceMultiplier -= stackCount * definition.CadenceReductionPerStack
 		end
-		if definition.ReloadReductionPerStack ~= nil then
-			reloadDurationMultiplier -= stackCount * definition.ReloadReductionPerStack
+		if definition.AmmoConservationChancePerStack ~= nil then
+			ammoConservationChance += stackCount * definition.AmmoConservationChancePerStack
 		end
 		if definition.CullDamageMultiplierPerStack ~= nil then
 			cullDamageMultiplier += stackCount * definition.CullDamageMultiplierPerStack
@@ -181,9 +181,10 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 	return table.freeze({
 		damageMultiplier = math.clamp(damageMultiplier, 1, RunProgressionConfig.MaximumDamageMultiplier),
 		cadenceMultiplier = math.max(RunProgressionConfig.MinimumCadenceMultiplier, cadenceMultiplier),
-		reloadDurationMultiplier = math.max(
-			RunProgressionConfig.MinimumReloadDurationMultiplier,
-			reloadDurationMultiplier
+		ammoConservationChance = math.clamp(
+			ammoConservationChance,
+			0,
+			RunProgressionConfig.MaximumAmmoConservationChance
 		),
 		cullDamageMultiplier = math.clamp(cullDamageMultiplier, 1, RunProgressionConfig.MaximumDamageMultiplier),
 		cullHealthThreshold = RunProgressionConfig.CullHealthThreshold,
