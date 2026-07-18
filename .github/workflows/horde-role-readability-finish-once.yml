@@ -1,0 +1,92 @@
+name: Finish horde role readability once
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: github.head_ref == 'feat/horde-role-readability-v1'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/horde-role-readability-v1
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Reproduce hardened source
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          source = Path('.github/workflows/horde-role-readability-replication-once.yml').read_text()
+          marker = '      - name: Harden replication-safe role composition\n'
+          section = source.split(marker, 1)[1].split('\n\n      - name: Format focused Luau', 1)[0]
+          script = section.split('        run: |\n', 1)[1]
+          Path('/tmp/reproduce.sh').write_text(textwrap.dedent(script))
+          PY
+          bash /tmp/reproduce.sh
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('games/living-kingdoms/src/client/Controllers/EnemyPresentationController.luau')
+          source = path.read_text()
+          old = 'local STRIDES_PER_SECOND = 3\n'
+          if source.count(old) != 1:
+              raise RuntimeError('expected one legacy stride constant')
+          path.write_text(source.replace(old, '', 1))
+          PY
+
+      - name: Format focused Luau
+        run: |
+          stylua \
+            games/living-kingdoms/src/server/Systems/HordeRolePresentationService.luau \
+            games/living-kingdoms/src/server/Systems/EnemyPresentationService.luau \
+            games/living-kingdoms/src/client/Controllers/EnemyPresentationController.luau \
+            games/living-kingdoms/tests/HordeRolePresentationSourceAudit.test.luau
+
+      - name: Run Selene
+        run: selene games/living-kingdoms/src
+
+      - name: Run complete Lune fixture suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture_count=0
+          while IFS= read -r -d '' fixture; do
+            lune run "$fixture"
+            fixture_count=$((fixture_count + 1))
+          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          test "$fixture_count" -gt 0
+          echo "Executed $fixture_count fixtures."
+
+      - name: Build Rojo project
+        run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
+
+      - name: Commit validated final source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/horde-role-readability-replication-once.yml
+          rm .github/workflows/horde-role-readability-selene-diagnostic.yml
+          rm .github/workflows/horde-role-readability-finish-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Harden horde role presentation replication"
+          git push origin HEAD:feat/horde-role-readability-v1
