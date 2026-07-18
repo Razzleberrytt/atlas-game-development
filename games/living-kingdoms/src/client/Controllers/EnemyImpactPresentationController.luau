@@ -45,7 +45,7 @@ local descendantAddedConnection: RBXScriptConnection? = nil
 local childRemovedConnection: RBXScriptConnection? = nil
 local renderConnection: RBXScriptConnection? = nil
 
-local type Record = {
+type Record = {
 	root: BasePart,
 	effectAttachment: Attachment,
 	hitEmitter: ParticleEmitter,
@@ -303,7 +303,7 @@ function EnemyImpactPresentationController.start()
 	end)
 	renderConnection = RunService.RenderStepped:Connect(function()
 		local serverTimestamp = Workspace:GetServerTimeNow()
-		local staleModels = {}
+		local staleModels: { Model } = {}
 		for model, record in records do
 			if model.Parent == nil or record.root.Parent == nil then
 				table.insert(staleModels, model)
@@ -334,7 +334,7 @@ function EnemyImpactPresentationController.stop()
 		renderConnection:Disconnect()
 		renderConnection = nil
 	end
-	local trackedModels = {}
+	local trackedModels: { Model } = {}
 	for model in records do
 		table.insert(trackedModels, model)
 	end
