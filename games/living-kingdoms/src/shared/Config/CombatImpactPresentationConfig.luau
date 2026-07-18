@@ -31,8 +31,7 @@ assert(
 	"impact effects require a bounded camera distance"
 )
 assert(
-	CombatImpactPresentationConfig.HitParticleCount > 0
-		and CombatImpactPresentationConfig.HitParticleCount <= 12,
+	CombatImpactPresentationConfig.HitParticleCount > 0 and CombatImpactPresentationConfig.HitParticleCount <= 12,
 	"hit bursts must remain small and readable"
 )
 assert(
@@ -41,8 +40,7 @@ assert(
 	"kill bursts must be stronger than hit bursts while remaining bounded"
 )
 assert(
-	CombatImpactPresentationConfig.HitFlashSeconds > 0
-		and CombatImpactPresentationConfig.HitFlashSeconds <= 0.15,
+	CombatImpactPresentationConfig.HitFlashSeconds > 0 and CombatImpactPresentationConfig.HitFlashSeconds <= 0.15,
 	"hit flash must remain brief"
 )
 assert(
