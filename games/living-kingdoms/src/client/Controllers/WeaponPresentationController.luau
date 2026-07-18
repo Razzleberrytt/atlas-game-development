@@ -354,7 +354,8 @@ local function playShot(
 	shotId: string,
 	operativeEntityId: string,
 	didApplyDamage: boolean,
-	impactWorldPosition: Vector3?
+	impactWorldPosition: Vector3?,
+	secondaryImpactWorldPositions: { Vector3 }
 )
 	if not rememberShot(shotId) then
 		return
@@ -367,7 +368,7 @@ local function playShot(
 	if rig == nil then
 		return
 	end
-	WeaponShotEffectPresenter.present(rig, shotId, didApplyDamage, impactWorldPosition)
+	WeaponShotEffectPresenter.present(rig, shotId, didApplyDamage, impactWorldPosition, secondaryImpactWorldPositions)
 	if shooter ~= Players.LocalPlayer then
 		RemoteWeaponMotionPresenter.presentShot(shooter, rig)
 		return
@@ -535,6 +536,29 @@ local function presentAmmunitionPayload(payload: any): boolean
 	return true
 end
 
+local function readSecondaryImpactPositions(value: unknown): { Vector3 }?
+	if value == nil then
+		return {}
+	end
+	if type(value) ~= "table" or #value > 3 then
+		return nil
+	end
+	local positions = {}
+	for _, impact in value :: any do
+		if
+			type(impact) ~= "table"
+			or not isNonEmptyString(impact.targetEntityId)
+			or typeof(impact.impactWorldPosition) ~= "Vector3"
+			or not isWholeNonnegative(impact.damageAmount)
+			or impact.damageAmount <= 0
+		then
+			return nil
+		end
+		table.insert(positions, impact.impactWorldPosition)
+	end
+	return positions
+end
+
 local function onPresentationMessage(message: unknown)
 	if type(message) ~= "table" then
 		return
@@ -542,6 +566,7 @@ local function onPresentationMessage(message: unknown)
 	local payload = message :: any
 	local kindId = payload.kindId
 	if kindId == CombatContracts.PresentationMessageKindIds.ShotFired then
+		local secondaryImpactWorldPositions = readSecondaryImpactPositions(payload.secondaryImpacts)
 		if
 			isNonEmptyString(payload.shotId)
 			and isNonEmptyString(payload.operativeEntityId)
@@ -550,8 +575,15 @@ local function onPresentationMessage(message: unknown)
 			and type(payload.didApplyDamage) == "boolean"
 			and ((payload.didApplyDamage and typeof(payload.impactWorldPosition) == "Vector3") or (not payload.didApplyDamage and payload.impactWorldPosition == nil))
 			and isFiniteNumber(payload.serverTimestamp)
+			and secondaryImpactWorldPositions ~= nil
 		then
-			playShot(payload.shotId, payload.operativeEntityId, payload.didApplyDamage, payload.impactWorldPosition)
+			playShot(
+				payload.shotId,
+				payload.operativeEntityId,
+				payload.didApplyDamage,
+				payload.impactWorldPosition,
+				secondaryImpactWorldPositions
+			)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadStarted then
 		if

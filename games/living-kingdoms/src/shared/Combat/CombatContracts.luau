@@ -249,6 +249,12 @@ export type TargetClearedPresentationMessage = {
 	serverTimestamp: number,
 }
 
+export type SecondaryShotImpactPresentation = {
+	targetEntityId: CombatEntityId,
+	impactWorldPosition: Vector3,
+	damageAmount: number,
+}
+
 export type ShotFiredPresentationMessage = {
 	kindId: "ShotFired",
 	shotId: ShotId,
@@ -258,6 +264,7 @@ export type ShotFiredPresentationMessage = {
 	didApplyDamage: boolean,
 	impactWorldPosition: Vector3?,
 	damageAmount: number?,
+	secondaryImpacts: { SecondaryShotImpactPresentation }?,
 	serverTimestamp: number,
 }
 

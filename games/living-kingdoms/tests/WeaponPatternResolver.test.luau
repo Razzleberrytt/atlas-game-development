@@ -91,8 +91,14 @@ local origin = position(0, 0)
 local primary = fact("enemy.primary", 10, 0)
 
 assert(#resolver.resolve("weapon.lmg", origin, primary.entityId, { primary }) == 0, "single target must not cleave")
-assert(#resolver.resolve("weapon.unknown", origin, primary.entityId, { primary }) == 0, "unknown weapon must fail closed")
-assert(#resolver.resolve("weapon.shotgun", origin, "enemy.missing", { primary }) == 0, "missing primary must fail closed")
+assert(
+	#resolver.resolve("weapon.unknown", origin, primary.entityId, { primary }) == 0,
+	"unknown weapon must fail closed"
+)
+assert(
+	#resolver.resolve("weapon.shotgun", origin, "enemy.missing", { primary }) == 0,
+	"missing primary must fail closed"
+)
 
 local closeCenter = fact("enemy.close-center", 7, 0.5)
 local closeLeft = fact("enemy.close-left", 9, -2)
@@ -157,7 +163,10 @@ local sniperImpacts = resolver.resolve("weapon.sniper", origin, sniperPrimary.en
 	nearestBehind,
 })
 assert(#sniperImpacts == 1, "sniper must pierce at most one secondary target")
-assert(sniperImpacts[1].targetEntityId == nearestBehind.entityId, "sniper must choose nearest aligned target behind primary")
+assert(
+	sniperImpacts[1].targetEntityId == nearestBehind.entityId,
+	"sniper must choose nearest aligned target behind primary"
+)
 assert(sniperImpacts[1].damageMultiplier == 0.72, "sniper multiplier must come from server config")
 
 local immutable = pcall(function()

@@ -41,6 +41,7 @@ local FirearmHitResolver = require(script.Parent.FirearmHitResolver)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local ReloadResolver = require(script.Parent.ReloadResolver)
 local TargetCandidateSelector = require(script.Parent.TargetCandidateSelector)
+local WeaponPatternResolver = require(script.Parent.WeaponPatternResolver)
 local weaponLoadoutModule = script.Parent.WeaponLoadoutService
 local WeaponLoadoutService = if weaponLoadoutModule == nil
 	then table.freeze({
@@ -51,6 +52,7 @@ local WeaponLoadoutService = if weaponLoadoutModule == nil
 	else require(weaponLoadoutModule)
 
 type CombatEntityId = CombatContracts.CombatEntityId
+type FirearmHitResolution = CombatContracts.FirearmHitResolution
 type FirearmTargetContext = CombatContracts.FirearmTargetContext
 type OperativeReloadState = CombatContracts.OperativeReloadState
 type TargetCandidate = CombatContracts.TargetCandidate
@@ -370,6 +372,70 @@ local function broadcastReloadPresentation(
 	presentationRemote:FireAllClients(payload)
 end
 
+local function buildPatternTargetFacts(playerState: PlayerCombatState): { WeaponPatternResolver.PatternTargetFact }
+	local facts = {}
+	for _, sightedEntry in playerState.sightedByEntityId do
+		table.insert(facts, {
+			entityId = sightedEntry.fact.entityId,
+			worldPosition = sightedEntry.fact.worldPosition,
+			isAlive = sightedEntry.fact.isAlive,
+			isTargetable = true,
+			isVisible = sightedEntry.distanceStuds <= EnemyConfig.Combat.GameplayVisibilityRadiusStuds,
+			hasLineOfSight = sightedEntry.hasLineOfSight,
+		})
+	end
+	return facts
+end
+
+local function commitPatternImpacts(
+	playerState: PlayerCombatState,
+	operativePosition: Vector3,
+	primaryTargetEntityId: string,
+	primaryShotId: string,
+	nowTimestamp: number
+): { CombatContracts.SecondaryShotImpactPresentation }
+	local selectedImpacts = WeaponPatternResolver.resolve(
+		playerState.weaponState.weaponId,
+		operativePosition,
+		primaryTargetEntityId,
+		buildPatternTargetFacts(playerState)
+	)
+	local disclosedImpacts = {}
+	for index, impact in selectedImpacts do
+		local sightedEntry = playerState.sightedByEntityId[impact.targetEntityId]
+		local healthRead = EnemyDirectorService.readHealthState(impact.targetEntityId)
+		if sightedEntry == nil or healthRead == nil or not healthRead.isAlive or not sightedEntry.hasLineOfSight then
+			continue
+		end
+		local derivedShotId = string.format("%s:pattern:%d:%s", primaryShotId, index, impact.targetEntityId)
+		local hitResolution: FirearmHitResolution = {
+			shotId = derivedShotId,
+			sourceEntityId = playerState.operativeState.entityId,
+			targetEntityId = impact.targetEntityId,
+			weaponId = playerState.weaponState.weaponId,
+			didHit = true,
+			rejectionReasonId = nil,
+		}
+		local damageResolution =
+			DamageResolver.resolvePattern(hitResolution, healthRead.healthState, nowTimestamp, impact.damageMultiplier)
+		local didCommit = EnemyDirectorService.commitHealthState(
+			impact.targetEntityId,
+			healthRead.revision,
+			damageResolution.targetHealthStateAfter,
+			nowTimestamp
+		)
+		local damageEvent = damageResolution.damageEvent
+		if didCommit and damageResolution.didApplyDamage and damageEvent ~= nil then
+			table.insert(disclosedImpacts, {
+				targetEntityId = impact.targetEntityId,
+				impactWorldPosition = sightedEntry.fact.worldPosition,
+				damageAmount = damageEvent.damageAmount,
+			})
+		end
+	end
+	return disclosedImpacts
+end
+
 local function resolveAcceptedShot(
 	playerState: PlayerCombatState,
 	operativePosition: Vector3,
@@ -405,22 +471,29 @@ local function resolveAcceptedShot(
 			else CombatContracts.ShotObstructionResultIds.Blocked,
 	}, targetContext)
 	local damageResolution = DamageResolver.resolve(hitResolution, healthRead.healthState, nowTimestamp)
-	EnemyDirectorService.commitHealthState(
+	local didCommitPrimary = EnemyDirectorService.commitHealthState(
 		targetEntityId,
 		healthRead.revision,
 		damageResolution.targetHealthStateAfter,
 		nowTimestamp
 	)
-	local damageAmount = if damageResolution.damageEvent == nil then nil else damageResolution.damageEvent.damageAmount
+	local didApplyPrimaryDamage = didCommitPrimary and damageResolution.didApplyDamage
+	local damageAmount = if didApplyPrimaryDamage and damageResolution.damageEvent ~= nil
+		then damageResolution.damageEvent.damageAmount
+		else nil
+	local secondaryImpacts = if didApplyPrimaryDamage
+		then commitPatternImpacts(playerState, operativePosition, targetEntityId, shotId, nowTimestamp)
+		else {}
 	presentationRemote:FireAllClients({
 		kindId = CombatContracts.PresentationMessageKindIds.ShotFired,
 		shotId = shotId,
 		operativeEntityId = playerState.operativeState.entityId,
 		weaponId = playerState.weaponState.weaponId,
 		targetEntityId = targetEntityId,
-		didApplyDamage = damageResolution.didApplyDamage,
-		impactWorldPosition = if damageResolution.didApplyDamage then fact.worldPosition else nil,
+		didApplyDamage = didApplyPrimaryDamage,
+		impactWorldPosition = if didApplyPrimaryDamage then fact.worldPosition else nil,
 		damageAmount = damageAmount,
+		secondaryImpacts = if #secondaryImpacts > 0 then secondaryImpacts else nil,
 		serverTimestamp = nowTimestamp,
 	})
 end

@@ -23,7 +23,8 @@ type WeaponShotEffectPresenter = {
 		rig: WeaponPresentationRig,
 		shotId: string,
 		didApplyDamage: boolean,
-		impactWorldPosition: Vector3?
+		impactWorldPosition: Vector3?,
+		secondaryImpactWorldPositions: { Vector3 }
 	) -> (),
 }
 
@@ -177,7 +178,8 @@ function WeaponShotEffectPresenter.present(
 	rig: WeaponPresentationRig,
 	shotId: string,
 	didApplyDamage: boolean,
-	impactWorldPosition: Vector3?
+	impactWorldPosition: Vector3?,
+	secondaryImpactWorldPositions: { Vector3 }
 )
 	local profile = profileForRig(rig)
 	presentMuzzleFlash(rig, profile)
@@ -185,6 +187,13 @@ function WeaponShotEffectPresenter.present(
 	if didApplyDamage and impactWorldPosition ~= nil then
 		spawnDamageTracer(rig, shotId, impactWorldPosition, profile)
 		spawnDamageImpact(impactWorldPosition, profile)
+	end
+	for index, secondaryPosition in secondaryImpactWorldPositions do
+		if index > 3 then
+			break
+		end
+		spawnDamageTracer(rig, shotId .. ":pattern:" .. tostring(index), secondaryPosition, profile)
+		spawnDamageImpact(secondaryPosition, profile)
 	end
 end
 

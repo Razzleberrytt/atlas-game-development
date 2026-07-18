@@ -64,30 +64,37 @@ local contracts = fs.readFile("games/living-kingdoms/src/shared/Combat/CombatCon
 local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau")
 local presenter = fs.readFile("games/living-kingdoms/src/client/Presentation/WeaponShotEffectPresenter.luau")
 
-for _, token in {
-	"MaximumSecondaryTargets",
-	"hasLineOfSight",
-	"ConeCleave",
-	"LinePierce",
-	"table.sort",
-	"table.freeze(impacts)",
-} do
+for _, token in
+	{
+		"MaximumSecondaryTargets",
+		"hasLineOfSight",
+		"ConeCleave",
+		"LinePierce",
+		"table.sort",
+		"table.freeze(impacts)",
+	}
+do
 	assertThat(contains(resolver, token), "pattern resolver missing bounded deterministic token: " .. token)
 end
-for _, prohibited in {
-	"Workspace",
-	"Raycast(",
-	"FireServer",
-	"OnServerEvent",
-	"DamageResolver",
-	"commitHealthState",
-	"loadedRounds",
-	"math.random",
-} do
+for _, prohibited in
+	{
+		"Workspace",
+		"Raycast(",
+		"FireServer",
+		"OnServerEvent",
+		"DamageResolver",
+		"commitHealthState",
+		"loadedRounds",
+		"math.random",
+	}
+do
 	assertThat(not contains(resolver, prohibited), "pure pattern resolver must not contain " .. prohibited)
 end
 
-assertThat(contains(damage, "function DamageResolver.resolvePattern"), "damage resolver must expose a pattern-only path")
+assertThat(
+	contains(damage, "function DamageResolver.resolvePattern"),
+	"damage resolver must expose a pattern-only path"
+)
 assertThat(contains(damage, "patternMultiplier > 1"), "pattern damage cannot exceed primary scale")
 assertThat(
 	contains(damage, "local minimumDamage = if patternMultiplier == nil then configured else 1"),
@@ -97,10 +104,19 @@ assertThat(contains(runtime, "WeaponPatternResolver.resolve("), "runtime must re
 assertThat(contains(runtime, "buildPatternTargetFacts(playerState)"), "runtime must reuse bounded sight facts")
 assertThat(contains(runtime, "DamageResolver.resolvePattern("), "secondary damage must use dedicated resolver path")
 assertThat(contains(runtime, '"%s:pattern:%d:%s"'), "secondary impacts require derived unique shot identities")
-assertThat(contains(runtime, "didCommit and damageResolution.didApplyDamage"), "only committed secondary damage may disclose")
-assertThat(contains(runtime, "secondaryImpacts = if #secondaryImpacts > 0"), "shot disclosure must omit empty secondary lists")
+assertThat(
+	contains(runtime, "didCommit and damageResolution.didApplyDamage"),
+	"only committed secondary damage may disclose"
+)
+assertThat(
+	contains(runtime, "secondaryImpacts = if #secondaryImpacts > 0"),
+	"shot disclosure must omit empty secondary lists"
+)
 
-assertThat(contains(contracts, "export type SecondaryShotImpactPresentation"), "shared contract must type secondary impacts")
+assertThat(
+	contains(contracts, "export type SecondaryShotImpactPresentation"),
+	"shared contract must type secondary impacts"
+)
 assertThat(
 	contains(contracts, "secondaryImpacts: { SecondaryShotImpactPresentation }?"),
 	"secondary disclosure must remain optional"
@@ -114,13 +130,20 @@ local _, casingCalls = string.gsub(presenter, "spawnCasing%(rig, shotId, profile
 assertThat(flashCalls == 1, "one accepted trigger must create exactly one muzzle flash")
 assertThat(casingCalls == 1, "one accepted trigger must eject exactly one casing or shell")
 
-for _, prohibited in {
-	"FireServer",
-	"InvokeServer",
-	"Humanoid:TakeDamage",
-	".Touched:Connect",
-} do
-	assertThat(not contains(controller .. presenter, prohibited), "pattern presentation must remain client-local: " .. prohibited)
+for _, prohibited in
+	{
+		"FireServer",
+		"InvokeServer",
+		"Humanoid:TakeDamage",
+		".Touched:Connect",
+	}
+do
+	assertThat(
+		not contains(controller .. presenter, prohibited),
+		"pattern presentation must remain client-local: " .. prohibited
+	)
 end
 
-print("WeaponPatternSourceAudit: bounded server patterns, reduced damage path, revision commits, and one-trigger presentation passed")
+print(
+	"WeaponPatternSourceAudit: bounded server patterns, reduced damage path, revision commits, and one-trigger presentation passed"
+)
