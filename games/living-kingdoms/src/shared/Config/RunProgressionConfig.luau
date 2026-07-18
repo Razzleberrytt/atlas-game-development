@@ -30,11 +30,11 @@ local UpgradeDefinitions = table.freeze({
 		ReloadReductionPerStack = 0.15,
 	}),
 	table.freeze({
-		Id = "upgrade.night_optics",
-		Name = "NIGHT OPTICS",
-		Description = "+12 studs automatic engagement range per stack",
-		MaximumStacks = 4,
-		VisibilityRadiusBonusStudsPerStack = 12,
+		Id = "upgrade.cull_protocol",
+		Name = "CULL PROTOCOL",
+		Description = "+35% damage to enemies at 30 health or less per stack",
+		MaximumStacks = 3,
+		CullDamageMultiplierPerStack = 0.35,
 	}),
 })
 
@@ -51,7 +51,8 @@ local RunProgressionConfig = {
 	UpgradeRequestCooldownSeconds = 0.25,
 	MinimumCadenceMultiplier = 0.55,
 	MinimumReloadDurationMultiplier = 0.55,
-	MaximumVisibilityRadiusBonusStuds = 48,
+	CullHealthThreshold = 30,
+	MaximumDamageMultiplier = 3,
 	UpgradeDefinitions = UpgradeDefinitions,
 }
 
@@ -101,9 +102,12 @@ assert(
 	"reload upgrades require a bounded duration floor"
 )
 assert(
-	RunProgressionConfig.MaximumVisibilityRadiusBonusStuds > 0
-		and RunProgressionConfig.MaximumVisibilityRadiusBonusStuds <= 60,
-	"engagement-range upgrades require a bounded visibility bonus"
+	RunProgressionConfig.CullHealthThreshold > 0 and RunProgressionConfig.CullHealthThreshold <= 60,
+	"cull protocol requires a bounded wounded-enemy threshold"
+)
+assert(
+	RunProgressionConfig.MaximumDamageMultiplier >= 1 and RunProgressionConfig.MaximumDamageMultiplier <= 3,
+	"run damage requires a strict multiplier ceiling"
 )
 
 local seenUpgradeIds = {}
