@@ -21,6 +21,7 @@ local Workspace = game:GetService("Workspace")
 local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 local HordeConfig = require(ReplicatedStorage.Shared.Config.HordeExperienceConfig)
+local HordeSpecialTelegraphConfig = require(ReplicatedStorage.Shared.Config.HordeSpecialTelegraphConfig)
 local WorldFoundationConfig = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 local HordeRolePresentationService = require(script.Parent.HordeRolePresentationService)
@@ -30,6 +31,9 @@ local LifeAttribute = EnemyPresentationContracts.AttributeNames.LifeStateId
 local HitSequenceAttribute = EnemyPresentationContracts.AttributeNames.HitSequence
 local EnemyLifeStateIds = EnemyPresentationContracts.LifeStateIds
 local SpawnSourceIds = EnemyContracts.EnemySpawnSourceIds
+local SpecialAttributeNames = HordeSpecialTelegraphConfig.AttributeNames
+local SpecialKindIds = HordeSpecialTelegraphConfig.KindIds
+local SpecialStateIds = HordeSpecialTelegraphConfig.StateIds
 
 local ENEMY_FOLDER_NAME = "EnemyEntities"
 
@@ -84,6 +88,9 @@ type EnemyRecord = {
 	lifeStateId: string,
 	lastHitSequence: number,
 	nextSpecialServerTimestamp: number,
+	specialSequence: number,
+	pendingSpecialKindId: string?,
+	pendingSpecialCommitServerTimestamp: number?,
 	deathHandled: boolean,
 }
 
@@ -230,6 +237,10 @@ local function decorateEnemy(record: EnemyRecord)
 	record.model:SetAttribute("HordeRoleDisplayName", role.DisplayName)
 	record.model:SetAttribute("HordeRewardXp", role.Xp)
 	record.model:SetAttribute("HordeThreatValue", role.Threat)
+	record.model:SetAttribute(SpecialAttributeNames.KindId, nil)
+	record.model:SetAttribute(SpecialAttributeNames.Sequence, 0)
+	record.model:SetAttribute(SpecialAttributeNames.StateId, SpecialStateIds.Idle)
+	record.model:SetAttribute(SpecialAttributeNames.CommitServerTimestamp, 0)
 	HordeRolePresentationService.applyRolePresentation(record.model)
 	local highlight = record.model:FindFirstChild("HordeRoleHighlight")
 	if highlight == nil then
@@ -268,6 +279,9 @@ local function trackEnemy(instance: Instance)
 		lifeStateId = if type(lifeState) == "string" then lifeState else EnemyLifeStateIds.Alive,
 		lastHitSequence = if type(hitSequence) == "number" then hitSequence else 0,
 		nextSpecialServerTimestamp = now() + (role.SpecialIntervalSeconds or math.huge),
+		specialSequence = 0,
+		pendingSpecialKindId = nil,
+		pendingSpecialCommitServerTimestamp = nil,
 		deathHandled = false,
 	}
 	enemyRecords[instance] = record
@@ -320,6 +334,32 @@ local function spawnReinforcements(origin: Vector3, count: number, prefix: strin
 	end
 end
 
+local function beginSpecialTelegraph(record: EnemyRecord, kindId: string, serverTimestamp: number): boolean
+	if record.pendingSpecialKindId ~= nil then
+		return false
+	end
+	local definition = HordeSpecialTelegraphConfig.get(kindId)
+	if definition == nil then
+		return false
+	end
+	record.specialSequence += 1
+	record.pendingSpecialKindId = kindId
+	record.pendingSpecialCommitServerTimestamp = serverTimestamp + definition.WindupSeconds
+	record.model:SetAttribute(SpecialAttributeNames.KindId, kindId)
+	record.model:SetAttribute(SpecialAttributeNames.CommitServerTimestamp, record.pendingSpecialCommitServerTimestamp)
+	record.model:SetAttribute(SpecialAttributeNames.StateId, SpecialStateIds.Windup)
+	record.model:SetAttribute(SpecialAttributeNames.Sequence, record.specialSequence)
+	return true
+end
+
+local function cancelPendingSpecial(record: EnemyRecord)
+	record.pendingSpecialKindId = nil
+	record.pendingSpecialCommitServerTimestamp = nil
+	record.model:SetAttribute(SpecialAttributeNames.KindId, nil)
+	record.model:SetAttribute(SpecialAttributeNames.CommitServerTimestamp, 0)
+	record.model:SetAttribute(SpecialAttributeNames.StateId, SpecialStateIds.Idle)
+end
+
 local function damagePlayersInBurst(record: EnemyRecord, role, serverTimestamp: number)
 	local radius = role.DeathBurstRadiusStuds
 	local damage = role.DeathBurstDamage
@@ -348,12 +388,43 @@ local function damagePlayersInBurst(record: EnemyRecord, role, serverTimestamp: 
 	end
 end
 
+local function commitPendingSpecial(record: EnemyRecord, role, serverTimestamp: number): boolean
+	local kindId = record.pendingSpecialKindId
+	local commitServerTimestamp = record.pendingSpecialCommitServerTimestamp
+	if kindId == nil or commitServerTimestamp == nil or serverTimestamp < commitServerTimestamp then
+		return false
+	end
+	record.pendingSpecialKindId = nil
+	record.pendingSpecialCommitServerTimestamp = nil
+	record.model:SetAttribute(SpecialAttributeNames.StateId, SpecialStateIds.Committed)
+
+	if kindId == SpecialKindIds.ScreamerReinforcement then
+		if record.lifeStateId == EnemyLifeStateIds.Dead then
+			return false
+		end
+		record.model:SetAttribute("HordeScreamSequence", serverTimestamp)
+		spawnReinforcements(record.root.Position, role.ReinforcementCount, "scream")
+		record.nextSpecialServerTimestamp = serverTimestamp + role.SpecialIntervalSeconds
+	elseif kindId == SpecialKindIds.BloaterDeathBurst then
+		damagePlayersInBurst(record, role, serverTimestamp)
+		record.model:SetAttribute("HordeDeathBurstSequence", serverTimestamp)
+	elseif kindId == SpecialKindIds.BruteSecondPhase then
+		spawnRoleAt(HordeConfig.Roles.Brute.Id, record.root.Position, "brute-phase2")
+	else
+		return false
+	end
+	return true
+end
+
 local function handleEnemyDeath(record: EnemyRecord, serverTimestamp: number)
 	if record.deathHandled then
 		return
 	end
 	record.deathHandled = true
 	local role = roleById[record.roleId] or HordeConfig.Roles.Basic
+	if record.pendingSpecialKindId == SpecialKindIds.ScreamerReinforcement then
+		cancelPendingSpecial(record)
+	end
 	for _, state in playerStates do
 		if serverTimestamp - state.lastKillServerTimestamp <= HordeConfig.Streak.KillStreakWindowSeconds then
 			state.streak += 1
@@ -364,12 +435,11 @@ local function handleEnemyDeath(record: EnemyRecord, serverTimestamp: number)
 		state.kills += 1
 	end
 	if role.Id == HordeConfig.Roles.Bloater.Id then
-		damagePlayersInBurst(record, role, serverTimestamp)
-		record.model:SetAttribute("HordeDeathBurstSequence", serverTimestamp)
+		beginSpecialTelegraph(record, SpecialKindIds.BloaterDeathBurst, serverTimestamp)
 	elseif role.Id == HordeConfig.Roles.Brute.Id then
 		local entityId = enemyEntityId(record.model) or ""
 		if not string.find(entityId, "phase2", 1, true) then
-			spawnRoleAt(HordeConfig.Roles.Brute.Id, record.root.Position, "brute-phase2")
+			beginSpecialTelegraph(record, SpecialKindIds.BruteSecondPhase, serverTimestamp)
 		end
 	end
 end
@@ -386,6 +456,7 @@ local function processEnemy(record: EnemyRecord, serverTimestamp: number)
 			handleEnemyDeath(record, serverTimestamp)
 		end
 	end
+	commitPendingSpecial(record, role, serverTimestamp)
 	if record.lifeStateId == EnemyLifeStateIds.Dead then
 		return
 	end
@@ -394,10 +465,12 @@ local function processEnemy(record: EnemyRecord, serverTimestamp: number)
 	if type(hitSequence) == "number" and hitSequence > record.lastHitSequence then
 		record.lastHitSequence = hitSequence
 	end
-	if role.Id == HordeConfig.Roles.Screamer.Id and serverTimestamp >= record.nextSpecialServerTimestamp then
-		record.nextSpecialServerTimestamp = serverTimestamp + role.SpecialIntervalSeconds
-		record.model:SetAttribute("HordeScreamSequence", serverTimestamp)
-		spawnReinforcements(record.root.Position, role.ReinforcementCount, "scream")
+	if
+		role.Id == HordeConfig.Roles.Screamer.Id
+		and record.pendingSpecialKindId == nil
+		and serverTimestamp >= record.nextSpecialServerTimestamp
+	then
+		beginSpecialTelegraph(record, SpecialKindIds.ScreamerReinforcement, serverTimestamp)
 	end
 end
 
