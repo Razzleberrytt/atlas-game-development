@@ -22,8 +22,7 @@ local ConfirmedHitMarkerConfig = {
 }
 
 assert(
-	ConfirmedHitMarkerConfig.MarkerDurationSeconds >= 0.18
-		and ConfirmedHitMarkerConfig.MarkerDurationSeconds <= 0.6,
+	ConfirmedHitMarkerConfig.MarkerDurationSeconds >= 0.18 and ConfirmedHitMarkerConfig.MarkerDurationSeconds <= 0.6,
 	"confirmed hit marker duration must remain immediate and bounded"
 )
 assert(
@@ -53,8 +52,7 @@ assert(
 	"confirmed hit marker chain thresholds must escalate monotonically"
 )
 assert(
-	ConfirmedHitMarkerConfig.MaximumRememberedShotIds >= 32
-		and ConfirmedHitMarkerConfig.MaximumRememberedShotIds <= 256,
+	ConfirmedHitMarkerConfig.MaximumRememberedShotIds >= 32 and ConfirmedHitMarkerConfig.MaximumRememberedShotIds <= 256,
 	"confirmed hit marker deduplication memory must remain bounded"
 )
 

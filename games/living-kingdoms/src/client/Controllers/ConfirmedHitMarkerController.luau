@@ -94,10 +94,8 @@ local function createPresentation()
 		local arm = Instance.new("Frame")
 		arm.Name = "Arm" .. tostring(index)
 		arm.AnchorPoint = Vector2.new(0.5, 0.5)
-		arm.Size = UDim2.fromOffset(
-			ConfirmedHitMarkerConfig.ArmLengthPixels,
-			ConfirmedHitMarkerConfig.ArmThicknessPixels
-		)
+		arm.Size =
+			UDim2.fromOffset(ConfirmedHitMarkerConfig.ArmLengthPixels, ConfirmedHitMarkerConfig.ArmThicknessPixels)
 		arm.BackgroundColor3 = Color3.fromRGB(244, 238, 216)
 		arm.BackgroundTransparency = 1
 		arm.BorderSizePixel = 0
@@ -193,7 +191,8 @@ local function updateFrame()
 	local progress = math.clamp(elapsed / duration, 0, 1)
 	local easedProgress = 1 - (1 - progress) * (1 - progress)
 	local radius = ConfirmedHitMarkerConfig.MinimumRadiusPixels
-		+ (ConfirmedHitMarkerConfig.MaximumRadiusPixels - ConfirmedHitMarkerConfig.MinimumRadiusPixels) * easedProgress
+		+ (ConfirmedHitMarkerConfig.MaximumRadiusPixels - ConfirmedHitMarkerConfig.MinimumRadiusPixels)
+			* easedProgress
 	local fadeProgress = math.clamp(
 		(progress - ConfirmedHitMarkerConfig.FadeStartFraction) / (1 - ConfirmedHitMarkerConfig.FadeStartFraction),
 		0,
