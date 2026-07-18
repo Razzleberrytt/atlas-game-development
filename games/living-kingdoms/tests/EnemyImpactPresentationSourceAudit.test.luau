@@ -2,7 +2,7 @@
 
 -- HROI-0104 source audit: combat-impact feedback consumes only replicated
 -- server-confirmed hit/death facts, stays client-local, and preserves bounded
--- scheduler, connection, particle, distance, and enemy-count budgets.
+-- scheduler, connection, particle, distance, and enemy-model budgets.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
@@ -25,14 +25,20 @@ local function countOccurrences(source: string, token: string): number
 	end
 end
 
-local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/CombatImpactPresentationConfig.luau"), {
-	debugName = "CombatImpactPresentationConfig",
-	injectGlobals = true,
-})()
+local config = luau.load(
+	fs.readFile("games/living-kingdoms/src/shared/Config/CombatImpactPresentationConfig.luau"),
+	{
+		debugName = "CombatImpactPresentationConfig",
+		injectGlobals = true,
+	}
+)()
 
 assert(config.Version == "HROI-0104-v1")
 assert(table.isfrozen(config), "impact config must be immutable")
-assert(config.MaximumTrackedEnemies == 24, "effect tracking must match the current validated global enemy ceiling")
+assert(
+	config.MaximumTrackedEnemyModels == 64,
+	"effect records must cover the active ceiling plus bounded corpse overlap"
+)
 assert(config.MaximumEffectDistanceStuds <= 200, "camera distance culling must stay bounded")
 assert(config.HitParticleCount <= 12, "hit particles must remain a small burst")
 assert(config.KillParticleCount <= 32, "kill particles must remain bounded")
@@ -54,9 +60,12 @@ assert(controller:find(":Emit(CombatImpactPresentationConfig.HitParticleCount)",
 assert(controller:find(":Emit(CombatImpactPresentationConfig.KillParticleCount)", 1, true) ~= nil)
 assert(controller:find("HighlightDepthMode.Occluded", 1, true) ~= nil)
 assert(controller:find("MaximumEffectDistanceStuds", 1, true) ~= nil)
-assert(controller:find("MaximumTrackedEnemies", 1, true) ~= nil)
+assert(controller:find("MaximumTrackedEnemyModels", 1, true) ~= nil)
 
-assert(countOccurrences(controller, ":Connect(") == 3, "exactly two folder connections and one frame connection are allowed")
+assert(
+	countOccurrences(controller, ":Connect(") == 3,
+	"exactly two folder connections and one frame connection are allowed"
+)
 for _, prohibited in {
 	"RemoteEvent",
 	"RemoteFunction",
