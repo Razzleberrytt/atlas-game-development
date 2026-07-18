@@ -66,15 +66,7 @@ local Parts: { HelmetPartDefinition } = table.freeze({
 		"Metal",
 		"Trim"
 	),
-	part(
-		"HelmetRearRim",
-		vector(2.04, 0.12, 0.38),
-		vector(0, 0.03, 0.72),
-		vector(3, 0, 0),
-		"Block",
-		"Metal",
-		"Trim"
-	),
+	part("HelmetRearRim", vector(2.04, 0.12, 0.38), vector(0, 0.03, 0.72), vector(3, 0, 0), "Block", "Metal", "Trim"),
 })
 
 local Config = {
