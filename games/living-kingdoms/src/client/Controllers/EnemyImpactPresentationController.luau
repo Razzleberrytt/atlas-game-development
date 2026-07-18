@@ -16,8 +16,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
-local CombatImpactPresentationConfig =
-	require(ReplicatedStorage.Shared.Config.CombatImpactPresentationConfig)
+local CombatImpactPresentationConfig = require(ReplicatedStorage.Shared.Config.CombatImpactPresentationConfig)
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 
@@ -216,7 +215,7 @@ local function untrackModel(model: Model)
 	if record == nil then
 		return
 	end
-	 records[model] = nil
+	records[model] = nil
 	trackedCount = math.max(0, trackedCount - 1)
 	if record.highlight.Parent ~= nil then
 		record.highlight:Destroy()
