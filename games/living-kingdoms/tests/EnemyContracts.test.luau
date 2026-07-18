@@ -99,7 +99,7 @@ local function capFor(operativeCount: number): number
 	)
 end
 assert(
-	capFor(1) == 28 and capFor(2) == 56 and capFor(4) == 112,
+	capFor(1) == 24 and capFor(2) == 48 and capFor(4) == 96,
 	"representative 1/2/4 horde population caps changed"
 )
 
