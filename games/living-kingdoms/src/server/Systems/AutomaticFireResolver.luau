@@ -5,8 +5,8 @@
 	The caller owns the monotonic server time source and must commit the returned
 	weapon state before resolving another attempt. This module does not discover
 	or validate candidates, retain state, resolve hits, apply damage, or present
-	combat. A server-owned cadence override may only shorten the configured
-	interval within a hard floor; clients never provide it.
+	combat. Server-owned run modifiers may shorten cadence and deterministically
+	conserve a round within strict floors and ceilings; clients never provide them.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,6 +15,7 @@ local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 
 local MINIMUM_CADENCE_SECONDS = 0.05
+local MAXIMUM_AMMO_CONSERVATION_CHANCE = 0.5
 
 type AmmunitionState = CombatContracts.AmmunitionState
 type AutomaticFireDecision = CombatContracts.AutomaticFireDecision
@@ -136,6 +137,14 @@ local function deterministicShotId(
 	return string.format("shot:%s:%s:%.17g", operativeEntityId, weaponId, serverTimestamp)
 end
 
+local function stableUnitInterval(text: string): number
+	local hash = 17
+	for index = 1, #text do
+		hash = (hash * 31 + string.byte(text, index) * index) % 2147483647
+	end
+	return (hash % 10000) / 10000
+end
+
 local function readProgressionNumber(attributeName: string, fallback: number): number
 	local storageAsAny = ReplicatedStorage :: any
 	if type(storageAsAny.FindFirstChild) ~= "function" then
@@ -165,6 +174,14 @@ local function resolveCadenceSeconds(override: number?): number?
 		return nil
 	end
 	return requested
+end
+
+local function resolveAmmoConservationChance(): number?
+	local chance = readProgressionNumber("RunAmmoConservationChance", 0)
+	if chance < 0 or chance > MAXIMUM_AMMO_CONSERVATION_CHANCE then
+		return nil
+	end
+	return chance
 end
 
 function AutomaticFireResolver.resolve(
@@ -205,9 +222,11 @@ function AutomaticFireResolver.resolve(
 	end
 
 	local cadenceSeconds = resolveCadenceSeconds(cadenceSecondsOverride)
+	local ammoConservationChance = resolveAmmoConservationChance()
 	local configuredWeaponId = FirearmConfig.BasicFirearm.WeaponId
 	if
 		cadenceSeconds == nil
+		or ammoConservationChance == nil
 		or weaponState.weaponId ~= configuredWeaponId
 		or weaponState.ammunition.weaponId ~= configuredWeaponId
 		or weaponState.cadence.weaponId ~= configuredWeaponId
@@ -224,8 +243,11 @@ function AutomaticFireResolver.resolve(
 		return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.CadenceBlocked)
 	end
 
+	local shotId = deterministicShotId(operativeState.entityId, weaponState.weaponId, serverTimestamp)
 	local ammunitionAfter = copyAmmunition(weaponState.ammunition)
-	ammunitionAfter.loadedRounds -= 1
+	if stableUnitInterval(shotId) >= ammoConservationChance then
+		ammunitionAfter.loadedRounds -= 1
+	end
 	local cadenceAfter = copyCadence(weaponState.cadence)
 	cadenceAfter.lastFireServerTimestamp = serverTimestamp
 	cadenceAfter.nextAllowedFireServerTimestamp = serverTimestamp + cadenceSeconds
@@ -236,7 +258,6 @@ function AutomaticFireResolver.resolve(
 		cadence = cadenceAfter,
 		reloadState = copyReloadState(weaponState.reloadState),
 	}
-	local shotId = deterministicShotId(operativeState.entityId, weaponState.weaponId, serverTimestamp)
 
 	return {
 		decision = createDecision(operativeState, weaponState, targetEntityId, serverTimestamp, true, nil),
