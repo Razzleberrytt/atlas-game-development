@@ -15,6 +15,7 @@ end
 local config = fs.readFile("games/living-kingdoms/src/shared/Config/HordeRolePresentationConfig.luau")
 local horde = fs.readFile("games/living-kingdoms/src/server/Systems/HordeExperienceService.luau")
 local presenter = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyPresentationService.luau")
+local roleService = fs.readFile("games/living-kingdoms/src/server/Systems/HordeRolePresentationService.luau")
 local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/EnemyPresentationController.luau")
 local director = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau")
 
@@ -33,29 +34,37 @@ for _, token in {
 end
 
 assertThat(not contains(horde, "record.model:ScaleTo"), "role decoration must not scale the authoritative enemy model")
-assertThat(contains(horde, "EnemyPresentationService.applyRolePresentation(record.model)"), "role assignment must refresh presentation")
+assertThat(
+	contains(horde, "HordeRolePresentationService.applyRolePresentation(record.model)"),
+	"role assignment must refresh the stateless visual applicator"
+)
+assertThat(
+	contains(presenter, "HordeRolePresentationService.applyRolePresentation(enemyModel)"),
+	"shell attachment must apply the current role regardless of spawn-order"
+)
 
 for _, token in {
 	"HordeRolePresentationConfig",
-	"RoleBaseSize",
+	"HordeRoleBaseSize",
+	"HordeRoleBaseC0",
 	"HordeRoleVisualSignature",
-	"function EnemyPresentationService.applyRolePresentation",
-	"HordeRoleId",
+	"HordeRoleStrideScale",
+	"function HordeRolePresentationService.applyRolePresentation",
 	"profile.SensorBrightness",
 	"profile.SensorRange",
+	"applyPosture",
+	"presentation:GetDescendants()",
 } do
-	assertThat(contains(presenter, token), "server role presenter missing " .. token)
+	assertThat(contains(roleService, token), "stateless role applicator missing " .. token)
 end
 
 for _, token in {
-	"HordeRolePresentationConfig",
-	"HordeRoleId",
-	"roleProfile(record.roleId)",
-	"profile.StridesPerSecond",
-	"posture.TorsoHeightStuds",
-	"record.poseId = \"\"",
+	'GetAttribute("HordeRoleStrideScale")',
+	"strideScaleValue >= 0.5",
+	"strideScaleValue <= 2",
+	"STRIDES_PER_SECOND * strideScale",
 } do
-	assertThat(contains(controller, token), "client role posture owner missing " .. token)
+	assertThat(contains(controller, token), "client role stride composition missing " .. token)
 end
 
 for _, forbidden in {
@@ -67,14 +76,15 @@ for _, forbidden in {
 	"FireServer",
 	"OnServerEvent",
 } do
-	assertThat(not contains(presenter .. controller, forbidden), "role presentation cannot mutate authority: " .. forbidden)
+	assertThat(not contains(roleService .. controller, forbidden), "role presentation cannot mutate authority: " .. forbidden)
 end
 
 assertThat(contains(director, "root.Size = Vector3.new(3, 5.6, 3)"), "authoritative root footprint must remain fixed")
 local _, serverListenerCount = string.gsub(presenter, "ChildAdded:Connect", "")
 assertThat(serverListenerCount == 1, "server presentation must retain one folder listener")
 local _, clientFrameCount = string.gsub(controller, "RenderStepped:Connect", "")
-assertThat(clientFrameCount == 1, "client role poses must reuse one frame connection")
+assertThat(clientFrameCount == 1, "client role motion must reuse one frame connection")
+assertThat(not contains(roleService, ":Connect"), "stateless role applicator cannot own connections")
 assertThat(not contains(controller, "GetAttributeChangedSignal"), "role readability cannot add per-enemy attribute listeners")
 assertThat(not contains(controller, ".Changed:Connect"), "role readability cannot add per-enemy changed listeners")
 
