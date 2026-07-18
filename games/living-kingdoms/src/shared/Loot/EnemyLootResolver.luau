@@ -38,11 +38,7 @@ local function stableHash(entityId: string, deathSequence: number): number
 	return hash
 end
 
-function EnemyLootResolver.resolveDrop(
-	entityId: string,
-	deathSequence: number,
-	activeDropCount: number
-): DropResolution
+function EnemyLootResolver.resolveDrop(entityId: string, deathSequence: number, activeDropCount: number): DropResolution
 	if
 		type(entityId) ~= "string"
 		or entityId == ""
