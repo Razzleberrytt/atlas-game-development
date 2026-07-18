@@ -154,7 +154,7 @@ local function syncCombatModifierAttributes()
 	local modifiers = RunUpgradeResolver.deriveCombatModifiers(upgradeStacks)
 	progressionNetwork:SetAttribute("RunDamageMultiplier", modifiers.damageMultiplier)
 	progressionNetwork:SetAttribute("RunCadenceMultiplier", modifiers.cadenceMultiplier)
-	progressionNetwork:SetAttribute("RunReloadDurationMultiplier", modifiers.reloadDurationMultiplier)
+	progressionNetwork:SetAttribute("RunAmmoConservationChance", modifiers.ammoConservationChance)
 	progressionNetwork:SetAttribute("RunCullDamageMultiplier", modifiers.cullDamageMultiplier)
 	progressionNetwork:SetAttribute("RunCullHealthThreshold", modifiers.cullHealthThreshold)
 end
