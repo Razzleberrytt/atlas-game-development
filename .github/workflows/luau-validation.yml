@@ -32,22 +32,62 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
+      - name: Remove lint-only dead state
+        if: github.actor != 'github-actions[bot]'
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              Path("games/living-kingdoms/src/client/Controllers/HordeEffectsController.luau"): [
+                  ("local enemyFolder: Folder? = nil\n", ""),
+                  ("\tenemyFolder = found\n", ""),
+                  ("\tenemyFolder = nil\n", ""),
+              ],
+              Path("games/living-kingdoms/src/client/Controllers/HordeHUDController.luau"): [
+                  ("local latestState: any = nil\n", ""),
+                  ("\tlatestState = payload\n", ""),
+                  ("\tlatestState = nil\n", ""),
+              ],
+              Path("games/living-kingdoms/src/server/Systems/HordeExperienceService.luau"): [
+                  ("local enemyFolder: Folder? = nil\n", ""),
+                  (
+                      "local function finiteNumber(value: unknown): boolean\n"
+                      "\treturn type(value) == \"number\" and value == value and math.abs(value) < math.huge\n"
+                      "end\n\n",
+                      "",
+                  ),
+                  ("\tenemyFolder = foundEnemyFolder\n", ""),
+                  ("\tenemyFolder = nil\n", ""),
+              ],
+          }
+
+          for path, edits in replacements.items():
+              text = path.read_text(encoding="utf-8")
+              for old, new in edits:
+                  if old not in text:
+                      raise SystemExit(f"expected text missing from {path}: {old!r}")
+                  text = text.replace(old, new, 1)
+              path.write_text(text, encoding="utf-8", newline="\n")
+          PY
+
       - name: Format Luau sources
         shell: bash
         run: stylua games/living-kingdoms/src
 
-      - name: Commit formatter output
+      - name: Commit validated source cleanup
         if: github.actor != 'github-actions[bot]'
         shell: bash
         run: |
           if git diff --quiet -- games/living-kingdoms/src; then
-            echo "No formatter changes required."
+            echo "No source changes required."
             exit 0
           fi
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add games/living-kingdoms/src
-          git commit -m "style: format horde vertical slice"
+          git commit -m "chore: clean horde runtime lint warnings"
           git push origin HEAD:${{ github.head_ref }}
 
       - name: Capture Selene report
