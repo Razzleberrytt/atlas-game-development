@@ -40,13 +40,9 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Print canonical Luau formatting diff
+      - name: Check Luau formatting
         shell: bash
-        run: |
-          set -euo pipefail
-          stylua games/living-kingdoms/src
-          git diff -- games/living-kingdoms/src
-          exit 1
+        run: stylua --check games/living-kingdoms/src
 
       - name: Run Selene
         shell: bash
