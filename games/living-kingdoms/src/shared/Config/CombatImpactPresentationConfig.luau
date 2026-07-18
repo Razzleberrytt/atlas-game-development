@@ -9,7 +9,10 @@
 
 local CombatImpactPresentationConfig = {
 	Version = "HROI-0104-v1",
-	MaximumTrackedEnemies = 24,
+	-- The server caps living enemies at 24, but recently killed models remain
+	-- replicated through the corpse-cleanup window. This cosmetic-only record
+	-- ceiling covers both groups without increasing gameplay population.
+	MaximumTrackedEnemyModels = 64,
 	MaximumEffectDistanceStuds = 140,
 	HitParticleCount = 7,
 	KillParticleCount = 22,
@@ -18,9 +21,9 @@ local CombatImpactPresentationConfig = {
 }
 
 assert(
-	CombatImpactPresentationConfig.MaximumTrackedEnemies > 0
-		and CombatImpactPresentationConfig.MaximumTrackedEnemies <= 24,
-	"impact presentation must remain inside the current validated global enemy ceiling"
+	CombatImpactPresentationConfig.MaximumTrackedEnemyModels >= 24
+		and CombatImpactPresentationConfig.MaximumTrackedEnemyModels <= 64,
+	"impact presentation must cover living enemies and bounded corpse overlap"
 )
 assert(
 	CombatImpactPresentationConfig.MaximumEffectDistanceStuds > 0
