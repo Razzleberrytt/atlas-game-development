@@ -1,9 +1,11 @@
 --!strict
 
 --[[
-	Client-only horror combat feedback. Every effect is gated by replicated,
-	server-authored shot/death disclosure. It never applies damage, changes enemy
-	state, selects targets, or reports a hit back to the server.
+	Client-only horde reward and horror feedback layered on top of the canonical
+	EnemyImpactPresentationController. The canonical impact controller owns hit
+	and kill bursts/highlights; this controller adds role-aware death pools, XP
+	billboards, and bounded camera shake from server-confirmed presentation facts.
+	It never applies damage, changes enemy state, selects targets, or reports a hit.
 ]]
 
 local Debris = game:GetService("Debris")
@@ -37,42 +39,6 @@ local function addShake(magnitude: number, duration: number)
 	shakeMagnitude = math.max(shakeMagnitude, magnitude)
 	shakeUntil = math.max(shakeUntil, os.clock() + duration)
 	shakeSequence += 1
-end
-
-local function createEmitterPart(position: Vector3, color: Color3, count: number, size: number)
-	local part = Instance.new("Part")
-	part.Name = "HordeImpactEffect"
-	part.Size = Vector3.new(0.2, 0.2, 0.2)
-	part.Position = position
-	part.Anchored = true
-	part.CanCollide = false
-	part.CanTouch = false
-	part.CanQuery = false
-	part.Transparency = 1
-	part.Parent = Workspace
-	local emitter = Instance.new("ParticleEmitter")
-	emitter.Rate = 0
-	emitter.Lifetime = NumberRange.new(0.25, 0.7)
-	emitter.Speed = NumberRange.new(7, 18)
-	emitter.SpreadAngle = Vector2.new(180, 180)
-	emitter.Rotation = NumberRange.new(0, 360)
-	emitter.RotSpeed = NumberRange.new(-180, 180)
-	emitter.Drag = 5
-	emitter.Acceleration = Vector3.new(0, -28, 0)
-	emitter.Color = ColorSequence.new(color)
-	emitter.Transparency = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.05),
-		NumberSequenceKeypoint.new(0.7, 0.2),
-		NumberSequenceKeypoint.new(1, 1),
-	})
-	emitter.Size = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, size),
-		NumberSequenceKeypoint.new(1, size * 0.25),
-	})
-	emitter.Texture = "rbxasset://textures/particles/smoke_main.dds"
-	emitter.Parent = part
-	emitter:Emit(count)
-	Debris:AddItem(part, 1.2)
 end
 
 local function createBloodPool(position: Vector3, isBloater: boolean)
@@ -139,13 +105,6 @@ local function presentDeath(model: Model)
 	end
 	local roleId = model:GetAttribute("HordeRoleId")
 	local isBloater = roleId == HordeConfig.Roles.Bloater.Id
-	local color = if isBloater then Color3.fromRGB(96, 186, 65) else Color3.fromRGB(126, 5, 10)
-	createEmitterPart(
-		root.Position + Vector3.new(0, 2, 0),
-		color,
-		if isBloater then 34 else 22,
-		if isBloater then 1.6 else 1.05
-	)
 	createBloodPool(root.Position, isBloater)
 	createKillText(model, root.Position)
 	addShake(if roleId == HordeConfig.Roles.Brute.Id or isBloater then 0.28 else 0.1, 0.18)
@@ -180,10 +139,6 @@ local function untrackModel(instance: Instance)
 	processedDeaths[instance] = nil
 end
 
-local function validVector3(value: unknown): boolean
-	return typeof(value) == "Vector3"
-end
-
 local function onCombatPresentation(message: unknown)
 	if type(message) ~= "table" then
 		return
@@ -195,17 +150,12 @@ local function onCombatPresentation(message: unknown)
 		or type(payload.shotId) ~= "string"
 		or payload.shotId == ""
 		or processedShotIds[payload.shotId]
-		or not validVector3(payload.impactWorldPosition)
 	then
 		return
 	end
 	processedShotIds[payload.shotId] = true
-	createEmitterPart(
-		payload.impactWorldPosition,
-		Color3.fromRGB(138, 8, 13),
-		HordeConfig.Feedback.BloodBurstParticles,
-		0.65
-	)
+	-- The canonical impact controller owns particles/highlights. This layer adds
+	-- only subtle camera response, preserving one visual impact owner.
 	addShake(0.035, 0.06)
 end
 
