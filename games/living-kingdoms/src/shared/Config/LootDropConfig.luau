@@ -68,7 +68,10 @@ assert(
 )
 local totalPercent = LootDropConfig.NoDropPercent
 for _, percent in LootDropConfig.DropRollPercentByKind do
-	assert(type(percent) == "number" and percent >= 0 and percent % 1 == 0, "drop weights must be nonnegative integers")
+	assert(
+		type(percent) == "number" and percent >= 0 and percent % 1 == 0,
+		"drop weights must be nonnegative integers"
+	)
 	totalPercent += percent
 end
 assert(totalPercent == 100, "recovery loot probabilities must total exactly 100 percent")
