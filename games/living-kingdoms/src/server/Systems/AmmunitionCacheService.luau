@@ -12,7 +12,7 @@ local CachePresentationContracts = require(ReplicatedStorage.Shared.Combat.Ammun
 local Contracts = require(ReplicatedStorage.Shared.Combat.AmmunitionScarcityContracts)
 local CacheConfig = require(ReplicatedStorage.Shared.Config.AmmunitionCacheConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
-local AmmunitionSupplyResolver = require(script.Parent.AmmunitionSupplyResolver)
+local AmmunitionSupplyResolver = require(script.Parent.Parent.Domain.AmmunitionSupplyResolver)
 local OperativeCombatRuntimeService = require(script.Parent.OperativeCombatRuntimeService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 
