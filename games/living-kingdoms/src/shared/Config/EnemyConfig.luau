@@ -47,13 +47,13 @@ local EnemyConfig = {
 	}),
 	Pressure = table.freeze({
 		-- Horde Pressure v1: contact begins in seconds, not minutes. Escalation
-		-- increases both cadence and group size while the existing population cap
-		-- remains the hard performance ceiling.
+		-- tightens cadence and raises the final burst while every proposal still
+		-- passes the existing population cap and fair-spawn validation.
 		RoamingByEscalationLevel = table.freeze({
 			[0] = table.freeze({ IntervalSeconds = 12, SpawnCount = 2 }),
 			[1] = table.freeze({ IntervalSeconds = 10, SpawnCount = 2 }),
-			[2] = table.freeze({ IntervalSeconds = 8, SpawnCount = 3 }),
-			[3] = table.freeze({ IntervalSeconds = 6, SpawnCount = 4 }),
+			[2] = table.freeze({ IntervalSeconds = 8, SpawnCount = 2 }),
+			[3] = table.freeze({ IntervalSeconds = 6, SpawnCount = 3 }),
 		}),
 		MaximumEscalationLevel = 3,
 		-- Preserve readable breathers without draining the world of urgency.
