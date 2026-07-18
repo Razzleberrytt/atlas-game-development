@@ -18,19 +18,12 @@ local function isFiniteNumber(value: unknown): boolean
 end
 
 function RunProgressionResolver.xpRequiredForLevel(level: number): number
-	if
-		not isFiniteNumber(level)
-		or level % 1 ~= 0
-		or level < 1
-		or level >= RunProgressionConfig.MaximumRunLevel
-	then
+	if not isFiniteNumber(level) or level % 1 ~= 0 or level < 1 or level >= RunProgressionConfig.MaximumRunLevel then
 		return 0
 	end
 	return math.max(
 		1,
-		math.floor(
-			RunProgressionConfig.BaseXpToLevel * (RunProgressionConfig.XpGrowthPerLevel ^ (level - 1)) + 0.5
-		)
+		math.floor(RunProgressionConfig.BaseXpToLevel * (RunProgressionConfig.XpGrowthPerLevel ^ (level - 1)) + 0.5)
 	)
 end
 
