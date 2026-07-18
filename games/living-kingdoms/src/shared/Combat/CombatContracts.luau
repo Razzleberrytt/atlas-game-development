@@ -257,6 +257,7 @@ export type ShotFiredPresentationMessage = {
 	targetEntityId: CombatEntityId,
 	didApplyDamage: boolean,
 	impactWorldPosition: Vector3?,
+	damageAmount: number?,
 	serverTimestamp: number,
 }
 
