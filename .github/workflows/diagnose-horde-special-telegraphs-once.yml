@@ -12,7 +12,7 @@ jobs:
   diagnose:
     if: github.head_ref == 'feat/horde-special-telegraphs-v1'
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Check out feature branch
@@ -28,15 +28,15 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Apply deterministic integration
+      - name: Apply lint-clean integration
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import textwrap
 
-          source = Path('.github/workflows/final-horde-special-telegraphs-v3.yml').read_text()
-          marker = '      - name: Apply deterministic integration\n'
+          source = Path('.github/workflows/final-horde-special-telegraphs-v4.yml').read_text()
+          marker = '      - name: Apply lint-clean integration\n'
           section = source.split(marker, 1)[1].split('\n\n      - name: Format focused Luau', 1)[0]
           script = section.split('        run: |\n', 1)[1]
           Path('/tmp/replay.sh').write_text(textwrap.dedent(script))
@@ -52,22 +52,27 @@ jobs:
             games/living-kingdoms/tests/HordeSpecialTelegraphConfig.test.luau \
             games/living-kingdoms/tests/HordeSpecialTelegraphSourceAudit.test.luau
 
-      - name: Capture Selene output
-        id: selene
+      - name: Capture complete fixture suite
+        id: suite
         continue-on-error: true
         shell: bash
         run: |
           set -o pipefail
-          selene games/living-kingdoms/src 2>&1 | tee /tmp/horde-special-selene.log
+          {
+            while IFS= read -r -d '' fixture; do
+              echo "=== $fixture ==="
+              lune run "$fixture" || exit $?
+            done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          } 2>&1 | tee /tmp/horde-special-suite.log
 
-      - name: Upload Selene diagnostic
+      - name: Upload fixture diagnostic
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: horde-special-selene-log
-          path: /tmp/horde-special-selene.log
+          name: horde-special-suite-log
+          path: /tmp/horde-special-suite.log
           retention-days: 1
 
-      - name: Enforce Selene result
-        if: steps.selene.outcome == 'failure'
+      - name: Enforce suite result
+        if: steps.suite.outcome == 'failure'
         run: exit 1
