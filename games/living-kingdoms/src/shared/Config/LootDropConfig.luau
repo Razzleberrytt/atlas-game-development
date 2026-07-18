@@ -4,6 +4,7 @@
 	HROI-0106 bounded run-only recovery loot. The newer EnemyLootService remains
 	the sole owner of ammunition drops; this companion table adds only occasional
 	Field Dressings and Field Intel without duplicating the hard ammo economy.
+	Integer percentages keep deterministic death rolls easy to audit and tune.
 ]]
 
 local LootDropContracts = require(script.Parent.Parent.Loot.LootDropContracts)
