@@ -1,4 +1,4 @@
-# Run Field XP and Squad Upgrades — HROI-0105 v2
+# Run Field XP and Squad Upgrades — HROI-0105 v3
 
 ## Purpose
 
@@ -9,13 +9,15 @@ This slice extends shared squad Field XP with a bounded three-choice run-upgrade
 ## Player-facing behavior
 
 - Every server-confirmed enemy death awards **20 Field XP** to the current squad run.
-- Field Level 2 requires 100 XP, so the first level-up occurs after five ordinary confirmed deaths under prototype tuning.
-- Later thresholds grow by 1.3× per level, rounded to whole XP.
-- The bottom-center HUD shows current Field Level, XP progress, and short XP/selection confirmations.
+- Field Level 2 requires **80 XP**, so the first level-up occurs after **four ordinary confirmed deaths**.
+- Later thresholds grow by **1.35×** per level, rounded to whole XP. Field Level 3 therefore requires 108 XP after the opening upgrade.
+- The unified combat HUD shows current Field Level, XP progress, and short XP/selection confirmations.
 - Crossing a threshold opens a centered three-card squad upgrade choice.
 - The first valid squad selection locks the upgrade for the run and closes the offer for every client.
 - Multiple unclaimed levels queue one offer at a time.
 - Field XP, level, kills, offers, stacks, and modifiers reset when the progression service starts a new server session.
+
+The first threshold is tuned together with `HordeExperienceConfig.Pressure`. The opening reward arrives one kill earlier while later thresholds slow slightly, allowing the first upgrade to influence survival without creating rapid upgrade spam during sustained horde clearing.
 
 ## Initial upgrade pool
 
@@ -55,7 +57,7 @@ There is no persistence or DataStore access.
 
 ## Cooperative decision
 
-Field XP and upgrades are shared by the squad. This prevents kill stealing and makes automatic combat compatible with cooperative progression. The first accepted squad choice wins in v2; voting, leader assignment, individualized builds, shooter credit, and assists remain later product decisions.
+Field XP and upgrades are shared by the squad. This prevents kill stealing and makes automatic combat compatible with cooperative progression. The first accepted squad choice wins in v3; voting, leader assignment, individualized builds, shooter credit, and assists remain later product decisions.
 
 ## Runtime bounds
 
@@ -65,9 +67,8 @@ Field XP and upgrades are shared by the squad. This prevents kill stealing and m
 - zero per-enemy progression connections
 - zero server delayed progression tasks
 - one throttled upgrade intent connection
-- one client state-event connection
-- three fixed button connections
-- one client RenderStepped connection used only to fade the gain notification
+- one client state-event connection through the unified HUD
+- three fixed upgrade-button connections
 - zero new combat loops, raycasts, path requests, or enemy population
 
 The 64-model observation ceiling does not increase the authoritative 24-living-enemy gameplay cap.
@@ -79,7 +80,6 @@ The 64-model observation ceiling does not increase the authoritative 24-living-e
 - squad voting or designated chooser rules
 - assists and contribution XP
 - objective and revive XP
-- loot drops
 - permanent account progression
 - battle pass, paid power, inventory, crafting, and rarity economies
 
@@ -87,13 +87,14 @@ The 64-model observation ceiling does not increase the authoritative 24-living-e
 
 Automated validation must pass StyLua, Selene, every Lune fixture, and Rojo build. Studio approval must verify:
 
-1. five confirmed enemy deaths produce one level-up and one three-card offer
-2. a killing hit awards only once
-3. two clients see identical choices and the same accepted result
-4. stale, duplicate, unoffered, malformed, and spammed choice requests do not mutate state
-5. each accepted upgrade changes only its documented combat behavior
-6. maxed upgrades leave later offer pools
-7. corpse cleanup does not duplicate XP
-8. restarting the server session resets Field XP and all modifier attributes
-9. the choice panel is usable with mouse and touch without obscuring critical combat space
-10. the 24-enemy representative load remains playable with the progression HUD visible
+1. four confirmed enemy deaths produce one level-up and one three-card offer
+2. the opening offer appears before an ordinary active solo run reaches its expected first-wipe window
+3. a killing hit awards only once
+4. two clients see identical choices and the same accepted result
+5. stale, duplicate, unoffered, malformed, and spammed choice requests do not mutate state
+6. each accepted upgrade changes only its documented combat behavior
+7. maxed upgrades leave later offer pools
+8. corpse cleanup does not duplicate XP
+9. restarting the server session resets Field XP and all modifier attributes
+10. the choice panel is usable with mouse and touch without obscuring critical combat space
+11. the 24-enemy representative load remains playable with the unified HUD visible
