@@ -3,12 +3,13 @@
 --[[
 	HROI-0106 run-only enemy ammunition loot. Confirmed enemy deaths may create
 	one short-lived server-owned pickup at the corpse position. The pickup pool,
-	grant sizes, lifetime, collection radius, and evaluation cadence are all
-	bounded here; no permanent inventory or account reward is represented.
+	grant sizes, lifetime, collection radius, guaranteed reward cadence, and
+	evaluation cadence are all bounded here; no permanent inventory or account
+	reward is represented.
 ]]
 
 local EnemyLootConfig = {
-	Version = "HROI-0106-v1-enemy-ammo-loot",
+	Version = "HROI-0106-v2-guaranteed-salvage",
 	EvaluationIntervalSeconds = 0.1,
 	MaximumTrackedEnemyModels = 64,
 	MaximumActiveDrops = 16,
@@ -17,6 +18,8 @@ local EnemyLootConfig = {
 	DropRollModulo = 20,
 	RareDropRolls = 1,
 	CommonDropRolls = 6,
+	GuaranteeFirstConfirmedDeath = true,
+	GuaranteedCommonDropEveryDeaths = 5,
 	HoverHeightStuds = 1.35,
 	BobAmplitudeStuds = 0.22,
 	BobRadiansPerSecond = 3.2,
@@ -60,6 +63,16 @@ assert(
 		and EnemyLootConfig.CommonDropRolls > 0
 		and EnemyLootConfig.RareDropRolls + EnemyLootConfig.CommonDropRolls < EnemyLootConfig.DropRollModulo,
 	"enemy loot probabilities must leave a no-drop outcome"
+)
+assert(
+	type(EnemyLootConfig.GuaranteeFirstConfirmedDeath) == "boolean",
+	"first-death guarantee must be an explicit bounded product decision"
+)
+assert(
+	EnemyLootConfig.GuaranteedCommonDropEveryDeaths >= 3
+		and EnemyLootConfig.GuaranteedCommonDropEveryDeaths <= 12
+		and EnemyLootConfig.GuaranteedCommonDropEveryDeaths % 1 == 0,
+	"guaranteed salvage cadence must remain useful and bounded"
 )
 for _, definition in EnemyLootConfig.Definitions do
 	assert(definition.Rounds > 0 and definition.Rounds <= 24, "enemy loot ammunition grants must remain bounded")
