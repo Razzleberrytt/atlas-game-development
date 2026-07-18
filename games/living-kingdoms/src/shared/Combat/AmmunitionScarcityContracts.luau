@@ -5,6 +5,9 @@ local Contracts = {
 		AuthoredCache = "AuthoredCache",
 		EngineerResupply = "EngineerResupply",
 		EnemyLoot = "EnemyLoot",
+		-- Compatibility alias for the isolated recovery-loot service. Both names
+		-- resolve to the same server-owned enemy-loot authority boundary.
+		EnemyDrop = "EnemyLoot",
 	}),
 	CollectionRejectionReasonIds = table.freeze({
 		InvalidState = "InvalidState",

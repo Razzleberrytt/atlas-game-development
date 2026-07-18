@@ -10,6 +10,7 @@ local COMBAT_TOKEN = {}
 local CONFIG_TOKEN = {}
 local CONTRACTS_TOKEN = {}
 local HEALTH_RESOLVER_TOKEN = {}
+local HEALING_RESOLVER_TOKEN = {}
 
 local lifeStateIds = table.freeze({ Alive = "Alive", Incapacitated = "Incapacitated", Dead = "Dead" })
 local combatContracts = {
@@ -117,9 +118,21 @@ local environment = {
 				end,
 			}
 		end
+		if token == HEALING_RESOLVER_TOKEN then
+			return {
+				resolve = function()
+					error("healing routing is covered by HROI-0106 fixtures")
+				end,
+			}
+		end
 		error("unexpected module")
 	end,
-	script = { Parent = { OperativeHealthResolver = HEALTH_RESOLVER_TOKEN } },
+	script = {
+		Parent = {
+			OperativeHealingResolver = HEALING_RESOLVER_TOKEN,
+			OperativeHealthResolver = HEALTH_RESOLVER_TOKEN,
+		},
+	},
 	typeof = function(value)
 		return if type(value) == "table" and value._className ~= nil then "Instance" else type(value)
 	end,

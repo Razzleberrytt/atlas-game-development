@@ -10,6 +10,7 @@ local COMBAT_TOKEN = {}
 local CONFIG_TOKEN = {}
 local CONTRACTS_TOKEN = {}
 local HEALTH_RESOLVER_TOKEN = {}
+local HEALING_RESOLVER_TOKEN = {}
 
 local lifeStateIds = table.freeze({ Alive = "Alive", Incapacitated = "Incapacitated", Dead = "Dead" })
 local reasons = table.freeze({
@@ -154,9 +155,21 @@ local serviceLoader = luau.load(fs.readFile("games/living-kingdoms/src/server/Sy
 			if token == HEALTH_RESOLVER_TOKEN then
 				return resolverProxy
 			end
+			if token == HEALING_RESOLVER_TOKEN then
+				return {
+					resolve = function()
+						error("healing routing is covered by HROI-0106 fixtures")
+					end,
+				}
+			end
 			return baseRequire(token)
 		end,
-		script = { Parent = { OperativeHealthResolver = HEALTH_RESOLVER_TOKEN } },
+		script = {
+			Parent = {
+				OperativeHealingResolver = HEALING_RESOLVER_TOKEN,
+				OperativeHealthResolver = HEALTH_RESOLVER_TOKEN,
+			},
+		},
 		typeof = function(value)
 			return if type(value) == "table" and value._className ~= nil then "Instance" else type(value)
 		end,
