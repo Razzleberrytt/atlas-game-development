@@ -8,7 +8,8 @@ export type CombatModifiers = {
 	damageMultiplier: number,
 	cadenceMultiplier: number,
 	reloadDurationMultiplier: number,
-	visibilityRadiusBonusStuds: number,
+	cullDamageMultiplier: number,
+	cullHealthThreshold: number,
 }
 
 export type ChoiceResolution = {
@@ -152,14 +153,15 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 			damageMultiplier = 1,
 			cadenceMultiplier = 1,
 			reloadDurationMultiplier = 1,
-			visibilityRadiusBonusStuds = 0,
+			cullDamageMultiplier = 1,
+			cullHealthThreshold = RunProgressionConfig.CullHealthThreshold,
 		})
 	end
 
 	local damageMultiplier = 1
 	local cadenceMultiplier = 1
 	local reloadDurationMultiplier = 1
-	local visibilityRadiusBonusStuds = 0
+	local cullDamageMultiplier = 1
 	for _, definition in RunProgressionConfig.UpgradeDefinitions do
 		local stackCount = stacks[definition.Id] or 0
 		if definition.DamageMultiplierPerStack ~= nil then
@@ -171,22 +173,20 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 		if definition.ReloadReductionPerStack ~= nil then
 			reloadDurationMultiplier -= stackCount * definition.ReloadReductionPerStack
 		end
-		if definition.VisibilityRadiusBonusStudsPerStack ~= nil then
-			visibilityRadiusBonusStuds += stackCount * definition.VisibilityRadiusBonusStudsPerStack
+		if definition.CullDamageMultiplierPerStack ~= nil then
+			cullDamageMultiplier += stackCount * definition.CullDamageMultiplierPerStack
 		end
 	end
 
 	return table.freeze({
-		damageMultiplier = math.max(1, damageMultiplier),
+		damageMultiplier = math.clamp(damageMultiplier, 1, RunProgressionConfig.MaximumDamageMultiplier),
 		cadenceMultiplier = math.max(RunProgressionConfig.MinimumCadenceMultiplier, cadenceMultiplier),
 		reloadDurationMultiplier = math.max(
 			RunProgressionConfig.MinimumReloadDurationMultiplier,
 			reloadDurationMultiplier
 		),
-		visibilityRadiusBonusStuds = math.min(
-			RunProgressionConfig.MaximumVisibilityRadiusBonusStuds,
-			visibilityRadiusBonusStuds
-		),
+		cullDamageMultiplier = math.clamp(cullDamageMultiplier, 1, RunProgressionConfig.MaximumDamageMultiplier),
+		cullHealthThreshold = RunProgressionConfig.CullHealthThreshold,
 	})
 end
 
