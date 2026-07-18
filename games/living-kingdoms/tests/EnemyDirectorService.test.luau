@@ -363,7 +363,7 @@ local victim, victimRoot = addOperative("operative.player:1", 100, 0)
 local unfair = service.spawnEnemy(request("enemy.deferred", 100 + minimumSpawn - 1, 0))
 assert(not unfair.didSpawn and unfair.wasDeferred and unfair.rejectionReasonId == "TooCloseToOperative")
 assert(service.readPressureState().pendingSpawnCount == 1)
-now = 1
+now = config.FairSpawn.DeferredRetryIntervalSeconds * 0.5
 local early = service.evaluateAt(now)
 assert(early.spawnedCount == 0 and service.readPressureState().pendingSpawnCount == 1, "retry must wait its interval")
 now = config.FairSpawn.DeferredRetryIntervalSeconds
