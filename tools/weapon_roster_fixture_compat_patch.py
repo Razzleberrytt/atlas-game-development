@@ -124,4 +124,21 @@ p4_source = p4_source.replace(
 )
 p4_path.write_text(p4_source, encoding="utf-8")
 
+visibility_path = Path("games/living-kingdoms/tests/VisibilityResolver.test.luau")
+visibility_source = visibility_path.read_text(encoding="utf-8")
+old_visibility = '''\t\tweaponReadiness = {
+\t\t\tweaponId = "weapon.basic_firearm",
+\t\t\treadinessStateId = "Ready",
+\t\t\tammunition = { loadedRounds = 1 },
+\t\t},'''
+new_visibility = '''\t\tweaponReadiness = {
+\t\t\tweaponId = "weapon.basic_firearm",
+\t\t\treadinessStateId = "Ready",
+\t\t\tammunition = { weaponId = "weapon.basic_firearm", loadedRounds = 1 },
+\t\t\tcadence = { weaponId = "weapon.basic_firearm" },
+\t\t},'''
+if visibility_source.count(old_visibility) != 1:
+    raise RuntimeError("visibility weapon readiness fixture anchor drifted")
+visibility_path.write_text(visibility_source.replace(old_visibility, new_visibility, 1), encoding="utf-8")
+
 print("Applied fixture compatibility, safe disclosures, and roster-aware authority audits")
