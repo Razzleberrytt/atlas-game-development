@@ -319,9 +319,9 @@ local Registry = table.freeze({
 	record(
 		Keys.AudioStandardHostile,
 		FamilyIds.Audio,
-		StatusIds.MissingPresentation,
-		"src/server/Systems/EnemyDirectorService.luau",
-		"No approved hostile alert, pursuit, attack, hit, or death sound set is registered.",
+		StatusIds.TemporaryPresentation,
+		"src/client/Controllers/EnemyAudioController.luau",
+		"Replicated walker presentation attributes now drive client-local pooled 2D alert, windup, strike, hit, and death cues; every cue is a temporary derivation of the two verified firearm audio assets at shifted playback speeds, so unique production-approved hostile assets and a Studio mix review remain pending.",
 		"StandardHostileAudio",
 		{},
 		"enemy.exclusion_walker",
