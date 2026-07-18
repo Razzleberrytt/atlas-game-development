@@ -27,7 +27,7 @@ Each accepted drop appears immediately above the confirmed corpse position as a 
 - isometric-distance billboard showing item name and reward
 - instant ProximityPrompt collection
 
-Drops expire after 18 seconds. At most 20 may exist simultaneously, while death observation remains bounded to the existing 64-model living/corpse-overlap ceiling.
+Drops expire after 18 seconds. At most 20 may exist simultaneously, while death observation remains bounded to the existing 64-model living/corpse-overlap ceiling. The pickup model is transient world presentation and is destroyed immediately after a successful authoritative claim.
 
 ## Authority chain
 
