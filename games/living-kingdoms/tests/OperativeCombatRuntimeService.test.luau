@@ -377,7 +377,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				FirearmHitResolver = HIT_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 				ReloadResolver = RELOAD_TOKEN,
-				TargetCandidateSelector = SELECTOR_TOKEN,
+				WeaponTargetSelector = SELECTOR_TOKEN,
 				WeaponPatternResolver = PATTERN_TOKEN,
 			},
 		},

@@ -31,7 +31,11 @@ export type TargetValidationRejectionReasonId =
 	| "NoAmmunition"
 	| "WeaponNotReady"
 
-export type TargetSelectionReasonId = "ThreateningClosest" | "ValidClosest"
+export type TargetSelectionReasonId =
+	"ThreateningClosest"
+	| "ValidClosest"
+	| "ThreateningPatternUtility"
+	| "ValidPatternUtility"
 export type AutomaticFireRejectionReasonId =
 	"NoSelectedTarget"
 	| "SelectedTargetInvalid"
@@ -367,6 +371,8 @@ CombatContracts.TargetValidationRejectionReasonIds = table.freeze({
 CombatContracts.TargetSelectionReasonIds = table.freeze({
 	ThreateningClosest = "ThreateningClosest",
 	ValidClosest = "ValidClosest",
+	ThreateningPatternUtility = "ThreateningPatternUtility",
+	ValidPatternUtility = "ValidPatternUtility",
 })
 
 CombatContracts.AutomaticFireRejectionReasonIds = table.freeze({
