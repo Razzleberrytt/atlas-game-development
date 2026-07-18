@@ -37,8 +37,22 @@ function Factory.create(): WeaponVisualModelRig
 		"weapon.service-pistol"
 	)
 
-	Builder.box(context, "Frame", Vector3.new(0.92, 0.38, 0.44), CFrame.new(0.04, 0, -0.02), COLORS.polymer, Enum.Material.SmoothPlastic)
-	Builder.box(context, "DustCover", Vector3.new(0.52, 0.40, 0.24), CFrame.new(0.50, 0, -0.22), COLORS.polymer, Enum.Material.SmoothPlastic)
+	Builder.box(
+		context,
+		"Frame",
+		Vector3.new(0.92, 0.38, 0.44),
+		CFrame.new(0.04, 0, -0.02),
+		COLORS.polymer,
+		Enum.Material.SmoothPlastic
+	)
+	Builder.box(
+		context,
+		"DustCover",
+		Vector3.new(0.52, 0.40, 0.24),
+		CFrame.new(0.50, 0, -0.22),
+		COLORS.polymer,
+		Enum.Material.SmoothPlastic
+	)
 	Builder.box(context, "AccessoryRail", Vector3.new(0.45, 0.42, 0.08), CFrame.new(0.48, 0, -0.39), COLORS.black)
 	for index = 1, 3 do
 		Builder.box(
@@ -58,8 +72,22 @@ function Factory.create(): WeaponVisualModelRig
 		COLORS.polymer,
 		Enum.Material.SmoothPlastic
 	)
-	Builder.box(context, "Backstrap", Vector3.new(0.17, 0.42, 0.74), CFrame.new(-0.54, 0, -0.67) * CFrame.Angles(0, math.rad(8), 0), COLORS.rubber, Enum.Material.SmoothPlastic)
-	Builder.box(context, "Frontstrap", Vector3.new(0.13, 0.42, 0.64), CFrame.new(-0.08, 0, -0.69) * CFrame.Angles(0, math.rad(8), 0), COLORS.rubber, Enum.Material.SmoothPlastic)
+	Builder.box(
+		context,
+		"Backstrap",
+		Vector3.new(0.17, 0.42, 0.74),
+		CFrame.new(-0.54, 0, -0.67) * CFrame.Angles(0, math.rad(8), 0),
+		COLORS.rubber,
+		Enum.Material.SmoothPlastic
+	)
+	Builder.box(
+		context,
+		"Frontstrap",
+		Vector3.new(0.13, 0.42, 0.64),
+		CFrame.new(-0.08, 0, -0.69) * CFrame.Angles(0, math.rad(8), 0),
+		COLORS.rubber,
+		Enum.Material.SmoothPlastic
+	)
 	for index = 1, 4 do
 		Builder.box(
 			context,
@@ -83,17 +111,40 @@ function Factory.create(): WeaponVisualModelRig
 	Builder.box(context, "SlideStop", Vector3.new(0.20, 0.07, 0.10), CFrame.new(-0.12, -0.23, 0.08), COLORS.steel)
 	Builder.box(context, "TakeDownLever", Vector3.new(0.15, 0.08, 0.10), CFrame.new(0.25, -0.23, -0.02), COLORS.steel)
 
-	local slide, boltMotor = Builder.motorBox(
+	local slide, boltMotor =
+		Builder.motorBox(context, "Bolt", Vector3.new(1.24, 0.42, 0.42), CFrame.new(0.12, 0, 0.32), COLORS.black)
+	Builder.attachBox(
 		context,
-		"Bolt",
-		Vector3.new(1.24, 0.42, 0.42),
-		CFrame.new(0.12, 0, 0.32),
-		COLORS.black
+		slide,
+		"SlideTop",
+		Vector3.new(1.05, 0.34, 0.10),
+		CFrame.new(0, 0, 0.25),
+		COLORS.gunmetal
 	)
-	Builder.attachBox(context, slide, "SlideTop", Vector3.new(1.05, 0.34, 0.10), CFrame.new(0, 0, 0.25), COLORS.gunmetal)
-	Builder.attachBox(context, slide, "BarrelHood", Vector3.new(0.34, 0.31, 0.12), CFrame.new(0.12, 0, 0.25), COLORS.steel)
-	Builder.attachCylinder(context, slide, "Barrel", Vector3.new(0.92, 0.14, 0.14), CFrame.new(0.30, 0, -0.03), COLORS.steel)
-	Builder.attachCylinder(context, slide, "MuzzleCrown", Vector3.new(0.11, 0.25, 0.25), CFrame.new(0.68, 0, -0.03), COLORS.gunmetal)
+	Builder.attachBox(
+		context,
+		slide,
+		"BarrelHood",
+		Vector3.new(0.34, 0.31, 0.12),
+		CFrame.new(0.12, 0, 0.25),
+		COLORS.steel
+	)
+	Builder.attachCylinder(
+		context,
+		slide,
+		"Barrel",
+		Vector3.new(0.92, 0.14, 0.14),
+		CFrame.new(0.30, 0, -0.03),
+		COLORS.steel
+	)
+	Builder.attachCylinder(
+		context,
+		slide,
+		"MuzzleCrown",
+		Vector3.new(0.11, 0.25, 0.25),
+		CFrame.new(0.68, 0, -0.03),
+		COLORS.gunmetal
+	)
 	for index = 1, 4 do
 		Builder.attachBox(
 			context,
@@ -104,11 +155,49 @@ function Factory.create(): WeaponVisualModelRig
 			COLORS.steel
 		)
 	end
-	Builder.attachBox(context, slide, "RearSight", Vector3.new(0.18, 0.28, 0.22), CFrame.new(-0.45, 0, 0.35), COLORS.black)
-	Builder.attachBox(context, slide, "FrontSight", Vector3.new(0.12, 0.19, 0.20), CFrame.new(0.50, 0, 0.35), COLORS.black)
-	Builder.attachBox(context, slide, "RearSightDotLeft", Vector3.new(0.04, 0.04, 0.05), CFrame.new(-0.45, 0.08, 0.46), COLORS.white, Enum.Material.Neon)
-	Builder.attachBox(context, slide, "RearSightDotRight", Vector3.new(0.04, 0.04, 0.05), CFrame.new(-0.45, -0.08, 0.46), COLORS.white, Enum.Material.Neon)
-	Builder.attachBox(context, slide, "FrontSightDot", Vector3.new(0.04, 0.04, 0.05), CFrame.new(0.50, 0, 0.46), COLORS.red, Enum.Material.Neon)
+	Builder.attachBox(
+		context,
+		slide,
+		"RearSight",
+		Vector3.new(0.18, 0.28, 0.22),
+		CFrame.new(-0.45, 0, 0.35),
+		COLORS.black
+	)
+	Builder.attachBox(
+		context,
+		slide,
+		"FrontSight",
+		Vector3.new(0.12, 0.19, 0.20),
+		CFrame.new(0.50, 0, 0.35),
+		COLORS.black
+	)
+	Builder.attachBox(
+		context,
+		slide,
+		"RearSightDotLeft",
+		Vector3.new(0.04, 0.04, 0.05),
+		CFrame.new(-0.45, 0.08, 0.46),
+		COLORS.white,
+		Enum.Material.Neon
+	)
+	Builder.attachBox(
+		context,
+		slide,
+		"RearSightDotRight",
+		Vector3.new(0.04, 0.04, 0.05),
+		CFrame.new(-0.45, -0.08, 0.46),
+		COLORS.white,
+		Enum.Material.Neon
+	)
+	Builder.attachBox(
+		context,
+		slide,
+		"FrontSightDot",
+		Vector3.new(0.04, 0.04, 0.05),
+		CFrame.new(0.50, 0, 0.46),
+		COLORS.red,
+		Enum.Material.Neon
+	)
 
 	local magazine, magazineMotor = Builder.motorBox(
 		context,
@@ -117,12 +206,41 @@ function Factory.create(): WeaponVisualModelRig
 		CFrame.new(-0.30, 0, -0.72) * CFrame.Angles(0, math.rad(8), 0),
 		COLORS.gunmetal
 	)
-	Builder.attachBox(context, magazine, "MagazineBase", Vector3.new(0.48, 0.43, 0.13), CFrame.new(0, 0, -0.44), COLORS.blue, Enum.Material.SmoothPlastic)
-	Builder.attachBox(context, magazine, "MagazineWitness", Vector3.new(0.12, 0.025, 0.35), CFrame.new(0.03, -0.165, 0), COLORS.steel)
+	Builder.attachBox(
+		context,
+		magazine,
+		"MagazineBase",
+		Vector3.new(0.48, 0.43, 0.13),
+		CFrame.new(0, 0, -0.44),
+		COLORS.blue,
+		Enum.Material.SmoothPlastic
+	)
+	Builder.attachBox(
+		context,
+		magazine,
+		"MagazineWitness",
+		Vector3.new(0.12, 0.025, 0.35),
+		CFrame.new(0.03, -0.165, 0),
+		COLORS.steel
+	)
 
 	Builder.box(context, "WeaponLightBody", Vector3.new(0.46, 0.34, 0.26), CFrame.new(0.46, 0, -0.55), COLORS.black)
-	Builder.cylinder(context, "WeaponLightLens", Vector3.new(0.09, 0.28, 0.28), CFrame.new(0.74, 0, -0.55), COLORS.glass, Enum.Material.Glass)
-	Builder.box(context, "WeaponLightSwitch", Vector3.new(0.10, 0.38, 0.12), CFrame.new(0.20, 0, -0.48), COLORS.blue, Enum.Material.SmoothPlastic)
+	Builder.cylinder(
+		context,
+		"WeaponLightLens",
+		Vector3.new(0.09, 0.28, 0.28),
+		CFrame.new(0.74, 0, -0.55),
+		COLORS.glass,
+		Enum.Material.Glass
+	)
+	Builder.box(
+		context,
+		"WeaponLightSwitch",
+		Vector3.new(0.10, 0.38, 0.12),
+		CFrame.new(0.20, 0, -0.48),
+		COLORS.blue,
+		Enum.Material.SmoothPlastic
+	)
 
 	return Builder.finish(context, {
 		boltMotor = boltMotor,

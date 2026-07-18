@@ -45,7 +45,7 @@ local config = luau.load(fs.readFile(configPath), {
 })()
 
 assertThat(config.Version == "VIS-0101-v1", "visual asset registry version must be stable")
-assertThat(#config.Registry == 28, "VIS-0101 must inventory the complete initial presentation surface")
+assertThat(#config.Registry == 32, "VIS-0101 must inventory the expanded presentation surface")
 
 local keyCount = 0
 for _, assetKey in contracts.AssetKeys do
@@ -58,6 +58,19 @@ assertThat(
 	config.ByKey[contracts.AssetKeys.WeaponBasicFirearmModel].statusId == contracts.StatusIds.MissingPresentation,
 	"basic firearm must remain honestly marked as missing production presentation"
 )
+for _, assetKey in
+	{
+		contracts.AssetKeys.WeaponBreachShotgunModel,
+		contracts.AssetKeys.WeaponSniperRifleModel,
+		contracts.AssetKeys.WeaponServicePistolModel,
+		contracts.AssetKeys.WeaponSubmachineGunModel,
+	}
+do
+	local entry = config.ByKey[assetKey]
+	assertThat(entry.statusId == contracts.StatusIds.PrimitivePlaceholder, "new weapon models must remain honest fallbacks")
+	assertThat(entry.expectedRootName == "WeaponPresentation", "new weapon model root contract drifted")
+	assertThat(#entry.requiredAttachmentNames == 5, "new weapon models require the shared five-locator contract")
+end
 assertThat(
 	config.ByKey[contracts.AssetKeys.OperativeBaseRig].statusId == contracts.StatusIds.DefaultAvatarPlaceholder,
 	"operative rig must remain honestly marked as the default-avatar placeholder"

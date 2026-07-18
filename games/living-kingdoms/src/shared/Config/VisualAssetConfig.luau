@@ -53,6 +53,50 @@ local Registry = table.freeze({
 		true
 	),
 	record(
+		Keys.WeaponBreachShotgunModel,
+		FamilyIds.Weapon,
+		StatusIds.PrimitivePlaceholder,
+		"src/client/Presentation/BreachShotgunPresentationFactory.luau",
+		"Morrow Breach Shotgun uses a dedicated project-original multi-part fallback with a vented heat shield, pump, box magazine, shell rack, and side light; Studio approval and a canonical imported production asset remain pending.",
+		"WeaponPresentation",
+		{ "RightGripAttachment", "LeftGripAttachment", "Muzzle", "Magazine", "Ejection" },
+		"weapon.breach-shotgun",
+		true
+	),
+	record(
+		Keys.WeaponSniperRifleModel,
+		FamilyIds.Weapon,
+		StatusIds.PrimitivePlaceholder,
+		"src/client/Presentation/SniperRiflePresentationFactory.luau",
+		"Longwatch Sniper Rifle uses a dedicated project-original multi-part fallback with a free-floated heavy barrel, full optic stack, working bolt presentation, precision stock, and folded bipod; Studio approval and a canonical imported production asset remain pending.",
+		"WeaponPresentation",
+		{ "RightGripAttachment", "LeftGripAttachment", "Muzzle", "Magazine", "Ejection" },
+		"weapon.sniper-rifle",
+		true
+	),
+	record(
+		Keys.WeaponServicePistolModel,
+		FamilyIds.Weapon,
+		StatusIds.PrimitivePlaceholder,
+		"src/client/Presentation/ServicePistolPresentationFactory.luau",
+		"Vigil Service Pistol uses a dedicated project-original multi-part fallback with a moving detailed slide, visible barrel hood, duty frame, iron sights, magazine assembly, and weapon light; Studio approval and a canonical imported production asset remain pending.",
+		"WeaponPresentation",
+		{ "RightGripAttachment", "LeftGripAttachment", "Muzzle", "Magazine", "Ejection" },
+		"weapon.service-pistol",
+		true
+	),
+	record(
+		Keys.WeaponSubmachineGunModel,
+		FamilyIds.Weapon,
+		StatusIds.PrimitivePlaceholder,
+		"src/client/Presentation/SubmachineGunPresentationFactory.luau",
+		"Razor Compact SMG uses a dedicated project-original multi-part fallback with a short barrel shroud, folding wire stock, curved magazine, reflex optic, vertical foregrip, and identity panels; Studio approval and a canonical imported production asset remain pending.",
+		"WeaponPresentation",
+		{ "RightGripAttachment", "LeftGripAttachment", "Muzzle", "Magazine", "Ejection" },
+		"weapon.submachine-gun",
+		true
+	),
+	record(
 		Keys.OperativeBaseRig,
 		FamilyIds.Operative,
 		StatusIds.DefaultAvatarPlaceholder,

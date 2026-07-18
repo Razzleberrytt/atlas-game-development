@@ -57,7 +57,14 @@ function Factory.create(): WeaponVisualModelRig
 	Builder.cylinder(context, "MuzzleCollar", Vector3.new(0.34, 0.34, 0.34), CFrame.new(3.66, 0, 0.19), COLORS.steel)
 	Builder.cylinder(context, "TubeCap", Vector3.new(0.24, 0.28, 0.28), CFrame.new(3.30, 0, -0.16), COLORS.red)
 
-	Builder.box(context, "StockNeck", Vector3.new(0.64, 0.40, 0.40), CFrame.new(-0.89, 0, 0.02), COLORS.woodDark, Enum.Material.Wood)
+	Builder.box(
+		context,
+		"StockNeck",
+		Vector3.new(0.64, 0.40, 0.40),
+		CFrame.new(-0.89, 0, 0.02),
+		COLORS.woodDark,
+		Enum.Material.Wood
+	)
 	Builder.wedge(
 		context,
 		"StockBody",
@@ -66,7 +73,14 @@ function Factory.create(): WeaponVisualModelRig
 		COLORS.wood,
 		Enum.Material.Wood
 	)
-	Builder.box(context, "ButtPad", Vector3.new(0.18, 0.64, 0.78), CFrame.new(-2.14, 0, -0.01), COLORS.rubber, Enum.Material.SmoothPlastic)
+	Builder.box(
+		context,
+		"ButtPad",
+		Vector3.new(0.18, 0.64, 0.78),
+		CFrame.new(-2.14, 0, -0.01),
+		COLORS.rubber,
+		Enum.Material.SmoothPlastic
+	)
 	Builder.box(
 		context,
 		"PistolGrip",
@@ -91,20 +105,51 @@ function Factory.create(): WeaponVisualModelRig
 		CFrame.new(0.40, 0, -0.88) * CFrame.Angles(0, math.rad(-4), 0),
 		COLORS.black
 	)
-	Builder.attachBox(context, magazine, "MagazineFrontRib", Vector3.new(0.10, 0.49, 0.72), CFrame.new(0.27, 0, 0), COLORS.red)
-	Builder.attachBox(context, magazine, "MagazineBase", Vector3.new(0.64, 0.50, 0.14), CFrame.new(0, 0, -0.52), COLORS.rubber, Enum.Material.SmoothPlastic)
-	Builder.attachBox(context, magazine, "MagazineWitness", Vector3.new(0.28, 0.025, 0.42), CFrame.new(0.06, -0.242, 0.05), COLORS.steel)
-
-	local bolt, boltMotor = Builder.motorBox(
+	Builder.attachBox(
 		context,
-		"Bolt",
-		Vector3.new(0.58, 0.09, 0.24),
-		CFrame.new(0.18, -0.37, 0.17),
+		magazine,
+		"MagazineFrontRib",
+		Vector3.new(0.10, 0.49, 0.72),
+		CFrame.new(0.27, 0, 0),
+		COLORS.red
+	)
+	Builder.attachBox(
+		context,
+		magazine,
+		"MagazineBase",
+		Vector3.new(0.64, 0.50, 0.14),
+		CFrame.new(0, 0, -0.52),
+		COLORS.rubber,
+		Enum.Material.SmoothPlastic
+	)
+	Builder.attachBox(
+		context,
+		magazine,
+		"MagazineWitness",
+		Vector3.new(0.28, 0.025, 0.42),
+		CFrame.new(0.06, -0.242, 0.05),
 		COLORS.steel
 	)
-	Builder.attachBox(context, bolt, "ChargingHandle", Vector3.new(0.18, 0.25, 0.12), CFrame.new(0.10, -0.15, 0), COLORS.black)
 
-	Builder.box(context, "Pump", Vector3.new(0.78, 0.61, 0.52), CFrame.new(1.50, 0, -0.02), COLORS.woodDark, Enum.Material.Wood)
+	local bolt, boltMotor =
+		Builder.motorBox(context, "Bolt", Vector3.new(0.58, 0.09, 0.24), CFrame.new(0.18, -0.37, 0.17), COLORS.steel)
+	Builder.attachBox(
+		context,
+		bolt,
+		"ChargingHandle",
+		Vector3.new(0.18, 0.25, 0.12),
+		CFrame.new(0.10, -0.15, 0),
+		COLORS.black
+	)
+
+	Builder.box(
+		context,
+		"Pump",
+		Vector3.new(0.78, 0.61, 0.52),
+		CFrame.new(1.50, 0, -0.02),
+		COLORS.woodDark,
+		Enum.Material.Wood
+	)
 	for index = 1, 4 do
 		Builder.box(
 			context,
@@ -119,8 +164,21 @@ function Factory.create(): WeaponVisualModelRig
 	Builder.box(context, "TopRail", Vector3.new(1.18, 0.12, 0.09), CFrame.new(0.22, 0, 0.61), COLORS.black)
 	Builder.box(context, "RearSight", Vector3.new(0.20, 0.25, 0.27), CFrame.new(-0.20, 0, 0.76), COLORS.black)
 	Builder.box(context, "FrontSight", Vector3.new(0.16, 0.20, 0.34), CFrame.new(2.95, 0, 0.48), COLORS.black)
-	Builder.cylinder(context, "SideLight", Vector3.new(0.62, 0.23, 0.23), CFrame.new(1.74, 0.38, -0.08), COLORS.gunmetal)
-	Builder.cylinder(context, "SideLightLens", Vector3.new(0.08, 0.25, 0.25), CFrame.new(2.09, 0.38, -0.08), COLORS.red, Enum.Material.Neon)
+	Builder.cylinder(
+		context,
+		"SideLight",
+		Vector3.new(0.62, 0.23, 0.23),
+		CFrame.new(1.74, 0.38, -0.08),
+		COLORS.gunmetal
+	)
+	Builder.cylinder(
+		context,
+		"SideLightLens",
+		Vector3.new(0.08, 0.25, 0.25),
+		CFrame.new(2.09, 0.38, -0.08),
+		COLORS.red,
+		Enum.Material.Neon
+	)
 
 	Builder.box(context, "ShellRack", Vector3.new(0.78, 0.10, 0.35), CFrame.new(-0.05, 0.38, 0.06), COLORS.black)
 	for index = 1, 4 do

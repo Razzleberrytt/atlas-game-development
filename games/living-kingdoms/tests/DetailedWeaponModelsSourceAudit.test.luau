@@ -54,7 +54,10 @@ for _, model in models do
 	assert(contains(router, "require(script.Parent." .. model.factory .. ")"), "router missing " .. model.factory)
 	assert(contains(router, model.factory .. ".create()"), "router must create " .. model.factory)
 	assert(contains(source, model.candidate), "model must expose stable candidate identity: " .. model.file)
-	assert(contains(source, "VisualAssetContracts.AssetKeys." .. model.assetKey), "model missing asset identity: " .. model.file)
+	assert(
+		contains(source, "VisualAssetContracts.AssetKeys." .. model.assetKey),
+		"model missing asset identity: " .. model.file
+	)
 	assert(contains(contracts, model.assetKey), "visual contracts missing " .. model.assetKey)
 	assert(contains(registry, "Keys." .. model.assetKey), "visual registry missing " .. model.assetKey)
 	assert(contains(source, "Builder.finish"), "model must publish shared rig contract: " .. model.file)
@@ -62,23 +65,29 @@ for _, model in models do
 	for _, partName in model.parts do
 		assert(contains(source, '"' .. partName), "missing defining model component " .. partName)
 	end
-	for _, prohibited in { "FireServer", "InvokeServer", "OnServerEvent", "DamagePerHit", "loadedRounds -=", "Humanoid.Health" } do
+	for _, prohibited in
+		{ "FireServer", "InvokeServer", "OnServerEvent", "DamagePerHit", "loadedRounds -=", "Humanoid.Health" }
+	do
 		assert(not contains(source, prohibited), "visual model gained authority token " .. prohibited)
 	end
 end
 
-for _, contractName in {
-	"RightGripAttachment",
-	"LeftGripAttachment",
-	"Muzzle",
-	"Magazine",
-	"Ejection",
-	"boltRestC0",
-	"magazineRestC0",
-} do
+for _, contractName in
+	{
+		"RightGripAttachment",
+		"LeftGripAttachment",
+		"Muzzle",
+		"Magazine",
+		"Ejection",
+		"boltRestC0",
+		"magazineRestC0",
+	}
+do
 	assert(contains(builder, contractName), "shared model builder missing rig contract " .. contractName)
 end
 assert(not contains(builder, "RemoteEvent"), "shared model builder must remain client-local geometry")
 assert(not contains(builder, "FireServer"), "shared model builder must not gain network authority")
 
-print("DetailedWeaponModelsSourceAudit: four dedicated models, asset identities, rig contracts, complexity, and authority boundaries passed")
+print(
+	"DetailedWeaponModelsSourceAudit: four dedicated models, asset identities, rig contracts, complexity, and authority boundaries passed"
+)

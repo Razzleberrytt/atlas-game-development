@@ -77,6 +77,10 @@ VisualAssetContracts.SourceKindIds = table.freeze({
 
 VisualAssetContracts.AssetKeys = table.freeze({
 	WeaponBasicFirearmModel = "visual.weapon.basic-firearm.model",
+	WeaponBreachShotgunModel = "visual.weapon.breach-shotgun.model",
+	WeaponSniperRifleModel = "visual.weapon.sniper-rifle.model",
+	WeaponServicePistolModel = "visual.weapon.service-pistol.model",
+	WeaponSubmachineGunModel = "visual.weapon.submachine-gun.model",
 	OperativeBaseRig = "visual.operative.base-rig",
 	ClassCombatSpecialistEquipment = "visual.class.combat-specialist.equipment",
 	ClassMedicEquipment = "visual.class.medic.equipment",
