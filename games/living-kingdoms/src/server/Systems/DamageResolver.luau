@@ -3,8 +3,9 @@
 --[[
 	Applies at most one configured damage event for a resolved ShotId. The caller
 	owns and commits targetHealthStateAfter, including its processed-ShotId set.
-	No hidden deduplication state, Humanoid mutation, death behavior, or presentation
-	is created here.
+	No hidden deduplication state, Humanoid mutation, death behavior, or
+	presentation is created here. An optional damage override is accepted only
+	from the server caller and is bounded to a finite nonnegative value.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,7 +23,8 @@ type DamageResolver = {
 	resolve: (
 		hitResolution: FirearmHitResolution,
 		targetHealthState: TargetHealthState,
-		serverTimestamp: number
+		serverTimestamp: number,
+		damageAmountOverride: number?
 	) -> DamageResolution,
 }
 
@@ -54,10 +56,24 @@ local function withoutDamage(
 	}
 end
 
+local function resolveDamageAmount(damageAmountOverride: number?): number
+	local baseline = FirearmConfig.BasicFirearm.DamagePerHit
+	if
+		type(damageAmountOverride) == "number"
+		and damageAmountOverride == damageAmountOverride
+		and damageAmountOverride >= baseline
+		and damageAmountOverride <= 120
+	then
+		return damageAmountOverride
+	end
+	return baseline
+end
+
 function DamageResolver.resolve(
 	hitResolution: FirearmHitResolution,
 	targetHealthState: TargetHealthState,
-	serverTimestamp: number
+	serverTimestamp: number,
+	damageAmountOverride: number?
 ): DamageResolution
 	local healthStateAfter = copyHealthState(targetHealthState)
 	local shotId = hitResolution.shotId
@@ -85,7 +101,7 @@ function DamageResolver.resolve(
 		return withoutDamage(healthStateAfter, reasons.WeaponInvalid)
 	end
 
-	local damageAmount = FirearmConfig.BasicFirearm.DamagePerHit
+	local damageAmount = resolveDamageAmount(damageAmountOverride)
 	local healthBefore = math.max(0, targetHealthState.currentHealth)
 	healthStateAfter.currentHealth = math.max(0, healthBefore - damageAmount)
 	local becameDead = healthBefore > 0 and healthStateAfter.currentHealth == 0
