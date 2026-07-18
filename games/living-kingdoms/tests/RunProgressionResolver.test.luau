@@ -15,23 +15,26 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Ru
 })()
 
 local CONFIG_TOKEN = {}
-local resolver = luau.load(fs.readFile("games/living-kingdoms/src/shared/Progression/RunProgressionResolver.luau"), {
-	debugName = "RunProgressionResolver",
-	environment = {
-		script = {
-			Parent = {
+local resolver = luau.load(
+	fs.readFile("games/living-kingdoms/src/shared/Progression/RunProgressionResolver.luau"),
+	{
+		debugName = "RunProgressionResolver",
+		environment = {
+			script = {
 				Parent = {
-					Config = { RunProgressionConfig = CONFIG_TOKEN },
+					Parent = {
+						Config = { RunProgressionConfig = CONFIG_TOKEN },
+					},
 				},
 			},
+			require = function(token: unknown)
+				assert(token == CONFIG_TOKEN, "unexpected progression resolver dependency")
+				return config
+			end,
 		},
-		require = function(token: unknown)
-			assert(token == CONFIG_TOKEN, "unexpected progression resolver dependency")
-			return config
-		end,
-	},
-	injectGlobals = true,
-})()
+		injectGlobals = true,
+	}
+)()
 
 assert(config.FieldXpPerConfirmedEnemyDeath == 20, "one confirmed death should award 20 Field XP")
 assert(

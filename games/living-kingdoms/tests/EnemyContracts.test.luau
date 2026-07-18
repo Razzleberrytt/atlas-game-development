@@ -57,9 +57,7 @@ assert(contracts.EnemyBehaviorStateIds.StandDown == "StandDown")
 assert(contracts.EnemyBehaviorStateIds.Dead == "Dead")
 assert(contracts.EnemySpawnSourceIds.AuthoredWave == "AuthoredWave")
 assert(contracts.EnemySpawnSourceIds.RoamingPressure == "RoamingPressure")
-for _, reason in
-	{ "InvalidDefinition", "DuplicateEntityId", "PopulationCapReached", "OutsidePlayableExtent", "TooCloseToOperative" }
-do
+for _, reason in { "InvalidDefinition", "DuplicateEntityId", "PopulationCapReached", "OutsidePlayableExtent", "TooCloseToOperative" } do
 	assert(contracts.EnemySpawnRejectionReasonIds[reason] == reason, "missing spawn rejection: " .. reason)
 end
 for _, reason in { "InvalidFacts", "InvalidTimestamp" } do
@@ -72,17 +70,22 @@ assert(table.isfrozen(contracts.EnemyBehaviorStateIds), "state IDs must be froze
 assert(config.Walker.ArchetypeId == contracts.EnemyArchetypeIds.ExclusionWalker)
 assert(table.isfrozen(config) and table.isfrozen(config.Walker), "config must be frozen")
 assert(config.Walker.MaximumHealth > 0 and config.Walker.MaximumHealth < math.huge)
-assert(config.Walker.AttackDamage < 100, "one walker swing must never down a full-health operative outright")
 assert(
-	config.Walker.DetectionRadiusStuds
-		< config.FairSpawn.MinimumOperativeDistanceStuds + config.Pressure.RoamingSpawnMaximumDistanceStuds,
+	config.Walker.AttackDamage < 100,
+	"one walker swing must never down a full-health operative outright"
+)
+assert(
+	config.Walker.DetectionRadiusStuds < config.FairSpawn.MinimumOperativeDistanceStuds + config.Pressure.RoamingSpawnMaximumDistanceStuds,
 	"detection must stay in the same order of magnitude as the spawn ring"
 )
 assert(
 	config.FairSpawn.MinimumOperativeDistanceStuds > config.Combat.GameplayVisibilityRadiusStuds,
 	"fair spawns must land outside the darkness engagement radius"
 )
-assert(config.Combat.GameplayVisibilityRadiusStuds < 80, "darkness, not weapon range, must bound engagement")
+assert(
+	config.Combat.GameplayVisibilityRadiusStuds < 80,
+	"darkness, not weapon range, must bound engagement"
+)
 assert(
 	config.Population.AbsoluteMaximumConcurrent >= config.Population.MaximumConcurrentPerOperative * 4,
 	"the absolute cap must cover a four-operative squad"
@@ -95,7 +98,10 @@ local function capFor(operativeCount: number): number
 		config.Population.MaximumConcurrentPerOperative * math.max(1, operativeCount)
 	)
 end
-assert(capFor(1) == 24 and capFor(2) == 48 and capFor(4) == 96, "representative 1/2/4 horde population caps changed")
+assert(
+	capFor(1) == 24 and capFor(2) == 48 and capFor(4) == 96,
+	"representative 1/2/4 horde population caps changed"
+)
 
 -- Roaming cadence covers every escalation level, tightens monotonically, and
 -- remains bounded by the authored ten-enemy burst maximum.

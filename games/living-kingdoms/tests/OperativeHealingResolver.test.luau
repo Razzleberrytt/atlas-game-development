@@ -9,22 +9,25 @@ local contracts = luau.load(
 	{ debugName = "OperativeLifeContracts", injectGlobals = true }
 )()
 local replicatedStorage = { Shared = { Health = { OperativeLifeContracts = CONTRACTS_TOKEN } } }
-local resolver = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/OperativeHealingResolver.luau"), {
-	debugName = "OperativeHealingResolver",
-	environment = {
-		game = {
-			GetService = function(_, serviceName)
-				assert(serviceName == "ReplicatedStorage")
-				return replicatedStorage
+local resolver = luau.load(
+	fs.readFile("games/living-kingdoms/src/server/Systems/OperativeHealingResolver.luau"),
+	{
+		debugName = "OperativeHealingResolver",
+		environment = {
+			game = {
+				GetService = function(_, serviceName)
+					assert(serviceName == "ReplicatedStorage")
+					return replicatedStorage
+				end,
+			},
+			require = function(token)
+				assert(token == CONTRACTS_TOKEN)
+				return contracts
 			end,
 		},
-		require = function(token)
-			assert(token == CONTRACTS_TOKEN)
-			return contracts
-		end,
-	},
-	injectGlobals = true,
-})()
+		injectGlobals = true,
+	}
+)()
 
 local function snapshot(health: number, lifeStateId: string?)
 	return {

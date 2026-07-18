@@ -64,7 +64,7 @@ assertThat(
 )
 
 assertThat(
-	string.find(generator, 'scene.export(file_type="obj")', 1, true) ~= nil,
+	string.find(generator, "scene.export(file_type=\"obj\")", 1, true) ~= nil,
 	"support LMG generator must emit a Roblox-importable OBJ"
 )
 assertThat(

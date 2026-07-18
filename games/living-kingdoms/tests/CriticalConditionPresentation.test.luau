@@ -40,53 +40,43 @@ assertThat(config.MortalHealthFraction < config.CriticalHealthFraction, "mortal 
 assertThat(config.EdgeThicknessPixels <= 160, "critical edges must not consume the combat view")
 assertThat(config.PulseTransparencyAmplitude <= 0.25, "critical pulse amplitude must remain bounded")
 
-for _, required in
-	{
-		"local CriticalConditionConfig = require(ReplicatedStorage.Shared.Config.CriticalConditionConfig)",
-		'"LK_P3_CurrentHealth"',
-		'"LK_P3_MaximumHealth"',
-		'"LK_P3_LifeState"',
-		'lifeState ~= "Alive"',
-		"CriticalConditionConfig.CriticalHealthFraction",
-		"CriticalConditionConfig.MortalHealthFraction",
-		"Workspace:GetServerTimeNow()",
-		'Instance.new("UIGradient")',
-		'"CRITICAL CONDITION  //  %d%% HEALTH"',
-		'"MORTAL CONDITION  //  %d%% HEALTH"',
-		"RunService.RenderStepped:Connect(updateFrame)",
-		"table.clear(edgeFrames)",
-	}
-do
+for _, required in {
+	'local CriticalConditionConfig = require(ReplicatedStorage.Shared.Config.CriticalConditionConfig)',
+	'"LK_P3_CurrentHealth"',
+	'"LK_P3_MaximumHealth"',
+	'"LK_P3_LifeState"',
+	'lifeState ~= "Alive"',
+	"CriticalConditionConfig.CriticalHealthFraction",
+	"CriticalConditionConfig.MortalHealthFraction",
+	"Workspace:GetServerTimeNow()",
+	'Instance.new("UIGradient")',
+	'"CRITICAL CONDITION  //  %d%% HEALTH"',
+	'"MORTAL CONDITION  //  %d%% HEALTH"',
+	"RunService.RenderStepped:Connect(updateFrame)",
+	"table.clear(edgeFrames)",
+} do
 	assertThat(contains(controller, required), "critical condition presentation is missing " .. required)
 end
 
-assertThat(
-	count(controller, "createEdge(gui,") == 4,
-	"critical presentation requires exactly four bounded screen edges"
-)
+assertThat(count(controller, "createEdge(gui,") == 4, "critical presentation requires exactly four bounded screen edges")
 assertThat(count(controller, ":Connect(") == 1, "critical presentation requires exactly one render connection")
 assertThat(contains(bootstrap, "CriticalConditionController.start()"), "client bootstrap must start critical urgency")
 
-for _, prohibited in
-	{
-		"RemoteEvent",
-		"RemoteFunction",
-		"FireServer",
-		"InvokeServer",
-		"applyAuthoritativeDamage",
-		"commitAcceptedTransition",
-		"currentHealth = currentHealth -",
-		"Humanoid.Health",
-		"TakeDamage",
-		"task.delay",
-		"task.spawn",
-		"task.defer",
-	}
-do
-	assertThat(
-		not contains(controller, prohibited),
-		"critical presentation must not own gameplay through " .. prohibited
-	)
+for _, prohibited in {
+	"RemoteEvent",
+	"RemoteFunction",
+	"FireServer",
+	"InvokeServer",
+	"applyAuthoritativeDamage",
+	"commitAcceptedTransition",
+	"currentHealth = currentHealth -",
+	"Humanoid.Health",
+	"TakeDamage",
+	"task.delay",
+	"task.spawn",
+	"task.defer",
+} do
+	assertThat(not contains(controller, prohibited), "critical presentation must not own gameplay through " .. prohibited)
 end
 
 print("CriticalConditionPresentation: bounded server-disclosed critical and mortal urgency passed")

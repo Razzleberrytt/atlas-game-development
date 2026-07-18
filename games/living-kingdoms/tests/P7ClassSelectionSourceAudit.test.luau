@@ -22,38 +22,27 @@ local clientBootstrap = fs.readFile(clientBootstrapPath)
 
 assertThat(string.find(service, "ClassSelectionResolver.resolve", 1, true) ~= nil, "runtime must use pure resolver")
 assertThat(string.find(service, "MissionDirectorService.read", 1, true) ~= nil, "mission phase must be server-derived")
-assertThat(
-	string.find(service, "OperativeLifeService.read(player)", 1, true) ~= nil,
-	"participation must be server-derived"
-)
+assertThat(string.find(service, "OperativeLifeService.read(player)", 1, true) ~= nil, "participation must be server-derived")
 assertThat(string.find(service, "subscribeRoster", 1, true) ~= nil, "roster lifecycle must follow life owner")
-assertThat(
-	string.find(service, "maximumProcessedRequestIdsPerOperative", 1, true) ~= nil,
-	"replay history must be bounded"
-)
-assertThat(
-	string.find(service, "minimumRequestIntervalSeconds", 1, true) ~= nil,
-	"selection requests must be rate-limited"
-)
+assertThat(string.find(service, "maximumProcessedRequestIdsPerOperative", 1, true) ~= nil, "replay history must be bounded")
+assertThat(string.find(service, "minimumRequestIntervalSeconds", 1, true) ~= nil, "selection requests must be rate-limited")
 assertThat(string.find(service, "task.delay", 1, true) ~= nil, "one bounded deadline lock must exist")
 assertThat(not string.find(service, "Heartbeat", 1, true), "selection must not add a Heartbeat loop")
 assertThat(not string.find(service, "RunService", 1, true), "selection must not poll per frame")
 assertThat(not string.find(service, "FireAllClients", 1, true), "roster snapshots must be recipient-authored")
 
-for _, forbidden in
-	{
-		"ActionIntent",
-		"applyAuthoritativeDamage",
-		"commitAcceptedTransition",
-		"applyCombatRestrictions",
-		"AmmunitionCacheService",
-		"OperativeCombatRuntimeService",
-		"FieldTreatment",
-		"FieldResupply",
-		"ReviveAssistance",
-		"Brace",
-	}
-do
+for _, forbidden in {
+	"ActionIntent",
+	"applyAuthoritativeDamage",
+	"commitAcceptedTransition",
+	"applyCombatRestrictions",
+	"AmmunitionCacheService",
+	"OperativeCombatRuntimeService",
+	"FieldTreatment",
+	"FieldResupply",
+	"ReviveAssistance",
+	"Brace",
+} do
 	assertThat(not string.find(service, forbidden, 1, true), "selection owner must not implement " .. forbidden)
 end
 
@@ -69,17 +58,15 @@ local selectionPayload = string.sub(controller, payloadStart :: number, (payload
 
 assertThat(string.find(selectionPayload, "requestId =", 1, true) ~= nil, "client request requires replay identity")
 assertThat(string.find(selectionPayload, "classId = classId", 1, true) ~= nil, "client request contains selected class")
-for _, forbidden in
-	{
-		"operativeEntityId =",
-		"selectionStateId =",
-		"revision =",
-		"resourceAmount =",
-		"cooldownEndServerTimestamp =",
-		"health =",
-		"ammunition =",
-	}
-do
+for _, forbidden in {
+	"operativeEntityId =",
+	"selectionStateId =",
+	"revision =",
+	"resourceAmount =",
+	"cooldownEndServerTimestamp =",
+	"health =",
+	"ammunition =",
+} do
 	assertThat(
 		not string.find(selectionPayload, forbidden, 1, true),
 		"client selection payload must not submit authority field " .. forbidden
@@ -89,22 +76,20 @@ end
 local resolverHeaderEnd = string.find(resolver, "]]", 1, true)
 local resolverExecutable = if resolverHeaderEnd == nil then resolver else string.sub(resolver, resolverHeaderEnd + 2)
 assertThat(
-	string.find(resolverExecutable, 'game:GetService("ReplicatedStorage")', 1, true) ~= nil,
+	string.find(resolverExecutable, "game:GetService(\"ReplicatedStorage\")", 1, true) ~= nil,
 	"resolver may read shared declarations"
 )
-for _, forbidden in
-	{
-		"Instance.new",
-		"RemoteEvent",
-		"RemoteFunction",
-		"Players",
-		"Workspace",
-		"task.delay",
-		"task.spawn",
-		"OnServerEvent",
-		"FireClient",
-	}
-do
+for _, forbidden in {
+	"Instance.new",
+	"RemoteEvent",
+	"RemoteFunction",
+	"Players",
+	"Workspace",
+	"task.delay",
+	"task.spawn",
+	"OnServerEvent",
+	"FireClient",
+} do
 	assertThat(
 		not string.find(resolverExecutable, forbidden, 1, true),
 		"pure resolver executable source must not contain " .. forbidden
@@ -117,11 +102,5 @@ assertThat(string.find(serverBootstrap, "ReadState", 1, true) ~= nil, "server mu
 assertThat(not string.find(serverBootstrap, "ActionIntent", 1, true), "P7-0102 must not create an action remote")
 local missionStart = string.find(serverBootstrap, "MissionDirectorService.start()", 1, true)
 local classStart = string.find(serverBootstrap, "ClassService.start()", 1, true)
-assertThat(
-	missionStart ~= nil and classStart ~= nil and missionStart < classStart,
-	"mission authority must start before class selection"
-)
-assertThat(
-	string.find(clientBootstrap, "ClassSelectionController.start()", 1, true) ~= nil,
-	"client selection must be bootstrapped"
-)
+assertThat(missionStart ~= nil and classStart ~= nil and missionStart < classStart, "mission authority must start before class selection")
+assertThat(string.find(clientBootstrap, "ClassSelectionController.start()", 1, true) ~= nil, "client selection must be bootstrapped")

@@ -21,23 +21,11 @@ check(string.find(cache, "table.freeze(table.clone(granted))", 1, true) ~= nil, 
 local commitPosition = string.find(cache, "commitReviveCombatState", 1, true)
 local historyPosition = string.find(cache, "processedByPlayer[player] = table.clone", 1, true)
 local grantPosition = string.find(cache, "grantedSetFor(player)[definition.cacheId]", 1, true)
-check(
-	commitPosition ~= nil and historyPosition ~= nil and commitPosition < historyPosition,
-	"history must follow combat commit"
-)
-check(
-	historyPosition ~= nil and grantPosition ~= nil and historyPosition < grantPosition,
-	"grant telemetry must follow history"
-)
+check(commitPosition ~= nil and historyPosition ~= nil and commitPosition < historyPosition, "history must follow combat commit")
+check(historyPosition ~= nil and grantPosition ~= nil and historyPosition < grantPosition, "grant telemetry must follow history")
 
-check(
-	string.find(telemetry, "starting rounds + committed cache grants - current rounds", 1, true) ~= nil,
-	"derivation contract missing"
-)
-check(
-	string.find(telemetry, "initialTotalRounds + cacheRoundsGranted - totalRounds", 1, true) ~= nil,
-	"shot derivation missing"
-)
+check(string.find(telemetry, "starting rounds + committed cache grants - current rounds", 1, true) ~= nil, "derivation contract missing")
+check(string.find(telemetry, "initialTotalRounds + cacheRoundsGranted - totalRounds", 1, true) ~= nil, "shot derivation missing")
 check(string.find(telemetry, "function Service.sample", 1, true) ~= nil, "explicit sampling missing")
 check(string.find(telemetry, "dryAmmunitionTransitionCount", 1, true) ~= nil, "dry transition metric missing")
 check(string.find(telemetry, "remainingCacheOpportunityCount", 1, true) ~= nil, "remaining opportunity metric missing")

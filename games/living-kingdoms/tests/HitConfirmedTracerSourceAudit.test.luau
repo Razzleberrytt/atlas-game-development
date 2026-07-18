@@ -13,35 +13,31 @@ local presenter = fs.readFile("games/living-kingdoms/src/client/Presentation/Wea
 local registry = fs.readFile("games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau")
 local roadmap = fs.readFile("docs/roadmap/VISUAL-PRODUCTION-TRACK.md")
 
-for _, required in
-	{
-		"server confirmed that damage was applied",
-		"server disclosed an authoritative impact world position",
-		"Blocked, rejected, duplicate, or otherwise non-damaging shots must not display a tracer",
-		"approximately 0.055 seconds",
-		"Skip degenerate paths shorter than 0.5 studs",
-	}
-do
+for _, required in {
+	"server confirmed that damage was applied",
+	"server disclosed an authoritative impact world position",
+	"Blocked, rejected, duplicate, or otherwise non-damaging shots must not display a tracer",
+	"approximately 0.055 seconds",
+	"Skip degenerate paths shorter than 0.5 studs",
+} do
 	assertThat(string.find(policy, required, 1, true) ~= nil, "tracer policy missing: " .. required)
 end
 
-for _, required in
-	{
-		"local TRACER_LIFETIME_SECONDS = 0.055",
-		"local MINIMUM_TRACER_DISTANCE_STUDS = 0.5",
-		"rig.muzzleAttachment.WorldPosition",
-		"if distance < MINIMUM_TRACER_DISTANCE_STUDS then",
-		'tracer.Name = "AuthoritativeDamageTracer"',
-		'tracer:SetAttribute("SourceShotId", shotId)',
-		'tracer:SetAttribute("PresentationOnly", true)',
-		"tracer.CanCollide = false",
-		"tracer.CanTouch = false",
-		"tracer.CanQuery = false",
-		"Debris:AddItem(tracer, TRACER_LIFETIME_SECONDS)",
-		"if didApplyDamage and impactWorldPosition ~= nil then",
-		"spawnDamageTracer(rig, shotId, impactWorldPosition)",
-	}
-do
+for _, required in {
+	'local TRACER_LIFETIME_SECONDS = 0.055',
+	'local MINIMUM_TRACER_DISTANCE_STUDS = 0.5',
+	'rig.muzzleAttachment.WorldPosition',
+	'if distance < MINIMUM_TRACER_DISTANCE_STUDS then',
+	'tracer.Name = "AuthoritativeDamageTracer"',
+	'tracer:SetAttribute("SourceShotId", shotId)',
+	'tracer:SetAttribute("PresentationOnly", true)',
+	'tracer.CanCollide = false',
+	'tracer.CanTouch = false',
+	'tracer.CanQuery = false',
+	'Debris:AddItem(tracer, TRACER_LIFETIME_SECONDS)',
+	'if didApplyDamage and impactWorldPosition ~= nil then',
+	'spawnDamageTracer(rig, shotId, impactWorldPosition)',
+} do
 	assertThat(string.find(presenter, required, 1, true) ~= nil, "tracer presenter missing: " .. required)
 end
 
@@ -52,22 +48,20 @@ assertThat(
 	"tracer creation must remain below the authoritative damage gate"
 )
 
-for _, forbidden in
-	{
-		"FireServer",
-		"InvokeServer",
-		"OnServerEvent",
-		"DamageResolver",
-		"FirearmHitResolver",
-		"Humanoid:TakeDamage",
-		".Touched:Connect",
-		"Raycast(",
-		"loadedRounds",
-		"reserveRounds",
-		"CadenceSeconds",
-		"ReloadDurationSeconds",
-	}
-do
+for _, forbidden in {
+	"FireServer",
+	"InvokeServer",
+	"OnServerEvent",
+	"DamageResolver",
+	"FirearmHitResolver",
+	"Humanoid:TakeDamage",
+	".Touched:Connect",
+	"Raycast(",
+	"loadedRounds",
+	"reserveRounds",
+	"CadenceSeconds",
+	"ReloadDurationSeconds",
+} do
 	assertThat(not string.find(presenter, forbidden, 1, true), "tracer presenter must not contain " .. forbidden)
 end
 

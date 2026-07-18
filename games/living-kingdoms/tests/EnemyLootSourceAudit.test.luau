@@ -32,8 +32,7 @@ assertThat(config.CommonDropRolls + config.RareDropRolls == 8, "total enemy loot
 assertThat(config.Definitions.Common.Rounds == 8, "common enemy loot grant drifted")
 assertThat(config.Definitions.Rare.Rounds == 20, "rare enemy loot grant drifted")
 local expectedRoundsPerKill = (
-	config.CommonDropRolls * config.Definitions.Common.Rounds
-	+ config.RareDropRolls * config.Definitions.Rare.Rounds
+	config.CommonDropRolls * config.Definitions.Common.Rounds + config.RareDropRolls * config.Definitions.Rare.Rounds
 ) / config.DropRollModulo
 assertThat(expectedRoundsPerKill <= 0.8, "enemy loot must not sustain automatic fire")
 
@@ -56,48 +55,31 @@ assertThat(
 )
 assertThat(contains(service, 'Instance.new("PointLight")'), "world loot requires readable glow")
 assertThat(contains(service, 'Instance.new("BillboardGui")'), "world loot requires readable ammunition disclosure")
-assertThat(
-	not contains(service, 'Instance.new("ProximityPrompt")'),
-	"enemy loot must not create client-triggered prompts"
-)
-assertThat(
-	contains(service, "serverTimestamp >= record.expiresAtServerTimestamp"),
-	"loot must expire in the bounded pass"
-)
-assertThat(
-	contains(service, "activeDropCount = math.max(0, activeDropCount - 1)"),
-	"loot cleanup must release cap budget"
-)
+assertThat(not contains(service, 'Instance.new("ProximityPrompt")'), "enemy loot must not create client-triggered prompts")
+assertThat(contains(service, "serverTimestamp >= record.expiresAtServerTimestamp"), "loot must expire in the bounded pass")
+assertThat(contains(service, "activeDropCount = math.max(0, activeDropCount - 1)"), "loot cleanup must release cap budget")
 
-for _, prohibited in
-	{
-		"RemoteEvent",
-		"RemoteFunction",
-		"FireServer",
-		"OnServerEvent",
-		".Touched",
-		"TouchEnded",
-		"task.delay",
-		"task.spawn",
-		"task.defer",
-		"DataStoreService",
-		"Humanoid.Health",
-	}
-do
+for _, prohibited in {
+	"RemoteEvent",
+	"RemoteFunction",
+	"FireServer",
+	"OnServerEvent",
+	".Touched",
+	"TouchEnded",
+	"task.delay",
+	"task.spawn",
+	"task.defer",
+	"DataStoreService",
+	"Humanoid.Health",
+} do
 	assertThat(not contains(service, prohibited), "enemy loot must not widen authority or scheduling: " .. prohibited)
 end
 
 assertThat(contains(contracts, 'EnemyLoot = "EnemyLoot"'), "enemy loot requires an explicit supply source")
-assertThat(
-	contains(supplyResolver, "candidate.sourceId == SourceIds.EnemyLoot"),
-	"supply resolver must whitelist enemy loot"
-)
+assertThat(contains(supplyResolver, "candidate.sourceId == SourceIds.EnemyLoot"), "supply resolver must whitelist enemy loot")
 assertThat(contains(bootstrap, "EnemyLootService.start()"), "server bootstrap must start enemy loot")
 local combatStart = string.find(bootstrap, "OperativeCombatRuntimeService.start()", 1, true)
 local lootStart = string.find(bootstrap, "EnemyLootService.start()", 1, true)
-assertThat(
-	combatStart ~= nil and lootStart ~= nil and combatStart < lootStart,
-	"combat authority must start before loot collection"
-)
+assertThat(combatStart ~= nil and lootStart ~= nil and combatStart < lootStart, "combat authority must start before loot collection")
 
 print("EnemyLootSourceAudit: hard eight-percent loot economy, automatic collection, authority, expiry, and caps passed")

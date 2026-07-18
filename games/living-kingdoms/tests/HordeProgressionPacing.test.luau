@@ -14,10 +14,13 @@ local hordeConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Conf
 	injectGlobals = true,
 })()
 
-local progressionConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RunProgressionConfig.luau"), {
-	debugName = "RunProgressionConfig",
-	injectGlobals = true,
-})()
+local progressionConfig = luau.load(
+	fs.readFile("games/living-kingdoms/src/shared/Config/RunProgressionConfig.luau"),
+	{
+		debugName = "RunProgressionConfig",
+		injectGlobals = true,
+	}
+)()
 
 local pressure = hordeConfig.Pressure
 local killsForFirstUpgrade = progressionConfig.BaseXpToLevel / progressionConfig.FieldXpPerConfirmedEnemyDeath

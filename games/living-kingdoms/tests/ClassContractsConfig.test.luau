@@ -98,10 +98,7 @@ assertThat(not contractsMutationSucceeded, "class ID vocabulary must be frozen")
 
 assertThat(config.Version == "P7-0102-v1", "class config version must identify selection integration")
 assertThat(config.Selection.allowDuplicateStartingClasses, "duplicate starting classes must remain allowed")
-assertThat(
-	config.Selection.defaultClassId == contracts.ClassIds.CombatSpecialist,
-	"fallback class must be deterministic"
-)
+assertThat(config.Selection.defaultClassId == contracts.ClassIds.CombatSpecialist, "fallback class must be deterministic")
 assertThat(config.Selection.openMissionPhaseId == "Insertion", "selection must use the bounded insertion window")
 assertThat(config.Selection.minimumRequestIntervalSeconds == 0.15, "selection rate limit must be configured")
 assertThat(config.Selection.maximumProcessedRequestIdsPerOperative == 64, "selection replay history must be bounded")
@@ -128,11 +125,14 @@ assertThat(
 	contracts.validateClassSelectionIntent({ requestId = "request-1", classId = contracts.ClassIds.Medic }),
 	"minimal selection intent must validate"
 )
-assertThat(not contracts.validateClassSelectionIntent({
-	requestId = "request-1",
-	classId = contracts.ClassIds.Medic,
-	operativeEntityId = "forged",
-}), "selection intent must reject extra identity fields")
+assertThat(
+	not contracts.validateClassSelectionIntent({
+		requestId = "request-1",
+		classId = contracts.ClassIds.Medic,
+		operativeEntityId = "forged",
+	}),
+	"selection intent must reject extra identity fields"
+)
 assertThat(
 	contracts.validateClassSelectionIntent({ requestId = "request-2", classId = "unknown-class" }),
 	"shape validation must preserve UnknownClass resolver feedback"
@@ -199,23 +199,18 @@ for _, classId in config.Selection.startingClassIds do
 end
 
 local combinedDeclarations = fs.readFile(contractsPath) .. "\n" .. fs.readFile(configPath)
-for _, forbidden in
-	{
-		"game:GetService",
-		"Instance.new",
-		"RemoteEvent",
-		"RemoteFunction",
-		"Heartbeat",
-		"RenderStepped",
-		"task.delay",
-		"task.spawn",
-		"FireServer",
-		"FireClient",
-		"OnServerEvent",
-	}
-do
-	assertThat(
-		not string.find(combinedDeclarations, forbidden, 1, true),
-		"shared declarations must not contain " .. forbidden
-	)
+for _, forbidden in {
+	"game:GetService",
+	"Instance.new",
+	"RemoteEvent",
+	"RemoteFunction",
+	"Heartbeat",
+	"RenderStepped",
+	"task.delay",
+	"task.spawn",
+	"FireServer",
+	"FireClient",
+	"OnServerEvent",
+} do
+	assertThat(not string.find(combinedDeclarations, forbidden, 1, true), "shared declarations must not contain " .. forbidden)
 end

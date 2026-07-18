@@ -31,21 +31,19 @@ assert(contains(controller, "part.CanQuery = false"), "helmet parts must not aff
 assert(contains(controller, "Players.PlayerAdded:Connect"), "late-joining players must receive helmets")
 assert(contains(controller, "player.CharacterAdded:Connect"), "respawned characters must receive helmets")
 
-for _, prohibited in
-	{
-		'Instance.new("RemoteEvent")',
-		'Instance.new("RemoteFunction")',
-		"FireServer",
-		"OnServerEvent",
-		"SetNetworkOwner",
-		"ApplyDescription",
-		"LoadCharacter",
-		"DataStoreService",
-		"WalkSpeed",
-		"JumpPower",
-		"Health =",
-	}
-do
+for _, prohibited in {
+	'Instance.new("RemoteEvent")',
+	'Instance.new("RemoteFunction")',
+	"FireServer",
+	"OnServerEvent",
+	"SetNetworkOwner",
+	"ApplyDescription",
+	"LoadCharacter",
+	"DataStoreService",
+	"WalkSpeed",
+	"JumpPower",
+	"Health =",
+} do
 	assert(not contains(controller, prohibited), "helmet controller contains prohibited gameplay API: " .. prohibited)
 end
 
