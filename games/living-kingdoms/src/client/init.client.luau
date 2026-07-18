@@ -21,6 +21,8 @@ local LandmarkAccentPresentationController = require(script.Controllers.Landmark
 local MissionController = require(script.Controllers.MissionController)
 local MissionObjectPresentationController = require(script.Controllers.MissionObjectPresentationController)
 local RunProgressionHUDController = require(script.Controllers.RunProgressionHUDController)
+local HordeHUDController = require(script.Controllers.HordeHUDController)
+local HordeEffectsController = require(script.Controllers.HordeEffectsController)
 
 CameraController.init()
 CameraController.start()
@@ -46,6 +48,8 @@ LandmarkAccentPresentationController.start()
 MissionController.start()
 MissionObjectPresentationController.start()
 RunProgressionHUDController.start()
+HordeHUDController.start()
+HordeEffectsController.start()
 -- Mission presentation starts first; class selection then requests authoritative state.
 ClassSelectionController.start()
 ClassSilhouetteController.start()

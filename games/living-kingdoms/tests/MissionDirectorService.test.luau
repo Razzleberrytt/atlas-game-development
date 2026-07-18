@@ -407,7 +407,10 @@ assert(afterObjective.extractionUnlocked == true)
 assert(afterObjective.escalationLevel == 1)
 assert(afterObjective.objectiveCompletedByOperativeEntityId == "operative:alpha")
 assert(afterObjective.objectiveCompletedAtServerTimestamp == now)
-assert(#spawnedHostiles == 2, "objective completion spawns the first escalation wave")
+assert(
+	#spawnedHostiles == #config.Escalation.Waves[1],
+	"objective completion spawns the configured first escalation wave"
+)
 assert(spawnedHostiles[1].id == config.Escalation.Waves[1][1].id)
 assert(spawnedWaveIndexes[1] == 1, "the first wave must carry its escalation index to the director")
 assert(latestBroadcast().radio.lineId == "ObjectiveComplete")
@@ -430,11 +433,17 @@ assert(service.read().objectiveStateId == "Completed")
 local objectiveCompletedAt = afterObjective.objectiveCompletedAtServerTimestamp
 now = objectiveCompletedAt + config.Escalation.SecondWaveDelaySeconds
 assert(service.evaluateTimersAt(now).didChange)
-assert(#spawnedHostiles == 4)
+assert(
+	#spawnedHostiles == #config.Escalation.Waves[1] + #config.Escalation.Waves[2],
+	"second escalation appends the configured second wave"
+)
 assert(service.read().escalationLevel == 2)
 assert(latestBroadcast().radio.lineId == "PressureRising")
 assert(not service.evaluateTimersAt(now + 1).didChange)
-assert(#spawnedHostiles == 4, "second wave must not respawn")
+assert(
+	#spawnedHostiles == #config.Escalation.Waves[1] + #config.Escalation.Waves[2],
+	"second wave must not respawn"
+)
 
 -- Holdout requires an admitted, alive survivor inside the clearing.
 assert(not service.evaluateExtractionPresenceAt(now).didChange)
@@ -448,7 +457,10 @@ local holdoutRead = service.read()
 assert(holdoutRead.phaseId == "Holdout", "presence heartbeat must begin holdout")
 assert(holdoutRead.holdoutDeadlineServerTimestamp == now + config.Extraction.ArrivalSeconds)
 assert(holdoutRead.escalationLevel == 3)
-assert(#spawnedHostiles == 4 + #config.Escalation.Waves[3])
+assert(
+	#spawnedHostiles
+		== #config.Escalation.Waves[1] + #config.Escalation.Waves[2] + #config.Escalation.Waves[3]
+)
 assert(latestBroadcast().radio.lineId == "HoldPosition")
 assert(latestBroadcast().holdoutDeadlineServerTimestamp == holdoutRead.holdoutDeadlineServerTimestamp)
 assert(service.evaluateExtractionPresenceAt(now).rejectionReasonId == "InvalidPhase")
