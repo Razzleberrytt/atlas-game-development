@@ -20,7 +20,7 @@ export type ScarcityAmmunitionState = {
 	reserveRounds: number,
 	magazineCapacity: number,
 	maximumReserveRounds: number,
-	processedSupplyIds: { [string]: boolean,
+	processedSupplyIds: { [string]: boolean },
 }
 
 export type AmmunitionSupply = {
