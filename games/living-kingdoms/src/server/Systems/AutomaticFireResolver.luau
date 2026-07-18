@@ -5,7 +5,8 @@
 	The caller owns the monotonic server time source and must commit the returned
 	weapon state before resolving another attempt. This module does not discover
 	or validate candidates, retain state, resolve hits, apply damage, or present
-	combat.
+	combat. An optional cadence override is accepted only from the server caller
+	and is bounded to a faster positive value than the configured baseline.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -34,7 +35,8 @@ type AutomaticFireResolver = {
 		operativeState: OperativeAutomaticFireState,
 		selectedTarget: SelectedTargetState?,
 		weaponState: WeaponReadinessState,
-		serverTimestamp: number
+		serverTimestamp: number,
+		cadenceSecondsOverride: number?
 	) -> AutomaticFireResolution,
 }
 
@@ -62,7 +64,6 @@ local function copyReloadState(reloadState: ReloadState?): ReloadState?
 	if reloadState == nil then
 		return nil
 	end
-
 	return {
 		weaponId = reloadState.weaponId,
 		startedAtServerTimestamp = reloadState.startedAtServerTimestamp,
@@ -132,11 +133,25 @@ local function deterministicShotId(
 	return string.format("shot:%s:%s:%.17g", operativeEntityId, weaponId, serverTimestamp)
 end
 
+local function resolveCadenceSeconds(cadenceSecondsOverride: number?): number
+	local baseline = FirearmConfig.BasicFirearm.CadenceSeconds
+	if
+		type(cadenceSecondsOverride) == "number"
+		and cadenceSecondsOverride == cadenceSecondsOverride
+		and cadenceSecondsOverride >= 0.05
+		and cadenceSecondsOverride <= baseline
+	then
+		return cadenceSecondsOverride
+	end
+	return baseline
+end
+
 function AutomaticFireResolver.resolve(
 	operativeState: OperativeAutomaticFireState,
 	selectedTarget: SelectedTargetState?,
 	weaponState: WeaponReadinessState,
-	serverTimestamp: number
+	serverTimestamp: number,
+	cadenceSecondsOverride: number?
 ): AutomaticFireResolution
 	local targetEntityId = if selectedTarget == nil then nil else selectedTarget.targetEntityId
 
@@ -190,7 +205,7 @@ function AutomaticFireResolver.resolve(
 	ammunitionAfter.loadedRounds -= 1
 	local cadenceAfter = copyCadence(weaponState.cadence)
 	cadenceAfter.lastFireServerTimestamp = serverTimestamp
-	cadenceAfter.nextAllowedFireServerTimestamp = serverTimestamp + FirearmConfig.BasicFirearm.CadenceSeconds
+	cadenceAfter.nextAllowedFireServerTimestamp = serverTimestamp + resolveCadenceSeconds(cadenceSecondsOverride)
 	local weaponStateAfter: WeaponReadinessState = {
 		weaponId = weaponState.weaponId,
 		readinessStateId = weaponState.readinessStateId,
