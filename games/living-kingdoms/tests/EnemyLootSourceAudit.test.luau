@@ -17,6 +17,7 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/En
 	debugName = "EnemyLootConfig",
 	injectGlobals = true,
 })()
+local resolver = fs.readFile("games/living-kingdoms/src/shared/Loot/EnemyLootResolver.luau")
 local service = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyLootService.luau")
 local contracts = fs.readFile("games/living-kingdoms/src/shared/Combat/AmmunitionScarcityContracts.luau")
 local supplyResolver = fs.readFile("games/living-kingdoms/src/server/Domain/AmmunitionSupplyResolver.luau")
@@ -27,6 +28,25 @@ assertThat(config.MaximumActiveDrops == 16, "enemy loot active pickup ceiling dr
 assertThat(config.PickupRadiusStuds <= 8, "enemy loot collection radius must remain local")
 assertThat(config.Definitions.Common.Rounds == 8, "common enemy loot grant drifted")
 assertThat(config.Definitions.Rare.Rounds == 20, "rare enemy loot grant drifted")
+assertThat(config.GuaranteeFirstConfirmedDeath == true, "the opening kill must produce an immediate reward")
+assertThat(
+	config.GuaranteedCommonDropEveryDeaths >= 3 and config.GuaranteedCommonDropEveryDeaths <= 12,
+	"the guaranteed salvage cadence must remain bounded"
+)
+assertThat(
+	contains(resolver, "deathSequence == 1") and contains(resolver, 'return "FirstConfirmedDeath"'),
+	"the pure resolver must own first-blood guarantee"
+)
+assertThat(
+	contains(resolver, "deathSequence % EnemyLootConfig.GuaranteedCommonDropEveryDeaths == 0")
+		and contains(resolver, 'return "CadenceFloor"'),
+	"the pure resolver must own deterministic dry-streak protection"
+)
+assertThat(
+	contains(resolver, "activeDropCount >= EnemyLootConfig.MaximumActiveDrops"),
+	"active-drop budget must be checked before guaranteed creation"
+)
+assertThat(not contains(resolver, "math.random"), "guaranteed loot must remain deterministic")
 
 assertThat(contains(service, "RunService.Heartbeat:Connect"), "enemy loot must use one bounded server pass")
 assertThat(contains(service, "folder:GetChildren()"), "enemy loot must observe the bounded enemy folder")
@@ -74,4 +94,4 @@ local combatStart = string.find(bootstrap, "OperativeCombatRuntimeService.start(
 local lootStart = string.find(bootstrap, "EnemyLootService.start()", 1, true)
 assertThat(combatStart ~= nil and lootStart ~= nil and combatStart < lootStart, "combat authority must start before loot collection")
 
-print("EnemyLootSourceAudit: server-only death rolls, automatic collection, visual disclosure, expiry, and caps passed")
+print("EnemyLootSourceAudit: guaranteed cadence, server-only death rolls, automatic collection, expiry, and caps passed")
