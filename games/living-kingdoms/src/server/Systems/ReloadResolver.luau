@@ -12,6 +12,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 
+local function resolveWeaponDefinition(weaponId: unknown)
+	local getter = FirearmConfig.get
+	if type(getter) == "function" then
+		return getter(weaponId)
+	end
+	local basic = FirearmConfig.BasicFirearm
+	return if basic ~= nil and weaponId == basic.WeaponId then basic else nil
+end
+
 type AmmunitionState = CombatContracts.AmmunitionState
 type OperativeReloadState = CombatContracts.OperativeReloadState
 type ReloadBeginResolution = CombatContracts.ReloadBeginResolution
@@ -84,12 +93,17 @@ local function copyOperativeState(operativeState: OperativeReloadState): Operati
 	}
 end
 
-local function isConfiguredWeaponState(weaponState: WeaponReadinessState): boolean
-	local configuredWeaponId = FirearmConfig.BasicFirearm.WeaponId
-	return weaponState.weaponId == configuredWeaponId
-		and weaponState.ammunition.weaponId == configuredWeaponId
-		and weaponState.cadence.weaponId == configuredWeaponId
-		and weaponState.ammunition.magazineCapacity == FirearmConfig.BasicFirearm.MagazineCapacity
+local function configuredWeapon(weaponState: WeaponReadinessState): FirearmConfig.FirearmDefinition?
+	local definition = resolveWeaponDefinition(weaponState.weaponId)
+	if
+		definition == nil
+		or weaponState.ammunition.weaponId ~= weaponState.weaponId
+		or weaponState.cadence.weaponId ~= weaponState.weaponId
+		or weaponState.ammunition.magazineCapacity ~= definition.MagazineCapacity
+	then
+		return nil
+	end
+	return definition
 end
 
 local function rejectBegin(
@@ -160,10 +174,8 @@ function ReloadResolver.begin(
 		return rejectBegin(operativeState, weaponState, reasons.OperativeStateInvalid)
 	end
 
-	if
-		not isConfiguredWeaponState(weaponState)
-		or operativeState.equippedWeaponId ~= FirearmConfig.BasicFirearm.WeaponId
-	then
+	local weapon = configuredWeapon(weaponState)
+	if weapon == nil or operativeState.equippedWeaponId ~= weapon.WeaponId then
 		return rejectBegin(operativeState, weaponState, reasons.WeaponInvalid)
 	end
 
@@ -191,9 +203,9 @@ function ReloadResolver.begin(
 	local weaponStateAfter = copyWeaponState(weaponState)
 	weaponStateAfter.readinessStateId = CombatContracts.WeaponReadinessStateIds.Reloading
 	weaponStateAfter.reloadState = {
-		weaponId = FirearmConfig.BasicFirearm.WeaponId,
+		weaponId = weapon.WeaponId,
 		startedAtServerTimestamp = serverTimestamp,
-		completionServerTimestamp = serverTimestamp + FirearmConfig.BasicFirearm.ReloadDurationSeconds,
+		completionServerTimestamp = serverTimestamp + weapon.ReloadDurationSeconds,
 	}
 
 	return {
@@ -209,7 +221,8 @@ function ReloadResolver.complete(
 	weaponState: WeaponReadinessState,
 	serverTimestamp: number
 ): ReloadCompletionResolution
-	if not isConfiguredWeaponState(weaponState) then
+	local weapon = configuredWeapon(weaponState)
+	if weapon == nil then
 		return rejectCompletion(operativeState, weaponState, reasons.WeaponInvalid)
 	end
 
@@ -218,7 +231,7 @@ function ReloadResolver.complete(
 		return rejectCompletion(operativeState, weaponState, reasons.ReloadNotInProgress)
 	end
 
-	if reloadState.weaponId ~= FirearmConfig.BasicFirearm.WeaponId then
+	if reloadState.weaponId ~= weapon.WeaponId then
 		return rejectCompletion(operativeState, weaponState, reasons.WeaponInvalid)
 	end
 

@@ -43,14 +43,7 @@ local function weld(root: BasePart, part: BasePart, offset: CFrame)
 	constraint.Parent = root
 end
 
-local function box(
-	model: Model,
-	root: BasePart,
-	name: string,
-	size: Vector3,
-	offset: CFrame,
-	color: Color3
-): Part
+local function box(model: Model, root: BasePart, name: string, size: Vector3, offset: CFrame, color: Color3): Part
 	local part = Instance.new("Part")
 	configure(part, name, size, color)
 	part.Parent = model
@@ -58,14 +51,7 @@ local function box(
 	return part
 end
 
-local function cylinder(
-	model: Model,
-	root: BasePart,
-	name: string,
-	size: Vector3,
-	offset: CFrame,
-	color: Color3
-): Part
+local function cylinder(model: Model, root: BasePart, name: string, size: Vector3, offset: CFrame, color: Color3): Part
 	local part = box(model, root, name, size, offset, color)
 	part.Shape = Enum.PartType.Cylinder
 	return part
@@ -180,14 +166,8 @@ local function compactRig(weaponId: string): WeaponPresentationRig
 		then Vector3.new(0.28, 0.3, 0.62)
 		else Vector3.new(0.42, 0.34, 0.72)
 	local _, magazineMotor = motorPart(model, root, "Magazine", magazineSize, CFrame.new(0.08, 0, -0.68), color)
-	local _, boltMotor = motorPart(
-		model,
-		root,
-		"Bolt",
-		Vector3.new(0.45, 0.08, 0.18),
-		CFrame.new(0.18, -0.29, 0.08),
-		COLORS.steel
-	)
+	local _, boltMotor =
+		motorPart(model, root, "Bolt", Vector3.new(0.45, 0.08, 0.18), CFrame.new(0.18, -0.29, 0.08), COLORS.steel)
 
 	local muzzleX = 0.85 + barrelLength * 1.22
 	local rightGripAttachment = attachment(root, "RightGripAttachment", Vector3.new(-0.12, 0, -0.55))
@@ -249,8 +229,7 @@ function Factory.create(weaponId: string): WeaponPresentationRig
 			ejectionAttachment = basic.ejectionAttachment,
 			muzzleFlash = basic.muzzleFlash,
 			muzzleLight = basic.muzzleLight,
-			gripC0 = CFrame.new(0, -0.55, -0.15)
-				* CFrame.Angles(math.rad(-8), math.rad(90), math.rad(-90)),
+			gripC0 = CFrame.new(0, -0.55, -0.15) * CFrame.Angles(math.rad(-8), math.rad(90), math.rad(-90)),
 		})
 	end
 	assert(FirearmConfig.get(weaponId) ~= nil, "weapon presentation requires a configured weapon")

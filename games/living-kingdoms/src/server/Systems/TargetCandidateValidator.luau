@@ -1,99 +1,69 @@
 --!strict
-
---[[
-	Validates one server-derived automatic-target candidate without discovering,
-	selecting, caching, or mutating combat state. The caller is responsible for
-	supplying authoritative server facts; this module cannot prove their provenance.
-
-	Range uses horizontal XZ distance so prototype elevation does not change the
-	legal engagement radius. The inclusive comparison makes exactly maximum range
-	valid and any greater distance invalid.
-]]
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 
+local function resolveWeaponDefinition(weaponId: unknown)
+	local getter = FirearmConfig.get
+	if type(getter) == "function" then
+		return getter(weaponId)
+	end
+	local basic = FirearmConfig.BasicFirearm
+	return if basic ~= nil and weaponId == basic.WeaponId then basic else nil
+end
 type OperativeCombatStateId = CombatContracts.OperativeCombatStateId
 type TargetCandidate = CombatContracts.TargetCandidate
 type TargetValidationResult = CombatContracts.TargetValidationResult
 type WeaponReadinessState = CombatContracts.WeaponReadinessState
-
 export type OperativeTargetingState = {
 	worldPosition: Vector3,
 	combatStateId: OperativeCombatStateId,
 	weaponReadiness: WeaponReadinessState,
 }
-
-type TargetCandidateValidator = {
-	validate: (operative: OperativeTargetingState, candidate: TargetCandidate) -> TargetValidationResult,
-}
-
-local TargetCandidateValidator: TargetCandidateValidator = {} :: TargetCandidateValidator
-local rejectionReasons = CombatContracts.TargetValidationRejectionReasonIds
-
-local function reject(reasonId: CombatContracts.TargetValidationRejectionReasonId): TargetValidationResult
-	return {
-		isValid = false,
-		rejectionReasonId = reasonId,
-	}
+local Validator = {}
+local reasons = CombatContracts.TargetValidationRejectionReasonIds
+local function reject(reasonId)
+	return { isValid = false, rejectionReasonId = reasonId }
 end
-
-local function horizontalDistanceSquared(first: Vector3, second: Vector3): number
-	local deltaX = second.X - first.X
-	local deltaZ = second.Z - first.Z
-	return deltaX * deltaX + deltaZ * deltaZ
+local function distanceSquared(a: Vector3, b: Vector3): number
+	local x = b.X - a.X
+	local z = b.Z - a.Z
+	return x * x + z * z
 end
-
-function TargetCandidateValidator.validate(
-	operative: OperativeTargetingState,
-	candidate: TargetCandidate
-): TargetValidationResult
+function Validator.validate(operative: OperativeTargetingState, candidate: TargetCandidate): TargetValidationResult
 	if operative.combatStateId ~= CombatContracts.OperativeCombatStateIds.Ready then
-		return reject(rejectionReasons.OperativeStateInvalid)
+		return reject(reasons.OperativeStateInvalid)
 	end
-
 	if candidate.relationshipId ~= CombatContracts.TeamRelationshipIds.Hostile then
-		return reject(rejectionReasons.RelationshipNotHostile)
+		return reject(reasons.RelationshipNotHostile)
 	end
-
 	if not candidate.isAlive then
-		return reject(rejectionReasons.HostileDead)
+		return reject(reasons.HostileDead)
 	end
-
 	if not candidate.isTargetable then
-		return reject(rejectionReasons.HostileUntargetable)
+		return reject(reasons.HostileUntargetable)
 	end
-
 	if not candidate.isVisible then
-		return reject(rejectionReasons.NotVisible)
+		return reject(reasons.NotVisible)
 	end
-
 	if not candidate.hasLineOfSight then
-		return reject(rejectionReasons.NoLineOfSight)
+		return reject(reasons.NoLineOfSight)
 	end
-
-	local maximumRange = FirearmConfig.BasicFirearm.RangeStuds
-	if horizontalDistanceSquared(operative.worldPosition, candidate.worldPosition) > maximumRange * maximumRange then
-		return reject(rejectionReasons.OutOfRange)
-	end
-
-	if operative.weaponReadiness.ammunition.loadedRounds <= 0 then
-		return reject(rejectionReasons.NoAmmunition)
-	end
-
+	local weapon = resolveWeaponDefinition(operative.weaponReadiness.weaponId)
 	if
-		operative.weaponReadiness.weaponId ~= FirearmConfig.BasicFirearm.WeaponId
+		weapon == nil
+		or operative.weaponReadiness.ammunition.weaponId ~= weapon.WeaponId
+		or operative.weaponReadiness.cadence.weaponId ~= weapon.WeaponId
 		or operative.weaponReadiness.readinessStateId ~= CombatContracts.WeaponReadinessStateIds.Ready
 	then
-		return reject(rejectionReasons.WeaponNotReady)
+		return reject(reasons.WeaponNotReady)
 	end
-
-	return {
-		isValid = true,
-		rejectionReasonId = nil,
-	}
+	if distanceSquared(operative.worldPosition, candidate.worldPosition) > weapon.RangeStuds * weapon.RangeStuds then
+		return reject(reasons.OutOfRange)
+	end
+	if operative.weaponReadiness.ammunition.loadedRounds <= 0 then
+		return reject(reasons.NoAmmunition)
+	end
+	return { isValid = true, rejectionReasonId = nil }
 end
-
-return table.freeze(TargetCandidateValidator)
+return table.freeze(Validator)

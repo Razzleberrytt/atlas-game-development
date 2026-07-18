@@ -5,9 +5,8 @@ local luau = require("@lune/luau")
 
 local CONFIG_TOKEN = {}
 local CONTRACTS_TOKEN = {}
-local resolver = luau.load(
-	fs.readFile("games/living-kingdoms/src/server/Systems/WeaponLoadoutSelectionResolver.luau"),
-	{
+local resolver =
+	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/WeaponLoadoutSelectionResolver.luau"), {
 		debugName = "WeaponLoadoutSelectionResolver",
 		environment = {
 			game = {
@@ -48,8 +47,7 @@ local resolver = luau.load(
 			script = { Parent = {} },
 		},
 		injectGlobals = true,
-	}
-)()
+	})()
 
 local assignment = {
 	operativeEntityId = "operative.fixture",

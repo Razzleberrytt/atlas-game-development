@@ -100,6 +100,37 @@ local function ensureClassNetwork()
 	end
 end
 
+local function ensureWeaponLoadoutNetwork()
+	local existingNetwork = ReplicatedStorage:FindFirstChild("WeaponLoadoutNetwork")
+	local network: Folder
+	if existingNetwork == nil then
+		network = Instance.new("Folder")
+		network.Name = "WeaponLoadoutNetwork"
+		network.Parent = ReplicatedStorage
+	else
+		assert(existingNetwork:IsA("Folder"), "WeaponLoadoutNetwork must be a Folder")
+		network = existingNetwork
+	end
+	for _, remoteName in { "SelectionIntent", "State" } do
+		local existing = network:FindFirstChild(remoteName)
+		if existing == nil then
+			local remote = Instance.new("RemoteEvent")
+			remote.Name = remoteName
+			remote.Parent = network
+		else
+			assert(existing:IsA("RemoteEvent"), remoteName .. " must be a RemoteEvent")
+		end
+	end
+	local existingRead = network:FindFirstChild("ReadState")
+	if existingRead == nil then
+		local read = Instance.new("RemoteFunction")
+		read.Name = "ReadState"
+		read.Parent = network
+	else
+		assert(existingRead:IsA("RemoteFunction"), "WeaponLoadoutNetwork.ReadState must be a RemoteFunction")
+	end
+end
+
 local function ensureProgressionNetwork()
 	local existingNetwork = ReplicatedStorage:FindFirstChild("ProgressionNetwork")
 	local network: Folder
@@ -135,6 +166,7 @@ ensureFlashlightNetwork()
 ensureSquadPingNetwork()
 ensureMissionNetwork()
 ensureClassNetwork()
+ensureWeaponLoadoutNetwork()
 ensureProgressionNetwork()
 
 local AmmunitionCacheService = require(script.Systems.AmmunitionCacheService)
@@ -158,6 +190,7 @@ local PersonalFlashlightService = require(script.Systems.PersonalFlashlightServi
 local SquadPingService = require(script.Systems.SquadPingService)
 local WorldFoundationService = require(script.Systems.WorldFoundationService)
 local MissionDirectorService = require(script.Systems.MissionDirectorService)
+local WeaponLoadoutService = require(script.Systems.WeaponLoadoutService)
 
 WorldFoundationService.start()
 OperativeLifeService.start()
@@ -178,6 +211,9 @@ OperativeCombatRuntimeService.start()
 AmmunitionCacheService.start()
 EnemyLootService.start()
 AmmunitionScarcityValidationProbeService.start()
+MissionDirectorService.start()
+ClassService.start()
+WeaponLoadoutService.start()
 MissionDirectorService.start()
 ClassService.start()
 

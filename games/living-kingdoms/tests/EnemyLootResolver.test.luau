@@ -48,7 +48,10 @@ local first = resolver.resolveDrop("enemy.fixture", 17, 0)
 local repeated = resolver.resolveDrop("enemy.fixture", 17, 0)
 assertThat(first.didDrop == repeated.didDrop, "identical death facts must produce an identical drop decision")
 assertThat(first.rejectionReasonId == repeated.rejectionReasonId, "identical rejection must be stable")
-assertThat(first.dropId == repeated.dropId and first.roll == repeated.roll, "drop identity and roll must be deterministic")
+assertThat(
+	first.dropId == repeated.dropId and first.roll == repeated.roll,
+	"drop identity and roll must be deterministic"
+)
 
 local common = nil
 local rare = nil
@@ -75,6 +78,11 @@ assertThat(common.lifetimeSeconds == config.Definitions.Common.LifetimeSeconds, 
 assertThat(rare.rounds == config.Definitions.Rare.Rounds, "rare ammunition grant drifted")
 assertThat(rare.lifetimeSeconds == config.Definitions.Rare.LifetimeSeconds, "rare lifetime drifted")
 assertThat(common.dropId ~= rare.dropId, "separate deaths require separate pickup identities")
-assertThat(table.isfrozen(common) and table.isfrozen(rare) and table.isfrozen(noDrop), "loot resolutions must be immutable")
+assertThat(
+	table.isfrozen(common) and table.isfrozen(rare) and table.isfrozen(noDrop),
+	"loot resolutions must be immutable"
+)
 
-print("EnemyLootResolver: hard eight-percent deterministic rarity rolls, no-drop outcomes, grants, lifetime, and cap passed")
+print(
+	"EnemyLootResolver: hard eight-percent deterministic rarity rolls, no-drop outcomes, grants, lifetime, and cap passed"
+)

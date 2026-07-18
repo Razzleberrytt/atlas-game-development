@@ -529,7 +529,8 @@ local function p2Operative()
 		weaponReadiness = {
 			weaponId = "weapon.basic_firearm",
 			readinessStateId = "Ready",
-			ammunition = { loadedRounds = 1 },
+			ammunition = { weaponId = "weapon.basic_firearm", loadedRounds = 1 },
+			cadence = { weaponId = "weapon.basic_firearm" },
 		},
 	}
 end

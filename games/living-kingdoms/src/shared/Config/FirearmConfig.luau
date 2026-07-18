@@ -188,7 +188,10 @@ for _, weaponId in selectableWeaponIds do
 	assert(definition.CadenceSeconds >= 0.05 and definition.CadenceSeconds <= 2, "cadence must remain bounded")
 	assert(definition.RangeStuds >= 30 and definition.RangeStuds <= 180, "weapon range must remain bounded")
 	assert(definition.DamagePerHit > 0 and definition.DamagePerHit <= 150, "weapon damage must remain bounded")
-	assert(definition.ReloadDurationSeconds >= 1 and definition.ReloadDurationSeconds <= 5, "reload must remain bounded")
+	assert(
+		definition.ReloadDurationSeconds >= 1 and definition.ReloadDurationSeconds <= 5,
+		"reload must remain bounded"
+	)
 end
 assert(#selectableWeaponIds == 5, "the first weapon roster must contain exactly five selectable weapons")
 

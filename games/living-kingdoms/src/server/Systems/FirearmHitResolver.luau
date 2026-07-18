@@ -11,6 +11,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 
+local function resolveWeaponDefinition(weaponId: unknown)
+	local getter = FirearmConfig.get
+	if type(getter) == "function" then
+		return getter(weaponId)
+	end
+	local basic = FirearmConfig.BasicFirearm
+	return if basic ~= nil and weaponId == basic.WeaponId then basic else nil
+end
+
 type AuthoritativeFireResult = CombatContracts.AuthoritativeFireResult
 type FirearmHitRejectionReasonId = CombatContracts.FirearmHitRejectionReasonId
 type FirearmHitResolution = CombatContracts.FirearmHitResolution
@@ -91,10 +100,8 @@ function FirearmHitResolver.resolve(
 		return reject(acceptedFireResult, reasons.MissingShotIdentity)
 	end
 
-	if
-		acceptedFireResult.weaponId ~= FirearmConfig.BasicFirearm.WeaponId
-		or shotContext.weaponId ~= acceptedFireResult.weaponId
-	then
+	local weapon = resolveWeaponDefinition(acceptedFireResult.weaponId)
+	if weapon == nil or shotContext.weaponId ~= acceptedFireResult.weaponId then
 		return reject(acceptedFireResult, reasons.WeaponInvalid)
 	end
 
@@ -121,7 +128,7 @@ function FirearmHitResolver.resolve(
 		return reject(acceptedFireResult, reasons.NotVisible)
 	end
 
-	local maximumRange = FirearmConfig.BasicFirearm.RangeStuds
+	local maximumRange = weapon.RangeStuds
 	if
 		horizontalDistanceSquared(shotContext.operativeWorldPosition, targetContext.worldPosition)
 		> maximumRange * maximumRange

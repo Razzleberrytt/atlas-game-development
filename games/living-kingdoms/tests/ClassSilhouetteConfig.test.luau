@@ -56,7 +56,10 @@ local function validatePart(part: any, seenNames: { [string]: boolean })
 	assertThat(knownMaterials[part.materialId] == true, "unknown silhouette material")
 	assertThat(knownPalettes[part.paletteId] == true, "unknown silhouette palette")
 	for _, vector in { part.size, part.offset, part.rotationDegrees } do
-		assertThat(isFinite(vector.x) and isFinite(vector.y) and isFinite(vector.z), "silhouette vectors must be finite")
+		assertThat(
+			isFinite(vector.x) and isFinite(vector.y) and isFinite(vector.z),
+			"silhouette vectors must be finite"
+		)
 	end
 	assertThat(part.size.x > 0 and part.size.y > 0 and part.size.z > 0, "silhouette sizes must be positive")
 end

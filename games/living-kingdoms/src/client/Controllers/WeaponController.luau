@@ -15,6 +15,19 @@ local Workspace = game:GetService("Workspace")
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 
+local function resolveWeaponDefinition(weaponId: unknown)
+	local getter = FirearmConfig.get
+	if type(getter) == "function" then
+		return getter(weaponId)
+	end
+	local basic = FirearmConfig.BasicFirearm
+	return if basic ~= nil and weaponId == basic.WeaponId then basic else nil
+end
+
+local function isKnownWeaponId(weaponId: unknown): boolean
+	return resolveWeaponDefinition(weaponId) ~= nil
+end
+
 local REQUEST_COOLDOWN_SECONDS = 0.5
 local COMBAT_ENTITY_ID_ATTRIBUTE = "CombatEntityId"
 local localPlayer = Players.LocalPlayer
@@ -23,6 +36,8 @@ local HUD_ATTRIBUTES = {
 	"LK_HUD_LoadedRounds",
 	"LK_HUD_ReserveRounds",
 	"LK_HUD_MagazineCapacity",
+	"LK_HUD_WeaponId",
+	"LK_HUD_WeaponName",
 	"LK_HUD_CombatStatus",
 	"LK_HUD_CombatStatusUntil",
 }
@@ -45,6 +60,7 @@ type LifecycleState = {
 	lastReloadRequestLocalTimestamp: number,
 	presentedShotIds: { [string]: boolean },
 	selectedTargetEntityId: string?,
+	currentWeaponId: string,
 	inputBeganConnection: RBXScriptConnection?,
 	presentationConnection: RBXScriptConnection?,
 	targetHighlight: Highlight?,
@@ -58,6 +74,7 @@ local state: LifecycleState = {
 	lastReloadRequestLocalTimestamp = -math.huge,
 	presentedShotIds = {},
 	selectedTargetEntityId = nil,
+	currentWeaponId = FirearmConfig.BasicFirearm.WeaponId,
 	inputBeganConnection = nil,
 	presentationConnection = nil,
 	targetHighlight = nil,
@@ -141,8 +158,9 @@ local function isWholeNonnegative(value: unknown): boolean
 end
 
 local function presentAmmunitionPayload(payload: any): boolean
+	local definition = resolveWeaponDefinition(payload.weaponId)
 	if
-		payload.weaponId ~= FirearmConfig.BasicFirearm.WeaponId
+		definition == nil
 		or not isWholeNonnegative(payload.loadedRounds)
 		or not isWholeNonnegative(payload.reserveRounds)
 		or not isWholeNonnegative(payload.magazineCapacity)
@@ -153,6 +171,9 @@ local function presentAmmunitionPayload(payload: any): boolean
 	then
 		return false
 	end
+	state.currentWeaponId = definition.WeaponId
+	localPlayer:SetAttribute("LK_HUD_WeaponId", definition.WeaponId)
+	localPlayer:SetAttribute("LK_HUD_WeaponName", definition.ShortName)
 	presentAmmunition(payload.loadedRounds, payload.reserveRounds, payload.magazineCapacity)
 	return true
 end
@@ -175,7 +196,7 @@ local function onPresentationMessage(message: unknown)
 		if
 			isNonEmptyString(payload.shotId)
 			and isLocalOperativeEntityId(payload.operativeEntityId)
-			and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+			and isKnownWeaponId(payload.weaponId)
 			and isNonEmptyString(payload.targetEntityId)
 			and isFiniteNumber(payload.serverTimestamp)
 			and not state.presentedShotIds[payload.shotId]
@@ -188,23 +209,17 @@ local function onPresentationMessage(message: unknown)
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadStarted then
 		if
 			isLocalOperativeEntityId(payload.operativeEntityId)
-			and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+			and isKnownWeaponId(payload.weaponId)
 			and isFiniteNumber(payload.completionServerTimestamp)
 		then
 			setStatus("RELOADING", 4)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadCompleted then
-		if
-			isLocalOperativeEntityId(payload.operativeEntityId)
-			and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
-		then
+		if isLocalOperativeEntityId(payload.operativeEntityId) and isKnownWeaponId(payload.weaponId) then
 			setStatus("RELOAD COMPLETE", 1.2)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadInterrupted then
-		if
-			isLocalOperativeEntityId(payload.operativeEntityId)
-			and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
-		then
+		if isLocalOperativeEntityId(payload.operativeEntityId) and isKnownWeaponId(payload.weaponId) then
 			setStatus("RELOAD INTERRUPTED", 1.8)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.AmmunitionState then
@@ -229,7 +244,7 @@ local function onInputBegan(input: InputObject, gameProcessedEvent: boolean)
 		return
 	end
 	state.lastReloadRequestLocalTimestamp = timestamp
-	reloadIntentRemote:FireServer(FirearmConfig.BasicFirearm.WeaponId)
+	reloadIntentRemote:FireServer(state.currentWeaponId)
 end
 
 function WeaponController.init()

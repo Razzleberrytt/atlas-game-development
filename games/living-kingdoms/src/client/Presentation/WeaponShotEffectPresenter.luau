@@ -10,13 +10,13 @@
 local Debris = game:GetService("Debris")
 local Workspace = game:GetService("Workspace")
 
-local BasicFirearmPresentationFactory = require(script.Parent.BasicFirearmPresentationFactory)
+local WeaponPresentationFactory = require(script.Parent.WeaponPresentationFactory)
 
-type BasicFirearmPresentationRig = BasicFirearmPresentationFactory.BasicFirearmPresentationRig
+type WeaponPresentationRig = WeaponPresentationFactory.WeaponPresentationRig
 
 type WeaponShotEffectPresenter = {
 	present: (
-		rig: BasicFirearmPresentationRig,
+		rig: WeaponPresentationRig,
 		shotId: string,
 		didApplyDamage: boolean,
 		impactWorldPosition: Vector3?
@@ -44,7 +44,7 @@ local function effectsFolder(): Folder
 	return folder
 end
 
-local function presentMuzzleFlash(rig: BasicFirearmPresentationRig)
+local function presentMuzzleFlash(rig: WeaponPresentationRig)
 	local currentGeneration = rig.model:GetAttribute("MuzzleFlashGeneration")
 	local generation = if type(currentGeneration) == "number" then currentGeneration + 1 else 1
 	rig.model:SetAttribute("MuzzleFlashGeneration", generation)
@@ -59,7 +59,7 @@ local function presentMuzzleFlash(rig: BasicFirearmPresentationRig)
 	end)
 end
 
-local function spawnCasing(rig: BasicFirearmPresentationRig, shotId: string)
+local function spawnCasing(rig: WeaponPresentationRig, shotId: string)
 	local ejectionFrame = rig.ejectionAttachment.WorldCFrame
 	local casing = Instance.new("Part")
 	casing.Name = "CarbineCasing"
@@ -83,7 +83,7 @@ local function spawnCasing(rig: BasicFirearmPresentationRig, shotId: string)
 	Debris:AddItem(casing, CASING_LIFETIME_SECONDS)
 end
 
-local function spawnDamageTracer(rig: BasicFirearmPresentationRig, shotId: string, impactWorldPosition: Vector3)
+local function spawnDamageTracer(rig: WeaponPresentationRig, shotId: string, impactWorldPosition: Vector3)
 	local muzzleWorldPosition = rig.muzzleAttachment.WorldPosition
 	local displacement = impactWorldPosition - muzzleWorldPosition
 	local distance = displacement.Magnitude
@@ -137,7 +137,7 @@ local function spawnDamageImpact(impactWorldPosition: Vector3)
 end
 
 function WeaponShotEffectPresenter.present(
-	rig: BasicFirearmPresentationRig,
+	rig: WeaponPresentationRig,
 	shotId: string,
 	didApplyDamage: boolean,
 	impactWorldPosition: Vector3?

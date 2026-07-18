@@ -15,15 +15,29 @@ local Workspace = game:GetService("Workspace")
 
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
-local BasicFirearmPresentationFactory = require(script.Parent.Parent.Presentation.BasicFirearmPresentationFactory)
+
+local function resolveWeaponDefinition(weaponId: unknown)
+	local getter = FirearmConfig.get
+	if type(getter) == "function" then
+		return getter(weaponId)
+	end
+	local basic = FirearmConfig.BasicFirearm
+	return if basic ~= nil and weaponId == basic.WeaponId then basic else nil
+end
+
+local function isKnownWeaponId(weaponId: unknown): boolean
+	return resolveWeaponDefinition(weaponId) ~= nil
+end
+local WeaponPresentationFactory = require(script.Parent.Parent.Presentation.WeaponPresentationFactory)
 local RemoteWeaponMotionPresenter = require(script.Parent.Parent.Presentation.RemoteWeaponMotionPresenter)
 local WeaponShotEffectPresenter = require(script.Parent.Parent.Presentation.WeaponShotEffectPresenter)
 
-type BasicFirearmPresentationRig = BasicFirearmPresentationFactory.BasicFirearmPresentationRig
+type WeaponPresentationRig = WeaponPresentationFactory.WeaponPresentationRig
 
 type PlayerBinding = {
 	characterAddedConnection: RBXScriptConnection,
 	characterRemovingConnection: RBXScriptConnection,
+	weaponAttributeConnection: RBXScriptConnection,
 }
 
 type State = {
@@ -33,7 +47,7 @@ type State = {
 	playerRemovingConnection: RBXScriptConnection?,
 	presentationConnection: RBXScriptConnection?,
 	bindings: { [Player]: PlayerBinding },
-	rigs: { [Player]: BasicFirearmPresentationRig },
+	rigs: { [Player]: WeaponPresentationRig },
 	gripMotors: { [Player]: Motor6D },
 	activeTweens: { [string]: Tween },
 	presentedShotIds: { [string]: boolean },
@@ -47,8 +61,7 @@ type State = {
 local WeaponPresentationController = {}
 
 local MAX_PRESENTED_SHOT_IDS = 128
-local MODEL_NAME = "BasicFirearmPresentation"
-local GRIP_C0 = CFrame.new(0, -0.55, -0.15) * CFrame.Angles(math.rad(-8), math.rad(90), math.rad(-90))
+local MODEL_NAME = "WeaponPresentation"
 local BOLT_BACK_OFFSET = CFrame.new(-0.2, 0, 0)
 local MAGAZINE_OUT_OFFSET = CFrame.new(0.22, 0, -0.75) * CFrame.Angles(0, 0, math.rad(8))
 
@@ -130,7 +143,7 @@ local function playMotorTween(
 	return tween
 end
 
-local function localRig(): BasicFirearmPresentationRig?
+local function localRig(): WeaponPresentationRig?
 	local localPlayer = Players.LocalPlayer
 	if localPlayer == nil then
 		return nil
@@ -199,15 +212,17 @@ local function attachRig(player: Player, character: Model)
 		existing:Destroy()
 	end
 
-	local rig = BasicFirearmPresentationFactory.create()
-	rig.root.CFrame = hand.CFrame * GRIP_C0
+	local weaponId = player:GetAttribute("LK_EquippedWeaponId")
+	local configuredId = if isKnownWeaponId(weaponId) then weaponId else FirearmConfig.BasicFirearm.WeaponId
+	local rig = WeaponPresentationFactory.create(configuredId)
+	rig.root.CFrame = hand.CFrame * rig.gripC0
 	rig.model.Parent = character
 
 	local gripMotor = Instance.new("Motor6D")
 	gripMotor.Name = "WeaponGrip"
 	gripMotor.Part0 = hand
 	gripMotor.Part1 = rig.root
-	gripMotor.C0 = GRIP_C0
+	gripMotor.C0 = rig.gripC0
 	gripMotor.C1 = CFrame.identity
 	gripMotor.Parent = hand
 
@@ -220,6 +235,7 @@ local function unbindPlayer(player: Player)
 	if binding ~= nil then
 		binding.characterAddedConnection:Disconnect()
 		binding.characterRemovingConnection:Disconnect()
+		binding.weaponAttributeConnection:Disconnect()
 		state.bindings[player] = nil
 	end
 	destroyRig(player)
@@ -235,9 +251,16 @@ local function bindPlayer(player: Player)
 	local characterRemovingConnection = player.CharacterRemoving:Connect(function()
 		destroyRig(player)
 	end)
+	local weaponAttributeConnection = player:GetAttributeChangedSignal("LK_EquippedWeaponId"):Connect(function()
+		local currentCharacter = player.Character
+		if currentCharacter ~= nil then
+			attachRig(player, currentCharacter)
+		end
+	end)
 	state.bindings[player] = {
 		characterAddedConnection = characterAddedConnection,
 		characterRemovingConnection = characterRemovingConnection,
+		weaponAttributeConnection = weaponAttributeConnection,
 	}
 	local character = player.Character
 	if character ~= nil then
@@ -438,7 +461,7 @@ end
 
 local function presentAmmunitionPayload(payload: any): boolean
 	if
-		payload.weaponId ~= FirearmConfig.BasicFirearm.WeaponId
+		not isKnownWeaponId(payload.weaponId)
 		or not isWholeNonnegative(payload.loadedRounds)
 		or not isWholeNonnegative(payload.magazineCapacity)
 		or payload.magazineCapacity <= 0
@@ -467,7 +490,7 @@ local function onPresentationMessage(message: unknown)
 		if
 			isNonEmptyString(payload.shotId)
 			and isNonEmptyString(payload.operativeEntityId)
-			and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+			and isKnownWeaponId(payload.weaponId)
 			and isNonEmptyString(payload.targetEntityId)
 			and type(payload.didApplyDamage) == "boolean"
 			and ((payload.didApplyDamage and typeof(payload.impactWorldPosition) == "Vector3") or (not payload.didApplyDamage and payload.impactWorldPosition == nil))
@@ -478,17 +501,17 @@ local function onPresentationMessage(message: unknown)
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadStarted then
 		if
 			isNonEmptyString(payload.operativeEntityId)
-			and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+			and isKnownWeaponId(payload.weaponId)
 			and isFiniteNumber(payload.completionServerTimestamp)
 		then
 			playReload(payload.operativeEntityId, payload.completionServerTimestamp)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadCompleted then
-		if isNonEmptyString(payload.operativeEntityId) and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
+		if isNonEmptyString(payload.operativeEntityId) and isKnownWeaponId(payload.weaponId) then
 			finishReload(payload.operativeEntityId)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadInterrupted then
-		if isNonEmptyString(payload.operativeEntityId) and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
+		if isNonEmptyString(payload.operativeEntityId) and isKnownWeaponId(payload.weaponId) then
 			interruptReload(payload.operativeEntityId)
 		end
 	elseif

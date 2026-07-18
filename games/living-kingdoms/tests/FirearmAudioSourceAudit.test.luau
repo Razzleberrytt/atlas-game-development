@@ -49,7 +49,8 @@ assertThat(
 	contains(controller, "CombatContracts.PresentationMessageKindIds.ReloadStarted"),
 	"audio must play on reload starts"
 )
-assertThat(contains(controller, "FirearmConfig.BasicFirearm.WeaponId"), "audio must gate on the basic firearm")
+assertThat(contains(controller, "isKnownWeaponId(payload.weaponId)"), "audio must gate on a configured firearm")
+assertThat(contains(controller, "resolveWeaponDefinition"), "audio must retain legacy fixture compatibility")
 assertThat(contains(controller, "FirearmAudioConfig.FirePoolSize"), "audio must build a bounded, reused Sound pool")
 
 -- The Sound pool is built once in createPresentation, never per message.

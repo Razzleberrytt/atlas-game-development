@@ -654,19 +654,13 @@ local function fillToCap(): number
 	return spawned
 end
 addOperative("operative.player:1", 300, 300)
-assert(
-	fillToCap() == config.Population.MaximumConcurrentPerOperative,
-	"one-operative cap must follow configuration"
-)
+assert(fillToCap() == config.Population.MaximumConcurrentPerOperative, "one-operative cap must follow configuration")
 reset()
 addOperative("operative.player:1", 300, 300)
 addOperative("operative.player:2", 300, -300)
 assert(
 	fillToCap()
-		== math.min(
-			config.Population.AbsoluteMaximumConcurrent,
-			config.Population.MaximumConcurrentPerOperative * 2
-		),
+		== math.min(config.Population.AbsoluteMaximumConcurrent, config.Population.MaximumConcurrentPerOperative * 2),
 	"two-operative cap must follow configuration"
 )
 reset()

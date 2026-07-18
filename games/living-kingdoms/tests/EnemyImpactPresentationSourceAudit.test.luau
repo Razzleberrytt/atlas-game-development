@@ -25,13 +25,10 @@ local function countOccurrences(source: string, token: string): number
 	end
 end
 
-local config = luau.load(
-	fs.readFile("games/living-kingdoms/src/shared/Config/CombatImpactPresentationConfig.luau"),
-	{
-		debugName = "CombatImpactPresentationConfig",
-		injectGlobals = true,
-	}
-)()
+local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/CombatImpactPresentationConfig.luau"), {
+	debugName = "CombatImpactPresentationConfig",
+	injectGlobals = true,
+})()
 
 assert(config.Version == "HROI-0104-v1")
 assert(table.isfrozen(config), "impact config must be immutable")
@@ -66,21 +63,23 @@ assert(
 	countOccurrences(controller, ":Connect(") == 3,
 	"exactly two folder connections and one frame connection are allowed"
 )
-for _, prohibited in {
-	"RemoteEvent",
-	"RemoteFunction",
-	"FireServer",
-	"OnClientEvent",
-	"task.delay",
-	"task.spawn",
-	"Debris",
-	"while true",
-	"TakeDamage",
-	"applyAuthoritativeDamage",
-	"commitHealthState",
-	"SetNetworkOwner",
-	"Humanoid:MoveTo",
-} do
+for _, prohibited in
+	{
+		"RemoteEvent",
+		"RemoteFunction",
+		"FireServer",
+		"OnClientEvent",
+		"task.delay",
+		"task.spawn",
+		"Debris",
+		"while true",
+		"TakeDamage",
+		"applyAuthoritativeDamage",
+		"commitHealthState",
+		"SetNetworkOwner",
+		"Humanoid:MoveTo",
+	}
+do
 	assert(controller:find(prohibited, 1, true) == nil, "prohibited authority or scheduler token: " .. prohibited)
 end
 

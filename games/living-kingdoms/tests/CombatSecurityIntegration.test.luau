@@ -310,7 +310,8 @@ assert(reloadCompleteA.weaponStateAfter.ammunition.reserveRounds == 0, "reload r
 
 local projectSource = fs.readFile("games/living-kingdoms/default.project.json")
 local harnessSource = fs.readFile("games/living-kingdoms/src/server/Systems/AutomaticCombatDevelopmentHarness.luau")
-local productionCombatSource = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau")
+local productionCombatSource =
+	fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau")
 local bootstrapSource = fs.readFile("games/living-kingdoms/src/server/init.server.luau")
 local serverSources = table.concat({ harnessSource, productionCombatSource, bootstrapSource }, "\n")
 local clientSource = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponController.luau")
@@ -325,10 +326,7 @@ assert(remoteDefinitionCount == 2, "combat remote surface changed")
 local _, serverListenerCount = string.gsub(serverSources, "OnServerEvent:Connect", "")
 assert(serverListenerCount == 2, "client-to-server combat listener surface changed")
 for _, source in { harnessSource, productionCombatSource } do
-	assert(
-		string.find(source, "reloadIntentRemote.OnServerEvent:Connect", 1, true),
-		"reload intent listener missing"
-	)
+	assert(string.find(source, "reloadIntentRemote.OnServerEvent:Connect", 1, true), "reload intent listener missing")
 	assert(not string.find(source, "presentationRemote.OnServerEvent", 1, true), "presentation gained authority path")
 end
 assert(not string.find(bootstrapSource, "OnServerEvent", 1, true), "bootstrap gained a combat listener")
@@ -343,8 +341,12 @@ assert(
 local _, fireServerCount = string.gsub(clientSource, ":FireServer", "")
 assert(fireServerCount == 1, "client gained another combat request path")
 assert(
-	string.find(clientSource, "reloadIntentRemote:FireServer(FirearmConfig.BasicFirearm.WeaponId)", 1, true),
-	"reload request payload widened"
+	string.find(clientSource, "reloadIntentRemote:FireServer(state.currentWeaponId)", 1, true),
+	"reload request must contain only the server-disclosed equipped weapon ID"
+)
+assert(
+	not string.find(clientSource, "reloadIntentRemote:FireServer(state.currentWeaponId,", 1, true),
+	"reload request must not include ammunition, timing, or weapon statistics"
 )
 assert(
 	string.find(harnessSource, "if started or not RunService:IsStudio() then", 1, true),

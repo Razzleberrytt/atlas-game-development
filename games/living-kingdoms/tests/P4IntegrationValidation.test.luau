@@ -272,7 +272,8 @@ local operative = {
 	weaponReadiness = {
 		weaponId = "weapon.basic",
 		readinessStateId = "Ready",
-		ammunition = { loadedRounds = 1 },
+		ammunition = { weaponId = "weapon.basic", loadedRounds = 1 },
+		cadence = { weaponId = "weapon.basic" },
 	},
 }
 local candidate = {
@@ -302,7 +303,7 @@ local p4NetworkEnd = assert(string.find(project, '"Shared"', p4NetworkStart, tru
 local p4NetworkSource = string.sub(project, p4NetworkStart, p4NetworkEnd - 1)
 local _, p4RemoteCount = string.gsub(p4NetworkSource, '"%$className"%s*:%s*"RemoteEvent"', "")
 assert(p4RemoteCount == 4, "P4 remote surface changed")
-assert(not string.find(project, '"RemoteFunction"', 1, true), "P4 must not add RemoteFunctions")
+assert(not string.find(p4NetworkSource, '"RemoteFunction"', 1, true), "P4 must not add RemoteFunctions")
 
 for _, prohibited in
 	{ "DiscoveryMemoryService", "VisibilityResolver", "TargetCandidate", "CombatNetwork", "FireAllClients" }

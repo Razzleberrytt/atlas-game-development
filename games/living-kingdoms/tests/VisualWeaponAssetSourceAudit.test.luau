@@ -14,37 +14,69 @@ local manifest = fs.readFile(root .. "asset-manifest.json")
 local generator = fs.readFile(root .. "generate_blackwater_carbine.py")
 local readme = fs.readFile(root .. "README.md")
 
-for _, componentName in {
-	"Receiver",
-	"Magazine",
-	"Bolt",
-	"MuzzleDevice",
-	"PistolGrip",
-} do
-	assertThat(string.find(generator, '"' .. componentName .. '"', 1, true) ~= nil, "missing generated component " .. componentName)
+for _, componentName in
+	{
+		"Receiver",
+		"Magazine",
+		"Bolt",
+		"MuzzleDevice",
+		"PistolGrip",
+	}
+do
+	assertThat(
+		string.find(generator, '"' .. componentName .. '"', 1, true) ~= nil,
+		"missing generated component " .. componentName
+	)
 end
 
-assertThat(string.find(generator, "scene.export(file_type=\"obj\")", 1, true) ~= nil, "generator must emit Roblox-importable OBJ")
-assertThat(string.find(generator, "blackwater_service_carbine_preview.svg", 1, true) ~= nil, "generator must emit a review preview")
+assertThat(
+	string.find(generator, 'scene.export(file_type="obj")', 1, true) ~= nil,
+	"generator must emit Roblox-importable OBJ"
+)
+assertThat(
+	string.find(generator, "blackwater_service_carbine_preview.svg", 1, true) ~= nil,
+	"generator must emit a review preview"
+)
 
 for _, clipName in { "Fire", "Reload", "Empty" } do
-	assertThat(string.find(animations, '"name": "' .. clipName .. '"', 1, true) ~= nil, "missing animation clip " .. clipName)
+	assertThat(
+		string.find(animations, '"name": "' .. clipName .. '"', 1, true) ~= nil,
+		"missing animation clip " .. clipName
+	)
 end
 
 assertThat(string.find(animations, '"node": "Bolt"', 1, true) ~= nil, "bolt animation track must remain explicit")
-assertThat(string.find(animations, '"node": "Magazine"', 1, true) ~= nil, "magazine animation track must remain explicit")
+assertThat(
+	string.find(animations, '"node": "Magazine"', 1, true) ~= nil,
+	"magazine animation track must remain explicit"
+)
 
 assertThat(
 	string.find(manifest, '"status": "source-candidate-not-runtime-approved"', 1, true) ~= nil,
 	"manifest must not claim Studio or runtime approval"
 )
-assertThat(string.find(manifest, '"sourceKind": "ProjectOriginal"', 1, true) ~= nil, "source ownership must be recorded")
+assertThat(
+	string.find(manifest, '"sourceKind": "ProjectOriginal"', 1, true) ~= nil,
+	"source ownership must be recorded"
+)
 assertThat(string.find(manifest, '"imported": false', 1, true) ~= nil, "Studio import must remain honestly pending")
-assertThat(string.find(manifest, '"cadence": "server"', 1, true) ~= nil, "manifest must preserve server cadence authority")
-assertThat(string.find(manifest, '"damage": "server"', 1, true) ~= nil, "manifest must preserve server damage authority")
+assertThat(
+	string.find(manifest, '"cadence": "server"', 1, true) ~= nil,
+	"manifest must preserve server cadence authority"
+)
+assertThat(
+	string.find(manifest, '"damage": "server"', 1, true) ~= nil,
+	"manifest must preserve server damage authority"
+)
 
 for _, forbidden in { "rbxassetid://", "requests.get", "urllib.request", "subprocess" } do
-	assertThat(not string.find(generator, forbidden, 1, true), "generator must not fetch or execute external content: " .. forbidden)
+	assertThat(
+		not string.find(generator, forbidden, 1, true),
+		"generator must not fetch or execute external content: " .. forbidden
+	)
 end
 
-assertThat(string.find(readme, "presentation only", 1, true) ~= nil, "import guide must preserve the authority boundary")
+assertThat(
+	string.find(readme, "presentation only", 1, true) ~= nil,
+	"import guide must preserve the authority boundary"
+)

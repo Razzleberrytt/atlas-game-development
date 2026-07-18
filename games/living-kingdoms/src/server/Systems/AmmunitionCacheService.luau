@@ -12,6 +12,15 @@ local CachePresentationContracts = require(ReplicatedStorage.Shared.Combat.Ammun
 local Contracts = require(ReplicatedStorage.Shared.Combat.AmmunitionScarcityContracts)
 local CacheConfig = require(ReplicatedStorage.Shared.Config.AmmunitionCacheConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
+
+local function resolveWeaponDefinition(weaponId: unknown)
+	local getter = FirearmConfig.get
+	if type(getter) == "function" then
+		return getter(weaponId)
+	end
+	local basic = FirearmConfig.BasicFirearm
+	return if basic ~= nil and weaponId == basic.WeaponId then basic else nil
+end
 local AmmunitionSupplyResolver = require(script.Parent.Parent.Domain.AmmunitionSupplyResolver)
 local OperativeCombatRuntimeService = require(script.Parent.OperativeCombatRuntimeService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
@@ -97,13 +106,13 @@ local function tryCollect(player: Player, definition)
 		loadedRounds = ammunition.loadedRounds,
 		reserveRounds = ammunition.reserveRounds,
 		magazineCapacity = ammunition.magazineCapacity,
-		maximumReserveRounds = FirearmConfig.BasicFirearm.MaximumReserveRounds,
+		maximumReserveRounds = (resolveWeaponDefinition(ammunition.weaponId) or FirearmConfig.BasicFirearm).MaximumReserveRounds,
 		processedSupplyIds = processed,
 	}, {
 		supplyId = definition.cacheId,
 		sourceId = SourceIds.AuthoredCache,
-		weaponId = definition.weaponId,
-		availableRounds = definition.rounds,
+		weaponId = ammunition.weaponId,
+		availableRounds = (resolveWeaponDefinition(ammunition.weaponId) or FirearmConfig.BasicFirearm).AuthoredCacheRounds,
 	})
 	if not result.didCollect then
 		return

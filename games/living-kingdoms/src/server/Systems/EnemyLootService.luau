@@ -19,6 +19,15 @@ local AmmunitionScarcityContracts = require(ReplicatedStorage.Shared.Combat.Ammu
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local EnemyLootConfig = require(ReplicatedStorage.Shared.Config.EnemyLootConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
+
+local function resolveWeaponDefinition(weaponId: unknown)
+	local getter = FirearmConfig.get
+	if type(getter) == "function" then
+		return getter(weaponId)
+	end
+	local basic = FirearmConfig.BasicFirearm
+	return if basic ~= nil and weaponId == basic.WeaponId then basic else nil
+end
 local EnemyLootResolver = require(ReplicatedStorage.Shared.Loot.EnemyLootResolver)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 local AmmunitionSupplyResolver = require(script.Parent.Parent.Domain.AmmunitionSupplyResolver)
@@ -314,7 +323,7 @@ local function tryCollect(player: Player, record: DropRecord): boolean
 		loadedRounds = ammunition.loadedRounds,
 		reserveRounds = ammunition.reserveRounds,
 		magazineCapacity = ammunition.magazineCapacity,
-		maximumReserveRounds = FirearmConfig.BasicFirearm.MaximumReserveRounds,
+		maximumReserveRounds = (resolveWeaponDefinition(ammunition.weaponId) or FirearmConfig.BasicFirearm).MaximumReserveRounds,
 		processedSupplyIds = processed,
 	}, {
 		supplyId = record.dropId,

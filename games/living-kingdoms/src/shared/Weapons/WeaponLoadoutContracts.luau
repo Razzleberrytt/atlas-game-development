@@ -70,8 +70,10 @@ function Contracts.validateSafeSnapshot(value: unknown): boolean
 		candidate.operationId ~= Contracts.NetworkOperationIds.Snapshot
 		or type(candidate.rosterRevision) ~= "number"
 		or candidate.rosterRevision < 0
-		or (candidate.selectionStateId ~= Contracts.SelectionStateIds.Open
-			and candidate.selectionStateId ~= Contracts.SelectionStateIds.Locked)
+		or (
+			candidate.selectionStateId ~= Contracts.SelectionStateIds.Open
+			and candidate.selectionStateId ~= Contracts.SelectionStateIds.Locked
+		)
 	then
 		return false
 	end
