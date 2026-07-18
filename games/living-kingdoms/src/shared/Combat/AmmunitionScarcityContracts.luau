@@ -4,6 +4,7 @@ local Contracts = {
 	SupplySourceIds = table.freeze({
 		AuthoredCache = "AuthoredCache",
 		EngineerResupply = "EngineerResupply",
+		EnemyLoot = "EnemyLoot",
 	}),
 	CollectionRejectionReasonIds = table.freeze({
 		InvalidState = "InvalidState",

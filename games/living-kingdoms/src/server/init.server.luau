@@ -69,29 +69,6 @@ local function ensureMissionNetwork()
 	end
 end
 
-local function ensureHordeNetwork()
-	local existingNetwork = ReplicatedStorage:FindFirstChild("HordeNetwork")
-	local network: Folder
-	if existingNetwork == nil then
-		network = Instance.new("Folder")
-		network.Name = "HordeNetwork"
-		network.Parent = ReplicatedStorage
-	else
-		assert(existingNetwork:IsA("Folder"), "HordeNetwork must be a Folder")
-		network = existingNetwork
-	end
-	for _, remoteName in { "State", "ChooseUpgrade" } do
-		local existingRemote = network:FindFirstChild(remoteName)
-		if existingRemote == nil then
-			local remote = Instance.new("RemoteEvent")
-			remote.Name = remoteName
-			remote.Parent = network
-		else
-			assert(existingRemote:IsA("RemoteEvent"), "HordeNetwork." .. remoteName .. " must be a RemoteEvent")
-		end
-	end
-end
-
 local function ensureClassNetwork()
 	local existingNetwork = ReplicatedStorage:FindFirstChild("ClassNetwork")
 	local network: Folder
@@ -134,13 +111,15 @@ local function ensureProgressionNetwork()
 		assert(existingNetwork:IsA("Folder"), "ProgressionNetwork must be a Folder")
 		network = existingNetwork
 	end
-	local existingState = network:FindFirstChild("State")
-	if existingState == nil then
-		local state = Instance.new("RemoteEvent")
-		state.Name = "State"
-		state.Parent = network
-	else
-		assert(existingState:IsA("RemoteEvent"), "ProgressionNetwork.State must be a RemoteEvent")
+	for _, remoteName in { "State", "ChooseUpgrade" } do
+		local existingRemote = network:FindFirstChild(remoteName)
+		if existingRemote == nil then
+			local remote = Instance.new("RemoteEvent")
+			remote.Name = remoteName
+			remote.Parent = network
+		else
+			assert(existingRemote:IsA("RemoteEvent"), "ProgressionNetwork." .. remoteName .. " must be a RemoteEvent")
+		end
 	end
 	local existingReadState = network:FindFirstChild("ReadState")
 	if existingReadState == nil then
@@ -155,7 +134,6 @@ end
 ensureFlashlightNetwork()
 ensureSquadPingNetwork()
 ensureMissionNetwork()
-ensureHordeNetwork()
 ensureClassNetwork()
 ensureProgressionNetwork()
 
@@ -165,6 +143,7 @@ local ClassService = require(script.Systems.ClassService)
 local MovementValidationSystem = require(script.Systems.MovementValidationSystem)
 local MovementStateReplicationSystem = require(script.Systems.MovementStateReplicationSystem)
 local EnemyDirectorService = require(script.Systems.EnemyDirectorService)
+local EnemyLootService = require(script.Systems.EnemyLootService)
 local EnemyPresentationService = require(script.Systems.EnemyPresentationService)
 local EnemyValidationProbeService = require(script.Systems.EnemyValidationProbeService)
 local HordeExperienceService = require(script.Systems.HordeExperienceService)
@@ -192,13 +171,14 @@ MovementValidationSystem.start()
 MovementStateReplicationSystem.start()
 EnemyDirectorService.start()
 RunProgressionService.start()
+HordeExperienceService.start()
 EnemyPresentationService.start()
 EnemyValidationProbeService.start()
 OperativeCombatRuntimeService.start()
 AmmunitionCacheService.start()
+EnemyLootService.start()
 AmmunitionScarcityValidationProbeService.start()
-HordeExperienceService.start()
 MissionDirectorService.start()
 ClassService.start()
 
-print("[Living Kingdoms] Server bootstrap started — Field XP + horde vertical slice active")
+print("[Living Kingdoms] Server bootstrap started")

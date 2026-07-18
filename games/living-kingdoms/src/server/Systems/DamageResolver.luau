@@ -3,8 +3,9 @@
 --[[
 	Applies at most one configured damage event for a resolved ShotId. The caller
 	owns and commits targetHealthStateAfter, including its processed-ShotId set.
-	No hidden deduplication state, Humanoid mutation, death behavior, or presentation
-	is created here.
+	No hidden deduplication state, Humanoid mutation, death behavior, or
+	presentation is created here. Server-owned run modifiers may raise damage
+	within a strict multiple of the configured firearm value.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,7 +23,8 @@ type DamageResolver = {
 	resolve: (
 		hitResolution: FirearmHitResolution,
 		targetHealthState: TargetHealthState,
-		serverTimestamp: number
+		serverTimestamp: number,
+		damageAmountOverride: number?
 	) -> DamageResolution,
 }
 
@@ -54,10 +56,49 @@ local function withoutDamage(
 	}
 end
 
+local function readProgressionNumber(attributeName: string, fallback: number): number
+	local storageAsAny = ReplicatedStorage :: any
+	if type(storageAsAny.FindFirstChild) ~= "function" then
+		return fallback
+	end
+	local network = storageAsAny:FindFirstChild("ProgressionNetwork")
+	if network == nil or type(network.GetAttribute) ~= "function" then
+		return fallback
+	end
+	local value = network:GetAttribute(attributeName)
+	return if type(value) == "number" and value == value then value else fallback
+end
+
+local function resolveDamageAmount(override: number?, currentHealth: number): number?
+	local configured = FirearmConfig.BasicFirearm.DamagePerHit
+	local requested = override
+	if requested == nil then
+		local damageMultiplier = readProgressionNumber("RunDamageMultiplier", 1)
+		local cullMultiplier = 1
+		local cullThreshold = readProgressionNumber("RunCullHealthThreshold", 0)
+		if currentHealth <= cullThreshold then
+			cullMultiplier = readProgressionNumber("RunCullDamageMultiplier", 1)
+		end
+		requested = math.floor(configured * damageMultiplier * cullMultiplier + 0.5)
+	end
+	if
+		type(requested) ~= "number"
+		or requested ~= requested
+		or requested <= 0
+		or requested % 1 ~= 0
+		or requested < configured
+		or requested > configured * 3
+	then
+		return nil
+	end
+	return requested
+end
+
 function DamageResolver.resolve(
 	hitResolution: FirearmHitResolution,
 	targetHealthState: TargetHealthState,
-	serverTimestamp: number
+	serverTimestamp: number,
+	damageAmountOverride: number?
 ): DamageResolution
 	local healthStateAfter = copyHealthState(targetHealthState)
 	local shotId = hitResolution.shotId
@@ -81,12 +122,16 @@ function DamageResolver.resolve(
 		return withoutDamage(healthStateAfter, reasons.TargetMismatch)
 	end
 
-	if hitResolution.weaponId ~= FirearmConfig.BasicFirearm.WeaponId or hitResolution.sourceEntityId == nil then
+	local healthBefore = math.max(0, targetHealthState.currentHealth)
+	local damageAmount = resolveDamageAmount(damageAmountOverride, healthBefore)
+	if
+		damageAmount == nil
+		or hitResolution.weaponId ~= FirearmConfig.BasicFirearm.WeaponId
+		or hitResolution.sourceEntityId == nil
+	then
 		return withoutDamage(healthStateAfter, reasons.WeaponInvalid)
 	end
 
-	local damageAmount = FirearmConfig.BasicFirearm.DamagePerHit
-	local healthBefore = math.max(0, targetHealthState.currentHealth)
 	healthStateAfter.currentHealth = math.max(0, healthBefore - damageAmount)
 	local becameDead = healthBefore > 0 and healthStateAfter.currentHealth == 0
 	local damageEvent = table.freeze({
