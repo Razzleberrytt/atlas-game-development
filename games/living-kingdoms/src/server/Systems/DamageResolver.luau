@@ -35,6 +35,12 @@ type DamageResolver = {
 		serverTimestamp: number,
 		damageAmountOverride: number?
 	) -> DamageResolution,
+	resolvePattern: (
+		hitResolution: FirearmHitResolution,
+		targetHealthState: TargetHealthState,
+		serverTimestamp: number,
+		damageMultiplier: number
+	) -> DamageResolution,
 }
 
 local DamageResolver: DamageResolver = {} :: DamageResolver
@@ -78,7 +84,12 @@ local function readProgressionNumber(attributeName: string, fallback: number): n
 	return if type(value) == "number" and value == value then value else fallback
 end
 
-local function resolveDamageAmount(weaponId: string, override: number?, currentHealth: number): number?
+local function resolveDamageAmount(
+	weaponId: string,
+	override: number?,
+	currentHealth: number,
+	patternMultiplier: number?
+): number?
 	local weapon = resolveWeaponDefinition(weaponId)
 	if weapon == nil then
 		return nil
@@ -94,12 +105,24 @@ local function resolveDamageAmount(weaponId: string, override: number?, currentH
 		end
 		requested = math.floor(configured * damageMultiplier * cullMultiplier + 0.5)
 	end
+	if patternMultiplier ~= nil then
+		if
+			type(patternMultiplier) ~= "number"
+			or patternMultiplier ~= patternMultiplier
+			or patternMultiplier <= 0
+			or patternMultiplier > 1
+		then
+			return nil
+		end
+		requested = math.max(1, math.floor(requested * patternMultiplier + 0.5))
+	end
+	local minimumDamage = if patternMultiplier == nil then configured else 1
 	if
 		type(requested) ~= "number"
 		or requested ~= requested
 		or requested <= 0
 		or requested % 1 ~= 0
-		or requested < configured
+		or requested < minimumDamage
 		or requested > configured * 3
 	then
 		return nil
@@ -107,11 +130,12 @@ local function resolveDamageAmount(weaponId: string, override: number?, currentH
 	return requested
 end
 
-function DamageResolver.resolve(
+local function resolveInternal(
 	hitResolution: FirearmHitResolution,
 	targetHealthState: TargetHealthState,
 	serverTimestamp: number,
-	damageAmountOverride: number?
+	damageAmountOverride: number?,
+	patternMultiplier: number?
 ): DamageResolution
 	local healthStateAfter = copyHealthState(targetHealthState)
 	local shotId = hitResolution.shotId
@@ -137,7 +161,8 @@ function DamageResolver.resolve(
 
 	local healthBefore = math.max(0, targetHealthState.currentHealth)
 	local weapon = resolveWeaponDefinition(hitResolution.weaponId)
-	local damageAmount = resolveDamageAmount(hitResolution.weaponId, damageAmountOverride, healthBefore)
+	local damageAmount =
+		resolveDamageAmount(hitResolution.weaponId, damageAmountOverride, healthBefore, patternMultiplier)
 	if damageAmount == nil or weapon == nil or hitResolution.sourceEntityId == nil then
 		return withoutDamage(healthStateAfter, reasons.WeaponInvalid)
 	end
@@ -162,6 +187,24 @@ function DamageResolver.resolve(
 		becameDead = becameDead,
 		rejectionReasonId = nil,
 	}
+end
+
+function DamageResolver.resolve(
+	hitResolution: FirearmHitResolution,
+	targetHealthState: TargetHealthState,
+	serverTimestamp: number,
+	damageAmountOverride: number?
+): DamageResolution
+	return resolveInternal(hitResolution, targetHealthState, serverTimestamp, damageAmountOverride, nil)
+end
+
+function DamageResolver.resolvePattern(
+	hitResolution: FirearmHitResolution,
+	targetHealthState: TargetHealthState,
+	serverTimestamp: number,
+	damageMultiplier: number
+): DamageResolution
+	return resolveInternal(hitResolution, targetHealthState, serverTimestamp, nil, damageMultiplier)
 end
 
 return table.freeze(DamageResolver)

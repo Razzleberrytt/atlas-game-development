@@ -12,7 +12,8 @@ local contracts = fs.readFile("games/living-kingdoms/src/shared/Combat/CombatCon
 local runtime = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau")
 local factory = fs.readFile("games/living-kingdoms/src/client/Presentation/BasicFirearmPresentationFactory.luau")
 local presenter = fs.readFile("games/living-kingdoms/src/client/Presentation/WeaponShotEffectPresenter.luau")
-local presentationController = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau")
+local presentationController =
+	fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau")
 local weaponController = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponController.luau")
 local visualConfig = fs.readFile("games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau")
 
@@ -30,29 +31,32 @@ assertThat(
 	"accepted shot presentation must be squad-visible"
 )
 assertThat(
-	string.find(runtime, "didApplyDamage = damageResolution.didApplyDamage", 1, true) ~= nil,
-	"server disclosure must use the committed damage resolution"
+	string.find(runtime, "local didApplyPrimaryDamage = didCommitPrimary and damageResolution.didApplyDamage", 1, true)
+		~= nil,
+	"server disclosure must require both damage resolution and a successful revisioned health commit"
 )
 assertThat(
-	string.find(
-		runtime,
-		"impactWorldPosition = if damageResolution.didApplyDamage then fact.worldPosition else nil",
-		1,
-		true
-	) ~= nil,
-	"blocked or rejected damage must not fabricate an impact position"
+	string.find(runtime, "didApplyDamage = didApplyPrimaryDamage", 1, true) ~= nil,
+	"shot disclosure must use committed primary damage truth"
+)
+assertThat(
+	string.find(runtime, "impactWorldPosition = if didApplyPrimaryDamage then fact.worldPosition else nil", 1, true)
+		~= nil,
+	"blocked, rejected, or stale commits must not fabricate an impact position"
 )
 assertThat(
 	string.find(runtime, "presentationRemote:FireClient(player, payload)", 1, true) ~= nil,
 	"private ammunition disclosure must remain recipient-specific"
 )
 
-for _, required in {
-	'"MuzzleFlash"',
-	'"MuzzleLight"',
-	'muzzleFlash.Transparency = 1',
-	'muzzleLight.Enabled = false',
-} do
+for _, required in
+	{
+		'"MuzzleFlash"',
+		'"MuzzleLight"',
+		"muzzleFlash.Transparency = 1",
+		"muzzleLight.Enabled = false",
+	}
+do
 	assertThat(string.find(factory, required, 1, true) ~= nil, "missing firearm flash component " .. required)
 end
 
@@ -67,17 +71,19 @@ assertThat(
 	"casings must identify themselves as presentation-only"
 )
 
-for _, forbidden in {
-	"FireServer",
-	"InvokeServer",
-	"OnServerEvent",
-	"DamageResolver",
-	"FirearmHitResolver",
-	"loadedRounds -=",
-	"reserveRounds -=",
-	"Humanoid:TakeDamage",
-	"SoundId =",
-} do
+for _, forbidden in
+	{
+		"FireServer",
+		"InvokeServer",
+		"OnServerEvent",
+		"DamageResolver",
+		"FirearmHitResolver",
+		"loadedRounds -=",
+		"reserveRounds -=",
+		"Humanoid:TakeDamage",
+		"SoundId =",
+	}
+do
 	assertThat(not string.find(presenter, forbidden, 1, true), "effect presenter must not contain " .. forbidden)
 end
 

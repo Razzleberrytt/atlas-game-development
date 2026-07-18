@@ -351,6 +351,7 @@ local HIT_TOKEN = {}
 local LIFE_TOKEN = {}
 local RELOAD_TOKEN = {}
 local SELECTOR_TOKEN = {}
+local PATTERN_TOKEN = {}
 
 local scheduled = {}
 local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau"), {
@@ -377,6 +378,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				OperativeLifeService = LIFE_TOKEN,
 				ReloadResolver = RELOAD_TOKEN,
 				TargetCandidateSelector = SELECTOR_TOKEN,
+				WeaponPatternResolver = PATTERN_TOKEN,
 			},
 		},
 		require = function(token)
@@ -400,6 +402,12 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return reloadResolver
 			elseif token == SELECTOR_TOKEN then
 				return selector
+			elseif token == PATTERN_TOKEN then
+				return table.freeze({
+					resolve = function()
+						return table.freeze({})
+					end,
+				})
 			end
 			error("unexpected OperativeCombatRuntimeService dependency")
 		end,
