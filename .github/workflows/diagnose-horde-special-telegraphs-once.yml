@@ -20,32 +20,54 @@ jobs:
         with:
           ref: feat/horde-special-telegraphs-v1
 
-      - name: Replay final wrapper and capture output
-        id: replay
-        continue-on-error: true
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Apply deterministic integration
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import textwrap
 
-          source = Path('.github/workflows/finalize-horde-special-telegraphs-v2.yml').read_text()
-          marker = '      - name: Apply corrected integration\n'
+          source = Path('.github/workflows/final-horde-special-telegraphs-v3.yml').read_text()
+          marker = '      - name: Apply deterministic integration\n'
           section = source.split(marker, 1)[1].split('\n\n      - name: Format focused Luau', 1)[0]
           script = section.split('        run: |\n', 1)[1]
           Path('/tmp/replay.sh').write_text(textwrap.dedent(script))
           PY
-          set -o pipefail
-          bash /tmp/replay.sh 2>&1 | tee /tmp/horde-special-wire.log
+          bash /tmp/replay.sh
+          stylua \
+            games/living-kingdoms/src/server/Systems/HordeExperienceService.luau \
+            games/living-kingdoms/src/client/Controllers/HordeSpecialTelegraphController.luau \
+            games/living-kingdoms/src/client/Controllers/EnemyAudioController.luau \
+            games/living-kingdoms/src/client/init.client.luau \
+            games/living-kingdoms/src/shared/Config/HordeSpecialTelegraphConfig.luau \
+            games/living-kingdoms/src/shared/Config/EnemyAudioConfig.luau \
+            games/living-kingdoms/tests/HordeSpecialTelegraphConfig.test.luau \
+            games/living-kingdoms/tests/HordeSpecialTelegraphSourceAudit.test.luau
 
-      - name: Upload integration diagnostic
+      - name: Capture Selene output
+        id: selene
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          selene games/living-kingdoms/src 2>&1 | tee /tmp/horde-special-selene.log
+
+      - name: Upload Selene diagnostic
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: horde-special-wire-log
-          path: /tmp/horde-special-wire.log
+          name: horde-special-selene-log
+          path: /tmp/horde-special-selene.log
           retention-days: 1
 
-      - name: Enforce replay result
-        if: steps.replay.outcome == 'failure'
+      - name: Enforce Selene result
+        if: steps.selene.outcome == 'failure'
         run: exit 1
