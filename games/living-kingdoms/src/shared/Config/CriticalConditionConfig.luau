@@ -21,8 +21,7 @@ local CriticalConditionConfig = {
 }
 
 assert(
-	CriticalConditionConfig.CriticalHealthFraction >= 0.15
-		and CriticalConditionConfig.CriticalHealthFraction <= 0.35,
+	CriticalConditionConfig.CriticalHealthFraction >= 0.15 and CriticalConditionConfig.CriticalHealthFraction <= 0.35,
 	"critical condition must begin late enough to preserve readability and early enough to create urgency"
 )
 assert(
