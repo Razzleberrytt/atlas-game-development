@@ -4,13 +4,16 @@
 	Resolves pure reload begin and completion transitions from authoritative
 	caller state. The caller owns the monotonic server timestamp and commits the
 	returned copies. This module accepts no client ammunition, duration, state,
-	eligibility, or completion time.
+	eligibility, or completion time. A server-owned run-upgrade override may
+	shorten reload duration within a strict floor.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
+
+local MINIMUM_RELOAD_DURATION_SECONDS = 0.4
 
 type AmmunitionState = CombatContracts.AmmunitionState
 type OperativeReloadState = CombatContracts.OperativeReloadState
@@ -25,7 +28,8 @@ type ReloadResolver = {
 	begin: (
 		operativeState: OperativeReloadState,
 		weaponState: WeaponReadinessState,
-		serverTimestamp: number
+		serverTimestamp: number,
+		reloadDurationSecondsOverride: number?
 	) -> ReloadBeginResolution,
 	complete: (
 		operativeState: OperativeReloadState,
@@ -92,6 +96,22 @@ local function isConfiguredWeaponState(weaponState: WeaponReadinessState): boole
 		and weaponState.ammunition.magazineCapacity == FirearmConfig.BasicFirearm.MagazineCapacity
 end
 
+local function resolveReloadDuration(override: number?): number?
+	local configured = FirearmConfig.BasicFirearm.ReloadDurationSeconds
+	if override == nil then
+		return configured
+	end
+	if
+		type(override) ~= "number"
+		or override ~= override
+		or override < MINIMUM_RELOAD_DURATION_SECONDS
+		or override > configured
+	then
+		return nil
+	end
+	return override
+end
+
 local function rejectBegin(
 	operativeState: OperativeReloadState,
 	weaponState: WeaponReadinessState,
@@ -154,14 +174,17 @@ end
 function ReloadResolver.begin(
 	operativeState: OperativeReloadState,
 	weaponState: WeaponReadinessState,
-	serverTimestamp: number
+	serverTimestamp: number,
+	reloadDurationSecondsOverride: number?
 ): ReloadBeginResolution
 	if operativeState.combatStateId ~= CombatContracts.OperativeCombatStateIds.Ready then
 		return rejectBegin(operativeState, weaponState, reasons.OperativeStateInvalid)
 	end
 
+	local reloadDurationSeconds = resolveReloadDuration(reloadDurationSecondsOverride)
 	if
-		not isConfiguredWeaponState(weaponState)
+		reloadDurationSeconds == nil
+		or not isConfiguredWeaponState(weaponState)
 		or operativeState.equippedWeaponId ~= FirearmConfig.BasicFirearm.WeaponId
 	then
 		return rejectBegin(operativeState, weaponState, reasons.WeaponInvalid)
@@ -193,7 +216,7 @@ function ReloadResolver.begin(
 	weaponStateAfter.reloadState = {
 		weaponId = FirearmConfig.BasicFirearm.WeaponId,
 		startedAtServerTimestamp = serverTimestamp,
-		completionServerTimestamp = serverTimestamp + FirearmConfig.BasicFirearm.ReloadDurationSeconds,
+		completionServerTimestamp = serverTimestamp + reloadDurationSeconds,
 	}
 
 	return {
