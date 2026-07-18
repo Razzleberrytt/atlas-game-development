@@ -1,0 +1,78 @@
+name: Integrate detailed weapon visuals once
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: github.head_ref == 'feat/detailed-weapon-visual-models-v1'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/detailed-weapon-visual-models-v1
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Register detailed weapon models
+        run: python3 tools/apply_detailed_weapon_visual_registry.py
+
+      - name: Format focused visual diff
+        run: |
+          stylua \
+            games/living-kingdoms/src/client/Presentation/WeaponVisualModelBuilder.luau \
+            games/living-kingdoms/src/client/Presentation/BreachShotgunPresentationFactory.luau \
+            games/living-kingdoms/src/client/Presentation/SniperRiflePresentationFactory.luau \
+            games/living-kingdoms/src/client/Presentation/ServicePistolPresentationFactory.luau \
+            games/living-kingdoms/src/client/Presentation/SubmachineGunPresentationFactory.luau \
+            games/living-kingdoms/src/client/Presentation/WeaponPresentationFactory.luau \
+            games/living-kingdoms/src/shared/Visual/VisualAssetContracts.luau \
+            games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau \
+            games/living-kingdoms/tests/DetailedWeaponModelsSourceAudit.test.luau \
+            games/living-kingdoms/tests/WeaponRosterSourceAudit.test.luau
+
+      - name: Run Selene
+        run: selene games/living-kingdoms/src
+
+      - name: Run complete Lune fixture suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          fixture_count=0
+          while IFS= read -r -d '' fixture; do
+            echo "::group::Lune fixture: $fixture"
+            lune run "$fixture"
+            echo "::endgroup::"
+            fixture_count=$((fixture_count + 1))
+          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          test "$fixture_count" -gt 0
+          echo "Executed $fixture_count fixtures."
+
+      - name: Build Rojo project
+        run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
+
+      - name: Commit validated final source
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm tools/apply_detailed_weapon_visual_registry.py
+          rm .github/workflows/detailed-weapon-visuals-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Integrate detailed visual models for weapon roster"
+          git push origin HEAD:feat/detailed-weapon-visual-models-v1
