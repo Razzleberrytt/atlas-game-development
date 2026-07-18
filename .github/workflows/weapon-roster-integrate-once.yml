@@ -35,6 +35,7 @@ jobs:
         run: |
           set -o pipefail
           python3 tools/weapon_roster_integration_patch.py 2>&1 | tee /tmp/weapon-roster-patch.log
+          python3 tools/weapon_roster_fixture_compat_patch.py 2>&1 | tee -a /tmp/weapon-roster-patch.log
 
       - name: Upload patch diagnostics
         if: always()
@@ -101,6 +102,7 @@ jobs:
         run: |
           set -euo pipefail
           rm tools/weapon_roster_integration_patch.py
+          rm tools/weapon_roster_fixture_compat_patch.py
           rm .github/workflows/weapon-roster-integrate-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
