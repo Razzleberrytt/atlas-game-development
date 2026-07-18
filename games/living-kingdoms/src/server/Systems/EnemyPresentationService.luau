@@ -16,6 +16,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
+local HordeRolePresentationService = require(script.Parent.HordeRolePresentationService)
 local VisualAssetContracts = require(ReplicatedStorage.Shared.Visual.VisualAssetContracts)
 
 local EnemyPresentationService = {}
@@ -67,6 +68,7 @@ local function createPart(
 	local part = Instance.new("Part")
 	configurePart(part, name, color, material)
 	part.Size = size
+	part:SetAttribute("HordeRoleBaseSize", size)
 	if shape ~= nil then
 		part.Shape = shape
 	end
@@ -112,6 +114,7 @@ local function makeMotorPart(
 	motor.Part0 = motorParent
 	motor.Part1 = part
 	motor.C0 = motorParent.CFrame:ToObjectSpace(part.CFrame)
+	motor:SetAttribute("HordeRoleBaseC0", motor.C0)
 	motor.C1 = CFrame.new()
 	motor.Parent = motorParent
 	return part
@@ -366,6 +369,7 @@ local function attachPresentation(enemyModel: Model)
 
 	local presentation = createPresentation(root)
 	presentation.Parent = enemyModel
+	HordeRolePresentationService.applyRolePresentation(enemyModel)
 end
 
 function EnemyPresentationService.start()
