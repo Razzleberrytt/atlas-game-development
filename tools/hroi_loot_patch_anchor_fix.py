@@ -5,28 +5,19 @@ from pathlib import Path
 path = Path("tools/hroi_loot_integration_patch.py")
 source = path.read_text(encoding="utf-8")
 
-old = """progression = replace_once(
-    progression,
-    '''\ttable.clear(lastUpgradeRequestTimestamps)
-\tsyncCombatModifierAttributes()''',
-    '''\ttable.clear(lastUpgradeRequestTimestamps)
-\ttable.clear(processedFieldIntelRewardIds)
-\ttable.clear(fieldIntelRewardOrder)
-\tsyncCombatModifierAttributes()''',
-    "progression intel reset",
-)
-progression = replace_once(
-    progression,
-    '''\ttable.clear(lastUpgradeRequestTimestamps)
-\taccumulatedSeconds = 0''',
-    '''\ttable.clear(lastUpgradeRequestTimestamps)
-\ttable.clear(processedFieldIntelRewardIds)
-\ttable.clear(fieldIntelRewardOrder)
-\taccumulatedSeconds = 0''',
-    "progression intel stop reset",
-)"""
+first_label = '"progression intel reset"'
+second_label = '"progression intel stop reset"'
+if source.count(first_label) != 1 or source.count(second_label) != 1:
+    raise RuntimeError("expected unique progression reset patch labels")
 
-new = """progression = replace_once(
+first_label_index = source.index(first_label)
+start = source.rfind("progression = replace_once(", 0, first_label_index)
+second_label_index = source.index(second_label, first_label_index)
+end = source.index("\n)", second_label_index) + 2
+if start < 0 or end <= start:
+    raise RuntimeError("could not bound the progression reset patch region")
+
+replacement = """progression = replace_once(
     progression,
     '''\ttable.clear(trackedLifeStates)
 \ttable.clear(upgradeStacks)
@@ -65,8 +56,5 @@ progression = replace_once(
     "progression intel stop reset",
 )"""
 
-if source.count(old) != 1:
-    raise RuntimeError(f"expected one ambiguous progression reset block, found {source.count(old)}")
-
-path.write_text(source.replace(old, new, 1), encoding="utf-8")
+path.write_text(source[:start] + replacement + source[end:], encoding="utf-8")
 print("Anchored progression start and stop reset patches")
