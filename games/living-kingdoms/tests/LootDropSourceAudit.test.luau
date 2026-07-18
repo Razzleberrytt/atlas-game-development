@@ -88,13 +88,33 @@ for _, prohibited in {
 	assert(not contains(service, prohibited), "loot runtime must not contain " .. prohibited)
 end
 
-assert(contains(healingResolver, "operativeSnapshot.lifeStateId ~= AliveStateId"))
-assert(contains(healingResolver, "math.min("))
-assert(not contains(healingResolver, "Humanoid"))
-assert(contains(lifeService, "OperativeHealingResolver.resolve"))
-assert(contains(lifeService, "allowHealthIncrease"))
-assert(contains(progressionService, "function RunProgressionService.awardFieldIntel"))
-assert(contains(progressionService, "processedFieldIntelRewardIds"))
-assert(contains(bootstrap, "LootDropService.start()"))
+assert(
+	contains(healingResolver, "operativeSnapshot.lifeStateId ~= AliveStateId"),
+	"field dressings must reject non-Alive operatives"
+)
+assert(contains(healingResolver, "math.min("), "field dressing healing must clamp to maximum health")
+for _, prohibited in {
+	'GetService("Players")',
+	'FindFirstChildOfClass("Humanoid")',
+	"Humanoid:TakeDamage",
+	"Humanoid.Health",
+	".Health =",
+} do
+	assert(not contains(healingResolver, prohibited), "pure healing resolver must not use " .. prohibited)
+end
+assert(
+	contains(lifeService, "OperativeHealingResolver.resolve"),
+	"life service must route field dressings through the pure healing resolver"
+)
+assert(contains(lifeService, "allowHealthIncrease"), "only the healing commit path may permit health increases")
+assert(
+	contains(progressionService, "function RunProgressionService.awardFieldIntel"),
+	"field intel requires a server-owned XP award function"
+)
+assert(
+	contains(progressionService, "processedFieldIntelRewardIds"),
+	"field intel rewards require bounded duplicate protection"
+)
+assert(contains(bootstrap, "LootDropService.start()"), "server bootstrap must start the loot runtime")
 
 print("LootDropSourceAudit: deterministic death drops, one prompt connection, reward authority, and bounds passed")
