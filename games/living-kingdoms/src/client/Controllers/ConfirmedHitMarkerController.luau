@@ -32,6 +32,7 @@ local connections: { RBXScriptConnection } = {}
 local screenGui: ScreenGui? = nil
 local markerRoot: Frame? = nil
 local markerLabel: TextLabel? = nil
+local markerCenter: Frame? = nil
 local markerArms: { Frame } = {}
 local impactWorldPosition: Vector3? = nil
 local presentationStartedTimestamp = -math.huge
@@ -116,6 +117,7 @@ local function createPresentation()
 	center.BorderSizePixel = 0
 	center.ZIndex = 21
 	center.Parent = root
+	markerCenter = center
 
 	local label = Instance.new("TextLabel")
 	label.Name = "Confirmation"
@@ -161,8 +163,9 @@ end
 local function updateFrame()
 	local root = markerRoot
 	local label = markerLabel
+	local center = markerCenter
 	local worldPosition = impactWorldPosition
-	if root == nil or label == nil or worldPosition == nil then
+	if root == nil or label == nil or center == nil or worldPosition == nil then
 		hidePresentation()
 		return
 	end
@@ -206,6 +209,8 @@ local function updateFrame()
 		arm.BackgroundColor3 = color
 		arm.BackgroundTransparency = 0.08 + fadeProgress * 0.92
 	end
+	center.BackgroundColor3 = color
+	center.BackgroundTransparency = 0.16 + fadeProgress * 0.84
 	label.Text = if confirmedChain >= 2 then string.format("CONFIRMED  x%d", confirmedChain) else "HIT CONFIRMED"
 	label.TextColor3 = color
 	label.TextTransparency = fadeProgress
@@ -231,7 +236,8 @@ local function onPresentationMessage(message: unknown)
 		return
 	end
 
-	if payload.serverTimestamp - lastConfirmedServerTimestamp <= ConfirmedHitMarkerConfig.ChainWindowSeconds then
+	local chainDelta = payload.serverTimestamp - lastConfirmedServerTimestamp
+	if chainDelta >= 0 and chainDelta <= ConfirmedHitMarkerConfig.ChainWindowSeconds then
 		confirmedChain = math.min(99, confirmedChain + 1)
 	else
 		confirmedChain = 1
@@ -266,6 +272,7 @@ function Controller.stop()
 	end
 	markerRoot = nil
 	markerLabel = nil
+	markerCenter = nil
 	table.clear(markerArms)
 	impactWorldPosition = nil
 	presentationStartedTimestamp = -math.huge
