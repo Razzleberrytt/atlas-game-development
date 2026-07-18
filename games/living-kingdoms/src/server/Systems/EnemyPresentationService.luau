@@ -23,14 +23,18 @@ local EnemyPresentationService = {}
 local ENEMY_FOLDER_NAME = "EnemyEntities"
 local PRESENTATION_MODEL_NAME = "ExclusionWalkerPresentation"
 
+-- Rotting-horror palette: necrotic maroon flesh over jaundiced exposed bone,
+-- charred corroded plating, bloodstained claws, a bile-green canister, and an
+-- intense blood-red ocular sensor. The client owns the live per-state sensor
+-- colour; this is only the spawn appearance.
 local COLORS = table.freeze({
-	bone = Color3.fromRGB(113, 119, 113),
-	armor = Color3.fromRGB(58, 65, 62),
-	armorDark = Color3.fromRGB(30, 35, 34),
-	flesh = Color3.fromRGB(104, 45, 48),
-	claw = Color3.fromRGB(132, 128, 110),
-	sensor = Color3.fromRGB(218, 78, 53),
-	canister = Color3.fromRGB(75, 87, 68),
+	bone = Color3.fromRGB(176, 166, 138),
+	armor = Color3.fromRGB(27, 24, 25),
+	armorDark = Color3.fromRGB(13, 11, 12),
+	flesh = Color3.fromRGB(71, 20, 24),
+	claw = Color3.fromRGB(126, 96, 72),
+	sensor = Color3.fromRGB(255, 28, 22),
+	canister = Color3.fromRGB(62, 76, 40),
 })
 
 local started = false
@@ -141,7 +145,7 @@ local function createPresentation(root: BasePart): Model
 		Vector3.new(2.25, 0.42, 1.30),
 		CFrame.new(0, 0.95, 0),
 		COLORS.armor,
-		Enum.Material.Metal,
+		Enum.Material.CorrodedMetal,
 		nil
 	)
 	makeRigidPart(
@@ -152,7 +156,7 @@ local function createPresentation(root: BasePart): Model
 		Vector3.new(1.55, 0.50, 1.05),
 		CFrame.new(0, 1.42, -0.04),
 		COLORS.armorDark,
-		Enum.Material.Metal,
+		Enum.Material.CorrodedMetal,
 		nil
 	)
 	makeRigidPart(
@@ -166,17 +170,24 @@ local function createPresentation(root: BasePart): Model
 		Enum.Material.Slate,
 		nil
 	)
-	makeRigidPart(
+	local sensor = makeRigidPart(
 		presentation,
 		root,
 		torso,
 		"Sensor",
-		Vector3.new(0.56, 0.18, 0.30),
+		Vector3.new(0.64, 0.15, 0.26),
 		CFrame.new(0, 2.10, -0.50),
 		COLORS.sensor,
 		Enum.Material.Neon,
 		nil
 	)
+	local eyeGlow = Instance.new("PointLight")
+	eyeGlow.Name = "EyeGlow"
+	eyeGlow.Color = Color3.fromRGB(255, 34, 26)
+	eyeGlow.Brightness = 2.6
+	eyeGlow.Range = 8.5
+	eyeGlow.Shadows = false
+	eyeGlow.Parent = sensor
 	makeRigidPart(
 		presentation,
 		root,
@@ -185,7 +196,7 @@ local function createPresentation(root: BasePart): Model
 		Vector3.new(1.05, 0.36, 0.36),
 		CFrame.new(0, 1.95, 0.25) * CFrame.Angles(0, 0, math.rad(90)),
 		COLORS.claw,
-		Enum.Material.Metal,
+		Enum.Material.CorrodedMetal,
 		Enum.PartType.Cylinder
 	)
 	makeRigidPart(
@@ -196,7 +207,7 @@ local function createPresentation(root: BasePart): Model
 		Vector3.new(0.65, 0.65, 0.80),
 		CFrame.new(-1.35, 1.02, 0),
 		COLORS.armor,
-		Enum.Material.Metal,
+		Enum.Material.CorrodedMetal,
 		nil
 	)
 	makeRigidPart(
@@ -207,7 +218,7 @@ local function createPresentation(root: BasePart): Model
 		Vector3.new(0.65, 0.65, 0.80),
 		CFrame.new(1.35, 1.02, 0),
 		COLORS.armor,
-		Enum.Material.Metal,
+		Enum.Material.CorrodedMetal,
 		nil
 	)
 
@@ -238,10 +249,10 @@ local function createPresentation(root: BasePart): Model
 		root,
 		forearmLeft,
 		"ClawLeft",
-		Vector3.new(0.34, 0.78, 0.32),
-		CFrame.new(-1.55, -0.95, -0.12) * CFrame.Angles(math.rad(12), 0, math.rad(6)),
+		Vector3.new(0.24, 1.18, 0.24),
+		CFrame.new(-1.58, -1.12, -0.18) * CFrame.Angles(math.rad(16), 0, math.rad(6)),
 		COLORS.claw,
-		Enum.Material.Metal,
+		Enum.Material.Slate,
 		nil
 	)
 	makeRigidPart(
@@ -249,10 +260,10 @@ local function createPresentation(root: BasePart): Model
 		root,
 		forearmRight,
 		"ClawRight",
-		Vector3.new(0.34, 0.78, 0.32),
-		CFrame.new(1.55, -0.95, -0.12) * CFrame.Angles(math.rad(12), 0, math.rad(-6)),
+		Vector3.new(0.24, 1.18, 0.24),
+		CFrame.new(1.58, -1.12, -0.18) * CFrame.Angles(math.rad(16), 0, math.rad(-6)),
 		COLORS.claw,
-		Enum.Material.Metal,
+		Enum.Material.Slate,
 		nil
 	)
 	makeRigidPart(
@@ -263,7 +274,7 @@ local function createPresentation(root: BasePart): Model
 		Vector3.new(1.35, 0.52, 0.92),
 		CFrame.new(0, -0.95, 0),
 		COLORS.armorDark,
-		Enum.Material.Metal,
+		Enum.Material.CorrodedMetal,
 		nil
 	)
 
@@ -297,7 +308,7 @@ local function createPresentation(root: BasePart): Model
 		Vector3.new(0.70, 0.34, 1.25),
 		CFrame.new(-0.52, -3.00, -0.28),
 		COLORS.armor,
-		Enum.Material.Metal,
+		Enum.Material.CorrodedMetal,
 		nil
 	)
 	makeRigidPart(
@@ -308,7 +319,7 @@ local function createPresentation(root: BasePart): Model
 		Vector3.new(0.70, 0.34, 1.25),
 		CFrame.new(0.52, -3.00, -0.28),
 		COLORS.armor,
-		Enum.Material.Metal,
+		Enum.Material.CorrodedMetal,
 		nil
 	)
 	makeRigidPart(
@@ -319,7 +330,7 @@ local function createPresentation(root: BasePart): Model
 		Vector3.new(0.95, 0.64, 0.64),
 		CFrame.new(0, 0.28, 0.72) * CFrame.Angles(0, 0, math.rad(90)),
 		COLORS.canister,
-		Enum.Material.Metal,
+		Enum.Material.CorrodedMetal,
 		Enum.PartType.Cylinder
 	)
 
