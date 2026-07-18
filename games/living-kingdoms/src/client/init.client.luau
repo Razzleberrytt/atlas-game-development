@@ -23,6 +23,7 @@ local MissionObjectPresentationController = require(script.Controllers.MissionOb
 local RunProgressionHUDController = require(script.Controllers.RunProgressionHUDController)
 local HordeHUDController = require(script.Controllers.HordeHUDController)
 local HordeEffectsController = require(script.Controllers.HordeEffectsController)
+local CriticalConditionController = require(script.Controllers.CriticalConditionController)
 
 CameraController.init()
 CameraController.start()
@@ -50,6 +51,7 @@ MissionObjectPresentationController.start()
 RunProgressionHUDController.start()
 HordeHUDController.start()
 HordeEffectsController.start()
+CriticalConditionController.start()
 -- Mission presentation starts first; class selection then requests authoritative state.
 ClassSelectionController.start()
 ClassSilhouetteController.start()

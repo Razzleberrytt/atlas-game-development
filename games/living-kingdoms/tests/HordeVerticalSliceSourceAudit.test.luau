@@ -85,6 +85,7 @@ for _, required in {
 	"EnemyImpactPresentationController.start()",
 	"HordeEffectsController.start()",
 	"HordeHUDController.start()",
+	"CriticalConditionController.start()",
 } do
 	assertThat(
 		string.find(clientBootstrap, required, 1, true) ~= nil,
