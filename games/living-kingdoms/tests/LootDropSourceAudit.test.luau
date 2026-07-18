@@ -49,14 +49,18 @@ assert(
 	contains(dropResolver, "fact.activeDropCount >= LootDropConfig.MaximumActiveDrops"),
 	"the pure resolver must enforce the active-drop ceiling"
 )
+assert(
+	contains(dropResolver, "fact.serverTimestamp + LootDropConfig.DropLifetimeSeconds"),
+	"the pure resolver must author one bounded expiry timestamp"
+)
 
 for _, token in {
 	"ProximityPromptService.PromptTriggered:Connect",
 	"RunService.Heartbeat:Connect",
 	"MaximumTrackedEnemyModels",
-	"DropLifetimeSeconds",
 	"PickupMaximumDistanceStuds",
 	"activeDropCount()",
+	"serverTimestamp >= entry.expiresAtServerTimestamp",
 	"LootDropResolver.resolve",
 	"AmmunitionSupplyResolver.collect",
 	"OperativeLifeService.applyAuthoritativeHealing",
