@@ -32,7 +32,7 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Co
 
 assert(config.Version == "HROI-0104-v1")
 assert(table.isfrozen(config), "impact config must be immutable")
-assert(config.MaximumTrackedEnemies == 40, "effect tracking must match the hard global enemy ceiling")
+assert(config.MaximumTrackedEnemies == 24, "effect tracking must match the current validated global enemy ceiling")
 assert(config.MaximumEffectDistanceStuds <= 200, "camera distance culling must stay bounded")
 assert(config.HitParticleCount <= 12, "hit particles must remain a small burst")
 assert(config.KillParticleCount <= 32, "kill particles must remain bounded")
