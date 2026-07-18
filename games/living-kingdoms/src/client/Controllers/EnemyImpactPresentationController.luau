@@ -16,7 +16,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
-local CombatImpactPresentationConfig = require(ReplicatedStorage.Shared.Config.CombatImpactPresentationConfig)
+local CombatImpactPresentationConfig =
+	require(ReplicatedStorage.Shared.Config.CombatImpactPresentationConfig)
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 
@@ -74,7 +75,10 @@ local function findEnemyModel(instance: Instance): Model?
 	local folder = enemyFolder
 	local current: Instance? = instance
 	while current ~= nil and current ~= folder do
-		if current:IsA("Model") and current:GetAttribute("EnemyArchetypeId") == EnemyConfig.Walker.ArchetypeId then
+		if
+			current:IsA("Model")
+			and current:GetAttribute("EnemyArchetypeId") == EnemyConfig.Walker.ArchetypeId
+		then
 			return current
 		end
 		current = current.Parent
@@ -101,7 +105,10 @@ local function configureEmitter(emitter: ParticleEmitter)
 	})
 end
 
-local function createEffectObjects(model: Model, root: BasePart): (Attachment, ParticleEmitter, ParticleEmitter, Highlight)
+local function createEffectObjects(
+	model: Model,
+	root: BasePart
+): (Attachment, ParticleEmitter, ParticleEmitter, Highlight)
 	local staleAttachment = root:FindFirstChild(EFFECT_ATTACHMENT_NAME)
 	if staleAttachment ~= nil then
 		staleAttachment:Destroy()
@@ -171,7 +178,7 @@ local function trackModel(model: Model)
 	if
 		records[model] ~= nil
 		or trackingModels[model] == true
-		or trackedCount >= CombatImpactPresentationConfig.MaximumTrackedEnemies
+		or trackedCount >= CombatImpactPresentationConfig.MaximumTrackedEnemyModels
 		or model:GetAttribute("EnemyArchetypeId") ~= EnemyConfig.Walker.ArchetypeId
 	then
 		return
@@ -209,7 +216,7 @@ local function untrackModel(model: Model)
 	if record == nil then
 		return
 	end
-	records[model] = nil
+	 records[model] = nil
 	trackedCount = math.max(0, trackedCount - 1)
 	if record.highlight.Parent ~= nil then
 		record.highlight:Destroy()
