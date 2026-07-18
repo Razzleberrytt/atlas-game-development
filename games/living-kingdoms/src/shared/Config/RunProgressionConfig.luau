@@ -14,7 +14,7 @@ local RunProgressionConfig = {
 	XpGrowthPerLevel = 1.3,
 	MaximumRunLevel = 20,
 	EnemyScanIntervalSeconds = 0.1,
-	MaximumTrackedEnemyModels = 64,
+	MaximumTrackedEnemyModels = 128,
 	GainDisplaySeconds = 1.2,
 }
 
@@ -37,7 +37,7 @@ assert(
 	"enemy-death observation must remain responsive and bounded"
 )
 assert(
-	RunProgressionConfig.MaximumTrackedEnemyModels >= 24 and RunProgressionConfig.MaximumTrackedEnemyModels <= 64,
+	RunProgressionConfig.MaximumTrackedEnemyModels >= 24 and RunProgressionConfig.MaximumTrackedEnemyModels <= 128,
 	"tracking must cover living enemies plus bounded corpse overlap"
 )
 assert(

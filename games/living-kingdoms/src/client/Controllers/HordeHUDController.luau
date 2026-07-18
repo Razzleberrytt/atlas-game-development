@@ -22,6 +22,7 @@ local connections: { RBXScriptConnection } = {}
 local screenGui: ScreenGui? = nil
 local lastRevision = -1
 local lastEventSequence = -1
+local lastFieldGainSequence = -1
 local eventVisibleUntil = 0
 local upgradeButtons: { TextButton } = {}
 
@@ -317,21 +318,20 @@ local function applyHordeState(payload: any)
 	if enemyCountLabel ~= nil then
 		enemyCountLabel.Text = string.format("HOSTILES  %03d", tonumber(payload.activeEnemies) or 0)
 	end
-	local level = tonumber(payload.level) or 1
-	local xp = tonumber(payload.xp) or 0
-	local xpForNext = math.max(1, tonumber(payload.xpForNextLevel) or 1)
+	local level = readNumberAttribute("LK_HUD_FieldLevel", tonumber(payload.level) or 1)
+	local xp = readNumberAttribute("LK_HUD_FieldXp", tonumber(payload.xp) or 0)
+	local xpForNext = readNumberAttribute("LK_HUD_FieldXpForNext", tonumber(payload.xpForNextLevel) or 0)
 	if levelLabel ~= nil then
-		levelLabel.Text = string.format("LEVEL %02d  //  WEAPON TIER %d", level, tonumber(payload.weaponTier) or 0)
+		levelLabel.Text =
+			string.format("FIELD LEVEL %02d  //  WEAPON TIER %d", level, tonumber(payload.weaponTier) or 0)
 	end
 	if xpText ~= nil then
-		xpText.Text = string.format("XP  %d / %d", xp, xpForNext)
+		xpText.Text = if xpForNext <= 0 then "MAX LEVEL" else string.format("XP  %d / %d", xp, xpForNext)
 	end
-	setBar(xpFill, xp / xpForNext)
+	setBar(xpFill, if xpForNext <= 0 then 1 else xp / xpForNext)
 	local streak = tonumber(payload.streak) or 0
 	if streakLabel ~= nil then
-		streakLabel.Text = if streak >= 2
-			then string.format("MASSACRE x%d  //  %.2fx XP", streak, tonumber(payload.streakMultiplier) or 1)
-			else ""
+		streakLabel.Text = if streak >= 2 then string.format("MASSACRE x%d", streak) else ""
 		streakLabel.Visible = streak >= 2
 	end
 	local eventSequence = tonumber(payload.lastEventSequence) or 0
@@ -589,6 +589,14 @@ local function updateFrame()
 	updateLifePresentation()
 	updateCombatPresentation(serverTimestamp)
 	updateSquadPresentation()
+	local fieldGainSequence = readNumberAttribute("LK_HUD_FieldGainSequence", -1)
+	if eventLabel ~= nil and fieldGainSequence > lastFieldGainSequence then
+		lastFieldGainSequence = fieldGainSequence
+		eventLabel.Text = readStringAttribute("LK_HUD_FieldGainText", "")
+		eventLabel.TextColor3 = Color3.fromRGB(247, 198, 79)
+		eventLabel.Visible = eventLabel.Text ~= ""
+		eventVisibleUntil = serverTimestamp + 2
+	end
 	if eventLabel ~= nil and eventLabel.Visible and serverTimestamp > eventVisibleUntil then
 		eventLabel.Visible = false
 	end
@@ -620,6 +628,7 @@ function Controller.stop()
 	end
 	lastRevision = -1
 	lastEventSequence = -1
+	lastFieldGainSequence = -1
 end
 
 return Controller

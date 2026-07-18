@@ -21,6 +21,7 @@ local WorldFoundationConfig = require(ReplicatedStorage.Shared.Config.WorldFound
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 local OperativeCombatRuntimeService = require(script.Parent.OperativeCombatRuntimeService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
+local RunProgressionService = require(script.Parent.RunProgressionService)
 
 local LifeAttribute = EnemyPresentationContracts.AttributeNames.LifeStateId
 local HitSequenceAttribute = EnemyPresentationContracts.AttributeNames.HitSequence
@@ -89,6 +90,7 @@ end
 type PlayerState = {
 	level: number,
 	xp: number,
+	xpForNextLevel: number,
 	kills: number,
 	streak: number,
 	lastKillServerTimestamp: number,
@@ -145,17 +147,11 @@ local function colorFromTuple(tuple): Color3
 	return Color3.fromRGB(tuple[1], tuple[2], tuple[3])
 end
 
-local function xpForLevel(level: number): number
-	return math.max(
-		1,
-		math.floor(HordeConfig.Progression.BaseXpToLevel * (HordeConfig.Progression.XpGrowthPerLevel ^ (level - 1)))
-	)
-end
-
 local function createPlayerState(): PlayerState
 	return {
 		level = 1,
 		xp = 0,
+		xpForNextLevel = 100,
 		kills = 0,
 		streak = 0,
 		lastKillServerTimestamp = -math.huge,
@@ -314,7 +310,7 @@ local function publishPlayer(player: Player, serverTimestamp: number)
 		revision = revision,
 		level = state.level,
 		xp = state.xp,
-		xpForNextLevel = xpForLevel(state.level),
+		xpForNextLevel = state.xpForNextLevel,
 		kills = state.kills,
 		streak = state.streak,
 		streakMultiplier = math.min(
@@ -374,31 +370,20 @@ local function generateChoices(player: Player, state: PlayerState)
 	end
 end
 
-local function addXp(player: Player, baseAmount: number, isSpecial: boolean)
-	local state = playerStates[player]
-	if state == nil or baseAmount <= 0 then
+local function syncProgressionForPlayer(player: Player, state: PlayerState, snapshot: any)
+	local previousLevel = state.level
+	state.level = snapshot.level
+	state.xp = snapshot.xp
+	state.xpForNextLevel = snapshot.xpForNextLevel
+	state.kills = snapshot.squadKills
+	if state.level <= previousLevel then
 		return
 	end
-	local multiplier = math.min(
-		HordeConfig.Progression.MaximumStreakMultiplier,
-		1 + state.streak * HordeConfig.Progression.StreakMultiplierStep
-	)
-	if now() < state.surgeUntilServerTimestamp then
-		multiplier *= 1.35
+	state.unclaimedUpgrades += state.level - previousLevel
+	if #state.pendingChoices == 0 then
+		generateChoices(player, state)
 	end
-	if isSpecial then
-		multiplier *= 1 + (state.upgradeStacks["upgrade.executioner"] or 0) * 0.25
-	end
-	state.xp += math.max(1, math.floor(baseAmount * multiplier))
-	while state.level < HordeConfig.Progression.MaximumLevel and state.xp >= xpForLevel(state.level) do
-		state.xp -= xpForLevel(state.level)
-		state.level += 1
-		state.unclaimedUpgrades += 1
-		if #state.pendingChoices == 0 then
-			generateChoices(player, state)
-		end
-		setEvent(player, "LEVEL " .. tostring(state.level) .. " — CHOOSE AN UPGRADE", "LevelUp")
-	end
+	setEvent(player, "FIELD LEVEL " .. tostring(state.level) .. " — CHOOSE AN UPGRADE", "LevelUp")
 end
 
 local function chooseWeightedRole(seed: number): any
@@ -657,7 +642,9 @@ local function collectLoot(player: Player, part: BasePart)
 		healPlayer(player, record.amount + bonus, "TRAUMA GEL APPLIED")
 	elseif record.kindId == HordeConfig.Loot.Kinds.Surge.Id then
 		state.surgeUntilServerTimestamp = now() + HordeConfig.Loot.Kinds.Surge.DurationSeconds
-		healPlayer(player, 8, "ADRENAL SURGE — XP AMPLIFIED")
+		healPlayer(player, 8, "ADRENAL SURGE STABILIZED")
+		local granted = grantAmmunition(player, 10)
+		setEvent(player, "ADRENAL SURGE — +" .. tostring(granted) .. " AMMO / LOOT MAGNET", "Loot")
 	else
 		state.weaponTier = math.min(8, state.weaponTier + record.amount)
 		setEvent(player, "WEAPON OVERCHARGE TIER " .. tostring(state.weaponTier), "Weapon")
@@ -667,12 +654,18 @@ local function collectLoot(player: Player, part: BasePart)
 	part:Destroy()
 end
 
-local function spawnLoot(position: Vector3, seed: number, ownerState: PlayerState)
+local function spawnLoot(position: Vector3, seed: number, ownerState: PlayerState, isSpecial: boolean)
 	if worldLootCount() >= HordeConfig.Loot.MaximumWorldDrops then
 		return
 	end
-	local chance =
-		math.min(0.8, HordeConfig.Loot.BaseDropChance + (ownerState.upgradeStacks["upgrade.scavenger"] or 0) * 0.12)
+	local chance = HordeConfig.Loot.BaseDropChance + (ownerState.upgradeStacks["upgrade.scavenger"] or 0) * 0.12
+	if now() < ownerState.surgeUntilServerTimestamp then
+		chance += 0.15
+	end
+	if isSpecial then
+		chance += (ownerState.upgradeStacks["upgrade.executioner"] or 0) * 0.08
+	end
+	chance = math.min(0.85, chance)
 	if (seed % 1000) / 1000 > chance then
 		return
 	end
@@ -736,7 +729,6 @@ local function handleEnemyDeath(record: EnemyRecord, serverTimestamp: number)
 		end
 		state.lastKillServerTimestamp = serverTimestamp
 		state.kills += 1
-		addXp(player, role.Xp, isSpecial)
 		local bloodlustStacks = state.upgradeStacks["upgrade.bloodlust"] or 0
 		if bloodlustStacks > 0 and state.kills % 8 == 0 then
 			healPlayer(player, 6 * bloodlustStacks, "BLOODLUST RESTORED HEALTH")
@@ -748,7 +740,7 @@ local function handleEnemyDeath(record: EnemyRecord, serverTimestamp: number)
 				setEvent(player, "SCROUNGED +" .. tostring(granted) .. " AMMO", "Loot")
 			end
 		end
-		spawnLoot(record.root.Position, seed + player.UserId, state)
+		spawnLoot(record.root.Position, seed + player.UserId, state, isSpecial)
 	end
 	if role.Id == HordeConfig.Roles.Bloater.Id then
 		damagePlayersInBurst(record, role, serverTimestamp)
@@ -916,7 +908,17 @@ local function onLifeChanged(player: Player, snapshot, revisionBefore: number)
 end
 
 local function addPlayer(player: Player)
-	playerStates[player] = createPlayerState()
+	local state = createPlayerState()
+	local snapshot = RunProgressionService.readSafeSnapshot()
+	state.level = snapshot.level
+	state.xp = snapshot.xp
+	state.xpForNextLevel = snapshot.xpForNextLevel
+	state.kills = snapshot.squadKills
+	state.unclaimedUpgrades = math.max(0, snapshot.level - 1)
+	playerStates[player] = state
+	if state.unclaimedUpgrades > 0 then
+		generateChoices(player, state)
+	end
 	task.defer(function()
 		if started and player.Parent == Players then
 			publishPlayer(player, now())
@@ -929,6 +931,10 @@ local function removePlayer(player: Player)
 end
 
 local function evaluate(serverTimestamp: number)
+	local progressionSnapshot = RunProgressionService.readSafeSnapshot()
+	for player, state in playerStates do
+		syncProgressionForPlayer(player, state, progressionSnapshot)
+	end
 	for _, record in enemyRecords do
 		processEnemy(record, serverTimestamp)
 	end

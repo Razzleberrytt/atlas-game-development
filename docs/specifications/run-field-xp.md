@@ -36,14 +36,14 @@ Field XP is shared by the squad for this slice. This prevents kill stealing and 
 
 - one server Heartbeat connection
 - one bounded enemy-folder scan every 0.1 seconds
-- at most 64 tracked living/corpse-overlap models
+- at most 128 tracked living/corpse-overlap models
 - zero per-enemy connections
 - zero server delayed tasks
 - zero client reward requests
 - one client state-event connection
 - one client RenderStepped connection used only to fade the gain notification
 
-The 64-model observation ceiling does not increase the authoritative 24-living-enemy gameplay cap.
+The 128-model observation ceiling does not increase the authoritative 96-living-enemy profiling cap.
 
 ## Explicitly deferred
 

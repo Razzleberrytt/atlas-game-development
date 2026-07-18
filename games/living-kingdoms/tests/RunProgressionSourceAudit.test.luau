@@ -29,7 +29,7 @@ assert(contains(service, "EnemyPresentationContracts.AttributeNames.HitSequence"
 assert(contains(service, "stateRemote:FireAllClients"), "confirmed awards must publish a server snapshot")
 assert(contains(service, "readStateRemote.OnServerInvoke"), "late clients require read-only state recovery")
 assert(contains(service, "table.clear(trackedLifeStates)"), "run progression must reset and clean tracked death state")
-assert(config.MaximumTrackedEnemyModels == 64, "the cosmetic corpse-overlap tracking ceiling must stay bounded")
+assert(config.MaximumTrackedEnemyModels == 128, "the cosmetic corpse-overlap tracking ceiling must stay bounded")
 
 for _, prohibited in {
 	"OnServerEvent",

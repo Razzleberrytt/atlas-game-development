@@ -52,6 +52,7 @@ end
 
 for _, required in {
 	"EnemyDirectorService.spawnEnemy",
+	"RunProgressionService.readSafeSnapshot",
 	"EnemyDirectorService.commitHealthState",
 	"OperativeLifeService.applyAuthoritativeDamage",
 	"OperativeLifeService.commitAcceptedTransition",
@@ -71,6 +72,7 @@ for _, forbidden in {
 	"clientXp",
 	"clientHealth",
 	"clientEnemy",
+	"local function addXp",
 } do
 	assertThat(not string.find(runtime, forbidden, 1, true), "server horde runtime contains forbidden pattern " .. forbidden)
 end

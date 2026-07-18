@@ -47,13 +47,13 @@ Two bounded sources create pressure:
 - the retained `EnemyDirectorService` roaming and authored-wave systems;
 - `HordeExperienceService` horde injections around living operatives.
 
-The global population cap is 112. Spawn cadence and group size increase with a 0–100 threat value derived from elapsed operation time, living-enemy count, and squad kill count. All spawns continue through the existing server fair-spawn and population-cap validation.
+The global population cap is 96. Spawn cadence and group size increase with a 0–100 threat value derived from elapsed operation time, living-enemy count, and squad kill count. All spawns continue through the existing server fair-spawn and population-cap validation.
 
 No per-enemy heartbeat is added. The horde layer uses one server heartbeat and iterates the bounded enemy collection.
 
 ## Run progression
 
-Kills award XP to the active squad. Consecutive kills inside the streak window increase an XP multiplier. Level thresholds grow geometrically and each level creates three deterministic server-authored upgrade choices.
+The canonical RunProgressionService awards shared Field XP from confirmed deaths. The horde layer observes Field Level changes and creates three deterministic server-authored upgrade choices without minting XP itself. Consecutive kills remain a combat-feedback streak rather than an XP multiplier.
 
 Implemented upgrades:
 
@@ -119,7 +119,7 @@ The client owns only presentation and one upgrade-choice request. Existing reloa
 
 The slice targets 1–4 players first.
 
-- 112 global living-enemy cap.
+- 96 global living-enemy cap.
 - 32 global loot-drop cap.
 - One horde-service heartbeat.
 - Existing one enemy-director heartbeat.
@@ -127,7 +127,7 @@ The slice targets 1–4 players first.
 - Client death tracking uses at most one attribute connection per bounded replicated enemy.
 - Blood and kill effects use Debris cleanup.
 
-The 112-enemy target is a playtest budget, not a proven production guarantee. Studio MicroProfiler evidence is required before merge.
+The 96-enemy target is a playtest budget, not a proven production guarantee. Studio MicroProfiler evidence is required before merge.
 
 ## Deferred
 
