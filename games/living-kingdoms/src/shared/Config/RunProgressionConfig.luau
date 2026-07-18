@@ -5,6 +5,11 @@
 	XP is shared, upgrade offers are generated and validated by the server, and
 	all stacks reset whenever the server starts a new operation session. No
 	permanent account progression or monetized power is represented here.
+
+	The v3 pacing target is one first upgrade after four confirmed enemy deaths.
+	This aligns the reward onset with the gentler additive-horde warmup while a
+	steeper post-level growth curve prevents later high-density combat from
+	producing upgrade choices faster than players can evaluate them.
 ]]
 
 local UpgradeDefinitions = table.freeze({
@@ -39,10 +44,10 @@ local UpgradeDefinitions = table.freeze({
 })
 
 local RunProgressionConfig = {
-	Version = "HROI-0105-v2-squad-upgrades",
+	Version = "HROI-0105-v3-first-upgrade-pacing",
 	FieldXpPerConfirmedEnemyDeath = 20,
-	BaseXpToLevel = 100,
-	XpGrowthPerLevel = 1.3,
+	BaseXpToLevel = 80,
+	XpGrowthPerLevel = 1.4,
 	MaximumRunLevel = 20,
 	EnemyScanIntervalSeconds = 0.1,
 	MaximumTrackedEnemyModels = 64,
@@ -63,8 +68,13 @@ assert(
 )
 assert(RunProgressionConfig.BaseXpToLevel > 0, "the first run level requires positive XP")
 assert(
-	RunProgressionConfig.XpGrowthPerLevel > 1 and RunProgressionConfig.XpGrowthPerLevel <= 2,
-	"run-level XP growth must be gradual and bounded"
+	RunProgressionConfig.BaseXpToLevel % RunProgressionConfig.FieldXpPerConfirmedEnemyDeath == 0
+		and RunProgressionConfig.BaseXpToLevel / RunProgressionConfig.FieldXpPerConfirmedEnemyDeath == 4,
+	"the first upgrade must arrive after exactly four ordinary confirmed deaths"
+)
+assert(
+	RunProgressionConfig.XpGrowthPerLevel >= 1.35 and RunProgressionConfig.XpGrowthPerLevel <= 2,
+	"post-first-upgrade XP growth must slow later choices while remaining bounded"
 )
 assert(
 	RunProgressionConfig.MaximumRunLevel >= 2 and RunProgressionConfig.MaximumRunLevel <= 50,
