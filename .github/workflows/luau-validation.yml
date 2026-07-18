@@ -48,22 +48,36 @@ jobs:
         shell: bash
         run: selene games/living-kingdoms/src
 
-      - name: Run Lune fixtures
+      - name: Capture Lune fixture diagnostics
         shell: bash
         run: |
-          set -euo pipefail
-          fixture_count=0
-          while IFS= read -r -d '' fixture; do
-            echo "::group::Lune fixture: $fixture"
-            lune run "$fixture"
-            echo "::endgroup::"
-            fixture_count=$((fixture_count + 1))
-          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
-          if [ "$fixture_count" -eq 0 ]; then
-            echo "No Living Kingdoms fixtures were discovered." >&2
-            exit 1
-          fi
-          echo "Executed $fixture_count Living Kingdoms fixtures."
+          set +e
+          bash -c '
+            set -euo pipefail
+            fixture_count=0
+            while IFS= read -r -d "" fixture; do
+              echo "::group::Lune fixture: $fixture"
+              lune run "$fixture"
+              echo "::endgroup::"
+              fixture_count=$((fixture_count + 1))
+            done < <(find games/living-kingdoms/tests -type f -name "*.test.luau" -print0 | sort -z)
+            if [ "$fixture_count" -eq 0 ]; then
+              echo "No Living Kingdoms fixtures were discovered." >&2
+              exit 1
+            fi
+            echo "Executed $fixture_count Living Kingdoms fixtures."
+          ' > /tmp/lune.log 2>&1
+          status=$?
+          cat /tmp/lune.log
+          exit $status
+
+      - name: Upload Lune diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: enemy-loot-lune-log
+          path: /tmp/lune.log
+          retention-days: 1
 
       - name: Build Rojo project
         shell: bash
