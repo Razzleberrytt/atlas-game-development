@@ -1,13 +1,13 @@
 --!strict
 
 --[[
-	HROI-0105 server-owned squad Field XP. One bounded heartbeat scan observes
-	the existing server-authored enemy presentation life state and awards shared
-	run XP exactly once when an enemy transitions to authoritative death.
+	HROI-0105 server-owned squad Field XP and run upgrades. One bounded heartbeat
+	scan observes existing server-authored enemy life state and awards shared run
+	XP exactly once when an enemy transitions to authoritative death.
 
-	There is no client reward request. The only client call is a read-only state
-	snapshot used to recover the initial HUD state if the first event was missed.
-	Progress resets when this service starts and is never persisted.
+	Clients may submit only a bounded selection intent for the current server-
+	authored three-choice offer. They cannot submit kills, XP, levels, offer
+	contents, stack counts, modifier values, or persistent progression.
 ]]
 
 local Players = game:GetService("Players")
@@ -18,7 +18,14 @@ local Workspace = game:GetService("Workspace")
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local RunProgressionConfig = require(ReplicatedStorage.Shared.Config.RunProgressionConfig)
 local RunProgressionResolver = require(ReplicatedStorage.Shared.Progression.RunProgressionResolver)
+local RunUpgradeContracts = require(ReplicatedStorage.Shared.Progression.RunUpgradeContracts)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
+
+type CombatModifiers = RunUpgradeContracts.CombatModifiers
+type SelectionIntent = RunUpgradeContracts.SelectionIntent
+type UpgradeId = RunUpgradeContracts.UpgradeId
+type UpgradeOffer = RunUpgradeContracts.UpgradeOffer
+type UpgradeStacks = RunUpgradeContracts.UpgradeStacks
 
 local LifeStateAttribute = EnemyPresentationContracts.AttributeNames.LifeStateId
 local HitSequenceAttribute = EnemyPresentationContracts.AttributeNames.HitSequence
@@ -37,6 +44,12 @@ export type SafeRunProgressionSnapshot = {
 	lastGainAmount: number,
 	lastGainSequence: number,
 	levelsGainedLastAward: number,
+	pendingUpgradeSelections: number,
+	pendingUpgradeOffer: UpgradeOffer?,
+	upgradeStacks: UpgradeStacks,
+	combatModifiers: CombatModifiers,
+	lastSelectedUpgradeId: UpgradeId?,
+	lastUpgradeSelectionSequence: number,
 }
 
 local RunProgressionService = {}
@@ -50,15 +63,34 @@ local squadKills = 0
 local lastGainAmount = 0
 local lastGainSequence = 0
 local levelsGainedLastAward = 0
+local pendingUpgradeSelections = 0
+local pendingUpgradeOffer: UpgradeOffer? = nil
+local offerSequence = 0
+local upgradeStacks: UpgradeStacks = RunProgressionResolver.createUpgradeStacks()
+local lastSelectedUpgradeId: UpgradeId? = nil
+local lastUpgradeSelectionSequence = 0
 local accumulatedSeconds = 0
 local initialScanComplete = false
 local heartbeatConnection: RBXScriptConnection? = nil
 local playerAddedConnection: RBXScriptConnection? = nil
+local selectionConnection: RBXScriptConnection? = nil
 local trackedLifeStates: { [Model]: string } = {}
+local lastSelectionRequestAt: { [Player]: number } = {}
 
 local progressionNetwork = ReplicatedStorage:WaitForChild("ProgressionNetwork")
 local stateRemote = progressionNetwork:WaitForChild("State") :: RemoteEvent
 local readStateRemote = progressionNetwork:WaitForChild("ReadState") :: RemoteFunction
+local selectionIntentRemote = progressionNetwork:WaitForChild("SelectionIntent") :: RemoteEvent
+
+local function copyOffer(offer: UpgradeOffer?): UpgradeOffer?
+	if offer == nil then
+		return nil
+	end
+	return table.freeze({
+		offerId = offer.offerId,
+		upgradeIds = table.freeze(table.clone(offer.upgradeIds)),
+	}) :: UpgradeOffer
+end
 
 local function safeSnapshot(): SafeRunProgressionSnapshot
 	return table.freeze({
@@ -72,12 +104,26 @@ local function safeSnapshot(): SafeRunProgressionSnapshot
 		lastGainAmount = lastGainAmount,
 		lastGainSequence = lastGainSequence,
 		levelsGainedLastAward = levelsGainedLastAward,
+		pendingUpgradeSelections = pendingUpgradeSelections,
+		pendingUpgradeOffer = copyOffer(pendingUpgradeOffer),
+		upgradeStacks = table.freeze(table.clone(upgradeStacks)),
+		combatModifiers = RunProgressionResolver.deriveCombatModifiers(upgradeStacks),
+		lastSelectedUpgradeId = lastSelectedUpgradeId,
+		lastUpgradeSelectionSequence = lastUpgradeSelectionSequence,
 	}) :: SafeRunProgressionSnapshot
 end
 
 local function publishAll()
 	revision += 1
 	stateRemote:FireAllClients(safeSnapshot())
+end
+
+local function ensurePendingUpgradeOffer()
+	if pendingUpgradeOffer ~= nil or pendingUpgradeSelections <= 0 then
+		return
+	end
+	offerSequence += 1
+	pendingUpgradeOffer = RunProgressionResolver.createUpgradeOffer(level, offerSequence)
 end
 
 local function awardConfirmedEnemyDeath()
@@ -93,6 +139,13 @@ local function awardConfirmedEnemyDeath()
 	lastGainAmount = amount
 	lastGainSequence += 1
 	levelsGainedLastAward = resolution.levelsGained
+	if resolution.levelsGained > 0 then
+		pendingUpgradeSelections = math.min(
+			RunProgressionConfig.MaximumPendingUpgradeSelections,
+			pendingUpgradeSelections + resolution.levelsGained
+		)
+		ensurePendingUpgradeOffer()
+	end
 	publishAll()
 end
 
@@ -158,8 +211,42 @@ local function scanEnemyDeaths()
 	initialScanComplete = true
 end
 
+local function onSelectionIntent(player: Player, payload: unknown, ...: unknown)
+	if select("#", ...) ~= 0 or not RunUpgradeContracts.validateSelectionIntent(payload) then
+		return
+	end
+	local serverTimestamp = Workspace:GetServerTimeNow()
+	local previousRequestAt = lastSelectionRequestAt[player] or -math.huge
+	if serverTimestamp - previousRequestAt < RunProgressionConfig.SelectionIntentCooldownSeconds then
+		return
+	end
+	lastSelectionRequestAt[player] = serverTimestamp
+
+	local intent = payload :: SelectionIntent
+	local resolution = RunProgressionResolver.applyUpgradeSelection(
+		upgradeStacks,
+		pendingUpgradeOffer,
+		intent.offerId,
+		intent.upgradeId
+	)
+	if not resolution.didApply then
+		return
+	end
+	upgradeStacks = resolution.stacksAfter
+	pendingUpgradeSelections = math.max(0, pendingUpgradeSelections - 1)
+	pendingUpgradeOffer = nil
+	lastSelectedUpgradeId = intent.upgradeId
+	lastUpgradeSelectionSequence += 1
+	ensurePendingUpgradeOffer()
+	publishAll()
+end
+
 function RunProgressionService.readSafeSnapshot(): SafeRunProgressionSnapshot
 	return safeSnapshot()
+end
+
+function RunProgressionService.readCombatModifiers(): CombatModifiers
+	return RunProgressionResolver.deriveCombatModifiers(upgradeStacks)
 end
 
 function RunProgressionService.start()
@@ -175,9 +262,16 @@ function RunProgressionService.start()
 	lastGainAmount = 0
 	lastGainSequence = 0
 	levelsGainedLastAward = 0
+	pendingUpgradeSelections = 0
+	pendingUpgradeOffer = nil
+	offerSequence = 0
+	upgradeStacks = RunProgressionResolver.createUpgradeStacks()
+	lastSelectedUpgradeId = nil
+	lastUpgradeSelectionSequence = 0
 	accumulatedSeconds = 0
 	initialScanComplete = false
 	table.clear(trackedLifeStates)
+	table.clear(lastSelectionRequestAt)
 
 	readStateRemote.OnServerInvoke = function(_player: Player)
 		return safeSnapshot()
@@ -185,6 +279,7 @@ function RunProgressionService.start()
 	playerAddedConnection = Players.PlayerAdded:Connect(function(player)
 		stateRemote:FireClient(player, safeSnapshot())
 	end)
+	selectionConnection = selectionIntentRemote.OnServerEvent:Connect(onSelectionIntent)
 	scanEnemyDeaths()
 	heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
 		accumulatedSeconds += deltaTime
@@ -209,10 +304,18 @@ function RunProgressionService.stop()
 		playerAddedConnection:Disconnect()
 		playerAddedConnection = nil
 	end
+	if selectionConnection ~= nil then
+		selectionConnection:Disconnect()
+		selectionConnection = nil
+	end
 	readStateRemote.OnServerInvoke = nil
 	table.clear(trackedLifeStates)
+	table.clear(lastSelectionRequestAt)
 	accumulatedSeconds = 0
 	initialScanComplete = false
+	pendingUpgradeSelections = 0
+	pendingUpgradeOffer = nil
+	upgradeStacks = RunProgressionResolver.createUpgradeStacks()
 end
 
 return table.freeze(RunProgressionService)
