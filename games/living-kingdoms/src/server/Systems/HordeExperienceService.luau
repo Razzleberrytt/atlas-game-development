@@ -23,6 +23,7 @@ local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.Enemy
 local HordeConfig = require(ReplicatedStorage.Shared.Config.HordeExperienceConfig)
 local WorldFoundationConfig = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
+local HordeRolePresentationService = require(script.Parent.HordeRolePresentationService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 
 local LifeAttribute = EnemyPresentationContracts.AttributeNames.LifeStateId
@@ -229,6 +230,7 @@ local function decorateEnemy(record: EnemyRecord)
 	record.model:SetAttribute("HordeRoleDisplayName", role.DisplayName)
 	record.model:SetAttribute("HordeRewardXp", role.Xp)
 	record.model:SetAttribute("HordeThreatValue", role.Threat)
+	HordeRolePresentationService.applyRolePresentation(record.model)
 	local highlight = record.model:FindFirstChild("HordeRoleHighlight")
 	if highlight == nil then
 		local created = Instance.new("Highlight")
@@ -243,19 +245,6 @@ local function decorateEnemy(record: EnemyRecord)
 	if highlight:IsA("Highlight") then
 		highlight.FillColor = colorFromTuple(role.HighlightFill)
 		highlight.OutlineColor = colorFromTuple(role.HighlightOutline)
-	end
-	if role.Id == HordeConfig.Roles.Brute.Id then
-		pcall(function()
-			record.model:ScaleTo(1.35)
-		end)
-	elseif role.Id == HordeConfig.Roles.Crawler.Id then
-		pcall(function()
-			record.model:ScaleTo(0.72)
-		end)
-	elseif role.Id == HordeConfig.Roles.Runner.Id then
-		pcall(function()
-			record.model:ScaleTo(0.9)
-		end)
 	end
 end
 

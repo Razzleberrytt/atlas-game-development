@@ -16,6 +16,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
+local HordeRolePresentationService = require(script.Parent.HordeRolePresentationService)
 local VisualAssetContracts = require(ReplicatedStorage.Shared.Visual.VisualAssetContracts)
 
 local EnemyPresentationService = {}
@@ -366,6 +367,7 @@ local function attachPresentation(enemyModel: Model)
 
 	local presentation = createPresentation(root)
 	presentation.Parent = enemyModel
+	HordeRolePresentationService.applyRolePresentation(enemyModel)
 end
 
 function EnemyPresentationService.start()

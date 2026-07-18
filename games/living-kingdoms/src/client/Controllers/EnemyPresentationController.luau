@@ -318,7 +318,14 @@ local function updateRecord(model: Model, record: Record, serverTimestamp: numbe
 	local isPursuing = behaviorStateId == BehaviorStateIds.Pursuing
 		or behaviorStateId == BehaviorStateIds.WindingUp
 		or behaviorStateId == BehaviorStateIds.Attacking
-	local strideIndex = math.floor((serverTimestamp + record.phaseOffsetSeconds) * STRIDES_PER_SECOND) % 2
+	local strideScaleValue = model:GetAttribute("HordeRoleStrideScale")
+	local strideScale = if type(strideScaleValue) == "number"
+			and strideScaleValue == strideScaleValue
+			and strideScaleValue >= 0.5
+			and strideScaleValue <= 2
+		then strideScaleValue
+		else 1
+	local strideIndex = math.floor((serverTimestamp + record.phaseOffsetSeconds) * STRIDES_PER_SECOND * strideScale) % 2
 
 	local pose = EnemyPresentationPoseResolver.resolve({
 		isDead = isDead,

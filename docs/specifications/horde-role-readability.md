@@ -17,7 +17,7 @@ This pass gives every existing role a distinct presentation signature while pres
 
 ## Authority boundary
 
-`HordeRolePresentationConfig` contains presentation-only component proportions, RGB tuples, eye-light bounds, stride timing, and pose offsets. `EnemyPresentationService` applies those values only to massless, non-colliding, non-queryable parts inside `ExclusionWalkerPresentation`. `EnemyPresentationController` reads the server-authored `HordeRoleId` attribute through its existing single frame loop and composes role posture with the existing behavior pose.
+`HordeRolePresentationConfig` contains presentation-only component proportions, RGB tuples, eye-light bounds, stride timing, and base-pose offsets. The stateless `HordeRolePresentationService` applies those values only to massless, non-colliding, non-queryable parts and the five presentation motors inside `ExclusionWalkerPresentation`. Both `EnemyPresentationService` and `HordeExperienceService` invoke the same applicator so the correct role is resolved whether the shell or server-authored role arrives first. `EnemyPresentationController` keeps its existing single frame loop and reads only a bounded `HordeRoleStrideScale` attribute before composing its existing behavior poses from the role-adjusted motor bases.
 
 The authoritative `HumanoidRootPart` remains `3 × 5.6 × 3`. The pass changes no movement speed, health, damage, targeting, attack timing, spawning, rewards, network ownership, remotes, or server combat decisions.
 
@@ -25,11 +25,13 @@ The authoritative `HumanoidRootPart` remains `3 × 5.6 × 3`. The pass changes n
 
 - one existing server `EnemyEntities.ChildAdded` listener;
 - one existing client `RenderStepped` connection;
+- a stateless role applicator with zero connections;
 - zero per-enemy attribute or property connections;
 - zero new parts, motors, remotes, timers, raycasts, or particles;
 - the existing 18 components and five presentation motors remain canonical;
 - all component multipliers are constrained to 0.55–1.60;
-- role posture stays within one stud of the authoritative root.
+- role posture stays within one stud of the authoritative root;
+- the client accepts only a 0.5–2.0 stride scalar.
 
 ## Acceptance
 
