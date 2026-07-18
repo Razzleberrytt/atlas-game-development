@@ -382,9 +382,7 @@ local function resolveAcceptedShot(
 		damageResolution.targetHealthStateAfter,
 		nowTimestamp
 	)
-	local damageAmount = if damageResolution.damageEvent == nil
-		then nil
-		else damageResolution.damageEvent.damageAmount
+	local damageAmount = if damageResolution.damageEvent == nil then nil else damageResolution.damageEvent.damageAmount
 	presentationRemote:FireAllClients({
 		kindId = CombatContracts.PresentationMessageKindIds.ShotFired,
 		shotId = shotId,
