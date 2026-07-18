@@ -11,21 +11,25 @@ local EnemyContracts = require(script.Parent.Parent.Combat.EnemyContracts)
 local WorldFoundationConfig = require(script.Parent.WorldFoundationConfig)
 
 local EnemyConfig = {
-	Version = "P5-0104-v2",
+	Version = "P5-0104-v3-horde-pressure",
 	Walker = table.freeze({
 		ArchetypeId = EnemyContracts.EnemyArchetypeIds.ExclusionWalker,
 		DisplayName = "Exclusion Walker",
-		MaximumHealth = 60,
-		PursuitSpeedStudsPerSecond = 11,
-		RoamSpeedStudsPerSecond = 6,
-		DetectionRadiusStuds = 70,
-		PursuitDropRadiusStuds = 95,
+		-- Faster time-to-kill keeps a larger enemy population satisfying rather
+		-- than turning every contact into a slow damage-sponge cleanup exercise.
+		MaximumHealth = 45,
+		PursuitSpeedStudsPerSecond = 13,
+		RoamSpeedStudsPerSecond = 7.5,
+		-- The pressure ring now lands inside detection range, so fair off-screen
+		-- spawns become active threats instead of wandering harmlessly nearby.
+		DetectionRadiusStuds = 110,
+		PursuitDropRadiusStuds = 145,
 		AttackRangeStuds = 6,
 		AttackDamage = 12,
 		AttackWindupSeconds = 0.6,
-		AttackCooldownSeconds = 1.6,
+		AttackCooldownSeconds = 1.45,
 		RoamWanderRadiusStuds = 24,
-		RoamRetargetIntervalSeconds = 6,
+		RoamRetargetIntervalSeconds = 4,
 	}),
 	FairSpawn = table.freeze({
 		-- Larger than the darkness engagement radius so spawns never pop into
@@ -35,24 +39,27 @@ local EnemyConfig = {
 		MaximumDeferredSpawns = 16,
 	}),
 	Population = table.freeze({
+		-- Keep the already validated population budget. This pass raises pressure
+		-- by filling it quickly and consistently rather than increasing the worst-
+		-- case server load before representative Studio profiling.
 		MaximumConcurrentPerOperative = 6,
 		AbsoluteMaximumConcurrent = 24,
 	}),
 	Pressure = table.freeze({
-		-- Roaming cadence per mission escalation level. Level 0 is the light
-		-- infiltration baseline; authored waves raise the level monotonically.
+		-- Horde Pressure v1: contact begins in seconds, not minutes. Escalation
+		-- increases both cadence and group size while the existing population cap
+		-- remains the hard performance ceiling.
 		RoamingByEscalationLevel = table.freeze({
-			[0] = table.freeze({ IntervalSeconds = 60, SpawnCount = 1 }),
-			[1] = table.freeze({ IntervalSeconds = 45, SpawnCount = 1 }),
-			[2] = table.freeze({ IntervalSeconds = 35, SpawnCount = 2 }),
-			[3] = table.freeze({ IntervalSeconds = 25, SpawnCount = 2 }),
+			[0] = table.freeze({ IntervalSeconds = 12, SpawnCount = 2 }),
+			[1] = table.freeze({ IntervalSeconds = 10, SpawnCount = 2 }),
+			[2] = table.freeze({ IntervalSeconds = 8, SpawnCount = 3 }),
+			[3] = table.freeze({ IntervalSeconds = 6, SpawnCount = 4 }),
 		}),
 		MaximumEscalationLevel = 3,
-		-- Short recovery window after each authored wave: roaming pressure
-		-- pauses so squads get a readable breather between spikes.
-		RecoveryWindowSeconds = 20,
-		RoamingSpawnMinimumDistanceStuds = 70,
-		RoamingSpawnMaximumDistanceStuds = 120,
+		-- Preserve readable breathers without draining the world of urgency.
+		RecoveryWindowSeconds = 8,
+		RoamingSpawnMinimumDistanceStuds = 68,
+		RoamingSpawnMaximumDistanceStuds = 96,
 	}),
 	Cleanup = table.freeze({
 		CorpseCleanupSeconds = 8,
