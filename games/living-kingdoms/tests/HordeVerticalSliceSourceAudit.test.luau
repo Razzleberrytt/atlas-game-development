@@ -57,9 +57,11 @@ end
 
 for _, required in
 	{
-		"BaseSpawnIntervalSeconds = 7",
-		"MinimumSpawnIntervalSeconds = 2.4",
-		"MaximumSpawnCount = 16",
+		"WarmupSeconds = 24",
+		"BaseSpawnIntervalSeconds = 10",
+		"MinimumSpawnIntervalSeconds = 3.25",
+		"BaseSpawnCount = 3",
+		"MaximumSpawnCount = 12",
 		'Id = "horde.role.screamer"',
 		'Id = "horde.role.bloater"',
 		'Id = "horde.role.brute"',
@@ -211,4 +213,4 @@ assertThat(not contains(weapon, "TemporaryCombatPresentation"), "old temporary c
 assertThat(not contains(life, "TemporaryP3Validation"), "old temporary life overlay must be removed")
 assertThat(not contains(mission, "TemporaryMissionUI"), "old temporary mission overlay must be removed")
 
-print("Horde vertical slice single-source-of-truth ownership, bounds, and unified HUD audit passed")
+print("Horde vertical slice single-source-of-truth ownership, pacing bounds, and unified HUD audit passed")
