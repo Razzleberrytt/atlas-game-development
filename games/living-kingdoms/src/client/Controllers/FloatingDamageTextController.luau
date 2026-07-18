@@ -14,6 +14,19 @@ local Workspace = game:GetService("Workspace")
 
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
+
+local function resolveWeaponDefinition(weaponId: unknown)
+	local getter = FirearmConfig.get
+	if type(getter) == "function" then
+		return getter(weaponId)
+	end
+	local basic = FirearmConfig.BasicFirearm
+	return if basic ~= nil and weaponId == basic.WeaponId then basic else nil
+end
+
+local function isKnownWeaponId(weaponId: unknown): boolean
+	return resolveWeaponDefinition(weaponId) ~= nil
+end
 local FloatingDamageTextConfig = require(ReplicatedStorage.Shared.Config.FloatingDamageTextConfig)
 
 local Controller = {}
@@ -81,8 +94,8 @@ local function stableShotHash(shotId: string): number
 	return hash
 end
 
-local function damageColor(damageAmount: number): Color3
-	local configuredDamage = FirearmConfig.BasicFirearm.DamagePerHit
+local function damageColor(damageAmount: number, weaponId: string): Color3
+	local configuredDamage = (resolveWeaponDefinition(weaponId) or FirearmConfig.BasicFirearm).DamagePerHit
 	if damageAmount >= configuredDamage * FloatingDamageTextConfig.BrutalDamageMultiplier then
 		return Color3.fromRGB(255, 74, 54)
 	end
@@ -161,7 +174,7 @@ local function selectEntry(): FloatingEntry?
 	return oldestEntry
 end
 
-local function activateEntry(shotId: string, damageAmount: number, worldPosition: Vector3)
+local function activateEntry(shotId: string, weaponId: string, damageAmount: number, worldPosition: Vector3)
 	local entry = selectEntry()
 	if entry == nil then
 		return
@@ -176,7 +189,7 @@ local function activateEntry(shotId: string, damageAmount: number, worldPosition
 	entry.lateralOffsetPixels = lateralFactor * FloatingDamageTextConfig.MaximumLateralDriftPixels
 	entry.verticalOffsetPixels = verticalBand * 3
 	entry.label.Text = tostring(damageAmount)
-	entry.label.TextColor3 = damageColor(damageAmount)
+	entry.label.TextColor3 = damageColor(damageAmount, weaponId)
 	entry.label.TextTransparency = 0
 	entry.label.TextStrokeTransparency = 0.08
 	entry.label.Rotation = lateralFactor * 4
@@ -252,7 +265,7 @@ local function onPresentationMessage(message: unknown)
 		payload.kindId ~= CombatContracts.PresentationMessageKindIds.ShotFired
 		or not isNonEmptyString(payload.shotId)
 		or not isLocalOperativeEntityId(payload.operativeEntityId)
-		or payload.weaponId ~= FirearmConfig.BasicFirearm.WeaponId
+		or not isKnownWeaponId(payload.weaponId)
 		or not isNonEmptyString(payload.targetEntityId)
 		or payload.didApplyDamage ~= true
 		or typeof(payload.impactWorldPosition) ~= "Vector3"
@@ -263,7 +276,7 @@ local function onPresentationMessage(message: unknown)
 		return
 	end
 
-	activateEntry(payload.shotId, payload.damageAmount, payload.impactWorldPosition)
+	activateEntry(payload.shotId, payload.weaponId, payload.damageAmount, payload.impactWorldPosition)
 end
 
 function Controller.start()

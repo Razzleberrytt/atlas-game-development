@@ -25,6 +25,15 @@ local Workspace = game:GetService("Workspace")
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
+
+local function resolveWeaponDefinition(weaponId: unknown)
+	local getter = FirearmConfig.get
+	if type(getter) == "function" then
+		return getter(weaponId)
+	end
+	local basic = FirearmConfig.BasicFirearm
+	return if basic ~= nil and weaponId == basic.WeaponId then basic else nil
+end
 local AutomaticFireResolver = require(script.Parent.AutomaticFireResolver)
 local DamageResolver = require(script.Parent.DamageResolver)
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
@@ -32,6 +41,14 @@ local FirearmHitResolver = require(script.Parent.FirearmHitResolver)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local ReloadResolver = require(script.Parent.ReloadResolver)
 local TargetCandidateSelector = require(script.Parent.TargetCandidateSelector)
+local weaponLoadoutModule = script.Parent.WeaponLoadoutService
+local WeaponLoadoutService = if weaponLoadoutModule == nil
+	then table.freeze({
+		read = function(_player: Player)
+			return nil
+		end,
+	})
+	else require(weaponLoadoutModule)
 
 type CombatEntityId = CombatContracts.CombatEntityId
 type FirearmTargetContext = CombatContracts.FirearmTargetContext
@@ -71,6 +88,13 @@ type OperativeCombatRuntimeService = {
 
 local SERVER_REQUEST_COOLDOWN_SECONDS = 0.25
 
+local function setPlayerAttribute(player: Player, attributeName: string, value: unknown)
+	local candidate = player :: any
+	if type(candidate.SetAttribute) == "function" then
+		candidate:SetAttribute(attributeName, value)
+	end
+end
+
 local OperativeCombatRuntimeService: OperativeCombatRuntimeService = {} :: OperativeCombatRuntimeService
 local started = false
 local accumulatedSeconds = 0
@@ -86,16 +110,17 @@ local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
 local reloadIntentRemote = combatNetwork:WaitForChild("ReloadIntent") :: RemoteEvent
 local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: RemoteEvent
 
-local function createWeaponState(): WeaponReadinessState
-	local weaponId = FirearmConfig.BasicFirearm.WeaponId
+local function createWeaponState(weaponId: string?): WeaponReadinessState
+	local definition = resolveWeaponDefinition(weaponId) or FirearmConfig.BasicFirearm
+	weaponId = definition.WeaponId
 	return {
 		weaponId = weaponId,
 		readinessStateId = CombatContracts.WeaponReadinessStateIds.Ready,
 		ammunition = {
 			weaponId = weaponId,
-			loadedRounds = FirearmConfig.BasicFirearm.PrototypeInitialLoadedRounds,
-			reserveRounds = FirearmConfig.BasicFirearm.PrototypeInitialReserveRounds,
-			magazineCapacity = FirearmConfig.BasicFirearm.MagazineCapacity,
+			loadedRounds = definition.PrototypeInitialLoadedRounds,
+			reserveRounds = definition.PrototypeInitialReserveRounds,
+			magazineCapacity = definition.MagazineCapacity,
 		},
 		cadence = {
 			weaponId = weaponId,
@@ -120,7 +145,7 @@ local function createPlayerState(player: Player): PlayerCombatState
 			combatStateId = CombatContracts.OperativeCombatStateIds.Ready,
 			equippedWeaponId = weaponId,
 		},
-		weaponState = createWeaponState(),
+		weaponState = createWeaponState(weaponId),
 		selectedTargetEntityId = nil,
 		lastRequestServerTimestamp = -math.huge,
 		generation = 1,
@@ -146,6 +171,10 @@ function OperativeCombatRuntimeService.publishAmmunitionState(player: Player, gr
 		return false
 	end
 	local ammunition = playerState.weaponState.ammunition
+	local definition = resolveWeaponDefinition(ammunition.weaponId)
+	if definition == nil then
+		return false
+	end
 	local kindId = if grantedRounds == nil
 		then CombatContracts.PresentationMessageKindIds.AmmunitionState
 		else CombatContracts.PresentationMessageKindIds.AmmunitionCollected
@@ -155,7 +184,7 @@ function OperativeCombatRuntimeService.publishAmmunitionState(player: Player, gr
 		loadedRounds = ammunition.loadedRounds,
 		reserveRounds = ammunition.reserveRounds,
 		magazineCapacity = ammunition.magazineCapacity,
-		maximumReserveRounds = FirearmConfig.BasicFirearm.MaximumReserveRounds,
+		maximumReserveRounds = definition.MaximumReserveRounds,
 	}
 	if grantedRounds ~= nil then
 		payload.grantedRounds = grantedRounds
@@ -333,7 +362,7 @@ local function broadcastReloadPresentation(
 	local payload: any = {
 		kindId = kindId,
 		operativeEntityId = playerState.operativeState.entityId,
-		weaponId = FirearmConfig.BasicFirearm.WeaponId,
+		weaponId = playerState.weaponState.weaponId,
 	}
 	if completionServerTimestamp ~= nil then
 		payload.completionServerTimestamp = completionServerTimestamp
@@ -368,7 +397,7 @@ local function resolveAcceptedShot(
 	}
 	local hitResolution = FirearmHitResolver.resolve(fireResult, {
 		operativeEntityId = playerState.operativeState.entityId,
-		weaponId = FirearmConfig.BasicFirearm.WeaponId,
+		weaponId = playerState.weaponState.weaponId,
 		selectedTargetEntityId = targetEntityId,
 		operativeWorldPosition = operativePosition,
 		obstructionResultId = if sightedEntry.hasLineOfSight
@@ -387,7 +416,7 @@ local function resolveAcceptedShot(
 		kindId = CombatContracts.PresentationMessageKindIds.ShotFired,
 		shotId = shotId,
 		operativeEntityId = playerState.operativeState.entityId,
-		weaponId = FirearmConfig.BasicFirearm.WeaponId,
+		weaponId = playerState.weaponState.weaponId,
 		targetEntityId = targetEntityId,
 		didApplyDamage = damageResolution.didApplyDamage,
 		impactWorldPosition = if damageResolution.didApplyDamage then fact.worldPosition else nil,
@@ -396,7 +425,29 @@ local function resolveAcceptedShot(
 	})
 end
 
+local function applyLockedLoadout(player: Player, playerState: PlayerCombatState)
+	local assignment = WeaponLoadoutService.read(player)
+	if
+		assignment == nil
+		or assignment.selectionStateId ~= "Locked"
+		or assignment.weaponId == playerState.weaponState.weaponId
+		or resolveWeaponDefinition(assignment.weaponId) == nil
+	then
+		return
+	end
+	playerState.generation += 1
+	playerState.operativeState.combatStateId = CombatContracts.OperativeCombatStateIds.Ready
+	playerState.operativeState.equippedWeaponId = assignment.weaponId
+	playerState.weaponState = createWeaponState(assignment.weaponId)
+	playerState.selectedTargetEntityId = nil
+	table.clear(playerState.processedShotIds)
+	table.clear(playerState.sightedByEntityId)
+	setPlayerAttribute(player, "LK_EquippedWeaponId", assignment.weaponId)
+	OperativeCombatRuntimeService.publishAmmunitionState(player)
+end
+
 local function evaluatePlayer(player: Player, playerState: PlayerCombatState, nowTimestamp: number)
+	applyLockedLoadout(player, playerState)
 	if not OperativeLifeService.isCombatAllowed(player) then
 		discloseTarget(player, playerState, nil, nowTimestamp)
 		local restricted = OperativeLifeService.applyCombatRestrictions(player, playerState)
@@ -501,7 +552,11 @@ local function onReloadIntent(player: Player, weaponId: unknown, ...: unknown)
 		reloadState.completionServerTimestamp
 	)
 	local generation = playerState.generation
-	task.delay(FirearmConfig.BasicFirearm.ReloadDurationSeconds, function()
+	local definition = resolveWeaponDefinition(playerState.weaponState.weaponId)
+	if definition == nil then
+		return
+	end
+	task.delay(definition.ReloadDurationSeconds, function()
 		completeReload(player, reloadState.completionServerTimestamp, generation)
 	end)
 end
@@ -538,6 +593,10 @@ end
 
 local function addPlayer(player: Player)
 	resetPlayer(player)
+	local state = playerStates[player]
+	if state ~= nil then
+		setPlayerAttribute(player, "LK_EquippedWeaponId", state.weaponState.weaponId)
+	end
 	OperativeCombatRuntimeService.publishAmmunitionState(player)
 	characterAddedConnections[player] = player.CharacterAdded:Connect(function()
 		resetPlayer(player)
@@ -552,6 +611,7 @@ local function removePlayer(player: Player)
 		characterAddedConnections[player] = nil
 	end
 	playerStates[player] = nil
+	setPlayerAttribute(player, "LK_EquippedWeaponId", nil)
 end
 
 function OperativeCombatRuntimeService.start()

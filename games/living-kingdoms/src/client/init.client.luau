@@ -13,6 +13,7 @@ local EnemyPresentationController = require(script.Controllers.EnemyPresentation
 local EnemyImpactPresentationController = require(script.Controllers.EnemyImpactPresentationController)
 local AmmunitionCachePresentationController = require(script.Controllers.AmmunitionCachePresentationController)
 local ClassSelectionController = require(script.Controllers.ClassSelectionController)
+local WeaponSelectionController = require(script.Controllers.WeaponSelectionController)
 local ClassSilhouetteController = require(script.Controllers.ClassSilhouetteController)
 local OperativeLifeController = require(script.Controllers.OperativeLifeController)
 local OperativeLifeWorldPresentationController = require(script.Controllers.OperativeLifeWorldPresentationController)
@@ -62,6 +63,7 @@ HordeEffectsController.start()
 CriticalConditionController.start()
 -- Mission presentation starts first; class selection then requests authoritative state.
 ClassSelectionController.start()
+WeaponSelectionController.start()
 ClassSilhouetteController.start()
 OperativeLifeWorldPresentationController.start()
 

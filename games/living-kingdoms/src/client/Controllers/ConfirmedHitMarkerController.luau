@@ -16,6 +16,19 @@ local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local ConfirmedHitMarkerConfig = require(ReplicatedStorage.Shared.Config.ConfirmedHitMarkerConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 
+local function resolveWeaponDefinition(weaponId: unknown)
+	local getter = FirearmConfig.get
+	if type(getter) == "function" then
+		return getter(weaponId)
+	end
+	local basic = FirearmConfig.BasicFirearm
+	return if basic ~= nil and weaponId == basic.WeaponId then basic else nil
+end
+
+local function isKnownWeaponId(weaponId: unknown): boolean
+	return resolveWeaponDefinition(weaponId) ~= nil
+end
+
 local Controller = {}
 local localPlayer = Players.LocalPlayer
 
@@ -225,7 +238,7 @@ local function onPresentationMessage(message: unknown)
 		payload.kindId ~= CombatContracts.PresentationMessageKindIds.ShotFired
 		or not isNonEmptyString(payload.shotId)
 		or not isLocalOperativeEntityId(payload.operativeEntityId)
-		or payload.weaponId ~= FirearmConfig.BasicFirearm.WeaponId
+		or not isKnownWeaponId(payload.weaponId)
 		or not isNonEmptyString(payload.targetEntityId)
 		or payload.didApplyDamage ~= true
 		or typeof(payload.impactWorldPosition) ~= "Vector3"

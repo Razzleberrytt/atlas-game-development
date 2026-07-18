@@ -14,6 +14,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 
+local function resolveWeaponDefinition(weaponId: unknown)
+	local getter = FirearmConfig.get
+	if type(getter) == "function" then
+		return getter(weaponId)
+	end
+	local basic = FirearmConfig.BasicFirearm
+	return if basic ~= nil and weaponId == basic.WeaponId then basic else nil
+end
+
 local MINIMUM_CADENCE_SECONDS = 0.05
 local MAXIMUM_AMMO_CONSERVATION_CHANCE = 0.5
 
@@ -158,8 +167,12 @@ local function readProgressionNumber(attributeName: string, fallback: number): n
 	return if type(value) == "number" and value == value then value else fallback
 end
 
-local function resolveCadenceSeconds(override: number?): number?
-	local configured = FirearmConfig.BasicFirearm.CadenceSeconds
+local function resolveCadenceSeconds(weaponId: string, override: number?): number?
+	local definition = resolveWeaponDefinition(weaponId)
+	if definition == nil then
+		return nil
+	end
+	local configured = definition.CadenceSeconds
 	local requested = override
 	if requested == nil then
 		local multiplier = readProgressionNumber("RunCadenceMultiplier", 1)
@@ -221,15 +234,15 @@ function AutomaticFireResolver.resolve(
 		)
 	end
 
-	local cadenceSeconds = resolveCadenceSeconds(cadenceSecondsOverride)
+	local cadenceSeconds = resolveCadenceSeconds(weaponState.weaponId, cadenceSecondsOverride)
 	local ammoConservationChance = resolveAmmoConservationChance()
-	local configuredWeaponId = FirearmConfig.BasicFirearm.WeaponId
+	local configuredWeapon = resolveWeaponDefinition(weaponState.weaponId)
 	if
 		cadenceSeconds == nil
 		or ammoConservationChance == nil
-		or weaponState.weaponId ~= configuredWeaponId
-		or weaponState.ammunition.weaponId ~= configuredWeaponId
-		or weaponState.cadence.weaponId ~= configuredWeaponId
+		or configuredWeapon == nil
+		or weaponState.ammunition.weaponId ~= weaponState.weaponId
+		or weaponState.cadence.weaponId ~= weaponState.weaponId
 		or weaponState.readinessStateId ~= CombatContracts.WeaponReadinessStateIds.Ready
 	then
 		return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.WeaponNotReady)

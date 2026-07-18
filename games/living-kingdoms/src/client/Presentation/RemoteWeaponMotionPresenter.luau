@@ -10,9 +10,9 @@
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
-local BasicFirearmPresentationFactory = require(script.Parent.BasicFirearmPresentationFactory)
+local WeaponPresentationFactory = require(script.Parent.WeaponPresentationFactory)
 
-type BasicFirearmPresentationRig = BasicFirearmPresentationFactory.BasicFirearmPresentationRig
+type WeaponPresentationRig = WeaponPresentationFactory.WeaponPresentationRig
 
 type MotionState = {
 	shotGeneration: number,
@@ -75,7 +75,7 @@ local function playMotorTween(
 	return tween
 end
 
-local function resetBolt(motionState: MotionState, rig: BasicFirearmPresentationRig, durationSeconds: number)
+local function resetBolt(motionState: MotionState, rig: WeaponPresentationRig, durationSeconds: number)
 	playMotorTween(
 		motionState,
 		"Bolt",
@@ -87,7 +87,7 @@ local function resetBolt(motionState: MotionState, rig: BasicFirearmPresentation
 	)
 end
 
-local function resetMagazine(motionState: MotionState, rig: BasicFirearmPresentationRig, durationSeconds: number)
+local function resetMagazine(motionState: MotionState, rig: WeaponPresentationRig, durationSeconds: number)
 	playMotorTween(
 		motionState,
 		"Magazine",
@@ -99,7 +99,7 @@ local function resetMagazine(motionState: MotionState, rig: BasicFirearmPresenta
 	)
 end
 
-function RemoteWeaponMotionPresenter.presentShot(player: Player, rig: BasicFirearmPresentationRig)
+function RemoteWeaponMotionPresenter.presentShot(player: Player, rig: WeaponPresentationRig)
 	local motionState = stateFor(player)
 	motionState.shotGeneration += 1
 	local generation = motionState.shotGeneration
@@ -126,7 +126,7 @@ end
 
 function RemoteWeaponMotionPresenter.presentReloadStarted(
 	player: Player,
-	rig: BasicFirearmPresentationRig,
+	rig: WeaponPresentationRig,
 	completionServerTimestamp: number
 )
 	local motionState = stateFor(player)
@@ -169,7 +169,7 @@ function RemoteWeaponMotionPresenter.presentReloadStarted(
 	end)
 end
 
-function RemoteWeaponMotionPresenter.presentReloadCompleted(player: Player, rig: BasicFirearmPresentationRig)
+function RemoteWeaponMotionPresenter.presentReloadCompleted(player: Player, rig: WeaponPresentationRig)
 	local motionState = stateFor(player)
 	motionState.reloadGeneration += 1
 	motionState.isReloading = false
@@ -177,7 +177,7 @@ function RemoteWeaponMotionPresenter.presentReloadCompleted(player: Player, rig:
 	resetBolt(motionState, rig, 0.08)
 end
 
-function RemoteWeaponMotionPresenter.presentReloadInterrupted(player: Player, rig: BasicFirearmPresentationRig)
+function RemoteWeaponMotionPresenter.presentReloadInterrupted(player: Player, rig: WeaponPresentationRig)
 	local motionState = stateFor(player)
 	motionState.reloadGeneration += 1
 	motionState.isReloading = false

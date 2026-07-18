@@ -18,6 +18,19 @@ local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmAudioConfig = require(ReplicatedStorage.Shared.Config.FirearmAudioConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 
+local function resolveWeaponDefinition(weaponId: unknown)
+	local getter = FirearmConfig.get
+	if type(getter) == "function" then
+		return getter(weaponId)
+	end
+	local basic = FirearmConfig.BasicFirearm
+	return if basic ~= nil and weaponId == basic.WeaponId then basic else nil
+end
+
+local function isKnownWeaponId(weaponId: unknown): boolean
+	return resolveWeaponDefinition(weaponId) ~= nil
+end
+
 local Controller = {}
 
 local localPlayer = Players.LocalPlayer
@@ -92,7 +105,7 @@ local function onPresentationMessage(message: unknown)
 		return
 	end
 	local payload = message :: any
-	if payload.weaponId ~= FirearmConfig.BasicFirearm.WeaponId or not isNonEmptyString(payload.operativeEntityId) then
+	if not isKnownWeaponId(payload.weaponId) or not isNonEmptyString(payload.operativeEntityId) then
 		return
 	end
 	if payload.kindId == CombatContracts.PresentationMessageKindIds.ShotFired then

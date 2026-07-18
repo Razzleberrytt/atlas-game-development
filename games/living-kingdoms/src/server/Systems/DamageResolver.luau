@@ -13,6 +13,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 
+local function resolveWeaponDefinition(weaponId: unknown)
+	local getter = FirearmConfig.get
+	if type(getter) == "function" then
+		return getter(weaponId)
+	end
+	local basic = FirearmConfig.BasicFirearm
+	return if basic ~= nil and weaponId == basic.WeaponId then basic else nil
+end
+
 type DamageResolution = CombatContracts.DamageResolution
 type FirearmHitRejectionReasonId = CombatContracts.FirearmHitRejectionReasonId
 type FirearmHitResolution = CombatContracts.FirearmHitResolution
@@ -69,8 +78,12 @@ local function readProgressionNumber(attributeName: string, fallback: number): n
 	return if type(value) == "number" and value == value then value else fallback
 end
 
-local function resolveDamageAmount(override: number?, currentHealth: number): number?
-	local configured = FirearmConfig.BasicFirearm.DamagePerHit
+local function resolveDamageAmount(weaponId: string, override: number?, currentHealth: number): number?
+	local weapon = resolveWeaponDefinition(weaponId)
+	if weapon == nil then
+		return nil
+	end
+	local configured = weapon.DamagePerHit
 	local requested = override
 	if requested == nil then
 		local damageMultiplier = readProgressionNumber("RunDamageMultiplier", 1)
@@ -123,12 +136,9 @@ function DamageResolver.resolve(
 	end
 
 	local healthBefore = math.max(0, targetHealthState.currentHealth)
-	local damageAmount = resolveDamageAmount(damageAmountOverride, healthBefore)
-	if
-		damageAmount == nil
-		or hitResolution.weaponId ~= FirearmConfig.BasicFirearm.WeaponId
-		or hitResolution.sourceEntityId == nil
-	then
+	local weapon = resolveWeaponDefinition(hitResolution.weaponId)
+	local damageAmount = resolveDamageAmount(hitResolution.weaponId, damageAmountOverride, healthBefore)
+	if damageAmount == nil or weapon == nil or hitResolution.sourceEntityId == nil then
 		return withoutDamage(healthStateAfter, reasons.WeaponInvalid)
 	end
 
@@ -139,8 +149,8 @@ function DamageResolver.resolve(
 		shotId = shotId,
 		sourceEntityId = hitResolution.sourceEntityId,
 		targetEntityId = targetHealthState.entityId,
-		weaponId = FirearmConfig.BasicFirearm.WeaponId,
-		damageTypeId = FirearmConfig.BasicFirearm.DamageTypeId,
+		weaponId = weapon.WeaponId,
+		damageTypeId = weapon.DamageTypeId,
 		damageAmount = damageAmount,
 		serverTimestamp = serverTimestamp,
 	})

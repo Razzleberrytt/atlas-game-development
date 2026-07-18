@@ -213,7 +213,8 @@ local function updateCombatPresentation(serverTimestamp: number)
 	local reserve = readNumberAttribute("LK_HUD_ReserveRounds", 0)
 	local capacity = readNumberAttribute("LK_HUD_MagazineCapacity", 0)
 	if ammoLabel ~= nil then
-		ammoLabel.Text = string.format("%02d  /  %02d\nRESERVE  %03d", loaded, capacity, reserve)
+		local weaponName = readStringAttribute("LK_HUD_WeaponName", "WEAPON")
+		ammoLabel.Text = string.format("%s\n%02d / %02d   RESERVE %03d", weaponName, loaded, capacity, reserve)
 		ammoLabel.TextColor3 = if loaded == 0 then Color3.fromRGB(255, 72, 60) else Color3.fromRGB(239, 236, 226)
 	end
 	if combatStatusLabel ~= nil then

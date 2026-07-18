@@ -322,6 +322,11 @@ CombatContracts.TeamRelationshipIds = table.freeze({
 
 CombatContracts.WeaponIds = table.freeze({
 	BasicFirearm = "weapon.basic_firearm",
+	LightMachineGun = "weapon.light-machine-gun",
+	BreachShotgun = "weapon.breach-shotgun",
+	SniperRifle = "weapon.sniper-rifle",
+	ServicePistol = "weapon.service-pistol",
+	SubmachineGun = "weapon.submachine-gun",
 })
 
 CombatContracts.OperativeCombatStateIds = table.freeze({
