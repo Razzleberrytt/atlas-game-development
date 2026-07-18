@@ -42,6 +42,15 @@ jobs:
           Path('/tmp/reproduce.sh').write_text(textwrap.dedent(script))
           PY
           bash /tmp/reproduce.sh
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('games/living-kingdoms/tests/WeaponTargetSelector.test.luau')
+          source = path.read_text()
+          old = 'candidate("hostile.close", 6, 0)'
+          if source.count(old) != 1:
+              raise RuntimeError('expected one no-opportunity candidate')
+          path.write_text(source.replace(old, 'candidate("hostile.close", 0, 6)', 1))
+          PY
 
       - name: Capture selector behavior fixture
         id: behavior
