@@ -36,8 +36,7 @@ assert(
 	"floating damage rise escaped its screen-space budget"
 )
 assert(
-	FloatingDamageTextConfig.MaximumLateralDriftPixels >= 0
-		and FloatingDamageTextConfig.MaximumLateralDriftPixels <= 32,
+	FloatingDamageTextConfig.MaximumLateralDriftPixels >= 0 and FloatingDamageTextConfig.MaximumLateralDriftPixels <= 32,
 	"floating damage lateral drift escaped its screen-space budget"
 )
 assert(
@@ -59,8 +58,7 @@ assert(
 	"floating damage pool must remain useful and bounded"
 )
 assert(
-	FloatingDamageTextConfig.MaximumRememberedShotIds >= 64
-		and FloatingDamageTextConfig.MaximumRememberedShotIds <= 256,
+	FloatingDamageTextConfig.MaximumRememberedShotIds >= 64 and FloatingDamageTextConfig.MaximumRememberedShotIds <= 256,
 	"floating damage deduplication memory must remain bounded"
 )
 
