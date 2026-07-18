@@ -44,19 +44,9 @@ jobs:
         shell: bash
         run: stylua --check games/living-kingdoms/src
 
-      - name: Capture Selene diagnostics
+      - name: Run Selene
         shell: bash
-        run: |
-          set -o pipefail
-          selene games/living-kingdoms/src 2>&1 | tee /tmp/run-upgrades-selene.log
-
-      - name: Upload Selene diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: run-upgrades-selene-log
-          path: /tmp/run-upgrades-selene.log
-          retention-days: 1
+        run: selene games/living-kingdoms/src
 
       - name: Run Lune fixtures
         shell: bash
