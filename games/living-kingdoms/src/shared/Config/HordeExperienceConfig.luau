@@ -7,25 +7,30 @@
 
 	Field XP, levels, upgrades, and their tuning live in RunProgressionConfig.
 	Ammunition loot lives in EnemyLootConfig. HordeExperienceService reads none
-	of those rewards from this module. Values are intentionally aggressive so the
-	authored operation can be evaluated as an intense 8–12 minute combat loop.
+	of those rewards from this module.
+
+	The opening curve is intentionally staged around the canonical enemy director:
+	the director creates first contact, then this layer reinforces it instead of
+	front-loading enough bodies to fill the solo population cap before the first
+	run upgrade can appear. Late-operation pressure remains severe through threat
+	escalation, special enemies, and the unchanged production population ceiling.
 ]]
 
 local HordeExperienceConfig = {
-	Version = "HORDE-VS-001-v1",
+	Version = "HORDE-VS-001-v2-opening-curve",
 	Pressure = table.freeze({
-		WarmupSeconds = 8,
+		WarmupSeconds = 12,
 		EvaluationIntervalSeconds = 0.1,
 		StatePublishIntervalSeconds = 0.5,
-		BaseSpawnIntervalSeconds = 7,
-		MinimumSpawnIntervalSeconds = 2.4,
-		BaseSpawnCount = 5,
-		MaximumSpawnCount = 16,
+		BaseSpawnIntervalSeconds = 10,
+		MinimumSpawnIntervalSeconds = 4,
+		BaseSpawnCount = 3,
+		MaximumSpawnCount = 10,
 		SpawnRingMinimumStuds = 68,
 		SpawnRingMaximumStuds = 112,
-		ThreatPerMinute = 11,
-		ThreatPerLivingEnemy = 0.55,
-		ThreatPerKill = 0.08,
+		ThreatPerMinute = 8,
+		ThreatPerLivingEnemy = 0.4,
+		ThreatPerKill = 0.12,
 		ThreatMaximum = 100,
 	}),
 	Roles = table.freeze({
@@ -107,7 +112,24 @@ local HordeExperienceConfig = {
 	}),
 }
 
-assert(HordeExperienceConfig.Pressure.MinimumSpawnIntervalSeconds > 0, "spawn interval must be positive")
+assert(HordeExperienceConfig.Pressure.WarmupSeconds >= 9, "horde reinforcement must not beat canonical first contact")
+assert(
+	HordeExperienceConfig.Pressure.BaseSpawnIntervalSeconds >= 9,
+	"opening horde cadence must not outrun the baseline enemy director"
+)
+assert(
+	HordeExperienceConfig.Pressure.MinimumSpawnIntervalSeconds >= 3.5,
+	"maximum horde cadence must preserve a bounded late-run recovery beat"
+)
+assert(
+	HordeExperienceConfig.Pressure.BaseSpawnCount >= 2 and HordeExperienceConfig.Pressure.BaseSpawnCount <= 4,
+	"opening horde reinforcement must stay narrow"
+)
+assert(
+	HordeExperienceConfig.Pressure.MaximumSpawnCount >= HordeExperienceConfig.Pressure.BaseSpawnCount
+		and HordeExperienceConfig.Pressure.MaximumSpawnCount <= 10,
+	"horde pulse size requires a strict production ceiling"
+)
 assert(
 	HordeExperienceConfig.Pressure.SpawnRingMaximumStuds > HordeExperienceConfig.Pressure.SpawnRingMinimumStuds,
 	"spawn ring must have positive width"
