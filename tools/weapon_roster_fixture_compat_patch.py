@@ -65,4 +65,13 @@ if security_source.count(old_assertion) != 1:
     raise RuntimeError("combat security reload assertion anchor drifted")
 security_path.write_text(security_source.replace(old_assertion, new_assertion, 1), encoding="utf-8")
 
-print("Applied legacy fixture-compatible weapon definition fallback and reload audit update")
+audio_path = Path("games/living-kingdoms/tests/FirearmAudioSourceAudit.test.luau")
+audio_source = audio_path.read_text(encoding="utf-8")
+old_audio = 'assertThat(contains(controller, "FirearmConfig.BasicFirearm.WeaponId"), "audio must gate on the basic firearm")'
+new_audio = '''assertThat(contains(controller, "isKnownWeaponId(payload.weaponId)"), "audio must gate on a configured firearm")
+assertThat(contains(controller, "resolveWeaponDefinition"), "audio must retain legacy fixture compatibility")'''
+if audio_source.count(old_audio) != 1:
+    raise RuntimeError("firearm audio audit anchor drifted")
+audio_path.write_text(audio_source.replace(old_audio, new_audio, 1), encoding="utf-8")
+
+print("Applied legacy fixture compatibility and roster-aware authority audits")
