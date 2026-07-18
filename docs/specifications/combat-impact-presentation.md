@@ -30,7 +30,7 @@ Particles use a built-in Roblox texture and exist only on the observing client. 
 
 ## Runtime bounds
 
-- maximum tracked enemies: 40
+- maximum tracked enemies: 24 (the current validated global population ceiling)
 - maximum effect distance from the active camera: 140 studs
 - hit burst: 7 particles
 - kill burst: 22 particles
@@ -44,7 +44,7 @@ Particles use a built-in Roblox texture and exist only on the observing client. 
 - zero Debris scheduling
 - zero persistent splatter parts or decals
 
-The controller tracks the hard global enemy ceiling and skips cosmetic emission outside the camera-distance budget. Attribute sequences still advance while culled so old effects are never replayed when the camera returns.
+The controller tracks the current hard global enemy ceiling and skips cosmetic emission outside the camera-distance budget. Attribute sequences still advance while culled so old effects are never replayed when the camera returns.
 
 ## Authority boundary
 
@@ -87,4 +87,4 @@ The highlight and particle emitters are presentation-only descendants created lo
 - bounded corpse physics or stronger death pose
 - optional surface splatter with strict pooling and cleanup
 - camera-shake and blood-intensity accessibility controls
-- representative Studio review with forty active enemies
+- representative Studio review at the current 24-enemy ceiling, then again before any future increase toward forty
