@@ -40,9 +40,21 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Check Luau formatting
+      - name: Format Luau sources
         shell: bash
-        run: stylua --check games/living-kingdoms/src
+        run: stylua games/living-kingdoms/src
+
+      - name: Archive formatted sources
+        shell: bash
+        run: tar -czf /tmp/formatted-src.tar.gz games/living-kingdoms/src
+
+      - name: Upload formatted sources
+        uses: actions/upload-artifact@v4
+        with:
+          name: formatted-src
+          path: /tmp/formatted-src.tar.gz
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Run Selene
         shell: bash
