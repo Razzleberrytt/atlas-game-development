@@ -12,6 +12,8 @@ export type DropResolution = {
 	rounds: number,
 	lifetimeSeconds: number,
 	roll: number?,
+	wasGuaranteed: boolean,
+	guaranteeReasonId: string?,
 }
 
 local EnemyLootResolver = {}
@@ -27,6 +29,8 @@ local function rejected(reasonId: string): DropResolution
 		rounds = 0,
 		lifetimeSeconds = 0,
 		roll = nil,
+		wasGuaranteed = false,
+		guaranteeReasonId = nil,
 	})
 end
 
@@ -36,6 +40,16 @@ local function stableHash(entityId: string, deathSequence: number): number
 		hash = (hash * 33 + string.byte(entityId, index)) % 2147483647
 	end
 	return hash
+end
+
+local function guaranteeReason(deathSequence: number): string?
+	if EnemyLootConfig.GuaranteeFirstConfirmedDeath and deathSequence == 1 then
+		return "FirstConfirmedDeath"
+	end
+	if deathSequence % EnemyLootConfig.GuaranteedCommonDropEveryDeaths == 0 then
+		return "CadenceFloor"
+	end
+	return nil
 end
 
 function EnemyLootResolver.resolveDrop(entityId: string, deathSequence: number, activeDropCount: number): DropResolution
@@ -59,8 +73,11 @@ function EnemyLootResolver.resolveDrop(entityId: string, deathSequence: number, 
 
 	local hash = stableHash(entityId, deathSequence)
 	local roll = hash % EnemyLootConfig.DropRollModulo
+	local guaranteedBy = guaranteeReason(deathSequence)
 	local definition
-	if roll < EnemyLootConfig.RareDropRolls then
+	if guaranteedBy ~= nil then
+		definition = EnemyLootConfig.Definitions.Common
+	elseif roll < EnemyLootConfig.RareDropRolls then
 		definition = EnemyLootConfig.Definitions.Rare
 	elseif roll < EnemyLootConfig.RareDropRolls + EnemyLootConfig.CommonDropRolls then
 		definition = EnemyLootConfig.Definitions.Common
@@ -75,6 +92,8 @@ function EnemyLootResolver.resolveDrop(entityId: string, deathSequence: number, 
 			rounds = 0,
 			lifetimeSeconds = 0,
 			roll = roll,
+			wasGuaranteed = false,
+			guaranteeReasonId = nil,
 		})
 	end
 
@@ -88,6 +107,8 @@ function EnemyLootResolver.resolveDrop(entityId: string, deathSequence: number, 
 		rounds = definition.Rounds,
 		lifetimeSeconds = definition.LifetimeSeconds,
 		roll = roll,
+		wasGuaranteed = guaranteedBy ~= nil,
+		guaranteeReasonId = guaranteedBy,
 	})
 end
 
