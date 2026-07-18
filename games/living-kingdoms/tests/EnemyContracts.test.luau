@@ -1,14 +1,14 @@
 --!strict
 
--- P5-0104 enemy vocabulary and configuration invariants: stable IDs, bounded
--- balance values, fair-spawn distances, roaming cadence coverage, and frozen
--- shared tables.
+-- Horde vertical-slice enemy vocabulary and configuration invariants: stable
+-- IDs, bounded balance values, fair-spawn distances, representative population
+-- budgets, roaming cadence coverage, and frozen shared tables.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
 local function assert(condition: unknown, message: string?)
 	if not condition then
-		error(message or "P5-0104 enemy contracts fixture assertion failed", 2)
+		error(message or "horde enemy contracts fixture assertion failed", 2)
 	end
 end
 
@@ -90,23 +90,27 @@ assert(
 	config.Population.AbsoluteMaximumConcurrent >= config.Population.MaximumConcurrentPerOperative * 4,
 	"the absolute cap must cover a four-operative squad"
 )
--- Representative population measurement: 1/2/4 operatives.
+
+-- Representative vertical-slice population budget: 1/2/4 operatives.
 local function capFor(operativeCount: number): number
 	return math.min(
 		config.Population.AbsoluteMaximumConcurrent,
 		config.Population.MaximumConcurrentPerOperative * math.max(1, operativeCount)
 	)
 end
-assert(capFor(1) == 6 and capFor(2) == 12 and capFor(4) == 24, "representative 1/2/4 population caps changed")
+assert(
+	capFor(1) == 28 and capFor(2) == 56 and capFor(4) == 112,
+	"representative 1/2/4 horde population caps changed"
+)
 
--- Roaming cadence covers every escalation level and never accelerates past
--- readability.
+-- Roaming cadence covers every escalation level, tightens monotonically, and
+-- remains bounded by the authored ten-enemy burst maximum.
 local previousInterval = math.huge
 for level = 0, config.Pressure.MaximumEscalationLevel do
 	local cadence = config.Pressure.RoamingByEscalationLevel[level]
 	assert(cadence ~= nil, "missing roaming cadence for level " .. level)
 	assert(cadence.IntervalSeconds <= previousInterval, "escalation must not relax roaming pressure")
-	assert(cadence.SpawnCount >= 1 and cadence.SpawnCount <= 4, "roaming bursts must stay small")
+	assert(cadence.SpawnCount >= 1 and cadence.SpawnCount <= 10, "roaming bursts must remain bounded")
 	previousInterval = cadence.IntervalSeconds
 end
 assert(
@@ -117,4 +121,4 @@ assert(
 -- The spawn ring stays inside the authored world from any standing position.
 assert(config.Pressure.RoamingSpawnMaximumDistanceStuds < worldConfig.PlayableHalfExtentStuds)
 
-print("EnemyContracts: P5-0104 vocabulary, balance invariants, population caps, and cadence coverage passed")
+print("EnemyContracts: horde vocabulary, balance invariants, population caps, and cadence coverage passed")
