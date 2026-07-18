@@ -22,7 +22,6 @@ local presentationRemote =
 	ReplicatedStorage:WaitForChild("CombatNetwork"):WaitForChild("CombatPresentation") :: RemoteEvent
 
 local started = false
-local enemyFolder: Folder? = nil
 local folderAddedConnection: RBXScriptConnection? = nil
 local folderRemovedConnection: RBXScriptConnection? = nil
 local presentationConnection: RBXScriptConnection? = nil
@@ -236,7 +235,6 @@ function Controller.start()
 		found = Workspace:WaitForChild("EnemyEntities")
 	end
 	assert(found:IsA("Folder"), "EnemyEntities must be a Folder")
-	enemyFolder = found
 	for _, child in found:GetChildren() do
 		trackModel(child)
 	end
@@ -266,7 +264,6 @@ function Controller.stop()
 	end
 	table.clear(processedShotIds)
 	table.clear(processedDeaths)
-	enemyFolder = nil
 	shakeUntil = 0
 	shakeMagnitude = 0
 end

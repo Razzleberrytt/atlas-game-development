@@ -40,7 +40,6 @@ local revision = 0
 local accumulatedSeconds = 0
 local publishAccumulatedSeconds = 0
 local nextHordeServerTimestamp = 0
-local enemyFolder: Folder? = nil
 local lootFolder: Folder? = nil
 local heartbeatConnection: RBXScriptConnection? = nil
 local enemyAddedConnection: RBXScriptConnection? = nil
@@ -132,10 +131,6 @@ local lootRecords: { [BasePart]: LootRecord } = {}
 
 local function now(): number
 	return Workspace:GetServerTimeNow()
-end
-
-local function finiteNumber(value: unknown): boolean
-	return type(value) == "number" and value == value and math.abs(value) < math.huge
 end
 
 local function stableHash(text: string): number
@@ -969,7 +964,6 @@ function Service.start()
 		foundEnemyFolder = Workspace:WaitForChild(ENEMY_FOLDER_NAME)
 	end
 	assert(foundEnemyFolder:IsA("Folder"), "EnemyEntities must be a Folder")
-	enemyFolder = foundEnemyFolder
 	for _, child in foundEnemyFolder:GetChildren() do
 		trackEnemy(child)
 	end
@@ -1040,7 +1034,6 @@ function Service.stop()
 		folder:Destroy()
 		lootFolder = nil
 	end
-	enemyFolder = nil
 	accumulatedSeconds = 0
 	publishAccumulatedSeconds = 0
 	spawnSequence = 0

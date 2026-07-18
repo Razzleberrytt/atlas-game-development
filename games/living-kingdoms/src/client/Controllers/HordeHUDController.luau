@@ -20,7 +20,6 @@ local choiceRemote = network:WaitForChild("ChooseUpgrade") :: RemoteEvent
 local started = false
 local connections: { RBXScriptConnection } = {}
 local screenGui: ScreenGui? = nil
-local latestState: any = nil
 local lastRevision = -1
 local lastEventSequence = -1
 local eventVisibleUntil = 0
@@ -308,7 +307,6 @@ local function applyHordeState(payload: any)
 		return
 	end
 	lastRevision = payload.revision
-	latestState = payload
 	local threat = if type(payload.threat) == "number" then payload.threat else 0
 	if threatLabel ~= nil then
 		threatLabel.Text =
@@ -620,7 +618,6 @@ function Controller.stop()
 		screenGui:Destroy()
 		screenGui = nil
 	end
-	latestState = nil
 	lastRevision = -1
 	lastEventSequence = -1
 end
