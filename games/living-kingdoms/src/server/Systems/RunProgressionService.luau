@@ -90,6 +90,9 @@ local trackedLifeStates: { [Model]: string } = {}
 local upgradeStacks: RunUpgradeResolver.UpgradeStacks = {}
 local pendingChoiceIds: { string } = {}
 local lastUpgradeRequestTimestamps: { [Player]: number } = {}
+local processedFieldIntelRewardIds: { [string]: boolean } = {}
+local fieldIntelRewardOrder: { string } = {}
+local MAX_PROCESSED_FIELD_INTEL_REWARDS = 64
 
 local progressionNetwork = ReplicatedStorage:WaitForChild("ProgressionNetwork")
 local stateRemote = progressionNetwork:WaitForChild("State") :: RemoteEvent
@@ -179,16 +182,17 @@ local function generatePendingChoices()
 	end
 end
 
-local function awardConfirmedEnemyDeath()
-	local amount = RunProgressionConfig.FieldXpPerConfirmedEnemyDeath
+local function applyFieldXpAward(amount: number, countAsKill: boolean): boolean
 	local resolution = RunProgressionResolver.applyAward(level, xp, amount)
 	if not resolution.didApply then
-		return
+		return false
 	end
 	level = resolution.levelAfter
 	xp = resolution.xpAfter
 	totalXp += amount
-	squadKills += 1
+	if countAsKill then
+		squadKills += 1
+	end
 	lastGainAmount = amount
 	lastGainSequence += 1
 	levelsGainedLastAward = resolution.levelsGained
@@ -197,6 +201,11 @@ local function awardConfirmedEnemyDeath()
 		generatePendingChoices()
 	end
 	publishAll()
+	return true
+end
+
+local function awardConfirmedEnemyDeath()
+	applyFieldXpAward(RunProgressionConfig.FieldXpPerConfirmedEnemyDeath, true)
 end
 
 local function isTrackedEnemy(model: Model): boolean
@@ -293,6 +302,32 @@ local function onChooseUpgrade(player: Player, selectedUpgradeId: unknown, ...: 
 	publishAll()
 end
 
+function RunProgressionService.awardFieldIntel(rewardId: string, amount: number): boolean
+	if
+		not started
+		or type(rewardId) ~= "string"
+		or rewardId == ""
+		or #rewardId > 240
+		or processedFieldIntelRewardIds[rewardId]
+		or type(amount) ~= "number"
+		or amount ~= amount
+		or amount % 1 ~= 0
+		or amount <= 0
+		or amount > 100
+	then
+		return false
+	end
+	processedFieldIntelRewardIds[rewardId] = true
+	table.insert(fieldIntelRewardOrder, rewardId)
+	if #fieldIntelRewardOrder > MAX_PROCESSED_FIELD_INTEL_REWARDS then
+		local expired = table.remove(fieldIntelRewardOrder, 1)
+		if expired ~= nil then
+			processedFieldIntelRewardIds[expired] = nil
+		end
+	end
+	return applyFieldXpAward(amount, false)
+end
+
 function RunProgressionService.readSafeSnapshot(): SafeRunProgressionSnapshot
 	return safeSnapshot()
 end
@@ -326,6 +361,8 @@ function RunProgressionService.start()
 	table.clear(upgradeStacks)
 	table.clear(pendingChoiceIds)
 	table.clear(lastUpgradeRequestTimestamps)
+	table.clear(processedFieldIntelRewardIds)
+	table.clear(fieldIntelRewardOrder)
 	syncCombatModifierAttributes()
 
 	readStateRemote.OnServerInvoke = function(_player: Player)
@@ -368,6 +405,8 @@ function RunProgressionService.stop()
 	table.clear(upgradeStacks)
 	table.clear(pendingChoiceIds)
 	table.clear(lastUpgradeRequestTimestamps)
+	table.clear(processedFieldIntelRewardIds)
+	table.clear(fieldIntelRewardOrder)
 	syncCombatModifierAttributes()
 	accumulatedSeconds = 0
 	initialScanComplete = false
