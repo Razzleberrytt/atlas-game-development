@@ -32,7 +32,7 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Update deferred-spawn timing fixture
+      - name: Update population-cap fixtures
         if: github.actor != 'github-actions[bot]'
         shell: bash
         run: |
@@ -41,11 +41,25 @@ jobs:
 
           path = Path("games/living-kingdoms/tests/EnemyDirectorService.test.luau")
           text = path.read_text(encoding="utf-8")
-          old = "now = 1\nlocal early = service.evaluateAt(now)\n"
-          new = "now = config.FairSpawn.DeferredRetryIntervalSeconds * 0.5\nlocal early = service.evaluateAt(now)\n"
-          if old not in text:
-              raise SystemExit("expected deferred-spawn fixture timing was not found")
-          path.write_text(text.replace(old, new, 1), encoding="utf-8", newline="\n")
+          replacements = [
+              (
+                  'assert(fillToCap() == 6, "one operative caps at 6 concurrent enemies")',
+                  'assert(\n\tfillToCap() == config.Population.MaximumConcurrentPerOperative,\n\t"one-operative cap must follow configuration"\n)',
+              ),
+              (
+                  'assert(fillToCap() == 12, "two operatives cap at 12 concurrent enemies")',
+                  'assert(\n\tfillToCap()\n\t\t== math.min(\n\t\t\tconfig.Population.AbsoluteMaximumConcurrent,\n\t\t\tconfig.Population.MaximumConcurrentPerOperative * 2\n\t\t),\n\t"two-operative cap must follow configuration"\n)',
+              ),
+              (
+                  'assert(fillToCap() == 24, "four operatives cap at 24 concurrent enemies")',
+                  'assert(\n\tfillToCap() == config.Population.AbsoluteMaximumConcurrent,\n\t"four-operative cap must reach the configured absolute maximum"\n)',
+              ),
+          ]
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit(f"expected population fixture text missing: {old}")
+              text = text.replace(old, new, 1)
+          path.write_text(text, encoding="utf-8", newline="\n")
           PY
 
       - name: Commit fixture correction
@@ -59,7 +73,7 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add games/living-kingdoms/tests
-          git commit -m "test: derive deferred retry checkpoint from config"
+          git commit -m "test: derive enemy director caps from config"
           git push origin HEAD:${{ github.head_ref }}
 
       - name: Check Luau formatting
