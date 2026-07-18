@@ -48,6 +48,8 @@ Living Kingdoms now has dense horde pressure, blood impact, Field XP, upgrades, 
 
 ## Acceptance gate
 
+The automated source audit locks the server-disclosed inputs, local-shooter scope, fixed four-arm geometry, bounded connection and memory counts, ShotId deduplication, and absence of client gameplay-authority APIs.
+
 Automated validation must pass StyLua, Selene, every Lune fixture, and Rojo build. Studio review must confirm:
 
 1. accepted local hits display at the struck enemy position
