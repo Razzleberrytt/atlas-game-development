@@ -18,9 +18,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local OperativeLifeConfig = require(ReplicatedStorage.Shared.Config.OperativeLifeConfig)
 local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.OperativeLifeContracts)
+local OperativeHealingResolver = require(script.Parent.OperativeHealingResolver)
 local OperativeHealthResolver = require(script.Parent.OperativeHealthResolver)
 
 type AuthoritativeOperativeDamage = OperativeLifeContracts.AuthoritativeOperativeDamage
+type AuthoritativeHealing = OperativeHealingResolver.AuthoritativeHealing
 type OperativeLifeStateSnapshot = OperativeLifeContracts.OperativeLifeStateSnapshot
 
 export type AuthoritativeRead = {
@@ -80,6 +82,11 @@ type OperativeLifeService = {
 		operativeEntityId: string,
 		expectedRevision: number,
 		authoritativeDamage: AuthoritativeOperativeDamage
+	) -> CommitResult,
+	applyAuthoritativeHealing: (
+		operativeEntityId: string,
+		expectedRevision: number,
+		authoritativeHealing: AuthoritativeHealing
 	) -> CommitResult,
 	commitAcceptedTransition: (player: Player, expectedRevision: number, resolverResult: unknown) -> CommitResult,
 	isAlive: (player: Player) -> boolean,
@@ -506,10 +513,11 @@ function OperativeLifeService.applyAuthoritativeDamage(
 	return OperativeLifeService.commitAcceptedTransition(player, expectedRevision, resolverResult)
 end
 
-function OperativeLifeService.commitAcceptedTransition(
+local function commitAcceptedTransitionInternal(
 	player: Player,
 	expectedRevision: number,
-	resolverResult: unknown
+	resolverResult: unknown,
+	allowHealthIncrease: boolean
 ): CommitResult
 	local entry = entries[player]
 	if entry == nil then
@@ -562,7 +570,8 @@ function OperativeLifeService.commitAcceptedTransition(
 		end
 	end
 	if
-		entry.snapshot.lifeStateId == lifeStateIds.Alive
+		not allowHealthIncrease
+		and entry.snapshot.lifeStateId == lifeStateIds.Alive
 		and validatedSnapshot.lifeStateId == lifeStateIds.Alive
 		and validatedSnapshot.healthState.currentHealth > entry.snapshot.healthState.currentHealth
 	then
@@ -579,6 +588,57 @@ function OperativeLifeService.commitAcceptedTransition(
 		revision = entry.revision,
 		snapshot = copySnapshot(entry.snapshot),
 	}
+end
+
+function OperativeLifeService.commitAcceptedTransition(
+	player: Player,
+	expectedRevision: number,
+	resolverResult: unknown
+): CommitResult
+	return commitAcceptedTransitionInternal(player, expectedRevision, resolverResult, false)
+end
+
+function OperativeLifeService.applyAuthoritativeHealing(
+	operativeEntityId: string,
+	expectedRevision: number,
+	authoritativeHealing: AuthoritativeHealing
+): CommitResult
+	if type(operativeEntityId) ~= "string" or operativeEntityId == "" then
+		return rejected("UnknownOperative")
+	end
+	local player = playerByOperativeEntityId[operativeEntityId]
+	local entry = if player == nil then nil else entries[player]
+	if entry == nil or entry.operativeEntityId ~= operativeEntityId then
+		return rejected("OperativeNotRegistered")
+	end
+	if
+		type(expectedRevision) ~= "number"
+		or expectedRevision ~= expectedRevision
+		or expectedRevision % 1 ~= 0
+		or expectedRevision < 0
+		or expectedRevision ~= entry.revision
+	then
+		return rejected("StaleRevision")
+	end
+	local healing = authoritativeHealing :: any
+	local serverTimestamp = if type(healing) == "table" then healing.serverTimestamp else nil
+	local resolution =
+		OperativeHealingResolver.resolve(copySnapshot(entry.snapshot), authoritativeHealing, serverTimestamp :: any)
+	if
+		type(resolution) ~= "table"
+		or resolution.didTransition ~= true
+		or type(healing) ~= "table"
+		or type(healing.healingEventId) ~= "string"
+		or resolution.healingEventId ~= healing.healingEventId
+		or type(resolution.healedAmount) ~= "number"
+		or resolution.healedAmount <= 0
+	then
+		local reason = if type(resolution) == "table" and type(resolution.rejectionReasonId) == "string"
+			then resolution.rejectionReasonId
+			else "ResolverRejected"
+		return rejected(reason)
+	end
+	return commitAcceptedTransitionInternal(player, expectedRevision, resolution, true)
 end
 
 function OperativeLifeService.isAlive(player: Player): boolean
