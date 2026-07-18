@@ -36,22 +36,22 @@ local resolver = luau.load(
 	}
 )()
 
-assert(config.FieldXpPerConfirmedEnemyDeath == 20, "one confirmed death should award the prototype 20 Field XP")
-assert(resolver.xpRequiredForLevel(1) == 100, "the first run level should require 100 XP")
-assert(resolver.xpRequiredForLevel(2) == 130, "the second threshold should grow gradually")
+assert(config.FieldXpPerConfirmedEnemyDeath == 20, "one confirmed death should award 20 Field XP")
+assert(resolver.xpRequiredForLevel(1) == 80, "the first run level should require four ordinary kills")
+assert(resolver.xpRequiredForLevel(2) == 108, "the second threshold should slow after the opening reward")
 assert(resolver.xpRequiredForLevel(config.MaximumRunLevel) == 0, "maximum level has no next threshold")
 
 local oneKill = resolver.applyAward(1, 0, config.FieldXpPerConfirmedEnemyDeath)
 assert(oneKill.didApply and oneKill.levelAfter == 1 and oneKill.xpAfter == 20)
-assert(oneKill.levelsGained == 0 and oneKill.xpForNextLevel == 100)
+assert(oneKill.levelsGained == 0 and oneKill.xpForNextLevel == 80)
 assert(table.isfrozen(oneKill), "award results must be immutable")
 
-local firstLevel = resolver.applyAward(1, 80, config.FieldXpPerConfirmedEnemyDeath)
+local firstLevel = resolver.applyAward(1, 60, config.FieldXpPerConfirmedEnemyDeath)
 assert(firstLevel.didApply and firstLevel.levelAfter == 2 and firstLevel.xpAfter == 0)
-assert(firstLevel.levelsGained == 1 and firstLevel.xpForNextLevel == 130)
+assert(firstLevel.levelsGained == 1 and firstLevel.xpForNextLevel == 108)
 
-local multipleLevels = resolver.applyAward(1, 90, 150)
-assert(multipleLevels.didApply and multipleLevels.levelAfter == 3 and multipleLevels.xpAfter == 10)
+local multipleLevels = resolver.applyAward(1, 70, 150)
+assert(multipleLevels.didApply and multipleLevels.levelAfter == 3 and multipleLevels.xpAfter == 32)
 assert(multipleLevels.levelsGained == 2)
 
 local invalid = resolver.applyAward(1, 0, 0)
