@@ -28,20 +28,35 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Apply lint-clean integration
+      - name: Apply direct lint-clean integration
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
           import textwrap
 
-          source = Path('.github/workflows/final-horde-special-telegraphs-v4.yml').read_text()
-          marker = '      - name: Apply lint-clean integration\n'
+          source = Path('.github/workflows/final-horde-special-telegraphs-v3.yml').read_text()
+          marker = '      - name: Apply deterministic integration\n'
           section = source.split(marker, 1)[1].split('\n\n      - name: Format focused Luau', 1)[0]
           script = section.split('        run: |\n', 1)[1]
           Path('/tmp/replay.sh').write_text(textwrap.dedent(script))
           PY
           bash /tmp/replay.sh
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('games/living-kingdoms/src/client/Controllers/HordeSpecialTelegraphController.luau')
+          source = path.read_text()
+          for token in (
+              'local enemyFolder: Folder? = nil\n',
+              '\tenemyFolder = found\n',
+              '\tenemyFolder = nil\n',
+          ):
+              if source.count(token) != 1:
+                  raise RuntimeError(f'expected one unused enemy-folder token: {token!r}')
+              source = source.replace(token, '', 1)
+          path.write_text(source)
+          PY
           stylua \
             games/living-kingdoms/src/server/Systems/HordeExperienceService.luau \
             games/living-kingdoms/src/client/Controllers/HordeSpecialTelegraphController.luau \
