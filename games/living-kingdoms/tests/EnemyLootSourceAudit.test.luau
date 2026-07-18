@@ -25,8 +25,16 @@ local bootstrap = fs.readFile("games/living-kingdoms/src/server/init.server.luau
 assertThat(config.MaximumTrackedEnemyModels == 64, "enemy loot death observation ceiling drifted")
 assertThat(config.MaximumActiveDrops == 16, "enemy loot active pickup ceiling drifted")
 assertThat(config.PickupRadiusStuds <= 8, "enemy loot collection radius must remain local")
+assertThat(config.DropRollModulo == 100, "enemy loot probability denominator drifted")
+assertThat(config.CommonDropRolls == 7, "common enemy loot probability must remain seven percent")
+assertThat(config.RareDropRolls == 1, "rare enemy loot probability must remain one percent")
+assertThat(config.CommonDropRolls + config.RareDropRolls == 8, "total enemy loot probability must remain eight percent")
 assertThat(config.Definitions.Common.Rounds == 8, "common enemy loot grant drifted")
 assertThat(config.Definitions.Rare.Rounds == 20, "rare enemy loot grant drifted")
+local expectedRoundsPerKill = (
+	config.CommonDropRolls * config.Definitions.Common.Rounds + config.RareDropRolls * config.Definitions.Rare.Rounds
+) / config.DropRollModulo
+assertThat(expectedRoundsPerKill <= 0.8, "enemy loot must not sustain automatic fire")
 
 assertThat(contains(service, "RunService.Heartbeat:Connect"), "enemy loot must use one bounded server pass")
 assertThat(contains(service, "folder:GetChildren()"), "enemy loot must observe the bounded enemy folder")
@@ -74,4 +82,4 @@ local combatStart = string.find(bootstrap, "OperativeCombatRuntimeService.start(
 local lootStart = string.find(bootstrap, "EnemyLootService.start()", 1, true)
 assertThat(combatStart ~= nil and lootStart ~= nil and combatStart < lootStart, "combat authority must start before loot collection")
 
-print("EnemyLootSourceAudit: server-only death rolls, automatic collection, visual disclosure, expiry, and caps passed")
+print("EnemyLootSourceAudit: hard eight-percent loot economy, automatic collection, authority, expiry, and caps passed")
