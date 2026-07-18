@@ -354,9 +354,8 @@ local function evaluateDrops(serverTimestamp: number)
 		local orientation = if record.rarityId == "Rare"
 			then CFrame.Angles(0, spin, 0)
 			else CFrame.Angles(0, spin, math.rad(90))
-		record.part.CFrame = CFrame.new(
-			record.basePosition + Vector3.new(0, EnemyLootConfig.HoverHeightStuds + bob, 0)
-		) * orientation
+		record.part.CFrame = CFrame.new(record.basePosition + Vector3.new(0, EnemyLootConfig.HoverHeightStuds + bob, 0))
+			* orientation
 
 		local collector = nearestEligibleCollector(record)
 		if collector ~= nil and tryCollect(collector, record) then
