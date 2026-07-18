@@ -654,17 +654,30 @@ local function fillToCap(): number
 	return spawned
 end
 addOperative("operative.player:1", 300, 300)
-assert(fillToCap() == 6, "one operative caps at 6 concurrent enemies")
+assert(
+	fillToCap() == config.Population.MaximumConcurrentPerOperative,
+	"one-operative cap must follow configuration"
+)
 reset()
 addOperative("operative.player:1", 300, 300)
 addOperative("operative.player:2", 300, -300)
-assert(fillToCap() == 12, "two operatives cap at 12 concurrent enemies")
+assert(
+	fillToCap()
+		== math.min(
+			config.Population.AbsoluteMaximumConcurrent,
+			config.Population.MaximumConcurrentPerOperative * 2
+		),
+	"two-operative cap must follow configuration"
+)
 reset()
 addOperative("operative.player:1", 300, 300)
 addOperative("operative.player:2", 250, 300)
 addOperative("operative.player:3", 300, 250)
 addOperative("operative.player:4", 250, 250)
-assert(fillToCap() == 24, "four operatives cap at 24 concurrent enemies")
+assert(
+	fillToCap() == config.Population.AbsoluteMaximumConcurrent,
+	"four-operative cap must reach the configured absolute maximum"
+)
 
 -- Heartbeat wiring drives evaluation through the configured interval.
 now = 1000
