@@ -11,7 +11,7 @@ on:
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate:
@@ -32,105 +32,49 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Remove lint-only dead state
-        if: github.actor != 'github-actions[bot]'
+      - name: Check Luau formatting
         shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
+        run: stylua --check games/living-kingdoms/src
 
-          replacements = {
-              Path("games/living-kingdoms/src/client/Controllers/HordeEffectsController.luau"): [
-                  ("local enemyFolder: Folder? = nil\n", ""),
-                  ("\tenemyFolder = found\n", ""),
-                  ("\tenemyFolder = nil\n", ""),
-              ],
-              Path("games/living-kingdoms/src/client/Controllers/HordeHUDController.luau"): [
-                  ("local latestState: any = nil\n", ""),
-                  ("\tlatestState = payload\n", ""),
-                  ("\tlatestState = nil\n", ""),
-              ],
-              Path("games/living-kingdoms/src/server/Systems/HordeExperienceService.luau"): [
-                  ("local enemyFolder: Folder? = nil\n", ""),
-                  (
-                      "local function finiteNumber(value: unknown): boolean\n"
-                      "\treturn type(value) == \"number\" and value == value and math.abs(value) < math.huge\n"
-                      "end\n\n",
-                      "",
-                  ),
-                  ("\tenemyFolder = foundEnemyFolder\n", ""),
-                  ("\tenemyFolder = nil\n", ""),
-              ],
-          }
-
-          for path, edits in replacements.items():
-              text = path.read_text(encoding="utf-8")
-              for old, new in edits:
-                  if old not in text:
-                      raise SystemExit(f"expected text missing from {path}: {old!r}")
-                  text = text.replace(old, new, 1)
-              path.write_text(text, encoding="utf-8", newline="\n")
-          PY
-
-      - name: Format Luau sources
+      - name: Run Selene
         shell: bash
-        run: stylua games/living-kingdoms/src
+        run: selene games/living-kingdoms/src
 
-      - name: Commit validated source cleanup
-        if: github.actor != 'github-actions[bot]'
-        shell: bash
-        run: |
-          if git diff --quiet -- games/living-kingdoms/src; then
-            echo "No source changes required."
-            exit 0
-          fi
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add games/living-kingdoms/src
-          git commit -m "chore: clean horde runtime lint warnings"
-          git push origin HEAD:${{ github.head_ref }}
-
-      - name: Capture Selene report
-        id: selene
+      - name: Capture Lune fixture report
+        id: fixtures
         shell: bash
         continue-on-error: true
         run: |
           set +e
-          selene games/living-kingdoms/src > /tmp/selene.txt 2>&1
-          status=$?
+          fixture_count=0
+          status=0
+          : > /tmp/lune-fixtures.txt
+          while IFS= read -r -d '' fixture; do
+            echo "===== $fixture =====" | tee -a /tmp/lune-fixtures.txt
+            lune run "$fixture" 2>&1 | tee -a /tmp/lune-fixtures.txt
+            fixture_status=${PIPESTATUS[0]}
+            if [ "$fixture_status" -ne 0 ]; then
+              status=$fixture_status
+              break
+            fi
+            fixture_count=$((fixture_count + 1))
+          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          echo "Executed $fixture_count successful Living Kingdoms fixtures." | tee -a /tmp/lune-fixtures.txt
           echo "status=$status" >> "$GITHUB_OUTPUT"
-          cat /tmp/selene.txt
           exit 0
 
-      - name: Upload Selene report
+      - name: Upload Lune fixture report
         uses: actions/upload-artifact@v4
         with:
-          name: selene-report
-          path: /tmp/selene.txt
+          name: lune-fixture-report
+          path: /tmp/lune-fixtures.txt
           if-no-files-found: error
           retention-days: 1
 
-      - name: Fail on Selene findings
-        if: steps.selene.outputs.status != '0'
+      - name: Fail on fixture findings
+        if: steps.fixtures.outputs.status != '0'
         shell: bash
         run: exit 1
-
-      - name: Run Lune fixtures
-        shell: bash
-        run: |
-          set -euo pipefail
-          fixture_count=0
-          while IFS= read -r -d '' fixture; do
-            echo "::group::Lune fixture: $fixture"
-            lune run "$fixture"
-            echo "::endgroup::"
-            fixture_count=$((fixture_count + 1))
-          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
-          if [ "$fixture_count" -eq 0 ]; then
-            echo "No Living Kingdoms fixtures were discovered." >&2
-            exit 1
-          fi
-          echo "Executed $fixture_count Living Kingdoms fixtures."
 
       - name: Build Rojo project
         shell: bash
