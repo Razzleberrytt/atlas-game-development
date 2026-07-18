@@ -47,7 +47,6 @@ local xpFill: Frame? = nil
 local levelLabel: TextLabel? = nil
 local ammoLabel: TextLabel? = nil
 local combatStatusLabel: TextLabel? = nil
-local streakLabel: TextLabel? = nil
 local squadLabel: TextLabel? = nil
 local eventLabel: TextLabel? = nil
 local extractionLabel: TextLabel? = nil
@@ -327,11 +326,6 @@ local function applyHordeState(payload: any)
 	if enemyCountLabel ~= nil then
 		enemyCountLabel.Text = string.format("HOSTILES  %03d", tonumber(payload.activeEnemies) or 0)
 	end
-	local streak = tonumber(payload.streak) or 0
-	if streakLabel ~= nil then
-		streakLabel.Text = if streak >= 2 then string.format("MASSACRE x%d", streak) else ""
-		streakLabel.Visible = streak >= 2
-	end
 	local eventSequence = tonumber(payload.lastEventSequence) or 0
 	if eventLabel ~= nil and eventSequence > lastEventSequence then
 		lastEventSequence = eventSequence
@@ -549,18 +543,6 @@ local function createPresentation()
 		Enum.TextXAlignment.Left
 	)
 	squadLabel.TextYAlignment = Enum.TextYAlignment.Top
-
-	streakLabel = createLabel(
-		gui,
-		"Streak",
-		UDim2.new(0.5, -300, 0.72, 0),
-		UDim2.fromOffset(600, 40),
-		25,
-		Enum.Font.GothamBlack,
-		Enum.TextXAlignment.Center
-	)
-	streakLabel.TextColor3 = Color3.fromRGB(255, 94, 61)
-	streakLabel.Visible = false
 
 	eventLabel = createLabel(
 		gui,
