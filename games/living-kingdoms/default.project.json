@@ -23,9 +23,6 @@
         "$className": "Folder",
         "State": {
           "$className": "RemoteEvent"
-        },
-        "ChooseUpgrade": {
-          "$className": "RemoteEvent"
         }
       },
       "FlashlightNetwork": {

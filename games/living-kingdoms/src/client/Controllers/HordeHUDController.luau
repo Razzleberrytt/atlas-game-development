@@ -15,14 +15,22 @@ local Controller = {}
 local localPlayer = Players.LocalPlayer
 local network = ReplicatedStorage:WaitForChild("HordeNetwork")
 local stateRemote = network:WaitForChild("State") :: RemoteEvent
-local choiceRemote = network:WaitForChild("ChooseUpgrade") :: RemoteEvent
+
+-- Progression is owned by RunProgressionService. The combat HUD only renders its
+-- published snapshot and submits one offered upgrade ID back to it.
+local progressionNetwork = ReplicatedStorage:WaitForChild("ProgressionNetwork")
+local progressionStateRemote = progressionNetwork:WaitForChild("State") :: RemoteEvent
+local progressionReadStateRemote = progressionNetwork:WaitForChild("ReadState") :: RemoteFunction
+local progressionChooseUpgradeRemote = progressionNetwork:WaitForChild("ChooseUpgrade") :: RemoteEvent
 
 local started = false
 local connections: { RBXScriptConnection } = {}
 local screenGui: ScreenGui? = nil
 local lastRevision = -1
+local lastProgressionRevision = -1
 local lastEventSequence = -1
-local lastFieldGainSequence = -1
+local lastProgressionGainSequence = -1
+local lastSelectionSequence = -1
 local eventVisibleUntil = 0
 local upgradeButtons: { TextButton } = {}
 
@@ -297,7 +305,7 @@ local function renderUpgradeChoices(choices: { any })
 		local upgradeId = choice.id
 		button.Activated:Connect(function()
 			button.Active = false
-			choiceRemote:FireServer(upgradeId)
+			progressionChooseUpgradeRemote:FireServer(upgradeId)
 		end)
 		table.insert(upgradeButtons, button)
 	end
@@ -318,17 +326,6 @@ local function applyHordeState(payload: any)
 	if enemyCountLabel ~= nil then
 		enemyCountLabel.Text = string.format("HOSTILES  %03d", tonumber(payload.activeEnemies) or 0)
 	end
-	local level = readNumberAttribute("LK_HUD_FieldLevel", tonumber(payload.level) or 1)
-	local xp = readNumberAttribute("LK_HUD_FieldXp", tonumber(payload.xp) or 0)
-	local xpForNext = readNumberAttribute("LK_HUD_FieldXpForNext", tonumber(payload.xpForNextLevel) or 0)
-	if levelLabel ~= nil then
-		levelLabel.Text =
-			string.format("FIELD LEVEL %02d  //  WEAPON TIER %d", level, tonumber(payload.weaponTier) or 0)
-	end
-	if xpText ~= nil then
-		xpText.Text = if xpForNext <= 0 then "MAX LEVEL" else string.format("XP  %d / %d", xp, xpForNext)
-	end
-	setBar(xpFill, if xpForNext <= 0 then 1 else xp / xpForNext)
 	local streak = tonumber(payload.streak) or 0
 	if streakLabel ~= nil then
 		streakLabel.Text = if streak >= 2 then string.format("MASSACRE x%d", streak) else ""
@@ -340,16 +337,62 @@ local function applyHordeState(payload: any)
 		eventLabel.Text = tostring(payload.lastEventText or "")
 		eventLabel.TextColor3 = if payload.lastEventKind == "Threat"
 			then Color3.fromRGB(255, 77, 62)
-			elseif payload.lastEventKind == "LevelUp" or payload.lastEventKind == "Upgrade" then Color3.fromRGB(
-				247,
-				198,
-				79
-			)
 			else Color3.fromRGB(214, 235, 219)
 		eventLabel.Visible = eventLabel.Text ~= ""
 		eventVisibleUntil = Workspace:GetServerTimeNow() + 3.5
 	end
-	renderUpgradeChoices(if type(payload.pendingChoices) == "table" then payload.pendingChoices else {})
+end
+
+local function showEvent(text: string, color: Color3)
+	if eventLabel == nil or text == "" then
+		return
+	end
+	eventLabel.Text = text
+	eventLabel.TextColor3 = color
+	eventLabel.Visible = true
+	eventVisibleUntil = Workspace:GetServerTimeNow() + 3.5
+end
+
+-- Field XP, levels, and upgrade offers come exclusively from RunProgressionService
+-- through ProgressionNetwork. This renders the single XP bar and the single
+-- upgrade overlay.
+local function applyProgressionState(snapshot: any)
+	if type(snapshot) ~= "table" then
+		return
+	end
+	local revisionValue = snapshot.revision
+	if type(revisionValue) ~= "number" or revisionValue <= lastProgressionRevision then
+		return
+	end
+	lastProgressionRevision = revisionValue
+	local level = tonumber(snapshot.level) or 1
+	local xp = tonumber(snapshot.xp) or 0
+	local xpForNext = tonumber(snapshot.xpForNextLevel) or 0
+	if levelLabel ~= nil then
+		levelLabel.Text = string.format("FIELD LEVEL %02d", level)
+	end
+	if xpText ~= nil then
+		xpText.Text = if xpForNext <= 0 then "MAX LEVEL" else string.format("XP  %d / %d", xp, xpForNext)
+	end
+	setBar(xpFill, if xpForNext <= 0 then 1 else xp / xpForNext)
+
+	local selectionSequence = tonumber(snapshot.selectionSequence) or 0
+	local selectedName = if type(snapshot.lastSelectedUpgradeName) == "string"
+		then snapshot.lastSelectedUpgradeName
+		else ""
+	local gainSequence = tonumber(snapshot.lastGainSequence) or 0
+	local levelsGained = tonumber(snapshot.levelsGainedLastAward) or 0
+	if selectionSequence > lastSelectionSequence and selectedName ~= "" then
+		lastSelectionSequence = selectionSequence
+		showEvent(string.format("SQUAD UPGRADE  //  %s", string.upper(selectedName)), Color3.fromRGB(247, 198, 79))
+	elseif gainSequence > lastProgressionGainSequence then
+		lastProgressionGainSequence = gainSequence
+		if levelsGained > 0 then
+			showEvent(string.format("FIELD LEVEL %02d — CHOOSE AN UPGRADE", level), Color3.fromRGB(247, 198, 79))
+		end
+	end
+
+	renderUpgradeChoices(if type(snapshot.pendingChoices) == "table" then snapshot.pendingChoices else {})
 end
 
 local function onState(payload: unknown)
@@ -357,6 +400,10 @@ local function onState(payload: unknown)
 		return
 	end
 	applyHordeState(payload :: any)
+end
+
+local function onProgressionState(snapshot: unknown)
+	applyProgressionState(snapshot :: any)
 end
 
 local function createPresentation()
@@ -589,14 +636,6 @@ local function updateFrame()
 	updateLifePresentation()
 	updateCombatPresentation(serverTimestamp)
 	updateSquadPresentation()
-	local fieldGainSequence = readNumberAttribute("LK_HUD_FieldGainSequence", -1)
-	if eventLabel ~= nil and fieldGainSequence > lastFieldGainSequence then
-		lastFieldGainSequence = fieldGainSequence
-		eventLabel.Text = readStringAttribute("LK_HUD_FieldGainText", "")
-		eventLabel.TextColor3 = Color3.fromRGB(247, 198, 79)
-		eventLabel.Visible = eventLabel.Text ~= ""
-		eventVisibleUntil = serverTimestamp + 2
-	end
 	if eventLabel ~= nil and eventLabel.Visible and serverTimestamp > eventVisibleUntil then
 		eventLabel.Visible = false
 	end
@@ -609,7 +648,17 @@ function Controller.start()
 	started = true
 	createPresentation()
 	table.insert(connections, stateRemote.OnClientEvent:Connect(onState))
+	table.insert(connections, progressionStateRemote.OnClientEvent:Connect(onProgressionState))
 	table.insert(connections, RunService.RenderStepped:Connect(updateFrame))
+
+	-- Recover the current progression snapshot for late joins so the XP bar and
+	-- any pending upgrade offer render immediately.
+	local didRead, initialSnapshot = pcall(function()
+		return progressionReadStateRemote:InvokeServer()
+	end)
+	if didRead then
+		applyProgressionState(initialSnapshot :: any)
+	end
 end
 
 function Controller.stop()
@@ -627,8 +676,10 @@ function Controller.stop()
 		screenGui = nil
 	end
 	lastRevision = -1
+	lastProgressionRevision = -1
 	lastEventSequence = -1
-	lastFieldGainSequence = -1
+	lastProgressionGainSequence = -1
+	lastSelectionSequence = -1
 end
 
 return Controller

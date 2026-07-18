@@ -22,7 +22,6 @@ local RouteGuidePresentationController = require(script.Controllers.RouteGuidePr
 local LandmarkAccentPresentationController = require(script.Controllers.LandmarkAccentPresentationController)
 local MissionController = require(script.Controllers.MissionController)
 local MissionObjectPresentationController = require(script.Controllers.MissionObjectPresentationController)
-local RunProgressionHUDController = require(script.Controllers.RunProgressionHUDController)
 local HordeHUDController = require(script.Controllers.HordeHUDController)
 local HordeEffectsController = require(script.Controllers.HordeEffectsController)
 local CriticalConditionController = require(script.Controllers.CriticalConditionController)
@@ -52,7 +51,10 @@ RouteGuidePresentationController.start()
 LandmarkAccentPresentationController.start()
 MissionController.start()
 MissionObjectPresentationController.start()
-RunProgressionHUDController.start()
+-- HordeHUDController is the single combat HUD. It renders Field XP, levels, and
+-- upgrade offers sourced from ProgressionNetwork; the standalone
+-- RunProgressionHUDController is intentionally left uninitialized to avoid a
+-- duplicate XP bar and a second upgrade overlay.
 HordeHUDController.start()
 HordeEffectsController.start()
 CriticalConditionController.start()
