@@ -12,7 +12,7 @@ jobs:
   diagnose:
     if: github.head_ref == 'feat/weapon-aware-auto-targeting-v1'
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Check out feature branch
@@ -52,26 +52,30 @@ jobs:
           path.write_text(source.replace(old, 'candidate("hostile.close", 0, 6)', 1))
           PY
 
-      - name: Capture selector behavior fixture
-        id: behavior
+      - name: Run focused selector fixtures
+        run: |
+          lune run games/living-kingdoms/tests/WeaponTargetSelector.test.luau
+          lune run games/living-kingdoms/tests/WeaponTargetSelectorSourceAudit.test.luau
+
+      - name: Capture complete fixture suite
+        id: full_suite
         continue-on-error: true
         shell: bash
         run: |
-          set -o pipefail
-          lune run games/living-kingdoms/tests/WeaponTargetSelector.test.luau 2>&1 | tee /tmp/weapon-target-selector.log
+          set -euo pipefail
+          while IFS= read -r -d '' fixture; do
+            echo "FIXTURE $fixture"
+            lune run "$fixture"
+          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z) 2>&1 | tee /tmp/weapon-target-full-suite.log
 
-      - name: Upload fixture diagnostic
+      - name: Upload full-suite diagnostic
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: weapon-target-selector-log
-          path: /tmp/weapon-target-selector.log
+          name: weapon-target-full-suite-log
+          path: /tmp/weapon-target-full-suite.log
           retention-days: 1
 
-      - name: Run selector source audit
-        if: steps.behavior.outcome == 'success'
-        run: lune run games/living-kingdoms/tests/WeaponTargetSelectorSourceAudit.test.luau
-
-      - name: Enforce fixture result
-        if: steps.behavior.outcome == 'failure'
+      - name: Enforce suite result
+        if: steps.full_suite.outcome == 'failure'
         run: exit 1
