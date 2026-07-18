@@ -7,6 +7,7 @@ on:
       - "docs/**"
       - "tools/hroi_loot_integration_patch.py"
       - "tools/hroi_loot_patch_anchor_fix.py"
+      - "tools/hroi_loot_fixture_patch.py"
       - "rokit.toml"
       - "stylua.toml"
       - "selene.toml"
@@ -49,12 +50,14 @@ jobs:
         run: |
           set +e
           python3 tools/hroi_loot_patch_anchor_fix.py > /tmp/patch.log 2>&1
-          anchor_status=$?
-          if [ "$anchor_status" -eq 0 ]; then
+          status=$?
+          if [ "$status" -eq 0 ]; then
             python3 tools/hroi_loot_integration_patch.py >> /tmp/patch.log 2>&1
             status=$?
-          else
-            status="$anchor_status"
+          fi
+          if [ "$status" -eq 0 ]; then
+            python3 tools/hroi_loot_fixture_patch.py >> /tmp/patch.log 2>&1
+            status=$?
           fi
           cat /tmp/patch.log
           echo "$status" > /tmp/patch-status
@@ -167,7 +170,7 @@ jobs:
           set -euo pipefail
           git fetch origin main:refs/remotes/origin/main --depth=1
           git checkout origin/main -- .github/workflows/luau-validation.yml
-          rm -f tools/hroi_loot_integration_patch.py tools/hroi_loot_patch_anchor_fix.py
+          rm -f tools/hroi_loot_integration_patch.py tools/hroi_loot_patch_anchor_fix.py tools/hroi_loot_fixture_patch.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
