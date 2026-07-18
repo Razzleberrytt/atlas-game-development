@@ -43,8 +43,26 @@ jobs:
           PY
           bash /tmp/reproduce.sh
 
-      - name: Run selector behavior fixture
-        run: lune run games/living-kingdoms/tests/WeaponTargetSelector.test.luau
+      - name: Capture selector behavior fixture
+        id: behavior
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          lune run games/living-kingdoms/tests/WeaponTargetSelector.test.luau 2>&1 | tee /tmp/weapon-target-selector.log
+
+      - name: Upload fixture diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weapon-target-selector-log
+          path: /tmp/weapon-target-selector.log
+          retention-days: 1
 
       - name: Run selector source audit
+        if: steps.behavior.outcome == 'success'
         run: lune run games/living-kingdoms/tests/WeaponTargetSelectorSourceAudit.test.luau
+
+      - name: Enforce fixture result
+        if: steps.behavior.outcome == 'failure'
+        run: exit 1
