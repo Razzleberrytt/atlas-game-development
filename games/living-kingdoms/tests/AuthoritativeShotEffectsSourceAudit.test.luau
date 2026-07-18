@@ -30,17 +30,12 @@ assertThat(
 	"accepted shot presentation must be squad-visible"
 )
 assertThat(
-	string.find(runtime, "didApplyDamage = damageResolution.didApplyDamage", 1, true) ~= nil,
-	"server disclosure must use the committed damage resolution"
+	string.find(runtime, "local didApplyDamage = didCommit and damageResolution.didApplyDamage", 1, true) ~= nil,
+	"server disclosure must require both a committed health state and applied damage"
 )
 assertThat(
-	string.find(
-		runtime,
-		"impactWorldPosition = if damageResolution.didApplyDamage then fact.worldPosition else nil",
-		1,
-		true
-	) ~= nil,
-	"blocked or rejected damage must not fabricate an impact position"
+	string.find(runtime, "impactWorldPosition = if didApplyDamage then fact.worldPosition else nil", 1, true) ~= nil,
+	"blocked, rejected, or stale damage commits must not fabricate an impact position"
 )
 assertThat(
 	string.find(runtime, "presentationRemote:FireClient(player, payload)", 1, true) ~= nil,
@@ -50,8 +45,8 @@ assertThat(
 for _, required in {
 	'"MuzzleFlash"',
 	'"MuzzleLight"',
-	'muzzleFlash.Transparency = 1',
-	'muzzleLight.Enabled = false',
+	"muzzleFlash.Transparency = 1",
+	"muzzleLight.Enabled = false",
 } do
 	assertThat(string.find(factory, required, 1, true) ~= nil, "missing firearm flash component " .. required)
 end
