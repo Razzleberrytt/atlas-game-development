@@ -9,7 +9,7 @@
 
 local CombatImpactPresentationConfig = {
 	Version = "HROI-0104-v1",
-	MaximumTrackedEnemies = 40,
+	MaximumTrackedEnemies = 24,
 	MaximumEffectDistanceStuds = 140,
 	HitParticleCount = 7,
 	KillParticleCount = 22,
@@ -19,8 +19,8 @@ local CombatImpactPresentationConfig = {
 
 assert(
 	CombatImpactPresentationConfig.MaximumTrackedEnemies > 0
-		and CombatImpactPresentationConfig.MaximumTrackedEnemies <= 40,
-	"impact presentation must remain inside the validated global enemy ceiling"
+		and CombatImpactPresentationConfig.MaximumTrackedEnemies <= 24,
+	"impact presentation must remain inside the current validated global enemy ceiling"
 )
 assert(
 	CombatImpactPresentationConfig.MaximumEffectDistanceStuds > 0
