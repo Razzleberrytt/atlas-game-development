@@ -18,7 +18,8 @@ local HordeConfig = require(ReplicatedStorage.Shared.Config.HordeExperienceConfi
 local Controller = {}
 local lifeAttribute = EnemyPresentationContracts.AttributeNames.LifeStateId
 local deadLifeState = EnemyPresentationContracts.LifeStateIds.Dead
-local presentationRemote = ReplicatedStorage:WaitForChild("CombatNetwork"):WaitForChild("CombatPresentation") :: RemoteEvent
+local presentationRemote =
+	ReplicatedStorage:WaitForChild("CombatNetwork"):WaitForChild("CombatPresentation") :: RemoteEvent
 
 local started = false
 local enemyFolder: Folder? = nil
@@ -140,7 +141,12 @@ local function presentDeath(model: Model)
 	local roleId = model:GetAttribute("HordeRoleId")
 	local isBloater = roleId == HordeConfig.Roles.Bloater.Id
 	local color = if isBloater then Color3.fromRGB(96, 186, 65) else Color3.fromRGB(126, 5, 10)
-	createEmitterPart(root.Position + Vector3.new(0, 2, 0), color, if isBloater then 34 else 22, if isBloater then 1.6 else 1.05)
+	createEmitterPart(
+		root.Position + Vector3.new(0, 2, 0),
+		color,
+		if isBloater then 34 else 22,
+		if isBloater then 1.6 else 1.05
+	)
 	createBloodPool(root.Position, isBloater)
 	createKillText(model, root.Position)
 	addShake(if roleId == HordeConfig.Roles.Brute.Id or isBloater then 0.28 else 0.1, 0.18)
@@ -195,7 +201,12 @@ local function onCombatPresentation(message: unknown)
 		return
 	end
 	processedShotIds[payload.shotId] = true
-	createEmitterPart(payload.impactWorldPosition, Color3.fromRGB(138, 8, 13), HordeConfig.Feedback.BloodBurstParticles, 0.65)
+	createEmitterPart(
+		payload.impactWorldPosition,
+		Color3.fromRGB(138, 8, 13),
+		HordeConfig.Feedback.BloodBurstParticles,
+		0.65
+	)
 	addShake(0.035, 0.06)
 end
 

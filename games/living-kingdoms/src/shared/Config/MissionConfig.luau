@@ -6,18 +6,28 @@
 	after the relay, and extraction ends in a two-minute horde holdout.
 ]]
 
-local function createRingWave(prefix: string, displayName: string, centerX: number, centerZ: number, count: number, radius: number)
+local function createRingWave(
+	prefix: string,
+	displayName: string,
+	centerX: number,
+	centerZ: number,
+	count: number,
+	radius: number
+)
 	local result = {}
 	for index = 1, count do
 		local angle = (index - 1) * math.pi * 2 / count
 		local distance = radius + ((index % 3) - 1) * 10
-		table.insert(result, table.freeze({
-			id = string.format("hostile.%s.%02d", prefix, index),
-			name = displayName,
-			x = centerX + math.cos(angle) * distance,
-			y = 4,
-			z = centerZ + math.sin(angle) * distance,
-		}))
+		table.insert(
+			result,
+			table.freeze({
+				id = string.format("hostile.%s.%02d", prefix, index),
+				name = displayName,
+				x = centerX + math.cos(angle) * distance,
+				y = 4,
+				z = centerZ + math.sin(angle) * distance,
+			})
+		)
 	end
 	return table.freeze(result)
 end

@@ -151,7 +151,10 @@ local function colorFromTuple(tuple): Color3
 end
 
 local function xpForLevel(level: number): number
-	return math.max(1, math.floor(HordeConfig.Progression.BaseXpToLevel * (HordeConfig.Progression.XpGrowthPerLevel ^ (level - 1))))
+	return math.max(
+		1,
+		math.floor(HordeConfig.Progression.BaseXpToLevel * (HordeConfig.Progression.XpGrowthPerLevel ^ (level - 1)))
+	)
 end
 
 local function createPlayerState(): PlayerState
@@ -436,7 +439,9 @@ local function assignRole(model: Model): any
 	local entityId = enemyEntityId(model) or model.Name
 	local forced = forcedRoleByEntityId[entityId]
 	forcedRoleByEntityId[entityId] = nil
-	return if forced ~= nil then roleById[forced] or HordeConfig.Roles.Basic else chooseWeightedRole(stableHash(entityId))
+	return if forced ~= nil
+		then roleById[forced] or HordeConfig.Roles.Basic
+		else chooseWeightedRole(stableHash(entityId))
 end
 
 local function decorateEnemy(record: EnemyRecord)
@@ -599,7 +604,11 @@ local function damagePlayersInBurst(record: EnemyRecord, role, serverTimestamp: 
 		local position = if player == nil then nil else alivePlayerPosition(player)
 		if position ~= nil and (position - record.root.Position).Magnitude <= radius then
 			OperativeLifeService.applyAuthoritativeDamage(read.operativeEntityId, read.revision, {
-				damageEventId = string.format("horde-bloater:%s:%d", enemyEntityId(record.model) or "unknown", math.floor(serverTimestamp * 1000)),
+				damageEventId = string.format(
+					"horde-bloater:%s:%d",
+					enemyEntityId(record.model) or "unknown",
+					math.floor(serverTimestamp * 1000)
+				),
 				sourceEntityId = enemyEntityId(record.model) or "horde.bloater",
 				targetEntityId = read.operativeEntityId,
 				damageAmount = damage,
@@ -634,7 +643,10 @@ local function collectLoot(player: Player, part: BasePart)
 		return
 	end
 	local playerPosition = alivePlayerPosition(player)
-	if playerPosition == nil or (playerPosition - part.Position).Magnitude > HordeConfig.Loot.InteractionDistanceStuds + 2 then
+	if
+		playerPosition == nil
+		or (playerPosition - part.Position).Magnitude > HordeConfig.Loot.InteractionDistanceStuds + 2
+	then
 		return
 	end
 	record.claimed = true
@@ -664,7 +676,8 @@ local function spawnLoot(position: Vector3, seed: number, ownerState: PlayerStat
 	if worldLootCount() >= HordeConfig.Loot.MaximumWorldDrops then
 		return
 	end
-	local chance = math.min(0.8, HordeConfig.Loot.BaseDropChance + (ownerState.upgradeStacks["upgrade.scavenger"] or 0) * 0.12)
+	local chance =
+		math.min(0.8, HordeConfig.Loot.BaseDropChance + (ownerState.upgradeStacks["upgrade.scavenger"] or 0) * 0.12)
 	if (seed % 1000) / 1000 > chance then
 		return
 	end
@@ -785,7 +798,8 @@ local function currentSpawnInterval(serverTimestamp: number): number
 	local value = threatValue(serverTimestamp)
 	local fraction = value / HordeConfig.Pressure.ThreatMaximum
 	return HordeConfig.Pressure.BaseSpawnIntervalSeconds
-		- fraction * (HordeConfig.Pressure.BaseSpawnIntervalSeconds - HordeConfig.Pressure.MinimumSpawnIntervalSeconds)
+		- fraction
+			* (HordeConfig.Pressure.BaseSpawnIntervalSeconds - HordeConfig.Pressure.MinimumSpawnIntervalSeconds)
 end
 
 local function spawnHorde(serverTimestamp: number)
@@ -987,14 +1001,16 @@ function Service.stop()
 		return
 	end
 	started = false
-	for _, connection in {
-		heartbeatConnection,
-		enemyAddedConnection,
-		enemyRemovedConnection,
-		playerAddedConnection,
-		playerRemovingConnection,
-		choiceConnection,
-	} do
+	for _, connection in
+		{
+			heartbeatConnection,
+			enemyAddedConnection,
+			enemyRemovedConnection,
+			playerAddedConnection,
+			playerRemovingConnection,
+			choiceConnection,
+		}
+	do
 		if connection ~= nil then
 			connection:Disconnect()
 		end

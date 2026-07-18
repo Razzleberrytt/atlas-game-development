@@ -147,7 +147,12 @@ local HordeExperienceConfig = {
 		Kinds = table.freeze({
 			Ammo = table.freeze({ Id = "loot.ammo", DisplayName = "Rifle Ammunition", Weight = 44, Amount = 20 }),
 			Medical = table.freeze({ Id = "loot.medical", DisplayName = "Trauma Gel", Weight = 28, Amount = 18 }),
-			Surge = table.freeze({ Id = "loot.surge", DisplayName = "Adrenal Surge", Weight = 18, DurationSeconds = 18 }),
+			Surge = table.freeze({
+				Id = "loot.surge",
+				DisplayName = "Adrenal Surge",
+				Weight = 18,
+				DurationSeconds = 18,
+			}),
 			Weapon = table.freeze({ Id = "loot.weapon", DisplayName = "Weapon Overcharge", Weight = 10, Amount = 1 }),
 		}),
 	}),

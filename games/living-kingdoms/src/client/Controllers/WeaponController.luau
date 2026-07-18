@@ -194,17 +194,27 @@ local function onPresentationMessage(message: unknown)
 			setStatus("RELOADING", 4)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadCompleted then
-		if isLocalOperativeEntityId(payload.operativeEntityId) and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
+		if
+			isLocalOperativeEntityId(payload.operativeEntityId)
+			and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+		then
 			setStatus("RELOAD COMPLETE", 1.2)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadInterrupted then
-		if isLocalOperativeEntityId(payload.operativeEntityId) and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId then
+		if
+			isLocalOperativeEntityId(payload.operativeEntityId)
+			and payload.weaponId == FirearmConfig.BasicFirearm.WeaponId
+		then
 			setStatus("RELOAD INTERRUPTED", 1.8)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.AmmunitionState then
 		presentAmmunitionPayload(payload)
 	elseif kindId == CombatContracts.PresentationMessageKindIds.AmmunitionCollected then
-		if presentAmmunitionPayload(payload) and isWholeNonnegative(payload.grantedRounds) and payload.grantedRounds > 0 then
+		if
+			presentAmmunitionPayload(payload)
+			and isWholeNonnegative(payload.grantedRounds)
+			and payload.grantedRounds > 0
+		then
 			setStatus("+" .. tostring(payload.grantedRounds) .. " AMMUNITION", 1.8)
 		end
 	end
