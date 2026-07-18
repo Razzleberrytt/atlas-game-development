@@ -47,6 +47,7 @@ assertThat(
 )
 assertThat(contains(service, 'Instance.new("PointLight")'), "world loot requires readable glow")
 assertThat(contains(service, 'Instance.new("BillboardGui")'), "world loot requires readable ammunition disclosure")
+assertThat(not contains(service, 'Instance.new("ProximityPrompt")'), "enemy loot must not create client-triggered prompts")
 assertThat(contains(service, "serverTimestamp >= record.expiresAtServerTimestamp"), "loot must expire in the bounded pass")
 assertThat(contains(service, "activeDropCount = math.max(0, activeDropCount - 1)"), "loot cleanup must release cap budget")
 
@@ -55,7 +56,6 @@ for _, prohibited in {
 	"RemoteFunction",
 	"FireServer",
 	"OnServerEvent",
-	"ProximityPrompt",
 	".Touched",
 	"TouchEnded",
 	"task.delay",
