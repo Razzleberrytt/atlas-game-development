@@ -44,6 +44,36 @@ jobs:
       - name: Apply exact squad upgrade integration
         run: python3 tools/hroi_run_upgrade_patch.py
 
+      - name: Apply exact Selene corrections
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          choice_path = Path("games/living-kingdoms/src/client/Controllers/RunUpgradeChoiceController.luau")
+          choice = choice_path.read_text(encoding="utf-8")
+          choice = choice.replace("UDim2.new(0, 18, 0, 12)", "UDim2.fromOffset(18, 12)")
+          choice = choice.replace("UDim2.new(0, 18, 0, 48)", "UDim2.fromOffset(18, 48)")
+          choice = choice.replace("UDim2.new(0, 14, 0, 84)", "UDim2.fromOffset(14, 84)")
+          choice_path.write_text(choice, encoding="utf-8")
+
+          config_path = Path("games/living-kingdoms/src/shared/Config/RunProgressionConfig.luau")
+          config = config_path.read_text(encoding="utf-8")
+          config = config.replace(
+              "assert(RunProgressionConfig.DamageBonusPerStack > 0 and RunProgressionConfig.DamageBonusPerStack <= 10)",
+              "assert(\n\tRunProgressionConfig.DamageBonusPerStack > 0 and RunProgressionConfig.DamageBonusPerStack <= 10,\n\t\"damage upgrades require a positive bounded per-stack bonus\"\n)",
+          )
+          config = config.replace(
+              "\t\tand RunProgressionConfig.MinimumCadenceMultiplier < 1\n)",
+              "\t\tand RunProgressionConfig.MinimumCadenceMultiplier < 1,\n\t\"cadence upgrades require bounded faster multipliers\"\n)",
+          )
+          config = config.replace(
+              "\t\tand RunProgressionConfig.MinimumReloadMultiplier < 1\n)",
+              "\t\tand RunProgressionConfig.MinimumReloadMultiplier < 1,\n\t\"reload upgrades require bounded faster multipliers\"\n)",
+          )
+          config_path.write_text(config, encoding="utf-8")
+          PY
+
       - name: Format Luau integration
         run: stylua games/living-kingdoms/src games/living-kingdoms/tests
 
