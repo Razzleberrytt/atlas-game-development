@@ -136,20 +136,35 @@ local function deterministicShotId(
 	return string.format("shot:%s:%s:%.17g", operativeEntityId, weaponId, serverTimestamp)
 end
 
+local function readProgressionNumber(attributeName: string, fallback: number): number
+	local storageAsAny = ReplicatedStorage :: any
+	if type(storageAsAny.FindFirstChild) ~= "function" then
+		return fallback
+	end
+	local network = storageAsAny:FindFirstChild("ProgressionNetwork")
+	if network == nil or type(network.GetAttribute) ~= "function" then
+		return fallback
+	end
+	local value = network:GetAttribute(attributeName)
+	return if type(value) == "number" and value == value then value else fallback
+end
+
 local function resolveCadenceSeconds(override: number?): number?
 	local configured = FirearmConfig.BasicFirearm.CadenceSeconds
-	if override == nil then
-		return configured
+	local requested = override
+	if requested == nil then
+		local multiplier = readProgressionNumber("RunCadenceMultiplier", 1)
+		requested = configured * multiplier
 	end
 	if
-		type(override) ~= "number"
-		or override ~= override
-		or override < MINIMUM_CADENCE_SECONDS
-		or override > configured
+		type(requested) ~= "number"
+		or requested ~= requested
+		or requested < MINIMUM_CADENCE_SECONDS
+		or requested > configured
 	then
 		return nil
 	end
-	return override
+	return requested
 end
 
 function AutomaticFireResolver.resolve(
