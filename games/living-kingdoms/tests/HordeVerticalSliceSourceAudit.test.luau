@@ -29,8 +29,8 @@ for _, required in {
 end
 
 for _, required in {
-	"MaximumConcurrentPerOperative = 28",
-	"AbsoluteMaximumConcurrent = 112",
+	"MaximumConcurrentPerOperative = 24",
+	"AbsoluteMaximumConcurrent = 96",
 	"EvaluationIntervalSeconds = 0.1",
 	"MaximumLineOfSightRaycastsPerEvaluation = 8",
 } do
