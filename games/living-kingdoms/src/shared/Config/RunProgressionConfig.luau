@@ -23,11 +23,11 @@ local UpgradeDefinitions = table.freeze({
 		CadenceReductionPerStack = 0.12,
 	}),
 	table.freeze({
-		Id = "upgrade.rapid_feed",
-		Name = "RAPID FEED",
-		Description = "+15% reload speed per stack",
+		Id = "upgrade.echo_chamber",
+		Name = "ECHO CHAMBER",
+		Description = "15% chance each shot consumes no ammunition per stack",
 		MaximumStacks = 3,
-		ReloadReductionPerStack = 0.15,
+		AmmoConservationChancePerStack = 0.15,
 	}),
 	table.freeze({
 		Id = "upgrade.cull_protocol",
@@ -50,7 +50,7 @@ local RunProgressionConfig = {
 	UpgradeChoiceCount = 3,
 	UpgradeRequestCooldownSeconds = 0.25,
 	MinimumCadenceMultiplier = 0.55,
-	MinimumReloadDurationMultiplier = 0.55,
+	MaximumAmmoConservationChance = 0.45,
 	CullHealthThreshold = 30,
 	MaximumDamageMultiplier = 3,
 	UpgradeDefinitions = UpgradeDefinitions,
@@ -97,9 +97,9 @@ assert(
 	"fire-rate upgrades require a bounded cadence floor"
 )
 assert(
-	RunProgressionConfig.MinimumReloadDurationMultiplier >= 0.4
-		and RunProgressionConfig.MinimumReloadDurationMultiplier <= 1,
-	"reload upgrades require a bounded duration floor"
+	RunProgressionConfig.MaximumAmmoConservationChance >= 0
+		and RunProgressionConfig.MaximumAmmoConservationChance <= 0.5,
+	"ammo conservation must preserve ammunition pressure"
 )
 assert(
 	RunProgressionConfig.CullHealthThreshold > 0 and RunProgressionConfig.CullHealthThreshold <= 60,
