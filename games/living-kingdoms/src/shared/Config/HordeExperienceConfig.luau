@@ -7,25 +7,35 @@
 
 	Field XP, levels, upgrades, and their tuning live in RunProgressionConfig.
 	Ammunition loot lives in EnemyLootConfig. HordeExperienceService reads none
-	of those rewards from this module. Values are intentionally aggressive so the
-	authored operation can be evaluated as an intense 8–12 minute combat loop.
+	of those rewards from this module.
+
+	The v2 curve deliberately lets the canonical EnemyDirector create the first
+	contact before the additional horde injector comes online. A solo operative
+	should have time to secure the four confirmed kills required for the first
+	run upgrade before pressure reaches its likely-wipe phase, while successful
+	kill throughput accelerates later escalation.
 ]]
 
 local HordeExperienceConfig = {
-	Version = "HORDE-VS-001-v1",
+	Version = "HORDE-VS-001-v2-first-upgrade-window",
 	Pressure = table.freeze({
-		WarmupSeconds = 8,
+		-- EnemyDirector already begins baseline contact at roughly nine seconds.
+		-- Delay the additive horde injector so both pressure owners do not front-load
+		-- nine enemies into the opening seconds of a solo run.
+		WarmupSeconds = 24,
 		EvaluationIntervalSeconds = 0.1,
 		StatePublishIntervalSeconds = 0.5,
-		BaseSpawnIntervalSeconds = 7,
-		MinimumSpawnIntervalSeconds = 2.4,
-		BaseSpawnCount = 5,
-		MaximumSpawnCount = 16,
+		BaseSpawnIntervalSeconds = 10,
+		MinimumSpawnIntervalSeconds = 3.25,
+		BaseSpawnCount = 3,
+		MaximumSpawnCount = 12,
 		SpawnRingMinimumStuds = 68,
 		SpawnRingMaximumStuds = 112,
-		ThreatPerMinute = 11,
-		ThreatPerLivingEnemy = 0.55,
-		ThreatPerKill = 0.08,
+		ThreatPerMinute = 9,
+		ThreatPerLivingEnemy = 0.4,
+		-- Strong play should eventually summon harder waves instead of leaving the
+		-- curve driven almost entirely by elapsed time and existing population.
+		ThreatPerKill = 0.3,
 		ThreatMaximum = 100,
 	}),
 	Roles = table.freeze({
@@ -107,7 +117,24 @@ local HordeExperienceConfig = {
 	}),
 }
 
-assert(HordeExperienceConfig.Pressure.MinimumSpawnIntervalSeconds > 0, "spawn interval must be positive")
+assert(
+	HordeExperienceConfig.Pressure.WarmupSeconds >= 20 and HordeExperienceConfig.Pressure.WarmupSeconds <= 30,
+	"the additive horde injector must preserve a bounded first-upgrade window"
+)
+assert(
+	HordeExperienceConfig.Pressure.BaseSpawnCount > 0 and HordeExperienceConfig.Pressure.BaseSpawnCount <= 4,
+	"opening horde injections must remain threatening without front-loading the solo wipe"
+)
+assert(HordeExperienceConfig.Pressure.MinimumSpawnIntervalSeconds >= 3, "minimum horde cadence must remain readable")
+assert(
+	HordeExperienceConfig.Pressure.BaseSpawnIntervalSeconds > HordeExperienceConfig.Pressure.MinimumSpawnIntervalSeconds,
+	"threat escalation must shorten horde cadence from a slower baseline"
+)
+assert(
+	HordeExperienceConfig.Pressure.MaximumSpawnCount >= HordeExperienceConfig.Pressure.BaseSpawnCount
+		and HordeExperienceConfig.Pressure.MaximumSpawnCount <= 12,
+	"horde burst size requires a strict vertical-slice ceiling"
+)
 assert(
 	HordeExperienceConfig.Pressure.SpawnRingMaximumStuds > HordeExperienceConfig.Pressure.SpawnRingMinimumStuds,
 	"spawn ring must have positive width"
