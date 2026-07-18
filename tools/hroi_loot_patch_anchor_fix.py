@@ -5,65 +5,65 @@ from pathlib import Path
 path = Path("tools/hroi_loot_integration_patch.py")
 source = path.read_text(encoding="utf-8")
 
-old = '''progression = replace_once(
+old = """progression = replace_once(
     progression,
-    '''\t table.clear(lastUpgradeRequestTimestamps)
- \t syncCombatModifierAttributes()'''.replace("\t ", "\t"),
-    '''\t table.clear(lastUpgradeRequestTimestamps)
- \t table.clear(processedFieldIntelRewardIds)
- \t table.clear(fieldIntelRewardOrder)
- \t syncCombatModifierAttributes()'''.replace("\t ", "\t"),
+    '''\ttable.clear(lastUpgradeRequestTimestamps)
+\tsyncCombatModifierAttributes()''',
+    '''\ttable.clear(lastUpgradeRequestTimestamps)
+\ttable.clear(processedFieldIntelRewardIds)
+\ttable.clear(fieldIntelRewardOrder)
+\tsyncCombatModifierAttributes()''',
     "progression intel reset",
 )
 progression = replace_once(
     progression,
-    '''\t table.clear(lastUpgradeRequestTimestamps)
- \t accumulatedSeconds = 0'''.replace("\t ", "\t"),
-    '''\t table.clear(lastUpgradeRequestTimestamps)
- \t table.clear(processedFieldIntelRewardIds)
- \t table.clear(fieldIntelRewardOrder)
- \t accumulatedSeconds = 0'''.replace("\t ", "\t"),
+    '''\ttable.clear(lastUpgradeRequestTimestamps)
+\taccumulatedSeconds = 0''',
+    '''\ttable.clear(lastUpgradeRequestTimestamps)
+\ttable.clear(processedFieldIntelRewardIds)
+\ttable.clear(fieldIntelRewardOrder)
+\taccumulatedSeconds = 0''',
     "progression intel stop reset",
-)'''
+)"""
 
-new = '''progression = replace_once(
+new = """progression = replace_once(
     progression,
-    '''\t table.clear(trackedLifeStates)
- \t table.clear(upgradeStacks)
- \t table.clear(pendingChoiceIds)
- \t table.clear(lastUpgradeRequestTimestamps)
- \t syncCombatModifierAttributes()
+    '''\ttable.clear(trackedLifeStates)
+\ttable.clear(upgradeStacks)
+\ttable.clear(pendingChoiceIds)
+\ttable.clear(lastUpgradeRequestTimestamps)
+\tsyncCombatModifierAttributes()
 
- \t readStateRemote.OnServerInvoke'''.replace("\t ", "\t"),
-    '''\t table.clear(trackedLifeStates)
- \t table.clear(upgradeStacks)
- \t table.clear(pendingChoiceIds)
- \t table.clear(lastUpgradeRequestTimestamps)
- \t table.clear(processedFieldIntelRewardIds)
- \t table.clear(fieldIntelRewardOrder)
- \t syncCombatModifierAttributes()
+\treadStateRemote.OnServerInvoke''',
+    '''\ttable.clear(trackedLifeStates)
+\ttable.clear(upgradeStacks)
+\ttable.clear(pendingChoiceIds)
+\ttable.clear(lastUpgradeRequestTimestamps)
+\ttable.clear(processedFieldIntelRewardIds)
+\ttable.clear(fieldIntelRewardOrder)
+\tsyncCombatModifierAttributes()
 
- \t readStateRemote.OnServerInvoke'''.replace("\t ", "\t"),
+\treadStateRemote.OnServerInvoke''',
     "progression intel start reset",
 )
 progression = replace_once(
     progression,
-    '''\t table.clear(trackedLifeStates)
- \t table.clear(upgradeStacks)
- \t table.clear(pendingChoiceIds)
- \t table.clear(lastUpgradeRequestTimestamps)
- \t syncCombatModifierAttributes()
- \t accumulatedSeconds = 0'''.replace("\t ", "\t"),
-    '''\t table.clear(trackedLifeStates)
- \t table.clear(upgradeStacks)
- \t table.clear(pendingChoiceIds)
- \t table.clear(lastUpgradeRequestTimestamps)
- \t table.clear(processedFieldIntelRewardIds)
- \t table.clear(fieldIntelRewardOrder)
- \t syncCombatModifierAttributes()
- \t accumulatedSeconds = 0'''.replace("\t ", "\t"),
+    '''\ttable.clear(trackedLifeStates)
+\ttable.clear(upgradeStacks)
+\ttable.clear(pendingChoiceIds)
+\ttable.clear(lastUpgradeRequestTimestamps)
+\tsyncCombatModifierAttributes()
+\taccumulatedSeconds = 0''',
+    '''\ttable.clear(trackedLifeStates)
+\ttable.clear(upgradeStacks)
+\ttable.clear(pendingChoiceIds)
+\ttable.clear(lastUpgradeRequestTimestamps)
+\ttable.clear(processedFieldIntelRewardIds)
+\ttable.clear(fieldIntelRewardOrder)
+\tsyncCombatModifierAttributes()
+\taccumulatedSeconds = 0''',
     "progression intel stop reset",
-)'''
+)"""
 
 if source.count(old) != 1:
     raise RuntimeError(f"expected one ambiguous progression reset block, found {source.count(old)}")
