@@ -1,10 +1,12 @@
-# Living Kingdoms — Basic Firearm Tracer Policy
+# Living Kingdoms — Firearm Tracer Policy
 
 ## Status
 
-Temporary VIS-0102 presentation policy for the Blackwater Service Carbine.
+Temporary VIS-0102 presentation policy for the complete selectable firearm roster.
 
 Runtime owner: `src/client/Presentation/WeaponShotEffectPresenter.luau`.
+
+Presentation tuning owner: `src/shared/Config/WeaponFeelConfig.luau`.
 
 ## Purpose
 
@@ -24,11 +26,14 @@ The client derives only the presentation start from that rig's canonical `Muzzle
 ## Temporary implementation
 
 - Use one thin, non-collidable, non-queryable neon Part.
-- Keep the streak visible for approximately 0.055 seconds.
+- Read width, transparency, and lifetime from the bounded profile for the disclosed configured firearm.
+- Keep every streak brief: the current profiles range from approximately 0.035 seconds for the compact SMG to 0.12 seconds for the long-range sniper rifle.
 - Mark it `PresentationOnly` and attach the source shot ID for debugging.
 - Remove it through bounded `Debris` cleanup.
 - Skip degenerate paths shorter than 0.5 studs.
 - Do not render a persistent beam, projectile simulation, bullet drop, ricochet, penetration, or client-predicted miss.
+
+The profile differences exist only to preserve roster readability under the isometric camera. They do not alter projectile speed, accuracy, target selection, range, hit probability, damage, or any other gameplay fact.
 
 ## Blocked and unconfirmed shots
 
@@ -40,4 +45,4 @@ The current endpoint is the server-owned enemy combat fact position rather than 
 
 ## Production replacement
 
-The temporary Part may later be replaced by an approved Beam, particle, or authored effect if the same authority, lifetime, cleanup, accessibility, and no-fabrication rules remain intact.
+The temporary Part may later be replaced by an approved Beam, particle, or authored effect if the same authority, bounded profile, cleanup, accessibility, and no-fabrication rules remain intact.

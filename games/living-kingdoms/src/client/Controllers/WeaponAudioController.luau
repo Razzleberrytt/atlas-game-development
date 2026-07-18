@@ -1,13 +1,10 @@
 --!strict
 
 --[[
-	AUD-0101 client-local firearm audio. This controller listens to the same
-	authoritative CombatPresentation disclosure the visual effects use and plays
-	a bounded, reused pool of 2D Sounds for accepted shots and reload starts.
-
-	It creates no remote, requests no fire, resolves no hit, spends no
-	ammunition, and never reaches the server. It only reacts to messages the
-	server already decided to broadcast.
+	Client-local firearm audio. This controller listens to authoritative combat
+	presentation and reuses a bounded Sound pool. Per-weapon profiles change only
+	volume and playback speed so the roster reads differently without widening
+	combat authority or creating per-shot instances.
 ]]
 
 local Players = game:GetService("Players")
@@ -17,6 +14,7 @@ local SoundService = game:GetService("SoundService")
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmAudioConfig = require(ReplicatedStorage.Shared.Config.FirearmAudioConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
+local WeaponFeelConfig = require(ReplicatedStorage.Shared.Config.WeaponFeelConfig)
 
 local function resolveWeaponDefinition(weaponId: unknown)
 	local getter = FirearmConfig.get
@@ -28,7 +26,7 @@ local function resolveWeaponDefinition(weaponId: unknown)
 end
 
 local function isKnownWeaponId(weaponId: unknown): boolean
-	return resolveWeaponDefinition(weaponId) ~= nil
+	return resolveWeaponDefinition(weaponId) ~= nil and WeaponFeelConfig.get(weaponId) ~= nil
 end
 
 local Controller = {}
@@ -77,25 +75,35 @@ local function createPresentation()
 	soundHolder = holder
 end
 
-local function playFire(isLocal: boolean)
+local function playFire(isLocal: boolean, weaponId: string)
 	if #firePool == 0 then
+		return
+	end
+	local profile = WeaponFeelConfig.get(weaponId)
+	if profile == nil then
 		return
 	end
 	fireCursor = (fireCursor % #firePool) + 1
 	local sound = firePool[fireCursor]
 	local fire = FirearmAudioConfig.Fire
-	sound.Volume = if isLocal then fire.LocalVolume else fire.RemoteVolume
-	sound.PlaybackSpeed = fire.MinPlaybackSpeed + math.random() * (fire.MaxPlaybackSpeed - fire.MinPlaybackSpeed)
+	local baseVolume = if isLocal then fire.LocalVolume else fire.RemoteVolume
+	sound.Volume = math.clamp(baseVolume * profile.AudioVolumeMultiplier, 0, 2)
+	local minimumSpeed = fire.MinPlaybackSpeed * profile.AudioPitchMinimumMultiplier
+	local maximumSpeed = fire.MaxPlaybackSpeed * profile.AudioPitchMaximumMultiplier
+	sound.PlaybackSpeed = minimumSpeed + math.random() * (maximumSpeed - minimumSpeed)
 	sound.TimePosition = 0
 	sound:Play()
 end
 
-local function playReload(isLocal: boolean)
+local function playReload(isLocal: boolean, weaponId: string)
 	local sound = reloadSound
-	if sound == nil then
+	local profile = WeaponFeelConfig.get(weaponId)
+	if sound == nil or profile == nil then
 		return
 	end
-	sound.Volume = if isLocal then FirearmAudioConfig.Reload.LocalVolume else FirearmAudioConfig.Reload.RemoteVolume
+	local baseVolume = if isLocal then FirearmAudioConfig.Reload.LocalVolume else FirearmAudioConfig.Reload.RemoteVolume
+	sound.Volume = math.clamp(baseVolume * profile.ReloadVolumeMultiplier, 0, 2)
+	sound.PlaybackSpeed = profile.ReloadPlaybackSpeedMultiplier
 	sound.TimePosition = 0
 	sound:Play()
 end
@@ -110,10 +118,10 @@ local function onPresentationMessage(message: unknown)
 	end
 	if payload.kindId == CombatContracts.PresentationMessageKindIds.ShotFired then
 		if isNonEmptyString(payload.shotId) then
-			playFire(isLocalOperative(payload.operativeEntityId))
+			playFire(isLocalOperative(payload.operativeEntityId), payload.weaponId)
 		end
 	elseif payload.kindId == CombatContracts.PresentationMessageKindIds.ReloadStarted then
-		playReload(isLocalOperative(payload.operativeEntityId))
+		playReload(isLocalOperative(payload.operativeEntityId), payload.weaponId)
 	end
 end
 

@@ -15,6 +15,7 @@ local Workspace = game:GetService("Workspace")
 
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
+local WeaponFeelConfig = require(ReplicatedStorage.Shared.Config.WeaponFeelConfig)
 
 local function resolveWeaponDefinition(weaponId: unknown)
 	local getter = FirearmConfig.get
@@ -32,6 +33,7 @@ local WeaponPresentationFactory = require(script.Parent.Parent.Presentation.Weap
 local RemoteWeaponMotionPresenter = require(script.Parent.Parent.Presentation.RemoteWeaponMotionPresenter)
 local WeaponShotEffectPresenter = require(script.Parent.Parent.Presentation.WeaponShotEffectPresenter)
 
+type WeaponFeelProfile = WeaponFeelConfig.WeaponFeelProfile
 type WeaponPresentationRig = WeaponPresentationFactory.WeaponPresentationRig
 
 type PlayerBinding = {
@@ -62,8 +64,6 @@ local WeaponPresentationController = {}
 
 local MAX_PRESENTED_SHOT_IDS = 128
 local MODEL_NAME = "WeaponPresentation"
-local BOLT_BACK_OFFSET = CFrame.new(-0.2, 0, 0)
-local MAGAZINE_OUT_OFFSET = CFrame.new(0.22, 0, -0.75) * CFrame.Angles(0, 0, math.rad(8))
 
 local state: State = {
 	started = false,
@@ -151,6 +151,32 @@ local function localRig(): WeaponPresentationRig?
 	return state.rigs[localPlayer]
 end
 
+local function localGripMotor(): Motor6D?
+	local localPlayer = Players.LocalPlayer
+	if localPlayer == nil then
+		return nil
+	end
+	return state.gripMotors[localPlayer]
+end
+
+local function profileForRig(rig: WeaponPresentationRig): WeaponFeelProfile
+	return WeaponFeelConfig.get(rig.model:GetAttribute("GameplayWeaponId")) or WeaponFeelConfig.Default
+end
+
+local function boltBackOffset(profile: WeaponFeelProfile): CFrame
+	return CFrame.new(-profile.BoltTravelStuds, 0, 0)
+end
+
+local function gripKickOffset(profile: WeaponFeelProfile): CFrame
+	return CFrame.new(-profile.GripKickBackStuds, 0, profile.GripKickUpStuds)
+		* CFrame.Angles(0, math.rad(-profile.GripKickDegrees), 0)
+end
+
+local function magazineOutOffset(profile: WeaponFeelProfile): CFrame
+	return CFrame.new(profile.MagazineOutX, 0, profile.MagazineOutZ)
+		* CFrame.Angles(0, 0, math.rad(profile.MagazineRollDegrees))
+end
+
 local function destroyRig(player: Player)
 	RemoteWeaponMotionPresenter.cleanupPlayer(player)
 	local gripMotor = state.gripMotors[player]
@@ -166,6 +192,7 @@ local function destroyRig(player: Player)
 		state.isReloading = false
 		cancelTween("Bolt")
 		cancelTween("Magazine")
+		cancelTween("Grip")
 	end
 	local rig = state.rigs[player]
 	if rig ~= nil then
@@ -298,16 +325,26 @@ local function resetBolt(durationSeconds: number)
 	)
 end
 
+local function resetGrip(durationSeconds: number)
+	local rig = localRig()
+	local gripMotor = localGripMotor()
+	if rig == nil or gripMotor == nil then
+		return
+	end
+	playMotorTween("Grip", gripMotor, durationSeconds, rig.gripC0, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+end
+
 local function lockBoltOpen(durationSeconds: number)
 	local rig = localRig()
 	if rig == nil then
 		return
 	end
+	local profile = profileForRig(rig)
 	playMotorTween(
 		"Bolt",
 		rig.boltMotor,
 		durationSeconds,
-		rig.boltRestC0 * BOLT_BACK_OFFSET,
+		rig.boltRestC0 * boltBackOffset(profile),
 		Enum.EasingStyle.Quad,
 		Enum.EasingDirection.Out
 	)
@@ -335,13 +372,26 @@ local function playShot(
 		RemoteWeaponMotionPresenter.presentShot(shooter, rig)
 		return
 	end
+	local gripMotor = state.gripMotors[shooter]
+	if gripMotor == nil then
+		return
+	end
+	local profile = profileForRig(rig)
 	state.shotGeneration += 1
 	local generation = state.shotGeneration
+	playMotorTween(
+		"Grip",
+		gripMotor,
+		profile.ShotBackSeconds,
+		rig.gripC0 * gripKickOffset(profile),
+		Enum.EasingStyle.Quad,
+		Enum.EasingDirection.Out
+	)
 	local backTween = playMotorTween(
 		"Bolt",
 		rig.boltMotor,
-		0.045,
-		rig.boltRestC0 * BOLT_BACK_OFFSET,
+		profile.ShotBackSeconds,
+		rig.boltRestC0 * boltBackOffset(profile),
 		Enum.EasingStyle.Quad,
 		Enum.EasingDirection.Out
 	)
@@ -349,10 +399,11 @@ local function playShot(
 		if playbackState ~= Enum.PlaybackState.Completed or generation ~= state.shotGeneration then
 			return
 		end
+		resetGrip(profile.ShotReturnSeconds)
 		if state.lastLoadedRounds == 0 then
-			lockBoltOpen(0.06)
+			lockBoltOpen(profile.ShotReturnSeconds)
 		else
-			resetBolt(0.065)
+			resetBolt(profile.ShotReturnSeconds)
 		end
 	end)
 end
@@ -385,20 +436,22 @@ local function playReload(operativeEntityId: string, completionServerTimestamp: 
 		RemoteWeaponMotionPresenter.presentReloadStarted(player, rig, completionServerTimestamp)
 		return
 	end
+	local profile = profileForRig(rig)
 	state.reloadGeneration += 1
 	local generation = state.reloadGeneration
 	state.isReloading = true
 	state.shotGeneration += 1
 	resetBolt(0.08)
+	resetGrip(0.08)
 	local remaining = math.clamp(completionServerTimestamp - Workspace:GetServerTimeNow(), 0.15, 5)
-	local outwardDuration = remaining * 0.36
-	local holdDuration = remaining * 0.22
-	local returnDuration = remaining * 0.42
+	local outwardDuration = remaining * profile.ReloadOutwardFraction
+	local holdDuration = remaining * profile.ReloadHoldFraction
+	local returnDuration = remaining * profile.ReloadReturnFraction
 	local outwardTween = playMotorTween(
 		"Magazine",
 		rig.magazineMotor,
 		outwardDuration,
-		rig.magazineRestC0 * MAGAZINE_OUT_OFFSET,
+		rig.magazineRestC0 * magazineOutOffset(profile),
 		Enum.EasingStyle.Quad,
 		Enum.EasingDirection.In
 	)
@@ -431,6 +484,7 @@ local function finishReload(operativeEntityId: string)
 	state.reloadGeneration += 1
 	state.isReloading = false
 	resetMagazine(0.08)
+	resetGrip(0.08)
 	if state.lastLoadedRounds ~= nil and state.lastLoadedRounds > 0 then
 		resetBolt(0.08)
 	end
@@ -452,6 +506,7 @@ local function interruptReload(operativeEntityId: string)
 	state.reloadGeneration += 1
 	state.isReloading = false
 	resetMagazine(0.12)
+	resetGrip(0.12)
 	if state.lastLoadedRounds == 0 then
 		lockBoltOpen(0.12)
 	else
