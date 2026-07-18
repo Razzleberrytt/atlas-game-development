@@ -1,5 +1,7 @@
 # Combat impact presentation — HROI-0104 v1
 
+Tracking: issue #98, **Horde Pressure & Run Reward Vertical Slice**.
+
 ## Goal
 
 Make every confirmed enemy hit and kill visibly legible from the elevated isometric camera without creating a second combat-authority path.
