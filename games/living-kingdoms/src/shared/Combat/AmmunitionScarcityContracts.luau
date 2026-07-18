@@ -4,6 +4,7 @@ local Contracts = {
 	SupplySourceIds = table.freeze({
 		AuthoredCache = "AuthoredCache",
 		EngineerResupply = "EngineerResupply",
+		EnemyDrop = "EnemyDrop",
 	}),
 	CollectionRejectionReasonIds = table.freeze({
 		InvalidState = "InvalidState",
@@ -19,7 +20,7 @@ export type ScarcityAmmunitionState = {
 	reserveRounds: number,
 	magazineCapacity: number,
 	maximumReserveRounds: number,
-	processedSupplyIds: { [string]: boolean },
+	processedSupplyIds: { [string]: boolean,
 }
 
 export type AmmunitionSupply = {
