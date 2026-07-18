@@ -3,8 +3,9 @@
 --[[
 	Applies at most one configured damage event for a resolved ShotId. The caller
 	owns and commits targetHealthStateAfter, including its processed-ShotId set.
-	No hidden deduplication state, Humanoid mutation, death behavior, or presentation
-	is created here.
+	No hidden deduplication state, Humanoid mutation, death behavior, or
+	presentation is created here. A server-owned run-upgrade override may raise
+	damage within a strict multiple of the configured firearm value.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -22,7 +23,8 @@ type DamageResolver = {
 	resolve: (
 		hitResolution: FirearmHitResolution,
 		targetHealthState: TargetHealthState,
-		serverTimestamp: number
+		serverTimestamp: number,
+		damageAmountOverride: number?
 	) -> DamageResolution,
 }
 
@@ -54,10 +56,29 @@ local function withoutDamage(
 	}
 end
 
+local function resolveDamageAmount(override: number?): number?
+	local configured = FirearmConfig.BasicFirearm.DamagePerHit
+	if override == nil then
+		return configured
+	end
+	if
+		type(override) ~= "number"
+		or override ~= override
+		or override <= 0
+		or override % 1 ~= 0
+		or override < configured
+		or override > configured * 3
+	then
+		return nil
+	end
+	return override
+end
+
 function DamageResolver.resolve(
 	hitResolution: FirearmHitResolution,
 	targetHealthState: TargetHealthState,
-	serverTimestamp: number
+	serverTimestamp: number,
+	damageAmountOverride: number?
 ): DamageResolution
 	local healthStateAfter = copyHealthState(targetHealthState)
 	local shotId = hitResolution.shotId
@@ -81,11 +102,15 @@ function DamageResolver.resolve(
 		return withoutDamage(healthStateAfter, reasons.TargetMismatch)
 	end
 
-	if hitResolution.weaponId ~= FirearmConfig.BasicFirearm.WeaponId or hitResolution.sourceEntityId == nil then
+	local damageAmount = resolveDamageAmount(damageAmountOverride)
+	if
+		damageAmount == nil
+		or hitResolution.weaponId ~= FirearmConfig.BasicFirearm.WeaponId
+		or hitResolution.sourceEntityId == nil
+	then
 		return withoutDamage(healthStateAfter, reasons.WeaponInvalid)
 	end
 
-	local damageAmount = FirearmConfig.BasicFirearm.DamagePerHit
 	local healthBefore = math.max(0, targetHealthState.currentHealth)
 	healthStateAfter.currentHealth = math.max(0, healthBefore - damageAmount)
 	local becameDead = healthBefore > 0 and healthStateAfter.currentHealth == 0
