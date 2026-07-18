@@ -2,9 +2,13 @@
 
 --[[
 	Client-local firearm audio. This controller listens to authoritative combat
-	presentation and reuses a bounded Sound pool. Per-weapon profiles change only
-	volume and playback speed so the roster reads differently without widening
-	combat authority or creating per-shot instances.
+	presentation and reuses a bounded Sound set: a round-robin fire pool plus
+	single reload, empty-click, and handling Sounds. Per-weapon profiles change
+	only volume and playback speed so the roster reads differently without
+	widening combat authority or creating per-shot instances. The empty click
+	reacts to the server's personal ammunition disclosure reaching zero loaded
+	rounds; the handling cue reacts to reload completion; an interrupted reload
+	stops its own reload sound.
 ]]
 
 local Players = game:GetService("Players")
@@ -38,12 +42,21 @@ local soundHolder: Folder? = nil
 local firePool: { Sound } = {}
 local fireCursor = 0
 local reloadSound: Sound? = nil
+local emptySound: Sound? = nil
+local handlingSound: Sound? = nil
+local reloadSoundOperativeEntityId: string? = nil
+local lastKnownLoadedRounds: number? = nil
+local lastEmptyCueClock = -math.huge
 
 local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
 local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: RemoteEvent
 
 local function isNonEmptyString(value: unknown): boolean
 	return type(value) == "string" and value ~= ""
+end
+
+local function isWholeNonnegative(value: unknown): boolean
+	return type(value) == "number" and value == value and value >= 0 and value % 1 == 0
 end
 
 local function isLocalOperative(operativeEntityId: string): boolean
@@ -71,6 +84,20 @@ local function createPresentation()
 	reload.Parent = holder
 	reloadSound = reload
 
+	local empty = Instance.new("Sound")
+	empty.Name = "Empty"
+	empty.SoundId = FirearmAudioConfig.Empty.SoundId
+	empty.Volume = FirearmAudioConfig.Empty.LocalVolume
+	empty.Parent = holder
+	emptySound = empty
+
+	local handling = Instance.new("Sound")
+	handling.Name = "Handling"
+	handling.SoundId = FirearmAudioConfig.Handling.SoundId
+	handling.Volume = FirearmAudioConfig.Handling.LocalVolume
+	handling.Parent = holder
+	handlingSound = handling
+
 	holder.Parent = SoundService
 	soundHolder = holder
 end
@@ -95,7 +122,7 @@ local function playFire(isLocal: boolean, weaponId: string)
 	sound:Play()
 end
 
-local function playReload(isLocal: boolean, weaponId: string)
+local function playReload(isLocal: boolean, weaponId: string, operativeEntityId: string)
 	local sound = reloadSound
 	local profile = WeaponFeelConfig.get(weaponId)
 	if sound == nil or profile == nil then
@@ -105,7 +132,59 @@ local function playReload(isLocal: boolean, weaponId: string)
 	sound.Volume = math.clamp(baseVolume * profile.ReloadVolumeMultiplier, 0, 2)
 	sound.PlaybackSpeed = profile.ReloadPlaybackSpeedMultiplier
 	sound.TimePosition = 0
+	reloadSoundOperativeEntityId = operativeEntityId
 	sound:Play()
+end
+
+local function stopReloadForOperative(operativeEntityId: string)
+	local sound = reloadSound
+	if sound ~= nil and reloadSoundOperativeEntityId == operativeEntityId then
+		sound:Stop()
+		reloadSoundOperativeEntityId = nil
+	end
+end
+
+local function playHandling(isLocal: boolean, weaponId: string)
+	local sound = handlingSound
+	local profile = WeaponFeelConfig.get(weaponId)
+	if sound == nil or profile == nil then
+		return
+	end
+	local handling = FirearmAudioConfig.Handling
+	local baseVolume = if isLocal then handling.LocalVolume else handling.RemoteVolume
+	sound.Volume = math.clamp(baseVolume * profile.ReloadVolumeMultiplier, 0, 2)
+	sound.PlaybackSpeed = handling.PlaybackSpeed * profile.ReloadPlaybackSpeedMultiplier
+	sound.TimePosition = 0
+	sound:Play()
+end
+
+local function playEmptyClick(weaponId: string)
+	local sound = emptySound
+	local profile = WeaponFeelConfig.get(weaponId)
+	if sound == nil or profile == nil then
+		return
+	end
+	local nowClock = os.clock()
+	if nowClock - lastEmptyCueClock < FirearmAudioConfig.Empty.MinimumIntervalSeconds then
+		return
+	end
+	lastEmptyCueClock = nowClock
+	local empty = FirearmAudioConfig.Empty
+	sound.Volume = math.clamp(empty.LocalVolume * profile.AudioVolumeMultiplier, 0, 2)
+	sound.PlaybackSpeed = empty.PlaybackSpeed
+	sound.TimePosition = 0
+	sound:Play()
+end
+
+local function onAmmunitionMessage(payload: any)
+	if not isKnownWeaponId(payload.weaponId) or not isWholeNonnegative(payload.loadedRounds) then
+		return
+	end
+	local previousLoadedRounds = lastKnownLoadedRounds
+	lastKnownLoadedRounds = payload.loadedRounds
+	if previousLoadedRounds ~= nil and previousLoadedRounds > 0 and payload.loadedRounds == 0 then
+		playEmptyClick(payload.weaponId)
+	end
 end
 
 local function onPresentationMessage(message: unknown)
@@ -113,15 +192,31 @@ local function onPresentationMessage(message: unknown)
 		return
 	end
 	local payload = message :: any
+	local kindId = payload.kindId
+	if
+		kindId == CombatContracts.PresentationMessageKindIds.AmmunitionState
+		or kindId == CombatContracts.PresentationMessageKindIds.AmmunitionCollected
+	then
+		-- Ammunition disclosures are personal payloads about the local
+		-- operative and carry no operative identity.
+		onAmmunitionMessage(payload)
+		return
+	end
 	if not isKnownWeaponId(payload.weaponId) or not isNonEmptyString(payload.operativeEntityId) then
 		return
 	end
-	if payload.kindId == CombatContracts.PresentationMessageKindIds.ShotFired then
+	local isLocal = isLocalOperative(payload.operativeEntityId)
+	if kindId == CombatContracts.PresentationMessageKindIds.ShotFired then
 		if isNonEmptyString(payload.shotId) then
-			playFire(isLocalOperative(payload.operativeEntityId), payload.weaponId)
+			playFire(isLocal, payload.weaponId)
 		end
-	elseif payload.kindId == CombatContracts.PresentationMessageKindIds.ReloadStarted then
-		playReload(isLocalOperative(payload.operativeEntityId), payload.weaponId)
+	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadStarted then
+		playReload(isLocal, payload.weaponId, payload.operativeEntityId)
+	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadCompleted then
+		stopReloadForOperative(payload.operativeEntityId)
+		playHandling(isLocal, payload.weaponId)
+	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadInterrupted then
+		stopReloadForOperative(payload.operativeEntityId)
 	end
 end
 
@@ -150,6 +245,11 @@ function Controller.stop()
 	table.clear(firePool)
 	fireCursor = 0
 	reloadSound = nil
+	emptySound = nil
+	handlingSound = nil
+	reloadSoundOperativeEntityId = nil
+	lastKnownLoadedRounds = nil
+	lastEmptyCueClock = -math.huge
 end
 
 return Controller

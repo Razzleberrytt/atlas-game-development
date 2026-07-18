@@ -20,7 +20,7 @@ controls presentation sequencing; when this list drifts from them, they win.
 
 | Pass | What it covers | Source | Gate / track | Status |
 |---|---|---|---|---|
-| Production firearm audio pass | Approved fire, reload, empty, and handling set replacing the temporary pooled free Creator Store fire/reload audio owned by `WeaponAudioController`. | [`../specifications/firearm-audio.md`](../specifications/firearm-audio.md); `VisualAssetConfig.luau` (`AudioBasicFirearm` = `TemporaryPresentation`) | VIS-0102 | Pending |
+| Production firearm audio pass | Approved fire, reload, empty, and handling set owned by `WeaponAudioController`. AUD-0102 completed client-local coverage of all four cues (empty click on authoritative dry transitions, handling cue on reload completion, reload stop-on-interrupt); unique production-approved empty/handling assets and the Studio mix review remain the outstanding gates. | [`../specifications/firearm-audio.md`](../specifications/firearm-audio.md); `VisualAssetConfig.luau` (`AudioBasicFirearm` = `TemporaryPresentation`) | VIS-0102 | In progress |
 | Standard-hostile audio pass | Approved alert, pursuit, attack, hit, and death set for the Exclusion Walker; no set is registered today. | [`../specifications/visual-placeholder-inventory.md`](../specifications/visual-placeholder-inventory.md) | VIS-0103 | Pending |
 | World ambience audio-content pass | Wind, insects, wildlife, distant sirens, helicopters, and radio chatter; thunder for the distant-storm flash. Deferred until approved source assets and a mix budget exist. | [`../specifications/living-kingdoms-world-foundation.md`](../specifications/living-kingdoms-world-foundation.md) | VIS-0105 / VIS-0108 | Deferred |
 

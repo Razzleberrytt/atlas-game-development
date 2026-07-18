@@ -38,7 +38,7 @@ The registry is descriptive only. It does not load assets or change gameplay.
 | Landmark | Extraction Clearing | Primitive placeholder | Authored primitive clearing awaiting final extraction package | VIS-0105 |
 | Effect | Basic firearm fire/impact set | Temporary presentation | Code-built muzzle flash, casing, hit-confirmed tracer, and authoritative impact cue | VIS-0102 |
 | Effect | Standard hostile attack set | Temporary presentation | Cancelable server-owned windup plus confirmed active-strike/recovery and hit pose cues exist; authored particles, impact effects, and production audio remain missing | VIS-0103 |
-| Audio | Basic firearm set | Missing presentation | No approved fire, reload, empty, or handling set | VIS-0102 |
+| Audio | Basic firearm set | Temporary presentation | `WeaponAudioController` pooled client-local fire, reload, empty-click, and handling cues; fire/reload use approved free Creator Store audio and the empty/handling cues are temporary derivations of the verified reload asset, so unique production-approved assets and a Studio mix review remain pending | VIS-0102 |
 | Audio | Standard hostile set | Missing presentation | No approved alert, pursuit, attack, hit, or death set | VIS-0103 |
 | Audio | Blackwater ambience | Temporary presentation | `EnvironmentAmbienceController` code-driven ambience | VIS-0105 / VIS-0108 |
 | Interface | Ammunition display | Temporary presentation | Functional weapon/ammunition UI | VIS-0102 / VIS-0108 |

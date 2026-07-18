@@ -310,7 +310,7 @@ local Registry = table.freeze({
 		FamilyIds.Audio,
 		StatusIds.TemporaryPresentation,
 		"src/client/Controllers/WeaponAudioController.luau",
-		"Accepted shots and reload starts now drive a client-local pooled 2D fire and reload sound set from approved free Creator Store audio; a production-approved firearm audio pass remains pending.",
+		"Accepted shots, the reload lifecycle, and personal dry-ammunition disclosures now drive a client-local pooled 2D fire, reload, empty-click, and handling sound set; fire and reload use approved free Creator Store audio while the empty and handling cues are temporary derivations of the verified reload asset, so unique production-approved assets and a Studio mix review remain pending.",
 		"BasicFirearmAudio",
 		{},
 		"weapon.basic-firearm",
