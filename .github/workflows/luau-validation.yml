@@ -40,9 +40,22 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Check Luau formatting
+      - name: Capture Luau formatting patch
         shell: bash
-        run: stylua --check games/living-kingdoms/src
+        run: |
+          stylua games/living-kingdoms/src
+          git diff -- games/living-kingdoms/src > /tmp/stylua.diff
+          cat /tmp/stylua.diff
+          test ! -s /tmp/stylua.diff
+
+      - name: Upload formatting diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: field-xp-stylua-patch
+          path: /tmp/stylua.diff
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Run Selene
         shell: bash
