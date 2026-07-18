@@ -47,6 +47,33 @@ for file_name in SERVER_FILES + CLIENT_FILES:
     source = source.replace("FirearmConfig.isKnownWeaponId(", "isKnownWeaponId(")
     path.write_text(source, encoding="utf-8")
 
+runtime_path = Path("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau")
+runtime_source = runtime_path.read_text(encoding="utf-8")
+runtime_source = runtime_source.replace(
+    'player:SetAttribute("LK_EquippedWeaponId", assignment.weaponId)',
+    'setPlayerAttribute(player, "LK_EquippedWeaponId", assignment.weaponId)',
+)
+runtime_source = runtime_source.replace(
+    'player:SetAttribute("LK_EquippedWeaponId", state.weaponState.weaponId)',
+    'setPlayerAttribute(player, "LK_EquippedWeaponId", state.weaponState.weaponId)',
+)
+runtime_source = runtime_source.replace(
+    'player:SetAttribute("LK_EquippedWeaponId", nil)',
+    'setPlayerAttribute(player, "LK_EquippedWeaponId", nil)',
+)
+attribute_helper = '''
+local function setPlayerAttribute(player: Player, attributeName: string, value: unknown)
+\tlocal candidate = player :: any
+\tif type(candidate.SetAttribute) == "function" then
+\t\tcandidate:SetAttribute(attributeName, value)
+\tend
+end
+'''
+marker = "local SERVER_REQUEST_COOLDOWN_SECONDS = 0.25\n"
+if marker not in runtime_source:
+    raise RuntimeError("runtime attribute helper anchor drifted")
+runtime_path.write_text(runtime_source.replace(marker, marker + attribute_helper, 1), encoding="utf-8")
+
 security_path = Path("games/living-kingdoms/tests/CombatSecurityIntegration.test.luau")
 security_source = security_path.read_text(encoding="utf-8")
 old_assertion = '''assert(
@@ -74,4 +101,4 @@ if audio_source.count(old_audio) != 1:
     raise RuntimeError("firearm audio audit anchor drifted")
 audio_path.write_text(audio_source.replace(old_audio, new_audio, 1), encoding="utf-8")
 
-print("Applied legacy fixture compatibility and roster-aware authority audits")
+print("Applied fixture compatibility, safe attribute disclosure, and roster-aware authority audits")
