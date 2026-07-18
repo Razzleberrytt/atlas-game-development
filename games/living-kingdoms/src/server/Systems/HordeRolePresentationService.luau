@@ -17,7 +17,6 @@ local PRESENTATION_MODEL_NAME = "ExclusionWalkerPresentation"
 local ROLE_ATTRIBUTE_NAME = "HordeRoleId"
 local BASE_SIZE_ATTRIBUTE = "HordeRoleBaseSize"
 local BASE_C0_ATTRIBUTE = "HordeRoleBaseC0"
-local STRIDE_SCALE_ATTRIBUTE = "HordeRoleStrideScale"
 
 local function colorFromTuple(tuple: HordeRolePresentationConfig.Triple): Color3
 	return Color3.fromRGB(tuple[1], tuple[2], tuple[3])
@@ -113,8 +112,6 @@ function HordeRolePresentationService.applyRolePresentation(enemyModel: Model): 
 		eyeGlow.Range = profile.SensorRange
 	end
 
-	local defaultStride = HordeRolePresentationConfig.Default.StridesPerSecond
-	enemyModel:SetAttribute(STRIDE_SCALE_ATTRIBUTE, profile.StridesPerSecond / defaultStride)
 	presentation:SetAttribute("HordeRoleVisualSignature", profile.SignatureId)
 	presentation:SetAttribute("HordeRolePresentationVersion", HordeRolePresentationConfig.Version)
 	return true

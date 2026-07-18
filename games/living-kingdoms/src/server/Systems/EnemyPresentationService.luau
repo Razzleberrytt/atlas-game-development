@@ -68,6 +68,7 @@ local function createPart(
 	local part = Instance.new("Part")
 	configurePart(part, name, color, material)
 	part.Size = size
+	part:SetAttribute("HordeRoleBaseSize", size)
 	if shape ~= nil then
 		part.Shape = shape
 	end
@@ -113,6 +114,7 @@ local function makeMotorPart(
 	motor.Part0 = motorParent
 	motor.Part1 = part
 	motor.C0 = motorParent.CFrame:ToObjectSpace(part.CFrame)
+	motor:SetAttribute("HordeRoleBaseC0", motor.C0)
 	motor.C1 = CFrame.new()
 	motor.Parent = motorParent
 	return part

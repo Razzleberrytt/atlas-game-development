@@ -16,6 +16,7 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
+local HordeRolePresentationConfig = require(ReplicatedStorage.Shared.Config.HordeRolePresentationConfig)
 local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 local EnemyPresentationPoseResolver = require(script.Parent.Parent.Presentation.EnemyPresentationPoseResolver)
@@ -29,7 +30,6 @@ local PresentationLifeStateIds = EnemyPresentationContracts.LifeStateIds
 local ENEMY_FOLDER_NAME = "EnemyEntities"
 local PRESENTATION_MODEL_NAME = "ExclusionWalkerPresentation"
 local MOVEMENT_THRESHOLD = 0.05
-local STRIDES_PER_SECOND = 3
 
 local SENSOR_COLORS = table.freeze({
 	Normal = Color3.fromRGB(218, 78, 53),
@@ -74,6 +74,7 @@ type Record = {
 	hitServerTimestamp: number?,
 	phaseOffsetSeconds: number,
 	poseId: string,
+	roleId: string,
 }
 
 local started = false
@@ -91,6 +92,19 @@ end
 local function readStringAttribute(model: Model, attributeName: string): string?
 	local value = model:GetAttribute(attributeName)
 	return if type(value) == "string" then value else nil
+end
+
+local function colorFromTuple(tuple: HordeRolePresentationConfig.Triple): Color3
+	return Color3.fromRGB(tuple[1], tuple[2], tuple[3])
+end
+
+local function roleProfile(roleId: string): HordeRolePresentationConfig.RolePresentationProfile
+	return HordeRolePresentationConfig.get(roleId) or HordeRolePresentationConfig.Default
+end
+
+local function readMotorBaseC0(motor: Motor6D): CFrame
+	local baseC0 = motor:GetAttribute("HordeRoleBaseC0")
+	return if typeof(baseC0) == "CFrame" then baseC0 else motor.C0
 end
 
 local function stablePhaseOffset(model: Model): number
@@ -182,6 +196,7 @@ local function trackModel(model: Model)
 		return
 	end
 
+	local roleId = readStringAttribute(model, "HordeRoleId") or HordeRolePresentationConfig.Default.RoleId
 	records[model] = {
 		root = root,
 		humanoid = humanoid,
@@ -191,11 +206,11 @@ local function trackModel(model: Model)
 		rightArmMotor = rightArmMotor,
 		leftLegMotor = leftLegMotor,
 		rightLegMotor = rightLegMotor,
-		torsoBaseC0 = torsoMotor.C0,
-		leftArmBaseC0 = leftArmMotor.C0,
-		rightArmBaseC0 = rightArmMotor.C0,
-		leftLegBaseC0 = leftLegMotor.C0,
-		rightLegBaseC0 = rightLegMotor.C0,
+		torsoBaseC0 = readMotorBaseC0(torsoMotor),
+		leftArmBaseC0 = readMotorBaseC0(leftArmMotor),
+		rightArmBaseC0 = readMotorBaseC0(rightArmMotor),
+		leftLegBaseC0 = readMotorBaseC0(leftLegMotor),
+		rightLegBaseC0 = readMotorBaseC0(rightLegMotor),
 		windupSequence = windupSequence,
 		windupStartedServerTimestamp = if windupSequence > 0 and windupStartedServerTimestamp > 0
 			then windupStartedServerTimestamp
@@ -210,6 +225,7 @@ local function trackModel(model: Model)
 		hitServerTimestamp = if hitSequence > 0 and hitServerTimestamp > 0 then hitServerTimestamp else nil,
 		phaseOffsetSeconds = stablePhaseOffset(model),
 		poseId = "",
+		roleId = roleId,
 	}
 end
 
@@ -219,7 +235,7 @@ local function restoreRecord(record: Record)
 	record.rightArmMotor.C0 = record.rightArmBaseC0
 	record.leftLegMotor.C0 = record.leftLegBaseC0
 	record.rightLegMotor.C0 = record.rightLegBaseC0
-	record.sensor.Color = SENSOR_COLORS.Normal
+	record.sensor.Color = colorFromTuple(roleProfile(record.roleId).Colors.Sensor)
 	record.sensor.Transparency = SENSOR_TRANSPARENCY.Normal
 end
 
@@ -233,16 +249,37 @@ local function untrackModel(model: Model)
 end
 
 local function applyPose(record: Record, pose: EnemyPresentationPoseResolver.Pose)
+	local profile = roleProfile(record.roleId)
+	local posture = profile.Posture
 	record.torsoMotor.C0 = record.torsoBaseC0
-		* CFrame.Angles(math.rad(pose.torsoPitchDegrees), 0, math.rad(pose.torsoRollDegrees))
+		* CFrame.new(0, posture.TorsoHeightStuds, 0)
+		* CFrame.Angles(
+			math.rad(posture.TorsoPitchDegrees + pose.torsoPitchDegrees),
+			0,
+			math.rad(posture.TorsoRollDegrees + pose.torsoRollDegrees)
+		)
 	record.leftArmMotor.C0 = record.leftArmBaseC0
-		* CFrame.Angles(math.rad(pose.leftArmPitchDegrees), 0, math.rad(pose.leftArmRollDegrees))
+		* CFrame.Angles(
+			math.rad(posture.LeftArmPitchDegrees + pose.leftArmPitchDegrees),
+			0,
+			math.rad(posture.LeftArmRollDegrees + pose.leftArmRollDegrees)
+		)
 	record.rightArmMotor.C0 = record.rightArmBaseC0
-		* CFrame.Angles(math.rad(pose.rightArmPitchDegrees), 0, math.rad(pose.rightArmRollDegrees))
-	record.leftLegMotor.C0 = record.leftLegBaseC0 * CFrame.Angles(math.rad(pose.leftLegPitchDegrees), 0, 0)
-	record.rightLegMotor.C0 = record.rightLegBaseC0 * CFrame.Angles(math.rad(pose.rightLegPitchDegrees), 0, 0)
+		* CFrame.Angles(
+			math.rad(posture.RightArmPitchDegrees + pose.rightArmPitchDegrees),
+			0,
+			math.rad(posture.RightArmRollDegrees + pose.rightArmRollDegrees)
+		)
+	record.leftLegMotor.C0 = record.leftLegBaseC0
+		* CFrame.Angles(math.rad(posture.LeftLegPitchDegrees + pose.leftLegPitchDegrees), 0, 0)
+	record.rightLegMotor.C0 = record.rightLegBaseC0
+		* CFrame.Angles(math.rad(posture.RightLegPitchDegrees + pose.rightLegPitchDegrees), 0, 0)
 
 	local color = SENSOR_COLORS[pose.sensorMode]
+	if pose.sensorMode == "Normal" or pose.sensorMode == "Alert" then
+		local roleColor = colorFromTuple(profile.Colors.Sensor)
+		color = if pose.sensorMode == "Alert" then roleColor:Lerp(SENSOR_COLORS.Alert, 0.45) else roleColor
+	end
 	local transparency = SENSOR_TRANSPARENCY[pose.sensorMode]
 	if color ~= nil and transparency ~= nil then
 		record.sensor.Color = color
@@ -252,6 +289,15 @@ local function applyPose(record: Record, pose: EnemyPresentationPoseResolver.Pos
 end
 
 local function updateRecord(model: Model, record: Record, serverTimestamp: number)
+	local disclosedRoleId = readStringAttribute(model, "HordeRoleId")
+	if
+		disclosedRoleId ~= nil
+		and disclosedRoleId ~= record.roleId
+		and HordeRolePresentationConfig.get(disclosedRoleId) ~= nil
+	then
+		record.roleId = disclosedRoleId
+		record.poseId = ""
+	end
 	local windupSequence = readNumberAttribute(model, PresentationAttributeNames.WindupSequence)
 	local windupStartedServerTimestamp =
 		readNumberAttribute(model, PresentationAttributeNames.WindupStartedServerTimestamp)
@@ -318,14 +364,8 @@ local function updateRecord(model: Model, record: Record, serverTimestamp: numbe
 	local isPursuing = behaviorStateId == BehaviorStateIds.Pursuing
 		or behaviorStateId == BehaviorStateIds.WindingUp
 		or behaviorStateId == BehaviorStateIds.Attacking
-	local strideScaleValue = model:GetAttribute("HordeRoleStrideScale")
-	local strideScale = if type(strideScaleValue) == "number"
-			and strideScaleValue == strideScaleValue
-			and strideScaleValue >= 0.5
-			and strideScaleValue <= 2
-		then strideScaleValue
-		else 1
-	local strideIndex = math.floor((serverTimestamp + record.phaseOffsetSeconds) * STRIDES_PER_SECOND * strideScale) % 2
+	local profile = roleProfile(record.roleId)
+	local strideIndex = math.floor((serverTimestamp + record.phaseOffsetSeconds) * profile.StridesPerSecond) % 2
 
 	local pose = EnemyPresentationPoseResolver.resolve({
 		isDead = isDead,
