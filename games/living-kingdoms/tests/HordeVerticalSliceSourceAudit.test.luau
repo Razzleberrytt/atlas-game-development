@@ -11,6 +11,8 @@
 	    behaviour, threat, a non-rewarding massacre streak, and the event feed.
 	  * HordeHUDController is the only combat HUD and routes upgrade selection
 	    exclusively through ProgressionNetwork.ChooseUpgrade.
+	  * MassacreCrescendoController is the sole presentation owner for the
+	    non-rewarding streak disclosed by HordeExperienceService.
 ]]
 
 local fs = require("@lune/fs")
@@ -32,6 +34,8 @@ local runtime = fs.readFile("games/living-kingdoms/src/server/Systems/HordeExper
 local serverBootstrap = fs.readFile("games/living-kingdoms/src/server/init.server.luau")
 local clientBootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 local hud = fs.readFile("games/living-kingdoms/src/client/Controllers/HordeHUDController.luau")
+local crescendo = fs.readFile("games/living-kingdoms/src/client/Controllers/MassacreCrescendoController.luau")
+local crescendoConfig = fs.readFile("games/living-kingdoms/src/shared/Config/MassacreCrescendoConfig.luau")
 local effects = fs.readFile("games/living-kingdoms/src/client/Controllers/HordeEffectsController.luau")
 local weapon = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponController.luau")
 local life = fs.readFile("games/living-kingdoms/src/client/Controllers/OperativeLifeController.luau")
@@ -132,12 +136,14 @@ end
 
 assertThat(contains(serverBootstrap, "HordeExperienceService.start()"), "server bootstrap must start the horde runtime")
 
--- HordeHUDController is the single combat HUD.
+-- HordeHUDController remains the single combat HUD; specialist presentation
+-- owners may compose around it without creating a second progression surface.
 for _, required in
 	{
 		"HordeHUDController.start()",
 		"CriticalConditionController.start()",
 		"ConfirmedHitMarkerController.start()",
+		"MassacreCrescendoController.start()",
 	}
 do
 	assertThat(
@@ -162,10 +168,26 @@ for _, required in
 		"LK_HUD_LoadedRounds",
 		"LK_HUD_Objective",
 		"HOSTILES",
-		"MASSACRE",
 	}
 do
 	assertThat(contains(hud, required), "unified HUD is missing " .. required)
+end
+assertThat(not contains(hud, "streakLabel"), "the unified HUD must not retain a duplicate streak presentation owner")
+assertThat(not contains(hud, "MASSACRE x%d"), "the legacy static streak label must stay removed")
+
+for _, required in
+	{
+		"MASSACRE",
+		"streakExpiresServerTimestamp",
+		"MassacreCrescendoConfig.tierForStreak",
+		"HordeNetwork",
+		"RenderStepped:Connect",
+	}
+do
+	assertThat(contains(crescendo, required), "dedicated streak presentation is missing " .. required)
+end
+for _, required in { "KILL CHAIN", "SLAUGHTER", "MASSACRE", "ANNIHILATION", "APOCALYPSE" } do
+	assertThat(contains(crescendoConfig, required), "streak crescendo config is missing tier " .. required)
 end
 
 for _, forbidden in
@@ -213,4 +235,4 @@ assertThat(not contains(weapon, "TemporaryCombatPresentation"), "old temporary c
 assertThat(not contains(life, "TemporaryP3Validation"), "old temporary life overlay must be removed")
 assertThat(not contains(mission, "TemporaryMissionUI"), "old temporary mission overlay must be removed")
 
-print("Horde vertical slice single-source-of-truth ownership, pacing bounds, and unified HUD audit passed")
+print("Horde vertical slice single-source-of-truth ownership, pacing bounds, unified HUD, and streak presentation audit passed")
