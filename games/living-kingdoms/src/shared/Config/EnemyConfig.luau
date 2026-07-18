@@ -11,7 +11,7 @@ local EnemyContracts = require(script.Parent.Parent.Combat.EnemyContracts)
 local WorldFoundationConfig = require(script.Parent.WorldFoundationConfig)
 
 local EnemyConfig = {
-	Version = "HORDE-VS-001-v2",
+	Version = "HORDE-VS-001-v3",
 	Walker = table.freeze({
 		ArchetypeId = EnemyContracts.EnemyArchetypeIds.ExclusionWalker,
 		DisplayName = "Hollow Infected",
@@ -37,9 +37,9 @@ local EnemyConfig = {
 	Population = table.freeze({
 		-- This is the explicit vertical-slice profiling budget, not a production
 		-- guarantee. Merge remains blocked on solo and two-client MicroProfiler
-		-- evidence at representative pressure.
-		MaximumConcurrentPerOperative = 28,
-		AbsoluteMaximumConcurrent = 112,
+		-- evidence at representative pressure. Raise only from measured evidence.
+		MaximumConcurrentPerOperative = 24,
+		AbsoluteMaximumConcurrent = 96,
 	}),
 	Pressure = table.freeze({
 		-- Retains PR #99's contact-in-seconds principle while increasing the
