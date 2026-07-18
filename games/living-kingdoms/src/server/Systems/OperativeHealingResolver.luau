@@ -94,11 +94,7 @@ function Resolver.resolve(
 	then
 		return reject(operativeSnapshot, "InvalidHealing")
 	end
-	if
-		not isFiniteNumber(serverTimestamp)
-		or serverTimestamp < 0
-		or healing.serverTimestamp ~= serverTimestamp
-	then
+	if not isFiniteNumber(serverTimestamp) or serverTimestamp < 0 or healing.serverTimestamp ~= serverTimestamp then
 		return reject(operativeSnapshot, "InvalidServerTimestamp")
 	end
 	if operativeSnapshot.lifeStateId ~= AliveStateId then
@@ -110,10 +106,8 @@ function Resolver.resolve(
 
 	local snapshotAfter = deepCopy(operativeSnapshot) :: OperativeLifeStateSnapshot
 	local healthBefore = snapshotAfter.healthState.currentHealth
-	snapshotAfter.healthState.currentHealth = math.min(
-		snapshotAfter.healthState.maximumHealth,
-		healthBefore + healing.healingAmount
-	)
+	snapshotAfter.healthState.currentHealth =
+		math.min(snapshotAfter.healthState.maximumHealth, healthBefore + healing.healingAmount)
 	local healedAmount = snapshotAfter.healthState.currentHealth - healthBefore
 	return {
 		didTransition = true,

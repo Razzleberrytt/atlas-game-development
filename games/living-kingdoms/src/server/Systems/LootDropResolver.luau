@@ -64,11 +64,13 @@ function Resolver.resolve(fact: DeathDropFact): DropResolution
 	local roll = stablePercent(fact.enemyEntityId)
 	local cursor = 0
 	local selectedKindId: LootDropContracts.LootKindId? = nil
-	for _, kindId in {
-		LootDropContracts.LootKindIds.AmmunitionBundle,
-		LootDropContracts.LootKindIds.FieldDressing,
-		LootDropContracts.LootKindIds.FieldIntel,
-	} do
+	for _, kindId in
+		{
+			LootDropContracts.LootKindIds.AmmunitionBundle,
+			LootDropContracts.LootKindIds.FieldDressing,
+			LootDropContracts.LootKindIds.FieldIntel,
+		}
+	do
 		cursor += LootDropConfig.DropRollPercentByKind[kindId]
 		if roll < cursor then
 			selectedKindId = kindId

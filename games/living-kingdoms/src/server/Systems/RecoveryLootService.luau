@@ -230,11 +230,8 @@ local function spawnDrop(enemyModel: Model, serverTimestamp: number)
 	then
 		return
 	end
-	local worldPosition = Vector3.new(
-		resolution.worldPosition.x,
-		resolution.worldPosition.y,
-		resolution.worldPosition.z
-	)
+	local worldPosition =
+		Vector3.new(resolution.worldPosition.x, resolution.worldPosition.y, resolution.worldPosition.z)
 	local part, prompt = createDropPart(
 		resolution.dropId,
 		resolution.kindId,
@@ -327,10 +324,8 @@ local function tryCollect(player: Player, prompt: ProximityPrompt)
 	local serverTimestamp = Workspace:GetServerTimeNow()
 	local didCollect = if entry.kindId == KindIds.AmmunitionBundle
 		then collectAmmunition(player, entry)
-		elseif entry.kindId == KindIds.FieldDressing
-		then collectHealing(player, entry, serverTimestamp)
-		elseif entry.kindId == KindIds.FieldIntel
-		then collectIntel(entry)
+		elseif entry.kindId == KindIds.FieldDressing then collectHealing(player, entry, serverTimestamp)
+		elseif entry.kindId == KindIds.FieldIntel then collectIntel(entry)
 		else false
 	collectingPlayers[player] = nil
 	if not didCollect or entriesByDropId[entry.dropId] ~= entry or entry.claimed then
@@ -353,10 +348,7 @@ local function scanEnemyDeaths(serverTimestamp: number)
 		if inspectedCount >= LootDropConfig.MaximumTrackedEnemyModels then
 			break
 		end
-		if
-			not child:IsA("Model")
-			or child:GetAttribute("EnemyArchetypeId") ~= EnemyConfig.Walker.ArchetypeId
-		then
+		if not child:IsA("Model") or child:GetAttribute("EnemyArchetypeId") ~= EnemyConfig.Walker.ArchetypeId then
 			continue
 		end
 		inspectedCount += 1
