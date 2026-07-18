@@ -32,6 +32,7 @@ type TelegraphSlot = {
 	anchor: Part,
 	label: TextLabel,
 	active: boolean,
+	model: Model?,
 	root: BasePart?,
 	kindId: string?,
 	startServerTimestamp: number,
@@ -39,7 +40,6 @@ type TelegraphSlot = {
 }
 
 local started = false
-local enemyFolder: Folder? = nil
 local presentationFolder: Folder? = nil
 local childAddedConnection: RBXScriptConnection? = nil
 local childRemovedConnection: RBXScriptConnection? = nil
@@ -65,6 +65,7 @@ end
 
 local function deactivateSlot(slot: TelegraphSlot)
 	slot.active = false
+	slot.model = nil
 	slot.root = nil
 	slot.kindId = nil
 	slot.startServerTimestamp = 0
@@ -130,6 +131,7 @@ local function createSlot(parent: Folder, index: number): TelegraphSlot
 		anchor = anchor,
 		label = label,
 		active = false,
+		model = nil,
 		root = nil,
 		kindId = nil,
 		startServerTimestamp = 0,
@@ -164,13 +166,14 @@ local function chooseSlot(): TelegraphSlot
 	return earliest
 end
 
-local function activateTelegraph(root: BasePart, kindId: string, commitServerTimestamp: number)
+local function activateTelegraph(model: Model, root: BasePart, kindId: string, commitServerTimestamp: number)
 	local definition = HordeSpecialTelegraphConfig.get(kindId)
 	if definition == nil then
 		return
 	end
 	local slot = chooseSlot()
 	slot.active = true
+	slot.model = model
 	slot.root = root
 	slot.kindId = kindId
 	slot.startServerTimestamp = commitServerTimestamp - definition.WindupSeconds
@@ -197,7 +200,7 @@ local function readAndPresent(model: Model, record: ModelRecord, serverTimestamp
 	then
 		return
 	end
-	activateTelegraph(record.root, kindId, commitServerTimestamp)
+	activateTelegraph(model, record.root, kindId, commitServerTimestamp)
 end
 
 local function trackModel(instance: Instance)
@@ -229,7 +232,7 @@ local function trackModel(instance: Instance)
 		and commitServerTimestamp ~= nil
 		and commitServerTimestamp > serverTimestamp
 	then
-		activateTelegraph(root, kindId, commitServerTimestamp)
+		activateTelegraph(instance, root, kindId, commitServerTimestamp)
 	end
 end
 
@@ -259,10 +262,19 @@ local function updateSlot(slot: TelegraphSlot, serverTimestamp: number)
 	if not slot.active then
 		return
 	end
+	local model = slot.model
 	local root = slot.root
 	local kindId = slot.kindId
 	local definition = HordeSpecialTelegraphConfig.get(kindId)
-	if root == nil or root.Parent == nil or definition == nil then
+	if model == nil or model.Parent == nil or root == nil or root.Parent == nil or definition == nil then
+		deactivateSlot(slot)
+		return
+	end
+
+	if
+		serverTimestamp < slot.commitServerTimestamp - HordeSpecialTelegraphConfig.PollIntervalSeconds
+		and readStringAttribute(model, AttributeNames.StateId) ~= StateIds.Windup
+	then
 		deactivateSlot(slot)
 		return
 	end
@@ -304,7 +316,6 @@ function Controller.start()
 	createPresentation()
 	local found = Workspace:WaitForChild(ENEMY_FOLDER_NAME)
 	assert(found:IsA("Folder"), "EnemyEntities must be a Folder")
-	enemyFolder = found
 	for _, child in found:GetChildren() do
 		trackModel(child)
 	end
@@ -345,7 +356,6 @@ function Controller.stop()
 	table.clear(slots)
 	trackedCount = 0
 	pollAccumulatedSeconds = 0
-	enemyFolder = nil
 end
 
 return table.freeze(Controller)

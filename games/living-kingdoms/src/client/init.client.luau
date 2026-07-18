@@ -27,6 +27,7 @@ local MissionController = require(script.Controllers.MissionController)
 local MissionObjectPresentationController = require(script.Controllers.MissionObjectPresentationController)
 local HordeHUDController = require(script.Controllers.HordeHUDController)
 local HordeEffectsController = require(script.Controllers.HordeEffectsController)
+local HordeSpecialTelegraphController = require(script.Controllers.HordeSpecialTelegraphController)
 local CriticalConditionController = require(script.Controllers.CriticalConditionController)
 
 CameraController.init()
@@ -62,6 +63,7 @@ MissionObjectPresentationController.start()
 -- duplicate XP bar and a second upgrade overlay.
 HordeHUDController.start()
 HordeEffectsController.start()
+HordeSpecialTelegraphController.start()
 CriticalConditionController.start()
 -- Mission presentation starts first; class selection then requests authoritative state.
 ClassSelectionController.start()

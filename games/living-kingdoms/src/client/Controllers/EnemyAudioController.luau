@@ -22,6 +22,7 @@ local Workspace = game:GetService("Workspace")
 
 local EnemyAudioConfig = require(ReplicatedStorage.Shared.Config.EnemyAudioConfig)
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
+local HordeSpecialTelegraphConfig = require(ReplicatedStorage.Shared.Config.HordeSpecialTelegraphConfig)
 local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 
@@ -30,6 +31,8 @@ local EnemyAudioController = {}
 local PresentationAttributeNames = EnemyPresentationContracts.AttributeNames
 local PresentationLifeStateIds = EnemyPresentationContracts.LifeStateIds
 local BehaviorStateIds = EnemyContracts.EnemyBehaviorStateIds
+local SpecialAttributeNames = HordeSpecialTelegraphConfig.AttributeNames
+local SpecialKindIds = HordeSpecialTelegraphConfig.KindIds
 
 local ENEMY_FOLDER_NAME = "EnemyEntities"
 local SOUND_HOLDER_NAME = "LivingKingdomsEnemyAudio"
@@ -57,6 +60,7 @@ type Record = {
 	lastWindupSequence: number,
 	lastAttackSequence: number,
 	lastHitSequence: number,
+	lastSpecialSequence: number,
 	wasDead: boolean,
 }
 
@@ -158,6 +162,7 @@ local function trackModel(model: Model)
 	local windupSequence = readNumberAttribute(model, PresentationAttributeNames.WindupSequence)
 	local attackSequence = readNumberAttribute(model, PresentationAttributeNames.AttackSequence)
 	local hitSequence = readNumberAttribute(model, PresentationAttributeNames.HitSequence)
+	local specialSequence = readNumberAttribute(model, SpecialAttributeNames.Sequence) or 0
 	if
 		behaviorStateId == nil
 		or lifeStateId == nil
@@ -176,6 +181,7 @@ local function trackModel(model: Model)
 		lastWindupSequence = windupSequence,
 		lastAttackSequence = attackSequence,
 		lastHitSequence = hitSequence,
+		lastSpecialSequence = specialSequence,
 		wasDead = lifeStateId == PresentationLifeStateIds.Dead,
 	}
 	trackedCount += 1
@@ -195,6 +201,8 @@ local function updateRecord(model: Model, record: Record)
 	local windupSequence = readNumberAttribute(model, PresentationAttributeNames.WindupSequence)
 	local attackSequence = readNumberAttribute(model, PresentationAttributeNames.AttackSequence)
 	local hitSequence = readNumberAttribute(model, PresentationAttributeNames.HitSequence)
+	local specialSequence = readNumberAttribute(model, SpecialAttributeNames.Sequence) or record.lastSpecialSequence
+	local specialKindId = readStringAttribute(model, SpecialAttributeNames.KindId)
 	if
 		behaviorStateId == nil
 		or lifeStateId == nil
@@ -228,10 +236,21 @@ local function updateRecord(model: Model, record: Record)
 		end
 	end
 
+	if specialSequence > record.lastSpecialSequence then
+		if specialKindId == SpecialKindIds.ScreamerReinforcement then
+			playCue("ScreamerWarning", EnemyAudioConfig.ScreamerWarning, record)
+		elseif specialKindId == SpecialKindIds.BloaterDeathBurst then
+			playCue("BloaterWarning", EnemyAudioConfig.BloaterWarning, record)
+		elseif specialKindId == SpecialKindIds.BruteSecondPhase then
+			playCue("BruteWarning", EnemyAudioConfig.BruteWarning, record)
+		end
+	end
+
 	record.lastBehaviorStateId = behaviorStateId
 	record.lastWindupSequence = windupSequence
 	record.lastAttackSequence = attackSequence
 	record.lastHitSequence = hitSequence
+	record.lastSpecialSequence = specialSequence
 	record.wasDead = isDead
 end
 

@@ -103,7 +103,10 @@ end
 
 for kindId, definition in DefinitionsByKindId do
 	assert(definition.KindId == kindId, "special telegraph definition identity must match its key")
-	assert(definition.WindupSeconds >= 0.6 and definition.WindupSeconds <= 1.5, "special windups must stay readable and bounded")
+	assert(
+		definition.WindupSeconds >= 0.6 and definition.WindupSeconds <= 1.5,
+		"special windups must stay readable and bounded"
+	)
 	assert(definition.RadiusStuds > 0 and definition.RadiusStuds <= 24, "special telegraph radius must stay bounded")
 	assert(definition.PulseCount >= 1 and definition.PulseCount <= 4, "special telegraph pulse count must stay bounded")
 	assert(#definition.Color == 3, "special telegraph colors require RGB tuples")
@@ -117,10 +120,19 @@ assert(
 	math.max(BloaterDeathBurst.WindupSeconds, BruteSecondPhase.WindupSeconds) < EnemyConfig.Cleanup.CorpseCleanupSeconds,
 	"corpse specials must commit before authoritative cleanup"
 )
-assert(Config.MaximumTrackedEnemyModels >= EnemyConfig.Population.AbsoluteMaximumConcurrent, "telegraph tracking must cover the enemy cap")
+assert(
+	Config.MaximumTrackedEnemyModels >= EnemyConfig.Population.AbsoluteMaximumConcurrent,
+	"telegraph tracking must cover the enemy cap"
+)
 assert(Config.MaximumTrackedEnemyModels <= 128, "telegraph tracking must stay bounded")
-assert(Config.MaximumActiveTelegraphs > 0 and Config.MaximumActiveTelegraphs <= 24, "active telegraphs require a strict cap")
-assert(Config.PollIntervalSeconds > 0 and Config.PollIntervalSeconds <= 0.1, "telegraph polling must stay responsive and bounded")
+assert(
+	Config.MaximumActiveTelegraphs > 0 and Config.MaximumActiveTelegraphs <= 24,
+	"active telegraphs require a strict cap"
+)
+assert(
+	Config.PollIntervalSeconds > 0 and Config.PollIntervalSeconds <= 0.1,
+	"telegraph polling must stay responsive and bounded"
+)
 assert(Config.CommitHoldSeconds > 0 and Config.CommitHoldSeconds <= 0.5, "commit flash must stay brief")
 
 return table.freeze(Config)

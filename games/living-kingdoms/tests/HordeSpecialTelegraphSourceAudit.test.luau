@@ -44,18 +44,23 @@ assert(count(controller, "RenderStepped:Connect") == 1, "one frame loop must ser
 assert(count(controller, "ChildAdded:Connect") == 1)
 assert(count(controller, "ChildRemoved:Connect") == 1)
 assert(string.find(controller, "GetAttributeChangedSignal", 1, true) == nil, "no per-enemy attribute connections")
-for _, prohibited in {
-	"RemoteEvent",
-	"FireServer",
-	"InvokeServer",
-	"OnClientEvent",
-	"Raycast",
-	"applyAuthoritativeDamage",
-	"spawnEnemy",
-	"task.delay",
-	"task.spawn",
-} do
-	assert(string.find(controller, prohibited, 1, true) == nil, "telegraph presentation must stay cosmetic: " .. prohibited)
+for _, prohibited in
+	{
+		"RemoteEvent",
+		"FireServer",
+		"InvokeServer",
+		"OnClientEvent",
+		"Raycast",
+		"applyAuthoritativeDamage",
+		"spawnEnemy",
+		"task.delay",
+		"task.spawn",
+	}
+do
+	assert(
+		string.find(controller, prohibited, 1, true) == nil,
+		"telegraph presentation must stay cosmetic: " .. prohibited
+	)
 end
 assert(
 	string.find(controller, 'FindFirstChildOfClass("Humanoid")', 1, true) == nil,
@@ -75,7 +80,10 @@ assert(string.find(audio, "BruteWarning", 1, true) ~= nil)
 assert(count(audio, "RenderStepped:Connect") == 1, "special audio must reuse the existing hostile frame loop")
 assert(count(audio, 'Instance.new("Sound")') == 1, "special audio must reuse the existing fixed sound pool")
 for _, cueName in { "ScreamerWarning", "BloaterWarning", "BruteWarning" } do
-	assert(string.find(audioConfig, cueName .. " = table.freeze", 1, true) ~= nil, "missing bounded warning cue: " .. cueName)
+	assert(
+		string.find(audioConfig, cueName .. " = table.freeze", 1, true) ~= nil,
+		"missing bounded warning cue: " .. cueName
+	)
 end
 
 assert(string.find(bootstrap, "HordeSpecialTelegraphController", 1, true) ~= nil)

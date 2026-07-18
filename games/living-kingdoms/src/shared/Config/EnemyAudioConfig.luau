@@ -19,7 +19,7 @@
 ]]
 
 local EnemyAudioConfig = {
-	Version = "AUD-0103-v1",
+	Version = "AUD-0103-v2-special-warnings",
 
 	-- One bounded, reused Sound pool shared by every cue so a full 24-enemy
 	-- horde can never create unbounded Sound instances.
@@ -73,6 +73,27 @@ local EnemyAudioConfig = {
 		MinimumIntervalSeconds = 0.12,
 	}),
 
+	ScreamerWarning = table.freeze({
+		SoundId = "rbxassetid://7058441251",
+		Volume = 0.58,
+		PlaybackSpeed = 0.32,
+		MinimumIntervalSeconds = 0.8,
+	}),
+
+	BloaterWarning = table.freeze({
+		SoundId = "rbxassetid://165946267",
+		Volume = 0.6,
+		PlaybackSpeed = 0.2,
+		MinimumIntervalSeconds = 0.35,
+	}),
+
+	BruteWarning = table.freeze({
+		SoundId = "rbxassetid://165946267",
+		Volume = 0.66,
+		PlaybackSpeed = 0.16,
+		MinimumIntervalSeconds = 0.5,
+	}),
+
 	Death = table.freeze({
 		-- Fire asset, very low speed: the collapse thud when the walker dies.
 		SoundId = "rbxassetid://165946267",
@@ -96,7 +117,7 @@ assert(
 		and EnemyAudioConfig.MaximumAudibleDistanceStuds <= 200,
 	"enemy audio distances must be ordered and bounded"
 )
-for _, cueName in { "Alert", "Windup", "Strike", "Hit", "Death" } do
+for _, cueName in { "Alert", "Windup", "Strike", "Hit", "ScreamerWarning", "BloaterWarning", "BruteWarning", "Death" } do
 	local cue = (EnemyAudioConfig :: any)[cueName]
 	assert(type(cue) == "table", "enemy audio cue must exist: " .. cueName)
 	assert(
