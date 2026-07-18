@@ -1,0 +1,79 @@
+name: Clean weapon roster diff once
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  clean:
+    if: github.head_ref == 'feat/server-owned-weapon-roster-v1'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out feature branch with history
+        uses: actions/checkout@v4
+        with:
+          ref: feat/server-owned-weapon-roster-v1
+          fetch-depth: 0
+
+      - name: Preserve intentional weapon test changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/weapon-roster-tests
+          for test_file in \
+            CombatSecurityIntegration.test.luau \
+            FirearmAudioSourceAudit.test.luau \
+            P4IntegrationValidation.test.luau \
+            VisibilityResolver.test.luau \
+            WeaponLoadoutSelectionResolver.test.luau \
+            WeaponRosterConfig.test.luau \
+            WeaponRosterSourceAudit.test.luau; do
+            cp "games/living-kingdoms/tests/$test_file" "/tmp/weapon-roster-tests/$test_file"
+          done
+
+      - name: Remove unrelated test formatting noise
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout origin/main -- games/living-kingdoms/tests
+          cp /tmp/weapon-roster-tests/*.luau games/living-kingdoms/tests/
+          rm .github/workflows/weapon-roster-cleanup-once.yml
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Validate cleaned source
+        shell: bash
+        run: |
+          set -euo pipefail
+          stylua --check games/living-kingdoms/src
+          selene games/living-kingdoms/src
+          fixture_count=0
+          while IFS= read -r -d '' fixture; do
+            lune run "$fixture"
+            fixture_count=$((fixture_count + 1))
+          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          test "$fixture_count" -gt 0
+          rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
+          echo "Validated $fixture_count fixtures after cleanup."
+
+      - name: Commit focused diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Remove unrelated weapon roster formatting noise"
+          git push origin HEAD:feat/server-owned-weapon-roster-v1
