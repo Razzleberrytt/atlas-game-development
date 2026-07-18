@@ -363,7 +363,7 @@ local victim, victimRoot = addOperative("operative.player:1", 100, 0)
 local unfair = service.spawnEnemy(request("enemy.deferred", 100 + minimumSpawn - 1, 0))
 assert(not unfair.didSpawn and unfair.wasDeferred and unfair.rejectionReasonId == "TooCloseToOperative")
 assert(service.readPressureState().pendingSpawnCount == 1)
-now = 1
+now = config.FairSpawn.DeferredRetryIntervalSeconds * 0.5
 local early = service.evaluateAt(now)
 assert(early.spawnedCount == 0 and service.readPressureState().pendingSpawnCount == 1, "retry must wait its interval")
 now = config.FairSpawn.DeferredRetryIntervalSeconds
@@ -654,17 +654,30 @@ local function fillToCap(): number
 	return spawned
 end
 addOperative("operative.player:1", 300, 300)
-assert(fillToCap() == 6, "one operative caps at 6 concurrent enemies")
+assert(
+	fillToCap() == config.Population.MaximumConcurrentPerOperative,
+	"one-operative cap must follow configuration"
+)
 reset()
 addOperative("operative.player:1", 300, 300)
 addOperative("operative.player:2", 300, -300)
-assert(fillToCap() == 12, "two operatives cap at 12 concurrent enemies")
+assert(
+	fillToCap()
+		== math.min(
+			config.Population.AbsoluteMaximumConcurrent,
+			config.Population.MaximumConcurrentPerOperative * 2
+		),
+	"two-operative cap must follow configuration"
+)
 reset()
 addOperative("operative.player:1", 300, 300)
 addOperative("operative.player:2", 250, 300)
 addOperative("operative.player:3", 300, 250)
 addOperative("operative.player:4", 250, 250)
-assert(fillToCap() == 24, "four operatives cap at 24 concurrent enemies")
+assert(
+	fillToCap() == config.Population.AbsoluteMaximumConcurrent,
+	"four-operative cap must reach the configured absolute maximum"
+)
 
 -- Heartbeat wiring drives evaluation through the configured interval.
 now = 1000

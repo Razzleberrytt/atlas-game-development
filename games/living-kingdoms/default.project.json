@@ -19,6 +19,15 @@
           "$className": "RemoteEvent"
         }
       },
+      "HordeNetwork": {
+        "$className": "Folder",
+        "State": {
+          "$className": "RemoteEvent"
+        },
+        "ChooseUpgrade": {
+          "$className": "RemoteEvent"
+        }
+      },
       "FlashlightNetwork": {
         "$className": "Folder",
         "ToggleIntent": {
