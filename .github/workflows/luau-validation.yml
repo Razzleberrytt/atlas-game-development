@@ -34,6 +34,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: feat/hroi-immediate-loot-drops
 
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
@@ -163,13 +165,11 @@ jobs:
       - name: Build Rojo project
         run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
 
-      - name: Commit validated integration and restore normal CI
+      - name: Commit validated integration source
         if: github.event_name == 'pull_request' && github.head_ref == 'feat/hroi-immediate-loot-drops'
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin main:refs/remotes/origin/main --depth=1
-          git checkout origin/main -- .github/workflows/luau-validation.yml
           rm -f tools/hroi_loot_integration_patch.py tools/hroi_loot_patch_anchor_fix.py tools/hroi_loot_fixture_patch.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
