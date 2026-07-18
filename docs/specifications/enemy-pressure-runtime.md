@@ -29,23 +29,29 @@ No special enemy, boss, pathfinding around obstacles, enemy-versus-cover behavio
 
 | Value | Prototype |
 | --- | ---: |
-| Walker health | 60 (three basic-firearm hits) |
-| Pursuit / roam speed | 11 / 6 studs per second |
-| Detection radius | 70 studs |
-| Pursuit-drop radius (hysteresis) | 95 studs |
-| Attack range / damage / cooldown | 6 studs / 12 / 1.6 s |
+| Walker health | 45 (faster crowd-clearing time to kill) |
+| Pursuit / roam speed | 13 / 7.5 studs per second |
+| Detection radius | 110 studs |
+| Pursuit-drop radius (hysteresis) | 145 studs |
+| Attack range / damage / cooldown | 6 studs / 12 / 1.45 s |
 | Fair-spawn minimum distance to any alive operative | 64 studs (inclusive) |
 | Deferred-spawn retry interval / queue bound | 2 s / 16 |
 | Population caps | 6 per operative, 24 absolute |
-| Roaming cadence by escalation level 0–3 | 60 s×1, 45 s×1, 35 s×2, 25 s×2 |
-| Recovery window after each authored wave | 20 s |
-| Roaming spawn ring | 70–120 studs from a squad anchor |
+| Roaming cadence by escalation level 0–3 | 12 s×2, 10 s×2, 8 s×3, 6 s×4 |
+| Recovery window after each authored wave | 8 s |
+| Roaming spawn ring | 68–96 studs from a squad anchor |
 | Corpse cleanup | 8 s |
 | Gameplay visibility radius (darkness engagement bound) | 60 studs |
 | Combat evaluation interval / LOS raycast budget | 0.1 s / 3 per operative per pass |
 | Enemy evaluation interval | 0.2 s |
 
 Config asserts its own invariants: fairness distance exceeds both the darkness engagement radius and melee range, roaming intervals tighten monotonically with escalation, the spawn ring honors fairness and stays inside the authored world, and the absolute cap covers a four-operative squad.
+
+### Horde Pressure v1 intent
+
+This tuning pass fixes the highest-leverage playtest failure: the world could wait a full minute before adding one roaming enemy, while fair spawns could land outside the walker's detection radius. The revised loop starts contact in roughly twelve seconds, fills the already validated population budget in groups, and places pressure spawns inside detection range. Enemy health is reduced so the denser population creates a satisfying kill rhythm rather than a field of damage sponges.
+
+The pass deliberately does **not** raise the 6-per-operative / 24-absolute cap. Density comes from reaching the current ceiling quickly and refilling losses, preserving the existing worst-case runtime budget until representative Studio profiling supports a higher cap.
 
 ## Pure behavior resolution
 
@@ -67,7 +73,7 @@ Config asserts its own invariants: fairness distance exceeds both the darkness e
 - **Spawning:** `spawnEnemy` validates through the resolver against live facts. An authored-wave placement that is merely unfair (an operative stands too close) or over the cap defers into a bounded retry queue and lands once conditions allow; impossible placements (duplicate, invalid, outside the world) are dropped. Roaming proposals never defer — the next interval simply proposes a fresh position.
 - **Bodies:** graybox `HumanoidRootPart` + `Humanoid` models with a name/health billboard, spawned under `Workspace.EnemyEntities`, server network ownership.
 - **Waves:** `spawnAuthoredWave(waveIndex, definitions)` raises the escalation level monotonically, opens the recovery window, and spawns/defers each definition.
-- **Pressure:** `beginOperationPressure` (infiltration) starts level-0 roaming; each authored wave tightens the cadence. Roam spawns anchor on a deterministically rotated alive operative and propose golden-angle ring positions 70–120 studs out, clamped to the world, then pass the same fairness validation. The recovery window pauses roaming around each authored spike. `endOperationPressure` (mission resolution) is the stand-down: spawning stops, pending spawns clear, and every living enemy becomes inert so a resolved squad is not chased through the result screen.
+- **Pressure:** `beginOperationPressure` (infiltration) starts level-0 roaming; each authored wave tightens the cadence. Roam spawns anchor on a deterministically rotated alive operative and propose golden-angle ring positions 68–96 studs out, clamped to the world, then pass the same fairness validation. The 110-stud detection radius means accepted pressure spawns become active threats instead of idling beyond awareness. The shortened recovery window pauses roaming around each authored spike without draining urgency. `endOperationPressure` (mission resolution) is the stand-down: spawning stops, pending spawns clear, and every living enemy becomes inert so a resolved squad is not chased through the result screen.
 - **Behavior application:** one evaluation pass per configured interval reads operative facts once, applies each enemy's resolver decision (movement intent via `Humanoid:MoveTo`, walk speeds per state, deterministic roam wander), and commits legal attacks through the P3 boundary. A rejected life commit does not consume the attack cooldown.
 - **Death and cleanup:** an accepted health commit reaching zero marks the enemy `Dead`, anchors the corpse, frees population capacity, and schedules cleanup on the same evaluation pass — no timers.
 
