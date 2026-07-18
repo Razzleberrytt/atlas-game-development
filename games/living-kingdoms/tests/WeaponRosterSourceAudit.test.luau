@@ -23,10 +23,11 @@ assert(contains(service, "MissionDirectorService.read()"), "server must own inse
 assert(not contains(controller, "DamagePerHit ="), "client must not submit weapon damage")
 assert(not contains(controller, "CadenceSeconds ="), "client must not submit cadence")
 assert(not contains(controller, "MagazineCapacity ="), "client must not submit ammunition state")
-assert(contains(factory, "FirearmConfig.BreachShotgun.WeaponId"), "shotgun silhouette required")
-assert(contains(factory, "FirearmConfig.SniperRifle.WeaponId"), "sniper silhouette required")
-assert(contains(factory, "FirearmConfig.ServicePistol.WeaponId"), "pistol silhouette required")
-assert(contains(factory, "FirearmConfig.SubmachineGun.WeaponId"), "SMG silhouette required")
+assert(contains(factory, "BreachShotgunPresentationFactory.create()"), "shotgun model routing required")
+assert(contains(factory, "SniperRiflePresentationFactory.create()"), "sniper model routing required")
+assert(contains(factory, "ServicePistolPresentationFactory.create()"), "pistol model routing required")
+assert(contains(factory, "SubmachineGunPresentationFactory.create()"), "SMG model routing required")
+assert(not contains(factory, "compactRig"), "scaled-box placeholder factory must stay removed")
 assert(contains(serverInit, "WeaponLoadoutService.start()"), "server bootstrap must start loadout authority")
 
 for _, prohibited in { "DataStoreService", "MarketplaceService", "Humanoid.Health" } do
