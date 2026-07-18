@@ -40,9 +40,22 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Check Luau formatting
+      - name: Capture Luau formatting patch
         shell: bash
-        run: stylua --check games/living-kingdoms/src
+        run: |
+          set +e
+          stylua --check games/living-kingdoms/src > /tmp/stylua.patch 2>&1
+          status=$?
+          cat /tmp/stylua.patch
+          exit $status
+
+      - name: Upload formatting diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: enemy-loot-stylua-patch
+          path: /tmp/stylua.patch
+          retention-days: 1
 
       - name: Run Selene
         shell: bash
