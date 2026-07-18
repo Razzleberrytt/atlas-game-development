@@ -44,6 +44,19 @@ jobs:
         shell: bash
         run: stylua --check games/living-kingdoms/src
 
+      - name: Generate formatted Luau artifact
+        if: failure()
+        shell: bash
+        run: stylua games/living-kingdoms/src
+
+      - name: Upload formatted Luau artifact
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stylua-formatted-src
+          path: games/living-kingdoms/src
+          retention-days: 1
+
       - name: Run Selene
         shell: bash
         run: selene games/living-kingdoms/src
