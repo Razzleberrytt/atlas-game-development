@@ -4,7 +4,7 @@
 	Resolves pure reload begin and completion transitions from authoritative
 	caller state. The caller owns the monotonic server timestamp and commits the
 	returned copies. This module accepts no client ammunition, duration, state,
-	eligibility, or completion time. A server-owned run-upgrade override may
+	eligibility, or completion time. A server-owned run-upgrade modifier may
 	shorten reload duration within a strict floor.
 ]]
 
@@ -96,20 +96,35 @@ local function isConfiguredWeaponState(weaponState: WeaponReadinessState): boole
 		and weaponState.ammunition.magazineCapacity == FirearmConfig.BasicFirearm.MagazineCapacity
 end
 
+local function readProgressionNumber(attributeName: string, fallback: number): number
+	local storageAsAny = ReplicatedStorage :: any
+	if type(storageAsAny.FindFirstChild) ~= "function" then
+		return fallback
+	end
+	local network = storageAsAny:FindFirstChild("ProgressionNetwork")
+	if network == nil or type(network.GetAttribute) ~= "function" then
+		return fallback
+	end
+	local value = network:GetAttribute(attributeName)
+	return if type(value) == "number" and value == value then value else fallback
+end
+
 local function resolveReloadDuration(override: number?): number?
 	local configured = FirearmConfig.BasicFirearm.ReloadDurationSeconds
-	if override == nil then
-		return configured
+	local requested = override
+	if requested == nil then
+		local multiplier = readProgressionNumber("RunReloadDurationMultiplier", 1)
+		requested = configured * multiplier
 	end
 	if
-		type(override) ~= "number"
-		or override ~= override
-		or override < MINIMUM_RELOAD_DURATION_SECONDS
-		or override > configured
+		type(requested) ~= "number"
+		or requested ~= requested
+		or requested < MINIMUM_RELOAD_DURATION_SECONDS
+		or requested > configured
 	then
 		return nil
 	end
-	return override
+	return requested
 end
 
 local function rejectBegin(
