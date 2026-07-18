@@ -8,15 +8,15 @@
 ]]
 
 local EnemyLootConfig = {
-	Version = "HROI-0106-v1-enemy-ammo-loot",
+	Version = "HROI-0106-v2-hard-ammo-scarcity",
 	EvaluationIntervalSeconds = 0.1,
 	MaximumTrackedEnemyModels = 64,
 	MaximumActiveDrops = 16,
 	PickupRadiusStuds = 5.5,
 	MaximumVerticalPickupDistanceStuds = 8,
-	DropRollModulo = 20,
+	DropRollModulo = 100,
 	RareDropRolls = 1,
-	CommonDropRolls = 6,
+	CommonDropRolls = 7,
 	HoverHeightStuds = 1.35,
 	BobAmplitudeStuds = 0.22,
 	BobRadiansPerSecond = 3.2,
@@ -55,11 +55,16 @@ assert(
 	EnemyLootConfig.PickupRadiusStuds > 0 and EnemyLootConfig.PickupRadiusStuds <= 8,
 	"enemy loot automatic collection radius must remain local"
 )
+local totalDropRolls = EnemyLootConfig.RareDropRolls + EnemyLootConfig.CommonDropRolls
 assert(
 	EnemyLootConfig.RareDropRolls > 0
 		and EnemyLootConfig.CommonDropRolls > 0
-		and EnemyLootConfig.RareDropRolls + EnemyLootConfig.CommonDropRolls < EnemyLootConfig.DropRollModulo,
+		and totalDropRolls < EnemyLootConfig.DropRollModulo,
 	"enemy loot probabilities must leave a no-drop outcome"
+)
+assert(
+	totalDropRolls * 100 <= EnemyLootConfig.DropRollModulo * 10,
+	"enemy loot must remain a harsh ten-percent-or-lower resource economy"
 )
 for _, definition in EnemyLootConfig.Definitions do
 	assert(definition.Rounds > 0 and definition.Rounds <= 24, "enemy loot ammunition grants must remain bounded")

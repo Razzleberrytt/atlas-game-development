@@ -14,6 +14,11 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/En
 	injectGlobals = true,
 })()
 
+assertThat(config.DropRollModulo == 100, "loot rolls must use percentage-scale resolution")
+assertThat(config.CommonDropRolls == 7, "common drop chance must remain seven percent")
+assertThat(config.RareDropRolls == 1, "rare drop chance must remain one percent")
+assertThat(config.CommonDropRolls + config.RareDropRolls == 8, "enemy loot must remain an eight-percent event")
+
 local CONFIG_TOKEN = {}
 local resolver = luau.load(fs.readFile("games/living-kingdoms/src/shared/Loot/EnemyLootResolver.luau"), {
 	debugName = "EnemyLootResolver",
@@ -48,7 +53,7 @@ assertThat(first.dropId == repeated.dropId and first.roll == repeated.roll, "dro
 local common = nil
 local rare = nil
 local noDrop = nil
-for sequence = 1, 500 do
+for sequence = 1, 2000 do
 	local result = resolver.resolveDrop("enemy.roam:fixture", sequence, 0)
 	if result.didDrop and result.rarityId == "Common" and common == nil then
 		common = result
@@ -72,4 +77,4 @@ assertThat(rare.lifetimeSeconds == config.Definitions.Rare.LifetimeSeconds, "rar
 assertThat(common.dropId ~= rare.dropId, "separate deaths require separate pickup identities")
 assertThat(table.isfrozen(common) and table.isfrozen(rare) and table.isfrozen(noDrop), "loot resolutions must be immutable")
 
-print("EnemyLootResolver: deterministic rarity rolls, no-drop outcomes, grants, lifetime, and cap passed")
+print("EnemyLootResolver: hard eight-percent deterministic rarity rolls, no-drop outcomes, grants, lifetime, and cap passed")
