@@ -5,6 +5,7 @@ on:
     paths:
       - "games/living-kingdoms/**"
       - "docs/**"
+      - "tools/hroi_run_upgrade_patch.py"
       - "rokit.toml"
       - "stylua.toml"
       - "selene.toml"
@@ -39,6 +40,21 @@ jobs:
           path: .
           cache: false
           token: ${{ github.token }}
+
+      - name: Apply exact squad upgrade integration
+        run: python3 tools/hroi_run_upgrade_patch.py
+
+      - name: Format Luau integration
+        run: stylua games/living-kingdoms/src games/living-kingdoms/tests
+
+      - name: Upload formatted integration
+        uses: actions/upload-artifact@v4
+        with:
+          name: hroi-run-upgrade-formatted
+          path: |
+            games/living-kingdoms/src
+            games/living-kingdoms/tests
+          retention-days: 1
 
       - name: Check Luau formatting
         shell: bash
