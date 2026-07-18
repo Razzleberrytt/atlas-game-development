@@ -142,12 +142,10 @@ local function updateFrame()
 		* (if isMortal then CriticalConditionConfig.MortalPulseSpeedMultiplier else 1)
 	local pulse = (math.sin(Workspace:GetServerTimeNow() * pulseSpeed) + 1) * 0.5
 	local baseTransparency = CriticalConditionConfig.EdgeMaximumTransparency
-		+ (CriticalConditionConfig.EdgeMinimumTransparency - CriticalConditionConfig.EdgeMaximumTransparency) * severity
-	local edgeTransparency = math.clamp(
-		baseTransparency - pulse * CriticalConditionConfig.PulseTransparencyAmplitude,
-		0.05,
-		0.85
-	)
+		+ (CriticalConditionConfig.EdgeMinimumTransparency - CriticalConditionConfig.EdgeMaximumTransparency)
+			* severity
+	local edgeTransparency =
+		math.clamp(baseTransparency - pulse * CriticalConditionConfig.PulseTransparencyAmplitude, 0.05, 0.85)
 	local edgeColor = if isMortal then Color3.fromRGB(255, 18, 26) else Color3.fromRGB(196, 18, 24)
 	for _, edge in edgeFrames do
 		edge.BackgroundColor3 = edgeColor
@@ -163,7 +161,11 @@ local function updateFrame()
 		)
 		warning.TextColor3 = if isMortal then Color3.fromRGB(255, 44, 39) else Color3.fromRGB(255, 94, 71)
 		warning.TextTransparency = CriticalConditionConfig.WarningMaximumTransparency
-			+ (CriticalConditionConfig.WarningMinimumTransparency - CriticalConditionConfig.WarningMaximumTransparency) * pulse
+			+ (
+					CriticalConditionConfig.WarningMinimumTransparency
+					- CriticalConditionConfig.WarningMaximumTransparency
+				)
+				* pulse
 		warning.TextStrokeTransparency = 0.12 + (1 - pulse) * 0.18
 	end
 end
