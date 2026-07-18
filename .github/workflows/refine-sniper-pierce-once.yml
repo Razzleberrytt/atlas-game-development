@@ -29,7 +29,40 @@ jobs:
           token: ${{ github.token }}
 
       - name: Apply bounded validation refinement
-        run: python3 tools/refine_sniper_pierce_validation.py
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("tools/refine_sniper_pierce_validation.py")
+          source = path.read_text()
+          anchor = '''def replace_once(path: str, old: str, new: str) -> None:
+              file_path = Path(path)
+              source = file_path.read_text()
+              count = source.count(old)
+              if count != 1:
+                  raise RuntimeError(f"{path}: expected one replacement, found {count}")
+              file_path.write_text(source.replace(old, new, 1))
+          '''
+          addition = anchor + '''
+
+          def replace_first(path: str, old: str, new: str) -> None:
+              file_path = Path(path)
+              source = file_path.read_text()
+              if old not in source:
+                  raise RuntimeError(f"{path}: expected first replacement token")
+              file_path.write_text(source.replace(old, new, 1))
+          '''
+          if source.count(anchor) != 1:
+              raise RuntimeError("replace_once anchor drifted")
+          source = source.replace(anchor, addition, 1)
+          needle = "replace_once(\n    resolver,\n    '''\\tfor _, fact in targetFacts do"
+          replacement = "replace_first(\n    resolver,\n    '''\\tfor _, fact in targetFacts do"
+          if source.count(needle) != 1:
+              raise RuntimeError(f"cone helper call count: {source.count(needle)}")
+          path.write_text(source.replace(needle, replacement, 1))
+          PY
+          python3 tools/refine_sniper_pierce_validation.py
 
       - name: Format edited Luau
         run: |
