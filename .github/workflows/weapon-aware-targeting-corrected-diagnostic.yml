@@ -1,0 +1,68 @@
+name: Diagnose corrected weapon targeting once
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'feat/weapon-aware-auto-targeting-v1'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/weapon-aware-auto-targeting-v1
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Reproduce corrected source
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          source = Path('.github/workflows/weapon-aware-targeting-finish-once.yml').read_text()
+          marker = '      - name: Reproduce wiring and correct fixture\n'
+          section = source.split(marker, 1)[1].split('\n\n      - name: Format focused Luau', 1)[0]
+          script = section.split('        run: |\n', 1)[1]
+          Path('/tmp/reproduce.sh').write_text(textwrap.dedent(script))
+          PY
+          bash /tmp/reproduce.sh
+
+      - name: Capture corrected behavior fixture
+        id: behavior
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          lune run games/living-kingdoms/tests/WeaponTargetSelector.test.luau 2>&1 | tee /tmp/weapon-target-selector-corrected.log
+
+      - name: Upload corrected fixture diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: weapon-target-selector-corrected-log
+          path: /tmp/weapon-target-selector-corrected.log
+          retention-days: 1
+
+      - name: Run source audit
+        if: steps.behavior.outcome == 'success'
+        run: lune run games/living-kingdoms/tests/WeaponTargetSelectorSourceAudit.test.luau
+
+      - name: Enforce result
+        if: steps.behavior.outcome == 'failure'
+        run: exit 1
