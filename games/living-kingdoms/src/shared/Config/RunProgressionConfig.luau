@@ -5,6 +5,12 @@
 	XP is shared, upgrade offers are generated and validated by the server, and
 	all stacks reset whenever the server starts a new operation session. No
 	permanent account progression or monetized power is represented here.
+
+	The opening threshold is tuned jointly with HordeExperienceConfig.Pressure:
+	four ordinary confirmed deaths create the first upgrade, giving the opening
+	reward loop a chance to come online before solo pressure reaches its lethal
+	steady state. Later thresholds grow slightly faster to avoid upgrade spam once
+	the squad begins clearing larger hordes.
 ]]
 
 local UpgradeDefinitions = table.freeze({
@@ -39,10 +45,10 @@ local UpgradeDefinitions = table.freeze({
 })
 
 local RunProgressionConfig = {
-	Version = "HROI-0105-v2-squad-upgrades",
+	Version = "HROI-0105-v3-opening-curve",
 	FieldXpPerConfirmedEnemyDeath = 20,
-	BaseXpToLevel = 100,
-	XpGrowthPerLevel = 1.3,
+	BaseXpToLevel = 80,
+	XpGrowthPerLevel = 1.35,
 	MaximumRunLevel = 20,
 	EnemyScanIntervalSeconds = 0.1,
 	MaximumTrackedEnemyModels = 64,
@@ -62,6 +68,11 @@ assert(
 	"confirmed enemy deaths require a positive bounded Field XP award"
 )
 assert(RunProgressionConfig.BaseXpToLevel > 0, "the first run level requires positive XP")
+local firstUpgradeConfirmedKills =
+	math.ceil(RunProgressionConfig.BaseXpToLevel / RunProgressionConfig.FieldXpPerConfirmedEnemyDeath)
+assert(firstUpgradeConfirmedKills == 4, "the opening curve requires the first upgrade after four confirmed deaths")
+local secondLevelRequirement = math.floor(RunProgressionConfig.BaseXpToLevel * RunProgressionConfig.XpGrowthPerLevel + 0.5)
+assert(secondLevelRequirement >= 100, "later upgrade thresholds must slow after the opening reward")
 assert(
 	RunProgressionConfig.XpGrowthPerLevel > 1 and RunProgressionConfig.XpGrowthPerLevel <= 2,
 	"run-level XP growth must be gradual and bounded"
