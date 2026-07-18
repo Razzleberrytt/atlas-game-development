@@ -93,4 +93,31 @@ assert(contains(factory, "SubmachineGunPresentationFactory.create()"), "SMG mode
 assert(not contains(factory, "compactRig"), "scaled-box placeholder factory must stay removed")'''
 replace_once(audit_path, audit_old, audit_new, "weapon roster visual routing audit")
 
-print("Registered four dedicated weapon models and updated roster audit")
+visual_test_path = "games/living-kingdoms/tests/VisualAssetContractsConfig.test.luau"
+replace_once(
+    visual_test_path,
+    'assertThat(#config.Registry == 28, "VIS-0101 must inventory the complete initial presentation surface")',
+    'assertThat(#config.Registry == 32, "VIS-0101 must inventory the expanded presentation surface")',
+    "visual asset registry count",
+)
+weapon_assertion = '''assertThat(
+\tconfig.ByKey[contracts.AssetKeys.WeaponBasicFirearmModel].statusId == contracts.StatusIds.MissingPresentation,
+\t"basic firearm must remain honestly marked as missing production presentation"
+)'''
+weapon_assertion_insert = weapon_assertion + '''
+for _, assetKey in
+\t{
+\t\tcontracts.AssetKeys.WeaponBreachShotgunModel,
+\t\tcontracts.AssetKeys.WeaponSniperRifleModel,
+\t\tcontracts.AssetKeys.WeaponServicePistolModel,
+\t\tcontracts.AssetKeys.WeaponSubmachineGunModel,
+\t}
+do
+\tlocal entry = config.ByKey[assetKey]
+\tassertThat(entry.statusId == contracts.StatusIds.PrimitivePlaceholder, "new weapon models must remain honest fallbacks")
+\tassertThat(entry.expectedRootName == "WeaponPresentation", "new weapon model root contract drifted")
+\tassertThat(#entry.requiredAttachmentNames == 5, "new weapon models require the shared five-locator contract")
+end'''
+replace_once(visual_test_path, weapon_assertion, weapon_assertion_insert, "new weapon registry assertions")
+
+print("Registered four dedicated weapon models and updated visual inventory audits")
