@@ -14,10 +14,16 @@ bootstrap_path = Path("games/living-kingdoms/src/server/init.server.luau")
 bootstrap = bootstrap_path.read_text(encoding="utf-8")
 bootstrap = replace_once(
     bootstrap,
-    '''\tlocal existingReadState = network:FindFirstChild("ReadState")
+    '''\telse
+\t\tassert(existingState:IsA("RemoteEvent"), "ProgressionNetwork.State must be a RemoteEvent")
+\tend
+\tlocal existingReadState = network:FindFirstChild("ReadState")
 \tif existingReadState == nil then
 \t\tlocal readState = Instance.new("RemoteFunction")''',
-    '''\tlocal existingSelectionIntent = network:FindFirstChild("SelectionIntent")
+    '''\telse
+\t\tassert(existingState:IsA("RemoteEvent"), "ProgressionNetwork.State must be a RemoteEvent")
+\tend
+\tlocal existingSelectionIntent = network:FindFirstChild("SelectionIntent")
 \tif existingSelectionIntent == nil then
 \t\tlocal selectionIntent = Instance.new("RemoteEvent")
 \t\tselectionIntent.Name = "SelectionIntent"
