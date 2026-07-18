@@ -60,9 +60,31 @@ jobs:
         shell: bash
         run: stylua --check games/living-kingdoms/src
 
-      - name: Run Selene
+      - name: Run Selene and capture diagnostics
+        id: selene
+        continue-on-error: true
         shell: bash
-        run: selene games/living-kingdoms/src
+        run: |
+          set +e
+          selene games/living-kingdoms/src > /tmp/selene.log 2>&1
+          status=$?
+          cat /tmp/selene.log
+          echo "$status" > /tmp/selene-status
+          exit "$status"
+
+      - name: Upload Selene diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hroi-run-upgrade-selene-log
+          path: |
+            /tmp/selene.log
+            /tmp/selene-status
+          retention-days: 1
+
+      - name: Enforce Selene result
+        if: steps.selene.outcome == 'failure'
+        run: exit 1
 
       - name: Run Lune fixtures
         shell: bash
