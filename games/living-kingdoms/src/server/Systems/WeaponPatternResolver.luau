@@ -23,6 +23,7 @@ export type PatternTargetFact = {
 export type PatternImpact = {
 	targetEntityId: string,
 	damageMultiplier: number,
+	requiresPierceValidation: boolean,
 }
 
 type RankedCandidate = {
@@ -57,7 +58,6 @@ local function isEligibleSecondary(fact: PatternTargetFact, primaryTargetEntityI
 		and fact.isAlive
 		and fact.isTargetable
 		and fact.isVisible
-		and fact.hasLineOfSight
 end
 
 local function findPrimary(targetFacts: { PatternTargetFact }, primaryTargetEntityId: string): PatternTargetFact?
@@ -85,7 +85,7 @@ local function rankConeCandidates(
 	end
 	local minimumDot = math.cos(math.rad(halfAngle))
 	for _, fact in targetFacts do
-		if not isEligibleSecondary(fact, primaryTargetEntityId) then
+		if not isEligibleSecondary(fact, primaryTargetEntityId) or not fact.hasLineOfSight then
 			continue
 		end
 		local deltaX, deltaZ = horizontalDelta(operativeWorldPosition, fact.worldPosition)
@@ -222,6 +222,7 @@ function WeaponPatternResolver.resolve(
 		impacts[index] = table.freeze({
 			targetEntityId = ranked[index].fact.entityId,
 			damageMultiplier = definition.SecondaryDamageMultiplier,
+			requiresPierceValidation = definition.ModeId == modes.LinePierce,
 		})
 	end
 	return table.freeze(impacts)

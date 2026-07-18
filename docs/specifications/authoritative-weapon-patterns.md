@@ -14,13 +14,14 @@ Make the selectable firearms differ in server-owned firing behavior, not only ba
 
 ## Authority
 
-The client supplies no aim vector, spread seed, secondary target, damage multiplier, impact position, penetration result, or extra ammunition request. Pattern selection consumes the same bounded server-derived sight facts and line-of-sight results already used by primary automatic targeting.
+The client supplies no aim vector, spread seed, secondary target, damage multiplier, impact position, penetration result, or extra ammunition request. Pattern selection consumes the same bounded server-derived sight facts used by primary automatic targeting. Shotgun cleave requires the existing line-of-sight result. A geometrically aligned sniper candidate receives one server ray that excludes the already-hit primary so terrain or another hostile can still block the path.
 
 Primary hits retain the existing FirearmHitResolver identity contract. Secondary impacts use derived server-only ShotIds, a dedicated reduced-damage DamageResolver path, and the existing revisioned EnemyDirectorService health commit.
 
 ## Bounds
 
-- zero additional raycasts;
+- no new raycast loop;
+- at most one additional rear-path validation ray per accepted sniper shot, and only after a candidate is geometrically selected;
 - zero new remotes;
 - zero extra ammunition expenditure per trigger;
 - maximum three shotgun secondaries;

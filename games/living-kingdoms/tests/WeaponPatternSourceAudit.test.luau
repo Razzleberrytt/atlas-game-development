@@ -71,6 +71,7 @@ for _, token in
 		"ConeCleave",
 		"LinePierce",
 		"table.sort",
+		"requiresPierceValidation",
 		"table.freeze(impacts)",
 	}
 do
@@ -102,6 +103,13 @@ assertThat(
 )
 assertThat(contains(runtime, "WeaponPatternResolver.resolve("), "runtime must resolve patterns server-side")
 assertThat(contains(runtime, "buildPatternTargetFacts(playerState)"), "runtime must reuse bounded sight facts")
+assertThat(contains(runtime, "local function hasClearPierceShot("), "runtime must validate the rear path")
+assertThat(
+	contains(runtime, "local exclusions: { Instance } = { primaryFact.model }"),
+	"rear-path validation must exclude only the already-hit primary before testing the second target"
+)
+local _, runtimeRaycastCount = string.gsub(runtime, "Workspace:Raycast", "")
+assertThat(runtimeRaycastCount == 2, "runtime may own only the baseline sight ray and one bounded rear-path ray")
 assertThat(contains(runtime, "DamageResolver.resolvePattern("), "secondary damage must use dedicated resolver path")
 assertThat(contains(runtime, '"%s:pattern:%d:%s"'), "secondary impacts require derived unique shot identities")
 assertThat(

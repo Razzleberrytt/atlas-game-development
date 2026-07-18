@@ -280,6 +280,32 @@ local function hasClearShot(
 	return result.Instance:IsDescendantOf(fact.model)
 end
 
+-- A rear candidate naturally fails the normal sight ray when the selected
+-- primary is the first hit. One accepted precision shot may therefore perform
+-- one additional validation ray that excludes only the operative and the
+-- already-hit primary. Terrain and any other hostile still block the path.
+local function hasClearPierceShot(
+	player: Player,
+	operativePosition: Vector3,
+	primaryFact: EnemyDirectorService.EnemyCombatFact,
+	secondaryFact: EnemyDirectorService.EnemyCombatFact
+): boolean
+	local parameters = RaycastParams.new()
+	parameters.FilterType = Enum.RaycastFilterType.Exclude
+	local exclusions: { Instance } = { primaryFact.model }
+	local character = player.Character
+	if character ~= nil then
+		table.insert(exclusions, character)
+	end
+	parameters.FilterDescendantsInstances = exclusions
+	local direction = secondaryFact.worldPosition - operativePosition
+	local result = Workspace:Raycast(operativePosition, direction, parameters)
+	if result == nil then
+		return true
+	end
+	return result.Instance:IsDescendantOf(secondaryFact.model)
+end
+
 --[[
 	Build this operative's disclosed-fact candidates for one evaluation pass.
 	A hostile is visible only inside the darkness engagement radius, and the
@@ -388,12 +414,17 @@ local function buildPatternTargetFacts(playerState: PlayerCombatState): { Weapon
 end
 
 local function commitPatternImpacts(
+	player: Player,
 	playerState: PlayerCombatState,
 	operativePosition: Vector3,
 	primaryTargetEntityId: string,
 	primaryShotId: string,
 	nowTimestamp: number
 ): { CombatContracts.SecondaryShotImpactPresentation }
+	local primaryEntry = playerState.sightedByEntityId[primaryTargetEntityId]
+	if primaryEntry == nil then
+		return {}
+	end
 	local selectedImpacts = WeaponPatternResolver.resolve(
 		playerState.weaponState.weaponId,
 		operativePosition,
@@ -404,7 +435,13 @@ local function commitPatternImpacts(
 	for index, impact in selectedImpacts do
 		local sightedEntry = playerState.sightedByEntityId[impact.targetEntityId]
 		local healthRead = EnemyDirectorService.readHealthState(impact.targetEntityId)
-		if sightedEntry == nil or healthRead == nil or not healthRead.isAlive or not sightedEntry.hasLineOfSight then
+		if sightedEntry == nil or healthRead == nil or not healthRead.isAlive then
+			continue
+		end
+		local hasPatternLineOfSight = if impact.requiresPierceValidation
+			then hasClearPierceShot(player, operativePosition, primaryEntry.fact, sightedEntry.fact)
+			else sightedEntry.hasLineOfSight
+		if not hasPatternLineOfSight then
 			continue
 		end
 		local derivedShotId = string.format("%s:pattern:%d:%s", primaryShotId, index, impact.targetEntityId)
@@ -437,6 +474,7 @@ local function commitPatternImpacts(
 end
 
 local function resolveAcceptedShot(
+	player: Player,
 	playerState: PlayerCombatState,
 	operativePosition: Vector3,
 	fireResult: CombatContracts.AuthoritativeFireResult,
@@ -482,7 +520,7 @@ local function resolveAcceptedShot(
 		then damageResolution.damageEvent.damageAmount
 		else nil
 	local secondaryImpacts = if didApplyPrimaryDamage
-		then commitPatternImpacts(playerState, operativePosition, targetEntityId, shotId, nowTimestamp)
+		then commitPatternImpacts(player, playerState, operativePosition, targetEntityId, shotId, nowTimestamp)
 		else {}
 	presentationRemote:FireAllClients({
 		kindId = CombatContracts.PresentationMessageKindIds.ShotFired,
@@ -550,7 +588,7 @@ local function evaluatePlayer(player: Player, playerState: PlayerCombatState, no
 	}, selectedTarget, playerState.weaponState, nowTimestamp)
 	playerState.weaponState = fireResolution.weaponStateAfter
 	if fireResolution.decision.shouldFire then
-		resolveAcceptedShot(playerState, operativePosition, fireResolution.fireResult, nowTimestamp)
+		resolveAcceptedShot(player, playerState, operativePosition, fireResolution.fireResult, nowTimestamp)
 		OperativeCombatRuntimeService.publishAmmunitionState(player)
 	end
 end

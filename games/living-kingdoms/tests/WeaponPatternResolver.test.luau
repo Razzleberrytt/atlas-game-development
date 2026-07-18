@@ -128,6 +128,7 @@ assert(shotgunImpacts[2].targetEntityId == "enemy.close-left", "shotgun should d
 assert(shotgunImpacts[3].targetEntityId == "enemy.mid-right", "shotgun should take the third bounded cone target")
 for _, impact in shotgunImpacts do
 	assert(impact.damageMultiplier == 0.7, "shotgun multiplier must come from server config")
+	assert(not impact.requiresPierceValidation, "shotgun must use the existing sight result")
 	assert(impact.targetEntityId ~= primary.entityId, "primary cannot be duplicated as a secondary")
 end
 
@@ -148,6 +149,9 @@ end
 
 local sniperPrimary = fact("enemy.sniper-primary", 20, 0)
 local nearestBehind = fact("enemy.nearest-behind", 24, 1)
+-- The normal sight ray can hit the primary first. Geometry may nominate this
+-- target, but the runtime must perform the bounded post-primary validation ray.
+nearestBehind.hasLineOfSight = false
 local fartherBehind = fact("enemy.farther-behind", 45, 0)
 local tooWide = fact("enemy.too-wide", 30, 4)
 local beforePrimary = fact("enemy.before-primary", 15, 0)
@@ -168,6 +172,7 @@ assert(
 	"sniper must choose nearest aligned target behind primary"
 )
 assert(sniperImpacts[1].damageMultiplier == 0.72, "sniper multiplier must come from server config")
+assert(sniperImpacts[1].requiresPierceValidation, "precision impact must request runtime path validation")
 
 local immutable = pcall(function()
 	(sniperImpacts :: any)[1] = nil
