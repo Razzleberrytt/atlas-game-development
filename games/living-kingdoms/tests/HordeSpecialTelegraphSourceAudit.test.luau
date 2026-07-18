@@ -42,7 +42,6 @@ for _, prohibited in {
 	"InvokeServer",
 	"OnClientEvent",
 	"Raycast",
-	"Humanoid",
 	"applyAuthoritativeDamage",
 	"spawnEnemy",
 	"task.delay",
@@ -50,6 +49,15 @@ for _, prohibited in {
 } do
 	assert(string.find(controller, prohibited, 1, true) == nil, "telegraph presentation must stay cosmetic: " .. prohibited)
 end
+assert(
+	string.find(controller, 'FindFirstChildOfClass("Humanoid")', 1, true) == nil,
+	"telegraph presentation cannot inspect Humanoid state"
+)
+assert(string.find(controller, ".Health", 1, true) == nil, "telegraph presentation cannot inspect health")
+assert(
+	string.find(controller, 'FindFirstChild("HumanoidRootPart")', 1, true) ~= nil,
+	"telegraph presentation may follow only the replicated world root"
+)
 
 assert(string.find(audio, "HordeSpecialTelegraphConfig", 1, true) ~= nil)
 assert(string.find(audio, "lastSpecialSequence", 1, true) ~= nil)
@@ -57,7 +65,7 @@ assert(string.find(audio, "ScreamerWarning", 1, true) ~= nil)
 assert(string.find(audio, "BloaterWarning", 1, true) ~= nil)
 assert(string.find(audio, "BruteWarning", 1, true) ~= nil)
 assert(count(audio, "RenderStepped:Connect") == 1, "special audio must reuse the existing hostile frame loop")
-assert(count(audio, "Instance.new(\"Sound\")") == 1, "special audio must reuse the existing fixed sound pool")
+assert(count(audio, 'Instance.new("Sound")') == 1, "special audio must reuse the existing fixed sound pool")
 for _, cueName in { "ScreamerWarning", "BloaterWarning", "BruteWarning" } do
 	assert(string.find(audioConfig, cueName .. " = table.freeze", 1, true) ~= nil, "missing bounded warning cue: " .. cueName)
 end
