@@ -3,8 +3,16 @@
 local fs = require("@lune/fs")
 
 local function count(source: string, token: string): number
-	local _, occurrences = string.gsub(source, token, "")
-	return occurrences
+	local occurrences = 0
+	local startIndex = 1
+	while true do
+		local found = string.find(source, token, startIndex, true)
+		if found == nil then
+			return occurrences
+		end
+		occurrences += 1
+		startIndex = found + #token
+	end
 end
 
 local server = fs.readFile("games/living-kingdoms/src/server/Systems/HordeExperienceService.luau")
