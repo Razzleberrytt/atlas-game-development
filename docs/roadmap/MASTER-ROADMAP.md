@@ -12,7 +12,7 @@ Milestones are ordered. Work begins only after prerequisites are met, and later 
 
 ## Current milestone status
 
-Snapshot as of 2026-07-17. Task-level detail and acceptance gates for unfinished P6–P12 work live in [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md), which controls those tasks per the [roadmap index](README.md); the cross-cutting art sequence lives in [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md).
+Snapshot as of 2026-07-18. Task-level detail and acceptance gates for unfinished P6–P12 work live in [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md), which controls those tasks per the [roadmap index](README.md); the cross-cutting art sequence lives in [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md).
 
 | Milestone | Status | Summary |
 | --- | --- | --- |
@@ -30,7 +30,8 @@ Snapshot as of 2026-07-17. Task-level detail and acceptance gates for unfinished
 | P10 — Match loop and replay | Not started | Fully planned; begins after P9. |
 | P11 — Persistence and unlock | Not started | Fully planned; begins after P10. |
 | P12 — Release candidate | Not started | Fully planned; closes the MVP. |
-| VIS — Visual production track | In progress | `VIS-PLAN-001` and `VIS-0101` complete; `VIS-0102` firearm presentation in progress; later entries gated by their gameplay milestones. |
+| VIS — Visual production track | In progress | `VIS-PLAN-001` and `VIS-0101` complete; `VIS-0102`/`VIS-0103`/`VIS-0104` in progress with the five-weapon presentation models, six-role horde readability, and the client-local AUD-0102/AUD-0103 audio sets; later entries gated by their gameplay milestones. |
+| HROI — Horde pressure and run-reward vertical slice | In progress | Bounded slices merged through PR #128 (issue #98): horde pressure and pacing tuning, confirmed hit/kill impact feedback, floating damage text, shooter hit markers, critical-condition urgency, shared run-only Field XP with squad upgrade choices, scarce enemy ammunition/recovery/Field Intel loot, five-weapon loadout roster with cleave/pierce patterns, six readable horde roles, environment mood, and client-local firearm/hostile audio. Representative Studio playtest validation remains the outstanding gate. |
 
 ## Preserved foundation history
 
@@ -395,6 +396,14 @@ Tune difficulty for high but learnable failure, class dependence, scarcity, relo
 The complete MVP operation is difficult, readable, learnable, secure, bounded, replayable, persistent, and repeatedly completable for one to four operatives without fixed-four-player architecture, paid power, or unresolved release-blocking defects.
 
 **P12 status:** Not started; closes the MVP after P11.
+
+## Cross-cutting horde-and-reward vertical slice (HROI)
+
+[Issue #98](https://github.com/Razzleberrytt/atlas-game-development/issues/98) directs a bounded high-ROI product track: make the current prototype loop dense, urgent, readable, and rewarding inside one representative operation area before expanding the map. It executes as independently validated PR-sized slices over existing owners and does not change milestone authority, task IDs, or acceptance gates in this file or the execution roadmap.
+
+Merged so far (PRs #99–#128, excluding closed-unmerged #100 and #118): horde pressure and progression-pacing tuning with a single progression source of truth; server-confirmed hit/kill impact feedback, floating damage text, shooter-specific confirmed hit markers, and critical-condition urgency; shared run-only Field XP with server-authored three-choice squad upgrades; brutally scarce enemy ammunition loot plus rare recovery and Field Intel drops; the server-owned five-weapon loadout roster with authoritative shotgun cleave and sniper pierce, detailed presentation models, and distinct per-loadout feel; six visually readable horde roles over the shared Exclusion Walker shell; threat-responsive environment mood; and the client-local AUD-0102/AUD-0103 firearm and hostile audio sets.
+
+Outstanding scope: representative Studio playtest validation (solo and two-client pacing, weak-device tier, cap/cleanup recovery, and abuse probes per HROI-0108), the Studio visual/mix reviews recorded in the visual track, and any evidence-driven retuning those sessions require. Healing loot remains deferred until an authoritative healing contract exists.
 
 ## Cross-cutting visual production track
 

@@ -15,8 +15,8 @@ Detailed current inventory: `docs/specifications/visual-placeholder-inventory.md
 |---|---|---|
 | VIS-PLAN-001 | Complete | Visual target, authority rules, budgets, sourcing, fallbacks, and review gates defined. |
 | VIS-0101 | Complete | Registry and placeholder inventory established; no asset is falsely marked production-approved. |
-| VIS-0102 | In progress | Firearm model, state motion, and temporary shot effects exist. Needs Studio import/readability review, final effects/audio, and performance evidence. |
-| VIS-0103 | In progress | Exclusion Walker silhouette, disclosed-state poses, and attack readability exist. Needs canonical swap, effects/audio, and horde performance evidence. |
+| VIS-0102 | In progress | All five loadout firearms have dedicated multi-part presentation models, distinct per-loadout combat feel, temporary shot effects, and the complete client-local AUD-0102 audio set (fire, reload, empty click, handling). Needs Studio import/readability review, unique production-approved audio assets, the Studio mix review, and performance evidence. |
+| VIS-0103 | In progress | Exclusion Walker silhouette, disclosed-state poses, attack readability, six visually distinct horde-role profiles over the shared 18-part shell, and the complete client-local AUD-0103 audio set (alert, windup, strike, hit, death) exist. Needs canonical swap, unique production-approved audio assets, the Studio mix review, and horde performance evidence. |
 | VIS-0104 | In progress | Operative/class silhouettes, life-state cues, and carry poses exist. Needs canonical rig/animation, class-action cues, avatar-scale review, and squad performance evidence. |
 | VIS-0105 | In progress — review gate | Cache, relay, extraction, routes, five safe landmarks, and shared world-material language exist. Needs Studio visual/accessibility/performance review before more geometry. |
 | VIS-0106 | Blocked by P9 | Special-enemy and boss package waits for stable encounter contracts. |
@@ -55,8 +55,8 @@ All current world additions remain presentation-only: no gameplay ownership, new
 
 Source-audited detail of what each in-progress slice has already delivered. These remain temporary or fallback presentation, not canonical production approval.
 
-- **VIS-0102 firearms.** Hit-confirmed tracer policy: a temporary tracer marks server-resolved shots and the reload lifecycle; final effects and audio are still pending.
-- **VIS-0103 Exclusion Walker.** A deterministic 18-component Exclusion Walker source candidate exists as an offline fallback silhouette. Attack readability uses a cancelable 0.6-second server-owned windup so the disclosed-state pose telegraphs the strike.
+- **VIS-0102 firearms.** Hit-confirmed tracer policy: a temporary tracer marks server-resolved shots and the reload lifecycle. The five-weapon loadout roster (Blackwater Support LMG, Morrow Breach Shotgun, Longwatch Sniper Rifle, Vigil Service Pistol, Razor Compact SMG) has dedicated project-original presentation models with distinct per-loadout combat feel, and `WeaponAudioController` covers the full client-local fire/reload/empty-click/handling cue set (AUD-0102). Unique production-approved audio assets and the Studio mix review remain pending.
+- **VIS-0103 Exclusion Walker.** A deterministic 18-component Exclusion Walker source candidate exists as an offline fallback silhouette. Attack readability uses a cancelable 0.6-second server-owned windup so the disclosed-state pose telegraphs the strike. `HordeRolePresentationService` composes six visually distinct role profiles (Hollow Infected, Razor Runner, Grave Crawler, Choir Screamer, Rot Bloater, Grief Brute) by rescaling only massless non-colliding presentation parts of the shared shell, and `EnemyAudioController` covers the full client-local alert/windup/strike/hit/death cue set (AUD-0103). Unique production-approved hostile assets and the Studio mix review remain pending.
 - **VIS-0104 operatives.** Life-state cues plus event-driven upper-body carry poses read the operative's weapon state without changing the canonical rig.
 - **VIS-0105 world presentation.**
   - Cache: a procedural supply case presents available/consumed state around the unchanged server-owned cache.

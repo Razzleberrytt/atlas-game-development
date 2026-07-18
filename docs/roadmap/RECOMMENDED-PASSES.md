@@ -80,6 +80,12 @@ VIS-0102–VIS-0105 output from the gameplay camera, not more generated geometry
 - **Horde single-source-of-truth stabilization pass** — consolidated progression
   into a single authoritative owner
   ([`../specifications/horde-single-source-of-truth.md`](../specifications/horde-single-source-of-truth.md)).
+- **Horde role readability pass** — six visually distinct role presentations
+  composed over the shared 18-part Exclusion Walker shell by rescaling only
+  massless non-colliding presentation parts; the Studio isometric-separation,
+  color-vision, and representative-performance review remains the VIS-0103
+  acceptance gate
+  ([`../specifications/horde-role-readability.md`](../specifications/horde-role-readability.md)).
 
 ## C. Explicitly excluded
 
