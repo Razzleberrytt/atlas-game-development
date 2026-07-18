@@ -519,9 +519,12 @@ assert(missionHeartbeat:count() == 1, "the mission director owns exactly one hea
 local project = fs.readFile("games/living-kingdoms/default.project.json")
 assert(not string.find(project, "EnemyNetwork", 1, true), "P5 must not add an enemy remote surface")
 local _, projectRemoteCount = string.gsub(project, '"%$className"%s*:%s*"RemoteEvent"', "")
-assert(projectRemoteCount == 9, "the committed remote surface changed size")
+assert(projectRemoteCount == 8, "the committed remote surface changed size")
 assert(string.find(project, '"HordeNetwork"', 1, true) ~= nil, "horde remotes require one explicit folder")
-assert(string.find(project, '"ChooseUpgrade"', 1, true) ~= nil, "upgrade intent must remain explicit and reviewable")
+assert(
+	not string.find(project, '"ChooseUpgrade"', 1, true),
+	"upgrade intent has one owner: the runtime ProgressionNetwork remote, never a horde duplicate"
+)
 local clientBootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 assert(
 	string.find(clientBootstrap, "EnemyPresentationController.start()", 1, true) ~= nil,

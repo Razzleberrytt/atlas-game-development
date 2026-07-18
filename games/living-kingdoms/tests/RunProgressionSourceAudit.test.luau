@@ -40,27 +40,41 @@ local clientBootstrap = fs.readFile("games/living-kingdoms/src/client/init.clien
 
 assert(contains(service, "RunService.Heartbeat:Connect"), "progression must use one bounded server scan")
 assert(contains(service, "folder:GetChildren()"), "progression must inspect the bounded enemy folder")
-assert(contains(service, "EnemyPresentationContracts.AttributeNames.LifeStateId"), "death truth must come from server-authored life state")
-assert(contains(service, "EnemyPresentationContracts.AttributeNames.HitSequence"), "first-seen corpses require a confirmed hit")
+assert(
+	contains(service, "EnemyPresentationContracts.AttributeNames.LifeStateId"),
+	"death truth must come from server-authored life state"
+)
+assert(
+	contains(service, "EnemyPresentationContracts.AttributeNames.HitSequence"),
+	"first-seen corpses require a confirmed hit"
+)
 assert(contains(service, "stateRemote:FireAllClients"), "confirmed awards must publish a server snapshot")
 assert(contains(service, "readStateRemote.OnServerInvoke"), "late clients require read-only state recovery")
-assert(contains(service, "chooseUpgradeRemote.OnServerEvent:Connect(onChooseUpgrade)"), "one upgrade intent must reach server validation")
-assert(contains(service, "RunUpgradeResolver.applyChoice"), "the server must validate offered IDs through the pure resolver")
+assert(
+	contains(service, "chooseUpgradeRemote.OnServerEvent:Connect(onChooseUpgrade)"),
+	"one upgrade intent must reach server validation"
+)
+assert(
+	contains(service, "RunUpgradeResolver.applyChoice"),
+	"the server must validate offered IDs through the pure resolver"
+)
 assert(contains(service, "UpgradeRequestCooldownSeconds"), "upgrade selection must be server throttled")
-assert(contains(service, "select(\"#\", ...) ~= 0"), "upgrade requests must reject extra client arguments")
+assert(contains(service, 'select("#", ...) ~= 0'), "upgrade requests must reject extra client arguments")
 assert(contains(service, "syncCombatModifierAttributes()"), "accepted choices must publish trusted combat modifiers")
 assert(contains(service, "table.clear(upgradeStacks)"), "run upgrades must reset with the operation session")
 assert(config.MaximumTrackedEnemyModels == 64, "the corpse-overlap tracking ceiling must stay bounded")
 assert(config.UpgradeChoiceCount == 3 and #config.UpgradeDefinitions == 4, "the first pool must remain three-of-four")
 
-for _, prohibited in {
-	"GetAttributeChangedSignal",
-	"Humanoid.Health",
-	"DataStoreService",
-	"task.delay",
-	"task.spawn",
-	"task.defer",
-} do
+for _, prohibited in
+	{
+		"GetAttributeChangedSignal",
+		"Humanoid.Health",
+		"DataStoreService",
+		"task.delay",
+		"task.spawn",
+		"task.defer",
+	}
+do
 	assert(not contains(service, prohibited), "server progression must remain bounded and run-only: " .. prohibited)
 end
 
@@ -71,11 +85,17 @@ assert(contains(upgradeResolver, "MaximumDamageMultiplier"), "damage upgrades mu
 
 assert(contains(controller, "readStateRemote:InvokeServer()"), "the HUD must recover its current safe snapshot")
 assert(contains(controller, "stateRemote.OnClientEvent:Connect"), "the HUD must render server-published progression")
-assert(contains(controller, "chooseUpgradeRemote:FireServer(upgradeId)"), "the HUD may submit only an offered upgrade ID")
+assert(
+	contains(controller, "chooseUpgradeRemote:FireServer(upgradeId)"),
+	"the HUD may submit only an offered upgrade ID"
+)
 assert(occurrenceCount(controller, ":FireServer(") == 1, "the progression HUD must expose exactly one mutation call")
 assert(contains(controller, "button.Activated:Connect"), "touch and mouse must use fixed choice buttons")
 for _, prohibited in { "OnServerEvent", "DataStoreService", "Humanoid.Health", "SetAttribute(" } do
-	assert(not contains(controller, prohibited), "the HUD must not establish progression or combat truth: " .. prohibited)
+	assert(
+		not contains(controller, prohibited),
+		"the HUD must not establish progression or combat truth: " .. prohibited
+	)
 end
 
 assert(contains(fireResolver, "RunCadenceMultiplier"), "automatic fire must consume the trusted cadence modifier")
@@ -86,7 +106,10 @@ assert(contains(damageResolver, "RunCullDamageMultiplier"), "damage must consume
 assert(contains(damageResolver, "configured * 3"), "damage must retain a hard server-side ceiling")
 
 assert(contains(serverBootstrap, "ensureProgressionNetwork()"), "server bootstrap must create the progression network")
-assert(contains(serverBootstrap, "\"State\", \"ChooseUpgrade\""), "bootstrap must create exactly the progression event pair")
+assert(
+	contains(serverBootstrap, '"State", "ChooseUpgrade"'),
+	"bootstrap must create exactly the progression event pair"
+)
 assert(contains(serverBootstrap, "RunProgressionService.start()"), "server bootstrap must start run progression")
 local enemyStart = string.find(serverBootstrap, "EnemyDirectorService.start()", 1, true)
 local progressionStart = string.find(serverBootstrap, "RunProgressionService.start()", 1, true)
@@ -96,6 +119,15 @@ assert(
 	(enemyStart :: number) < (progressionStart :: number) and (progressionStart :: number) < (combatStart :: number),
 	"modifier attributes must initialize after enemy ownership and before automatic combat"
 )
-assert(contains(clientBootstrap, "RunProgressionHUDController.start()"), "client bootstrap must start the progression HUD")
+assert(
+	not contains(clientBootstrap, "RunProgressionHUDController.start()"),
+	"the standalone progression HUD must not run alongside the unified combat HUD"
+)
+assert(
+	contains(clientBootstrap, "HordeHUDController.start()"),
+	"the unified combat HUD must own the single progression surface"
+)
 
-print("RunProgressionSourceAudit: death awards, offered-ID validation, bounded modifiers, HUD surface, and bootstrap order passed")
+print(
+	"RunProgressionSourceAudit: death awards, offered-ID validation, bounded modifiers, HUD surface, and bootstrap order passed"
+)

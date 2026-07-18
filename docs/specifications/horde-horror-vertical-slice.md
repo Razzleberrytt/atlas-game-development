@@ -1,5 +1,15 @@
 # Living Kingdoms — Horde-Horror Vertical Slice
 
+> **Superseded in part by [horde-single-source-of-truth.md](horde-single-source-of-truth.md).**
+> The stabilization pass consolidated progression into a single authoritative
+> pipeline. Where this document describes `HordeExperienceService` minting XP,
+> upgrades, loot, healing, ammunition, weapon overcharge, or a second upgrade
+> remote, the single-source-of-truth spec is now canonical: Field XP, levels,
+> upgrades, and combat modifiers belong to `RunProgressionService`; ammunition
+> loot belongs to `EnemyLootService`; `HordeExperienceService` owns only
+> spawning, pressure, roles/behaviour, threat, a non-rewarding massacre streak,
+> and the event feed.
+
 ## Purpose
 
 Turn the technically functional prototype into a dense, rewarding, frightening 8–12 minute operation before investing in a much larger streamed world.
