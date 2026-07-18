@@ -1,0 +1,54 @@
+name: Format confirmed hit marker
+
+on:
+  push:
+    branches:
+      - feat/confirmed-hit-marker-v1
+    paths:
+      - ".github/workflows/format-confirmed-hit-marker.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/confirmed-hit-marker-v1
+          fetch-depth: 0
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Format product files and remove runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          stylua \
+            games/living-kingdoms/src/client/Controllers/ConfirmedHitMarkerController.luau \
+            games/living-kingdoms/src/client/init.client.luau \
+            games/living-kingdoms/src/shared/Config/ConfirmedHitMarkerConfig.luau
+          rm .github/workflows/format-confirmed-hit-marker.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            games/living-kingdoms/src/client/Controllers/ConfirmedHitMarkerController.luau \
+            games/living-kingdoms/src/client/init.client.luau \
+            games/living-kingdoms/src/shared/Config/ConfirmedHitMarkerConfig.luau \
+            .github/workflows/format-confirmed-hit-marker.yml
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Format confirmed hit marker slice"
+          git push origin HEAD:feat/confirmed-hit-marker-v1
