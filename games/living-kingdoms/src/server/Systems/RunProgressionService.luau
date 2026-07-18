@@ -7,8 +7,9 @@
 	the first valid squad selection applies one bounded run-only modifier.
 
 	Clients may submit only one offered upgrade ID. They cannot submit kills, XP,
-	levels, stacks, modifier values, reward amounts, or combat outcomes. All state
-	resets when this service starts and is never persisted.
+	levels, stacks, modifier values, reward amounts, or combat outcomes. Applied
+	combat modifiers are published as server-owned attributes on the progression
+	network and reset whenever this service starts or stops.
 ]]
 
 local Players = game:GetService("Players")
@@ -149,6 +150,15 @@ local function safeSnapshot(): SafeRunProgressionSnapshot
 	}) :: SafeRunProgressionSnapshot
 end
 
+local function syncCombatModifierAttributes()
+	local modifiers = RunUpgradeResolver.deriveCombatModifiers(upgradeStacks)
+	progressionNetwork:SetAttribute("RunDamageMultiplier", modifiers.damageMultiplier)
+	progressionNetwork:SetAttribute("RunCadenceMultiplier", modifiers.cadenceMultiplier)
+	progressionNetwork:SetAttribute("RunReloadDurationMultiplier", modifiers.reloadDurationMultiplier)
+	progressionNetwork:SetAttribute("RunCullDamageMultiplier", modifiers.cullDamageMultiplier)
+	progressionNetwork:SetAttribute("RunCullHealthThreshold", modifiers.cullHealthThreshold)
+end
+
 local function publishAll()
 	revision += 1
 	stateRemote:FireAllClients(safeSnapshot())
@@ -279,6 +289,7 @@ local function onChooseUpgrade(player: Player, selectedUpgradeId: unknown, ...: 
 	lastSelectedUpgradeStack = resolution.stackAfter
 	table.clear(pendingChoiceIds)
 	generatePendingChoices()
+	syncCombatModifierAttributes()
 	publishAll()
 end
 
@@ -315,6 +326,7 @@ function RunProgressionService.start()
 	table.clear(upgradeStacks)
 	table.clear(pendingChoiceIds)
 	table.clear(lastUpgradeRequestTimestamps)
+	syncCombatModifierAttributes()
 
 	readStateRemote.OnServerInvoke = function(_player: Player)
 		return safeSnapshot()
@@ -356,6 +368,7 @@ function RunProgressionService.stop()
 	table.clear(upgradeStacks)
 	table.clear(pendingChoiceIds)
 	table.clear(lastUpgradeRequestTimestamps)
+	syncCombatModifierAttributes()
 	accumulatedSeconds = 0
 	initialScanComplete = false
 end
