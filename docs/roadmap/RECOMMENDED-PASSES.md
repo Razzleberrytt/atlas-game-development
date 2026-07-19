@@ -98,6 +98,10 @@ VIS-0102–VIS-0105 output from the gameplay camera, not more generated geometry
   pierces now replace generic local hit confirmation with bounded, mode-specific
   multi-target punctuation sourced only from committed secondary impacts
   ([`../specifications/authoritative-pattern-hit-punctuation.md`](../specifications/authoritative-pattern-hit-punctuation.md)).
+- **Pattern-target stability pass** — server-valid equal-utility shotgun and sniper
+  primaries retain the current target inside a six-stud allowance while better
+  utility, active threats, and invalidation still switch immediately
+  ([`../specifications/pattern-target-stability.md`](../specifications/pattern-target-stability.md)).
 
 ## C. Explicitly excluded
 

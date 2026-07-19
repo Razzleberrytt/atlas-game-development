@@ -579,7 +579,7 @@ local function evaluatePlayer(player: Player, playerState: PlayerCombatState, no
 		combatStateId = playerState.operativeState.combatStateId,
 		weaponReadiness = playerState.weaponState,
 	}
-	local selectedTarget = WeaponTargetSelector.select(targetingState, candidates)
+	local selectedTarget = WeaponTargetSelector.select(targetingState, candidates, playerState.selectedTargetEntityId)
 	local targetEntityId = if selectedTarget == nil then nil else selectedTarget.targetEntityId
 	discloseTarget(player, playerState, targetEntityId, nowTimestamp)
 	local fireResolution = AutomaticFireResolver.resolve({
