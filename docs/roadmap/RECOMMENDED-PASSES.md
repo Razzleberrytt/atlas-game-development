@@ -108,6 +108,6 @@ VIS-0102–VIS-0105 output from the gameplay camera, not more generated geometry
 A **battle pass** is a monetization construct, not a production sweep, and the
 canon excludes it from the MVP alongside paid power
 ([`../bible/01-mvp.md`](../bible/01-mvp.md),
-[`../specifications/visual-asset-production.md`](../specifications/visual-placeholder-inventory.md),
+[`../specifications/visual-asset-production.md`](../specifications/visual-asset-production.md),
 [`../specifications/run-field-xp.md`](../specifications/run-field-xp.md)). It is
 listed here only so the term is not confused with the passes above.
