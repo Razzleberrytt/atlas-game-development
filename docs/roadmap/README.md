@@ -14,6 +14,9 @@ Specifications define the behavior inside a roadmap task. The active specificati
 
 - [`../specifications/ammunition-scarcity-and-supply.md`](../specifications/ammunition-scarcity-and-supply.md) for the remaining P6 evidence and tuning process;
 - [`../specifications/mvp-specialist-classes.md`](../specifications/mvp-specialist-classes.md) for the P7 class contracts, selection boundary, and blocked action runtime;
+- [`../specifications/rpg-integration-plan.md`](../specifications/rpg-integration-plan.md) for the proposed operation-bound RPG layer, including expanded Field Upgrades, elite affixes, run relics, modifier ownership, phased tasks, and the boundary reserving permanent progression for the later authoritative result/persistence sequence;
 - [`../specifications/visual-asset-production.md`](../specifications/visual-asset-production.md) for visual direction, placeholder replacement, model/rig/skin authority boundaries, asset sourcing, performance budgets, and review gates.
+
+The RPG integration plan is descriptive until its tasks are explicitly sequenced into the controlling execution roadmap. It may guide planning and pure declarations, but it does not bypass current milestone dependencies or mark any gameplay implementation unblocked.
 
 A task moves to complete only after its applicable Definition of Done, automated validation, required Studio evidence, documentation, and status update are all satisfied. A deferred manual gate remains deferred—not passed—until its evidence is recorded.
