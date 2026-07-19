@@ -4,11 +4,13 @@
 	Presentation-only punctuation for server-authored horde deaths. The client
 	selects one definition from already-replicated role and entity identity facts.
 	These values can change only billboard copy/color, the existing blood pool,
-	and the existing bounded camera-shake channel. They grant no rewards or power.
+	and the existing bounded camera-shake channel. Optional XP bonus copy mirrors
+	server-owned reward tuning but cannot grant rewards or power.
 ]]
 
 export type Definition = {
 	Title: string,
+	XpBonus: number?,
 	Color: { number },
 	BloodDiameterStuds: number,
 	BloodColor: { number },
@@ -37,6 +39,7 @@ local DefinitionsByKindId: { [string]: Definition } = {
 	}),
 	[KindIds.ScreamerInterrupted] = table.freeze({
 		Title = "SUMMON INTERRUPTED",
+		XpBonus = 10,
 		Color = table.freeze({ 255, 244, 120 }),
 		BloodDiameterStuds = 6.5,
 		BloodColor = table.freeze({ 92, 8, 10 }),
@@ -93,6 +96,11 @@ for kindId, definition in DefinitionsByKindId do
 	assert(
 		#definition.Title > 0 and #definition.Title <= Config.MaximumTitleCharacters,
 		kindId .. " title is not bounded"
+	)
+	local xpBonus = definition.XpBonus or 0
+	assert(
+		type(xpBonus) == "number" and xpBonus == xpBonus and xpBonus >= 0 and xpBonus <= 20 and xpBonus % 1 == 0,
+		kindId .. " XP bonus copy is not bounded"
 	)
 	assert(#definition.Color == 3 and #definition.BloodColor == 3, kindId .. " colors must be RGB tuples")
 	assert(
