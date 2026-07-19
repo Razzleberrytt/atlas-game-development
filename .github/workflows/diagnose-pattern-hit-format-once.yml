@@ -1,0 +1,77 @@
+name: Diagnose pattern hit formatting once
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.head_ref == 'feat/pattern-hit-punctuation-v1'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/pattern-hit-punctuation-v1
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Extract and apply committed patch script
+        shell: bash
+        run: |
+          python3 - <<'EXTRACT'
+          from pathlib import Path
+
+          workflow_lines = Path('.github/workflows/finalize-pattern-hit-punctuation-once.yml').read_text().splitlines()
+          start = next(index for index, line in enumerate(workflow_lines) if line.strip() == 'from pathlib import Path')
+          end = next(index for index in range(start + 1, len(workflow_lines)) if workflow_lines[index].strip() == 'PY')
+          code_lines = [line[10:] if line.startswith('          ') else line for line in workflow_lines[start:end]]
+          Path('/tmp/apply-pattern-punctuation.py').write_text('\n'.join(code_lines) + '\n')
+          EXTRACT
+          python3 /tmp/apply-pattern-punctuation.py
+
+      - name: Capture formatter result
+        shell: bash
+        run: |
+          set +e
+          stylua \
+            games/living-kingdoms/src/client/Controllers/ConfirmedHitMarkerController.luau \
+            games/living-kingdoms/src/shared/Config/ConfirmedHitMarkerConfig.luau \
+            games/living-kingdoms/tests/ConfirmedHitMarkerSourceAudit.test.luau \
+            > /tmp/stylua.log 2>&1
+          status=$?
+          echo "$status" > /tmp/stylua.status
+          cp games/living-kingdoms/src/client/Controllers/ConfirmedHitMarkerController.luau /tmp/ConfirmedHitMarkerController.luau
+          cp games/living-kingdoms/src/shared/Config/ConfirmedHitMarkerConfig.luau /tmp/ConfirmedHitMarkerConfig.luau
+          cp games/living-kingdoms/tests/ConfirmedHitMarkerSourceAudit.test.luau /tmp/ConfirmedHitMarkerSourceAudit.test.luau
+          cat /tmp/stylua.log
+          exit 0
+
+      - name: Upload formatter diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: pattern-hit-format-diagnostic
+          path: |
+            /tmp/stylua.log
+            /tmp/stylua.status
+            /tmp/ConfirmedHitMarkerController.luau
+            /tmp/ConfirmedHitMarkerConfig.luau
+            /tmp/ConfirmedHitMarkerSourceAudit.test.luau
+          retention-days: 1
+
+      - name: Enforce formatter result
+        shell: bash
+        run: |
+          test "$(cat /tmp/stylua.status)" = "0"
