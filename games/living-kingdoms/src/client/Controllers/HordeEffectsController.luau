@@ -63,8 +63,10 @@ local function resolveDeathPunctuation(model: Model, roleId: unknown): DeathPunc
 		kindId = punctuationKindIds.Bloater
 	elseif roleId == HordeConfig.Roles.Brute.Id then
 		local entityId = readCombatEntityId(model)
-		kindId = if entityId ~= nil
-				and string.find(entityId, HordeDeathPunctuationConfig.BruteFinalEntityMarker, 1, true) ~= nil
+		if entityId == nil then
+			return nil
+		end
+		kindId = if string.find(entityId, HordeDeathPunctuationConfig.BruteFinalEntityMarker, 1, true) ~= nil
 			then punctuationKindIds.BruteFinal
 			else punctuationKindIds.BrutePhaseOne
 	end
