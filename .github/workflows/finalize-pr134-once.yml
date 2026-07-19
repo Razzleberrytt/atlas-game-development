@@ -4,21 +4,18 @@ on:
   push:
     branches:
       - main
-  issue_comment:
-    types:
-      - created
+    paths:
+      - docs/pr134-operator-trigger.txt
 
 permissions:
   contents: write
-  pull-requests: read
+
+concurrency:
+  group: finalize-pr-134-once
+  cancel-in-progress: true
 
 jobs:
   finalize:
-    if: >-
-      (github.event_name == 'push' && github.event.head_commit.message == 'Trigger PR 134 operator') ||
-      (github.event.issue.pull_request != null &&
-      github.event.issue.number == 134 &&
-      github.event.comment.body == '/finalize-target-stability-134')
     runs-on: ubuntu-22.04
     timeout-minutes: 20
 
