@@ -98,12 +98,16 @@ VIS-0102–VIS-0105 output from the gameplay camera, not more generated geometry
   pierces now replace generic local hit confirmation with bounded, mode-specific
   multi-target punctuation sourced only from committed secondary impacts
   ([`../specifications/authoritative-pattern-hit-punctuation.md`](../specifications/authoritative-pattern-hit-punctuation.md)).
+- **Pattern-target stability pass** — server-valid equal-utility shotgun and sniper
+  primaries retain the current target inside a six-stud allowance while better
+  utility, active threats, and invalidation still switch immediately
+  ([`../specifications/pattern-target-stability.md`](../specifications/pattern-target-stability.md)).
 
 ## C. Explicitly excluded
 
 A **battle pass** is a monetization construct, not a production sweep, and the
 canon excludes it from the MVP alongside paid power
 ([`../bible/01-mvp.md`](../bible/01-mvp.md),
-[`../specifications/visual-asset-production.md`](../specifications/visual-asset-production.md),
+[`../specifications/visual-asset-production.md`](../specifications/visual-placeholder-inventory.md),
 [`../specifications/run-field-xp.md`](../specifications/run-field-xp.md)). It is
 listed here only so the term is not confused with the passes above.
