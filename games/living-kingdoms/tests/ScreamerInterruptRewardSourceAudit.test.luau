@@ -26,18 +26,16 @@ local function occurrenceCount(source: string, token: string): number
 	end
 end
 
-local rewardConfig = luau.load(fs.readFile(
-	"games/living-kingdoms/src/shared/Config/ScreamerInterruptRewardConfig.luau"
-), {
-	debugName = "ScreamerInterruptRewardConfig",
-	injectGlobals = true,
-})()
-local punctuationConfig = luau.load(fs.readFile(
-	"games/living-kingdoms/src/shared/Config/HordeDeathPunctuationConfig.luau"
-), {
-	debugName = "HordeDeathPunctuationConfig",
-	injectGlobals = true,
-})()
+local rewardConfig =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/ScreamerInterruptRewardConfig.luau"), {
+		debugName = "ScreamerInterruptRewardConfig",
+		injectGlobals = true,
+	})()
+local punctuationConfig =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/HordeDeathPunctuationConfig.luau"), {
+		debugName = "HordeDeathPunctuationConfig",
+		injectGlobals = true,
+	})()
 local service = fs.readFile("games/living-kingdoms/src/server/Systems/ScreamerInterruptRewardService.luau")
 local progressionService = fs.readFile("games/living-kingdoms/src/server/Systems/RunProgressionService.luau")
 local effectsController = fs.readFile("games/living-kingdoms/src/client/Controllers/HordeEffectsController.luau")
@@ -76,7 +74,10 @@ end
 local progressionStart = string.find(serverBootstrap, "RunProgressionService.start()", 1, true)
 local hordeStart = string.find(serverBootstrap, "HordeExperienceService.start()", 1, true)
 local rewardStart = string.find(serverBootstrap, "ScreamerInterruptRewardService.start()", 1, true)
-assert(progressionStart ~= nil and hordeStart ~= nil and rewardStart ~= nil, "bootstrap must start all reward prerequisites")
+assert(
+	progressionStart ~= nil and hordeStart ~= nil and rewardStart ~= nil,
+	"bootstrap must start all reward prerequisites"
+)
 assert(
 	(progressionStart :: number) < (hordeStart :: number) and (hordeStart :: number) < (rewardStart :: number),
 	"interrupt reward must start after progression and horde attribute ownership"

@@ -156,7 +156,11 @@ local function createKillText(model: Model, position: Vector3, definition: Death
 	local displayedXp = if xpAmount ~= nil then xpAmount + bonusXp else nil
 	label.Text = if definition ~= nil
 		then string.format("%s\n+%s XP", definition.Title, tostring(displayedXp or "?"))
-		else string.format("%s  +%s XP", string.upper(tostring(roleName or "INFECTED")), tostring(displayedXp or "?"))
+		else string.format(
+			"%s  +%s XP",
+			string.upper(tostring(roleName or "INFECTED")),
+			tostring(displayedXp or "?")
+		)
 	label.Parent = billboard
 	local lifetime = if definition ~= nil
 		then definition.BillboardLifetimeSeconds

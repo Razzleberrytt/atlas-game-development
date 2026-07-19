@@ -3,9 +3,7 @@
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
-local config = luau.load(fs.readFile(
-	"games/living-kingdoms/src/shared/Config/ScreamerInterruptRewardConfig.luau"
-), {
+local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/ScreamerInterruptRewardConfig.luau"), {
 	debugName = "ScreamerInterruptRewardConfig",
 	injectGlobals = true,
 })()
