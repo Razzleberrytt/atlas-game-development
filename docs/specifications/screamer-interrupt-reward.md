@@ -10,6 +10,7 @@ Turn the Choir Screamer's interrupt window into a real tactical reward, not only
 - confirmed reinforcement interruption: **+30 total Field XP**
 - the existing `SUMMON INTERRUPTED` billboard displays the combined total
 - the shared XP bar and level-up flow consume the bonus immediately
+- the entire squad receives the same run progression; the interrupt creates no kill-stealing incentive
 
 The bonus is deliberately half an ordinary kill. It rewards awareness without letting one special enemy erase the four-kill first-upgrade pacing target.
 
