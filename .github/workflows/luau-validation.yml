@@ -21,7 +21,7 @@ on:
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -68,3 +68,42 @@ jobs:
       - name: Build Rojo project
         shell: bash
         run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
+
+  format-pr135:
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 135
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/special-role-death-punctuation-v1
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Format focused source
+        run: |
+          stylua \
+            games/living-kingdoms/src/client/Controllers/HordeEffectsController.luau \
+            games/living-kingdoms/src/shared/Config/HordeDeathPunctuationConfig.luau
+
+      - name: Commit formatter output
+        shell: bash
+        run: |
+          git add \
+            games/living-kingdoms/src/client/Controllers/HordeEffectsController.luau \
+            games/living-kingdoms/src/shared/Config/HordeDeathPunctuationConfig.luau
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Apply pinned StyLua to special death punctuation"
+          git push origin HEAD:feat/special-role-death-punctuation-v1
