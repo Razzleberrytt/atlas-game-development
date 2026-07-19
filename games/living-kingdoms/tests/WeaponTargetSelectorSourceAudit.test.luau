@@ -29,14 +29,19 @@ for _, token in
 		"TargetCandidateSelector.select(operative, candidates)",
 		"ThreateningPatternUtility",
 		"ValidPatternUtility",
+		"EQUIVALENT_PATTERN_UTILITY_DISTANCE_ALLOWANCE_STUDS = 6",
+		"current.utilityCount ~= best.utilityCount",
+		"maximumRetainedDistance",
+		"currentTargetEntityId",
+		"retainedOrBest(best, current)",
 	}
-do
+ do
 	assertThat(contains(selector, token), "weapon-aware selector missing " .. token)
 end
 
 assertThat(
-	contains(runtime, "WeaponTargetSelector.select(targetingState, candidates)"),
-	"production automatic combat must use weapon-aware targeting"
+	contains(runtime, "WeaponTargetSelector.select(targetingState, candidates, playerState.selectedTargetEntityId)"),
+	"production automatic combat must pass the current authoritative target into weapon-aware selection"
 )
 assertThat(
 	not contains(runtime, "TargetCandidateSelector.select(targetingState, candidates)"),
@@ -63,9 +68,10 @@ for _, forbidden in
 		"TakeDamage",
 		"task.delay",
 		"task.spawn",
+		"selectedAtServerTimestamp = os.clock",
 	}
-do
-	assertThat(not contains(selector, forbidden), "selector cannot own side effects: " .. forbidden)
+ do
+	assertThat(not contains(selector, forbidden), "selector cannot own side effects or timers: " .. forbidden)
 end
 
 assertThat(
@@ -76,5 +82,9 @@ assertThat(
 	contains(selector, "candidate.entityKindId == CombatContracts.CombatEntityKindIds.Hostile"),
 	"secondary utility must require hostile entity kind"
 )
+assertThat(
+	contains(selector, "hasThreateningPrimary and not isThreatening(operative, candidate)"),
+	"equivalent-utility retention must never cross the active-threat cohort boundary"
+)
 
-print("WeaponTargetSelectorSourceAudit: threat priority, fallback parity, authority, and bounds passed")
+print("WeaponTargetSelectorSourceAudit: threat priority, fallback parity, bounded retention, authority, and LOS bounds passed")
