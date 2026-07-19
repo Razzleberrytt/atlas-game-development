@@ -18,6 +18,7 @@ local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 local HordeConfig = require(ReplicatedStorage.Shared.Config.HordeExperienceConfig)
 local HordeDeathPunctuationConfig = require(ReplicatedStorage.Shared.Config.HordeDeathPunctuationConfig)
+local HordeSpecialTelegraphConfig = require(ReplicatedStorage.Shared.Config.HordeSpecialTelegraphConfig)
 local PresentationAccessibilityConfig = require(ReplicatedStorage.Shared.Config.PresentationAccessibilityConfig)
 local PresentationAccessibilityState = require(script.Parent.Parent.Presentation.PresentationAccessibilityState)
 
@@ -27,6 +28,9 @@ local deadLifeState = EnemyPresentationContracts.LifeStateIds.Dead
 local presentationRemote =
 	ReplicatedStorage:WaitForChild("CombatNetwork"):WaitForChild("CombatPresentation") :: RemoteEvent
 local punctuationKindIds = HordeDeathPunctuationConfig.KindIds
+local SpecialAttributeNames = HordeSpecialTelegraphConfig.AttributeNames
+local SpecialKindIds = HordeSpecialTelegraphConfig.KindIds
+local SpecialStateIds = HordeSpecialTelegraphConfig.StateIds
 
 type DeathPunctuationDefinition = HordeDeathPunctuationConfig.Definition
 
@@ -59,15 +63,23 @@ local function addShake(magnitude: number, duration: number)
 	shakeSequence += 1
 end
 
-local function readCombatEntityId(model: Model): string?
-	local value = model:GetAttribute("CombatEntityId")
+local function readStringAttribute(model: Model, attributeName: string): string?
+	local value = model:GetAttribute(attributeName)
 	return if type(value) == "string" and value ~= "" then value else nil
+end
+
+local function readCombatEntityId(model: Model): string?
+	return readStringAttribute(model, "CombatEntityId")
 end
 
 local function resolveDeathPunctuation(model: Model, roleId: unknown): DeathPunctuationDefinition?
 	local kindId: string? = nil
 	if roleId == HordeConfig.Roles.Screamer.Id then
-		kindId = punctuationKindIds.Screamer
+		local specialKindId = readStringAttribute(model, SpecialAttributeNames.KindId)
+		local specialStateId = readStringAttribute(model, SpecialAttributeNames.StateId)
+		local wasInterrupted = specialKindId == SpecialKindIds.ScreamerReinforcement
+			and (specialStateId == SpecialStateIds.Windup or specialStateId == SpecialStateIds.Interrupted)
+		kindId = if wasInterrupted then punctuationKindIds.ScreamerInterrupted else punctuationKindIds.Screamer
 	elseif roleId == HordeConfig.Roles.Bloater.Id then
 		kindId = punctuationKindIds.Bloater
 	elseif roleId == HordeConfig.Roles.Brute.Id then

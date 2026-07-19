@@ -355,12 +355,11 @@ local function beginSpecialTelegraph(record: EnemyRecord, kindId: string, server
 	return true
 end
 
-local function cancelPendingSpecial(record: EnemyRecord)
+local function interruptPendingSpecial(record: EnemyRecord)
 	record.pendingSpecialKindId = nil
 	record.pendingSpecialCommitServerTimestamp = nil
-	record.model:SetAttribute(SpecialAttributeNames.KindId, nil)
 	record.model:SetAttribute(SpecialAttributeNames.CommitServerTimestamp, 0)
-	record.model:SetAttribute(SpecialAttributeNames.StateId, SpecialStateIds.Idle)
+	record.model:SetAttribute(SpecialAttributeNames.StateId, SpecialStateIds.Interrupted)
 end
 
 local function damagePlayersInBurst(record: EnemyRecord, role, serverTimestamp: number)
@@ -426,7 +425,7 @@ local function handleEnemyDeath(record: EnemyRecord, serverTimestamp: number)
 	record.deathHandled = true
 	local role = roleById[record.roleId] or HordeConfig.Roles.Basic
 	if record.pendingSpecialKindId == SpecialKindIds.ScreamerReinforcement then
-		cancelPendingSpecial(record)
+		interruptPendingSpecial(record)
 	end
 	for _, state in playerStates do
 		if serverTimestamp - state.lastKillServerTimestamp <= HordeConfig.Streak.KillStreakWindowSeconds then

@@ -19,6 +19,7 @@ export type Definition = {
 
 local KindIds = table.freeze({
 	Screamer = "Screamer",
+	ScreamerInterrupted = "ScreamerInterrupted",
 	Bloater = "Bloater",
 	BrutePhaseOne = "BrutePhaseOne",
 	BruteFinal = "BruteFinal",
@@ -33,6 +34,15 @@ local DefinitionsByKindId: { [string]: Definition } = {
 		ShakeMagnitude = 0.18,
 		ShakeDurationSeconds = 0.2,
 		BillboardLifetimeSeconds = 1.45,
+	}),
+	[KindIds.ScreamerInterrupted] = table.freeze({
+		Title = "SUMMON INTERRUPTED",
+		Color = table.freeze({ 255, 244, 120 }),
+		BloodDiameterStuds = 6.5,
+		BloodColor = table.freeze({ 92, 8, 10 }),
+		ShakeMagnitude = 0.26,
+		ShakeDurationSeconds = 0.23,
+		BillboardLifetimeSeconds = 1.65,
 	}),
 	[KindIds.Bloater] = table.freeze({
 		Title = "ROT BURST ARMED",

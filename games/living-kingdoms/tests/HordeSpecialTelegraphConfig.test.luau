@@ -40,7 +40,7 @@ local loader = luau.load(source, {
 })
 local config = loader()
 
-assert(config.Version == "HROI-0131-v1-horde-special-telegraphs")
+assert(config.Version == "HROI-0138-v1-screamer-interrupt-confirmation")
 assert(config.MaximumTrackedEnemyModels == 128)
 assert(config.MaximumActiveTelegraphs == 16)
 assert(config.PollIntervalSeconds == 0.05)
@@ -94,6 +94,7 @@ assert(attributeNames.HordeSpecialKindId)
 assert(attributeNames.HordeSpecialSequence)
 assert(attributeNames.HordeSpecialStateId)
 assert(attributeNames.HordeSpecialCommitServerTimestamp)
+assert(config.StateIds.Interrupted == "Interrupted")
 
 local mutated = pcall(function()
 	config.MaximumActiveTelegraphs = 99
