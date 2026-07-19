@@ -15,6 +15,7 @@ local Workspace = game:GetService("Workspace")
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local ConfirmedHitMarkerConfig = require(ReplicatedStorage.Shared.Config.ConfirmedHitMarkerConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
+local WeaponPatternConfig = require(ReplicatedStorage.Shared.Config.WeaponPatternConfig)
 
 local function resolveWeaponDefinition(weaponId: unknown)
 	local getter = FirearmConfig.get
@@ -46,10 +47,13 @@ local screenGui: ScreenGui? = nil
 local markerRoot: Frame? = nil
 local markerLabel: TextLabel? = nil
 local markerCenter: Frame? = nil
+local markerScale: UIScale? = nil
 local markerArms: { Frame } = {}
 local impactWorldPosition: Vector3? = nil
 local presentationStartedTimestamp = -math.huge
 local confirmedChain = 0
+local patternModeId: string? = nil
+local patternHitCount = 1
 local lastConfirmedServerTimestamp = -math.huge
 local presentedShotIds: { [string]: boolean } = {}
 local presentedShotOrder: { string } = {}
@@ -63,6 +67,39 @@ end
 
 local function isFiniteNumber(value: unknown): boolean
 	return type(value) == "number" and value == value and math.abs(value) < math.huge
+end
+
+local function isWholePositive(value: unknown): boolean
+	return isFiniteNumber(value) and value > 0 and value % 1 == 0
+end
+
+local function colorFromTuple(tuple: { number }): Color3
+	return Color3.fromRGB(tuple[1], tuple[2], tuple[3])
+end
+
+local function readSecondaryImpactCount(value: unknown, maximumSecondaryTargets: number): number?
+	if value == nil then
+		return 0
+	end
+	if type(value) ~= "table" then
+		return nil
+	end
+	local impacts = value :: { any }
+	local maximumAccepted = math.min(maximumSecondaryTargets, ConfirmedHitMarkerConfig.MaximumSecondaryImpacts)
+	if #impacts > maximumAccepted then
+		return nil
+	end
+	for _, impact in impacts do
+		if
+			type(impact) ~= "table"
+			or not isNonEmptyString(impact.targetEntityId)
+			or typeof(impact.impactWorldPosition) ~= "Vector3"
+			or not isWholePositive(impact.damageAmount)
+		then
+			return nil
+		end
+	end
+	return #impacts
 end
 
 local function isLocalOperativeEntityId(value: unknown): boolean
@@ -103,6 +140,11 @@ local function createPresentation()
 	root.Parent = gui
 	markerRoot = root
 
+	local scale = Instance.new("UIScale")
+	scale.Scale = 1
+	scale.Parent = root
+	markerScale = scale
+
 	for index, armDefinition in ARM_DEFINITIONS do
 		local arm = Instance.new("Frame")
 		arm.Name = "Arm" .. tostring(index)
@@ -134,7 +176,7 @@ local function createPresentation()
 	label.Name = "Confirmation"
 	label.AnchorPoint = Vector2.new(0.5, 0)
 	label.Position = UDim2.new(0.5, 0, 1, 1)
-	label.Size = UDim2.fromOffset(210, 25)
+	label.Size = UDim2.fromOffset(290, 25)
 	label.BackgroundTransparency = 1
 	label.BorderSizePixel = 0
 	label.Font = Enum.Font.GothamBlack
@@ -154,7 +196,11 @@ local function createPresentation()
 	screenGui = gui
 end
 
-local function markerColorForChain(chain: number): Color3
+local function markerColorForPresentation(chain: number, modeId: string?): Color3
+	local patternPresentation = ConfirmedHitMarkerConfig.getPatternPresentation(modeId)
+	if patternPresentation ~= nil then
+		return colorFromTuple(patternPresentation.Color)
+	end
 	if chain >= ConfirmedHitMarkerConfig.BrutalChainThreshold then
 		return Color3.fromRGB(255, 70, 52)
 	end
@@ -175,8 +221,9 @@ local function updateFrame()
 	local root = markerRoot
 	local label = markerLabel
 	local center = markerCenter
+	local scale = markerScale
 	local worldPosition = impactWorldPosition
-	if root == nil or label == nil or center == nil or worldPosition == nil then
+	if root == nil or label == nil or center == nil or scale == nil or worldPosition == nil then
 		hidePresentation()
 		return
 	end
@@ -203,7 +250,10 @@ local function updateFrame()
 
 	local progress = math.clamp(elapsed / duration, 0, 1)
 	local easedProgress = 1 - (1 - progress) * (1 - progress)
+	local patternPresentation = ConfirmedHitMarkerConfig.getPatternPresentation(patternModeId)
+	local radiusBonus = if patternPresentation ~= nil then ConfirmedHitMarkerConfig.PatternRadiusBonusPixels else 0
 	local radius = ConfirmedHitMarkerConfig.MinimumRadiusPixels
+		+ radiusBonus
 		+ (ConfirmedHitMarkerConfig.MaximumRadiusPixels - ConfirmedHitMarkerConfig.MinimumRadiusPixels)
 			* easedProgress
 	local fadeProgress = math.clamp(
@@ -211,7 +261,7 @@ local function updateFrame()
 		0,
 		1
 	)
-	local color = markerColorForChain(confirmedChain)
+	local color = markerColorForPresentation(confirmedChain, patternModeId)
 
 	root.Position = UDim2.fromOffset(viewportPoint.X, viewportPoint.Y)
 	root.Visible = true
@@ -223,8 +273,13 @@ local function updateFrame()
 	end
 	center.BackgroundColor3 = color
 	center.BackgroundTransparency = 0.16 + fadeProgress * 0.84
-	label.Text = if confirmedChain >= 2 then string.format("CONFIRMED  x%d", confirmedChain) else "HIT CONFIRMED"
+	label.Text = if patternPresentation ~= nil
+		then string.format("%s  x%d", patternPresentation.Title, patternHitCount)
+		elseif confirmedChain >= 2 then string.format("CONFIRMED  x%d", confirmedChain)
+		else "HIT CONFIRMED"
 	label.TextColor3 = color
+	local patternPulse = if patternPresentation ~= nil then (1 - progress) * (1 - progress) else 0
+	scale.Scale = 1 + (ConfirmedHitMarkerConfig.PatternPulseScale - 1) * patternPulse
 	label.TextTransparency = fadeProgress
 	label.TextStrokeTransparency = 0.18 + fadeProgress * 0.82
 end
@@ -234,6 +289,15 @@ local function onPresentationMessage(message: unknown)
 		return
 	end
 	local payload = message :: any
+	local patternDefinition = WeaponPatternConfig.get(payload.weaponId)
+	if patternDefinition == nil then
+		return
+	end
+	local secondaryImpactCount =
+		readSecondaryImpactCount(payload.secondaryImpacts, patternDefinition.MaximumSecondaryTargets)
+	if secondaryImpactCount == nil then
+		return
+	end
 	if
 		payload.kindId ~= CombatContracts.PresentationMessageKindIds.ShotFired
 		or not isNonEmptyString(payload.shotId)
@@ -256,6 +320,11 @@ local function onPresentationMessage(message: unknown)
 	end
 	lastConfirmedServerTimestamp = payload.serverTimestamp
 	impactWorldPosition = payload.impactWorldPosition
+	patternModeId = if secondaryImpactCount > 0
+			and patternDefinition.ModeId ~= WeaponPatternConfig.ModeIds.SingleTarget
+		then patternDefinition.ModeId
+		else nil
+	patternHitCount = 1 + secondaryImpactCount
 	presentationStartedTimestamp = Workspace:GetServerTimeNow()
 end
 
@@ -285,10 +354,13 @@ function Controller.stop()
 	markerRoot = nil
 	markerLabel = nil
 	markerCenter = nil
+	markerScale = nil
 	table.clear(markerArms)
 	impactWorldPosition = nil
 	presentationStartedTimestamp = -math.huge
 	confirmedChain = 0
+	patternModeId = nil
+	patternHitCount = 1
 	lastConfirmedServerTimestamp = -math.huge
 	table.clear(presentedShotIds)
 	table.clear(presentedShotOrder)

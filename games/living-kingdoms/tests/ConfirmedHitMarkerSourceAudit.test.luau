@@ -34,39 +34,76 @@ local controllerSource = fs.readFile(controllerPath)
 local configSource = fs.readFile(configPath)
 local bootstrapSource = fs.readFile(bootstrapPath)
 
-assertThat(contains(controllerSource, "PresentationMessageKindIds.ShotFired"), "marker must consume accepted ShotFired disclosure")
-assertThat(contains(controllerSource, "isLocalOperativeEntityId(payload.operativeEntityId)"), "marker must remain shooter-specific")
-assertThat(contains(controllerSource, "payload.didApplyDamage ~= true"), "marker must reject misses and rejected damage")
-assertThat(contains(controllerSource, "typeof(payload.impactWorldPosition) ~= \"Vector3\""), "marker must require authoritative impact position")
-assertThat(contains(controllerSource, "camera:WorldToViewportPoint(worldPosition)"), "marker must stay anchored to the disclosed world impact")
-assertThat(contains(controllerSource, "not rememberShot(payload.shotId)"), "marker must deduplicate accepted ShotIds")
-assertThat(contains(controllerSource, "#ARM_DEFINITIONS == 4"), "marker geometry must remain exactly four fixed arms")
-assertThat(contains(controllerSource, "math.min(99, confirmedChain + 1)"), "confirmed hit chain display must remain bounded")
+for _, required in
+	{
+		"PresentationMessageKindIds.ShotFired",
+		"isLocalOperativeEntityId(payload.operativeEntityId)",
+		"payload.didApplyDamage ~= true",
+		'typeof(payload.impactWorldPosition) ~= "Vector3"',
+		"camera:WorldToViewportPoint(worldPosition)",
+		"not rememberShot(payload.shotId)",
+		"#ARM_DEFINITIONS == 4",
+		"math.min(99, confirmedChain + 1)",
+		"WeaponPatternConfig.get(payload.weaponId)",
+		"readSecondaryImpactCount(payload.secondaryImpacts",
+		"patternDefinition.MaximumSecondaryTargets",
+		"impact.targetEntityId",
+		"impact.impactWorldPosition",
+		"impact.damageAmount",
+		"patternHitCount = 1 + secondaryImpactCount",
+		"ConfirmedHitMarkerConfig.getPatternPresentation(patternModeId)",
+	}
+do
+	assertThat(contains(controllerSource, required), "confirmed marker is missing " .. required)
+end
 assertThat(count(controllerSource, "RenderStepped:Connect") == 1, "marker must own exactly one frame connection")
 assertThat(count(controllerSource, "OnClientEvent:Connect") == 1, "marker must own exactly one disclosure connection")
-assertThat(not contains(controllerSource, ":FireServer("), "marker must not send gameplay intent")
-assertThat(not contains(controllerSource, "RemoteFunction"), "marker must not add a request surface")
-assertThat(not contains(controllerSource, "SetNetworkOwner"), "marker must not change network ownership")
-assertThat(not contains(controllerSource, "TakeDamage"), "marker must not apply damage")
-assertThat(not contains(controllerSource, "DamageResolver"), "marker must not resolve damage")
-assertThat(not contains(controllerSource, "EnemyDirectorService"), "marker must not mutate or query authoritative enemy services")
-assertThat(not contains(controllerSource, "task.delay"), "marker must not schedule one task per shot")
-assertThat(not contains(controllerSource, "task.spawn"), "marker must not create per-shot task loops")
+for _, forbidden in
+	{
+		":FireServer(",
+		"RemoteFunction",
+		"SetNetworkOwner",
+		"TakeDamage",
+		"DamageResolver",
+		"EnemyDirectorService",
+		"task.delay",
+		"task.spawn",
+		"RunProgressionService",
+		"EnemyLootService",
+	}
+do
+	assertThat(not contains(controllerSource, forbidden), "confirmed marker must not own gameplay: " .. forbidden)
+end
 
 local config = luau.load(configSource, {
 	debugName = "ConfirmedHitMarkerConfig",
 	injectGlobals = true,
 })()
 assertThat(type(config) == "table", "confirmed hit marker config did not load")
-assertThat(config.MarkerDurationSeconds >= 0.18 and config.MarkerDurationSeconds <= 0.6, "marker duration escaped bounds")
-assertThat(config.MaximumRadiusPixels <= 36, "marker radius escaped screen-space budget")
+assertThat(
+	config.MarkerDurationSeconds >= 0.18 and config.MarkerDurationSeconds <= 0.6,
+	"marker duration escaped bounds"
+)
+assertThat(config.MaximumRadiusPixels + config.PatternRadiusBonusPixels <= 36, "pattern marker radius escaped budget")
 assertThat(config.MaximumRememberedShotIds <= 256, "marker deduplication memory escaped bound")
 assertThat(config.BrutalChainThreshold > config.HotChainThreshold, "marker escalation thresholds are not monotonic")
+assertThat(config.MaximumSecondaryImpacts == 3, "pattern secondary cap drifted")
+assertThat(config.getPatternPresentation("ConeCleave").Title == "BREACH CLEAVE", "shotgun punctuation title drifted")
+assertThat(config.getPatternPresentation("LinePierce").Title == "LINE PIERCE", "sniper punctuation title drifted")
+assertThat(config.getPatternPresentation("SingleTarget") == nil, "ordinary hits must not receive pattern punctuation")
 
 assertThat(
-	contains(bootstrapSource, "local ConfirmedHitMarkerController = require(script.Controllers.ConfirmedHitMarkerController)"),
+	contains(
+		bootstrapSource,
+		"local ConfirmedHitMarkerController = require(script.Controllers.ConfirmedHitMarkerController)"
+	),
 	"client bootstrap does not require confirmed hit marker"
 )
-assertThat(contains(bootstrapSource, "ConfirmedHitMarkerController.start()"), "client bootstrap does not start confirmed hit marker")
+assertThat(
+	contains(bootstrapSource, "ConfirmedHitMarkerController.start()"),
+	"client bootstrap does not start confirmed hit marker"
+)
 
-print("ConfirmedHitMarkerSourceAudit: server-confirmed inputs, shooter scope, fixed presentation, and authority bounds passed")
+print(
+	"ConfirmedHitMarkerSourceAudit: authoritative pattern counts, shooter scope, fixed presentation, and authority bounds passed"
+)

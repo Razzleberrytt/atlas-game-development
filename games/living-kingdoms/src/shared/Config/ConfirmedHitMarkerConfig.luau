@@ -1,13 +1,35 @@
 --!strict
 
 --[[
-	HROI-0110 presentation-only tuning for shooter-specific confirmed hit markers.
-	The controller consumes existing server-authored ShotFired disclosures and can
-	never establish targeting, ammunition spend, hits, damage, death, or rewards.
+	Shooter-specific confirmation for server-authored damage impacts. Pattern-hit
+	punctuation changes only fixed client-local marker text, color, radius, and
+	scale when the accepted ShotFired disclosure includes bounded secondary
+	impacts. It cannot establish targeting, damage, death, ammunition, or rewards.
 ]]
 
+export type PatternPresentationDefinition = {
+	Title: string,
+	Color: { number },
+}
+
+local PatternPresentationsByModeId: { [string]: PatternPresentationDefinition } = {
+	ConeCleave = table.freeze({
+		Title = "BREACH CLEAVE",
+		Color = table.freeze({ 255, 151, 54 }),
+	}),
+	LinePierce = table.freeze({
+		Title = "LINE PIERCE",
+		Color = table.freeze({ 115, 221, 255 }),
+	}),
+}
+PatternPresentationsByModeId = table.freeze(PatternPresentationsByModeId)
+
+local function getPatternPresentation(modeId: unknown): PatternPresentationDefinition?
+	return if type(modeId) == "string" then PatternPresentationsByModeId[modeId] else nil
+end
+
 local ConfirmedHitMarkerConfig = {
-	Version = "HROI-0110-v1-confirmed-hit-marker",
+	Version = "HROI-0133-v1-authoritative-pattern-hit-punctuation",
 	DisplayOrder = 52,
 	MarkerDurationSeconds = 0.34,
 	ChainWindowSeconds = 0.72,
@@ -19,6 +41,11 @@ local ConfirmedHitMarkerConfig = {
 	HotChainThreshold = 4,
 	BrutalChainThreshold = 8,
 	MaximumRememberedShotIds = 128,
+	MaximumSecondaryImpacts = 3,
+	PatternRadiusBonusPixels = 7,
+	PatternPulseScale = 1.17,
+	PatternPresentationsByModeId = PatternPresentationsByModeId,
+	getPatternPresentation = getPatternPresentation,
 }
 
 assert(
@@ -34,6 +61,10 @@ assert(
 		and ConfirmedHitMarkerConfig.MaximumRadiusPixels <= 36
 		and ConfirmedHitMarkerConfig.MinimumRadiusPixels < ConfirmedHitMarkerConfig.MaximumRadiusPixels,
 	"confirmed hit marker radius bounds drifted"
+)
+assert(
+	ConfirmedHitMarkerConfig.MaximumRadiusPixels + ConfirmedHitMarkerConfig.PatternRadiusBonusPixels <= 36,
+	"pattern-hit radius must remain inside the fixed marker budget"
 )
 assert(
 	ConfirmedHitMarkerConfig.ArmLengthPixels >= 10
@@ -53,7 +84,18 @@ assert(
 )
 assert(
 	ConfirmedHitMarkerConfig.MaximumRememberedShotIds >= 32 and ConfirmedHitMarkerConfig.MaximumRememberedShotIds <= 256,
-	"confirmed hit marker deduplication memory must remain bounded"
+	"marker deduplication memory must remain bounded"
 )
+assert(
+	ConfirmedHitMarkerConfig.MaximumSecondaryImpacts == 3,
+	"pattern-hit punctuation must match the authoritative secondary-impact cap"
+)
+assert(
+	ConfirmedHitMarkerConfig.PatternPulseScale >= 1.05 and ConfirmedHitMarkerConfig.PatternPulseScale <= 1.25,
+	"pattern-hit pulse must remain readable and restrained"
+)
+assert(getPatternPresentation("ConeCleave") ~= nil, "cone cleave requires pattern punctuation")
+assert(getPatternPresentation("LinePierce") ~= nil, "line pierce requires pattern punctuation")
+assert(getPatternPresentation("SingleTarget") == nil, "single-target hits must retain ordinary confirmation")
 
 return table.freeze(ConfirmedHitMarkerConfig)
