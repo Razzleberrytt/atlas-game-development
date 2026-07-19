@@ -34,7 +34,8 @@ or disabled weapon readiness prevents retention immediately.
 
 Single-target firearms and pattern firearms with no secondary opportunity continue
 to delegate exactly to `TargetCandidateSelector`; this pass adds no generic lock-on
-or time-based hold.
+or time-based hold. Retention is recalculated from current server facts every combat
+pass and contains no minimum duration, cooldown, grace timer, or stale target cache.
 
 ## Authority and runtime bounds
 
