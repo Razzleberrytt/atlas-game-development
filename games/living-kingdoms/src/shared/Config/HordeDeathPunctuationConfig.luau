@@ -80,9 +80,15 @@ function Config.get(kindId: unknown): Definition?
 end
 
 for kindId, definition in DefinitionsByKindId do
-	assert(#definition.Title > 0 and #definition.Title <= Config.MaximumTitleCharacters, kindId .. " title is not bounded")
+	assert(
+		#definition.Title > 0 and #definition.Title <= Config.MaximumTitleCharacters,
+		kindId .. " title is not bounded"
+	)
 	assert(#definition.Color == 3 and #definition.BloodColor == 3, kindId .. " colors must be RGB tuples")
-	assert(definition.BloodDiameterStuds >= 5 and definition.BloodDiameterStuds <= 10, kindId .. " blood pool is unbounded")
+	assert(
+		definition.BloodDiameterStuds >= 5 and definition.BloodDiameterStuds <= 10,
+		kindId .. " blood pool is unbounded"
+	)
 	assert(
 		definition.ShakeMagnitude > Config.GenericShakeMagnitude
 			and definition.ShakeMagnitude <= Config.MaximumShakeMagnitude,
