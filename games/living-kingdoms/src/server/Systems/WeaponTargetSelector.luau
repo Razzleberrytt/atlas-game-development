@@ -93,8 +93,8 @@ local function retainedOrBest(best: RankedPrimary, current: RankedPrimary?): Ran
 	if current == nil or current.utilityCount ~= best.utilityCount then
 		return best
 	end
-	local maximumRetainedDistance =
-		math.sqrt(best.distanceSquared) + EQUIVALENT_PATTERN_UTILITY_DISTANCE_ALLOWANCE_STUDS
+	local maximumRetainedDistance = math.sqrt(best.distanceSquared)
+		+ EQUIVALENT_PATTERN_UTILITY_DISTANCE_ALLOWANCE_STUDS
 	if current.distanceSquared > maximumRetainedDistance * maximumRetainedDistance then
 		return best
 	end

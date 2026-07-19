@@ -35,7 +35,7 @@ for _, token in
 		"currentTargetEntityId",
 		"retainedOrBest(best, current)",
 	}
- do
+do
 	assertThat(contains(selector, token), "weapon-aware selector missing " .. token)
 end
 
@@ -70,7 +70,7 @@ for _, forbidden in
 		"task.spawn",
 		"selectedAtServerTimestamp = os.clock",
 	}
- do
+do
 	assertThat(not contains(selector, forbidden), "selector cannot own side effects or timers: " .. forbidden)
 end
 
@@ -87,4 +87,6 @@ assertThat(
 	"equivalent-utility retention must never cross the active-threat cohort boundary"
 )
 
-print("WeaponTargetSelectorSourceAudit: threat priority, fallback parity, bounded retention, authority, and LOS bounds passed")
+print(
+	"WeaponTargetSelectorSourceAudit: threat priority, fallback parity, bounded retention, authority, and LOS bounds passed"
+)
