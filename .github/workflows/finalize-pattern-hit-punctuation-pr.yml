@@ -33,14 +33,12 @@ jobs:
         run: |
           python3 - <<'EXTRACT'
           from pathlib import Path
-          import textwrap
 
-          workflow = Path('.github/workflows/finalize-pattern-hit-punctuation-once.yml').read_text()
-          start_marker = "          from pathlib import Path\n"
-          end_marker = "\n          PY\n"
-          start = workflow.index(start_marker)
-          end = workflow.index(end_marker, start)
-          Path('/tmp/apply-pattern-punctuation.py').write_text(textwrap.dedent(workflow[start:end]))
+          workflow_lines = Path('.github/workflows/finalize-pattern-hit-punctuation-once.yml').read_text().splitlines()
+          start = next(index for index, line in enumerate(workflow_lines) if line.strip() == 'from pathlib import Path')
+          end = next(index for index in range(start + 1, len(workflow_lines)) if workflow_lines[index].strip() == 'PY')
+          code_lines = [line[10:] if line.startswith('          ') else line for line in workflow_lines[start:end]]
+          Path('/tmp/apply-pattern-punctuation.py').write_text('\n'.join(code_lines) + '\n')
           EXTRACT
           python3 /tmp/apply-pattern-punctuation.py
 
