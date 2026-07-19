@@ -151,9 +151,12 @@ local function createKillText(model: Model, position: Vector3, definition: Death
 	label.TextWrapped = definition ~= nil
 	local roleName = model:GetAttribute("HordeRoleDisplayName")
 	local xp = model:GetAttribute("HordeRewardXp")
+	local xpAmount = if type(xp) == "number" and xp == xp and xp > 0 then xp else nil
+	local bonusXp = if definition ~= nil then definition.XpBonus or 0 else 0
+	local displayedXp = if xpAmount ~= nil then xpAmount + bonusXp else nil
 	label.Text = if definition ~= nil
-		then string.format("%s\n+%s XP", definition.Title, tostring(xp or "?"))
-		else string.format("%s  +%s XP", string.upper(tostring(roleName or "INFECTED")), tostring(xp or "?"))
+		then string.format("%s\n+%s XP", definition.Title, tostring(displayedXp or "?"))
+		else string.format("%s  +%s XP", string.upper(tostring(roleName or "INFECTED")), tostring(displayedXp or "?"))
 	label.Parent = billboard
 	local lifetime = if definition ~= nil
 		then definition.BillboardLifetimeSeconds
