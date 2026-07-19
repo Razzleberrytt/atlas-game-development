@@ -50,9 +50,10 @@ pass and contains no minimum duration, cooldown, grace timer, or stale target ca
 
 ## Validation
 
-Automated coverage must prove equivalent-utility retention inside the allowance,
+Automated coverage proves equivalent-utility retention inside the allowance,
 switching beyond the allowance, immediate switching for greater utility and active
 threats, invalid-current rejection, and unchanged single-target fallback behavior.
+The full Living Kingdoms regression suite remains required before merge.
 
 Roblox Studio remains required to judge whether shotgun and sniper facing appears
 steadier without feeling sluggish during fast horde movement.
