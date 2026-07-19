@@ -1,0 +1,241 @@
+name: Finalize Screamer interrupt PR 138
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.event.pull_request.number == 138 && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/screamer-interrupt-confirmation-v2
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Apply authoritative interrupt confirmation
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file_path = Path(path)
+              source = file_path.read_text()
+              count = source.count(old)
+              if count != 1:
+                  raise RuntimeError(f"{path}: expected one replacement, found {count}")
+              file_path.write_text(source.replace(old, new, 1))
+
+          special_config = "games/living-kingdoms/src/shared/Config/HordeSpecialTelegraphConfig.luau"
+          replace_once(
+              special_config,
+              'local StateIds = table.freeze({\n\tIdle = "Idle",\n\tWindup = "Windup",\n\tCommitted = "Committed",\n})',
+              'local StateIds = table.freeze({\n\tIdle = "Idle",\n\tWindup = "Windup",\n\tInterrupted = "Interrupted",\n\tCommitted = "Committed",\n})',
+          )
+          replace_once(
+              special_config,
+              'Version = "HROI-0131-v1-horde-special-telegraphs",',
+              'Version = "HROI-0138-v1-screamer-interrupt-confirmation",',
+          )
+
+          server = "games/living-kingdoms/src/server/Systems/HordeExperienceService.luau"
+          replace_once(
+              server,
+              '''local function cancelPendingSpecial(record: EnemyRecord)
+\trecord.pendingSpecialKindId = nil
+\trecord.pendingSpecialCommitServerTimestamp = nil
+\trecord.model:SetAttribute(SpecialAttributeNames.KindId, nil)
+\trecord.model:SetAttribute(SpecialAttributeNames.CommitServerTimestamp, 0)
+\trecord.model:SetAttribute(SpecialAttributeNames.StateId, SpecialStateIds.Idle)
+end''',
+              '''local function interruptPendingSpecial(record: EnemyRecord)
+\trecord.pendingSpecialKindId = nil
+\trecord.pendingSpecialCommitServerTimestamp = nil
+\trecord.model:SetAttribute(SpecialAttributeNames.CommitServerTimestamp, 0)
+\trecord.model:SetAttribute(SpecialAttributeNames.StateId, SpecialStateIds.Interrupted)
+end''',
+          )
+          replace_once(server, 'cancelPendingSpecial(record)', 'interruptPendingSpecial(record)')
+
+          death_config = "games/living-kingdoms/src/shared/Config/HordeDeathPunctuationConfig.luau"
+          replace_once(
+              death_config,
+              '''local KindIds = table.freeze({
+\tScreamer = "Screamer",
+\tBloater = "Bloater",''',
+              '''local KindIds = table.freeze({
+\tScreamer = "Screamer",
+\tScreamerInterrupted = "ScreamerInterrupted",
+\tBloater = "Bloater",''',
+          )
+          replace_once(
+              death_config,
+              '''\t[KindIds.Screamer] = table.freeze({
+\t\tTitle = "CHOIR SILENCED",
+\t\tColor = table.freeze({ 255, 224, 64 }),
+\t\tBloodDiameterStuds = 6,
+\t\tBloodColor = table.freeze({ 84, 7, 9 }),
+\t\tShakeMagnitude = 0.18,
+\t\tShakeDurationSeconds = 0.2,
+\t\tBillboardLifetimeSeconds = 1.45,
+\t}),
+\t[KindIds.Bloater]''',
+              '''\t[KindIds.Screamer] = table.freeze({
+\t\tTitle = "CHOIR SILENCED",
+\t\tColor = table.freeze({ 255, 224, 64 }),
+\t\tBloodDiameterStuds = 6,
+\t\tBloodColor = table.freeze({ 84, 7, 9 }),
+\t\tShakeMagnitude = 0.18,
+\t\tShakeDurationSeconds = 0.2,
+\t\tBillboardLifetimeSeconds = 1.45,
+\t}),
+\t[KindIds.ScreamerInterrupted] = table.freeze({
+\t\tTitle = "SUMMON INTERRUPTED",
+\t\tColor = table.freeze({ 255, 244, 120 }),
+\t\tBloodDiameterStuds = 6.5,
+\t\tBloodColor = table.freeze({ 92, 8, 10 }),
+\t\tShakeMagnitude = 0.26,
+\t\tShakeDurationSeconds = 0.23,
+\t\tBillboardLifetimeSeconds = 1.65,
+\t}),
+\t[KindIds.Bloater]''',
+          )
+
+          effects = "games/living-kingdoms/src/client/Controllers/HordeEffectsController.luau"
+          replace_once(
+              effects,
+              '''local HordeConfig = require(ReplicatedStorage.Shared.Config.HordeExperienceConfig)
+local HordeDeathPunctuationConfig = require(ReplicatedStorage.Shared.Config.HordeDeathPunctuationConfig)''',
+              '''local HordeConfig = require(ReplicatedStorage.Shared.Config.HordeExperienceConfig)
+local HordeDeathPunctuationConfig = require(ReplicatedStorage.Shared.Config.HordeDeathPunctuationConfig)
+local HordeSpecialTelegraphConfig = require(ReplicatedStorage.Shared.Config.HordeSpecialTelegraphConfig)''',
+          )
+          replace_once(
+              effects,
+              '''local punctuationKindIds = HordeDeathPunctuationConfig.KindIds
+
+type DeathPunctuationDefinition''',
+              '''local punctuationKindIds = HordeDeathPunctuationConfig.KindIds
+local SpecialAttributeNames = HordeSpecialTelegraphConfig.AttributeNames
+local SpecialKindIds = HordeSpecialTelegraphConfig.KindIds
+local SpecialStateIds = HordeSpecialTelegraphConfig.StateIds
+
+type DeathPunctuationDefinition''',
+          )
+          replace_once(
+              effects,
+              '''local function readCombatEntityId(model: Model): string?
+\tlocal value = model:GetAttribute("CombatEntityId")
+\treturn if type(value) == "string" and value ~= "" then value else nil
+end
+
+local function resolveDeathPunctuation''',
+              '''local function readStringAttribute(model: Model, attributeName: string): string?
+\tlocal value = model:GetAttribute(attributeName)
+\treturn if type(value) == "string" and value ~= "" then value else nil
+end
+
+local function readCombatEntityId(model: Model): string?
+\treturn readStringAttribute(model, "CombatEntityId")
+end
+
+local function resolveDeathPunctuation''',
+          )
+          replace_once(
+              effects,
+              '''\tif roleId == HordeConfig.Roles.Screamer.Id then
+\t\tkindId = punctuationKindIds.Screamer
+\telseif roleId == HordeConfig.Roles.Bloater.Id then''',
+              '''\tif roleId == HordeConfig.Roles.Screamer.Id then
+\t\tlocal specialKindId = readStringAttribute(model, SpecialAttributeNames.KindId)
+\t\tlocal specialStateId = readStringAttribute(model, SpecialAttributeNames.StateId)
+\t\tlocal wasInterrupted = specialKindId == SpecialKindIds.ScreamerReinforcement
+\t\t\tand (specialStateId == SpecialStateIds.Windup or specialStateId == SpecialStateIds.Interrupted)
+\t\tkindId = if wasInterrupted then punctuationKindIds.ScreamerInterrupted else punctuationKindIds.Screamer
+\telseif roleId == HordeConfig.Roles.Bloater.Id then''',
+          )
+
+          special_test = "games/living-kingdoms/tests/HordeSpecialTelegraphConfig.test.luau"
+          replace_once(
+              special_test,
+              'assert(config.Version == "HROI-0131-v1-horde-special-telegraphs")',
+              'assert(config.Version == "HROI-0138-v1-screamer-interrupt-confirmation")',
+          )
+          replace_once(
+              special_test,
+              'assert(attributeNames.HordeSpecialCommitServerTimestamp)\n',
+              'assert(attributeNames.HordeSpecialCommitServerTimestamp)\nassert(config.StateIds.Interrupted == "Interrupted")\n',
+          )
+
+          death_test = "games/living-kingdoms/tests/HordeDeathPunctuationConfig.test.luau"
+          replace_once(
+              death_test,
+              '''\t[config.KindIds.Screamer] = "CHOIR SILENCED",
+\t[config.KindIds.Bloater]''',
+              '''\t[config.KindIds.Screamer] = "CHOIR SILENCED",
+\t[config.KindIds.ScreamerInterrupted] = "SUMMON INTERRUPTED",
+\t[config.KindIds.Bloater]''',
+          )
+          PY
+
+      - name: Format focused Luau
+        shell: bash
+        run: |
+          stylua \
+            games/living-kingdoms/src/server/Systems/HordeExperienceService.luau \
+            games/living-kingdoms/src/shared/Config/HordeSpecialTelegraphConfig.luau \
+            games/living-kingdoms/src/shared/Config/HordeDeathPunctuationConfig.luau \
+            games/living-kingdoms/src/client/Controllers/HordeEffectsController.luau \
+            games/living-kingdoms/tests/HordeSpecialTelegraphConfig.test.luau \
+            games/living-kingdoms/tests/HordeDeathPunctuationConfig.test.luau \
+            games/living-kingdoms/tests/ScreamerInterruptConfirmationConfig.test.luau \
+            games/living-kingdoms/tests/ScreamerInterruptConfirmationSourceAudit.test.luau
+
+      - name: Run complete validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          stylua --check games/living-kingdoms/src
+          selene games/living-kingdoms/src
+          fixture_count=0
+          while IFS= read -r -d '' fixture; do
+            lune run "$fixture"
+            fixture_count=$((fixture_count + 1))
+          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
+          test "$fixture_count" -gt 0
+          rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
+
+      - name: Commit validated feature tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            games/living-kingdoms/src/server/Systems/HordeExperienceService.luau \
+            games/living-kingdoms/src/shared/Config/HordeSpecialTelegraphConfig.luau \
+            games/living-kingdoms/src/shared/Config/HordeDeathPunctuationConfig.luau \
+            games/living-kingdoms/src/client/Controllers/HordeEffectsController.luau \
+            games/living-kingdoms/tests/HordeSpecialTelegraphConfig.test.luau \
+            games/living-kingdoms/tests/HordeDeathPunctuationConfig.test.luau \
+            games/living-kingdoms/tests/ScreamerInterruptConfirmationConfig.test.luau \
+            games/living-kingdoms/tests/ScreamerInterruptConfirmationSourceAudit.test.luau
+          git diff --cached --quiet && exit 0
+          git commit -m "Confirm authoritative Screamer interrupts"
+          git push origin HEAD:feat/screamer-interrupt-confirmation-v2
