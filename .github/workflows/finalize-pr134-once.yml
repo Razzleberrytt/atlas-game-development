@@ -1,11 +1,9 @@
 name: Finalize PR 134 once
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - docs/pr134-operator-trigger.txt
+  pull_request:
+    types:
+      - ready_for_review
 
 permissions:
   contents: write
@@ -16,6 +14,7 @@ concurrency:
 
 jobs:
   finalize:
+    if: github.event.pull_request.number == 134
     runs-on: ubuntu-22.04
     timeout-minutes: 20
 
