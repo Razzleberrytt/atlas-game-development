@@ -22,6 +22,8 @@ for _, token in
 		"HordeDeathPunctuationConfig.get(kindId)",
 		"HordeRoleId",
 		"CombatEntityId",
+		"local entityId = readCombatEntityId(model)",
+		"if entityId == nil then",
 		"BruteFinalEntityMarker",
 		"punctuationKindIds.Screamer",
 		"punctuationKindIds.Bloater",
@@ -79,4 +81,4 @@ assertThat(
 	"special punctuation must reuse the existing life-state death trigger"
 )
 
-print("HordeDeathPunctuationSourceAudit: authoritative facts, reused objects, bounded cleanup, and zero power passed")
+print("HordeDeathPunctuationSourceAudit: authoritative facts, missing-identity fallback, reused objects, bounded cleanup, and zero power passed")
