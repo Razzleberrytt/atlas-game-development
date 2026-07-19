@@ -1,6 +1,9 @@
 name: Finalize PR 134 once
 
 on:
+  push:
+    branches:
+      - main
   issue_comment:
     types:
       - created
@@ -12,9 +15,10 @@ permissions:
 jobs:
   finalize:
     if: >-
-      github.event.issue.pull_request != null &&
+      (github.event_name == 'push' && github.event.head_commit.message == 'Trigger PR 134 operator') ||
+      (github.event.issue.pull_request != null &&
       github.event.issue.number == 134 &&
-      github.event.comment.body == '/finalize-target-stability-134'
+      github.event.comment.body == '/finalize-target-stability-134')
     runs-on: ubuntu-22.04
     timeout-minutes: 20
 
