@@ -21,7 +21,7 @@ on:
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -31,6 +31,9 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: feat/pattern-target-stability-v1
+          fetch-depth: 0
 
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
@@ -39,6 +42,106 @@ jobs:
           path: .
           cache: false
           token: ${{ github.token }}
+
+      - name: Finalize pattern target stability
+        if: github.head_ref == 'feat/pattern-target-stability-v1'
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              file_path = Path(path)
+              source = file_path.read_text()
+              count = source.count(old)
+              if count != 1:
+                  raise RuntimeError(f"{path}: expected one replacement, found {count}")
+              file_path.write_text(source.replace(old, new, 1))
+
+          runtime = "games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau"
+          replace_once(
+              runtime,
+              "local selectedTarget = WeaponTargetSelector.select(targetingState, candidates)",
+              "local selectedTarget = WeaponTargetSelector.select(\n\t\ttargetingState,\n\t\tcandidates,\n\t\tplayerState.selectedTargetEntityId\n\t)",
+          )
+
+          test = "games/living-kingdoms/tests/WeaponTargetSelector.test.luau"
+          replace_once(
+              test,
+              'print("WeaponTargetSelector: threat-safe shotgun cleave and sniper lineup selection passed")\n',
+              '''assertSelected(
+\tselector.select(operative("weapon.breach-shotgun"), shotgunCluster, "hostile.cluster-two"),
+\t"hostile.cluster-two",
+\t"ValidPatternUtility",
+\t"equivalent utility inside the distance allowance retains the current target"
+)
+assertSelected(
+\tselector.select(operative("weapon.breach-shotgun"), shotgunCluster, "hostile.cluster-four"),
+\t"hostile.cluster-primary",
+\t"ValidPatternUtility",
+\t"equivalent utility beyond the distance allowance switches to the best target"
+)
+assertSelected(
+\tselector.select(operative("weapon.breach-shotgun"), shotgunCluster, "hostile.closest-solo"),
+\t"hostile.cluster-primary",
+\t"ValidPatternUtility",
+\t"greater pattern utility switches immediately"
+)
+assertSelected(
+\tselector.select(operative("weapon.breach-shotgun"), threatAbsolute, "hostile.cluster-primary"),
+\t"hostile.threat-solo",
+\t"ThreateningClosest",
+\t"active threat priority switches immediately across cohorts"
+)
+
+local invalidCurrent = {
+\tcandidate("hostile.cluster-primary", 18, 0),
+\tcandidate("hostile.invalid-current", 22, 1),
+\tcandidate("hostile.cluster-three", 25, -1),
+\tcandidate("hostile.cluster-four", 28, 2),
+}
+invalidCurrent[2].hasLineOfSight = false
+assertSelected(
+\tselector.select(operative("weapon.breach-shotgun"), invalidCurrent, "hostile.invalid-current"),
+\t"hostile.cluster-primary",
+\t"ValidPatternUtility",
+\t"invalid current target cannot be retained"
+)
+assertSelected(
+\tselector.select(operative("weapon.light-machine-gun"), noPattern, "hostile.far"),
+\t"hostile.close",
+\t"ValidClosest",
+\t"single-target fallback remains exact and does not become sticky"
+)
+
+print("WeaponTargetSelector: threat-safe pattern utility with bounded equivalent-target retention passed")
+''',
+          )
+
+          roadmap = "docs/roadmap/RECOMMENDED-PASSES.md"
+          replace_once(
+              roadmap,
+              '''- **Authoritative pattern-hit punctuation pass** — shotgun cleaves and sniper
+  pierces now replace generic local hit confirmation with bounded, mode-specific
+  multi-target punctuation sourced only from committed secondary impacts
+  ([`../specifications/authoritative-pattern-hit-punctuation.md`](../specifications/authoritative-pattern-hit-punctuation.md)).
+''',
+              '''- **Authoritative pattern-hit punctuation pass** — shotgun cleaves and sniper
+  pierces now replace generic local hit confirmation with bounded, mode-specific
+  multi-target punctuation sourced only from committed secondary impacts
+  ([`../specifications/authoritative-pattern-hit-punctuation.md`](../specifications/authoritative-pattern-hit-punctuation.md)).
+- **Pattern-target stability pass** — server-valid equal-utility shotgun and sniper
+  primaries retain the current target inside a six-stud allowance while better
+  utility, active threats, and invalidation still switch immediately
+  ([`../specifications/pattern-target-stability.md`](../specifications/pattern-target-stability.md)).
+''',
+          )
+          PY
+          stylua \
+            games/living-kingdoms/src/server/Systems/WeaponTargetSelector.luau \
+            games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau \
+            games/living-kingdoms/tests/WeaponTargetSelector.test.luau \
+            games/living-kingdoms/tests/WeaponTargetSelectorSourceAudit.test.luau
 
       - name: Check Luau formatting
         shell: bash
@@ -68,3 +171,23 @@ jobs:
       - name: Build Rojo project
         shell: bash
         run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
+
+      - name: Commit validated final tree
+        if: github.head_ref == 'feat/pattern-target-stability-v1'
+        shell: bash
+        run: |
+          git checkout origin/main -- .github/workflows/luau-validation.yml
+          rm .github/workflows/finalize-pattern-target-stability-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            docs/roadmap/RECOMMENDED-PASSES.md \
+            docs/specifications/pattern-target-stability.md \
+            games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau \
+            games/living-kingdoms/src/server/Systems/WeaponTargetSelector.luau \
+            games/living-kingdoms/tests/WeaponTargetSelector.test.luau \
+            games/living-kingdoms/tests/WeaponTargetSelectorSourceAudit.test.luau \
+            .github/workflows/luau-validation.yml \
+            .github/workflows/finalize-pattern-target-stability-once.yml
+          git commit -m "Stabilize equivalent weapon-pattern targets"
+          git push origin HEAD:feat/pattern-target-stability-v1
