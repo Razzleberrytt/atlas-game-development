@@ -40,15 +40,27 @@ local config = luau.load(fs.readFile(configPath), {
 	injectGlobals = true,
 })()
 
-assertThat(contracts.RunUpgradeIds.OverpressureRounds == "upgrade.overpressure_rounds", "existing upgrade ID must remain stable")
-assertThat(contracts.RunUpgradeIds.FieldDiscipline == "upgrade.field_discipline", "planned upgrade ID must remain stable")
+assertThat(
+	contracts.RunUpgradeIds.OverpressureRounds == "upgrade.overpressure_rounds",
+	"existing upgrade ID must remain stable"
+)
+assertThat(
+	contracts.RunUpgradeIds.FieldDiscipline == "upgrade.field_discipline",
+	"planned upgrade ID must remain stable"
+)
 assertThat(contracts.EliteAffixIds.Frenzied == "elite-affix.frenzied", "Frenzied affix ID must remain stable")
 assertThat(contracts.EliteAffixIds.Commander == "elite-affix.commander", "Commander affix ID must remain stable")
 assertThat(contracts.RelicIds.BloodBattery == "relic.blood_battery", "Blood Battery ID must remain stable")
 assertThat(contracts.RelicIds.SecondWind == "relic.second_wind", "Second Wind ID must remain stable")
 assertThat(contracts.RewardSourceIds.EliteKill == "reward-source.elite-kill", "elite reward source must remain stable")
-assertThat(contracts.RunBuildNetworkOperationIds.Snapshot == "Snapshot", "run-build snapshot operation must remain stable")
-assertThat(contracts.RunRpgRejectionReasonIds.RelicNotOffered == "RelicNotOffered", "offer rejection must remain stable")
+assertThat(
+	contracts.RunBuildNetworkOperationIds.Snapshot == "Snapshot",
+	"run-build snapshot operation must remain stable"
+)
+assertThat(
+	contracts.RunRpgRejectionReasonIds.RelicNotOffered == "RelicNotOffered",
+	"offer rejection must remain stable"
+)
 assertThat(contracts.EffectStateIds.Starting == nil, "unused Starting state must not enter the initial RPG vocabulary")
 
 local contractsMutationSucceeded = pcall(function()
@@ -56,7 +68,10 @@ local contractsMutationSucceeded = pcall(function()
 end)
 assertThat(not contractsMutationSucceeded, "RPG contract vocabularies must be frozen")
 
-assertThat(config.Version == "RPG-0101-v1-contracts-only", "RPG config version must identify the declaration-only slice")
+assertThat(
+	config.Version == "RPG-0101-v1-contracts-only",
+	"RPG config version must identify the declaration-only slice"
+)
 assertThat(config.Limits.maximumEquippedRelicsPerOperative == 3, "the initial build must have three relic slots")
 assertThat(config.Limits.relicChoiceCountPerReward == 2, "relic rewards must present two choices")
 assertThat(config.Limits.maximumQueuedRelicRewardsPerOperative == 3, "pending reward queues must be bounded")
@@ -64,10 +79,16 @@ assertThat(config.Limits.maximumSimultaneousElites == 3, "simultaneous elites mu
 assertThat(config.Limits.maximumAffixesPerEnemy == 1, "v1 enemies may have only one affix")
 assertThat(config.ModifierCeilings.maximumDamageMultiplier == 3, "RPG damage must preserve the existing ceiling")
 assertThat(config.ModifierCeilings.minimumCadenceMultiplier == 0.55, "RPG cadence must preserve the existing floor")
-assertThat(config.ModifierCeilings.maximumAmmunitionConservationChance == 0.5, "ammo conservation must preserve scarcity")
+assertThat(
+	config.ModifierCeilings.maximumAmmunitionConservationChance == 0.5,
+	"ammo conservation must preserve scarcity"
+)
 assertThat(config.ModifierCeilings.maximumMovementSpeedMultiplier == 1.35, "movement growth must remain bounded")
 assertThat(config.ModifierCeilings.minimumReloadDurationMultiplier == 0.5, "reload commitment must remain meaningful")
-assertThat(config.ModifierCeilings.maximumTemporaryArmorFractionOfMaximumHealth == 0.4, "temporary armor must be health-relative and bounded")
+assertThat(
+	config.ModifierCeilings.maximumTemporaryArmorFractionOfMaximumHealth == 0.4,
+	"temporary armor must be health-relative and bounded"
+)
 assertThat(config.ModifierCeilings.maximumKillChainExtensionSeconds == 2, "kill-chain extension must be bounded")
 assertThat(config.ModifierCeilings.maximumGeneralProcChance == 0.35, "general proc chance must be bounded")
 assertThat(not config.EliteAssignmentPlanning.isRuntimeEnabled, "RPG-0101 must not enable elite assignment")
@@ -92,7 +113,10 @@ for _, definition in config.EliteAffixCatalog do
 	assertThat(definition.maximumPerEnemy == 1, "elite definitions must preserve one-affix v1")
 	assertThat(definition.requiresTelegraph, "every elite affix must require a telegraph")
 	assertThat(not definition.bossEligible, "initial elite affixes must exclude bosses")
-	assertThat(definition.implementationStateId == contracts.ImplementationStateIds.Planned, "affixes must remain planned")
+	assertThat(
+		definition.implementationStateId == contracts.ImplementationStateIds.Planned,
+		"affixes must remain planned"
+	)
 end
 
 local relicById = {}
@@ -101,12 +125,27 @@ for _, definition in config.RelicCatalog do
 	relicById[definition.relicId] = definition
 	assertThat(definition.maximumStacks == 1, "initial relics must be non-stackable")
 	assertThat(definition.slotCost == 1, "initial relics must consume one slot")
-	assertThat(definition.implementationStateId == contracts.ImplementationStateIds.Planned, "relics must remain planned")
+	assertThat(
+		definition.implementationStateId == contracts.ImplementationStateIds.Planned,
+		"relics must remain planned"
+	)
 end
-assertThat(relicById[contracts.RelicIds.BloodBattery].counterThreshold == 8, "Blood Battery must declare its bounded kill counter")
-assertThat(relicById[contracts.RelicIds.SecondWind].maximumCharges == 1, "Second Wind must declare one operation charge")
-assertThat(relicById[contracts.RelicIds.BreachDoctrine].compatibilityId == contracts.RelicCompatibilityIds.Shotgun, "Breach Doctrine must remain shotgun-specific")
-assertThat(relicById[contracts.RelicIds.LongwatchDoctrine].compatibilityId == contracts.RelicCompatibilityIds.Sniper, "Longwatch Doctrine must remain sniper-specific")
+assertThat(
+	relicById[contracts.RelicIds.BloodBattery].counterThreshold == 8,
+	"Blood Battery must declare its bounded kill counter"
+)
+assertThat(
+	relicById[contracts.RelicIds.SecondWind].maximumCharges == 1,
+	"Second Wind must declare one operation charge"
+)
+assertThat(
+	relicById[contracts.RelicIds.BreachDoctrine].compatibilityId == contracts.RelicCompatibilityIds.Shotgun,
+	"Breach Doctrine must remain shotgun-specific"
+)
+assertThat(
+	relicById[contracts.RelicIds.LongwatchDoctrine].compatibilityId == contracts.RelicCompatibilityIds.Sniper,
+	"Longwatch Doctrine must remain sniper-specific"
+)
 
 assertThat(
 	contracts.validateRelicChoiceIntent({
@@ -126,16 +165,13 @@ assertThat(
 	}),
 	"shape validation must preserve UnknownRelic resolver feedback"
 )
-assertThat(
-	not contracts.validateRelicChoiceIntent({
-		requestId = "request-forged",
-		operationGeneration = 2,
-		rewardSequence = 7,
-		relicId = contracts.RelicIds.BloodBattery,
-		operativeEntityId = "forged",
-	}),
-	"relic choice intent must reject extra identity fields"
-)
+assertThat(not contracts.validateRelicChoiceIntent({
+	requestId = "request-forged",
+	operationGeneration = 2,
+	rewardSequence = 7,
+	relicId = contracts.RelicIds.BloodBattery,
+	operativeEntityId = "forged",
+}), "relic choice intent must reject extra identity fields")
 assertThat(
 	contracts.validateRelicReplacementIntent({
 		requestId = "request-2",
@@ -146,16 +182,13 @@ assertThat(
 	}),
 	"minimal replacement intent must validate"
 )
-assertThat(
-	not contracts.validateRelicReplacementIntent({
-		requestId = "request-3",
-		operationGeneration = 2,
-		rewardSequence = 8,
-		relicId = contracts.RelicIds.SecondWind,
-		replaceSlotIndex = 0,
-	}),
-	"replacement slot indices must be positive"
-)
+assertThat(not contracts.validateRelicReplacementIntent({
+	requestId = "request-3",
+	operationGeneration = 2,
+	rewardSequence = 8,
+	relicId = contracts.RelicIds.SecondWind,
+	replaceSlotIndex = 0,
+}), "replacement slot indices must be positive")
 
 local validSnapshot = {
 	operationId = contracts.RunBuildNetworkOperationIds.Snapshot,
@@ -226,7 +259,10 @@ duplicateRelicSnapshot.relicSlots = {
 		revision = 1,
 	},
 }
-assertThat(not contracts.validateSafeRunBuildSnapshot(duplicateRelicSnapshot), "safe snapshots must reject duplicate equipped relics")
+assertThat(
+	not contracts.validateSafeRunBuildSnapshot(duplicateRelicSnapshot),
+	"safe snapshots must reject duplicate equipped relics"
+)
 
 assertThat(
 	contracts.validateSafeRunBuildRejection({
@@ -246,19 +282,24 @@ end)
 assertThat(not configMutationSucceeded, "RPG limits must be frozen")
 
 local combinedDeclarations = fs.readFile(contractsPath) .. "\n" .. fs.readFile(configPath)
-for _, forbidden in {
-	"game:GetService",
-	"Instance.new",
-	"RemoteEvent",
-	"RemoteFunction",
-	"Heartbeat",
-	"RenderStepped",
-	"task.delay",
-	"task.spawn",
-	"FireServer",
-	"FireClient",
-	"OnServerEvent",
-	"DataStoreService",
-} do
-	assertThat(not string.find(combinedDeclarations, forbidden, 1, true), "RPG declarations must not contain " .. forbidden)
+for _, forbidden in
+	{
+		"game:GetService",
+		"Instance.new",
+		"RemoteEvent",
+		"RemoteFunction",
+		"Heartbeat",
+		"RenderStepped",
+		"task.delay",
+		"task.spawn",
+		"FireServer",
+		"FireClient",
+		"OnServerEvent",
+		"DataStoreService",
+	}
+do
+	assertThat(
+		not string.find(combinedDeclarations, forbidden, 1, true),
+		"RPG declarations must not contain " .. forbidden
+	)
 end

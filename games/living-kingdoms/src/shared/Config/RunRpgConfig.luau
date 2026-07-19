@@ -371,9 +371,18 @@ local RelicCatalog = table.freeze({
 
 local RewardSourceCatalog = table.freeze({
 	table.freeze({ sourceId = RewardSourceIds.EliteKill, implementationStateId = ImplementationStateIds.Planned }),
-	table.freeze({ sourceId = RewardSourceIds.SpecialInterrupt, implementationStateId = ImplementationStateIds.Planned }),
-	table.freeze({ sourceId = RewardSourceIds.ObjectiveCompletion, implementationStateId = ImplementationStateIds.Planned }),
-	table.freeze({ sourceId = RewardSourceIds.AuthoredContainer, implementationStateId = ImplementationStateIds.Planned }),
+	table.freeze({
+		sourceId = RewardSourceIds.SpecialInterrupt,
+		implementationStateId = ImplementationStateIds.Planned,
+	}),
+	table.freeze({
+		sourceId = RewardSourceIds.ObjectiveCompletion,
+		implementationStateId = ImplementationStateIds.Planned,
+	}),
+	table.freeze({
+		sourceId = RewardSourceIds.AuthoredContainer,
+		implementationStateId = ImplementationStateIds.Planned,
+	}),
 	table.freeze({ sourceId = RewardSourceIds.HordeClear, implementationStateId = ImplementationStateIds.Planned }),
 	table.freeze({ sourceId = RewardSourceIds.BossMilestone, implementationStateId = ImplementationStateIds.Planned }),
 })
@@ -394,7 +403,10 @@ assert(Limits.relicChoiceCountPerReward == 2, "relic rewards require exactly two
 assert(Limits.maximumQueuedRelicRewardsPerOperative == 3, "pending relic rewards require a strict queue ceiling")
 assert(Limits.maximumSimultaneousElites == 3, "the initial elite population requires a strict ceiling")
 assert(Limits.maximumAffixesPerEnemy == 1, "v1 enemies may carry exactly one affix at most")
-assert(Limits.maximumUpgradeStacksPerDefinition >= 1 and Limits.maximumUpgradeStacksPerDefinition <= 4, "upgrade stacks must remain bounded")
+assert(
+	Limits.maximumUpgradeStacksPerDefinition >= 1 and Limits.maximumUpgradeStacksPerDefinition <= 4,
+	"upgrade stacks must remain bounded"
+)
 assert(
 	isNonnegativeInteger(Limits.maximumProcessedRequestIdsPerOperative)
 		and Limits.maximumProcessedRequestIdsPerOperative > 0
@@ -408,8 +420,7 @@ assert(
 	"RPG reward replay history must remain bounded"
 )
 assert(
-	isFinitePositive(Limits.minimumChoiceRequestIntervalSeconds)
-		and Limits.minimumChoiceRequestIntervalSeconds <= 1,
+	isFinitePositive(Limits.minimumChoiceRequestIntervalSeconds) and Limits.minimumChoiceRequestIntervalSeconds <= 1,
 	"RPG choice requests require a responsive server-owned throttle"
 )
 
@@ -424,23 +435,19 @@ assert(
 	"RPG ammunition conservation must preserve scarcity"
 )
 assert(
-	ModifierCeilings.maximumMagazineCapacityMultiplier >= 1
-		and ModifierCeilings.maximumMagazineCapacityMultiplier <= 2,
+	ModifierCeilings.maximumMagazineCapacityMultiplier >= 1 and ModifierCeilings.maximumMagazineCapacityMultiplier <= 2,
 	"RPG magazine growth must remain bounded"
 )
 assert(
-	ModifierCeilings.minimumReloadDurationMultiplier >= 0.5
-		and ModifierCeilings.minimumReloadDurationMultiplier <= 1,
+	ModifierCeilings.minimumReloadDurationMultiplier >= 0.5 and ModifierCeilings.minimumReloadDurationMultiplier <= 1,
 	"RPG reload effects may not erase the reload commitment"
 )
 assert(
-	ModifierCeilings.maximumMovementSpeedMultiplier >= 1
-		and ModifierCeilings.maximumMovementSpeedMultiplier <= 1.35,
+	ModifierCeilings.maximumMovementSpeedMultiplier >= 1 and ModifierCeilings.maximumMovementSpeedMultiplier <= 1.35,
 	"RPG movement must preserve encounter geometry"
 )
 assert(
-	ModifierCeilings.maximumAutomaticHealingPerTrigger > 0
-		and ModifierCeilings.maximumAutomaticHealingPerTrigger <= 25,
+	ModifierCeilings.maximumAutomaticHealingPerTrigger > 0 and ModifierCeilings.maximumAutomaticHealingPerTrigger <= 25,
 	"automatic RPG healing must not replace finite treatment"
 )
 assert(
@@ -449,8 +456,7 @@ assert(
 	"temporary armor requires a strict health-relative ceiling"
 )
 assert(
-	ModifierCeilings.maximumLootChanceAdditiveBonus >= 0
-		and ModifierCeilings.maximumLootChanceAdditiveBonus <= 0.15,
+	ModifierCeilings.maximumLootChanceAdditiveBonus >= 0 and ModifierCeilings.maximumLootChanceAdditiveBonus <= 0.15,
 	"RPG loot modifiers must preserve reward scarcity"
 )
 assert(
@@ -458,13 +464,11 @@ assert(
 	"RPG Field XP modifiers must not create level spam"
 )
 assert(
-	ModifierCeilings.maximumKillChainExtensionSeconds >= 0
-		and ModifierCeilings.maximumKillChainExtensionSeconds <= 2,
+	ModifierCeilings.maximumKillChainExtensionSeconds >= 0 and ModifierCeilings.maximumKillChainExtensionSeconds <= 2,
 	"RPG kill-chain extension requires a strict ceiling"
 )
 assert(
-	ModifierCeilings.maximumPatternDamageMultiplier >= 1
-		and ModifierCeilings.maximumPatternDamageMultiplier <= 2,
+	ModifierCeilings.maximumPatternDamageMultiplier >= 1 and ModifierCeilings.maximumPatternDamageMultiplier <= 2,
 	"pattern damage must remain bounded"
 )
 assert(
@@ -556,7 +560,10 @@ local seenRewardSourceIds = {}
 for _, definition in RewardSourceCatalog do
 	assert(not seenRewardSourceIds[definition.sourceId], "reward source IDs must be unique")
 	seenRewardSourceIds[definition.sourceId] = true
-	assert(definition.implementationStateId == ImplementationStateIds.Planned, "RPG-0101 reward sources remain declarations")
+	assert(
+		definition.implementationStateId == ImplementationStateIds.Planned,
+		"RPG-0101 reward sources remain declarations"
+	)
 end
 assert(#RewardSourceCatalog == countVocabulary(RewardSourceIds), "every reward source requires one catalog entry")
 

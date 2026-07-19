@@ -454,10 +454,10 @@ local function validateRelicSlot(value: unknown): boolean
 	end
 	if slot.slotStateId == RunRpgContracts.RelicSlotStateIds.Empty then
 		return slot.relicId == nil
-		and slot.effectStateId == RunRpgContracts.EffectStateIds.Inactive
-		and slot.chargeCount == 0
-		and slot.counterValue == 0
-		and slot.cooldownEndServerTimestamp == nil
+			and slot.effectStateId == RunRpgContracts.EffectStateIds.Inactive
+			and slot.chargeCount == 0
+			and slot.counterValue == 0
+			and slot.cooldownEndServerTimestamp == nil
 	end
 	return RunRpgContracts.isKnownRelicId(slot.relicId)
 end
@@ -532,7 +532,11 @@ function RunRpgContracts.validateSafeRunBuildSnapshot(value: unknown): boolean
 		return false
 	end
 	for upgradeId, stackCount in snapshot.upgradeStacks :: { [any]: any } do
-		if not RunRpgContracts.isKnownRunUpgradeId(upgradeId) or not isNonnegativeInteger(stackCount) or stackCount > 8 then
+		if
+			not RunRpgContracts.isKnownRunUpgradeId(upgradeId)
+			or not isNonnegativeInteger(stackCount)
+			or stackCount > 8
+		then
 			return false
 		end
 	end
