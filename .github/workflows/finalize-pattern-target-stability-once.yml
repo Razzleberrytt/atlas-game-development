@@ -1,6 +1,9 @@
 name: Finalize pattern target stability once
 
 on:
+  push:
+    branches:
+      - feat/pattern-target-stability-v1
   pull_request:
     branches:
       - main
@@ -10,7 +13,7 @@ permissions:
 
 jobs:
   validate:
-    if: github.head_ref == 'feat/pattern-target-stability-v1'
+    if: github.event_name == 'push' || github.head_ref == 'feat/pattern-target-stability-v1'
     runs-on: ubuntu-22.04
     timeout-minutes: 20
 
@@ -160,5 +163,3 @@ print("WeaponTargetSelector: threat-safe pattern utility with bounded equivalent
             .github/workflows/finalize-pattern-target-stability-once.yml
           git commit -m "Stabilize equivalent weapon-pattern targets"
           git push origin HEAD:feat/pattern-target-stability-v1
-
-# Synchronize trigger after draft PR creation.
