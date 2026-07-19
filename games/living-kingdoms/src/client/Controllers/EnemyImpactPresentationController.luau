@@ -19,6 +19,8 @@ local Workspace = game:GetService("Workspace")
 local CombatImpactPresentationConfig = require(ReplicatedStorage.Shared.Config.CombatImpactPresentationConfig)
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
+local PresentationAccessibilityConfig = require(ReplicatedStorage.Shared.Config.PresentationAccessibilityConfig)
+local PresentationAccessibilityState = require(script.Parent.Parent.Presentation.PresentationAccessibilityState)
 
 local EnemyImpactPresentationController = {}
 
@@ -231,11 +233,21 @@ local function isInsideEffectDistance(record: Record): boolean
 		<= CombatImpactPresentationConfig.MaximumEffectDistanceStuds
 end
 
+local function scaledBloodParticleCount(authoredCount: number): number
+	-- The HROI-0104 comfort scale only lowers blood-burst density. Hit and kill
+	-- flash highlights stay untouched: they carry combat readability, not gore.
+	local scale = PresentationAccessibilityState.getScale(PresentationAccessibilityConfig.SettingIds.Blood)
+	return math.floor(authoredCount * scale + 0.5)
+end
+
 local function triggerHit(record: Record, serverTimestamp: number)
 	if not isInsideEffectDistance(record) then
 		return
 	end
-	record.hitEmitter:Emit(CombatImpactPresentationConfig.HitParticleCount)
+	local particleCount = scaledBloodParticleCount(CombatImpactPresentationConfig.HitParticleCount)
+	if particleCount > 0 then
+		record.hitEmitter:Emit(particleCount)
+	end
 	record.highlight.FillColor = HIT_FLASH_COLOR
 	record.highlight.FillTransparency = 0.24
 	record.highlight.Enabled = true
@@ -246,7 +258,10 @@ local function triggerKill(record: Record, serverTimestamp: number)
 	if not isInsideEffectDistance(record) then
 		return
 	end
-	record.killEmitter:Emit(CombatImpactPresentationConfig.KillParticleCount)
+	local particleCount = scaledBloodParticleCount(CombatImpactPresentationConfig.KillParticleCount)
+	if particleCount > 0 then
+		record.killEmitter:Emit(particleCount)
+	end
 	record.highlight.FillColor = KILL_FLASH_COLOR
 	record.highlight.FillTransparency = 0.16
 	record.highlight.Enabled = true

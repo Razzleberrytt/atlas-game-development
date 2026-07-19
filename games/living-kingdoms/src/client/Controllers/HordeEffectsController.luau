@@ -18,6 +18,8 @@ local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 local HordeConfig = require(ReplicatedStorage.Shared.Config.HordeExperienceConfig)
 local HordeDeathPunctuationConfig = require(ReplicatedStorage.Shared.Config.HordeDeathPunctuationConfig)
+local PresentationAccessibilityConfig = require(ReplicatedStorage.Shared.Config.PresentationAccessibilityConfig)
+local PresentationAccessibilityState = require(script.Parent.Parent.Presentation.PresentationAccessibilityState)
 
 local Controller = {}
 local lifeAttribute = EnemyPresentationContracts.AttributeNames.LifeStateId
@@ -45,7 +47,14 @@ local function colorFromTuple(tuple: { number }): Color3
 end
 
 local function addShake(magnitude: number, duration: number)
-	shakeMagnitude = math.max(shakeMagnitude, magnitude)
+	-- The HROI-0104 comfort scale only attenuates this cosmetic response; it can
+	-- never raise magnitude above the authored value.
+	local scaled = magnitude
+		* PresentationAccessibilityState.getScale(PresentationAccessibilityConfig.SettingIds.CameraShake)
+	if scaled <= 0 then
+		return
+	end
+	shakeMagnitude = math.max(shakeMagnitude, scaled)
 	shakeUntil = math.max(shakeUntil, os.clock() + duration)
 	shakeSequence += 1
 end
@@ -74,9 +83,16 @@ local function resolveDeathPunctuation(model: Model, roleId: unknown): DeathPunc
 end
 
 local function createBloodPool(position: Vector3, definition: DeathPunctuationDefinition?)
-	local diameter = if definition ~= nil
-		then definition.BloodDiameterStuds
-		else HordeDeathPunctuationConfig.GenericBloodDiameterStuds
+	local bloodScale = PresentationAccessibilityState.getScale(PresentationAccessibilityConfig.SettingIds.Blood)
+	if bloodScale <= 0 then
+		return
+	end
+	local diameter = bloodScale
+		* (
+			if definition ~= nil
+				then definition.BloodDiameterStuds
+				else HordeDeathPunctuationConfig.GenericBloodDiameterStuds
+		)
 	local colorTuple = if definition ~= nil
 		then definition.BloodColor
 		else HordeDeathPunctuationConfig.GenericBloodColor
