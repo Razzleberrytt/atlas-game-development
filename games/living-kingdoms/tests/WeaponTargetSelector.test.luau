@@ -343,4 +343,49 @@ for _, candidates in { ordered, reversed, shuffled } do
 	)
 end
 
-print("WeaponTargetSelector: threat-safe shotgun cleave and sniper lineup selection passed")
+assertSelected(
+	selector.select(operative("weapon.breach-shotgun"), shotgunCluster, "hostile.cluster-two"),
+	"hostile.cluster-two",
+	"ValidPatternUtility",
+	"equivalent utility inside the distance allowance retains the current target"
+)
+assertSelected(
+	selector.select(operative("weapon.breach-shotgun"), shotgunCluster, "hostile.cluster-four"),
+	"hostile.cluster-primary",
+	"ValidPatternUtility",
+	"equivalent utility beyond the distance allowance switches to the best target"
+)
+assertSelected(
+	selector.select(operative("weapon.breach-shotgun"), shotgunCluster, "hostile.closest-solo"),
+	"hostile.cluster-primary",
+	"ValidPatternUtility",
+	"greater pattern utility switches immediately"
+)
+assertSelected(
+	selector.select(operative("weapon.breach-shotgun"), threatAbsolute, "hostile.cluster-primary"),
+	"hostile.threat-solo",
+	"ThreateningClosest",
+	"active threat priority switches immediately across cohorts"
+)
+
+local invalidCurrent = {
+	candidate("hostile.cluster-primary", 18, 0),
+	candidate("hostile.invalid-current", 22, 1),
+	candidate("hostile.cluster-three", 25, -1),
+	candidate("hostile.cluster-four", 28, 2),
+}
+invalidCurrent[2].hasLineOfSight = false
+assertSelected(
+	selector.select(operative("weapon.breach-shotgun"), invalidCurrent, "hostile.invalid-current"),
+	"hostile.cluster-primary",
+	"ValidPatternUtility",
+	"invalid current target cannot be retained"
+)
+assertSelected(
+	selector.select(operative("weapon.light-machine-gun"), noPattern, "hostile.far"),
+	"hostile.close",
+	"ValidClosest",
+	"single-target fallback remains exact and does not become sticky"
+)
+
+print("WeaponTargetSelector: threat-safe pattern utility with bounded equivalent-target retention passed")
