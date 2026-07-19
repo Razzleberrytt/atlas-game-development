@@ -21,6 +21,8 @@ for kindId, expectedTitle in expectedTitles do
 	local definition = config.get(kindId)
 	assert(definition ~= nil, kindId .. " definition is missing")
 	assert(definition.Title == expectedTitle, kindId .. " title drifted")
+	local expectedXpBonus = if kindId == config.KindIds.ScreamerInterrupted then 10 else 0
+	assert((definition.XpBonus or 0) == expectedXpBonus, kindId .. " XP bonus copy drifted")
 	assert(#definition.Color == 3, kindId .. " text color is not RGB")
 	assert(#definition.BloodColor == 3, kindId .. " blood color is not RGB")
 	assert(definition.BloodDiameterStuds >= 5 and definition.BloodDiameterStuds <= 10, kindId .. " pool is unbounded")
@@ -45,4 +47,4 @@ assert(config.BruteFinalEntityMarker == "brute-phase2", "final Brute marker must
 assert(config.get("Unknown") == nil, "unknown punctuation kind must fail closed")
 assert(config.get(nil) == nil, "missing punctuation kind must fail closed")
 
-print("HordeDeathPunctuationConfig: special copy, bounded intensity, and final Brute escalation passed")
+print("HordeDeathPunctuationConfig: special copy, bounded intensity, XP bonus, and final Brute escalation passed")
