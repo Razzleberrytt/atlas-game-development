@@ -30,6 +30,7 @@ local AttributeNames = table.freeze({
 local StateIds = table.freeze({
 	Idle = "Idle",
 	Windup = "Windup",
+	Interrupted = "Interrupted",
 	Committed = "Committed",
 })
 
@@ -80,7 +81,7 @@ local function get(kindId: unknown): TelegraphDefinition?
 end
 
 local Config = {
-	Version = "HROI-0131-v1-horde-special-telegraphs",
+	Version = "HROI-0138-v1-screamer-interrupt-confirmation",
 	AttributeNames = AttributeNames,
 	StateIds = StateIds,
 	KindIds = KindIds,

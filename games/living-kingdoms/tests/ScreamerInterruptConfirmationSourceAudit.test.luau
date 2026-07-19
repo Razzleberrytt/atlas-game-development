@@ -43,7 +43,10 @@ for _, token in
 		"interruptPendingSpecial(record)",
 	}
 do
-	assertThat(contains(server .. specialConfig, token), "authoritative Screamer interrupt contract is missing " .. token)
+	assertThat(
+		contains(server .. specialConfig, token),
+		"authoritative Screamer interrupt contract is missing " .. token
+	)
 end
 
 assertThat(
@@ -59,10 +62,7 @@ assertThat(
 	"death feedback must expose dedicated interrupt punctuation"
 )
 assertThat(contains(effects, "specialStateId == SpecialStateIds.Windup"), "Windup interrupt fact is missing")
-assertThat(
-	contains(effects, "specialStateId == SpecialStateIds.Interrupted"),
-	"durable Interrupted fact is missing"
-)
+assertThat(contains(effects, "specialStateId == SpecialStateIds.Interrupted"), "durable Interrupted fact is missing")
 assertThat(contains(deathConfig, "SUMMON INTERRUPTED"), "interrupt punctuation copy is missing")
 assertThat(
 	contains(telegraph, "readStringAttribute(model, AttributeNames.StateId) ~= StateIds.Windup"),
@@ -84,11 +84,16 @@ for _, forbidden in
 		"FireServer",
 		"task.delay",
 		"task.spawn",
-		"Instance.new(\"Sound\")",
+		'Instance.new("Sound")',
 		"ParticleEmitter",
 	}
 do
-	assertThat(not contains(effects, forbidden), "interrupt confirmation cannot add authority or event objects: " .. forbidden)
+	assertThat(
+		not contains(effects, forbidden),
+		"interrupt confirmation cannot add authority or event objects: " .. forbidden
+	)
 end
 
-print("ScreamerInterruptConfirmationSourceAudit: authoritative cancellation, durable outcome, accessibility, reused presentation, and zero power passed")
+print(
+	"ScreamerInterruptConfirmationSourceAudit: authoritative cancellation, durable outcome, accessibility, reused presentation, and zero power passed"
+)

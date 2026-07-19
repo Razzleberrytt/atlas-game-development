@@ -11,6 +11,7 @@ local config = luau.load(source, {
 
 local expectedTitles = {
 	[config.KindIds.Screamer] = "CHOIR SILENCED",
+	[config.KindIds.ScreamerInterrupted] = "SUMMON INTERRUPTED",
 	[config.KindIds.Bloater] = "ROT BURST ARMED",
 	[config.KindIds.BrutePhaseOne] = "BRUTE PHASE BROKEN",
 	[config.KindIds.BruteFinal] = "BRUTE ERADICATED",
