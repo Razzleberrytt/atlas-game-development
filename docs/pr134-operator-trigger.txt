@@ -1,0 +1,1 @@
+Finalize the bounded pattern-target stability pass on PR 134, then remove this trigger and its operator workflow.
