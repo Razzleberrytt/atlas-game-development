@@ -41,7 +41,7 @@ The pass adds no server edit, remote, client request, kill report, damage path, 
 
 Automated:
 
-- pinned StyLua formatting;
+- pinned StyLua formatting over the two touched source files;
 - Selene with zero findings;
 - complete Living Kingdoms Lune fixture suite;
 - Rojo build;
