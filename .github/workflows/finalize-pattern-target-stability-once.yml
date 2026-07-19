@@ -160,3 +160,5 @@ print("WeaponTargetSelector: threat-safe pattern utility with bounded equivalent
             .github/workflows/finalize-pattern-target-stability-once.yml
           git commit -m "Stabilize equivalent weapon-pattern targets"
           git push origin HEAD:feat/pattern-target-stability-v1
+
+# Synchronize trigger after draft PR creation.
