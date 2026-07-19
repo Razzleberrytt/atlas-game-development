@@ -25,13 +25,10 @@ local function countOccurrences(source: string, token: string): number
 	end
 end
 
-local config = luau.load(
-	fs.readFile("games/living-kingdoms/src/shared/Config/CombatImpactPresentationConfig.luau"),
-	{
-		debugName = "CombatImpactPresentationConfig",
-		injectGlobals = true,
-	}
-)()
+local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/CombatImpactPresentationConfig.luau"), {
+	debugName = "CombatImpactPresentationConfig",
+	injectGlobals = true,
+})()
 
 assert(config.Version == "HROI-0104-v1")
 assert(table.isfrozen(config), "impact config must be immutable")
@@ -56,8 +53,16 @@ assert(controller:find("hitSequence > record.lastHitSequence", 1, true) ~= nil)
 assert(controller:find("isDead and not record.wasDead", 1, true) ~= nil)
 assert(controller:find("Workspace:GetServerTimeNow()", 1, true) ~= nil)
 assert(controller:find("ParticleEmitter", 1, true) ~= nil)
-assert(controller:find(":Emit(CombatImpactPresentationConfig.HitParticleCount)", 1, true) ~= nil)
-assert(controller:find(":Emit(CombatImpactPresentationConfig.KillParticleCount)", 1, true) ~= nil)
+assert(controller:find("scaledBloodParticleCount(CombatImpactPresentationConfig.HitParticleCount)", 1, true) ~= nil)
+assert(controller:find("scaledBloodParticleCount(CombatImpactPresentationConfig.KillParticleCount)", 1, true) ~= nil)
+assert(
+	controller:find("PresentationAccessibilityState.getScale", 1, true) ~= nil,
+	"blood bursts must honor the client-local comfort scale"
+)
+assert(
+	controller:find("math.floor(authoredCount * scale + 0.5)", 1, true) ~= nil,
+	"the comfort scale may only lower the authored particle count"
+)
 assert(controller:find("HighlightDepthMode.Occluded", 1, true) ~= nil)
 assert(controller:find("MaximumEffectDistanceStuds", 1, true) ~= nil)
 assert(controller:find("MaximumTrackedEnemyModels", 1, true) ~= nil)
@@ -66,21 +71,23 @@ assert(
 	countOccurrences(controller, ":Connect(") == 3,
 	"exactly two folder connections and one frame connection are allowed"
 )
-for _, prohibited in {
-	"RemoteEvent",
-	"RemoteFunction",
-	"FireServer",
-	"OnClientEvent",
-	"task.delay",
-	"task.spawn",
-	"Debris",
-	"while true",
-	"TakeDamage",
-	"applyAuthoritativeDamage",
-	"commitHealthState",
-	"SetNetworkOwner",
-	"Humanoid:MoveTo",
-} do
+for _, prohibited in
+	{
+		"RemoteEvent",
+		"RemoteFunction",
+		"FireServer",
+		"OnClientEvent",
+		"task.delay",
+		"task.spawn",
+		"Debris",
+		"while true",
+		"TakeDamage",
+		"applyAuthoritativeDamage",
+		"commitHealthState",
+		"SetNetworkOwner",
+		"Humanoid:MoveTo",
+	}
+do
 	assert(controller:find(prohibited, 1, true) == nil, "prohibited authority or scheduler token: " .. prohibited)
 end
 

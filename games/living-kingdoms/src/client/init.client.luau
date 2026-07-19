@@ -30,6 +30,7 @@ local HordeEffectsController = require(script.Controllers.HordeEffectsController
 local HordeSpecialTelegraphController = require(script.Controllers.HordeSpecialTelegraphController)
 local MassacreCrescendoController = require(script.Controllers.MassacreCrescendoController)
 local CriticalConditionController = require(script.Controllers.CriticalConditionController)
+local PresentationSettingsController = require(script.Controllers.PresentationSettingsController)
 
 CameraController.init()
 CameraController.start()
@@ -67,6 +68,7 @@ HordeEffectsController.start()
 HordeSpecialTelegraphController.start()
 MassacreCrescendoController.start()
 CriticalConditionController.start()
+PresentationSettingsController.start()
 -- Mission presentation starts first; class selection then requests authoritative state.
 ClassSelectionController.start()
 WeaponSelectionController.start()
