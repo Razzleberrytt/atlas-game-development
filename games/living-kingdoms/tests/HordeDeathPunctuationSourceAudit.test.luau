@@ -18,7 +18,8 @@ local hordeConfig = fs.readFile("games/living-kingdoms/src/shared/Config/HordeEx
 
 for _, token in
 	{
-		"HordeDeathPunctuationConfig.resolveDeathPunctuation",
+		"local function resolveDeathPunctuation",
+		"HordeDeathPunctuationConfig.get(kindId)",
 		"HordeRoleId",
 		"CombatEntityId",
 		"BruteFinalEntityMarker",
