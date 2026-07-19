@@ -41,6 +41,17 @@ jobs:
           Path('/tmp/apply-pattern-punctuation.py').write_text('\n'.join(code_lines) + '\n')
           EXTRACT
           python3 /tmp/apply-pattern-punctuation.py
+          python3 - <<'FIX'
+          from pathlib import Path
+
+          path = Path('games/living-kingdoms/tests/ConfirmedHitMarkerSourceAudit.test.luau')
+          source = path.read_text()
+          malformed = '"typeof(payload.impactWorldPosition) ~= "Vector3"",'
+          corrected = '\'typeof(payload.impactWorldPosition) ~= "Vector3"\','
+          if source.count(malformed) != 1:
+              raise RuntimeError('expected one malformed Vector3 audit token')
+          path.write_text(source.replace(malformed, corrected, 1))
+          FIX
 
       - name: Format focused Luau
         run: |
@@ -68,6 +79,7 @@ jobs:
         run: |
           rm .github/workflows/finalize-pattern-hit-punctuation-once.yml
           rm .github/workflows/finalize-pattern-hit-punctuation-pr.yml
+          rm .github/workflows/diagnose-pattern-hit-format-once.yml
           rm docs/pattern-punctuation-trigger.md
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -79,6 +91,7 @@ jobs:
             games/living-kingdoms/tests/ConfirmedHitMarkerSourceAudit.test.luau \
             .github/workflows/finalize-pattern-hit-punctuation-once.yml \
             .github/workflows/finalize-pattern-hit-punctuation-pr.yml \
+            .github/workflows/diagnose-pattern-hit-format-once.yml \
             docs/pattern-punctuation-trigger.md
           git commit -m "Make authoritative weapon patterns hit unmistakably"
           git push origin HEAD:feat/pattern-hit-punctuation-v1
