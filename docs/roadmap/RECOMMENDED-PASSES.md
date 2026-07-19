@@ -94,6 +94,10 @@ VIS-0102–VIS-0105 output from the gameplay camera, not more generated geometry
   exact authoritative expiry, fixed audiovisual punch, and one verified tier
   stinger without changing XP, loot, health, ammunition, or combat power
   ([`../specifications/massacre-crescendo.md`](../specifications/massacre-crescendo.md)).
+- **Authoritative pattern-hit punctuation pass** — shotgun cleaves and sniper
+  pierces now replace generic local hit confirmation with bounded, mode-specific
+  multi-target punctuation sourced only from committed secondary impacts
+  ([`../specifications/authoritative-pattern-hit-punctuation.md`](../specifications/authoritative-pattern-hit-punctuation.md)).
 
 ## C. Explicitly excluded
 
