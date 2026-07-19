@@ -55,5 +55,5 @@ switching beyond the allowance, immediate switching for greater utility and acti
 threats, invalid-current rejection, and unchanged single-target fallback behavior.
 The full Living Kingdoms regression suite remains required before merge.
 
-Roblox Studio remains required to judge whether shotgun and sniper facing appears
-steadier without feeling sluggish during fast horde movement.
+Roblox Studio remains the manual acceptance gate for whether shotgun and sniper
+facing appears steadier without feeling sluggish during fast horde movement.
