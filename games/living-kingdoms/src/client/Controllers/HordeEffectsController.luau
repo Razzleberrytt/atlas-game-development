@@ -5,6 +5,7 @@
 	EnemyImpactPresentationController. The canonical impact controller owns hit
 	and kill bursts/highlights; this controller adds role-aware death pools, XP
 	billboards, and bounded camera shake from server-confirmed presentation facts.
+	Special-role punctuation reuses those same objects and cannot establish a kill.
 	It never applies damage, changes enemy state, selects targets, or reports a hit.
 ]]
 
@@ -16,12 +17,16 @@ local Workspace = game:GetService("Workspace")
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 local HordeConfig = require(ReplicatedStorage.Shared.Config.HordeExperienceConfig)
+local HordeDeathPunctuationConfig = require(ReplicatedStorage.Shared.Config.HordeDeathPunctuationConfig)
 
 local Controller = {}
 local lifeAttribute = EnemyPresentationContracts.AttributeNames.LifeStateId
 local deadLifeState = EnemyPresentationContracts.LifeStateIds.Dead
 local presentationRemote =
 	ReplicatedStorage:WaitForChild("CombatNetwork"):WaitForChild("CombatPresentation") :: RemoteEvent
+local punctuationKindIds = HordeDeathPunctuationConfig.KindIds
+
+type DeathPunctuationDefinition = HordeDeathPunctuationConfig.Definition
 
 local started = false
 local folderAddedConnection: RBXScriptConnection? = nil
@@ -35,30 +40,61 @@ local shakeUntil = 0
 local shakeMagnitude = 0
 local shakeSequence = 0
 
+local function colorFromTuple(tuple: { number }): Color3
+	return Color3.fromRGB(tuple[1], tuple[2], tuple[3])
+end
+
 local function addShake(magnitude: number, duration: number)
 	shakeMagnitude = math.max(shakeMagnitude, magnitude)
 	shakeUntil = math.max(shakeUntil, os.clock() + duration)
 	shakeSequence += 1
 end
 
-local function createBloodPool(position: Vector3, isBloater: boolean)
+local function readCombatEntityId(model: Model): string?
+	local value = model:GetAttribute("CombatEntityId")
+	return if type(value) == "string" and value ~= "" then value else nil
+end
+
+local function resolveDeathPunctuation(model: Model, roleId: unknown): DeathPunctuationDefinition?
+	local kindId: string? = nil
+	if roleId == HordeConfig.Roles.Screamer.Id then
+		kindId = punctuationKindIds.Screamer
+	elseif roleId == HordeConfig.Roles.Bloater.Id then
+		kindId = punctuationKindIds.Bloater
+	elseif roleId == HordeConfig.Roles.Brute.Id then
+		local entityId = readCombatEntityId(model)
+		kindId = if entityId ~= nil
+			and string.find(entityId, HordeDeathPunctuationConfig.BruteFinalEntityMarker, 1, true) ~= nil
+			then punctuationKindIds.BruteFinal
+			else punctuationKindIds.BrutePhaseOne
+	end
+	return HordeDeathPunctuationConfig.get(kindId)
+end
+
+local function createBloodPool(position: Vector3, definition: DeathPunctuationDefinition?)
+	local diameter = if definition ~= nil
+		then definition.BloodDiameterStuds
+		else HordeDeathPunctuationConfig.GenericBloodDiameterStuds
+	local colorTuple = if definition ~= nil
+		then definition.BloodColor
+		else HordeDeathPunctuationConfig.GenericBloodColor
 	local pool = Instance.new("Part")
 	pool.Name = "HordeBloodPool"
 	pool.Shape = Enum.PartType.Cylinder
-	pool.Size = Vector3.new(0.08, if isBloater then 8 else 5, if isBloater then 8 else 5)
+	pool.Size = Vector3.new(0.08, diameter, diameter)
 	pool.CFrame = CFrame.new(position.X, position.Y + 0.04, position.Z) * CFrame.Angles(0, 0, math.rad(90))
 	pool.Anchored = true
 	pool.CanCollide = false
 	pool.CanTouch = false
 	pool.CanQuery = false
 	pool.Material = Enum.Material.SmoothPlastic
-	pool.Color = if isBloater then Color3.fromRGB(45, 92, 32) else Color3.fromRGB(76, 4, 7)
+	pool.Color = colorFromTuple(colorTuple)
 	pool.Transparency = 0.25
 	pool.Parent = Workspace
 	Debris:AddItem(pool, HordeConfig.Feedback.BloodLifetimeSeconds)
 end
 
-local function createKillText(model: Model, position: Vector3)
+local function createKillText(model: Model, position: Vector3, definition: DeathPunctuationDefinition?)
 	local attachmentPart = Instance.new("Part")
 	attachmentPart.Name = "HordeKillText"
 	attachmentPart.Size = Vector3.new(0.1, 0.1, 0.1)
@@ -71,22 +107,28 @@ local function createKillText(model: Model, position: Vector3)
 	attachmentPart.Parent = Workspace
 	local billboard = Instance.new("BillboardGui")
 	billboard.AlwaysOnTop = true
-	billboard.Size = UDim2.fromOffset(190, 44)
+	billboard.Size = if definition ~= nil then UDim2.fromOffset(270, 64) else UDim2.fromOffset(190, 44)
 	billboard.StudsOffset = Vector3.new(0, 1, 0)
 	billboard.Parent = attachmentPart
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.fromScale(1, 1)
 	label.BackgroundTransparency = 1
 	label.Font = Enum.Font.GothamBlack
-	label.TextColor3 = Color3.fromRGB(255, 210, 95)
+	label.TextColor3 = if definition ~= nil then colorFromTuple(definition.Color) else Color3.fromRGB(255, 210, 95)
 	label.TextStrokeColor3 = Color3.fromRGB(20, 6, 7)
 	label.TextStrokeTransparency = 0.15
 	label.TextScaled = true
+	label.TextWrapped = definition ~= nil
 	local roleName = model:GetAttribute("HordeRoleDisplayName")
 	local xp = model:GetAttribute("HordeRewardXp")
-	label.Text = string.format("%s  +%s XP", string.upper(tostring(roleName or "INFECTED")), tostring(xp or "?"))
+	label.Text = if definition ~= nil
+		then string.format("%s\n+%s XP", definition.Title, tostring(xp or "?"))
+		else string.format("%s  +%s XP", string.upper(tostring(roleName or "INFECTED")), tostring(xp or "?"))
 	label.Parent = billboard
-	Debris:AddItem(attachmentPart, 1.2)
+	local lifetime = if definition ~= nil
+		then definition.BillboardLifetimeSeconds
+		else HordeDeathPunctuationConfig.GenericBillboardLifetimeSeconds
+	Debris:AddItem(attachmentPart, lifetime)
 end
 
 local function enemyRoot(model: Model): BasePart?
@@ -104,10 +146,15 @@ local function presentDeath(model: Model)
 		return
 	end
 	local roleId = model:GetAttribute("HordeRoleId")
-	local isBloater = roleId == HordeConfig.Roles.Bloater.Id
-	createBloodPool(root.Position, isBloater)
-	createKillText(model, root.Position)
-	addShake(if roleId == HordeConfig.Roles.Brute.Id or isBloater then 0.28 else 0.1, 0.18)
+	local definition = resolveDeathPunctuation(model, roleId)
+	createBloodPool(root.Position, definition)
+	createKillText(model, root.Position, definition)
+	addShake(
+		if definition ~= nil then definition.ShakeMagnitude else HordeDeathPunctuationConfig.GenericShakeMagnitude,
+		if definition ~= nil
+			then definition.ShakeDurationSeconds
+			else HordeDeathPunctuationConfig.GenericShakeDurationSeconds
+	)
 end
 
 local function trackModel(instance: Instance)
