@@ -13,6 +13,7 @@ export type CombatModifiers = {
 	incomingDamageMultiplier: number,
 	xpGainMultiplier: number,
 	reloadDurationMultiplier: number,
+	patternDamageMultiplier: number,
 }
 
 export type ChoiceResolution = {
@@ -157,6 +158,7 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 			incomingDamageMultiplier = 1,
 			xpGainMultiplier = 1,
 			reloadDurationMultiplier = 1,
+			patternDamageMultiplier = 1,
 		})
 	end
 
@@ -167,6 +169,7 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 	local incomingDamageReduction = 0
 	local xpGainBonus = 0
 	local reloadDurationReduction = 0
+	local patternDamageBonus = 0
 	for _, definition in RunProgressionConfig.UpgradeDefinitions do
 		local stackCount = stacks[definition.Id] or 0
 		if definition.DamageMultiplierPerStack ~= nil then
@@ -190,6 +193,9 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 		if definition.ReloadDurationReductionPerStack ~= nil then
 			reloadDurationReduction += stackCount * definition.ReloadDurationReductionPerStack
 		end
+		if definition.PatternDamageMultiplierPerStack ~= nil then
+			patternDamageBonus += stackCount * definition.PatternDamageMultiplierPerStack
+		end
 	end
 
 	local boundedReduction = math.clamp(incomingDamageReduction, 0, RunProgressionConfig.MaximumIncomingDamageReduction)
@@ -208,6 +214,11 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 		reloadDurationMultiplier = math.max(
 			RunProgressionConfig.MinimumReloadDurationMultiplier,
 			1 - reloadDurationReduction
+		),
+		patternDamageMultiplier = math.clamp(
+			1 + patternDamageBonus,
+			1,
+			RunProgressionConfig.MaximumPatternDamageMultiplier
 		),
 	})
 end

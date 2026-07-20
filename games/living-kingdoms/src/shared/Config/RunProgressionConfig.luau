@@ -15,17 +15,20 @@
 	axes so choices define a run instead of only stacking damage: bounded
 	defensive mitigation (Trauma Plating, a squad incoming-damage floor consumed
 	at the enemy attack source), a bounded economy pick (Field Discipline, extra
-	Field XP), and a bounded reload axis (Combat Loader, reduced reload duration
-	consumed by ReloadResolver). Field XP base values and the four-kill
+	Field XP), a bounded reload axis (Combat Loader, reduced reload duration
+	consumed by ReloadResolver), and a bounded pattern axis (Pattern Amplifier,
+	which raises cleave/pierce secondary damage toward full primary damage in
+	DamageResolver's pattern path). Field XP base values and the four-kill
 	first-upgrade pacing are unchanged; Field Discipline can never be held before
 	the first upgrade, so it only accelerates later choices.
 
-	These picks fill the Survival, CooperativeUtility, and AmmunitionReload slots
-	the RPG-0101 catalog (RunRpgConfig/RunRpgContracts) already reserved, so their
-	IDs and display names are the canonical `upgrade.trauma_plating` /
-	`upgrade.field_discipline` / `upgrade.combat_loader` rather than new
-	off-catalog identities, and every ceiling is held within the shared RPG-0101
-	global bounds (ModifierCeilings). RunRpgReconciliation locks this.
+	These picks fill Survival, CooperativeUtility, AmmunitionReload, and Firepower
+	(Pattern Amplifier) slots the RPG-0101 catalog (RunRpgConfig/RunRpgContracts)
+	already reserved, so their IDs and display names are the canonical
+	`upgrade.trauma_plating` / `upgrade.field_discipline` / `upgrade.combat_loader`
+	/ `upgrade.pattern_amplifier` rather than new off-catalog identities, and every
+	ceiling is held within the shared RPG-0101 global bounds (ModifierCeilings).
+	RunRpgReconciliation locks this.
 
 	Interim mechanics: RPG-PLAN-001 describes Trauma Plating as post-level
 	temporary armor and Field Discipline as bonus XP from cooperative actions
@@ -85,6 +88,13 @@ local UpgradeDefinitions = table.freeze({
 		MaximumStacks = 3,
 		ReloadDurationReductionPerStack = 0.12,
 	}),
+	table.freeze({
+		Id = "upgrade.pattern_amplifier",
+		Name = "PATTERN AMPLIFIER",
+		Description = "+15% cleave/pierce secondary damage per stack, up to full primary damage",
+		MaximumStacks = 3,
+		PatternDamageMultiplierPerStack = 0.15,
+	}),
 })
 
 local RunProgressionConfig = {
@@ -105,6 +115,7 @@ local RunProgressionConfig = {
 	MaximumIncomingDamageReduction = 0.3,
 	MaximumXpGainMultiplier = 1.5,
 	MinimumReloadDurationMultiplier = 0.5,
+	MaximumPatternDamageMultiplier = 2,
 	UpgradeDefinitions = UpgradeDefinitions,
 }
 
@@ -180,6 +191,11 @@ assert(
 		and RunProgressionConfig.MinimumReloadDurationMultiplier <= 1,
 	"reload upgrades may not erase the reload commitment"
 )
+assert(
+	RunProgressionConfig.MaximumPatternDamageMultiplier >= 1
+		and RunProgressionConfig.MaximumPatternDamageMultiplier <= 2,
+	"pattern-damage upgrades must remain within the bounded secondary-damage ceiling"
+)
 
 local seenUpgradeIds = {}
 for _, definition in RunProgressionConfig.UpgradeDefinitions do
@@ -223,6 +239,15 @@ for _, definition in RunProgressionConfig.UpgradeDefinitions do
 				and 1 - definition.ReloadDurationReductionPerStack * definition.MaximumStacks
 					>= RunProgressionConfig.MinimumReloadDurationMultiplier - 1e-9,
 			"combat loader reload reduction per stack must respect the configured duration floor"
+		)
+	end
+	if definition.PatternDamageMultiplierPerStack ~= nil then
+		assert(
+			type(definition.PatternDamageMultiplierPerStack) == "number"
+				and definition.PatternDamageMultiplierPerStack > 0
+				and 1 + definition.PatternDamageMultiplierPerStack * definition.MaximumStacks
+					<= RunProgressionConfig.MaximumPatternDamageMultiplier + 1e-9,
+			"pattern amplifier per stack must stay within the configured pattern-damage ceiling"
 		)
 	end
 end

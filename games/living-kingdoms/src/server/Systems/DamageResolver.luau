@@ -84,6 +84,11 @@ local function readProgressionNumber(attributeName: string, fallback: number): n
 	return if type(value) == "number" and value == value then value else fallback
 end
 
+-- Hard safety ceiling for the trusted Pattern Amplifier attribute, matching the
+-- shared RPG-0101 ModifierCeilings.maximumPatternDamageMultiplier. Defense in
+-- depth alongside the configured*3 total-damage ceiling below.
+local RUN_PATTERN_DAMAGE_CEILING = 2
+
 local function resolveDamageAmount(
 	weaponId: string,
 	override: number?,
@@ -114,7 +119,14 @@ local function resolveDamageAmount(
 		then
 			return nil
 		end
-		requested = math.max(1, math.floor(requested * patternMultiplier + 0.5))
+		-- Pattern Amplifier (run upgrade) raises secondary cleave/pierce damage
+		-- toward full primary damage. Clamp the trusted attribute to the bounded
+		-- pattern ceiling and cap the effective multiplier at 1 so secondary
+		-- damage can never exceed primary or reach the hard configured*3 cap here.
+		local runPatternMultiplier =
+			math.clamp(readProgressionNumber("RunPatternDamageMultiplier", 1), 1, RUN_PATTERN_DAMAGE_CEILING)
+		local effectiveMultiplier = math.min(1, patternMultiplier * runPatternMultiplier)
+		requested = math.max(1, math.floor(requested * effectiveMultiplier + 0.5))
 	end
 	local minimumDamage = if patternMultiplier == nil then configured else 1
 	if

@@ -18,6 +18,7 @@ local attributes = {
 	RunAmmoConservationChance = 0,
 	RunCullDamageMultiplier = 1,
 	RunCullHealthThreshold = 30,
+	RunPatternDamageMultiplier = 1,
 }
 
 local progressionNetwork = {
@@ -191,5 +192,17 @@ attributes.RunDamageMultiplier = 4
 local invalidDamage = damageResolver.resolve(hit("shot.invalid"), health(45), 13)
 assert(not invalidDamage.didApplyDamage and invalidDamage.rejectionReasonId == "WeaponInvalid")
 assert(invalidDamage.targetHealthStateAfter.currentHealth == 45)
+
+-- Pattern Amplifier: raises secondary cleave/pierce damage toward full primary,
+-- capped at the primary amount so it never reaches the hard damage ceiling.
+attributes.RunDamageMultiplier = 1
+local baselinePattern = damageResolver.resolvePattern(hit("shot.pattern.baseline"), health(45), 14, 0.7)
+assert(baselinePattern.damageEvent.damageAmount == 14, "unamplified 0.7 secondary of base 20 deals 14")
+attributes.RunPatternDamageMultiplier = 1.45
+local amplifiedPattern = damageResolver.resolvePattern(hit("shot.pattern.amplified"), health(45), 15, 0.7)
+assert(amplifiedPattern.damageEvent.damageAmount == 20, "Pattern Amplifier raises 0.7 secondary to full primary damage")
+local cappedPattern = damageResolver.resolvePattern(hit("shot.pattern.capped"), health(45), 16, 1)
+assert(cappedPattern.damageEvent.damageAmount == 20, "amplified secondary never exceeds primary damage")
+attributes.RunPatternDamageMultiplier = 1
 
 print("RunUpgradeCombatModifiers: cadence, deterministic ammo conservation, overpressure, cull, and hard caps passed")

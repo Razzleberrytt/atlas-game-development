@@ -75,7 +75,7 @@ assertThat(
 	liveUpgradeCount == implementedCount,
 	"the count of live run upgrades must equal the RPG catalog's implemented count"
 )
-assertThat(liveUpgradeCount == 7, "reconciliation expects the seven-upgrade v4 pool")
+assertThat(liveUpgradeCount == 8, "reconciliation expects the eight-upgrade v4 pool")
 
 -- Every live HROI modifier ceiling must sit within the shared RPG-0101 global
 -- safety bounds.
@@ -99,6 +99,10 @@ assertThat(
 assertThat(
 	progressionConfig.MinimumReloadDurationMultiplier >= ceilings.minimumReloadDurationMultiplier,
 	"live reload-duration floor must not undercut the RPG-0101 global reload floor"
+)
+assertThat(
+	progressionConfig.MaximumPatternDamageMultiplier <= ceilings.maximumPatternDamageMultiplier,
+	"live pattern-damage ceiling must not exceed the RPG-0101 global pattern-damage ceiling"
 )
 
 print("RunRpgReconciliation: live pool uses canonical implemented IDs and honors every shared global ceiling")
