@@ -1,10 +1,10 @@
-# Run Field XP and Squad Upgrades — HROI-0105 v3
+# Run Field XP and Squad Upgrades — HROI-0105 v4
 
 ## Purpose
 
 Make every confirmed enemy death visibly advance the current operation and turn level thresholds into immediate combat decisions without introducing permanent progression, inventory scope, or client-authored rewards.
 
-This slice extends shared squad Field XP with a bounded three-choice run-upgrade loop and one narrow tactical bonus for confirmed Screamer interruptions. It remains deliberately smaller than a full roguelite system: four upgrades, no rarity, no inventory, no persistence, and no paid power.
+This slice extends shared squad Field XP with a bounded three-choice run-upgrade loop and one narrow tactical bonus for confirmed Screamer interruptions. It remains deliberately smaller than a full roguelite system: no rarity, no inventory, no persistence, and no paid power. The v4 pool grew from four all-offensive picks to **seven upgrades across offensive, defensive, economy, and reload axes**, adopting the canonical RPG-0101 catalog identities (see [`rpg-integration-plan.md`](rpg-integration-plan.md) §7.4). It is the first implementation slice of the RPG track's Field Upgrade layer.
 
 ## Player-facing behavior
 
@@ -18,23 +18,35 @@ This slice extends shared squad Field XP with a bounded three-choice run-upgrade
 - Multiple unclaimed levels queue one offer at a time.
 - Field XP, level, kills, offers, stacks, and modifiers reset when the progression service starts a new server session.
 
-## Initial upgrade pool
+## Upgrade pool (v4)
 
-Each offer contains three eligible entries selected deterministically from the four-upgrade pool. Maxed upgrades leave the offer pool.
+Each offer contains three eligible entries selected deterministically from the seven-upgrade pool. Maxed upgrades leave the offer pool.
 
-| Upgrade | Per-stack effect | Maximum stacks |
-|---|---:|---:|
-| Overpressure Rounds | +20% firearm damage | 4 |
-| Hair Trigger | 12% shorter automatic-fire cadence | 4 |
-| Echo Chamber | 15% deterministic chance that a shot consumes no ammunition | 3 |
-| Cull Protocol | +35% damage against enemies at 30 health or less | 3 |
+| Upgrade | Per-stack effect | Maximum stacks | Axis |
+|---|---:|---:|---|
+| Overpressure Rounds | +20% firearm damage | 4 | Firepower |
+| Hair Trigger | 12% shorter automatic-fire cadence | 4 | Firepower |
+| Echo Chamber | 15% deterministic chance that a shot consumes no ammunition | 3 | Ammunition |
+| Cull Protocol | +35% damage against enemies at 30 health or less | 3 | Firepower |
+| Trauma Plating | −10% incoming enemy damage (squad) | 3 | Survival |
+| Field Discipline | +15% Field XP from confirmed kills | 3 | Economy |
+| Combat Loader | −12% reload duration | 3 | Reload |
 
-Hard combat ceilings remain independent of card text:
+Trauma Plating is a squad modifier consumed at the enemy attack source (`EnemyDirectorService` scales the melee `damageAmount` before the P3 commit boundary, mirroring how `DamageResolver` scales operative damage). Combat Loader is consumed by `ReloadResolver` at reload begin. Both fall back to no effect when progression state is absent.
+
+Hard combat ceilings remain independent of card text and are held within the shared RPG-0101 global `ModifierCeilings` (locked by `RunRpgReconciliation`):
 
 - total applied damage may not exceed 3× configured firearm damage
 - automatic-fire cadence may not fall below 55% of configured cadence
 - ammo conservation may not exceed 45%
 - Cull Protocol activates only at the server-configured 30-health threshold
+- incoming-damage mitigation may not exceed 30% (multiplier floor 0.7)
+- Field XP economy may not exceed 1.5× (the global `maximumFieldXpMultiplier`)
+- reload duration may not fall below 50% of configured duration
+
+### Interim mechanics
+
+RPG-PLAN-001 §7.1 describes Trauma Plating as post-level *temporary armor* and Field Discipline as bonus XP from *cooperative actions* (revive/treatment/resupply/objective). Those forms depend on a temporary-armor health buffer and cooperative-action XP sources that are not yet built, so this slice ships simpler functional mechanics (flat squad mitigation; confirmed-kill XP) and records the divergence in [`rpg-integration-plan.md`](rpg-integration-plan.md) §7.4. Combat Loader matches its planned mechanic.
 
 ## Authority model
 
@@ -52,7 +64,7 @@ An ordinary death XP award is legal only when a tracked production enemy transit
 
 `ChooseUpgrade` accepts no client level, stack, magnitude, damage, cadence, chance, XP, or reward values. The server rejects extra arguments, throttles requests, verifies the ID is in the current offer, verifies its stack cap, accepts only the first legal selection, and publishes the resulting shared snapshot.
 
-Accepted stacks are reduced to bounded combat modifiers by the pure `RunUpgradeResolver`. `RunProgressionService` writes those values as server-owned attributes on `ProgressionNetwork` before automatic combat starts. The pure automatic-fire and damage resolvers consume those trusted attributes and fail closed on out-of-range values.
+Accepted stacks are reduced to bounded combat modifiers by the pure `RunUpgradeResolver`. `RunProgressionService` writes those values as server-owned attributes on `ProgressionNetwork` before automatic combat starts. The authoritative resolvers consume those trusted attributes and fail closed on out-of-range values: `AutomaticFireResolver` (cadence, ammo conservation), `DamageResolver` (damage, cull), `EnemyDirectorService` (incoming-damage mitigation, applied to the melee amount before the P3 commit), and `ReloadResolver` (reload duration, applied at reload begin). Field Discipline's Field XP bonus is applied inside `RunProgressionService` when awarding confirmed-kill XP.
 
 There is no persistence or DataStore access.
 
@@ -78,10 +90,10 @@ The 64-model observation ceiling does not increase the authoritative 24-living-e
 ## Explicitly deferred
 
 - upgrade rerolls, rarity, synergies, curses, and branching trees
-- reload, magazine, movement, revive, pickup, armor, or maximum-health upgrades
+- magazine, movement, revive, pickup, or maximum-health upgrades (reload is now implemented via Combat Loader; survivability ships as Trauma Plating's interim flat mitigation rather than the planned temporary-armor buffer)
 - squad voting or designated chooser rules
 - assists and non-interrupt contribution XP
-- objective and revive XP
+- cooperative-action XP sources (revive/treatment/resupply/objective) — Field Discipline currently boosts confirmed-kill XP as an interim mechanic until these sources exist
 - permanent account progression
 - battle pass, paid power, inventory, crafting, and rarity economies
 

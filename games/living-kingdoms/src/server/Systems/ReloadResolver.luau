@@ -46,6 +46,29 @@ type ReloadResolver = {
 local ReloadResolver: ReloadResolver = {} :: ReloadResolver
 local reasons = CombatContracts.ReloadRejectionReasonIds
 
+-- Combat Loader publishes a bounded squad RunReloadDurationMultiplier on
+-- ProgressionNetwork. Read it defensively (mirroring the operative-side
+-- DamageResolver) and clamp to [0.5, 1] so an upgrade can only shorten, never
+-- erase or extend, the authoritative reload commitment. The multiplier is baked
+-- into completionServerTimestamp at begin() time so completion stays a pure
+-- deadline check. Absent progression state (including fixtures) falls back to 1.
+local RELOAD_DURATION_FLOOR = 0.5
+local function readReloadDurationMultiplier(): number
+	local storageAsAny = ReplicatedStorage :: any
+	if type(storageAsAny.FindFirstChild) ~= "function" then
+		return 1
+	end
+	local network = storageAsAny:FindFirstChild("ProgressionNetwork")
+	if network == nil or type(network.GetAttribute) ~= "function" then
+		return 1
+	end
+	local value = network:GetAttribute("RunReloadDurationMultiplier")
+	if type(value) ~= "number" or value ~= value then
+		return 1
+	end
+	return math.clamp(value, RELOAD_DURATION_FLOOR, 1)
+end
+
 local function copyAmmunition(ammunition: AmmunitionState): AmmunitionState
 	return {
 		weaponId = ammunition.weaponId,
@@ -205,7 +228,7 @@ function ReloadResolver.begin(
 	weaponStateAfter.reloadState = {
 		weaponId = weapon.WeaponId,
 		startedAtServerTimestamp = serverTimestamp,
-		completionServerTimestamp = serverTimestamp + weapon.ReloadDurationSeconds,
+		completionServerTimestamp = serverTimestamp + weapon.ReloadDurationSeconds * readReloadDurationMultiplier(),
 	}
 
 	return {

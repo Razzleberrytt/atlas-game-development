@@ -229,6 +229,22 @@ The server must:
 
 V1 does not implement a large skill tree. A small number of mutually exclusive branches may be added later, but branch restrictions must be configuration-driven and visible before selection.
 
+### 7.4 Implementation status (HROI run-progression v4 slice)
+
+Ahead of the full RPG-0102 run-build centralization, the live HROI run-progression owner (`RunProgressionService` / `RunUpgradeResolver` / `RunProgressionConfig`) implements the first seven upgrades of this pool under the canonical RPG-0101 catalog IDs. `RunRpgReconciliation.test` enforces that every live upgrade is a catalog entry marked `Implemented` with a matching display name, and that every live modifier ceiling sits within the shared RPG-0101 `ModifierCeilings`.
+
+| Upgrade | Family | Status | Shipped mechanic vs plan |
+|---|---|---|---|
+| Overpressure Rounds | Firepower | Implemented | Matches (+damage). |
+| Hair Trigger | Firepower | Implemented | Matches (+fire rate). |
+| Echo Chamber | Ammunition/Reload | Implemented | Matches (ammo conservation). |
+| Cull Protocol | Firepower | Implemented | Matches (wounded-enemy damage). |
+| Combat Loader | Ammunition/Reload | Implemented | Matches: reduced reload duration, consumed by `ReloadResolver` at reload begin, floored at the global `minimumReloadDurationMultiplier`. |
+| Trauma Plating | Survival | Implemented — **interim mechanic** | Plan: post-level *temporary armor* buffer. Interim: flat bounded squad incoming-damage reduction consumed at the enemy attack source. The temporary-armor form is deferred until a temporary-armor health buffer exists. |
+| Field Discipline | Cooperative | Implemented — **interim mechanic** | Plan: bonus Field XP from *cooperative actions* (revive/treatment/resupply/objective) under anti-farming rules. Interim: bounded Field XP bonus on confirmed kills, because cooperative-action XP sources are not yet built (they remain deferred in `run-field-xp.md`). |
+
+Remaining pool upgrades (Pattern Amplifier, Specialist Munitions, Expanded Feed, Scavenger Reach, Last Magazine, Adrenal Response, Second Pulse, Rescue Instinct, Shared Momentum, Covering Fire) stay `Planned` because they depend on systems not yet built (weapon-pattern/special-enemy damage plumbing, magazine/loot-radius modifiers, movement modifiers, squad-proximity facts, and cooperative-action events). When each lands it must flip its catalog entry to `Implemented` or `RunRpgReconciliation` fails.
+
 ## 8. Elite enemy affixes
 
 Some otherwise normal enemies become elites. Assignment occurs when the server spawns the enemy; the client cannot request or influence elite creation.
@@ -500,11 +516,13 @@ A new account must remain capable of completing the operation through skill, coo
 
 ## 15. Implementation sequence
 
-### RPG-0101 — Define RPG contracts and configuration
+### RPG-0101 — Define RPG contracts and configuration — **Complete (PR #142)**
 
 Create stable definitions for relic IDs, affix IDs, modifier categories, effect triggers and states, reward sequences, slot and replacement states, rejection reasons, safe snapshots, and global modifier ceilings. No runtime behavior.
 
-**Exit:** Frozen vocabulary and invariant fixtures pass.
+Delivered as `RunRpgContracts` and `RunRpgConfig` with declaration-only invariant fixtures (`RunRpgContractsConfig.test`, `RunRpgRewardSourceConfig.test`). The upgrade-ID vocabulary shares the live HROI namespace, so the four original run upgrades plus the newly implemented Trauma Plating, Field Discipline, and Combat Loader are marked `Implemented` in the catalog; the rest remain `Planned`. `RunRpgReconciliation.test` binds the live HROI run-progression pool to this catalog and its global ceilings (see §7.4).
+
+**Exit:** Frozen vocabulary and invariant fixtures pass. ✔
 
 ### RPG-0102 — Centralize run-build state
 

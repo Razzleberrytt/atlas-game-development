@@ -12,6 +12,7 @@ export type CombatModifiers = {
 	cullHealthThreshold: number,
 	incomingDamageMultiplier: number,
 	xpGainMultiplier: number,
+	reloadDurationMultiplier: number,
 }
 
 export type ChoiceResolution = {
@@ -155,6 +156,7 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 			cullHealthThreshold = RunProgressionConfig.CullHealthThreshold,
 			incomingDamageMultiplier = 1,
 			xpGainMultiplier = 1,
+			reloadDurationMultiplier = 1,
 		})
 	end
 
@@ -164,6 +166,7 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 	local cullDamageMultiplier = 1
 	local incomingDamageReduction = 0
 	local xpGainBonus = 0
+	local reloadDurationReduction = 0
 	for _, definition in RunProgressionConfig.UpgradeDefinitions do
 		local stackCount = stacks[definition.Id] or 0
 		if definition.DamageMultiplierPerStack ~= nil then
@@ -184,6 +187,9 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 		if definition.XpGainMultiplierPerStack ~= nil then
 			xpGainBonus += stackCount * definition.XpGainMultiplierPerStack
 		end
+		if definition.ReloadDurationReductionPerStack ~= nil then
+			reloadDurationReduction += stackCount * definition.ReloadDurationReductionPerStack
+		end
 	end
 
 	local boundedReduction = math.clamp(incomingDamageReduction, 0, RunProgressionConfig.MaximumIncomingDamageReduction)
@@ -199,6 +205,10 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 		cullHealthThreshold = RunProgressionConfig.CullHealthThreshold,
 		incomingDamageMultiplier = 1 - boundedReduction,
 		xpGainMultiplier = math.clamp(1 + xpGainBonus, 1, RunProgressionConfig.MaximumXpGainMultiplier),
+		reloadDurationMultiplier = math.max(
+			RunProgressionConfig.MinimumReloadDurationMultiplier,
+			1 - reloadDurationReduction
+		),
 	})
 end
 

@@ -36,6 +36,7 @@ local upgradeResolver = fs.readFile("games/living-kingdoms/src/shared/Progressio
 local fireResolver = fs.readFile("games/living-kingdoms/src/server/Systems/AutomaticFireResolver.luau")
 local damageResolver = fs.readFile("games/living-kingdoms/src/server/Systems/DamageResolver.luau")
 local enemyDirector = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau")
+local reloadResolver = fs.readFile("games/living-kingdoms/src/server/Systems/ReloadResolver.luau")
 local serverBootstrap = fs.readFile("games/living-kingdoms/src/server/init.server.luau")
 local clientBootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 
@@ -65,8 +66,8 @@ assert(contains(service, "syncCombatModifierAttributes()"), "accepted choices mu
 assert(contains(service, "table.clear(upgradeStacks)"), "run upgrades must reset with the operation session")
 assert(config.MaximumTrackedEnemyModels == 64, "the corpse-overlap tracking ceiling must stay bounded")
 assert(
-	config.UpgradeChoiceCount == 3 and #config.UpgradeDefinitions == 6,
-	"the v4 pool must offer three choices from six bounded upgrades"
+	config.UpgradeChoiceCount == 3 and #config.UpgradeDefinitions == 7,
+	"the v4 pool must offer three choices from seven bounded upgrades"
 )
 
 local upgradeIdSet = {}
@@ -75,19 +76,28 @@ for _, definition in config.UpgradeDefinitions do
 end
 assert(upgradeIdSet["upgrade.trauma_plating"], "the v4 pool must include the Trauma Plating defensive pick")
 assert(upgradeIdSet["upgrade.field_discipline"], "the v4 pool must include the Field Discipline economy pick")
+assert(upgradeIdSet["upgrade.combat_loader"], "the v4 pool must include the Combat Loader reload pick")
 
 assert(
 	contains(service, 'SetAttribute("RunIncomingDamageMultiplier"'),
-	"the server must publish trusted Iron Hide mitigation"
+	"the server must publish trusted Trauma Plating mitigation"
 )
-assert(contains(service, "xpGainMultiplier"), "confirmed-kill XP must consume the trusted Field Promotion economy")
+assert(
+	contains(service, 'SetAttribute("RunReloadDurationMultiplier"'),
+	"the server must publish trusted Combat Loader reload speed"
+)
+assert(contains(service, "xpGainMultiplier"), "confirmed-kill XP must consume the trusted Field Discipline economy")
 assert(
 	contains(enemyDirector, "RunIncomingDamageMultiplier"),
-	"enemy attacks must consume trusted Iron Hide mitigation at the attack source"
+	"enemy attacks must consume trusted Trauma Plating mitigation at the attack source"
 )
 assert(
 	contains(enemyDirector, "OperativeLifeService.applyAuthoritativeDamage"),
 	"mitigated enemy damage must still commit through the authoritative P3 boundary"
+)
+assert(
+	contains(reloadResolver, "RunReloadDurationMultiplier"),
+	"reload timing must consume trusted Combat Loader state at reload begin"
 )
 
 for _, prohibited in
@@ -107,8 +117,9 @@ assert(contains(upgradeResolver, "UpgradeNotOffered"), "spoofed upgrade IDs requ
 assert(contains(upgradeResolver, "MaximumStacks"), "maxed upgrades must be excluded and rejected")
 assert(contains(upgradeResolver, "MaximumAmmoConservationChance"), "ammo conservation must remain bounded")
 assert(contains(upgradeResolver, "MaximumDamageMultiplier"), "damage upgrades must remain bounded")
-assert(contains(upgradeResolver, "MaximumIncomingDamageReduction"), "Iron Hide mitigation must remain bounded")
-assert(contains(upgradeResolver, "MaximumXpGainMultiplier"), "Field Promotion economy must remain bounded")
+assert(contains(upgradeResolver, "MaximumIncomingDamageReduction"), "Trauma Plating mitigation must remain bounded")
+assert(contains(upgradeResolver, "MaximumXpGainMultiplier"), "Field Discipline economy must remain bounded")
+assert(contains(upgradeResolver, "MinimumReloadDurationMultiplier"), "Combat Loader reload speed must remain bounded")
 
 assert(contains(controller, "readStateRemote:InvokeServer()"), "the HUD must recover its current safe snapshot")
 assert(contains(controller, "stateRemote.OnClientEvent:Connect"), "the HUD must render server-published progression")

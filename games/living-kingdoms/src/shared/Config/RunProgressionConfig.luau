@@ -11,20 +11,28 @@
 	steeper post-level growth curve prevents later high-density combat from
 	producing upgrade choices faster than players can evaluate them.
 
-	v4 grows the offer pool beyond the four all-offensive picks into two new
-	build axes so choices define a run instead of only stacking damage: one
-	bounded defensive mitigation (Trauma Plating, a squad incoming-damage floor
-	consumed at the enemy attack source) and one bounded economy pick (Field
-	Discipline, extra Field XP from confirmed kills). Field XP base values and the
-	four-kill first-upgrade pacing are unchanged; Field Discipline can never be
-	held before the first upgrade, so it only accelerates later choices.
+	v4 grows the offer pool beyond the four all-offensive picks into new build
+	axes so choices define a run instead of only stacking damage: bounded
+	defensive mitigation (Trauma Plating, a squad incoming-damage floor consumed
+	at the enemy attack source), a bounded economy pick (Field Discipline, extra
+	Field XP), and a bounded reload axis (Combat Loader, reduced reload duration
+	consumed by ReloadResolver). Field XP base values and the four-kill
+	first-upgrade pacing are unchanged; Field Discipline can never be held before
+	the first upgrade, so it only accelerates later choices.
 
-	These two picks fill the Survival and CooperativeUtility slots the RPG-0101
-	catalog (RunRpgConfig/RunRpgContracts) already reserved, so their IDs and
-	display names are the canonical `upgrade.trauma_plating` /
-	`upgrade.field_discipline` rather than new off-catalog identities, and the
-	Field XP economy ceiling is held at the shared RPG-0101 global bound
-	(ModifierCeilings.maximumFieldXpMultiplier). RunRpgReconciliation locks this.
+	These picks fill the Survival, CooperativeUtility, and AmmunitionReload slots
+	the RPG-0101 catalog (RunRpgConfig/RunRpgContracts) already reserved, so their
+	IDs and display names are the canonical `upgrade.trauma_plating` /
+	`upgrade.field_discipline` / `upgrade.combat_loader` rather than new
+	off-catalog identities, and every ceiling is held within the shared RPG-0101
+	global bounds (ModifierCeilings). RunRpgReconciliation locks this.
+
+	Interim mechanics: RPG-PLAN-001 describes Trauma Plating as post-level
+	temporary armor and Field Discipline as bonus XP from cooperative actions
+	(revive/treatment/resupply). Those forms depend on systems not yet built (a
+	temporary-armor buffer and cooperative-action XP sources), so this slice ships
+	simpler functional mechanics (flat squad mitigation; confirmed-kill XP) and
+	the doc records the divergence. Combat Loader matches its planned mechanic.
 ]]
 
 local UpgradeDefinitions = table.freeze({
@@ -70,6 +78,13 @@ local UpgradeDefinitions = table.freeze({
 		MaximumStacks = 3,
 		XpGainMultiplierPerStack = 0.15,
 	}),
+	table.freeze({
+		Id = "upgrade.combat_loader",
+		Name = "COMBAT LOADER",
+		Description = "-12% reload time per stack",
+		MaximumStacks = 3,
+		ReloadDurationReductionPerStack = 0.12,
+	}),
 })
 
 local RunProgressionConfig = {
@@ -89,6 +104,7 @@ local RunProgressionConfig = {
 	MaximumDamageMultiplier = 3,
 	MaximumIncomingDamageReduction = 0.3,
 	MaximumXpGainMultiplier = 1.5,
+	MinimumReloadDurationMultiplier = 0.5,
 	UpgradeDefinitions = UpgradeDefinitions,
 }
 
@@ -159,6 +175,11 @@ assert(
 	RunProgressionConfig.MaximumXpGainMultiplier > 1 and RunProgressionConfig.MaximumXpGainMultiplier <= 2,
 	"Field XP economy upgrades must accelerate later choices within a bounded ceiling"
 )
+assert(
+	RunProgressionConfig.MinimumReloadDurationMultiplier >= 0.5
+		and RunProgressionConfig.MinimumReloadDurationMultiplier <= 1,
+	"reload upgrades may not erase the reload commitment"
+)
 
 local seenUpgradeIds = {}
 for _, definition in RunProgressionConfig.UpgradeDefinitions do
@@ -183,7 +204,7 @@ for _, definition in RunProgressionConfig.UpgradeDefinitions do
 				and definition.IncomingDamageReductionPerStack > 0
 				and definition.IncomingDamageReductionPerStack * definition.MaximumStacks
 					<= RunProgressionConfig.MaximumIncomingDamageReduction + 1e-9,
-			"iron hide mitigation per stack must stay within the configured reduction ceiling"
+			"trauma plating mitigation per stack must stay within the configured reduction ceiling"
 		)
 	end
 	if definition.XpGainMultiplierPerStack ~= nil then
@@ -192,7 +213,16 @@ for _, definition in RunProgressionConfig.UpgradeDefinitions do
 				and definition.XpGainMultiplierPerStack > 0
 				and 1 + definition.XpGainMultiplierPerStack * definition.MaximumStacks
 					<= RunProgressionConfig.MaximumXpGainMultiplier + 1e-9,
-			"field promotion XP gain per stack must stay within the configured economy ceiling"
+			"field discipline XP gain per stack must stay within the configured economy ceiling"
+		)
+	end
+	if definition.ReloadDurationReductionPerStack ~= nil then
+		assert(
+			type(definition.ReloadDurationReductionPerStack) == "number"
+				and definition.ReloadDurationReductionPerStack > 0
+				and 1 - definition.ReloadDurationReductionPerStack * definition.MaximumStacks
+					>= RunProgressionConfig.MinimumReloadDurationMultiplier - 1e-9,
+			"combat loader reload reduction per stack must respect the configured duration floor"
 		)
 	end
 end
