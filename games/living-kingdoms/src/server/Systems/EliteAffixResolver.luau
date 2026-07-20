@@ -1,7 +1,7 @@
 --!strict
 
 --[[
-	RPG-0105 pure elite assignment and modifier resolver. The server supplies
+	RPG-0106 pure elite assignment and modifier resolver. The server supplies
 	spawn identity, source, elapsed operation time, and the retained elite
 	population. A stable entity-ID hash replaces client-influenceable randomness,
 	so retries resolve identically and can never reroll an elite.
@@ -22,6 +22,7 @@ export type AssignmentFacts = {
 	activeEliteCount: number,
 	isBoss: boolean,
 	isHordePulse: boolean,
+	hordeRoleId: string,
 }
 
 export type Assignment = {
@@ -42,14 +43,50 @@ local function neutral(): Assignment
 	})
 end
 
-local function stableRoll(entityId: string): number
+local AffixIds = RunRpgContracts.EliteAffixIds
+local ORDERED_AFFIX_IDS = table.freeze({
+	AffixIds.Armored,
+	AffixIds.Frenzied,
+	AffixIds.Regenerator,
+	AffixIds.Volatile,
+	AffixIds.Commander,
+})
+
+local function stableRoll(entityId: string, salt: string): number
 	local resolution = RunRpgConfig.EliteAssignmentPlanning.deterministicRollResolution
 	local hash = 2166136261
-	for index = 1, #entityId do
-		hash = bit32.bxor(hash, string.byte(entityId, index))
+	local value = entityId .. ":" .. salt
+	for index = 1, #value do
+		hash = bit32.bxor(hash, string.byte(value, index))
 		hash = (hash * 16777619) % 4294967296
 	end
 	return hash % resolution
+end
+
+local function isCompatible(affixId: string, hordeRoleId: string): boolean
+	local runtime = RunRpgConfig.EliteAffixRuntimeById[affixId]
+	if runtime == nil then
+		return false
+	end
+	for _, compatibleRoleId in runtime.compatibleHordeRoleIds do
+		if compatibleRoleId == hordeRoleId then
+			return true
+		end
+	end
+	return false
+end
+
+function EliteAffixResolver.readCompatibleAffixIds(hordeRoleId: unknown): { string }
+	if type(hordeRoleId) ~= "string" or hordeRoleId == "" then
+		return table.freeze({})
+	end
+	local result = {}
+	for _, affixId in ORDERED_AFFIX_IDS do
+		if isCompatible(affixId, hordeRoleId) then
+			table.insert(result, affixId)
+		end
+	end
+	return table.freeze(result)
 end
 
 function EliteAffixResolver.resolveAssignment(facts: AssignmentFacts): Assignment
@@ -64,6 +101,8 @@ function EliteAffixResolver.resolveAssignment(facts: AssignmentFacts): Assignmen
 		or type(facts.activeEliteCount) ~= "number"
 		or facts.activeEliteCount % 1 ~= 0
 		or type(facts.isHordePulse) ~= "boolean"
+		or type(facts.hordeRoleId) ~= "string"
+		or facts.hordeRoleId == ""
 	then
 		return neutral()
 	end
@@ -81,15 +120,24 @@ function EliteAffixResolver.resolveAssignment(facts: AssignmentFacts): Assignmen
 		then planning.hordePulseProbability
 		else planning.ordinaryPressureProbability
 	local threshold = math.floor(probability * planning.deterministicRollResolution)
-	if stableRoll(facts.entityId) >= threshold then
+	if stableRoll(facts.entityId, "elite") >= threshold then
 		return neutral()
 	end
-	local runtime = RunRpgConfig.FrenziedRuntime
+	local compatibleAffixIds = EliteAffixResolver.readCompatibleAffixIds(facts.hordeRoleId)
+	if #compatibleAffixIds == 0 then
+		return neutral()
+	end
+	local affixRoll = stableRoll(facts.entityId, "affix")
+	local affixId = compatibleAffixIds[(affixRoll % #compatibleAffixIds) + 1]
+	local runtime = RunRpgConfig.EliteAffixRuntimeById[affixId]
+	local movementSpeedMultiplier = runtime.movementSpeedMultiplier or 1
+	local attackCadenceMultiplier = runtime.attackCadenceMultiplier or 1
+	local maximumHealthMultiplier = runtime.maximumHealthMultiplier or 1
 	return table.freeze({
-		affixId = RunRpgContracts.EliteAffixIds.Frenzied,
-		movementSpeedMultiplier = runtime.movementSpeedMultiplier,
-		attackCadenceMultiplier = runtime.attackCadenceMultiplier,
-		maximumHealthMultiplier = runtime.maximumHealthMultiplier,
+		affixId = affixId,
+		movementSpeedMultiplier = movementSpeedMultiplier,
+		attackCadenceMultiplier = attackCadenceMultiplier,
+		maximumHealthMultiplier = maximumHealthMultiplier,
 		bonusFieldXp = runtime.bonusFieldXp,
 	})
 end

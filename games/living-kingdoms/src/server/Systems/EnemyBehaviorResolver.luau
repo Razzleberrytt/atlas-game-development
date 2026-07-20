@@ -78,6 +78,7 @@ function EnemyBehaviorResolver.resolveSpawn(request: EnemySpawnRequest, facts: E
 		or not isNonemptyString(request.displayName)
 		or not isWorldPosition(request.position)
 		or (request.isHordePulse ~= nil and type(request.isHordePulse) ~= "boolean")
+		or (request.hordeRoleId ~= nil and (type(request.hordeRoleId) ~= "string" or request.hordeRoleId == ""))
 		or type(facts) ~= "table"
 		or type(facts.existingEnemyEntityIds) ~= "table"
 		or not isFiniteNumber(facts.activeEnemyCount)

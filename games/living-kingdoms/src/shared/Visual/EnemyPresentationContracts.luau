@@ -22,6 +22,12 @@ local AttributeNames = table.freeze({
 	EliteMovementSpeedMultiplier = "EnemyEliteMovementSpeedMultiplier",
 	EliteAttackCadenceMultiplier = "EnemyEliteAttackCadenceMultiplier",
 	EliteBonusFieldXp = "EnemyEliteBonusFieldXp",
+	EliteArmorRemaining = "EnemyEliteArmorRemaining",
+	EliteRegenerationReadyServerTimestamp = "EnemyEliteRegenerationReadyServerTimestamp",
+	EliteVolatileDetonateServerTimestamp = "EnemyEliteVolatileDetonateServerTimestamp",
+	EliteVolatileDetonationSequence = "EnemyEliteVolatileDetonationSequence",
+	EliteCommanderAuraActive = "EnemyEliteCommanderAuraActive",
+	EffectiveMovementSpeedMultiplier = "EnemyEffectiveMovementSpeedMultiplier",
 })
 
 local LifeStateIds = table.freeze({

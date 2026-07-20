@@ -132,6 +132,14 @@ type EnemyEntry = {
 	movementSpeedMultiplier: number,
 	attackCadenceMultiplier: number,
 	bonusFieldXp: number,
+	maximumHealth: number,
+	armorRemaining: number,
+	nextRegenerationServerTimestamp: number?,
+	volatileDetonateServerTimestamp: number?,
+	volatileDidDetonate: boolean,
+	commanderAuraActive: boolean,
+	effectiveMovementSpeedMultiplier: number,
+	effectiveAttackCadenceMultiplier: number,
 }
 
 type PendingSpawn = {
@@ -161,6 +169,16 @@ local sequenceCounter = 0
 local operationPressureStartedServerTimestamp: number? = nil
 local activeEliteCount = 0
 
+local EliteAffixIds = RunRpgContracts.EliteAffixIds
+
+local ELITE_DISPLAY_NAMES = table.freeze({
+	[EliteAffixIds.Armored] = "ARMORED",
+	[EliteAffixIds.Frenzied] = "FRENZIED",
+	[EliteAffixIds.Regenerator] = "REGENERATOR",
+	[EliteAffixIds.Volatile] = "VOLATILE",
+	[EliteAffixIds.Commander] = "COMMANDER",
+})
+
 local function now(): number
 	return Workspace:GetServerTimeNow()
 end
@@ -174,8 +192,19 @@ local function copyStringSet(source: { [string]: boolean }): { [string]: boolean
 	return table.clone(source)
 end
 
+local function horizontalDistanceSquared(a: Vector3, b: Vector3): number
+	local dx = a.X - b.X
+	local dz = a.Z - b.Z
+	return dx * dx + dz * dz
+end
+
 local function setHealthPresentation(entry: EnemyEntry)
-	local eliteLine = if entry.eliteAffixId == RunRpgContracts.EliteAffixIds.Frenzied then "FRENZIED • " else ""
+	local displayName = if entry.eliteAffixId == nil then nil else ELITE_DISPLAY_NAMES[entry.eliteAffixId]
+	if entry.volatileDetonateServerTimestamp ~= nil and not entry.volatileDidDetonate then
+		displayName = "VOLATILE — DETONATING"
+	end
+	local armorLine = if entry.armorRemaining > 0 then string.format(" • Armor: %d", entry.armorRemaining) else ""
+	local eliteLine = if displayName == nil then "" else displayName .. armorLine .. " • "
 	entry.healthLabel.Text =
 		string.format("%s%s\nHealth: %d", eliteLine, entry.model.Name, math.max(0, entry.healthState.currentHealth))
 	entry.root.Color = if entry.isAlive then Color3.fromRGB(126, 46, 46) else Color3.fromRGB(74, 74, 74)
@@ -215,7 +244,7 @@ local function beginAttackWindup(entry: EnemyEntry, targetOperativeEntityId: str
 	entry.model:SetAttribute(PresentationAttributeNames.WindupStartedServerTimestamp, serverTimestamp)
 	entry.model:SetAttribute(
 		PresentationAttributeNames.WindupCommitServerTimestamp,
-		serverTimestamp + EnemyConfig.Walker.AttackWindupSeconds * entry.attackCadenceMultiplier
+		serverTimestamp + EnemyConfig.Walker.AttackWindupSeconds * entry.effectiveAttackCadenceMultiplier
 	)
 	entry.model:SetAttribute(PresentationAttributeNames.WindupSequence, entry.attackAttemptSequence)
 end
@@ -338,6 +367,7 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 		activeEliteCount = activeEliteCount,
 		isBoss = false,
 		isHordePulse = request.isHordePulse == true,
+		hordeRoleId = request.hordeRoleId or "horde.role.infected",
 	})
 	local maximumHealth =
 		math.max(1, math.floor(EnemyConfig.Walker.MaximumHealth * assignment.maximumHealthMultiplier + 0.5))
@@ -371,19 +401,38 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 		movementSpeedMultiplier = assignment.movementSpeedMultiplier,
 		attackCadenceMultiplier = assignment.attackCadenceMultiplier,
 		bonusFieldXp = assignment.bonusFieldXp,
+		maximumHealth = maximumHealth,
+		armorRemaining = if assignment.affixId == EliteAffixIds.Armored
+			then RunRpgConfig.ArmoredRuntime.armorCapacity
+			else 0,
+		nextRegenerationServerTimestamp = nil,
+		volatileDetonateServerTimestamp = nil,
+		volatileDidDetonate = false,
+		commanderAuraActive = false,
+		effectiveMovementSpeedMultiplier = assignment.movementSpeedMultiplier,
+		effectiveAttackCadenceMultiplier = assignment.attackCadenceMultiplier,
 	}
 	model:SetAttribute(PresentationAttributeNames.EliteAffixId, assignment.affixId)
 	model:SetAttribute(
 		PresentationAttributeNames.EliteDisplayName,
-		if assignment.affixId == nil then nil else "FRENZIED"
+		if assignment.affixId == nil then nil else ELITE_DISPLAY_NAMES[assignment.affixId]
 	)
 	model:SetAttribute(PresentationAttributeNames.EliteMovementSpeedMultiplier, assignment.movementSpeedMultiplier)
 	model:SetAttribute(PresentationAttributeNames.EliteAttackCadenceMultiplier, assignment.attackCadenceMultiplier)
 	model:SetAttribute(PresentationAttributeNames.EliteBonusFieldXp, assignment.bonusFieldXp)
+	model:SetAttribute(PresentationAttributeNames.EliteArmorRemaining, entry.armorRemaining)
+	model:SetAttribute(PresentationAttributeNames.EliteRegenerationReadyServerTimestamp, 0)
+	model:SetAttribute(PresentationAttributeNames.EliteVolatileDetonateServerTimestamp, 0)
+	model:SetAttribute(PresentationAttributeNames.EliteVolatileDetonationSequence, 0)
+	model:SetAttribute(PresentationAttributeNames.EliteCommanderAuraActive, false)
+	model:SetAttribute(
+		PresentationAttributeNames.EffectiveMovementSpeedMultiplier,
+		entry.effectiveMovementSpeedMultiplier
+	)
 	if assignment.affixId ~= nil then
 		activeEliteCount += 1
 		local telegraph = Instance.new("Highlight")
-		local runtime = RunRpgConfig.FrenziedRuntime
+		local runtime = RunRpgConfig.EliteAffixRuntimeById[assignment.affixId]
 		telegraph.Name = "EliteTelegraph"
 		telegraph.FillColor = Color3.fromRGB(table.unpack(runtime.highlightFillColor))
 		telegraph.OutlineColor = Color3.fromRGB(table.unpack(runtime.highlightOutlineColor))
@@ -391,6 +440,26 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 		telegraph.OutlineTransparency = runtime.highlightOutlineTransparency
 		telegraph.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 		telegraph.Parent = model
+		if assignment.affixId == EliteAffixIds.Commander then
+			local aura = Instance.new("Part")
+			aura.Name = "EliteCommanderAura"
+			aura.Shape = Enum.PartType.Ball
+			aura.Size = Vector3.new(1, 1, 1) * RunRpgConfig.CommanderRuntime.auraRadiusStuds * 2
+			aura.CFrame = root.CFrame
+			aura.Anchored = false
+			aura.CanCollide = false
+			aura.CanQuery = false
+			aura.CanTouch = false
+			aura.Massless = true
+			aura.Material = Enum.Material.Neon
+			aura.Color = Color3.fromRGB(table.unpack(runtime.highlightOutlineColor))
+			aura.Transparency = 0.88
+			aura.Parent = model
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0 = root
+			weld.Part1 = aura
+			weld.Parent = aura
+		end
 	end
 	entries[request.entityId] = entry
 	activeEnemyCount += 1
@@ -458,6 +527,7 @@ function EnemyDirectorService.spawnAuthoredWave(
 			displayName = definition.name,
 			position = { x = definition.x, y = definition.y, z = definition.z },
 			isHordePulse = true,
+			hordeRoleId = "horde.role.infected",
 		})
 		if result.didSpawn or result.wasDeferred then
 			accepted += 1
@@ -503,6 +573,22 @@ function EnemyDirectorService.endOperationPressure()
 			setPresentationBehaviorState(entry, BehaviorStateIds.StandDown)
 			entry.targetOperativeEntityId = nil
 			entry.humanoid.WalkSpeed = 0
+			entry.commanderAuraActive = false
+			entry.effectiveMovementSpeedMultiplier = entry.movementSpeedMultiplier
+			entry.effectiveAttackCadenceMultiplier = entry.attackCadenceMultiplier
+			entry.model:SetAttribute(PresentationAttributeNames.EliteCommanderAuraActive, false)
+			entry.model:SetAttribute(
+				PresentationAttributeNames.EffectiveMovementSpeedMultiplier,
+				entry.effectiveMovementSpeedMultiplier
+			)
+		elseif entry.volatileDetonateServerTimestamp ~= nil and not entry.volatileDidDetonate then
+			entry.volatileDidDetonate = true
+			entry.volatileDetonateServerTimestamp = nil
+			entry.model:SetAttribute(PresentationAttributeNames.EliteVolatileDetonateServerTimestamp, 0)
+			local dangerZone = entry.model:FindFirstChild("EliteVolatileDangerZone")
+			if dangerZone ~= nil then
+				dangerZone:Destroy()
+			end
 		end
 	end
 end
@@ -548,6 +634,27 @@ local function applyDeath(entry: EnemyEntry, serverTimestamp: number)
 	entry.humanoid.WalkSpeed = 0
 	entry.root.Anchored = true
 	entry.cleanupAtServerTimestamp = serverTimestamp + EnemyConfig.Cleanup.CorpseCleanupSeconds
+	if entry.eliteAffixId == EliteAffixIds.Volatile then
+		entry.volatileDetonateServerTimestamp = serverTimestamp + RunRpgConfig.VolatileRuntime.deathReactionDelaySeconds
+		entry.model:SetAttribute(
+			PresentationAttributeNames.EliteVolatileDetonateServerTimestamp,
+			entry.volatileDetonateServerTimestamp
+		)
+		local dangerZone = Instance.new("Part")
+		dangerZone.Name = "EliteVolatileDangerZone"
+		dangerZone.Shape = Enum.PartType.Ball
+		local diameter = RunRpgConfig.VolatileRuntime.deathReactionRadiusStuds * 2
+		dangerZone.Size = Vector3.new(diameter, diameter, diameter)
+		dangerZone.CFrame = entry.root.CFrame
+		dangerZone.Anchored = true
+		dangerZone.CanCollide = false
+		dangerZone.CanQuery = false
+		dangerZone.CanTouch = false
+		dangerZone.Material = Enum.Material.Neon
+		dangerZone.Color = Color3.fromRGB(table.unpack(RunRpgConfig.VolatileRuntime.highlightOutlineColor))
+		dangerZone.Transparency = 0.72
+		dangerZone.Parent = entry.model
+	end
 	activeEnemyCount = math.max(0, activeEnemyCount - 1)
 	if entry.eliteAffixId ~= nil then
 		activeEliteCount = math.max(0, activeEliteCount - 1)
@@ -570,7 +677,7 @@ function EnemyDirectorService.commitHealthState(
 		processedShotIds: { [string]: boolean },
 	},
 	serverTimestamp: number
-): boolean
+): (boolean, number?)
 	local entry = entries[entityId]
 	if
 		entry == nil
@@ -586,21 +693,39 @@ function EnemyDirectorService.commitHealthState(
 		or type(serverTimestamp) ~= "number"
 		or serverTimestamp ~= serverTimestamp
 	then
-		return false
+		return false, nil
 	end
 	for shotId in entry.healthState.processedShotIds do
 		if healthStateAfter.processedShotIds[shotId] ~= true then
-			return false
+			return false, nil
 		end
 	end
 	local previousHealth = entry.healthState.currentHealth
+	local requestedDamage = previousHealth - healthStateAfter.currentHealth
+	local committedDamage = requestedDamage
+	if requestedDamage > 0 and entry.armorRemaining > 0 then
+		local runtime = RunRpgConfig.ArmoredRuntime
+		local reducedDamage = math.max(1, math.floor(requestedDamage * runtime.damageTakenMultiplierWhileArmored + 0.5))
+		local absorbedDamage = math.min(entry.armorRemaining, math.max(0, requestedDamage - reducedDamage))
+		entry.armorRemaining -= absorbedDamage
+		committedDamage = requestedDamage - absorbedDamage
+		entry.model:SetAttribute(PresentationAttributeNames.EliteArmorRemaining, entry.armorRemaining)
+	end
 	entry.healthState = {
 		entityId = entityId,
-		currentHealth = healthStateAfter.currentHealth,
+		currentHealth = math.max(0, previousHealth - committedDamage),
 		processedShotIds = copyStringSet(healthStateAfter.processedShotIds),
 	}
 	entry.healthRevision += 1
 	if entry.healthState.currentHealth < previousHealth then
+		if entry.eliteAffixId == EliteAffixIds.Regenerator then
+			entry.nextRegenerationServerTimestamp = serverTimestamp
+				+ RunRpgConfig.RegeneratorRuntime.damageRecoveryDelaySeconds
+			entry.model:SetAttribute(
+				PresentationAttributeNames.EliteRegenerationReadyServerTimestamp,
+				entry.nextRegenerationServerTimestamp
+			)
+		end
 		discloseCommittedHit(entry, serverTimestamp)
 	end
 	if entry.healthState.currentHealth <= 0 then
@@ -608,7 +733,7 @@ function EnemyDirectorService.commitHealthState(
 	else
 		setHealthPresentation(entry)
 	end
-	return true
+	return true, committedDamage
 end
 
 function EnemyDirectorService.readActiveEnemyCount(): number
@@ -718,7 +843,7 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 		lastAttackServerTimestamp = entry.lastAttackServerTimestamp,
 		attackWindupTargetOperativeEntityId = entry.attackWindupTargetOperativeEntityId,
 		attackWindupStartedServerTimestamp = entry.attackWindupStartedServerTimestamp,
-		attackCadenceMultiplier = entry.attackCadenceMultiplier,
+		attackCadenceMultiplier = entry.effectiveAttackCadenceMultiplier,
 	}, operativeFacts, serverTimestamp)
 	if decision.rejectionReasonId ~= nil then
 		return 0
@@ -744,7 +869,8 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 
 	if decision.behaviorStateIdAfter == BehaviorStateIds.Pursuing then
 		local targetId = decision.targetOperativeEntityId
-		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond * entry.movementSpeedMultiplier
+		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond
+			* entry.effectiveMovementSpeedMultiplier
 		for _, fact in operativeFacts do
 			if fact.operativeEntityId == targetId then
 				entry.humanoid:MoveTo(Vector3.new(fact.position.x, fact.position.y, fact.position.z))
@@ -754,7 +880,7 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 		return 0
 	end
 	if decision.behaviorStateIdAfter == BehaviorStateIds.Roaming then
-		entry.humanoid.WalkSpeed = EnemyConfig.Walker.RoamSpeedStudsPerSecond * entry.movementSpeedMultiplier
+		entry.humanoid.WalkSpeed = EnemyConfig.Walker.RoamSpeedStudsPerSecond * entry.effectiveMovementSpeedMultiplier
 		if serverTimestamp >= entry.nextRoamRetargetServerTimestamp then
 			entry.nextRoamRetargetServerTimestamp = serverTimestamp + EnemyConfig.Walker.RoamRetargetIntervalSeconds
 			local angle = nextSequence() * 2.399963
@@ -800,9 +926,122 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 	end
 
 	if decision.behaviorStateIdAfter == BehaviorStateIds.Attacking then
-		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond * entry.movementSpeedMultiplier
+		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond
+			* entry.effectiveMovementSpeedMultiplier
 	end
 	return 0
+end
+
+local function refreshCommanderAuras()
+	local runtime = RunRpgConfig.CommanderRuntime
+	local radiusSquared = runtime.auraRadiusStuds * runtime.auraRadiusStuds
+	for _, entry in entries do
+		if entry.isAlive then
+			entry.commanderAuraActive = false
+			entry.effectiveMovementSpeedMultiplier = entry.movementSpeedMultiplier
+			entry.effectiveAttackCadenceMultiplier = entry.attackCadenceMultiplier
+		end
+	end
+	if not isStoodDown then
+		for _, commander in entries do
+			if not commander.isAlive or commander.eliteAffixId ~= EliteAffixIds.Commander then
+				continue
+			end
+			for _, target in entries do
+				if
+					target.isAlive
+					and target.eliteAffixId == nil
+					and horizontalDistanceSquared(commander.root.Position, target.root.Position) <= radiusSquared
+				then
+					target.commanderAuraActive = true
+					target.effectiveMovementSpeedMultiplier = math.min(
+						RunRpgConfig.ModifierCeilings.maximumMovementSpeedMultiplier,
+						target.movementSpeedMultiplier * runtime.auraMovementSpeedMultiplier
+					)
+					target.effectiveAttackCadenceMultiplier = math.max(
+						RunRpgConfig.ModifierCeilings.minimumCadenceMultiplier,
+						target.attackCadenceMultiplier * runtime.auraAttackCadenceMultiplier
+					)
+				end
+			end
+		end
+	end
+	for _, entry in entries do
+		if entry.isAlive then
+			entry.model:SetAttribute(PresentationAttributeNames.EliteCommanderAuraActive, entry.commanderAuraActive)
+			entry.model:SetAttribute(
+				PresentationAttributeNames.EffectiveMovementSpeedMultiplier,
+				entry.effectiveMovementSpeedMultiplier
+			)
+		end
+	end
+end
+
+local function applyRegeneration(entry: EnemyEntry, serverTimestamp: number)
+	if
+		not entry.isAlive
+		or isStoodDown
+		or entry.eliteAffixId ~= EliteAffixIds.Regenerator
+		or entry.healthState.currentHealth >= entry.maximumHealth
+	then
+		return
+	end
+	local runtime = RunRpgConfig.RegeneratorRuntime
+	local nextRegenerationAt = entry.nextRegenerationServerTimestamp
+	if nextRegenerationAt == nil then
+		nextRegenerationAt = serverTimestamp + runtime.damageRecoveryDelaySeconds
+		entry.nextRegenerationServerTimestamp = nextRegenerationAt
+		entry.model:SetAttribute(PresentationAttributeNames.EliteRegenerationReadyServerTimestamp, nextRegenerationAt)
+	end
+	if serverTimestamp < nextRegenerationAt then
+		return
+	end
+	entry.healthState.currentHealth =
+		math.min(entry.maximumHealth, entry.healthState.currentHealth + runtime.healingPerInterval)
+	entry.healthRevision += 1
+	entry.nextRegenerationServerTimestamp = serverTimestamp + runtime.healingIntervalSeconds
+	entry.model:SetAttribute(
+		PresentationAttributeNames.EliteRegenerationReadyServerTimestamp,
+		entry.nextRegenerationServerTimestamp
+	)
+	setHealthPresentation(entry)
+end
+
+local function detonateVolatile(entry: EnemyEntry, serverTimestamp: number)
+	local detonateAt = entry.volatileDetonateServerTimestamp
+	if
+		entry.eliteAffixId ~= EliteAffixIds.Volatile
+		or entry.volatileDidDetonate
+		or detonateAt == nil
+		or serverTimestamp < detonateAt
+	then
+		return
+	end
+	entry.volatileDidDetonate = true
+	entry.model:SetAttribute(PresentationAttributeNames.EliteVolatileDetonationSequence, serverTimestamp)
+	local runtime = RunRpgConfig.VolatileRuntime
+	local radiusSquared = runtime.deathReactionRadiusStuds * runtime.deathReactionRadiusStuds
+	for _, fact in readOperativeFacts() do
+		if not fact.isAlive then
+			continue
+		end
+		local dx = fact.position.x - entry.root.Position.X
+		local dz = fact.position.z - entry.root.Position.Z
+		if dx * dx + dz * dz > radiusSquared then
+			continue
+		end
+		local read = OperativeLifeService.readByOperativeEntityId(fact.operativeEntityId)
+		if read ~= nil and read.snapshot.lifeStateId == "Alive" then
+			OperativeLifeService.applyAuthoritativeDamage(fact.operativeEntityId, read.revision, {
+				damageEventId = string.format("elitevolatile:%s:%s", entry.entityId, tostring(detonateAt)),
+				sourceEntityId = entry.entityId,
+				targetEntityId = fact.operativeEntityId,
+				damageAmount = runtime.deathReactionDamage,
+				serverTimestamp = serverTimestamp,
+			})
+		end
+	end
+	setHealthPresentation(entry)
 end
 
 --[[
@@ -820,14 +1059,17 @@ function EnemyDirectorService.evaluateAt(serverTimestamp: number): EvaluationSum
 	local operativeFacts = readOperativeFacts()
 	summary.spawnedCount += retryPendingSpawns(operativeFacts, serverTimestamp)
 	summary.spawnedCount += attemptRoamingSpawns(operativeFacts, serverTimestamp)
+	refreshCommanderAuras()
 	local toClean: { string } = {}
 	for entityId, entry in entries do
 		local cleanupAt = entry.cleanupAtServerTimestamp
 		if cleanupAt ~= nil then
+			detonateVolatile(entry, serverTimestamp)
 			if serverTimestamp >= cleanupAt then
 				table.insert(toClean, entityId)
 			end
 		elseif entry.isAlive then
+			applyRegeneration(entry, serverTimestamp)
 			summary.attackCommittedCount += applyBehavior(entry, operativeFacts, serverTimestamp)
 		end
 	end

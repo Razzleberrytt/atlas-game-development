@@ -376,6 +376,20 @@ local function findCreated(name: string)
 	return nil
 end
 
+local function findModelByEntityId(entityId: string)
+	for index = #createdInstances, 1, -1 do
+		local instance = createdInstances[index]
+		if
+			instance.ClassName == "Model"
+			and not instance._destroyed
+			and instance:GetAttribute("CombatEntityId") == entityId
+		then
+			return instance
+		end
+	end
+	return nil
+end
+
 local function request(entityId: string, x: number, z: number, sourceId: string?)
 	return {
 		entityId = entityId,
@@ -384,6 +398,44 @@ local function request(entityId: string, x: number, z: number, sourceId: string?
 		displayName = "Test Walker",
 		position = { x = x, y = 3, z = z },
 	}
+end
+
+local function findEliteEntityId(affixId: string): string
+	for index = 1, 10000 do
+		local candidate = "enemy.director-" .. affixId .. ":" .. tostring(index)
+		local assignment = eliteResolver.resolveAssignment({
+			entityId = candidate,
+			spawnSourceId = contracts.EnemySpawnSourceIds.AuthoredWave,
+			operationElapsedSeconds = rpgConfig.EliteAssignmentPlanning.protectedOpeningSeconds,
+			activeEliteCount = 0,
+			isBoss = false,
+			isHordePulse = false,
+			hordeRoleId = "horde.role.infected",
+		})
+		if assignment.affixId == affixId then
+			return candidate
+		end
+	end
+	error("fixture range must contain requested elite affix: " .. affixId)
+end
+
+local function findOrdinaryEntityId(): string
+	for index = 1, 10000 do
+		local candidate = "enemy.director-ordinary:" .. tostring(index)
+		local assignment = eliteResolver.resolveAssignment({
+			entityId = candidate,
+			spawnSourceId = contracts.EnemySpawnSourceIds.AuthoredWave,
+			operationElapsedSeconds = rpgConfig.EliteAssignmentPlanning.protectedOpeningSeconds,
+			activeEliteCount = 0,
+			isBoss = false,
+			isHordePulse = false,
+			hordeRoleId = "horde.role.infected",
+		})
+		if assignment.affixId == nil then
+			return candidate
+		end
+	end
+	error("fixture range must contain an ordinary enemy")
 end
 
 local function reset()
@@ -428,25 +480,9 @@ assert(service.spawnEnemy(request("enemy.protected", 0, 0)).didSpawn)
 local protectedModel = findCreated("Test Walker")
 assert(protectedModel ~= nil and protectedModel:GetAttribute(presentationAttributes.EliteAffixId) == nil)
 
-local eliteEntityId = nil
-for index = 1, 1000 do
-	local candidate = "enemy.director-elite:" .. tostring(index)
-	local assignment = eliteResolver.resolveAssignment({
-		entityId = candidate,
-		spawnSourceId = contracts.EnemySpawnSourceIds.AuthoredWave,
-		operationElapsedSeconds = rpgConfig.EliteAssignmentPlanning.protectedOpeningSeconds,
-		activeEliteCount = 0,
-		isBoss = false,
-		isHordePulse = false,
-	})
-	if assignment.affixId ~= nil then
-		eliteEntityId = candidate
-		break
-	end
-end
-assert(eliteEntityId ~= nil, "fixture range must contain one deterministic elite")
+local eliteEntityId = findEliteEntityId(rpgContracts.EliteAffixIds.Frenzied)
 now = rpgConfig.EliteAssignmentPlanning.protectedOpeningSeconds
-assert(service.spawnEnemy(request(eliteEntityId :: string, 20, 0)).didSpawn)
+assert(service.spawnEnemy(request(eliteEntityId, 20, 0)).didSpawn)
 local eliteModel = findCreated("Test Walker")
 assert(eliteModel ~= nil and eliteModel:GetAttribute("CombatEntityId") == eliteEntityId)
 assert(
@@ -464,14 +500,123 @@ assert(
 )
 assert(eliteModel:GetAttribute(presentationAttributes.EliteBonusFieldXp) == rpgConfig.FrenziedRuntime.bonusFieldXp)
 assert(findCreated("EliteTelegraph") ~= nil, "Frenzied requires an unmistakable highlight")
-local eliteHealth = service.readHealthState(eliteEntityId :: string)
+local eliteHealth = service.readHealthState(eliteEntityId)
 local expectedEliteHealth = math.floor(walker.MaximumHealth * rpgConfig.FrenziedRuntime.maximumHealthMultiplier + 0.5)
 assert(eliteHealth ~= nil and eliteHealth.healthState.currentHealth == expectedEliteHealth)
-assert(service.commitHealthState(eliteEntityId :: string, eliteHealth.revision, {
+assert(service.commitHealthState(eliteEntityId, eliteHealth.revision, {
 	entityId = eliteEntityId,
 	currentHealth = 0,
 	processedShotIds = { ["shot:elite"] = true },
 }, now + 1))
+
+-- Armored absorbs only a configured fraction behind a finite armor pool. The
+-- returned committed damage keeps hit feedback aligned with actual health.
+reset()
+service.beginOperationPressure()
+now = rpgConfig.EliteAssignmentPlanning.protectedOpeningSeconds
+local armoredId = findEliteEntityId(rpgContracts.EliteAffixIds.Armored)
+assert(service.spawnEnemy(request(armoredId, 0, 0)).didSpawn)
+local armoredModel = findModelByEntityId(armoredId)
+local armoredHealth = service.readHealthState(armoredId)
+assert(armoredModel ~= nil and armoredHealth ~= nil)
+local armoredCommitted, armoredDamage = service.commitHealthState(armoredId, armoredHealth.revision, {
+	entityId = armoredId,
+	currentHealth = armoredHealth.healthState.currentHealth - 20,
+	processedShotIds = { ["shot:armor-1"] = true },
+}, now + 1)
+assert(armoredCommitted and armoredDamage == 12, "finite armor must reduce rather than erase damage")
+local armoredAfter = service.readHealthState(armoredId)
+assert(armoredAfter ~= nil and armoredAfter.healthState.currentHealth == armoredHealth.healthState.currentHealth - 12)
+assert(
+	armoredModel:GetAttribute(presentationAttributes.EliteArmorRemaining) == rpgConfig.ArmoredRuntime.armorCapacity - 8
+)
+
+-- Regenerator waits through uninterrupted pressure, heals on its bounded
+-- interval, and advances the health revision so stale shots cannot overwrite it.
+reset()
+service.beginOperationPressure()
+now = rpgConfig.EliteAssignmentPlanning.protectedOpeningSeconds
+local regeneratorId = findEliteEntityId(rpgContracts.EliteAffixIds.Regenerator)
+assert(service.spawnEnemy(request(regeneratorId, 0, 0)).didSpawn)
+local regeneratorHealth = service.readHealthState(regeneratorId)
+assert(regeneratorHealth ~= nil)
+assert(service.commitHealthState(regeneratorId, regeneratorHealth.revision, {
+	entityId = regeneratorId,
+	currentHealth = regeneratorHealth.healthState.currentHealth - 20,
+	processedShotIds = { ["shot:regen-1"] = true },
+}, now + 1))
+local damagedRegenerator = service.readHealthState(regeneratorId)
+assert(damagedRegenerator ~= nil)
+local regenerationAt = now + 1 + rpgConfig.RegeneratorRuntime.damageRecoveryDelaySeconds
+assert(service.evaluateAt(regenerationAt - 0.01).attackCommittedCount == 0)
+assert(service.readHealthState(regeneratorId).healthState.currentHealth == damagedRegenerator.healthState.currentHealth)
+service.evaluateAt(regenerationAt)
+local regenerated = service.readHealthState(regeneratorId)
+assert(regenerated ~= nil)
+assert(
+	regenerated.healthState.currentHealth
+		== damagedRegenerator.healthState.currentHealth + rpgConfig.RegeneratorRuntime.healingPerInterval
+)
+assert(regenerated.revision == damagedRegenerator.revision + 1, "server healing must advance health revision")
+
+-- Volatile is a delayed, smaller-than-Bloater one-shot danger zone.
+reset()
+local _volatileTarget, volatileTargetRoot = addOperative("operative.player:volatile", 300, 300)
+service.beginOperationPressure()
+now = rpgConfig.EliteAssignmentPlanning.protectedOpeningSeconds
+local volatileId = findEliteEntityId(rpgContracts.EliteAffixIds.Volatile)
+assert(service.spawnEnemy(request(volatileId, 0, 0)).didSpawn)
+volatileTargetRoot.Position = roblox.Vector3.new(2, 2, 0)
+local volatileHealth = service.readHealthState(volatileId)
+assert(volatileHealth ~= nil)
+assert(service.commitHealthState(volatileId, volatileHealth.revision, {
+	entityId = volatileId,
+	currentHealth = 0,
+	processedShotIds = { ["shot:volatile"] = true },
+}, now + 1))
+local volatileModel = findModelByEntityId(volatileId)
+assert(volatileModel ~= nil and findCreated("EliteVolatileDangerZone") ~= nil)
+local detonateAt = now + 1 + rpgConfig.VolatileRuntime.deathReactionDelaySeconds
+service.evaluateAt(detonateAt - 0.01)
+assert(#damageCalls == 0, "Volatile damage must wait for its disclosed reaction")
+service.evaluateAt(detonateAt)
+assert(#damageCalls == 1 and damageCalls[1].damage.damageAmount == rpgConfig.VolatileRuntime.deathReactionDamage)
+service.evaluateAt(detonateAt + 0.1)
+assert(#damageCalls == 1, "Volatile reaction must never duplicate")
+assert(volatileModel:GetAttribute(presentationAttributes.EliteVolatileDetonationSequence) == detonateAt)
+
+-- Commander buffs only nearby non-elites, at one stack, and the aura clears on
+-- range exit and commander death.
+reset()
+service.beginOperationPressure()
+now = rpgConfig.EliteAssignmentPlanning.protectedOpeningSeconds
+local commanderId = findEliteEntityId(rpgContracts.EliteAffixIds.Commander)
+local ordinaryId = findOrdinaryEntityId()
+assert(service.spawnEnemy(request(commanderId, 0, 0)).didSpawn)
+assert(service.spawnEnemy(request(ordinaryId, 10, 0)).didSpawn)
+local commanderModel = findModelByEntityId(commanderId)
+local ordinaryModel = findModelByEntityId(ordinaryId)
+assert(commanderModel ~= nil and ordinaryModel ~= nil and findCreated("EliteCommanderAura") ~= nil)
+service.evaluateAt(now + 0.1)
+assert(ordinaryModel:GetAttribute(presentationAttributes.EliteCommanderAuraActive) == true)
+assert(
+	ordinaryModel:GetAttribute(presentationAttributes.EffectiveMovementSpeedMultiplier)
+		== rpgConfig.CommanderRuntime.auraMovementSpeedMultiplier
+)
+ordinaryModel.PrimaryPart.Position =
+	roblox.Vector3.new(rpgConfig.CommanderRuntime.auraRadiusStuds + 1, ordinaryModel.PrimaryPart.Position.Y, 0)
+service.evaluateAt(now + 0.2)
+assert(ordinaryModel:GetAttribute(presentationAttributes.EliteCommanderAuraActive) == false)
+ordinaryModel.PrimaryPart.Position = roblox.Vector3.new(10, ordinaryModel.PrimaryPart.Position.Y, 0)
+local commanderHealth = service.readHealthState(commanderId)
+assert(commanderHealth ~= nil)
+assert(service.commitHealthState(commanderId, commanderHealth.revision, {
+	entityId = commanderId,
+	currentHealth = 0,
+	processedShotIds = { ["shot:commander"] = true },
+}, now + 0.3))
+service.evaluateAt(now + 0.4)
+assert(ordinaryModel:GetAttribute(presentationAttributes.EliteCommanderAuraActive) == false)
 
 -- Unfair authored spawn defers, then lands once the operative moves away.
 reset()

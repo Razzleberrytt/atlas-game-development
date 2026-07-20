@@ -61,4 +61,4 @@ for _, sourceId in contracts.RewardSourceIds do
 end
 
 assertThat(#config.RewardSourceCatalog == 6, "the initial RPG reward source vocabulary must remain bounded")
-assertThat(config.EliteAssignmentPlanning.isRuntimeEnabled, "RPG-0105 must enable elite runtime")
+assertThat(config.EliteAssignmentPlanning.isRuntimeEnabled, "RPG-0106 must enable elite runtime")

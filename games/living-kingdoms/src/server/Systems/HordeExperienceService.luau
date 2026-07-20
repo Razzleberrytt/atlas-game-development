@@ -319,6 +319,7 @@ local function spawnRoleAt(roleId: string, position: Vector3, prefix: string): b
 			z = math.clamp(position.Z, -halfExtent, halfExtent),
 		},
 		isHordePulse = true,
+		hordeRoleId = role.Id,
 	})
 	if not result.didSpawn then
 		forcedRoleByEntityId[entityId] = nil
@@ -464,7 +465,7 @@ local function processEnemy(record: EnemyRecord, serverTimestamp: number)
 		return
 	end
 	local eliteMovementMultiplier =
-		record.model:GetAttribute(EnemyPresentationContracts.AttributeNames.EliteMovementSpeedMultiplier)
+		record.model:GetAttribute(EnemyPresentationContracts.AttributeNames.EffectiveMovementSpeedMultiplier)
 	if type(eliteMovementMultiplier) ~= "number" or eliteMovementMultiplier ~= eliteMovementMultiplier then
 		eliteMovementMultiplier = 1
 	end
