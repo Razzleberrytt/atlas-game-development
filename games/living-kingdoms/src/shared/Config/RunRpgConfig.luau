@@ -105,7 +105,7 @@ local UpgradeCatalog = table.freeze({
 		upgradeId = UpgradeIds.SpecialistMunitions,
 		familyId = UpgradeFamilyIds.Firepower,
 		displayName = "SPECIALIST MUNITIONS",
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.CombatLoader,
@@ -117,19 +117,19 @@ local UpgradeCatalog = table.freeze({
 		upgradeId = UpgradeIds.ExpandedFeed,
 		familyId = UpgradeFamilyIds.AmmunitionReload,
 		displayName = "EXPANDED FEED",
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.ScavengerReach,
 		familyId = UpgradeFamilyIds.AmmunitionReload,
 		displayName = "SCAVENGER REACH",
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.LastMagazine,
 		familyId = UpgradeFamilyIds.AmmunitionReload,
 		displayName = "LAST MAGAZINE",
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.TraumaPlating,
@@ -527,10 +527,7 @@ for _, definition in UpgradeCatalog do
 	end
 end
 assert(#UpgradeCatalog == countVocabulary(UpgradeIds), "every RPG upgrade ID requires exactly one catalog entry")
-assert(
-	implementedUpgradeCount == 8,
-	"the implemented catalog must match the eight live run upgrades (four original plus Trauma Plating, Field Discipline, Combat Loader, and Pattern Amplifier)"
-)
+assert(implementedUpgradeCount == 12, "the implemented catalog must match the twelve-upgrade RPG-0103 live pool")
 
 local seenAffixIds = {}
 for _, definition in EliteAffixCatalog do

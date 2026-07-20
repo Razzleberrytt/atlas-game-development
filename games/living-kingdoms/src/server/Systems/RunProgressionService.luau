@@ -18,6 +18,7 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
+local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local RunProgressionConfig = require(ReplicatedStorage.Shared.Config.RunProgressionConfig)
 local RunProgressionResolver = require(ReplicatedStorage.Shared.Progression.RunProgressionResolver)
 local RunUpgradeResolver = require(ReplicatedStorage.Shared.Progression.RunUpgradeResolver)
@@ -170,6 +171,11 @@ local function syncCombatModifierAttributes()
 	progressionNetwork:SetAttribute("RunIncomingDamageMultiplier", modifiers.incomingDamageMultiplier)
 	progressionNetwork:SetAttribute("RunReloadDurationMultiplier", modifiers.reloadDurationMultiplier)
 	progressionNetwork:SetAttribute("RunPatternDamageMultiplier", modifiers.patternDamageMultiplier)
+	progressionNetwork:SetAttribute("RunSpecialEnemyDamageMultiplier", modifiers.specialEnemyDamageMultiplier)
+	progressionNetwork:SetAttribute("RunMagazineCapacityMultiplier", modifiers.magazineCapacityMultiplier)
+	progressionNetwork:SetAttribute("RunLootPickupRadiusBonusStuds", modifiers.lootPickupRadiusBonusStuds)
+	progressionNetwork:SetAttribute("RunLastMagazineDamageMultiplier", modifiers.lastMagazineDamageMultiplier)
+	progressionNetwork:SetAttribute("RunLastMagazineReserveFraction", modifiers.lastMagazineReserveFraction)
 end
 
 local function publishAll()
@@ -182,8 +188,20 @@ local function generatePendingChoices()
 		return
 	end
 	local upgradeStacks = readUpgradeStacks()
+	local squadWeaponIds = {}
+	local seenWeaponIds = {}
+	for _, player in Players:GetPlayers() do
+		local weaponId = player:GetAttribute("LK_EquippedWeaponId")
+		if type(weaponId) ~= "string" or not FirearmConfig.isKnownWeaponId(weaponId) then
+			weaponId = FirearmConfig.BasicFirearm.WeaponId
+		end
+		if not seenWeaponIds[weaponId] then
+			seenWeaponIds[weaponId] = true
+			table.insert(squadWeaponIds, weaponId)
+		end
+	end
 	offerSequence += 1
-	local generated = RunUpgradeResolver.generateChoices(upgradeStacks, offerSequence, squadKills)
+	local generated = RunUpgradeResolver.generateChoices(upgradeStacks, offerSequence, squadKills, squadWeaponIds)
 	table.clear(pendingChoiceIds)
 	for _, upgradeId in generated do
 		table.insert(pendingChoiceIds, upgradeId)

@@ -37,6 +37,9 @@ local upgradeResolver = fs.readFile("games/living-kingdoms/src/shared/Progressio
 local fireResolver = fs.readFile("games/living-kingdoms/src/server/Systems/AutomaticFireResolver.luau")
 local damageResolver = fs.readFile("games/living-kingdoms/src/server/Systems/DamageResolver.luau")
 local enemyDirector = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau")
+local combatRuntime = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau")
+local enemyLoot = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyLootService.luau")
+local magazineResolver = fs.readFile("games/living-kingdoms/src/server/Systems/RunMagazineCapacityResolver.luau")
 local reloadResolver = fs.readFile("games/living-kingdoms/src/server/Systems/ReloadResolver.luau")
 local serverBootstrap = fs.readFile("games/living-kingdoms/src/server/init.server.luau")
 local clientBootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
@@ -68,14 +71,11 @@ assert(
 	contains(service, "RunBuildService.readSquadUpgradeStacks"),
 	"run progression must read upgrades from the centralized run-build owner"
 )
-assert(
-	contains(buildStore, "table.clear(squadUpgradeStacks)"),
-	"run upgrades must reset with the operation session"
-)
+assert(contains(buildStore, "table.clear(squadUpgradeStacks)"), "run upgrades must reset with the operation session")
 assert(config.MaximumTrackedEnemyModels == 64, "the corpse-overlap tracking ceiling must stay bounded")
 assert(
-	config.UpgradeChoiceCount == 3 and #config.UpgradeDefinitions == 8,
-	"the v4 pool must offer three choices from eight bounded upgrades"
+	config.UpgradeChoiceCount == 3 and #config.UpgradeDefinitions == 12,
+	"RPG-0103 must offer three choices from twelve bounded upgrades"
 )
 
 local upgradeIdSet = {}
@@ -86,6 +86,10 @@ assert(upgradeIdSet["upgrade.trauma_plating"], "the v4 pool must include the Tra
 assert(upgradeIdSet["upgrade.field_discipline"], "the v4 pool must include the Field Discipline economy pick")
 assert(upgradeIdSet["upgrade.combat_loader"], "the v4 pool must include the Combat Loader reload pick")
 assert(upgradeIdSet["upgrade.pattern_amplifier"], "the v4 pool must include the Pattern Amplifier pattern pick")
+assert(upgradeIdSet["upgrade.specialist_munitions"], "RPG-0103 must include Specialist Munitions")
+assert(upgradeIdSet["upgrade.expanded_feed"], "RPG-0103 must include Expanded Feed")
+assert(upgradeIdSet["upgrade.scavenger_reach"], "RPG-0103 must include Scavenger Reach")
+assert(upgradeIdSet["upgrade.last_magazine"], "RPG-0103 must include Last Magazine")
 
 assert(
 	contains(service, 'SetAttribute("RunIncomingDamageMultiplier"'),
@@ -99,6 +103,10 @@ assert(
 	contains(service, 'SetAttribute("RunPatternDamageMultiplier"'),
 	"the server must publish trusted Pattern Amplifier secondary damage"
 )
+assert(contains(service, 'SetAttribute("RunSpecialEnemyDamageMultiplier"'), "special damage publication missing")
+assert(contains(service, 'SetAttribute("RunMagazineCapacityMultiplier"'), "magazine publication missing")
+assert(contains(service, 'SetAttribute("RunLootPickupRadiusBonusStuds"'), "loot-radius publication missing")
+assert(contains(service, 'SetAttribute("RunLastMagazineDamageMultiplier"'), "low-reserve damage publication missing")
 assert(contains(service, "xpGainMultiplier"), "confirmed-kill XP must consume the trusted Field Discipline economy")
 assert(
 	contains(enemyDirector, "RunIncomingDamageMultiplier"),
@@ -116,6 +124,12 @@ assert(
 	contains(damageResolver, "RunPatternDamageMultiplier"),
 	"secondary pattern damage must consume trusted Pattern Amplifier state"
 )
+assert(contains(damageResolver, "RunSpecialEnemyDamageMultiplier"), "special-enemy damage consumer missing")
+assert(contains(damageResolver, "RunLastMagazineDamageMultiplier"), "low-reserve damage consumer missing")
+assert(contains(combatRuntime, 'GetAttribute("HordeRoleId")'), "special-enemy truth must be server-authored")
+assert(contains(combatRuntime, "RunMagazineCapacityResolver.resolve"), "magazine runtime reconciliation missing")
+assert(contains(magazineResolver, "createdSlots"), "Expanded Feed must preserve ammunition while growing capacity")
+assert(contains(enemyLoot, "RunLootPickupRadiusBonusStuds"), "Scavenger Reach collection consumer missing")
 
 for _, prohibited in
 	{
@@ -137,7 +151,10 @@ assert(contains(upgradeResolver, "MaximumDamageMultiplier"), "damage upgrades mu
 assert(contains(upgradeResolver, "MaximumIncomingDamageReduction"), "Trauma Plating mitigation must remain bounded")
 assert(contains(upgradeResolver, "MaximumXpGainMultiplier"), "Field Discipline economy must remain bounded")
 assert(contains(upgradeResolver, "MinimumReloadDurationMultiplier"), "Combat Loader reload speed must remain bounded")
-assert(contains(upgradeResolver, "MaximumPatternDamageMultiplier"), "Pattern Amplifier secondary damage must remain bounded")
+assert(
+	contains(upgradeResolver, "MaximumPatternDamageMultiplier"),
+	"Pattern Amplifier secondary damage must remain bounded"
+)
 
 assert(contains(controller, "readStateRemote:InvokeServer()"), "the HUD must recover its current safe snapshot")
 assert(contains(controller, "stateRemote.OnClientEvent:Connect"), "the HUD must render server-published progression")

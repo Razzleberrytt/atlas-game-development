@@ -294,6 +294,17 @@ assert(
 	"large reserve total changed"
 )
 
+progressionAttributes.RunMagazineCapacityMultiplier = 1.45
+local expandedWeapon = weaponState(10, 20)
+expandedWeapon.ammunition.magazineCapacity = 17
+local expandedBegin = resolver.begin(operative(), expandedWeapon, 30)
+assert(expandedBegin.didBegin, "Expanded Feed capacity must remain reload-compatible")
+local expandedComplete = resolver.complete(expandedBegin.operativeStateAfter, expandedBegin.weaponStateAfter, 32)
+assert(expandedComplete.didComplete)
+assert(expandedComplete.weaponStateAfter.ammunition.loadedRounds == 17)
+assert(expandedComplete.weaponStateAfter.ammunition.reserveRounds == 13)
+progressionAttributes.RunMagazineCapacityMultiplier = nil
+
 for _, nonInterruptingField in { "isMoving", "tookDamage" } do
 	local nonInterruptingBegin = begin()
 	nonInterruptingBegin.operativeStateAfter[nonInterruptingField] = true

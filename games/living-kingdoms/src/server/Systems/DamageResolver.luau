@@ -28,18 +28,26 @@ type FirearmHitResolution = CombatContracts.FirearmHitResolution
 type ProcessedShotIds = CombatContracts.ProcessedShotIds
 type TargetHealthState = CombatContracts.TargetHealthState
 
+export type RunDamageContext = {
+	reserveRounds: number,
+	maximumReserveRounds: number,
+	isSpecialEnemy: boolean,
+}
+
 type DamageResolver = {
 	resolve: (
 		hitResolution: FirearmHitResolution,
 		targetHealthState: TargetHealthState,
 		serverTimestamp: number,
-		damageAmountOverride: number?
+		damageAmountOverride: number?,
+		runContext: RunDamageContext?
 	) -> DamageResolution,
 	resolvePattern: (
 		hitResolution: FirearmHitResolution,
 		targetHealthState: TargetHealthState,
 		serverTimestamp: number,
-		damageMultiplier: number
+		damageMultiplier: number,
+		runContext: RunDamageContext?
 	) -> DamageResolution,
 }
 
@@ -93,7 +101,8 @@ local function resolveDamageAmount(
 	weaponId: string,
 	override: number?,
 	currentHealth: number,
-	patternMultiplier: number?
+	patternMultiplier: number?,
+	runContext: RunDamageContext?
 ): number?
 	local weapon = resolveWeaponDefinition(weaponId)
 	if weapon == nil then
@@ -104,9 +113,43 @@ local function resolveDamageAmount(
 	if requested == nil then
 		local damageMultiplier = readProgressionNumber("RunDamageMultiplier", 1)
 		local cullMultiplier = 1
+		local specialEnemyMultiplier = 1
+		local lastMagazineMultiplier = 1
 		local cullThreshold = readProgressionNumber("RunCullHealthThreshold", 0)
 		if currentHealth <= cullThreshold then
 			cullMultiplier = readProgressionNumber("RunCullDamageMultiplier", 1)
+		end
+		if runContext ~= nil then
+			if
+				type(runContext.reserveRounds) ~= "number"
+				or runContext.reserveRounds ~= runContext.reserveRounds
+				or runContext.reserveRounds < 0
+				or runContext.reserveRounds % 1 ~= 0
+				or type(runContext.maximumReserveRounds) ~= "number"
+				or runContext.maximumReserveRounds ~= runContext.maximumReserveRounds
+				or runContext.maximumReserveRounds <= 0
+				or runContext.maximumReserveRounds % 1 ~= 0
+				or runContext.reserveRounds > runContext.maximumReserveRounds
+				or type(runContext.isSpecialEnemy) ~= "boolean"
+			then
+				return nil
+			end
+			if runContext.isSpecialEnemy then
+				specialEnemyMultiplier = readProgressionNumber("RunSpecialEnemyDamageMultiplier", 1)
+			end
+			local reserveFraction = readProgressionNumber("RunLastMagazineReserveFraction", 0.2)
+			if
+				reserveFraction <= 0
+				or reserveFraction > 0.25
+				or reserveFraction ~= reserveFraction
+				or specialEnemyMultiplier < 1
+				or specialEnemyMultiplier > 2
+			then
+				return nil
+			end
+			if runContext.reserveRounds <= math.floor(runContext.maximumReserveRounds * reserveFraction) then
+				lastMagazineMultiplier = readProgressionNumber("RunLastMagazineDamageMultiplier", 1)
+			end
 		end
 		-- Each trusted run multiplier must stay within its bounded 1..3 range;
 		-- anomalous values fail closed. Legitimate stacked damage and cull
@@ -114,10 +157,22 @@ local function resolveDamageAmount(
 		-- and Cull 2.05x), so clamp the product to the hard configured*3 cap
 		-- instead of rejecting -- otherwise a maxed build would deal zero damage
 		-- to wounded enemies rather than capped damage.
-		if damageMultiplier < 1 or damageMultiplier > 3 or cullMultiplier < 1 or cullMultiplier > 3 then
+		if
+			damageMultiplier < 1
+			or damageMultiplier > 3
+			or cullMultiplier < 1
+			or cullMultiplier > 3
+			or lastMagazineMultiplier < 1
+			or lastMagazineMultiplier > 1.5
+		then
 			return nil
 		end
-		requested = math.min(configured * 3, math.floor(configured * damageMultiplier * cullMultiplier + 0.5))
+		requested = math.min(
+			configured * 3,
+			math.floor(
+				configured * damageMultiplier * cullMultiplier * specialEnemyMultiplier * lastMagazineMultiplier + 0.5
+			)
+		)
 	end
 	if patternMultiplier ~= nil then
 		if
@@ -156,7 +211,8 @@ local function resolveInternal(
 	targetHealthState: TargetHealthState,
 	serverTimestamp: number,
 	damageAmountOverride: number?,
-	patternMultiplier: number?
+	patternMultiplier: number?,
+	runContext: RunDamageContext?
 ): DamageResolution
 	local healthStateAfter = copyHealthState(targetHealthState)
 	local shotId = hitResolution.shotId
@@ -183,7 +239,7 @@ local function resolveInternal(
 	local healthBefore = math.max(0, targetHealthState.currentHealth)
 	local weapon = resolveWeaponDefinition(hitResolution.weaponId)
 	local damageAmount =
-		resolveDamageAmount(hitResolution.weaponId, damageAmountOverride, healthBefore, patternMultiplier)
+		resolveDamageAmount(hitResolution.weaponId, damageAmountOverride, healthBefore, patternMultiplier, runContext)
 	if damageAmount == nil or weapon == nil or hitResolution.sourceEntityId == nil then
 		return withoutDamage(healthStateAfter, reasons.WeaponInvalid)
 	end
@@ -214,18 +270,20 @@ function DamageResolver.resolve(
 	hitResolution: FirearmHitResolution,
 	targetHealthState: TargetHealthState,
 	serverTimestamp: number,
-	damageAmountOverride: number?
+	damageAmountOverride: number?,
+	runContext: RunDamageContext?
 ): DamageResolution
-	return resolveInternal(hitResolution, targetHealthState, serverTimestamp, damageAmountOverride, nil)
+	return resolveInternal(hitResolution, targetHealthState, serverTimestamp, damageAmountOverride, nil, runContext)
 end
 
 function DamageResolver.resolvePattern(
 	hitResolution: FirearmHitResolution,
 	targetHealthState: TargetHealthState,
 	serverTimestamp: number,
-	damageMultiplier: number
+	damageMultiplier: number,
+	runContext: RunDamageContext?
 ): DamageResolution
-	return resolveInternal(hitResolution, targetHealthState, serverTimestamp, nil, damageMultiplier)
+	return resolveInternal(hitResolution, targetHealthState, serverTimestamp, nil, damageMultiplier, runContext)
 end
 
 return table.freeze(DamageResolver)
