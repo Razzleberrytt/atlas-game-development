@@ -10,6 +10,8 @@ export type CombatModifiers = {
 	ammoConservationChance: number,
 	cullDamageMultiplier: number,
 	cullHealthThreshold: number,
+	incomingDamageMultiplier: number,
+	xpGainMultiplier: number,
 }
 
 export type ChoiceResolution = {
@@ -151,6 +153,8 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 			ammoConservationChance = 0,
 			cullDamageMultiplier = 1,
 			cullHealthThreshold = RunProgressionConfig.CullHealthThreshold,
+			incomingDamageMultiplier = 1,
+			xpGainMultiplier = 1,
 		})
 	end
 
@@ -158,6 +162,8 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 	local cadenceMultiplier = 1
 	local ammoConservationChance = 0
 	local cullDamageMultiplier = 1
+	local incomingDamageReduction = 0
+	local xpGainBonus = 0
 	for _, definition in RunProgressionConfig.UpgradeDefinitions do
 		local stackCount = stacks[definition.Id] or 0
 		if definition.DamageMultiplierPerStack ~= nil then
@@ -172,8 +178,15 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 		if definition.CullDamageMultiplierPerStack ~= nil then
 			cullDamageMultiplier += stackCount * definition.CullDamageMultiplierPerStack
 		end
+		if definition.IncomingDamageReductionPerStack ~= nil then
+			incomingDamageReduction += stackCount * definition.IncomingDamageReductionPerStack
+		end
+		if definition.XpGainMultiplierPerStack ~= nil then
+			xpGainBonus += stackCount * definition.XpGainMultiplierPerStack
+		end
 	end
 
+	local boundedReduction = math.clamp(incomingDamageReduction, 0, RunProgressionConfig.MaximumIncomingDamageReduction)
 	return table.freeze({
 		damageMultiplier = math.clamp(damageMultiplier, 1, RunProgressionConfig.MaximumDamageMultiplier),
 		cadenceMultiplier = math.max(RunProgressionConfig.MinimumCadenceMultiplier, cadenceMultiplier),
@@ -184,6 +197,8 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 		),
 		cullDamageMultiplier = math.clamp(cullDamageMultiplier, 1, RunProgressionConfig.MaximumDamageMultiplier),
 		cullHealthThreshold = RunProgressionConfig.CullHealthThreshold,
+		incomingDamageMultiplier = 1 - boundedReduction,
+		xpGainMultiplier = math.clamp(1 + xpGainBonus, 1, RunProgressionConfig.MaximumXpGainMultiplier),
 	})
 end
 

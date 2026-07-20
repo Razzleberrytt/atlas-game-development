@@ -35,6 +35,7 @@ local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/Run
 local upgradeResolver = fs.readFile("games/living-kingdoms/src/shared/Progression/RunUpgradeResolver.luau")
 local fireResolver = fs.readFile("games/living-kingdoms/src/server/Systems/AutomaticFireResolver.luau")
 local damageResolver = fs.readFile("games/living-kingdoms/src/server/Systems/DamageResolver.luau")
+local enemyDirector = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau")
 local serverBootstrap = fs.readFile("games/living-kingdoms/src/server/init.server.luau")
 local clientBootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 
@@ -63,7 +64,31 @@ assert(contains(service, 'select("#", ...) ~= 0'), "upgrade requests must reject
 assert(contains(service, "syncCombatModifierAttributes()"), "accepted choices must publish trusted combat modifiers")
 assert(contains(service, "table.clear(upgradeStacks)"), "run upgrades must reset with the operation session")
 assert(config.MaximumTrackedEnemyModels == 64, "the corpse-overlap tracking ceiling must stay bounded")
-assert(config.UpgradeChoiceCount == 3 and #config.UpgradeDefinitions == 4, "the first pool must remain three-of-four")
+assert(
+	config.UpgradeChoiceCount == 3 and #config.UpgradeDefinitions == 6,
+	"the v4 pool must offer three choices from six bounded upgrades"
+)
+
+local upgradeIdSet = {}
+for _, definition in config.UpgradeDefinitions do
+	upgradeIdSet[definition.Id] = true
+end
+assert(upgradeIdSet["upgrade.iron_hide"], "the v4 pool must include the Iron Hide defensive pick")
+assert(upgradeIdSet["upgrade.field_promotion"], "the v4 pool must include the Field Promotion economy pick")
+
+assert(
+	contains(service, 'SetAttribute("RunIncomingDamageMultiplier"'),
+	"the server must publish trusted Iron Hide mitigation"
+)
+assert(contains(service, "xpGainMultiplier"), "confirmed-kill XP must consume the trusted Field Promotion economy")
+assert(
+	contains(enemyDirector, "RunIncomingDamageMultiplier"),
+	"enemy attacks must consume trusted Iron Hide mitigation at the attack source"
+)
+assert(
+	contains(enemyDirector, "OperativeLifeService.applyAuthoritativeDamage"),
+	"mitigated enemy damage must still commit through the authoritative P3 boundary"
+)
 
 for _, prohibited in
 	{
@@ -82,6 +107,8 @@ assert(contains(upgradeResolver, "UpgradeNotOffered"), "spoofed upgrade IDs requ
 assert(contains(upgradeResolver, "MaximumStacks"), "maxed upgrades must be excluded and rejected")
 assert(contains(upgradeResolver, "MaximumAmmoConservationChance"), "ammo conservation must remain bounded")
 assert(contains(upgradeResolver, "MaximumDamageMultiplier"), "damage upgrades must remain bounded")
+assert(contains(upgradeResolver, "MaximumIncomingDamageReduction"), "Iron Hide mitigation must remain bounded")
+assert(contains(upgradeResolver, "MaximumXpGainMultiplier"), "Field Promotion economy must remain bounded")
 
 assert(contains(controller, "readStateRemote:InvokeServer()"), "the HUD must recover its current safe snapshot")
 assert(contains(controller, "stateRemote.OnClientEvent:Connect"), "the HUD must render server-published progression")

@@ -10,6 +10,14 @@
 	This aligns the reward onset with the gentler additive-horde warmup while a
 	steeper post-level growth curve prevents later high-density combat from
 	producing upgrade choices faster than players can evaluate them.
+
+	v4 grows the offer pool beyond the four all-offensive picks into two new
+	build axes so choices define a run instead of only stacking damage: one
+	bounded defensive mitigation (Iron Hide, a squad incoming-damage floor
+	consumed at the enemy attack source) and one bounded economy pick (Field
+	Promotion, extra Field XP from confirmed kills). Field XP base values and the
+	four-kill first-upgrade pacing are unchanged; Field Promotion can never be
+	held before the first upgrade, so it only accelerates later choices.
 ]]
 
 local UpgradeDefinitions = table.freeze({
@@ -41,10 +49,24 @@ local UpgradeDefinitions = table.freeze({
 		MaximumStacks = 3,
 		CullDamageMultiplierPerStack = 0.35,
 	}),
+	table.freeze({
+		Id = "upgrade.iron_hide",
+		Name = "IRON HIDE",
+		Description = "-10% incoming enemy damage per stack",
+		MaximumStacks = 3,
+		IncomingDamageReductionPerStack = 0.1,
+	}),
+	table.freeze({
+		Id = "upgrade.field_promotion",
+		Name = "FIELD PROMOTION",
+		Description = "+20% Field XP from confirmed kills per stack",
+		MaximumStacks = 3,
+		XpGainMultiplierPerStack = 0.2,
+	}),
 })
 
 local RunProgressionConfig = {
-	Version = "HROI-0105-v3-first-upgrade-pacing",
+	Version = "HROI-0105-v4-upgrade-pool-expansion",
 	FieldXpPerConfirmedEnemyDeath = 20,
 	BaseXpToLevel = 80,
 	XpGrowthPerLevel = 1.4,
@@ -58,6 +80,8 @@ local RunProgressionConfig = {
 	MaximumAmmoConservationChance = 0.45,
 	CullHealthThreshold = 30,
 	MaximumDamageMultiplier = 3,
+	MaximumIncomingDamageReduction = 0.3,
+	MaximumXpGainMultiplier = 1.6,
 	UpgradeDefinitions = UpgradeDefinitions,
 }
 
@@ -119,6 +143,15 @@ assert(
 	RunProgressionConfig.MaximumDamageMultiplier >= 1 and RunProgressionConfig.MaximumDamageMultiplier <= 3,
 	"run damage requires a strict multiplier ceiling"
 )
+assert(
+	RunProgressionConfig.MaximumIncomingDamageReduction > 0
+		and RunProgressionConfig.MaximumIncomingDamageReduction <= 0.5,
+	"incoming-damage mitigation must help the squad without trivializing enemy attacks"
+)
+assert(
+	RunProgressionConfig.MaximumXpGainMultiplier > 1 and RunProgressionConfig.MaximumXpGainMultiplier <= 2,
+	"Field XP economy upgrades must accelerate later choices within a bounded ceiling"
+)
 
 local seenUpgradeIds = {}
 for _, definition in RunProgressionConfig.UpgradeDefinitions do
@@ -137,6 +170,24 @@ for _, definition in RunProgressionConfig.UpgradeDefinitions do
 			and definition.MaximumStacks <= 4,
 		"upgrade stack cap must be an integer from one through four"
 	)
+	if definition.IncomingDamageReductionPerStack ~= nil then
+		assert(
+			type(definition.IncomingDamageReductionPerStack) == "number"
+				and definition.IncomingDamageReductionPerStack > 0
+				and definition.IncomingDamageReductionPerStack * definition.MaximumStacks
+					<= RunProgressionConfig.MaximumIncomingDamageReduction + 1e-9,
+			"iron hide mitigation per stack must stay within the configured reduction ceiling"
+		)
+	end
+	if definition.XpGainMultiplierPerStack ~= nil then
+		assert(
+			type(definition.XpGainMultiplierPerStack) == "number"
+				and definition.XpGainMultiplierPerStack > 0
+				and 1 + definition.XpGainMultiplierPerStack * definition.MaximumStacks
+					<= RunProgressionConfig.MaximumXpGainMultiplier + 1e-9,
+			"field promotion XP gain per stack must stay within the configured economy ceiling"
+		)
+	end
 end
 
 return table.freeze(RunProgressionConfig)

@@ -56,12 +56,21 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/En
 	injectGlobals = true,
 })()
 
+local progressionAttributes = { RunIncomingDamageMultiplier = 1 }
+local progressionNetwork = {
+	GetAttribute = function(_self: unknown, attributeName: string)
+		return progressionAttributes[attributeName]
+	end,
+}
 local sharedReplicatedStorage = {
 	Shared = {
 		Combat = { EnemyContracts = CONTRACTS_TOKEN },
 		Config = { EnemyConfig = CONFIG_TOKEN, WorldFoundationConfig = WORLD_TOKEN },
 		Visual = { EnemyPresentationContracts = PRESENTATION_TOKEN },
 	},
+	FindFirstChild = function(_self: unknown, name: string)
+		return if name == "ProgressionNetwork" then progressionNetwork else nil
+	end,
 }
 
 local resolver = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/EnemyBehaviorResolver.luau"), {
@@ -435,6 +444,27 @@ assert(damageCalls[1].damage.serverTimestamp == now)
 assert(biterModel:GetAttribute("EnemyPresentationAttackSequence") == 1)
 assert(biterModel:GetAttribute("EnemyPresentationAttackServerTimestamp") == now)
 assert(biterModel:GetAttribute("EnemyPresentationBehaviorStateId") == "Attacking")
+
+-- Iron Hide: a squad incoming-damage multiplier published on ProgressionNetwork
+-- reduces the amount committed at the enemy attack source while the P3 boundary
+-- still receives one authoritative event. Absent the attribute the amount is the
+-- unmodified configured attack damage (asserted above).
+reset()
+progressionAttributes.RunIncomingDamageMultiplier = 0.5
+local _mitigatedTarget, mitigatedRoot = addOperative("operative.player:9", 300, 300)
+assert(service.spawnEnemy(request("enemy.ironhide", 0, 0)).didSpawn)
+mitigatedRoot.Position = roblox.Vector3.new(3, 2, 0)
+now = 40
+service.evaluateAt(now)
+now = 40 + walker.AttackWindupSeconds
+local mitigatedSwing = service.evaluateAt(now)
+assert(mitigatedSwing.attackCommittedCount == 1 and #damageCalls == 1)
+assert(
+	damageCalls[1].damage.damageAmount == math.max(1, math.floor(walker.AttackDamage * 0.5 + 0.5)),
+	"Iron Hide mitigation must reduce committed enemy damage"
+)
+assert(damageCalls[1].damage.damageAmount < walker.AttackDamage, "mitigated damage must be below the base attack")
+progressionAttributes.RunIncomingDamageMultiplier = 1
 
 -- Leaving melee range during windup cancels damage and resumes pursuit.
 reset()

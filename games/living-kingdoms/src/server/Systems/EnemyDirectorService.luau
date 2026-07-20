@@ -38,6 +38,27 @@ local PresentationLifeStateIds = EnemyPresentationContracts.LifeStateIds
 local SpawnSourceIds = EnemyContracts.EnemySpawnSourceIds
 local SpawnRejectionReasonIds = EnemyContracts.EnemySpawnRejectionReasonIds
 
+-- Squad Iron Hide mitigation is published by RunProgressionService as a bounded
+-- server-owned attribute. Read it defensively (mirroring the operative-side
+-- DamageResolver) and clamp to at most 1 so the enemy attack source can only
+-- reduce, never amplify, the authoritative amount the P3 boundary receives.
+-- Absent progression state (including the fixture harness) falls back to 1.
+local function readIncomingDamageMultiplier(): number
+	local storageAsAny = ReplicatedStorage :: any
+	if type(storageAsAny.FindFirstChild) ~= "function" then
+		return 1
+	end
+	local network = storageAsAny:FindFirstChild("ProgressionNetwork")
+	if network == nil or type(network.GetAttribute) ~= "function" then
+		return 1
+	end
+	local value = network:GetAttribute("RunIncomingDamageMultiplier")
+	if type(value) ~= "number" or value ~= value then
+		return 1
+	end
+	return math.clamp(value, 0, 1)
+end
+
 export type SpawnResult = {
 	didSpawn: boolean,
 	wasDeferred: boolean,
@@ -703,11 +724,12 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 		if targetRead == nil or targetRead.snapshot.lifeStateId ~= "Alive" then
 			return 0
 		end
+		local reducedDamage = math.max(1, math.floor(attack.damageAmount * readIncomingDamageMultiplier() + 0.5))
 		local commit = OperativeLifeService.applyAuthoritativeDamage(attack.targetEntityId, targetRead.revision, {
 			damageEventId = attack.damageEventId,
 			sourceEntityId = attack.sourceEntityId,
 			targetEntityId = attack.targetEntityId,
-			damageAmount = attack.damageAmount,
+			damageAmount = reducedDamage,
 			serverTimestamp = attack.serverTimestamp,
 		})
 		if commit.didCommit then
