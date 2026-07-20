@@ -18,7 +18,40 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Ru
 	injectGlobals = true,
 })()
 
+local contracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/RPG/RunRpgContracts.luau"), {
+	debugName = "RunRpgContracts",
+	injectGlobals = true,
+})()
+
+local CONTRACTS_TOKEN = {}
+local rpgConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RunRpgConfig.luau"), {
+	debugName = "RunRpgConfig",
+	environment = {
+		script = { Parent = { Parent = { RPG = { RunRpgContracts = CONTRACTS_TOKEN } } } },
+		require = function(token: unknown)
+			assert(token == CONTRACTS_TOKEN, "unexpected RunRpgConfig dependency")
+			return contracts
+		end,
+	},
+	injectGlobals = true,
+})()
+
+local RPG_CONFIG_TOKEN = {}
+local modifierResolver =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Progression/RunModifierResolver.luau"), {
+		debugName = "RunModifierResolver",
+		environment = {
+			script = { Parent = { Parent = { Config = { RunRpgConfig = RPG_CONFIG_TOKEN } } } },
+			require = function(token: unknown)
+				assert(token == RPG_CONFIG_TOKEN, "unexpected RunModifierResolver dependency")
+				return rpgConfig
+			end,
+		},
+		injectGlobals = true,
+	})()
+
 local CONFIG_TOKEN = {}
+local MODIFIER_TOKEN = {}
 local resolver = luau.load(fs.readFile("games/living-kingdoms/src/shared/Progression/RunUpgradeResolver.luau"), {
 	debugName = "RunUpgradeResolver",
 	environment = {
@@ -27,11 +60,16 @@ local resolver = luau.load(fs.readFile("games/living-kingdoms/src/shared/Progres
 				Parent = {
 					Config = { RunProgressionConfig = CONFIG_TOKEN },
 				},
+				RunModifierResolver = MODIFIER_TOKEN,
 			},
 		},
 		require = function(token: unknown)
-			assert(token == CONFIG_TOKEN, "unexpected upgrade resolver dependency")
-			return config
+			if token == CONFIG_TOKEN then
+				return config
+			elseif token == MODIFIER_TOKEN then
+				return modifierResolver
+			end
+			error("unexpected upgrade resolver dependency", 2)
 		end,
 	},
 	injectGlobals = true,

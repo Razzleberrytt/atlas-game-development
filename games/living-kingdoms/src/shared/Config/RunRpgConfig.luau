@@ -59,6 +59,9 @@ local ModifierCeilings = table.freeze({
 	maximumPatternDamageMultiplier = 2,
 	maximumSpecialEnemyDamageMultiplier = 2,
 	maximumGeneralProcChance = 0.35,
+	maximumIncomingDamageReduction = 0.3,
+	maximumLootPickupRadiusBonusStuds = 4.5,
+	maximumConditionalDamageMultiplier = 1.5,
 })
 
 local EliteAssignmentPlanning = table.freeze({
@@ -481,6 +484,20 @@ assert(
 assert(
 	ModifierCeilings.maximumGeneralProcChance >= 0 and ModifierCeilings.maximumGeneralProcChance <= 0.35,
 	"general RPG proc chance requires a strict ceiling"
+)
+assert(
+	ModifierCeilings.maximumIncomingDamageReduction >= 0 and ModifierCeilings.maximumIncomingDamageReduction <= 0.3,
+	"incoming damage reduction must preserve enemy pressure"
+)
+assert(
+	ModifierCeilings.maximumLootPickupRadiusBonusStuds >= 0
+		and ModifierCeilings.maximumLootPickupRadiusBonusStuds <= 4.5,
+	"loot pickup radius growth must remain spatially bounded"
+)
+assert(
+	ModifierCeilings.maximumConditionalDamageMultiplier >= 1
+		and ModifierCeilings.maximumConditionalDamageMultiplier <= 1.5,
+	"conditional damage must remain below the global damage ceiling"
 )
 
 assert(

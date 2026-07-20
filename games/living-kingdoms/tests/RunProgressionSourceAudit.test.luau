@@ -34,6 +34,7 @@ local service = fs.readFile("games/living-kingdoms/src/server/Systems/RunProgres
 local buildStore = fs.readFile("games/living-kingdoms/src/server/Systems/RunBuildStateStore.luau")
 local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/RunProgressionHUDController.luau")
 local upgradeResolver = fs.readFile("games/living-kingdoms/src/shared/Progression/RunUpgradeResolver.luau")
+local modifierResolver = fs.readFile("games/living-kingdoms/src/shared/Progression/RunModifierResolver.luau")
 local fireResolver = fs.readFile("games/living-kingdoms/src/server/Systems/AutomaticFireResolver.luau")
 local damageResolver = fs.readFile("games/living-kingdoms/src/server/Systems/DamageResolver.luau")
 local enemyDirector = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau")
@@ -146,15 +147,16 @@ end
 
 assert(contains(upgradeResolver, "UpgradeNotOffered"), "spoofed upgrade IDs require an explicit rejection")
 assert(contains(upgradeResolver, "MaximumStacks"), "maxed upgrades must be excluded and rejected")
-assert(contains(upgradeResolver, "MaximumAmmoConservationChance"), "ammo conservation must remain bounded")
-assert(contains(upgradeResolver, "MaximumDamageMultiplier"), "damage upgrades must remain bounded")
-assert(contains(upgradeResolver, "MaximumIncomingDamageReduction"), "Trauma Plating mitigation must remain bounded")
-assert(contains(upgradeResolver, "MaximumXpGainMultiplier"), "Field Discipline economy must remain bounded")
-assert(contains(upgradeResolver, "MinimumReloadDurationMultiplier"), "Combat Loader reload speed must remain bounded")
 assert(
-	contains(upgradeResolver, "MaximumPatternDamageMultiplier"),
-	"Pattern Amplifier secondary damage must remain bounded"
+	contains(upgradeResolver, "RunModifierResolver.resolve"),
+	"run upgrades must delegate all modifier arithmetic to the shared resolver"
 )
+assert(contains(modifierResolver, "RunRpgConfig.ModifierCeilings"), "modifier ceilings must have one canonical owner")
+assert(contains(modifierResolver, "maximumDamageMultiplier"), "damage upgrades must remain bounded")
+assert(contains(modifierResolver, "maximumIncomingDamageReduction"), "Trauma Plating mitigation must remain bounded")
+assert(contains(modifierResolver, "maximumFieldXpMultiplier"), "Field Discipline economy must remain bounded")
+assert(contains(modifierResolver, "minimumReloadDurationMultiplier"), "Combat Loader reload speed must remain bounded")
+assert(contains(modifierResolver, "maximumPatternDamageMultiplier"), "Pattern damage must remain bounded")
 
 assert(contains(controller, "readStateRemote:InvokeServer()"), "the HUD must recover its current safe snapshot")
 assert(contains(controller, "stateRemote.OnClientEvent:Connect"), "the HUD must render server-published progression")
