@@ -31,6 +31,7 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Ru
 	injectGlobals = true,
 })()
 local service = fs.readFile("games/living-kingdoms/src/server/Systems/RunProgressionService.luau")
+local buildStore = fs.readFile("games/living-kingdoms/src/server/Systems/RunBuildStateStore.luau")
 local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/RunProgressionHUDController.luau")
 local upgradeResolver = fs.readFile("games/living-kingdoms/src/shared/Progression/RunUpgradeResolver.luau")
 local fireResolver = fs.readFile("games/living-kingdoms/src/server/Systems/AutomaticFireResolver.luau")
@@ -63,7 +64,14 @@ assert(
 assert(contains(service, "UpgradeRequestCooldownSeconds"), "upgrade selection must be server throttled")
 assert(contains(service, 'select("#", ...) ~= 0'), "upgrade requests must reject extra client arguments")
 assert(contains(service, "syncCombatModifierAttributes()"), "accepted choices must publish trusted combat modifiers")
-assert(contains(service, "table.clear(upgradeStacks)"), "run upgrades must reset with the operation session")
+assert(
+	contains(service, "RunBuildService.readSquadUpgradeStacks"),
+	"run progression must read upgrades from the centralized run-build owner"
+)
+assert(
+	contains(buildStore, "table.clear(squadUpgradeStacks)"),
+	"run upgrades must reset with the operation session"
+)
 assert(config.MaximumTrackedEnemyModels == 64, "the corpse-overlap tracking ceiling must stay bounded")
 assert(
 	config.UpgradeChoiceCount == 3 and #config.UpgradeDefinitions == 8,

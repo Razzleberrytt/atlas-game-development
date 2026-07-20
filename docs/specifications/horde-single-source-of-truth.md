@@ -17,7 +17,8 @@ loop is predictable, playable, balanceable, and testable.
 | Concern | Sole owner | Surface |
 | --- | --- | --- |
 | Field XP, levels, XP from confirmed kills | `RunProgressionService` | `ProgressionNetwork.State` / `ReadState` |
-| Upgrade offers, stacks, selection validation, combat modifiers | `RunProgressionService` | `ProgressionNetwork.ChooseUpgrade` (the only upgrade remote) |
+| Upgrade offers, selection validation, combat-modifier publication | `RunProgressionService` | `ProgressionNetwork.ChooseUpgrade` (the only upgrade remote) |
+| Operation-scoped upgrade stacks and future per-operative relic/effect state | `RunBuildService` | Server-only; no client mutation surface |
 | Enemy ammunition loot (7% common / 1% rare / 92% none, one roll per death) | `EnemyLootService` | `EnemyLootDrops` folder, `AmmunitionSupplyResolver` |
 | Horde spawning, pressure, enemy roles/behaviour, threat, massacre streak, event feed | `HordeExperienceService` | `HordeNetwork.State` |
 | Unified combat HUD | `HordeHUDController` | reads the sources above + player attributes |

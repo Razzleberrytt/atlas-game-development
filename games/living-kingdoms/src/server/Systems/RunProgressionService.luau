@@ -22,6 +22,7 @@ local RunProgressionConfig = require(ReplicatedStorage.Shared.Config.RunProgress
 local RunProgressionResolver = require(ReplicatedStorage.Shared.Progression.RunProgressionResolver)
 local RunUpgradeResolver = require(ReplicatedStorage.Shared.Progression.RunUpgradeResolver)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
+local RunBuildService = require(script.Parent.RunBuildService)
 
 local LifeStateAttribute = EnemyPresentationContracts.AttributeNames.LifeStateId
 local HitSequenceAttribute = EnemyPresentationContracts.AttributeNames.HitSequence
@@ -87,7 +88,6 @@ local playerAddedConnection: RBXScriptConnection? = nil
 local playerRemovingConnection: RBXScriptConnection? = nil
 local choiceConnection: RBXScriptConnection? = nil
 local trackedLifeStates: { [Model]: string } = {}
-local upgradeStacks: RunUpgradeResolver.UpgradeStacks = {}
 local pendingChoiceIds: { string } = {}
 local lastUpgradeRequestTimestamps: { [Player]: number } = {}
 local processedFieldIntelRewardIds: { [string]: boolean } = {}
@@ -99,8 +99,13 @@ local stateRemote = progressionNetwork:WaitForChild("State") :: RemoteEvent
 local readStateRemote = progressionNetwork:WaitForChild("ReadState") :: RemoteFunction
 local chooseUpgradeRemote = progressionNetwork:WaitForChild("ChooseUpgrade") :: RemoteEvent
 
+local function readUpgradeStacks(): RunUpgradeResolver.UpgradeStacks
+	return RunBuildService.readSquadUpgradeStacks()
+end
+
 local function publicPendingChoices(): { PublicUpgradeChoice }
 	local result = {}
+	local upgradeStacks = readUpgradeStacks()
 	for _, upgradeId in pendingChoiceIds do
 		local definition = RunUpgradeResolver.readDefinition(upgradeId)
 		if definition ~= nil then
@@ -118,6 +123,7 @@ end
 
 local function publicActiveUpgrades(): { PublicActiveUpgrade }
 	local result = {}
+	local upgradeStacks = readUpgradeStacks()
 	for _, definition in RunProgressionConfig.UpgradeDefinitions do
 		local stacks = upgradeStacks[definition.Id] or 0
 		if stacks > 0 then
@@ -154,6 +160,7 @@ local function safeSnapshot(): SafeRunProgressionSnapshot
 end
 
 local function syncCombatModifierAttributes()
+	local upgradeStacks = readUpgradeStacks()
 	local modifiers = RunUpgradeResolver.deriveCombatModifiers(upgradeStacks)
 	progressionNetwork:SetAttribute("RunDamageMultiplier", modifiers.damageMultiplier)
 	progressionNetwork:SetAttribute("RunCadenceMultiplier", modifiers.cadenceMultiplier)
@@ -174,6 +181,7 @@ local function generatePendingChoices()
 	if #pendingChoiceIds > 0 or unclaimedUpgradeChoices <= 0 then
 		return
 	end
+	local upgradeStacks = readUpgradeStacks()
 	offerSequence += 1
 	local generated = RunUpgradeResolver.generateChoices(upgradeStacks, offerSequence, squadKills)
 	table.clear(pendingChoiceIds)
@@ -208,6 +216,7 @@ local function applyFieldXpAward(amount: number, countAsKill: boolean): boolean
 end
 
 local function awardConfirmedEnemyDeath()
+	local upgradeStacks = readUpgradeStacks()
 	local xpGainMultiplier = RunUpgradeResolver.deriveCombatModifiers(upgradeStacks).xpGainMultiplier
 	local base = RunProgressionConfig.FieldXpPerConfirmedEnemyDeath
 	local boosted = math.max(base, math.floor(base * xpGainMultiplier + 0.5))
@@ -287,13 +296,20 @@ local function onChooseUpgrade(player: Player, selectedUpgradeId: unknown, ...: 
 	end
 	lastUpgradeRequestTimestamps[player] = serverTimestamp
 
-	local resolution = RunUpgradeResolver.applyChoice(upgradeStacks, pendingChoiceIds, selectedUpgradeId)
+	local resolution = RunUpgradeResolver.applyChoice(readUpgradeStacks(), pendingChoiceIds, selectedUpgradeId)
 	if not resolution.didApply or resolution.upgradeId == nil then
 		return
 	end
-	upgradeStacks = table.clone(resolution.stacksAfter)
 	local definition = RunUpgradeResolver.readDefinition(resolution.upgradeId)
 	if definition == nil then
+		return
+	end
+	local didCommit = RunBuildService.commitSquadUpgradeStacks(
+		RunBuildService.readOperationGeneration(),
+		string.format("field-upgrade:%d:%d", offerSequence, selectionSequence + 1),
+		resolution.stacksAfter
+	)
+	if not didCommit then
 		return
 	end
 
@@ -339,7 +355,7 @@ function RunProgressionService.readSafeSnapshot(): SafeRunProgressionSnapshot
 end
 
 function RunProgressionService.readCombatModifiers(): RunUpgradeResolver.CombatModifiers
-	return RunUpgradeResolver.deriveCombatModifiers(upgradeStacks)
+	return RunUpgradeResolver.deriveCombatModifiers(readUpgradeStacks())
 end
 
 function RunProgressionService.start()
@@ -364,7 +380,6 @@ function RunProgressionService.start()
 	lastSelectedUpgradeName = ""
 	lastSelectedUpgradeStack = 0
 	table.clear(trackedLifeStates)
-	table.clear(upgradeStacks)
 	table.clear(pendingChoiceIds)
 	table.clear(lastUpgradeRequestTimestamps)
 	table.clear(processedFieldIntelRewardIds)
@@ -408,7 +423,6 @@ function RunProgressionService.stop()
 	choiceConnection = nil
 	readStateRemote.OnServerInvoke = nil
 	table.clear(trackedLifeStates)
-	table.clear(upgradeStacks)
 	table.clear(pendingChoiceIds)
 	table.clear(lastUpgradeRequestTimestamps)
 	table.clear(processedFieldIntelRewardIds)
