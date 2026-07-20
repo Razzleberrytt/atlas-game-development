@@ -48,6 +48,6 @@ For the reusable Studio launch check and first successful result, see the [smoke
 
 **Next actions:** the per-milestone status table and the detailed P6–P12 task breakdown live in `docs/roadmap/MASTER-ROADMAP.md`, with canonical acceptance gates in `docs/roadmap/P6-P12-EXECUTION-ROADMAP.md`. The immediate gates are manual: the representative Studio playtest validation of the merged horde-and-reward loop (issue #98 / HROI-0108) and the P6-0108 Studio evidence matrix. The first post-sign-off gameplay task is `P7-0103` (combat specialist vertical slice). The visual production track (`VIS-0102`–`VIS-0105`) and its Studio visual/mix reviews proceed in parallel per `docs/roadmap/VISUAL-PRODUCTION-TRACK.md`.
 
-The parallel RPG track is complete through `RPG-0105`, including the deterministic server-owned Frenzied elite vertical slice. Its next ordered implementation task is `RPG-0106`, the remaining initial elite roster.
+The parallel RPG track is complete through `RPG-0106`, including the deterministic server-owned five-affix elite roster. Its next ordered implementation task is `RPG-0107`, the relic reward and three-slot framework.
 
 Final public branding is unresolved. Living Kingdoms remains the working title and internal project identifier; naming work is outside the current scope.

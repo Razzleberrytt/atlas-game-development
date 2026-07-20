@@ -542,7 +542,7 @@ local function commitPatternImpacts(
 			impact.damageMultiplier,
 			runDamageContext(playerState, sightedEntry.fact)
 		)
-		local didCommit = EnemyDirectorService.commitHealthState(
+		local didCommit, committedDamage = EnemyDirectorService.commitHealthState(
 			impact.targetEntityId,
 			healthRead.revision,
 			damageResolution.targetHealthStateAfter,
@@ -553,7 +553,7 @@ local function commitPatternImpacts(
 			table.insert(disclosedImpacts, {
 				targetEntityId = impact.targetEntityId,
 				impactWorldPosition = sightedEntry.fact.worldPosition,
-				damageAmount = damageEvent.damageAmount,
+				damageAmount = committedDamage or damageEvent.damageAmount,
 			})
 		end
 	end
@@ -602,7 +602,7 @@ local function resolveAcceptedShot(
 		nil,
 		runDamageContext(playerState, fact)
 	)
-	local didCommitPrimary = EnemyDirectorService.commitHealthState(
+	local didCommitPrimary, committedDamage = EnemyDirectorService.commitHealthState(
 		targetEntityId,
 		healthRead.revision,
 		damageResolution.targetHealthStateAfter,
@@ -610,7 +610,7 @@ local function resolveAcceptedShot(
 	)
 	local didApplyPrimaryDamage = didCommitPrimary and damageResolution.didApplyDamage
 	local damageAmount = if didApplyPrimaryDamage and damageResolution.damageEvent ~= nil
-		then damageResolution.damageEvent.damageAmount
+		then committedDamage or damageResolution.damageEvent.damageAmount
 		else nil
 	local secondaryImpacts = if didApplyPrimaryDamage
 		then commitPatternImpacts(player, playerState, operativePosition, targetEntityId, shotId, nowTimestamp)

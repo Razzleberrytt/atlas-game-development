@@ -241,7 +241,7 @@ The centralized RPG-0102 run-build owner holds the live Field Upgrade stacks con
 | Cull Protocol | Firepower | Implemented | Matches (wounded-enemy damage). |
 | Combat Loader | Ammunition/Reload | Implemented | Matches: reduced reload duration, consumed by `ReloadResolver` at reload begin, floored at the global `minimumReloadDurationMultiplier`. |
 | Pattern Amplifier | Firepower | Implemented | Matches: raises shotgun cleave / sniper pierce secondary damage in `DamageResolver`'s pattern path toward full primary damage (effective secondary multiplier capped at 1.0), bounded by the global `maximumPatternDamageMultiplier`. |
-| Specialist Munitions | Firepower | Implemented | Matches for existing Screamer, Bloater, and Brute server-owned role facts; RPG-0105 elite identity will extend the same context to elites. |
+| Specialist Munitions | Firepower | Implemented | Matches existing Screamer, Bloater, Brute, and server-owned elite identity facts. |
 | Expanded Feed | Ammunition/Reload | Implemented | Matches: raises each firearm's configured magazine capacity while moving only the newly created slot count from reserve, so no ammunition is minted. |
 | Scavenger Reach | Ammunition/Reload | Implemented | Matches: adds a bounded radius bonus to the existing automatic server-owned enemy-loot collection pass. |
 | Last Magazine | Ammunition/Reload | Implemented | Matches: raises damage only when authoritative reserve rounds are at or below the floored 20% carry-cap threshold. |
@@ -261,6 +261,17 @@ The twelve RPG-0103 upgrades still own only their configured per-stack contribut
 `EliteAffixResolver` deterministically assigns Frenzied from server-owned spawn identity after the ten-second protected opening. Ordinary pressure uses a five-percent target and authored horde pulses use seven percent, with one affix per enemy and a hard three-living-elite cap. Retries reuse the entity ID and therefore cannot reroll assignment.
 
 Frenzied enemies move at 1.25× speed, use 0.7× windup and cooldown intervals, and trade down to 0.85× normal maximum health. The existing enemy director remains the only behavior, health, death, and cleanup authority. It replicates stable presentation-only elite attributes, prefixes the world label, and creates an orange/yellow always-visible highlight. Confirmed elite death adds 20 Field XP through the existing one-shot death transition; corpse rescans and cleanup cannot duplicate the award.
+
+### 7.7 Complete initial elite roster (RPG-0106)
+
+The deterministic assignment roll now selects from a role-compatible pool of all five affixes. The server passes the horde role into the existing spawn request; clients still have no elite request surface. Runners cannot become Frenzied, Brutes cannot become Armored or Regenerator, Bloaters cannot become Volatile, and Commander is restricted to the ordinary Infected, Runner, and Crawler bodies. This prevents unreadable mechanical overlap while retaining the same overall five-percent ordinary and seven-percent horde elite rates.
+
+- **Armored:** takes 0.6× damage behind a finite 40-point armor pool. Every hit still deals at least one damage, armor remaining is disclosed in the label and safe attributes, and committed damage feedback reports actual health loss.
+- **Regenerator:** heals five health once per second only after four uninterrupted seconds without confirmed damage. A hit resets the delay, healing advances the authoritative health revision, and it cannot exceed maximum health or continue after death.
+- **Volatile:** on confirmed death discloses a 1.25-second purple danger zone, then deals 12 damage once within 12 studs. Bloaters are incompatible; the reaction is smaller, weaker, and visually distinct from their 20-stud/18-damage burst. Mission stand-down cancels an unresolved reaction.
+- **Commander:** shows a 22-stud blue aura and grants nearby non-elites 1.1× movement and 0.85× attack intervals. Multiple Commanders cannot stack on one target; range exit, Commander death, and cleanup clear the effect on the bounded director pass.
+
+All five affixes retain one-shot 20 Field XP bonuses, stable presentation identity, the three-living-elite cap, one-affix-per-enemy restriction, and ordinary corpse cleanup.
 
 ## 8. Elite enemy affixes
 
@@ -571,11 +582,13 @@ Delivered through the pure deterministic `EliteAffixResolver` and the existing e
 
 **Exit:** Frenzied elites are unmistakable, consequential, and bounded. ✔
 
-### RPG-0106 — Complete initial elite roster
+### RPG-0106 — Complete initial elite roster — **Complete**
 
 Add Armored, Regenerator, Volatile, and Commander. One affix per elite in v1.
 
-**Exit:** Every affix has readable counterplay and role compatibility rules.
+Delivered through the existing pure assignment and enemy lifecycle owners. Role-filter fixtures cover every incompatibility; director fixtures cover finite armor, regeneration delay/reset bounds, delayed one-shot Volatile damage, Commander aura range/death cleanup, safe presentation facts, and unchanged authority boundaries.
+
+**Exit:** Every affix has readable counterplay and role compatibility rules. ✔
 
 ### RPG-0107 — Add relic reward and slot framework
 

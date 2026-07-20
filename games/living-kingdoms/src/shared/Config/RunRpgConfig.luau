@@ -1,9 +1,9 @@
 --!strict
 
 --[[
-	Canonical operation-bound RPG configuration through RPG-0105. This file
+	Canonical operation-bound RPG configuration through RPG-0106. This file
 	locks catalog identity, slot/reward/elite ceilings, global modifier safety
-	bounds, and the first live Frenzied tuning. Entries still marked Planned do
+	bounds, and the complete initial elite roster. Entries still marked Planned do
 	not grant power, generate rewards, or persist between runs.
 ]]
 
@@ -85,6 +85,91 @@ local FrenziedRuntime = table.freeze({
 	highlightOutlineColor = table.freeze({ 255, 214, 74 }),
 	highlightFillTransparency = 0.42,
 	highlightOutlineTransparency = 0,
+	compatibleHordeRoleIds = table.freeze({
+		"horde.role.infected",
+		"horde.role.crawler",
+		"horde.role.screamer",
+		"horde.role.bloater",
+		"horde.role.brute",
+	}),
+})
+
+local ArmoredRuntime = table.freeze({
+	damageTakenMultiplierWhileArmored = 0.6,
+	armorCapacity = 40,
+	bonusFieldXp = 20,
+	highlightFillColor = table.freeze({ 65, 91, 114 }),
+	highlightOutlineColor = table.freeze({ 190, 224, 255 }),
+	highlightFillTransparency = 0.5,
+	highlightOutlineTransparency = 0,
+	compatibleHordeRoleIds = table.freeze({
+		"horde.role.infected",
+		"horde.role.runner",
+		"horde.role.crawler",
+		"horde.role.screamer",
+		"horde.role.bloater",
+	}),
+})
+
+local RegeneratorRuntime = table.freeze({
+	damageRecoveryDelaySeconds = 4,
+	healingIntervalSeconds = 1,
+	healingPerInterval = 5,
+	bonusFieldXp = 20,
+	highlightFillColor = table.freeze({ 28, 112, 62 }),
+	highlightOutlineColor = table.freeze({ 104, 255, 151 }),
+	highlightFillTransparency = 0.48,
+	highlightOutlineTransparency = 0,
+	compatibleHordeRoleIds = table.freeze({
+		"horde.role.infected",
+		"horde.role.runner",
+		"horde.role.crawler",
+		"horde.role.screamer",
+		"horde.role.bloater",
+	}),
+})
+
+local VolatileRuntime = table.freeze({
+	deathReactionDelaySeconds = 1.25,
+	deathReactionRadiusStuds = 12,
+	deathReactionDamage = 12,
+	bonusFieldXp = 20,
+	highlightFillColor = table.freeze({ 121, 37, 139 }),
+	highlightOutlineColor = table.freeze({ 244, 134, 255 }),
+	highlightFillTransparency = 0.45,
+	highlightOutlineTransparency = 0,
+	compatibleHordeRoleIds = table.freeze({
+		"horde.role.infected",
+		"horde.role.runner",
+		"horde.role.crawler",
+		"horde.role.screamer",
+		"horde.role.brute",
+	}),
+})
+
+local CommanderRuntime = table.freeze({
+	auraRadiusStuds = 22,
+	auraMovementSpeedMultiplier = 1.1,
+	auraAttackCadenceMultiplier = 0.85,
+	maximumAuraStacksPerEnemy = 1,
+	bonusFieldXp = 20,
+	highlightFillColor = table.freeze({ 30, 68, 150 }),
+	highlightOutlineColor = table.freeze({ 104, 180, 255 }),
+	highlightFillTransparency = 0.42,
+	highlightOutlineTransparency = 0,
+	compatibleHordeRoleIds = table.freeze({
+		"horde.role.infected",
+		"horde.role.runner",
+		"horde.role.crawler",
+	}),
+})
+
+local EliteAffixRuntimeById = table.freeze({
+	[AffixIds.Armored] = ArmoredRuntime,
+	[AffixIds.Frenzied] = FrenziedRuntime,
+	[AffixIds.Regenerator] = RegeneratorRuntime,
+	[AffixIds.Volatile] = VolatileRuntime,
+	[AffixIds.Commander] = CommanderRuntime,
 })
 
 local UpgradeCatalog = table.freeze({
@@ -200,7 +285,7 @@ local EliteAffixCatalog = table.freeze({
 		maximumPerEnemy = 1,
 		requiresTelegraph = true,
 		bossEligible = false,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		affixId = AffixIds.Frenzied,
@@ -218,7 +303,7 @@ local EliteAffixCatalog = table.freeze({
 		maximumPerEnemy = 1,
 		requiresTelegraph = true,
 		bossEligible = false,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		affixId = AffixIds.Volatile,
@@ -227,7 +312,7 @@ local EliteAffixCatalog = table.freeze({
 		maximumPerEnemy = 1,
 		requiresTelegraph = true,
 		bossEligible = false,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		affixId = AffixIds.Commander,
@@ -236,7 +321,7 @@ local EliteAffixCatalog = table.freeze({
 		maximumPerEnemy = 1,
 		requiresTelegraph = true,
 		bossEligible = false,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 })
 
@@ -406,11 +491,16 @@ local RewardSourceCatalog = table.freeze({
 })
 
 local Config = {
-	Version = "RPG-0105-v1-frenzied-elite",
+	Version = "RPG-0106-v1-complete-elite-roster",
 	Limits = Limits,
 	ModifierCeilings = ModifierCeilings,
 	EliteAssignmentPlanning = EliteAssignmentPlanning,
 	FrenziedRuntime = FrenziedRuntime,
+	ArmoredRuntime = ArmoredRuntime,
+	RegeneratorRuntime = RegeneratorRuntime,
+	VolatileRuntime = VolatileRuntime,
+	CommanderRuntime = CommanderRuntime,
+	EliteAffixRuntimeById = EliteAffixRuntimeById,
 	UpgradeCatalog = UpgradeCatalog,
 	EliteAffixCatalog = EliteAffixCatalog,
 	RelicCatalog = RelicCatalog,
@@ -534,7 +624,7 @@ assert(
 		and EliteAssignmentPlanning.protectedOpeningSeconds <= 20,
 	"elite assignment requires a bounded protected opening"
 )
-assert(EliteAssignmentPlanning.isRuntimeEnabled, "RPG-0105 must enable server-owned elite assignment")
+assert(EliteAssignmentPlanning.isRuntimeEnabled, "RPG-0106 must enable server-owned elite assignment")
 assert(
 	EliteAssignmentPlanning.ordinaryPressureProbability >= EliteAssignmentPlanning.ordinaryPressureProbabilityMinimum
 		and EliteAssignmentPlanning.ordinaryPressureProbability
@@ -570,6 +660,46 @@ assert(
 	isNonnegativeInteger(FrenziedRuntime.bonusFieldXp) and FrenziedRuntime.bonusFieldXp > 0,
 	"Frenzied deaths require a positive bounded Field XP bonus"
 )
+assert(
+	ArmoredRuntime.damageTakenMultiplierWhileArmored >= 0.5
+		and ArmoredRuntime.damageTakenMultiplierWhileArmored < 1
+		and isNonnegativeInteger(ArmoredRuntime.armorCapacity)
+		and ArmoredRuntime.armorCapacity > 0,
+	"Armored must reduce rather than erase damage behind finite armor"
+)
+assert(
+	RegeneratorRuntime.damageRecoveryDelaySeconds >= 3
+		and RegeneratorRuntime.healingIntervalSeconds >= 0.5
+		and RegeneratorRuntime.healingPerInterval > 0
+		and RegeneratorRuntime.healingPerInterval <= ModifierCeilings.maximumAutomaticHealingPerTrigger,
+	"Regenerator healing must have a pressure-reset delay and bounded ticks"
+)
+assert(
+	VolatileRuntime.deathReactionDelaySeconds >= 1
+		and VolatileRuntime.deathReactionRadiusStuds > 0
+		and VolatileRuntime.deathReactionRadiusStuds < 20
+		and VolatileRuntime.deathReactionDamage > 0
+		and VolatileRuntime.deathReactionDamage < 18,
+	"Volatile must remain delayed, bounded, and distinct from the Bloater"
+)
+assert(
+	CommanderRuntime.auraRadiusStuds > 0
+		and CommanderRuntime.auraRadiusStuds <= 24
+		and CommanderRuntime.auraMovementSpeedMultiplier > 1
+		and CommanderRuntime.auraMovementSpeedMultiplier <= ModifierCeilings.maximumMovementSpeedMultiplier
+		and CommanderRuntime.auraAttackCadenceMultiplier >= ModifierCeilings.minimumCadenceMultiplier
+		and CommanderRuntime.auraAttackCadenceMultiplier < 1
+		and CommanderRuntime.maximumAuraStacksPerEnemy == 1,
+	"Commander aura must be spatially bounded, consequential, and non-stacking"
+)
+for affixId, runtime in EliteAffixRuntimeById do
+	assert(RunRpgContracts.isKnownEliteAffixId(affixId), "elite runtime contains an unknown affix")
+	assert(#runtime.compatibleHordeRoleIds >= 1, "every elite affix requires compatible roles")
+	assert(
+		isNonnegativeInteger(runtime.bonusFieldXp) and runtime.bonusFieldXp > 0 and runtime.bonusFieldXp <= 40,
+		"every elite affix requires a bounded XP reward"
+	)
+end
 
 local function countVocabulary(values: { [string]: string }): number
 	local count = 0
@@ -608,14 +738,13 @@ for _, definition in EliteAffixCatalog do
 	assert(not definition.bossEligible, "v1 affixes cannot be assigned to bosses")
 	if definition.implementationStateId == ImplementationStateIds.Implemented then
 		implementedAffixCount += 1
-		assert(definition.affixId == AffixIds.Frenzied, "RPG-0105 implements only Frenzied")
 	else
 		assert(definition.implementationStateId == ImplementationStateIds.Planned, "unknown affix implementation state")
 	end
 	assert(#definition.modifierCategoryIds >= 1, "every elite affix requires a declared modifier category")
 end
 assert(#EliteAffixCatalog == countVocabulary(AffixIds), "every elite affix ID requires exactly one catalog entry")
-assert(implementedAffixCount == 1, "RPG-0105 requires exactly one implemented elite affix")
+assert(implementedAffixCount == 5, "RPG-0106 requires the complete five-affix elite roster")
 
 local seenRelicIds = {}
 for _, definition in RelicCatalog do

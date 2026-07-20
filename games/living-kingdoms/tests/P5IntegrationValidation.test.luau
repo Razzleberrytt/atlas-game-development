@@ -44,8 +44,25 @@ local LIFE_TOKEN = {}
 local FAILURE_TOKEN = {}
 local ENEMY_DIRECTOR_TOKEN = {}
 
-local rpgContracts = { EliteAffixIds = { Frenzied = "elite-affix.frenzied" } }
+local rpgContracts = {
+	EliteAffixIds = {
+		Armored = "elite-affix.armored",
+		Frenzied = "elite-affix.frenzied",
+		Regenerator = "elite-affix.regenerator",
+		Volatile = "elite-affix.volatile",
+		Commander = "elite-affix.commander",
+	},
+}
 local rpgConfig = {
+	ModifierCeilings = {
+		maximumMovementSpeedMultiplier = 1.35,
+		minimumCadenceMultiplier = 0.55,
+	},
+	CommanderRuntime = {
+		auraRadiusStuds = 22,
+		auraMovementSpeedMultiplier = 1.1,
+		auraAttackCadenceMultiplier = 0.85,
+	},
 	FrenziedRuntime = {
 		highlightFillColor = { 255, 74, 24 },
 		highlightOutlineColor = { 255, 214, 74 },

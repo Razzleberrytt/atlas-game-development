@@ -69,6 +69,7 @@ local function facts(entityId: string, overrides: { [string]: any }?)
 		activeEliteCount = 0,
 		isBoss = false,
 		isHordePulse = false,
+		hordeRoleId = "horde.role.infected",
 	}
 	for key, value in overrides or {} do
 		result[key] = value
@@ -93,27 +94,24 @@ assertThat(
 
 local chosenId = nil
 local eliteCount = 0
+local seenAffixIds = {}
 for index = 1, 10000 do
 	local entityId = "enemy.fixture:" .. tostring(index)
 	local assignment = resolver.resolveAssignment(facts(entityId))
 	if assignment.affixId ~= nil then
 		chosenId = chosenId or entityId
 		eliteCount += 1
-		assertThat(assignment.affixId == rpgContracts.EliteAffixIds.Frenzied, "only Frenzied may be assigned")
-		assertThat(
-			assignment.movementSpeedMultiplier == config.FrenziedRuntime.movementSpeedMultiplier,
-			"movement drift"
-		)
-		assertThat(
-			assignment.attackCadenceMultiplier == config.FrenziedRuntime.attackCadenceMultiplier,
-			"cadence drift"
-		)
-		assertThat(assignment.maximumHealthMultiplier == config.FrenziedRuntime.maximumHealthMultiplier, "health drift")
-		assertThat(assignment.bonusFieldXp == config.FrenziedRuntime.bonusFieldXp, "XP drift")
+		seenAffixIds[assignment.affixId] = true
+		local runtime = config.EliteAffixRuntimeById[assignment.affixId]
+		assertThat(runtime ~= nil, "assigned affix requires runtime tuning")
+		assertThat(assignment.bonusFieldXp == runtime.bonusFieldXp, "XP drift")
 	end
 end
 assertThat(chosenId ~= nil, "deterministic fixture range must contain an elite")
 assertThat(eliteCount >= 400 and eliteCount <= 600, "ordinary deterministic assignment must remain near five percent")
+for _, affixId in rpgContracts.EliteAffixIds do
+	assertThat(seenAffixIds[affixId], "basic-role fixture must exercise the complete affix roster")
+end
 local hordeEliteCount = 0
 for index = 1, 10000 do
 	if resolver.resolveAssignment(facts("enemy.horde:" .. tostring(index), { isHordePulse = true })).affixId ~= nil then
@@ -125,4 +123,17 @@ local first = resolver.resolveAssignment(facts(chosenId :: string))
 local replay = resolver.resolveAssignment(facts(chosenId :: string))
 assertThat(first.affixId == replay.affixId, "same entity identity must not reroll")
 
-print("EliteAffixResolver: protected opening, caps, deterministic assignment, and Frenzied bounds passed")
+local bloaterCompatible = resolver.readCompatibleAffixIds("horde.role.bloater")
+assertThat(not table.find(bloaterCompatible, rpgContracts.EliteAffixIds.Volatile), "Bloaters cannot be Volatile")
+assertThat(not table.find(bloaterCompatible, rpgContracts.EliteAffixIds.Commander), "Bloaters cannot be Commanders")
+local bruteCompatible = resolver.readCompatibleAffixIds("horde.role.brute")
+assertThat(not table.find(bruteCompatible, rpgContracts.EliteAffixIds.Armored), "Brutes cannot be Armored")
+assertThat(not table.find(bruteCompatible, rpgContracts.EliteAffixIds.Regenerator), "Brutes cannot regenerate")
+local runnerCompatible = resolver.readCompatibleAffixIds("horde.role.runner")
+assertThat(not table.find(runnerCompatible, rpgContracts.EliteAffixIds.Frenzied), "Runners cannot be Frenzied")
+assertThat(
+	table.find(resolver.readCompatibleAffixIds("horde.role.infected"), rpgContracts.EliteAffixIds.Commander) ~= nil,
+	"ordinary infected must support Commander"
+)
+
+print("EliteAffixResolver: full roster, protected opening, rates, replay, and role compatibility passed")

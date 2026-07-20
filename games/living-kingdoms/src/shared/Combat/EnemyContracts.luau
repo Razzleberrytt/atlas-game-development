@@ -40,6 +40,7 @@ export type EnemySpawnRequest = {
 	displayName: string,
 	position: EnemyWorldPosition,
 	isHordePulse: boolean?,
+	hordeRoleId: string?,
 }
 
 -- Caller-supplied server-owned facts for one fair-spawn decision. Remote
