@@ -318,6 +318,7 @@ local function spawnRoleAt(roleId: string, position: Vector3, prefix: string): b
 			y = position.Y,
 			z = math.clamp(position.Z, -halfExtent, halfExtent),
 		},
+		isHordePulse = true,
 	})
 	if not result.didSpawn then
 		forcedRoleByEntityId[entityId] = nil
@@ -462,7 +463,12 @@ local function processEnemy(record: EnemyRecord, serverTimestamp: number)
 	if record.lifeStateId == EnemyLifeStateIds.Dead then
 		return
 	end
-	record.humanoid.WalkSpeed = role.SpeedFloor
+	local eliteMovementMultiplier =
+		record.model:GetAttribute(EnemyPresentationContracts.AttributeNames.EliteMovementSpeedMultiplier)
+	if type(eliteMovementMultiplier) ~= "number" or eliteMovementMultiplier ~= eliteMovementMultiplier then
+		eliteMovementMultiplier = 1
+	end
+	record.humanoid.WalkSpeed = role.SpeedFloor * math.clamp(eliteMovementMultiplier, 1, 1.35)
 	local hitSequence = record.model:GetAttribute(HitSequenceAttribute)
 	if type(hitSequence) == "number" and hitSequence > record.lastHitSequence then
 		record.lastHitSequence = hitSequence

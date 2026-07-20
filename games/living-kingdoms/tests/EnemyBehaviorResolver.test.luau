@@ -327,6 +327,43 @@ local secondWindup = resolver.resolveBehavior(
 )
 assert(secondWindup.behaviorStateIdAfter == "WindingUp" and secondWindup.attackWindupActionId == "Begin")
 
+-- Frenzied cadence shortens both disclosed windup and cooldown without
+-- changing damage or bypassing the same authoritative commit decision.
+local frenziedCadence = 0.7
+local frenziedWindingFacts = enemyFacts({
+	behaviorStateId = "WindingUp",
+	targetOperativeEntityId = "operative:a",
+	attackWindupTargetOperativeEntityId = "operative:a",
+	attackWindupStartedServerTimestamp = 10,
+	attackCadenceMultiplier = frenziedCadence,
+})
+assert(
+	resolver.resolveBehavior(
+		frenziedWindingFacts,
+		{ operative("operative:a", 2, 0) },
+		10 + walker.AttackWindupSeconds * frenziedCadence - 0.01
+	).attackWindupActionId == "Continue"
+)
+local frenziedCommit = resolver.resolveBehavior(
+	frenziedWindingFacts,
+	{ operative("operative:a", 2, 0) },
+	10 + walker.AttackWindupSeconds * frenziedCadence
+)
+assert(frenziedCommit.attackWindupActionId == "Commit" and frenziedCommit.shouldAttack)
+assert(frenziedCommit.attack ~= nil and frenziedCommit.attack.damageAmount == walker.AttackDamage)
+assert(
+	resolver.resolveBehavior(
+		enemyFacts({ lastAttackServerTimestamp = 10, attackCadenceMultiplier = frenziedCadence }),
+		{ operative("operative:a", 2, 0) },
+		10 + walker.AttackCooldownSeconds * frenziedCadence
+	).attackWindupActionId == "Begin"
+)
+assert(
+	resolver.resolveBehavior(enemyFacts({ attackCadenceMultiplier = 0 }), { operative("operative:a", 2, 0) }, 10).rejectionReasonId
+		== "InvalidFacts",
+	"fabricated cadence outside the server ceiling must fail closed"
+)
+
 -- Just outside melee range pursues instead of attacking.
 assert(
 	resolver.resolveBehavior(enemyFacts(), { operative("operative:a", walker.AttackRangeStuds + 0.01, 0) }, 10).behaviorStateIdAfter

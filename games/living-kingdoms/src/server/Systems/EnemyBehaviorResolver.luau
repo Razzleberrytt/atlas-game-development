@@ -77,6 +77,7 @@ function EnemyBehaviorResolver.resolveSpawn(request: EnemySpawnRequest, facts: E
 		or not isKnownValue(EnemyContracts.EnemySpawnSourceIds :: any, request.spawnSourceId)
 		or not isNonemptyString(request.displayName)
 		or not isWorldPosition(request.position)
+		or (request.isHordePulse ~= nil and type(request.isHordePulse) ~= "boolean")
 		or type(facts) ~= "table"
 		or type(facts.existingEnemyEntityIds) ~= "table"
 		or not isFiniteNumber(facts.activeEnemyCount)
@@ -215,6 +216,19 @@ function EnemyBehaviorResolver.resolveBehavior(
 	end
 
 	local walker = EnemyConfig.Walker
+	local cadenceMultiplier = enemy.attackCadenceMultiplier
+	if cadenceMultiplier == nil then
+		cadenceMultiplier = 1
+	elseif not isFiniteNumber(cadenceMultiplier) or cadenceMultiplier < 0.4 or cadenceMultiplier > 1 then
+		return decision(
+			BehaviorStateIds.Roaming,
+			nil,
+			AttackWindupActionIds.None,
+			false,
+			nil,
+			BehaviorRejectionReasonIds.InvalidFacts
+		)
+	end
 	local detectionSquared = walker.DetectionRadiusStuds * walker.DetectionRadiusStuds
 	local dropSquared = walker.PursuitDropRadiusStuds * walker.PursuitDropRadiusStuds
 	local attackRangeSquared = walker.AttackRangeStuds * walker.AttackRangeStuds
@@ -268,7 +282,7 @@ function EnemyBehaviorResolver.resolveBehavior(
 	if hasWindup then
 		if windupTargetIsAlive and windupTargetDistanceSquared <= attackRangeSquared then
 			local startedAt = windupStartedAt :: number
-			local commitAt = startedAt + walker.AttackWindupSeconds
+			local commitAt = startedAt + walker.AttackWindupSeconds * cadenceMultiplier
 			if serverTimestamp < commitAt then
 				return decision(
 					BehaviorStateIds.WindingUp,
@@ -304,7 +318,8 @@ function EnemyBehaviorResolver.resolveBehavior(
 	end
 
 	local lastAttack = enemy.lastAttackServerTimestamp
-	local cooldownElapsed = lastAttack == nil or serverTimestamp >= lastAttack + walker.AttackCooldownSeconds
+	local cooldownElapsed = lastAttack == nil
+		or serverTimestamp >= lastAttack + walker.AttackCooldownSeconds * cadenceMultiplier
 	if not cooldownElapsed then
 		return decision(BehaviorStateIds.Attacking, targetId, AttackWindupActionIds.None, false, nil, nil)
 	end

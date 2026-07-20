@@ -256,6 +256,12 @@ The pool now satisfies the RPG-0103 12–16 target. Adrenal Response, Second Pul
 
 The twelve RPG-0103 upgrades still own only their configured per-stack contributions. `RunUpgradeResolver` validates server-owned stack facts, accumulates those contributions, and delegates all modifier arithmetic to the shared resolver. Existing attribute names, consumers, and player-facing tuning are unchanged. `RunModifierResolver.test` fixture-locks every ceiling and neutral default; `RunUpgradeResolver.test` exercises the live upgrade pipeline through the real shared resolver.
 
+### 7.6 Frenzied elite vertical slice (RPG-0105)
+
+`EliteAffixResolver` deterministically assigns Frenzied from server-owned spawn identity after the ten-second protected opening. Ordinary pressure uses a five-percent target and authored horde pulses use seven percent, with one affix per enemy and a hard three-living-elite cap. Retries reuse the entity ID and therefore cannot reroll assignment.
+
+Frenzied enemies move at 1.25× speed, use 0.7× windup and cooldown intervals, and trade down to 0.85× normal maximum health. The existing enemy director remains the only behavior, health, death, and cleanup authority. It replicates stable presentation-only elite attributes, prefixes the world label, and creates an orange/yellow always-visible highlight. Confirmed elite death adds 20 Field XP through the existing one-shot death transition; corpse rescans and cleanup cannot duplicate the award.
+
 ## 8. Elite enemy affixes
 
 Some otherwise normal enemies become elites. Assignment occurs when the server spawns the enemy; the client cannot request or influence elite creation.
@@ -557,11 +563,13 @@ Centralize bounded calculation for damage, cadence, reload duration, ammunition 
 
 **Exit:** Existing behavior remains compatible and every modifier ceiling is fixture-locked.
 
-### RPG-0105 — Add elite identity and one affix
+### RPG-0105 — Add elite identity and one affix — **Complete**
 
 Implement the elite framework with **Frenzied** as the first vertical slice, including server assignment, replicated safe identity, bounded behavior modification, readable presentation, elite XP reward, and cleanup coverage.
 
-**Exit:** Frenzied elites are unmistakable, consequential, and bounded.
+Delivered through the pure deterministic `EliteAffixResolver` and the existing enemy director/progression paths. Fixtures cover protected opening, assignment rates and replay stability, the simultaneous cap, boss exclusion, health/movement/cadence bounds, safe presentation identity, telegraph creation, one-shot XP wiring, death cleanup, and regression compatibility.
+
+**Exit:** Frenzied elites are unmistakable, consequential, and bounded. ✔
 
 ### RPG-0106 — Complete initial elite roster
 

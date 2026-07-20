@@ -39,6 +39,7 @@ export type EnemySpawnRequest = {
 	spawnSourceId: EnemySpawnSourceId,
 	displayName: string,
 	position: EnemyWorldPosition,
+	isHordePulse: boolean?,
 }
 
 -- Caller-supplied server-owned facts for one fair-spawn decision. Remote
@@ -73,6 +74,7 @@ export type EnemyBehaviorFacts = {
 	lastAttackServerTimestamp: number?,
 	attackWindupTargetOperativeEntityId: string?,
 	attackWindupStartedServerTimestamp: number?,
+	attackCadenceMultiplier: number?,
 }
 
 -- One authoritative melee swing derived entirely from server-owned facts.

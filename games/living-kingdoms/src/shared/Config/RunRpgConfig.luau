@@ -1,10 +1,10 @@
 --!strict
 
 --[[
-	RPG-0101 configuration for the proposed operation-bound RPG layer. This file
-	locks catalog identity, slot/reward/elite ceilings, and global modifier safety
-	bounds before runtime integration. Planned entries are declarations only and
-	do not grant power, assign elites, generate rewards, or persist between runs.
+	Canonical operation-bound RPG configuration through RPG-0105. This file
+	locks catalog identity, slot/reward/elite ceilings, global modifier safety
+	bounds, and the first live Frenzied tuning. Entries still marked Planned do
+	not grant power, generate rewards, or persist between runs.
 ]]
 
 local RunRpgContracts = require(script.Parent.Parent.RPG.RunRpgContracts)
@@ -70,7 +70,21 @@ local EliteAssignmentPlanning = table.freeze({
 	hordePulseProbabilityMinimum = 0.05,
 	hordePulseProbabilityMaximum = 0.09,
 	protectedOpeningSeconds = 10,
-	isRuntimeEnabled = false,
+	isRuntimeEnabled = true,
+	ordinaryPressureProbability = 0.05,
+	hordePulseProbability = 0.07,
+	deterministicRollResolution = 10000,
+})
+
+local FrenziedRuntime = table.freeze({
+	movementSpeedMultiplier = 1.25,
+	attackCadenceMultiplier = 0.7,
+	maximumHealthMultiplier = 0.85,
+	bonusFieldXp = 20,
+	highlightFillColor = table.freeze({ 255, 74, 24 }),
+	highlightOutlineColor = table.freeze({ 255, 214, 74 }),
+	highlightFillTransparency = 0.42,
+	highlightOutlineTransparency = 0,
 })
 
 local UpgradeCatalog = table.freeze({
@@ -195,7 +209,7 @@ local EliteAffixCatalog = table.freeze({
 		maximumPerEnemy = 1,
 		requiresTelegraph = true,
 		bossEligible = false,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		affixId = AffixIds.Regenerator,
@@ -392,10 +406,11 @@ local RewardSourceCatalog = table.freeze({
 })
 
 local Config = {
-	Version = "RPG-0101-v1-contracts-only",
+	Version = "RPG-0105-v1-frenzied-elite",
 	Limits = Limits,
 	ModifierCeilings = ModifierCeilings,
 	EliteAssignmentPlanning = EliteAssignmentPlanning,
+	FrenziedRuntime = FrenziedRuntime,
 	UpgradeCatalog = UpgradeCatalog,
 	EliteAffixCatalog = EliteAffixCatalog,
 	RelicCatalog = RelicCatalog,
@@ -519,7 +534,42 @@ assert(
 		and EliteAssignmentPlanning.protectedOpeningSeconds <= 20,
 	"elite assignment requires a bounded protected opening"
 )
-assert(not EliteAssignmentPlanning.isRuntimeEnabled, "RPG-0101 must not enable elite runtime behavior")
+assert(EliteAssignmentPlanning.isRuntimeEnabled, "RPG-0105 must enable server-owned elite assignment")
+assert(
+	EliteAssignmentPlanning.ordinaryPressureProbability >= EliteAssignmentPlanning.ordinaryPressureProbabilityMinimum
+		and EliteAssignmentPlanning.ordinaryPressureProbability
+			<= EliteAssignmentPlanning.ordinaryPressureProbabilityMaximum,
+	"ordinary elite runtime probability must remain inside its planning range"
+)
+assert(
+	EliteAssignmentPlanning.hordePulseProbability >= EliteAssignmentPlanning.hordePulseProbabilityMinimum
+		and EliteAssignmentPlanning.hordePulseProbability <= EliteAssignmentPlanning.hordePulseProbabilityMaximum,
+	"horde elite runtime probability must remain inside its planning range"
+)
+assert(
+	isNonnegativeInteger(EliteAssignmentPlanning.deterministicRollResolution)
+		and EliteAssignmentPlanning.deterministicRollResolution >= 1000
+		and EliteAssignmentPlanning.deterministicRollResolution <= 100000,
+	"elite assignment requires a bounded deterministic roll resolution"
+)
+assert(
+	FrenziedRuntime.movementSpeedMultiplier > 1
+		and FrenziedRuntime.movementSpeedMultiplier <= ModifierCeilings.maximumMovementSpeedMultiplier,
+	"Frenzied movement must be consequential and globally bounded"
+)
+assert(
+	FrenziedRuntime.attackCadenceMultiplier >= ModifierCeilings.minimumCadenceMultiplier
+		and FrenziedRuntime.attackCadenceMultiplier < 1,
+	"Frenzied cadence must preserve a readable attack interval"
+)
+assert(
+	FrenziedRuntime.maximumHealthMultiplier >= 0.5 and FrenziedRuntime.maximumHealthMultiplier < 1,
+	"Frenzied durability tradeoff must remain survivable and consequential"
+)
+assert(
+	isNonnegativeInteger(FrenziedRuntime.bonusFieldXp) and FrenziedRuntime.bonusFieldXp > 0,
+	"Frenzied deaths require a positive bounded Field XP bonus"
+)
 
 local function countVocabulary(values: { [string]: string }): number
 	local count = 0
@@ -547,6 +597,7 @@ assert(#UpgradeCatalog == countVocabulary(UpgradeIds), "every RPG upgrade ID req
 assert(implementedUpgradeCount == 12, "the implemented catalog must match the twelve-upgrade RPG-0103 live pool")
 
 local seenAffixIds = {}
+local implementedAffixCount = 0
 for _, definition in EliteAffixCatalog do
 	assert(not seenAffixIds[definition.affixId], "elite affix IDs must be unique")
 	seenAffixIds[definition.affixId] = true
@@ -555,10 +606,16 @@ for _, definition in EliteAffixCatalog do
 	assert(definition.maximumPerEnemy == 1, "v1 affixes cannot stack on one enemy")
 	assert(definition.requiresTelegraph, "every elite affix requires readable telegraphing")
 	assert(not definition.bossEligible, "v1 affixes cannot be assigned to bosses")
-	assert(definition.implementationStateId == ImplementationStateIds.Planned, "RPG-0101 affixes remain declarations")
+	if definition.implementationStateId == ImplementationStateIds.Implemented then
+		implementedAffixCount += 1
+		assert(definition.affixId == AffixIds.Frenzied, "RPG-0105 implements only Frenzied")
+	else
+		assert(definition.implementationStateId == ImplementationStateIds.Planned, "unknown affix implementation state")
+	end
 	assert(#definition.modifierCategoryIds >= 1, "every elite affix requires a declared modifier category")
 end
 assert(#EliteAffixCatalog == countVocabulary(AffixIds), "every elite affix ID requires exactly one catalog entry")
+assert(implementedAffixCount == 1, "RPG-0105 requires exactly one implemented elite affix")
 
 local seenRelicIds = {}
 for _, definition in RelicCatalog do
