@@ -89,22 +89,28 @@ assert(capped.cullDamageMultiplier <= config.MaximumDamageMultiplier)
 local defensive = resolver.deriveCombatModifiers({
 	["upgrade.trauma_plating"] = 2,
 	["upgrade.field_discipline"] = 2,
+	["upgrade.combat_loader"] = 2,
 })
 assert(close(defensive.incomingDamageMultiplier, 0.8), "trauma plating stacks should reduce incoming enemy damage")
 assert(close(defensive.xpGainMultiplier, 1.3), "field discipline stacks should raise Field XP gain")
+assert(close(defensive.reloadDurationMultiplier, 0.76), "combat loader stacks should shorten reload duration")
 
 local defensiveCapped = resolver.deriveCombatModifiers({
 	["upgrade.trauma_plating"] = 3,
 	["upgrade.field_discipline"] = 3,
+	["upgrade.combat_loader"] = 3,
 })
 assert(defensiveCapped.incomingDamageMultiplier >= 1 - config.MaximumIncomingDamageReduction)
 assert(close(defensiveCapped.incomingDamageMultiplier, 0.7), "trauma plating reduction must respect the configured floor")
 assert(defensiveCapped.xpGainMultiplier <= config.MaximumXpGainMultiplier)
 assert(close(defensiveCapped.xpGainMultiplier, 1.45), "field discipline must respect the configured economy ceiling")
+assert(defensiveCapped.reloadDurationMultiplier >= config.MinimumReloadDurationMultiplier)
+assert(close(defensiveCapped.reloadDurationMultiplier, 0.64), "combat loader must respect the configured reload floor")
 
 local invalid = resolver.deriveCombatModifiers({ ["upgrade.unknown"] = 1 })
 assert(invalid.damageMultiplier == 1 and invalid.cadenceMultiplier == 1)
 assert(invalid.ammoConservationChance == 0 and invalid.cullDamageMultiplier == 1)
 assert(invalid.incomingDamageMultiplier == 1 and invalid.xpGainMultiplier == 1)
+assert(invalid.reloadDurationMultiplier == 1)
 
 print("RunUpgradeResolver: deterministic offers, spoof rejection, stack caps, and combat modifiers passed")

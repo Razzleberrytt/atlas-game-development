@@ -108,8 +108,8 @@ for _, definition in config.UpgradeCatalog do
 	end
 end
 assertThat(
-	implementedUpgradeCount == 6,
-	"the six live run upgrades (four original plus Trauma Plating and Field Discipline) must be marked implemented"
+	implementedUpgradeCount == 7,
+	"the seven live run upgrades (four original plus Trauma Plating, Field Discipline, and Combat Loader) must be marked implemented"
 )
 
 for _, definition in config.EliteAffixCatalog do

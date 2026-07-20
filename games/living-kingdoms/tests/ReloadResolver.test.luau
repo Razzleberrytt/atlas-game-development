@@ -43,11 +43,20 @@ local config = {
 	}),
 }
 
+local progressionAttributes: { [string]: number } = {}
+local progressionNetwork = {
+	GetAttribute = function(_self: unknown, attributeName: string)
+		return progressionAttributes[attributeName]
+	end,
+}
 local replicatedStorage = {
 	Shared = {
 		Combat = { CombatContracts = CONTRACTS_TOKEN },
 		Config = { FirearmConfig = CONFIG_TOKEN },
 	},
+	FindFirstChild = function(_self: unknown, name: string)
+		return if name == "ProgressionNetwork" then progressionNetwork else nil
+	end,
 }
 
 local environment = {
@@ -162,6 +171,31 @@ assert(validBegin.weaponStateAfter.reloadState.startedAtServerTimestamp == 10, "
 assert(validBegin.weaponStateAfter.reloadState.completionServerTimestamp == 12, "wrong completion timestamp")
 assert(validBegin.weaponStateAfter.ammunition.loadedRounds == 6, "begin moved loaded ammo")
 assert(validBegin.weaponStateAfter.ammunition.reserveRounds == 24, "begin moved reserve ammo")
+
+-- Combat Loader: a squad reload-duration multiplier published on
+-- ProgressionNetwork shortens the completion deadline at begin() while the
+-- reload commitment floor and the pure completion check are preserved. Absent
+-- the attribute the duration is the unmodified two seconds (asserted above).
+progressionAttributes.RunReloadDurationMultiplier = 0.5
+local fasterBegin = resolver.begin(operative(), weaponState(), 10)
+assert(fasterBegin.didBegin == true, "reduced-duration reload should still begin")
+assert(
+	fasterBegin.weaponStateAfter.reloadState.completionServerTimestamp == 11,
+	"Combat Loader must shorten the reload deadline (2s * 0.5 = 1s)"
+)
+-- The floor clamp rejects an out-of-range multiplier rather than erasing reload.
+progressionAttributes.RunReloadDurationMultiplier = 0.1
+local flooredBegin = resolver.begin(operative(), weaponState(), 10)
+assert(
+	flooredBegin.weaponStateAfter.reloadState.completionServerTimestamp == 11,
+	"reload duration must not fall below the 0.5 floor (2s * 0.5 = 1s)"
+)
+progressionAttributes.RunReloadDurationMultiplier = nil
+local restoredBegin = resolver.begin(operative(), weaponState(), 10)
+assert(
+	restoredBegin.weaponStateAfter.reloadState.completionServerTimestamp == 12,
+	"absent Combat Loader state must restore the configured reload duration"
+)
 
 local fullOperative, fullWeapon = operative(), weaponState(12, 24)
 assertBeginRejected(

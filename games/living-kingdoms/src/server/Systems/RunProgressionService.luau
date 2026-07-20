@@ -161,6 +161,7 @@ local function syncCombatModifierAttributes()
 	progressionNetwork:SetAttribute("RunCullDamageMultiplier", modifiers.cullDamageMultiplier)
 	progressionNetwork:SetAttribute("RunCullHealthThreshold", modifiers.cullHealthThreshold)
 	progressionNetwork:SetAttribute("RunIncomingDamageMultiplier", modifiers.incomingDamageMultiplier)
+	progressionNetwork:SetAttribute("RunReloadDurationMultiplier", modifiers.reloadDurationMultiplier)
 end
 
 local function publishAll()
