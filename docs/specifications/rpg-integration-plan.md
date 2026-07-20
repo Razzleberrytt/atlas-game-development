@@ -240,10 +240,11 @@ Ahead of the full RPG-0102 run-build centralization, the live HROI run-progressi
 | Echo Chamber | Ammunition/Reload | Implemented | Matches (ammo conservation). |
 | Cull Protocol | Firepower | Implemented | Matches (wounded-enemy damage). |
 | Combat Loader | Ammunition/Reload | Implemented | Matches: reduced reload duration, consumed by `ReloadResolver` at reload begin, floored at the global `minimumReloadDurationMultiplier`. |
+| Pattern Amplifier | Firepower | Implemented | Matches: raises shotgun cleave / sniper pierce secondary damage in `DamageResolver`'s pattern path toward full primary damage (effective secondary multiplier capped at 1.0), bounded by the global `maximumPatternDamageMultiplier`. |
 | Trauma Plating | Survival | Implemented — **interim mechanic** | Plan: post-level *temporary armor* buffer. Interim: flat bounded squad incoming-damage reduction consumed at the enemy attack source. The temporary-armor form is deferred until a temporary-armor health buffer exists. |
 | Field Discipline | Cooperative | Implemented — **interim mechanic** | Plan: bonus Field XP from *cooperative actions* (revive/treatment/resupply/objective) under anti-farming rules. Interim: bounded Field XP bonus on confirmed kills, because cooperative-action XP sources are not yet built (they remain deferred in `run-field-xp.md`). |
 
-Remaining pool upgrades (Pattern Amplifier, Specialist Munitions, Expanded Feed, Scavenger Reach, Last Magazine, Adrenal Response, Second Pulse, Rescue Instinct, Shared Momentum, Covering Fire) stay `Planned` because they depend on systems not yet built (weapon-pattern/special-enemy damage plumbing, magazine/loot-radius modifiers, movement modifiers, squad-proximity facts, and cooperative-action events). When each lands it must flip its catalog entry to `Implemented` or `RunRpgReconciliation` fails.
+Remaining pool upgrades (Specialist Munitions, Expanded Feed, Scavenger Reach, Last Magazine, Adrenal Response, Second Pulse, Rescue Instinct, Shared Momentum, Covering Fire) stay `Planned` because they depend on systems not yet built (special/elite-enemy damage plumbing, magazine/loot-radius modifiers, movement modifiers, squad-proximity facts, and cooperative-action events). When each lands it must flip its catalog entry to `Implemented` or `RunRpgReconciliation` fails.
 
 ## 8. Elite enemy affixes
 

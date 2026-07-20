@@ -4,7 +4,7 @@
 
 Make every confirmed enemy death visibly advance the current operation and turn level thresholds into immediate combat decisions without introducing permanent progression, inventory scope, or client-authored rewards.
 
-This slice extends shared squad Field XP with a bounded three-choice run-upgrade loop and one narrow tactical bonus for confirmed Screamer interruptions. It remains deliberately smaller than a full roguelite system: no rarity, no inventory, no persistence, and no paid power. The v4 pool grew from four all-offensive picks to **seven upgrades across offensive, defensive, economy, and reload axes**, adopting the canonical RPG-0101 catalog identities (see [`rpg-integration-plan.md`](rpg-integration-plan.md) §7.4). It is the first implementation slice of the RPG track's Field Upgrade layer.
+This slice extends shared squad Field XP with a bounded three-choice run-upgrade loop and one narrow tactical bonus for confirmed Screamer interruptions. It remains deliberately smaller than a full roguelite system: no rarity, no inventory, no persistence, and no paid power. The v4 pool grew from four all-offensive picks to **eight upgrades across offensive, defensive, economy, reload, and pattern axes**, adopting the canonical RPG-0101 catalog identities (see [`rpg-integration-plan.md`](rpg-integration-plan.md) §7.4). It is the first implementation slice of the RPG track's Field Upgrade layer.
 
 ## Player-facing behavior
 
@@ -20,7 +20,7 @@ This slice extends shared squad Field XP with a bounded three-choice run-upgrade
 
 ## Upgrade pool (v4)
 
-Each offer contains three eligible entries selected deterministically from the seven-upgrade pool. Maxed upgrades leave the offer pool.
+Each offer contains three eligible entries selected deterministically from the eight-upgrade pool. Maxed upgrades leave the offer pool.
 
 | Upgrade | Per-stack effect | Maximum stacks | Axis |
 |---|---:|---:|---|
@@ -31,8 +31,9 @@ Each offer contains three eligible entries selected deterministically from the s
 | Trauma Plating | −10% incoming enemy damage (squad) | 3 | Survival |
 | Field Discipline | +15% Field XP from confirmed kills | 3 | Economy |
 | Combat Loader | −12% reload duration | 3 | Reload |
+| Pattern Amplifier | +15% cleave/pierce secondary damage, up to full primary | 3 | Firepower |
 
-Trauma Plating is a squad modifier consumed at the enemy attack source (`EnemyDirectorService` scales the melee `damageAmount` before the P3 commit boundary, mirroring how `DamageResolver` scales operative damage). Combat Loader is consumed by `ReloadResolver` at reload begin. Both fall back to no effect when progression state is absent.
+Trauma Plating is a squad modifier consumed at the enemy attack source (`EnemyDirectorService` scales the melee `damageAmount` before the P3 commit boundary, mirroring how `DamageResolver` scales operative damage). Combat Loader is consumed by `ReloadResolver` at reload begin. Pattern Amplifier is consumed in `DamageResolver`'s secondary-impact (`resolvePattern`) path. All fall back to no effect when progression state is absent.
 
 Hard combat ceilings remain independent of card text and are held within the shared RPG-0101 global `ModifierCeilings` (locked by `RunRpgReconciliation`):
 
@@ -43,6 +44,7 @@ Hard combat ceilings remain independent of card text and are held within the sha
 - incoming-damage mitigation may not exceed 30% (multiplier floor 0.7)
 - Field XP economy may not exceed 1.5× (the global `maximumFieldXpMultiplier`)
 - reload duration may not fall below 50% of configured duration
+- Pattern Amplifier raises secondary damage only up to full primary damage (effective secondary multiplier capped at 1.0; attribute bounded by the global `maximumPatternDamageMultiplier` of 2×)
 
 ### Interim mechanics
 
@@ -64,7 +66,7 @@ An ordinary death XP award is legal only when a tracked production enemy transit
 
 `ChooseUpgrade` accepts no client level, stack, magnitude, damage, cadence, chance, XP, or reward values. The server rejects extra arguments, throttles requests, verifies the ID is in the current offer, verifies its stack cap, accepts only the first legal selection, and publishes the resulting shared snapshot.
 
-Accepted stacks are reduced to bounded combat modifiers by the pure `RunUpgradeResolver`. `RunProgressionService` writes those values as server-owned attributes on `ProgressionNetwork` before automatic combat starts. The authoritative resolvers consume those trusted attributes and fail closed on out-of-range values: `AutomaticFireResolver` (cadence, ammo conservation), `DamageResolver` (damage, cull), `EnemyDirectorService` (incoming-damage mitigation, applied to the melee amount before the P3 commit), and `ReloadResolver` (reload duration, applied at reload begin). Field Discipline's Field XP bonus is applied inside `RunProgressionService` when awarding confirmed-kill XP.
+Accepted stacks are reduced to bounded combat modifiers by the pure `RunUpgradeResolver`. `RunProgressionService` writes those values as server-owned attributes on `ProgressionNetwork` before automatic combat starts. The authoritative resolvers consume those trusted attributes and fail closed on out-of-range values: `AutomaticFireResolver` (cadence, ammo conservation), `DamageResolver` (damage, cull), `EnemyDirectorService` (incoming-damage mitigation, applied to the melee amount before the P3 commit), `ReloadResolver` (reload duration, applied at reload begin), and `DamageResolver.resolvePattern` (Pattern Amplifier, raising secondary cleave/pierce damage toward full primary). Field Discipline's Field XP bonus is applied inside `RunProgressionService` when awarding confirmed-kill XP.
 
 There is no persistence or DataStore access.
 

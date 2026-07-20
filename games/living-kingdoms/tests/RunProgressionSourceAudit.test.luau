@@ -66,8 +66,8 @@ assert(contains(service, "syncCombatModifierAttributes()"), "accepted choices mu
 assert(contains(service, "table.clear(upgradeStacks)"), "run upgrades must reset with the operation session")
 assert(config.MaximumTrackedEnemyModels == 64, "the corpse-overlap tracking ceiling must stay bounded")
 assert(
-	config.UpgradeChoiceCount == 3 and #config.UpgradeDefinitions == 7,
-	"the v4 pool must offer three choices from seven bounded upgrades"
+	config.UpgradeChoiceCount == 3 and #config.UpgradeDefinitions == 8,
+	"the v4 pool must offer three choices from eight bounded upgrades"
 )
 
 local upgradeIdSet = {}
@@ -77,6 +77,7 @@ end
 assert(upgradeIdSet["upgrade.trauma_plating"], "the v4 pool must include the Trauma Plating defensive pick")
 assert(upgradeIdSet["upgrade.field_discipline"], "the v4 pool must include the Field Discipline economy pick")
 assert(upgradeIdSet["upgrade.combat_loader"], "the v4 pool must include the Combat Loader reload pick")
+assert(upgradeIdSet["upgrade.pattern_amplifier"], "the v4 pool must include the Pattern Amplifier pattern pick")
 
 assert(
 	contains(service, 'SetAttribute("RunIncomingDamageMultiplier"'),
@@ -85,6 +86,10 @@ assert(
 assert(
 	contains(service, 'SetAttribute("RunReloadDurationMultiplier"'),
 	"the server must publish trusted Combat Loader reload speed"
+)
+assert(
+	contains(service, 'SetAttribute("RunPatternDamageMultiplier"'),
+	"the server must publish trusted Pattern Amplifier secondary damage"
 )
 assert(contains(service, "xpGainMultiplier"), "confirmed-kill XP must consume the trusted Field Discipline economy")
 assert(
@@ -98,6 +103,10 @@ assert(
 assert(
 	contains(reloadResolver, "RunReloadDurationMultiplier"),
 	"reload timing must consume trusted Combat Loader state at reload begin"
+)
+assert(
+	contains(damageResolver, "RunPatternDamageMultiplier"),
+	"secondary pattern damage must consume trusted Pattern Amplifier state"
 )
 
 for _, prohibited in
@@ -120,6 +129,7 @@ assert(contains(upgradeResolver, "MaximumDamageMultiplier"), "damage upgrades mu
 assert(contains(upgradeResolver, "MaximumIncomingDamageReduction"), "Trauma Plating mitigation must remain bounded")
 assert(contains(upgradeResolver, "MaximumXpGainMultiplier"), "Field Discipline economy must remain bounded")
 assert(contains(upgradeResolver, "MinimumReloadDurationMultiplier"), "Combat Loader reload speed must remain bounded")
+assert(contains(upgradeResolver, "MaximumPatternDamageMultiplier"), "Pattern Amplifier secondary damage must remain bounded")
 
 assert(contains(controller, "readStateRemote:InvokeServer()"), "the HUD must recover its current safe snapshot")
 assert(contains(controller, "stateRemote.OnClientEvent:Connect"), "the HUD must render server-published progression")

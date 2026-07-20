@@ -98,7 +98,7 @@ local UpgradeCatalog = table.freeze({
 		upgradeId = UpgradeIds.PatternAmplifier,
 		familyId = UpgradeFamilyIds.Firepower,
 		displayName = "PATTERN AMPLIFIER",
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.SpecialistMunitions,
@@ -526,8 +526,8 @@ for _, definition in UpgradeCatalog do
 end
 assert(#UpgradeCatalog == countVocabulary(UpgradeIds), "every RPG upgrade ID requires exactly one catalog entry")
 assert(
-	implementedUpgradeCount == 7,
-	"the implemented catalog must match the seven live run upgrades (four original plus Trauma Plating, Field Discipline, and Combat Loader)"
+	implementedUpgradeCount == 8,
+	"the implemented catalog must match the eight live run upgrades (four original plus Trauma Plating, Field Discipline, Combat Loader, and Pattern Amplifier)"
 )
 
 local seenAffixIds = {}
