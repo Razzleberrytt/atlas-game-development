@@ -13,11 +13,18 @@
 
 	v4 grows the offer pool beyond the four all-offensive picks into two new
 	build axes so choices define a run instead of only stacking damage: one
-	bounded defensive mitigation (Iron Hide, a squad incoming-damage floor
+	bounded defensive mitigation (Trauma Plating, a squad incoming-damage floor
 	consumed at the enemy attack source) and one bounded economy pick (Field
-	Promotion, extra Field XP from confirmed kills). Field XP base values and the
-	four-kill first-upgrade pacing are unchanged; Field Promotion can never be
+	Discipline, extra Field XP from confirmed kills). Field XP base values and the
+	four-kill first-upgrade pacing are unchanged; Field Discipline can never be
 	held before the first upgrade, so it only accelerates later choices.
+
+	These two picks fill the Survival and CooperativeUtility slots the RPG-0101
+	catalog (RunRpgConfig/RunRpgContracts) already reserved, so their IDs and
+	display names are the canonical `upgrade.trauma_plating` /
+	`upgrade.field_discipline` rather than new off-catalog identities, and the
+	Field XP economy ceiling is held at the shared RPG-0101 global bound
+	(ModifierCeilings.maximumFieldXpMultiplier). RunRpgReconciliation locks this.
 ]]
 
 local UpgradeDefinitions = table.freeze({
@@ -50,18 +57,18 @@ local UpgradeDefinitions = table.freeze({
 		CullDamageMultiplierPerStack = 0.35,
 	}),
 	table.freeze({
-		Id = "upgrade.iron_hide",
-		Name = "IRON HIDE",
+		Id = "upgrade.trauma_plating",
+		Name = "TRAUMA PLATING",
 		Description = "-10% incoming enemy damage per stack",
 		MaximumStacks = 3,
 		IncomingDamageReductionPerStack = 0.1,
 	}),
 	table.freeze({
-		Id = "upgrade.field_promotion",
-		Name = "FIELD PROMOTION",
-		Description = "+20% Field XP from confirmed kills per stack",
+		Id = "upgrade.field_discipline",
+		Name = "FIELD DISCIPLINE",
+		Description = "+15% Field XP from confirmed kills per stack",
 		MaximumStacks = 3,
-		XpGainMultiplierPerStack = 0.2,
+		XpGainMultiplierPerStack = 0.15,
 	}),
 })
 
@@ -81,7 +88,7 @@ local RunProgressionConfig = {
 	CullHealthThreshold = 30,
 	MaximumDamageMultiplier = 3,
 	MaximumIncomingDamageReduction = 0.3,
-	MaximumXpGainMultiplier = 1.6,
+	MaximumXpGainMultiplier = 1.5,
 	UpgradeDefinitions = UpgradeDefinitions,
 }
 

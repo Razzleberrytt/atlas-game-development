@@ -134,7 +134,7 @@ local UpgradeCatalog = table.freeze({
 		upgradeId = UpgradeIds.TraumaPlating,
 		familyId = UpgradeFamilyIds.Survival,
 		displayName = "TRAUMA PLATING",
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.AdrenalResponse,
@@ -170,7 +170,7 @@ local UpgradeCatalog = table.freeze({
 		upgradeId = UpgradeIds.FieldDiscipline,
 		familyId = UpgradeFamilyIds.CooperativeUtility,
 		displayName = "FIELD DISCIPLINE",
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 })
 
@@ -525,7 +525,10 @@ for _, definition in UpgradeCatalog do
 	end
 end
 assert(#UpgradeCatalog == countVocabulary(UpgradeIds), "every RPG upgrade ID requires exactly one catalog entry")
-assert(implementedUpgradeCount == 4, "RPG-0101 must preserve exactly the four currently implemented upgrades")
+assert(
+	implementedUpgradeCount == 6,
+	"the implemented catalog must match the six live run upgrades (four original plus Trauma Plating and Field Discipline)"
+)
 
 local seenAffixIds = {}
 for _, definition in EliteAffixCatalog do
