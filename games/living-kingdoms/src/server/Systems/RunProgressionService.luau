@@ -160,6 +160,7 @@ local function syncCombatModifierAttributes()
 	progressionNetwork:SetAttribute("RunAmmoConservationChance", modifiers.ammoConservationChance)
 	progressionNetwork:SetAttribute("RunCullDamageMultiplier", modifiers.cullDamageMultiplier)
 	progressionNetwork:SetAttribute("RunCullHealthThreshold", modifiers.cullHealthThreshold)
+	progressionNetwork:SetAttribute("RunIncomingDamageMultiplier", modifiers.incomingDamageMultiplier)
 end
 
 local function publishAll()
@@ -205,7 +206,10 @@ local function applyFieldXpAward(amount: number, countAsKill: boolean): boolean
 end
 
 local function awardConfirmedEnemyDeath()
-	applyFieldXpAward(RunProgressionConfig.FieldXpPerConfirmedEnemyDeath, true)
+	local xpGainMultiplier = RunUpgradeResolver.deriveCombatModifiers(upgradeStacks).xpGainMultiplier
+	local base = RunProgressionConfig.FieldXpPerConfirmedEnemyDeath
+	local boosted = math.max(base, math.floor(base * xpGainMultiplier + 0.5))
+	applyFieldXpAward(boosted, true)
 end
 
 local function isTrackedEnemy(model: Model): boolean

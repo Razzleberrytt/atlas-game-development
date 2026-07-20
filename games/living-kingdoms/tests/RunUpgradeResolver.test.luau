@@ -86,8 +86,25 @@ assert(capped.cadenceMultiplier >= config.MinimumCadenceMultiplier)
 assert(capped.ammoConservationChance <= config.MaximumAmmoConservationChance)
 assert(capped.cullDamageMultiplier <= config.MaximumDamageMultiplier)
 
+local defensive = resolver.deriveCombatModifiers({
+	["upgrade.iron_hide"] = 2,
+	["upgrade.field_promotion"] = 2,
+})
+assert(close(defensive.incomingDamageMultiplier, 0.8), "iron hide stacks should reduce incoming enemy damage")
+assert(close(defensive.xpGainMultiplier, 1.4), "field promotion stacks should raise Field XP gain")
+
+local defensiveCapped = resolver.deriveCombatModifiers({
+	["upgrade.iron_hide"] = 3,
+	["upgrade.field_promotion"] = 3,
+})
+assert(defensiveCapped.incomingDamageMultiplier >= 1 - config.MaximumIncomingDamageReduction)
+assert(close(defensiveCapped.incomingDamageMultiplier, 0.7), "iron hide reduction must respect the configured floor")
+assert(defensiveCapped.xpGainMultiplier <= config.MaximumXpGainMultiplier)
+assert(close(defensiveCapped.xpGainMultiplier, 1.6), "field promotion must respect the configured economy ceiling")
+
 local invalid = resolver.deriveCombatModifiers({ ["upgrade.unknown"] = 1 })
 assert(invalid.damageMultiplier == 1 and invalid.cadenceMultiplier == 1)
 assert(invalid.ammoConservationChance == 0 and invalid.cullDamageMultiplier == 1)
+assert(invalid.incomingDamageMultiplier == 1 and invalid.xpGainMultiplier == 1)
 
 print("RunUpgradeResolver: deterministic offers, spoof rejection, stack caps, and combat modifiers passed")
