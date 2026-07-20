@@ -229,9 +229,9 @@ The server must:
 
 V1 does not implement a large skill tree. A small number of mutually exclusive branches may be added later, but branch restrictions must be configuration-driven and visible before selection.
 
-### 7.4 Implementation status (HROI run-progression v4 slice)
+### 7.4 Implementation status (RPG-0103 twelve-upgrade slice)
 
-The centralized RPG-0102 run-build owner now holds the live HROI Field Upgrade stacks consumed by `RunProgressionService` / `RunUpgradeResolver` / `RunProgressionConfig`. The pool implements the first eight upgrades under the canonical RPG-0101 catalog IDs. `RunRpgReconciliation.test` enforces that every live upgrade is a catalog entry marked `Implemented` with a matching display name, and that every live modifier ceiling sits within the shared RPG-0101 `ModifierCeilings`.
+The centralized RPG-0102 run-build owner holds the live Field Upgrade stacks consumed by `RunProgressionService` / `RunUpgradeResolver` / `RunProgressionConfig`. RPG-0103 implements twelve upgrades under canonical RPG-0101 catalog IDs. Deterministic offer generation removes maxed and weapon-incompatible cards, prefers a broadly useful card, and prevents a three-card mono-family offer whenever a diverse legal pool remains. `RunRpgReconciliation.test` locks catalog identity and shared global ceilings.
 
 | Upgrade | Family | Status | Shipped mechanic vs plan |
 |---|---|---|---|
@@ -241,10 +241,14 @@ The centralized RPG-0102 run-build owner now holds the live HROI Field Upgrade s
 | Cull Protocol | Firepower | Implemented | Matches (wounded-enemy damage). |
 | Combat Loader | Ammunition/Reload | Implemented | Matches: reduced reload duration, consumed by `ReloadResolver` at reload begin, floored at the global `minimumReloadDurationMultiplier`. |
 | Pattern Amplifier | Firepower | Implemented | Matches: raises shotgun cleave / sniper pierce secondary damage in `DamageResolver`'s pattern path toward full primary damage (effective secondary multiplier capped at 1.0), bounded by the global `maximumPatternDamageMultiplier`. |
+| Specialist Munitions | Firepower | Implemented | Matches for existing Screamer, Bloater, and Brute server-owned role facts; RPG-0105 elite identity will extend the same context to elites. |
+| Expanded Feed | Ammunition/Reload | Implemented | Matches: raises each firearm's configured magazine capacity while moving only the newly created slot count from reserve, so no ammunition is minted. |
+| Scavenger Reach | Ammunition/Reload | Implemented | Matches: adds a bounded radius bonus to the existing automatic server-owned enemy-loot collection pass. |
+| Last Magazine | Ammunition/Reload | Implemented | Matches: raises damage only when authoritative reserve rounds are at or below the floored 20% carry-cap threshold. |
 | Trauma Plating | Survival | Implemented — **interim mechanic** | Plan: post-level *temporary armor* buffer. Interim: flat bounded squad incoming-damage reduction consumed at the enemy attack source. The temporary-armor form is deferred until a temporary-armor health buffer exists. |
 | Field Discipline | Cooperative | Implemented — **interim mechanic** | Plan: bonus Field XP from *cooperative actions* (revive/treatment/resupply/objective) under anti-farming rules. Interim: bounded Field XP bonus on confirmed kills, because cooperative-action XP sources are not yet built (they remain deferred in `run-field-xp.md`). |
 
-Remaining pool upgrades (Specialist Munitions, Expanded Feed, Scavenger Reach, Last Magazine, Adrenal Response, Second Pulse, Rescue Instinct, Shared Momentum, Covering Fire) stay `Planned` because they depend on systems not yet built (special/elite-enemy damage plumbing, magazine/loot-radius modifiers, movement modifiers, squad-proximity facts, and cooperative-action events). When each lands it must flip its catalog entry to `Implemented` or `RunRpgReconciliation` fails.
+The pool now satisfies the RPG-0103 12–16 target. Adrenal Response, Second Pulse, Rescue Instinct, Shared Momentum, and Covering Fire remain `Planned` because movement modifiers, horde-phase survival events, squad-proximity facts, and cooperative threat/action events are not yet available. When any lands it must flip its catalog entry to `Implemented` or `RunRpgReconciliation` fails.
 
 ## 8. Elite enemy affixes
 
@@ -533,11 +537,13 @@ Delivered as the pure `RunBuildStateStore` behind the server-only `RunBuildServi
 
 **Exit:** Reset, disconnect/reconnect, replay, stale-generation, duplication, population-bound, copied-snapshot, and teardown fixtures pass. ✔
 
-### RPG-0103 — Expand Field Upgrade pool
+### RPG-0103 — Expand Field Upgrade pool — **Complete**
 
 Add the first 12–16 upgrade definitions and compatibility filtering. Do not add elites or relics yet.
 
-**Exit:** Level-up offers create distinct but bounded early builds without invalid choices.
+Delivered as the twelve-upgrade v5 pool. Four new functional cards add special-role damage, ammunition-conserving magazine growth, automatic loot reach, and low-reserve damage. Server-owned squad weapon facts filter Pattern Amplifier from incompatible rosters; deterministic fixtures lock max-stack removal, broad-choice preference, and family diversity. No elite identity, elite assignment, relic, reward, persistence, or client authority was added.
+
+**Exit:** Level-up offers create distinct but bounded early builds without invalid choices. ✔
 
 ### RPG-0104 — Add modifier resolver framework
 

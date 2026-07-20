@@ -53,19 +53,24 @@ local reasons = CombatContracts.ReloadRejectionReasonIds
 -- into completionServerTimestamp at begin() time so completion stays a pure
 -- deadline check. Absent progression state (including fixtures) falls back to 1.
 local RELOAD_DURATION_FLOOR = 0.5
-local function readReloadDurationMultiplier(): number
+local function readProgressionNumber(attributeName: string, fallback: number): number
 	local storageAsAny = ReplicatedStorage :: any
 	if type(storageAsAny.FindFirstChild) ~= "function" then
-		return 1
+		return fallback
 	end
 	local network = storageAsAny:FindFirstChild("ProgressionNetwork")
 	if network == nil or type(network.GetAttribute) ~= "function" then
-		return 1
+		return fallback
 	end
-	local value = network:GetAttribute("RunReloadDurationMultiplier")
+	local value = network:GetAttribute(attributeName)
 	if type(value) ~= "number" or value ~= value then
-		return 1
+		return fallback
 	end
+	return value
+end
+
+local function readReloadDurationMultiplier(): number
+	local value = readProgressionNumber("RunReloadDurationMultiplier", 1)
 	return math.clamp(value, RELOAD_DURATION_FLOOR, 1)
 end
 
@@ -118,11 +123,19 @@ end
 
 local function configuredWeapon(weaponState: WeaponReadinessState): FirearmConfig.FirearmDefinition?
 	local definition = resolveWeaponDefinition(weaponState.weaponId)
+	local magazineMultiplier = readProgressionNumber("RunMagazineCapacityMultiplier", 1)
+	local expectedMagazineCapacity = if definition ~= nil
+			and magazineMultiplier >= 1
+			and magazineMultiplier <= 1.75
+		then math.max(definition.MagazineCapacity, math.floor(definition.MagazineCapacity * magazineMultiplier + 0.5))
+		else nil
 	if
 		definition == nil
+		or expectedMagazineCapacity == nil
 		or weaponState.ammunition.weaponId ~= weaponState.weaponId
 		or weaponState.cadence.weaponId ~= weaponState.weaponId
-		or weaponState.ammunition.magazineCapacity ~= definition.MagazineCapacity
+		or weaponState.ammunition.magazineCapacity < definition.MagazineCapacity
+		or weaponState.ammunition.magazineCapacity > expectedMagazineCapacity
 	then
 		return nil
 	end

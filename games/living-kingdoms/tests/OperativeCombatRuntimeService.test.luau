@@ -31,7 +31,15 @@ local WORLD_TOKEN = {}
 local ENEMY_CONFIG_TOKEN = {}
 local COMBAT_CONTRACTS_TOKEN = {}
 local FIREARM_CONFIG_TOKEN = {}
+local HORDE_CONFIG_TOKEN = {}
 local VALIDATOR_TOKEN = {}
+
+local hordeConfig =
+	loadSimple("games/living-kingdoms/src/shared/Config/HordeExperienceConfig.luau", "HordeExperienceConfig")
+local magazineResolver = loadSimple(
+	"games/living-kingdoms/src/server/Systems/RunMagazineCapacityResolver.luau",
+	"RunMagazineCapacityResolver"
+)
 
 local enemyConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/EnemyConfig.luau"), {
 	debugName = "EnemyConfig",
@@ -109,6 +117,7 @@ sharedReplicatedStorage = {
 		Combat = { CombatContracts = COMBAT_CONTRACTS_TOKEN, EnemyContracts = ENEMY_CONTRACTS_TOKEN },
 		Config = {
 			FirearmConfig = FIREARM_CONFIG_TOKEN,
+			HordeExperienceConfig = HORDE_CONFIG_TOKEN,
 			EnemyConfig = ENEMY_CONFIG_TOKEN,
 			WorldFoundationConfig = WORLD_TOKEN,
 		},
@@ -237,7 +246,12 @@ local function addEnemy(entityId: string, x: number, z: number, overrides: { [st
 		position = roblox.Vector3.new(x, 3, z),
 		isAlive = true,
 		targetOperativeEntityId = nil,
-		model = { name = entityId },
+		model = {
+			name = entityId,
+			GetAttribute = function()
+				return nil
+			end,
+		},
 		revision = 1,
 		currentHealth = enemyConfig.Walker.MaximumHealth,
 		processedShotIds = {},
@@ -345,6 +359,9 @@ local replicatedStorageMock = setmetatable({
 		assert(name == "CombatNetwork")
 		return combatNetwork
 	end,
+	FindFirstChild = function()
+		return nil
+	end,
 }, { __index = sharedReplicatedStorage })
 
 local FIRE_TOKEN = {}
@@ -355,6 +372,7 @@ local LIFE_TOKEN = {}
 local RELOAD_TOKEN = {}
 local SELECTOR_TOKEN = {}
 local PATTERN_TOKEN = {}
+local MAGAZINE_TOKEN = {}
 
 local scheduled = {}
 local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau"), {
@@ -382,6 +400,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				ReloadResolver = RELOAD_TOKEN,
 				WeaponTargetSelector = SELECTOR_TOKEN,
 				WeaponPatternResolver = PATTERN_TOKEN,
+				RunMagazineCapacityResolver = MAGAZINE_TOKEN,
 			},
 		},
 		require = function(token)
@@ -391,6 +410,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return enemyConfig
 			elseif token == FIREARM_CONFIG_TOKEN then
 				return firearmConfig
+			elseif token == HORDE_CONFIG_TOKEN then
+				return hordeConfig
 			elseif token == FIRE_TOKEN then
 				return fireResolver
 			elseif token == DAMAGE_TOKEN then
@@ -411,6 +432,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 						return table.freeze({})
 					end,
 				})
+			elseif token == MAGAZINE_TOKEN then
+				return magazineResolver
 			end
 			error("unexpected OperativeCombatRuntimeService dependency")
 		end,

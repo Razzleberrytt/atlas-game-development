@@ -25,6 +25,7 @@ local Workspace = game:GetService("Workspace")
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
+local HordeExperienceConfig = require(ReplicatedStorage.Shared.Config.HordeExperienceConfig)
 
 local function resolveWeaponDefinition(weaponId: unknown)
 	local getter = FirearmConfig.get
@@ -40,6 +41,7 @@ local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 local FirearmHitResolver = require(script.Parent.FirearmHitResolver)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local ReloadResolver = require(script.Parent.ReloadResolver)
+local RunMagazineCapacityResolver = require(script.Parent.RunMagazineCapacityResolver)
 local WeaponTargetSelector = require(script.Parent.WeaponTargetSelector)
 local WeaponPatternResolver = require(script.Parent.WeaponPatternResolver)
 local weaponLoadoutModule = script.Parent.WeaponLoadoutService
@@ -119,18 +121,33 @@ local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
 local reloadIntentRemote = combatNetwork:WaitForChild("ReloadIntent") :: RemoteEvent
 local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: RemoteEvent
 
+local function readProgressionNumber(attributeName: string, fallback: number): number
+	local network = ReplicatedStorage:FindFirstChild("ProgressionNetwork")
+	if network == nil then
+		return fallback
+	end
+	local value = network:GetAttribute(attributeName)
+	return if type(value) == "number" and value == value then value else fallback
+end
+
 local function createWeaponState(weaponId: string?): WeaponReadinessState
 	local definition = resolveWeaponDefinition(weaponId) or FirearmConfig.BasicFirearm
 	weaponId = definition.WeaponId
-	return {
-		weaponId = weaponId,
-		readinessStateId = CombatContracts.WeaponReadinessStateIds.Ready,
-		ammunition = {
+	local ammunition = RunMagazineCapacityResolver.resolve(
+		{
 			weaponId = weaponId,
 			loadedRounds = definition.PrototypeInitialLoadedRounds,
 			reserveRounds = definition.PrototypeInitialReserveRounds,
 			magazineCapacity = definition.MagazineCapacity,
 		},
+		definition.MagazineCapacity,
+		definition.MaximumReserveRounds,
+		readProgressionNumber("RunMagazineCapacityMultiplier", 1)
+	).ammunitionAfter
+	return {
+		weaponId = weaponId,
+		readinessStateId = CombatContracts.WeaponReadinessStateIds.Ready,
+		ammunition = ammunition,
 		cadence = {
 			weaponId = weaponId,
 			lastFireServerTimestamp = nil,
@@ -138,6 +155,25 @@ local function createWeaponState(weaponId: string?): WeaponReadinessState
 		},
 		reloadState = nil,
 	}
+end
+
+local function reconcileMagazineCapacity(player: Player, playerState: PlayerCombatState)
+	local ammunition = playerState.weaponState.ammunition
+	local definition = resolveWeaponDefinition(ammunition.weaponId)
+	if definition == nil then
+		return
+	end
+	local resolution = RunMagazineCapacityResolver.resolve(
+		ammunition,
+		definition.MagazineCapacity,
+		definition.MaximumReserveRounds,
+		readProgressionNumber("RunMagazineCapacityMultiplier", 1)
+	)
+	if not resolution.didApply or resolution.ammunitionAfter.magazineCapacity == ammunition.magazineCapacity then
+		return
+	end
+	playerState.weaponState.ammunition = resolution.ammunitionAfter
+	OperativeCombatRuntimeService.publishAmmunitionState(player)
 end
 
 local function deriveOperativeEntityId(player: Player): string
@@ -436,6 +472,25 @@ local function buildPatternTargetFacts(playerState: PlayerCombatState): { Weapon
 	return facts
 end
 
+local function runDamageContext(
+	playerState: PlayerCombatState,
+	fact: EnemyDirectorService.EnemyCombatFact
+): DamageResolver.RunDamageContext?
+	local ammunition = playerState.weaponState.ammunition
+	local definition = resolveWeaponDefinition(ammunition.weaponId)
+	if definition == nil then
+		return nil
+	end
+	local roleId = fact.model:GetAttribute("HordeRoleId")
+	local roles = HordeExperienceConfig.Roles
+	local isSpecialEnemy = roleId == roles.Screamer.Id or roleId == roles.Bloater.Id or roleId == roles.Brute.Id
+	return {
+		reserveRounds = ammunition.reserveRounds,
+		maximumReserveRounds = definition.MaximumReserveRounds,
+		isSpecialEnemy = isSpecialEnemy,
+	}
+end
+
 local function commitPatternImpacts(
 	player: Player,
 	playerState: PlayerCombatState,
@@ -476,8 +531,13 @@ local function commitPatternImpacts(
 			didHit = true,
 			rejectionReasonId = nil,
 		}
-		local damageResolution =
-			DamageResolver.resolvePattern(hitResolution, healthRead.healthState, nowTimestamp, impact.damageMultiplier)
+		local damageResolution = DamageResolver.resolvePattern(
+			hitResolution,
+			healthRead.healthState,
+			nowTimestamp,
+			impact.damageMultiplier,
+			runDamageContext(playerState, sightedEntry.fact)
+		)
 		local didCommit = EnemyDirectorService.commitHealthState(
 			impact.targetEntityId,
 			healthRead.revision,
@@ -531,7 +591,13 @@ local function resolveAcceptedShot(
 			then CombatContracts.ShotObstructionResultIds.TargetHit
 			else CombatContracts.ShotObstructionResultIds.Blocked,
 	}, targetContext)
-	local damageResolution = DamageResolver.resolve(hitResolution, healthRead.healthState, nowTimestamp)
+	local damageResolution = DamageResolver.resolve(
+		hitResolution,
+		healthRead.healthState,
+		nowTimestamp,
+		nil,
+		runDamageContext(playerState, fact)
+	)
 	local didCommitPrimary = EnemyDirectorService.commitHealthState(
 		targetEntityId,
 		healthRead.revision,
@@ -587,6 +653,7 @@ local function evaluatePlayer(
 	enemyFacts: { EnemyDirectorService.EnemyCombatFact }
 )
 	applyLockedLoadout(player, playerState)
+	reconcileMagazineCapacity(player, playerState)
 	if not OperativeLifeService.isCombatAllowed(player) then
 		discloseTarget(player, playerState, nil, nowTimestamp)
 		local restricted = OperativeLifeService.applyCombatRestrictions(player, playerState)

@@ -284,9 +284,22 @@ local function sortedPlayers(): { Player }
 	return players
 end
 
+local function pickupRadiusStuds(): number
+	local network = ReplicatedStorage:FindFirstChild("ProgressionNetwork")
+	if network == nil then
+		return EnemyLootConfig.PickupRadiusStuds
+	end
+	local bonus = network:GetAttribute("RunLootPickupRadiusBonusStuds")
+	if type(bonus) ~= "number" or bonus ~= bonus or bonus < 0 or bonus > 4.5 then
+		return EnemyLootConfig.PickupRadiusStuds
+	end
+	return math.min(10, EnemyLootConfig.PickupRadiusStuds + bonus)
+end
+
 local function nearestEligibleCollector(record: DropRecord): Player?
 	local nearest: Player? = nil
 	local nearestDistance = math.huge
+	local pickupRadius = pickupRadiusStuds()
 	for _, player in sortedPlayers() do
 		if not OperativeLifeService.isCombatAllowed(player) then
 			continue
@@ -299,7 +312,7 @@ local function nearestEligibleCollector(record: DropRecord): Player?
 		local distance = horizontalDistance(position, record.basePosition)
 		if
 			verticalDistance <= EnemyLootConfig.MaximumVerticalPickupDistanceStuds
-			and distance <= EnemyLootConfig.PickupRadiusStuds
+			and distance <= pickupRadius
 			and distance < nearestDistance
 		then
 			nearest = player

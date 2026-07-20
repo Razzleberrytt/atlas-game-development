@@ -107,10 +107,7 @@ for _, definition in config.UpgradeCatalog do
 		implementedUpgradeCount += 1
 	end
 end
-assertThat(
-	implementedUpgradeCount == 8,
-	"the eight live run upgrades (four original plus Trauma Plating, Field Discipline, Combat Loader, and Pattern Amplifier) must be marked implemented"
-)
+assertThat(implementedUpgradeCount == 12, "the twelve live RPG-0103 upgrades must be marked implemented")
 
 for _, definition in config.EliteAffixCatalog do
 	assertThat(definition.maximumPerEnemy == 1, "elite definitions must preserve one-affix v1")

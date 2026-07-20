@@ -19,6 +19,9 @@ local attributes = {
 	RunCullDamageMultiplier = 1,
 	RunCullHealthThreshold = 30,
 	RunPatternDamageMultiplier = 1,
+	RunSpecialEnemyDamageMultiplier = 1,
+	RunLastMagazineDamageMultiplier = 1,
+	RunLastMagazineReserveFraction = 0.2,
 }
 
 local progressionNetwork = {
@@ -218,4 +221,35 @@ local cappedPattern = damageResolver.resolvePattern(hit("shot.pattern.capped"), 
 assert(cappedPattern.damageEvent.damageAmount == 20, "amplified secondary never exceeds primary damage")
 attributes.RunPatternDamageMultiplier = 1
 
-print("RunUpgradeCombatModifiers: cadence, deterministic ammo conservation, overpressure, cull, and hard caps passed")
+local standardContext = { reserveRounds = 24, maximumReserveRounds = 48, isSpecialEnemy = false }
+local specialContext = { reserveRounds = 24, maximumReserveRounds = 48, isSpecialEnemy = true }
+attributes.RunSpecialEnemyDamageMultiplier = 1.6
+local ordinarySpecialist =
+	damageResolver.resolve(hit("shot.specialist.ordinary"), health(100), 18, nil, standardContext)
+assert(ordinarySpecialist.damageEvent.damageAmount == 20, "ordinary enemies must not consume Specialist Munitions")
+local specialSpecialist = damageResolver.resolve(hit("shot.specialist.special"), health(100), 19, nil, specialContext)
+assert(specialSpecialist.damageEvent.damageAmount == 32, "special enemies must consume Specialist Munitions")
+attributes.RunSpecialEnemyDamageMultiplier = 1
+
+attributes.RunLastMagazineDamageMultiplier = 1.45
+local stocked = damageResolver.resolve(hit("shot.last-mag.stocked"), health(100), 20, nil, standardContext)
+assert(stocked.damageEvent.damageAmount == 20, "stocked reserve must not activate Last Magazine")
+local lowReserve = damageResolver.resolve(
+	hit("shot.last-mag.low"),
+	health(100),
+	21,
+	nil,
+	{ reserveRounds = 9, maximumReserveRounds = 48, isSpecialEnemy = false }
+)
+assert(lowReserve.damageEvent.damageAmount == 29, "critical reserve must activate Last Magazine")
+local boundaryReserve = damageResolver.resolve(
+	hit("shot.last-mag.boundary"),
+	health(100),
+	22,
+	nil,
+	{ reserveRounds = 10, maximumReserveRounds = 48, isSpecialEnemy = false }
+)
+assert(boundaryReserve.damageEvent.damageAmount == 20, "reserve above the floored 20% boundary must not activate")
+attributes.RunLastMagazineDamageMultiplier = 1
+
+print("RunUpgradeCombatModifiers: cadence, scarcity, special, pattern, cull, and hard caps passed")

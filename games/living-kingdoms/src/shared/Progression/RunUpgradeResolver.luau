@@ -14,6 +14,11 @@ export type CombatModifiers = {
 	xpGainMultiplier: number,
 	reloadDurationMultiplier: number,
 	patternDamageMultiplier: number,
+	specialEnemyDamageMultiplier: number,
+	magazineCapacityMultiplier: number,
+	lootPickupRadiusBonusStuds: number,
+	lastMagazineDamageMultiplier: number,
+	lastMagazineReserveFraction: number,
 }
 
 export type ChoiceResolution = {
@@ -55,7 +60,8 @@ end
 function RunUpgradeResolver.generateChoices(
 	stacks: UpgradeStacks,
 	offerSequence: number,
-	squadKills: number
+	squadKills: number,
+	squadWeaponIds: { string }?
 ): { string }
 	if
 		not validateStacks(stacks)
@@ -71,9 +77,32 @@ function RunUpgradeResolver.generateChoices(
 		return table.freeze({})
 	end
 
+	local weaponIdSet: { [string]: boolean }? = nil
+	if squadWeaponIds ~= nil then
+		if type(squadWeaponIds) ~= "table" then
+			return table.freeze({})
+		end
+		weaponIdSet = {}
+		for _, weaponId in squadWeaponIds do
+			if type(weaponId) ~= "string" or weaponId == "" then
+				return table.freeze({})
+			end
+			weaponIdSet[weaponId] = true
+		end
+	end
+
 	local eligible = {}
 	for _, definition in RunProgressionConfig.UpgradeDefinitions do
-		if (stacks[definition.Id] or 0) < definition.MaximumStacks then
+		local isCompatible = definition.CompatibleWeaponIds == nil or weaponIdSet == nil
+		if definition.CompatibleWeaponIds ~= nil and weaponIdSet ~= nil then
+			for _, weaponId in definition.CompatibleWeaponIds do
+				if weaponIdSet[weaponId] then
+					isCompatible = true
+					break
+				end
+			end
+		end
+		if isCompatible and (stacks[definition.Id] or 0) < definition.MaximumStacks then
 			table.insert(eligible, definition.Id)
 		end
 	end
@@ -84,9 +113,48 @@ function RunUpgradeResolver.generateChoices(
 	local count = math.min(RunProgressionConfig.UpgradeChoiceCount, #eligible)
 	local offset = ((offerSequence * 5 + squadKills * 3) % #eligible) + 1
 	local choices = {}
-	for index = 0, count - 1 do
-		local eligibleIndex = ((offset + index - 1) % #eligible) + 1
-		table.insert(choices, eligible[eligibleIndex])
+	local chosenIds: { [string]: boolean } = {}
+	local firstFamilyId: string? = nil
+
+	local function chooseMatching(predicate: (any) -> boolean): boolean
+		for step = 0, #eligible - 1 do
+			local eligibleIndex = ((offset + step - 1) % #eligible) + 1
+			local upgradeId = eligible[eligibleIndex]
+			local definition = definitionsById[upgradeId]
+			if not chosenIds[upgradeId] and predicate(definition) then
+				chosenIds[upgradeId] = true
+				table.insert(choices, upgradeId)
+				if firstFamilyId == nil then
+					firstFamilyId = definition.FamilyId
+				end
+				return true
+			end
+		end
+		return false
+	end
+
+	-- Prefer a universally useful first card, then a second family before
+	-- filling the remaining deterministic slot. This prevents narrow mono-family
+	-- offers whenever a diverse legal choice exists.
+	chooseMatching(function(definition)
+		return definition.IsBroadlyUseful
+	end)
+	if #choices == 0 then
+		chooseMatching(function(_definition)
+			return true
+		end)
+	end
+	if #choices < count then
+		chooseMatching(function(definition)
+			return definition.FamilyId ~= firstFamilyId
+		end)
+	end
+	while #choices < count do
+		if not chooseMatching(function(_definition)
+			return true
+		end) then
+			break
+		end
 	end
 	return table.freeze(choices)
 end
@@ -159,6 +227,11 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 			xpGainMultiplier = 1,
 			reloadDurationMultiplier = 1,
 			patternDamageMultiplier = 1,
+			specialEnemyDamageMultiplier = 1,
+			magazineCapacityMultiplier = 1,
+			lootPickupRadiusBonusStuds = 0,
+			lastMagazineDamageMultiplier = 1,
+			lastMagazineReserveFraction = RunProgressionConfig.LastMagazineReserveFraction,
 		})
 	end
 
@@ -170,6 +243,10 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 	local xpGainBonus = 0
 	local reloadDurationReduction = 0
 	local patternDamageBonus = 0
+	local specialEnemyDamageBonus = 0
+	local magazineCapacityBonus = 0
+	local lootPickupRadiusBonusStuds = 0
+	local lastMagazineDamageBonus = 0
 	for _, definition in RunProgressionConfig.UpgradeDefinitions do
 		local stackCount = stacks[definition.Id] or 0
 		if definition.DamageMultiplierPerStack ~= nil then
@@ -196,6 +273,18 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 		if definition.PatternDamageMultiplierPerStack ~= nil then
 			patternDamageBonus += stackCount * definition.PatternDamageMultiplierPerStack
 		end
+		if definition.SpecialEnemyDamageMultiplierPerStack ~= nil then
+			specialEnemyDamageBonus += stackCount * definition.SpecialEnemyDamageMultiplierPerStack
+		end
+		if definition.MagazineCapacityMultiplierPerStack ~= nil then
+			magazineCapacityBonus += stackCount * definition.MagazineCapacityMultiplierPerStack
+		end
+		if definition.LootPickupRadiusBonusStudsPerStack ~= nil then
+			lootPickupRadiusBonusStuds += stackCount * definition.LootPickupRadiusBonusStudsPerStack
+		end
+		if definition.LastMagazineDamageMultiplierPerStack ~= nil then
+			lastMagazineDamageBonus += stackCount * definition.LastMagazineDamageMultiplierPerStack
+		end
 	end
 
 	local boundedReduction = math.clamp(incomingDamageReduction, 0, RunProgressionConfig.MaximumIncomingDamageReduction)
@@ -220,6 +309,27 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 			1,
 			RunProgressionConfig.MaximumPatternDamageMultiplier
 		),
+		specialEnemyDamageMultiplier = math.clamp(
+			1 + specialEnemyDamageBonus,
+			1,
+			RunProgressionConfig.MaximumSpecialEnemyDamageMultiplier
+		),
+		magazineCapacityMultiplier = math.clamp(
+			1 + magazineCapacityBonus,
+			1,
+			RunProgressionConfig.MaximumMagazineCapacityMultiplier
+		),
+		lootPickupRadiusBonusStuds = math.clamp(
+			lootPickupRadiusBonusStuds,
+			0,
+			RunProgressionConfig.MaximumLootPickupRadiusBonusStuds
+		),
+		lastMagazineDamageMultiplier = math.clamp(
+			1 + lastMagazineDamageBonus,
+			1,
+			RunProgressionConfig.MaximumLastMagazineDamageMultiplier
+		),
+		lastMagazineReserveFraction = RunProgressionConfig.LastMagazineReserveFraction,
 	})
 end
 
