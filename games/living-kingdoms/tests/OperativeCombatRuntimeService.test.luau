@@ -168,8 +168,10 @@ end
 -- Enemy director mock with the production read/commit surface.
 local enemies = {}
 local commitCalls = {}
+local enemyFactReadCount = 0
 local enemyDirector = {
 	readEnemyCombatFacts = function()
+		enemyFactReadCount += 1
 		local facts = {}
 		for _, enemy in enemies do
 			if enemy.isAlive then
@@ -280,6 +282,7 @@ local lifeService = {
 local now = 0
 local raycastCalls = {}
 local raycastResultsByEntityId = {}
+local raycastParamsCreated = 0
 local workspaceMock = {
 	GetServerTimeNow = function()
 		return now
@@ -418,6 +421,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 		},
 		RaycastParams = {
 			new = function()
+				raycastParamsCreated += 1
 				return {}
 			end,
 		},
@@ -472,6 +476,8 @@ local function reset(players: { any })
 	table.clear(scheduled)
 	table.clear(combatAllowedByPlayer)
 	table.clear(currentPlayers)
+	enemyFactReadCount = 0
+	raycastParamsCreated = 0
 	for _, player in players do
 		table.insert(currentPlayers, player)
 		combatAllowedByPlayer[player] = true
@@ -483,8 +489,22 @@ end
 local visibilityRadius = enemyConfig.Combat.GameplayVisibilityRadiusStuds
 local raycastBudget = enemyConfig.Combat.MaximumLineOfSightRaycastsPerEvaluation
 
--- Acquisition, disclosure, fire, damage, cadence.
+-- One evaluation snapshots director facts once for the whole squad and reuses
+-- each operative's raycast parameters on later passes.
 local operativeA = makePlayer(1, 0, 0)
+local operativeB = makePlayer(2, 4, 0)
+reset({ operativeA, operativeB })
+addEnemy("enemy.shared-snapshot", 30, 0, { currentHealth = 100000 })
+now = 1
+service.evaluateAt(now)
+assert(enemyFactReadCount == 1, "one squad evaluation must read enemy facts exactly once")
+assert(raycastParamsCreated == 4, "each operative must lazily allocate one primary and one pierce parameter")
+now += firearmConfig.BasicFirearm.CadenceSeconds
+service.evaluateAt(now)
+assert(enemyFactReadCount == 2, "each later evaluation must take one fresh shared enemy snapshot")
+assert(raycastParamsCreated == 4, "later evaluations must reuse the per-operative raycast parameters")
+
+-- Acquisition, disclosure, fire, damage, cadence.
 reset({ operativeA })
 addEnemy("enemy.close", 30, 0)
 now = 1
