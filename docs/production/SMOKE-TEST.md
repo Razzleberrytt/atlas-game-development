@@ -394,7 +394,7 @@ The Studio harness was also adjusted from 200 to 1000 fixture health and from an
 - This was a two-client, single-machine Studio loopback test; it does not measure internet latency, packet loss, adverse frame rate, mobile/console input, or production load.
 - Stationary fixtures are not enemy AI, hostile discovery, pathfinding, production spawning, waves, or a permanent enemy architecture.
 - Harness visibility, line of sight, threat, and obstruction are controlled server-owned facts. No production visibility provider or raycast filter is claimed.
-- Harness health and processed ShotIds are server-owned only for the Studio session. P3 production health ownership and long-lived deduplication remain unimplemented.
+- At the time of this LK-0207 run, harness health and processed ShotIds were server-owned only for the Studio session; P3 production health ownership and operative-lifetime deduplication had not yet been implemented. The later LK-0305 through LK-0308 sections below supersede that limitation.
 - Same-server client rejoin could not be driven after the closed Studio client window; cleanup was directly observed and repeated clean sessions proved fresh join state. The harness’s `PlayerAdded` and `PlayerRemoving` paths remain deterministic source/fixture boundaries.
 - Existing Roblox Studio platform messages remain environment noise; no new Living Kingdoms-originated warning/error appeared.
 
@@ -410,7 +410,7 @@ At the time of this LK-0207 record, P2 was complete and P3 had not started.
 - A server-only death transition followed by `Player:LoadCharacter()` left Player1 `Dead`, health `0`, revision `4`; the character instance changed, its authoritative restriction remained `WalkSpeed 0`, Humanoid health remained a non-authoritative positive shell, and `Players.CharacterAutoLoads` remained `false`.
 - A client command attempted to set Humanoid health and WalkSpeed. The server still read `Dead`, health `0`, revision `4`, and `WalkSpeed 0`. No life-state RemoteEvent or client transition surface existed.
 
-The live pass found and fixed two integration defects before the final run: Studio command-bar requires use a separate module cache, so the development controls now use Studio-only `BindableFunction` instances in `ServerStorage`; and zero-loaded readiness now returns to the existing P2 `Ready` convention after revival so reload is eligible without refilling ammunition. LK-0306 remains unstarted.
+The live pass found and fixed two integration defects before the final run: Studio command-bar requires use a separate module cache, so the development controls now use Studio-only `BindableFunction` instances in `ServerStorage`; and zero-loaded readiness now returns to the existing P2 `Ready` convention after revival so reload is eligible without refilling ammunition. At the time of this LK-0305 run, LK-0306 remained unstarted; the later sections record its completion and the final LK-0308 integration gate.
 
 ## LK-0307 squad-failure validation
 

@@ -150,7 +150,7 @@ Define server-owned health and damage, incapacitated state, teammate revival, un
 
 ### P3 exit criteria
 
-One or two controlled operatives use a server-owned `Alive`/`Incapacitated`/`Dead` model; ordinary lethal damage creates a readable rescue window, an exposed teammate can complete a validated revival, the limited solo exception is deterministic, unrecoverable death cannot be bypassed by respawn or rejoin, and server-owned squad-failure truth is verified without introducing P4 or later operation systems.
+Complete. One or two controlled operatives use a server-owned `Alive`/`Incapacitated`/`Dead` model; ordinary lethal damage creates a readable rescue window, an exposed teammate can complete a server-validated four-second revival, the limited solo exception is deterministic, unrecoverable death cannot be bypassed by character replacement, and server-owned squad-failure truth is verified without introducing P4 or later operation systems. The LK-0308 two-client and solo Studio evidence is recorded in `docs/production/SMOKE-TEST.md`; all 18 P1–P3 fixtures plus StyLua, Selene, Rojo sourcemap, Rojo build, and `git diff --check` form the automated exit gate.
 
 ## P4 — Darkness, limited vision, and squad-location tools
 
