@@ -188,6 +188,19 @@ attributes.RunCullDamageMultiplier = 1.35
 local cull = damageResolver.resolve(hit("shot.cull"), health(25), 12)
 assert(cull.damageEvent.damageAmount == 27 and cull.becameDead, "Cull Protocol should finish wounded enemies")
 
+-- Regression: legitimate stacked damage (1.8x) and cull (2.05x) combine past the
+-- 3x ceiling. The product must clamp to the cap and still apply, not reject and
+-- deal zero damage to a wounded enemy.
+attributes.RunDamageMultiplier = 1.8
+attributes.RunCullDamageMultiplier = 2.05
+local stackedCull = damageResolver.resolve(hit("shot.stacked-cull"), health(25), 17)
+assert(
+	stackedCull.didApplyDamage and stackedCull.damageEvent.damageAmount == 60,
+	"maxed damage x cull must clamp to the 3x ceiling, not reject the shot"
+)
+attributes.RunDamageMultiplier = 1
+attributes.RunCullDamageMultiplier = 1
+
 attributes.RunDamageMultiplier = 4
 local invalidDamage = damageResolver.resolve(hit("shot.invalid"), health(45), 13)
 assert(not invalidDamage.didApplyDamage and invalidDamage.rejectionReasonId == "WeaponInvalid")
