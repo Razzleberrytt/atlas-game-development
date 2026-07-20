@@ -482,8 +482,12 @@ local function runDamageContext(
 		return nil
 	end
 	local roleId = fact.model:GetAttribute("HordeRoleId")
+	local eliteAffixId = fact.model:GetAttribute("EnemyEliteAffixId")
 	local roles = HordeExperienceConfig.Roles
-	local isSpecialEnemy = roleId == roles.Screamer.Id or roleId == roles.Bloater.Id or roleId == roles.Brute.Id
+	local isSpecialEnemy = eliteAffixId ~= nil
+		or roleId == roles.Screamer.Id
+		or roleId == roles.Bloater.Id
+		or roleId == roles.Brute.Id
 	return {
 		reserveRounds = ammunition.reserveRounds,
 		maximumReserveRounds = definition.MaximumReserveRounds,

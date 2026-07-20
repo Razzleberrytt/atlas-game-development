@@ -28,11 +28,27 @@ local worldConfig =
 	loadSimple("games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "WorldFoundationConfig")
 
 local CONTRACTS_TOKEN = {}
+local RPG_CONTRACTS_TOKEN = {}
 local WORLD_TOKEN = {}
 local CONFIG_TOKEN = {}
+local RPG_CONFIG_TOKEN = {}
 local PRESENTATION_TOKEN = {}
 local RESOLVER_TOKEN = {}
+local ELITE_RESOLVER_TOKEN = {}
 local LIFE_TOKEN = {}
+
+local rpgContracts = loadSimple("games/living-kingdoms/src/shared/RPG/RunRpgContracts.luau", "RunRpgContracts")
+local rpgConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RunRpgConfig.luau"), {
+	debugName = "RunRpgConfig",
+	environment = {
+		script = { Parent = { Parent = { RPG = { RunRpgContracts = RPG_CONTRACTS_TOKEN } } } },
+		require = function(token: unknown)
+			assert(token == RPG_CONTRACTS_TOKEN, "unexpected RunRpgConfig dependency")
+			return rpgContracts
+		end,
+	},
+	injectGlobals = true,
+})()
 
 local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/EnemyConfig.luau"), {
 	debugName = "EnemyConfig",
@@ -65,7 +81,12 @@ local progressionNetwork = {
 local sharedReplicatedStorage = {
 	Shared = {
 		Combat = { EnemyContracts = CONTRACTS_TOKEN },
-		Config = { EnemyConfig = CONFIG_TOKEN, WorldFoundationConfig = WORLD_TOKEN },
+		Config = {
+			EnemyConfig = CONFIG_TOKEN,
+			RunRpgConfig = RPG_CONFIG_TOKEN,
+			WorldFoundationConfig = WORLD_TOKEN,
+		},
+		RPG = { RunRpgContracts = RPG_CONTRACTS_TOKEN },
 		Visual = { EnemyPresentationContracts = PRESENTATION_TOKEN },
 	},
 	FindFirstChild = function(_self: unknown, name: string)
@@ -90,6 +111,29 @@ local resolver = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems
 				return config
 			end
 			error("unexpected resolver dependency")
+		end,
+	},
+	injectGlobals = true,
+})()
+
+local eliteResolver = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/EliteAffixResolver.luau"), {
+	debugName = "EliteAffixResolver",
+	environment = {
+		game = {
+			GetService = function(_self: unknown, serviceName: string)
+				assert(serviceName == "ReplicatedStorage", "unexpected service request")
+				return sharedReplicatedStorage
+			end,
+		},
+		require = function(token: unknown)
+			if token == CONTRACTS_TOKEN then
+				return contracts
+			elseif token == RPG_CONFIG_TOKEN then
+				return rpgConfig
+			elseif token == RPG_CONTRACTS_TOKEN then
+				return rpgContracts
+			end
+			error("unexpected EliteAffixResolver dependency")
 		end,
 	},
 	injectGlobals = true,
@@ -273,20 +317,27 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 		script = {
 			Parent = {
 				EnemyBehaviorResolver = RESOLVER_TOKEN,
+				EliteAffixResolver = ELITE_RESOLVER_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 			},
 		},
 		require = function(token)
 			if token == CONFIG_TOKEN then
 				return config
+			elseif token == RPG_CONFIG_TOKEN then
+				return rpgConfig
 			elseif token == CONTRACTS_TOKEN then
 				return contracts
+			elseif token == RPG_CONTRACTS_TOKEN then
+				return rpgContracts
 			elseif token == PRESENTATION_TOKEN then
 				return presentationContracts
 			elseif token == WORLD_TOKEN then
 				return worldConfig
 			elseif token == RESOLVER_TOKEN then
 				return resolver
+			elseif token == ELITE_RESOLVER_TOKEN then
+				return eliteResolver
 			elseif token == LIFE_TOKEN then
 				return lifeService
 			end
@@ -367,7 +418,64 @@ assert(walkerModel:GetAttribute(presentationAttributes.AttackServerTimestamp) ==
 assert(walkerModel:GetAttribute(presentationAttributes.HitSequence) == 0)
 assert(walkerModel:GetAttribute(presentationAttributes.HitServerTimestamp) == 0)
 
+-- RPG-0105 assignment remains off during the protected opening, then applies
+-- one deterministic Frenzied identity with bounded health and replicated safe
+-- presentation facts. Death immediately releases the simultaneous-elite slot.
+reset()
+service.beginOperationPressure()
+now = rpgConfig.EliteAssignmentPlanning.protectedOpeningSeconds - 0.01
+assert(service.spawnEnemy(request("enemy.protected", 0, 0)).didSpawn)
+local protectedModel = findCreated("Test Walker")
+assert(protectedModel ~= nil and protectedModel:GetAttribute(presentationAttributes.EliteAffixId) == nil)
+
+local eliteEntityId = nil
+for index = 1, 1000 do
+	local candidate = "enemy.director-elite:" .. tostring(index)
+	local assignment = eliteResolver.resolveAssignment({
+		entityId = candidate,
+		spawnSourceId = contracts.EnemySpawnSourceIds.AuthoredWave,
+		operationElapsedSeconds = rpgConfig.EliteAssignmentPlanning.protectedOpeningSeconds,
+		activeEliteCount = 0,
+		isBoss = false,
+		isHordePulse = false,
+	})
+	if assignment.affixId ~= nil then
+		eliteEntityId = candidate
+		break
+	end
+end
+assert(eliteEntityId ~= nil, "fixture range must contain one deterministic elite")
+now = rpgConfig.EliteAssignmentPlanning.protectedOpeningSeconds
+assert(service.spawnEnemy(request(eliteEntityId :: string, 20, 0)).didSpawn)
+local eliteModel = findCreated("Test Walker")
+assert(eliteModel ~= nil and eliteModel:GetAttribute("CombatEntityId") == eliteEntityId)
+assert(
+	eliteModel:GetAttribute(presentationAttributes.EliteAffixId) == rpgContracts.EliteAffixIds.Frenzied,
+	"server must replicate only the safe Frenzied identity"
+)
+assert(eliteModel:GetAttribute(presentationAttributes.EliteDisplayName) == "FRENZIED")
+assert(
+	eliteModel:GetAttribute(presentationAttributes.EliteMovementSpeedMultiplier)
+		== rpgConfig.FrenziedRuntime.movementSpeedMultiplier
+)
+assert(
+	eliteModel:GetAttribute(presentationAttributes.EliteAttackCadenceMultiplier)
+		== rpgConfig.FrenziedRuntime.attackCadenceMultiplier
+)
+assert(eliteModel:GetAttribute(presentationAttributes.EliteBonusFieldXp) == rpgConfig.FrenziedRuntime.bonusFieldXp)
+assert(findCreated("EliteTelegraph") ~= nil, "Frenzied requires an unmistakable highlight")
+local eliteHealth = service.readHealthState(eliteEntityId :: string)
+local expectedEliteHealth = math.floor(walker.MaximumHealth * rpgConfig.FrenziedRuntime.maximumHealthMultiplier + 0.5)
+assert(eliteHealth ~= nil and eliteHealth.healthState.currentHealth == expectedEliteHealth)
+assert(service.commitHealthState(eliteEntityId :: string, eliteHealth.revision, {
+	entityId = eliteEntityId,
+	currentHealth = 0,
+	processedShotIds = { ["shot:elite"] = true },
+}, now + 1))
+
 -- Unfair authored spawn defers, then lands once the operative moves away.
+reset()
+assert(service.spawnEnemy(request("enemy.a", 0, 0)).didSpawn)
 local victim, victimRoot = addOperative("operative.player:1", 100, 0)
 local unfair = service.spawnEnemy(request("enemy.deferred", 100 + minimumSpawn - 1, 0))
 assert(not unfair.didSpawn and unfair.wasDeferred and unfair.rejectionReasonId == "TooCloseToOperative")
@@ -684,19 +792,13 @@ local function fillToCap(): number
 	return spawned
 end
 addOperative("operative.player:1", 300, 300)
-assert(
-	fillToCap() == config.Population.MaximumConcurrentPerOperative,
-	"one-operative cap must follow configuration"
-)
+assert(fillToCap() == config.Population.MaximumConcurrentPerOperative, "one-operative cap must follow configuration")
 reset()
 addOperative("operative.player:1", 300, 300)
 addOperative("operative.player:2", 300, -300)
 assert(
 	fillToCap()
-		== math.min(
-			config.Population.AbsoluteMaximumConcurrent,
-			config.Population.MaximumConcurrentPerOperative * 2
-		),
+		== math.min(config.Population.AbsoluteMaximumConcurrent, config.Population.MaximumConcurrentPerOperative * 2),
 	"two-operative cap must follow configuration"
 )
 reset()

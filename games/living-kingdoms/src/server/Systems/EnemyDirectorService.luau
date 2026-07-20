@@ -20,10 +20,13 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
+local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
 local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)
+local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 local WorldFoundationConfig = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)
 local EnemyBehaviorResolver = require(script.Parent.EnemyBehaviorResolver)
+local EliteAffixResolver = require(script.Parent.EliteAffixResolver)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 
 type AuthoritativeEnemyAttack = EnemyContracts.AuthoritativeEnemyAttack
@@ -125,6 +128,10 @@ type EnemyEntry = {
 	roamAnchor: EnemyWorldPosition,
 	nextRoamRetargetServerTimestamp: number,
 	cleanupAtServerTimestamp: number?,
+	eliteAffixId: string?,
+	movementSpeedMultiplier: number,
+	attackCadenceMultiplier: number,
+	bonusFieldXp: number,
 }
 
 type PendingSpawn = {
@@ -151,6 +158,8 @@ local recoveryWindowEndServerTimestamp: number? = nil
 -- Deterministic counter behind roam identity, wander headings, and spawn-ring
 -- placement; no randomness enters enemy behavior.
 local sequenceCounter = 0
+local operationPressureStartedServerTimestamp: number? = nil
+local activeEliteCount = 0
 
 local function now(): number
 	return Workspace:GetServerTimeNow()
@@ -166,8 +175,9 @@ local function copyStringSet(source: { [string]: boolean }): { [string]: boolean
 end
 
 local function setHealthPresentation(entry: EnemyEntry)
+	local eliteLine = if entry.eliteAffixId == RunRpgContracts.EliteAffixIds.Frenzied then "FRENZIED • " else ""
 	entry.healthLabel.Text =
-		string.format("%s\nHealth: %d", entry.model.Name, math.max(0, entry.healthState.currentHealth))
+		string.format("%s%s\nHealth: %d", eliteLine, entry.model.Name, math.max(0, entry.healthState.currentHealth))
 	entry.root.Color = if entry.isAlive then Color3.fromRGB(126, 46, 46) else Color3.fromRGB(74, 74, 74)
 end
 
@@ -205,7 +215,7 @@ local function beginAttackWindup(entry: EnemyEntry, targetOperativeEntityId: str
 	entry.model:SetAttribute(PresentationAttributeNames.WindupStartedServerTimestamp, serverTimestamp)
 	entry.model:SetAttribute(
 		PresentationAttributeNames.WindupCommitServerTimestamp,
-		serverTimestamp + EnemyConfig.Walker.AttackWindupSeconds
+		serverTimestamp + EnemyConfig.Walker.AttackWindupSeconds * entry.attackCadenceMultiplier
 	)
 	entry.model:SetAttribute(PresentationAttributeNames.WindupSequence, entry.attackAttemptSequence)
 end
@@ -318,6 +328,19 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 	local folder = enemyFolder
 	assert(folder ~= nil, "enemy spawns require the started director folder")
 	local model, root, humanoid, label = createEnemyBody(request)
+	local pressureStartedAt = operationPressureStartedServerTimestamp
+	local assignment = EliteAffixResolver.resolveAssignment({
+		entityId = request.entityId,
+		spawnSourceId = request.spawnSourceId,
+		operationElapsedSeconds = if pressureStartedAt == nil
+			then 0
+			else math.max(0, serverTimestamp - pressureStartedAt),
+		activeEliteCount = activeEliteCount,
+		isBoss = false,
+		isHordePulse = request.isHordePulse == true,
+	})
+	local maximumHealth =
+		math.max(1, math.floor(EnemyConfig.Walker.MaximumHealth * assignment.maximumHealthMultiplier + 0.5))
 	local entry: EnemyEntry = {
 		entityId = request.entityId,
 		spawnSourceId = request.spawnSourceId,
@@ -337,14 +360,38 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 		healthRevision = 1,
 		healthState = {
 			entityId = request.entityId,
-			currentHealth = EnemyConfig.Walker.MaximumHealth,
+			currentHealth = maximumHealth,
 			processedShotIds = {},
 		},
 		isAlive = true,
 		roamAnchor = { x = request.position.x, y = request.position.y, z = request.position.z },
 		nextRoamRetargetServerTimestamp = serverTimestamp,
 		cleanupAtServerTimestamp = nil,
+		eliteAffixId = assignment.affixId,
+		movementSpeedMultiplier = assignment.movementSpeedMultiplier,
+		attackCadenceMultiplier = assignment.attackCadenceMultiplier,
+		bonusFieldXp = assignment.bonusFieldXp,
 	}
+	model:SetAttribute(PresentationAttributeNames.EliteAffixId, assignment.affixId)
+	model:SetAttribute(
+		PresentationAttributeNames.EliteDisplayName,
+		if assignment.affixId == nil then nil else "FRENZIED"
+	)
+	model:SetAttribute(PresentationAttributeNames.EliteMovementSpeedMultiplier, assignment.movementSpeedMultiplier)
+	model:SetAttribute(PresentationAttributeNames.EliteAttackCadenceMultiplier, assignment.attackCadenceMultiplier)
+	model:SetAttribute(PresentationAttributeNames.EliteBonusFieldXp, assignment.bonusFieldXp)
+	if assignment.affixId ~= nil then
+		activeEliteCount += 1
+		local telegraph = Instance.new("Highlight")
+		local runtime = RunRpgConfig.FrenziedRuntime
+		telegraph.Name = "EliteTelegraph"
+		telegraph.FillColor = Color3.fromRGB(table.unpack(runtime.highlightFillColor))
+		telegraph.OutlineColor = Color3.fromRGB(table.unpack(runtime.highlightOutlineColor))
+		telegraph.FillTransparency = runtime.highlightFillTransparency
+		telegraph.OutlineTransparency = runtime.highlightOutlineTransparency
+		telegraph.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+		telegraph.Parent = model
+	end
 	entries[request.entityId] = entry
 	activeEnemyCount += 1
 	setHealthPresentation(entry)
@@ -410,6 +457,7 @@ function EnemyDirectorService.spawnAuthoredWave(
 			spawnSourceId = SpawnSourceIds.AuthoredWave,
 			displayName = definition.name,
 			position = { x = definition.x, y = definition.y, z = definition.z },
+			isHordePulse = true,
 		})
 		if result.didSpawn or result.wasDeferred then
 			accepted += 1
@@ -425,6 +473,7 @@ function EnemyDirectorService.beginOperationPressure()
 	isPressureActive = true
 	isStoodDown = false
 	escalationLevel = 0
+	operationPressureStartedServerTimestamp = now()
 	local cadence = EnemyConfig.Pressure.RoamingByEscalationLevel[escalationLevel]
 	nextRoamingSpawnServerTimestamp = now() + cadence.IntervalSeconds
 	for _, entry in entries do
@@ -500,6 +549,9 @@ local function applyDeath(entry: EnemyEntry, serverTimestamp: number)
 	entry.root.Anchored = true
 	entry.cleanupAtServerTimestamp = serverTimestamp + EnemyConfig.Cleanup.CorpseCleanupSeconds
 	activeEnemyCount = math.max(0, activeEnemyCount - 1)
+	if entry.eliteAffixId ~= nil then
+		activeEliteCount = math.max(0, activeEliteCount - 1)
+	end
 	setHealthPresentation(entry)
 end
 
@@ -666,6 +718,7 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 		lastAttackServerTimestamp = entry.lastAttackServerTimestamp,
 		attackWindupTargetOperativeEntityId = entry.attackWindupTargetOperativeEntityId,
 		attackWindupStartedServerTimestamp = entry.attackWindupStartedServerTimestamp,
+		attackCadenceMultiplier = entry.attackCadenceMultiplier,
 	}, operativeFacts, serverTimestamp)
 	if decision.rejectionReasonId ~= nil then
 		return 0
@@ -691,7 +744,7 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 
 	if decision.behaviorStateIdAfter == BehaviorStateIds.Pursuing then
 		local targetId = decision.targetOperativeEntityId
-		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond
+		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond * entry.movementSpeedMultiplier
 		for _, fact in operativeFacts do
 			if fact.operativeEntityId == targetId then
 				entry.humanoid:MoveTo(Vector3.new(fact.position.x, fact.position.y, fact.position.z))
@@ -701,7 +754,7 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 		return 0
 	end
 	if decision.behaviorStateIdAfter == BehaviorStateIds.Roaming then
-		entry.humanoid.WalkSpeed = EnemyConfig.Walker.RoamSpeedStudsPerSecond
+		entry.humanoid.WalkSpeed = EnemyConfig.Walker.RoamSpeedStudsPerSecond * entry.movementSpeedMultiplier
 		if serverTimestamp >= entry.nextRoamRetargetServerTimestamp then
 			entry.nextRoamRetargetServerTimestamp = serverTimestamp + EnemyConfig.Walker.RoamRetargetIntervalSeconds
 			local angle = nextSequence() * 2.399963
@@ -747,7 +800,7 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 	end
 
 	if decision.behaviorStateIdAfter == BehaviorStateIds.Attacking then
-		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond
+		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond * entry.movementSpeedMultiplier
 	end
 	return 0
 end
@@ -821,6 +874,8 @@ function EnemyDirectorService.stop()
 		heartbeatConnection = nil
 	end
 	table.clear(entries)
+	activeEliteCount = 0
+	operationPressureStartedServerTimestamp = nil
 	table.clear(pendingSpawns)
 	activeEnemyCount = 0
 	isPressureActive = false

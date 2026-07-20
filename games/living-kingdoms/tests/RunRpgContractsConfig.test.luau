@@ -68,10 +68,7 @@ local contractsMutationSucceeded = pcall(function()
 end)
 assertThat(not contractsMutationSucceeded, "RPG contract vocabularies must be frozen")
 
-assertThat(
-	config.Version == "RPG-0101-v1-contracts-only",
-	"RPG config version must identify the declaration-only slice"
-)
+assertThat(config.Version == "RPG-0105-v1-frenzied-elite", "RPG config version must identify the Frenzied elite slice")
 assertThat(config.Limits.maximumEquippedRelicsPerOperative == 3, "the initial build must have three relic slots")
 assertThat(config.Limits.relicChoiceCountPerReward == 2, "relic rewards must present two choices")
 assertThat(config.Limits.maximumQueuedRelicRewardsPerOperative == 3, "pending reward queues must be bounded")
@@ -94,7 +91,16 @@ assertThat(config.ModifierCeilings.maximumGeneralProcChance == 0.35, "general pr
 assertThat(config.ModifierCeilings.maximumIncomingDamageReduction == 0.3, "damage reduction must be bounded")
 assertThat(config.ModifierCeilings.maximumLootPickupRadiusBonusStuds == 4.5, "pickup radius must be bounded")
 assertThat(config.ModifierCeilings.maximumConditionalDamageMultiplier == 1.5, "conditional damage must be bounded")
-assertThat(not config.EliteAssignmentPlanning.isRuntimeEnabled, "RPG-0101 must not enable elite assignment")
+assertThat(config.EliteAssignmentPlanning.isRuntimeEnabled, "RPG-0105 must enable elite assignment")
+assertThat(
+	config.EliteAssignmentPlanning.ordinaryPressureProbability == 0.05
+		and config.EliteAssignmentPlanning.hordePulseProbability == 0.07,
+	"runtime elite probabilities must remain inside their planned bands"
+)
+assertThat(config.FrenziedRuntime.movementSpeedMultiplier == 1.25, "Frenzied movement tuning drifted")
+assertThat(config.FrenziedRuntime.attackCadenceMultiplier == 0.7, "Frenzied cadence tuning drifted")
+assertThat(config.FrenziedRuntime.maximumHealthMultiplier == 0.85, "Frenzied durability tradeoff drifted")
+assertThat(config.FrenziedRuntime.bonusFieldXp == 20, "Frenzied XP reward drifted")
 
 assertThat(#config.UpgradeCatalog == 17, "the planned RPG upgrade vocabulary must contain seventeen definitions")
 assertThat(#config.EliteAffixCatalog == 5, "the initial elite vocabulary must contain five affixes")
@@ -112,15 +118,19 @@ for _, definition in config.UpgradeCatalog do
 end
 assertThat(implementedUpgradeCount == 12, "the twelve live RPG-0103 upgrades must be marked implemented")
 
+local implementedAffixCount = 0
 for _, definition in config.EliteAffixCatalog do
 	assertThat(definition.maximumPerEnemy == 1, "elite definitions must preserve one-affix v1")
 	assertThat(definition.requiresTelegraph, "every elite affix must require a telegraph")
 	assertThat(not definition.bossEligible, "initial elite affixes must exclude bosses")
-	assertThat(
-		definition.implementationStateId == contracts.ImplementationStateIds.Planned,
-		"affixes must remain planned"
-	)
+	if definition.implementationStateId == contracts.ImplementationStateIds.Implemented then
+		implementedAffixCount += 1
+		assertThat(definition.affixId == contracts.EliteAffixIds.Frenzied, "only Frenzied may be implemented")
+	else
+		assertThat(definition.implementationStateId == contracts.ImplementationStateIds.Planned, "invalid affix state")
+	end
 end
+assertThat(implementedAffixCount == 1, "RPG-0105 must implement exactly one affix")
 
 local relicById = {}
 for _, definition in config.RelicCatalog do

@@ -17,6 +17,11 @@ local AttributeNames = table.freeze({
 	AttackServerTimestamp = "EnemyPresentationAttackServerTimestamp",
 	HitSequence = "EnemyPresentationHitSequence",
 	HitServerTimestamp = "EnemyPresentationHitServerTimestamp",
+	EliteAffixId = "EnemyEliteAffixId",
+	EliteDisplayName = "EnemyEliteDisplayName",
+	EliteMovementSpeedMultiplier = "EnemyEliteMovementSpeedMultiplier",
+	EliteAttackCadenceMultiplier = "EnemyEliteAttackCadenceMultiplier",
+	EliteBonusFieldXp = "EnemyEliteBonusFieldXp",
 })
 
 local LifeStateIds = table.freeze({

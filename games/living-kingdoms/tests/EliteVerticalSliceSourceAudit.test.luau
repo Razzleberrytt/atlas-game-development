@@ -1,0 +1,39 @@
+--!strict
+
+local fs = require("@lune/fs")
+
+local function assertThat(condition: unknown, message: string)
+	if not condition then
+		error(message, 2)
+	end
+end
+
+local function contains(source: string, value: string): boolean
+	return string.find(source, value, 1, true) ~= nil
+end
+
+local director = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau")
+local behavior = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyBehaviorResolver.luau")
+local horde = fs.readFile("games/living-kingdoms/src/server/Systems/HordeExperienceService.luau")
+local progression = fs.readFile("games/living-kingdoms/src/server/Systems/RunProgressionService.luau")
+local combat = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau")
+local presentation = fs.readFile("games/living-kingdoms/src/shared/Visual/EnemyPresentationContracts.luau")
+
+assertThat(contains(director, "EliteAffixResolver.resolveAssignment"), "spawn path must own elite assignment")
+assertThat(contains(director, "activeEliteCount = activeEliteCount"), "director must supply retained elite population")
+assertThat(contains(director, 'Instance.new("Highlight")'), "Frenzied must have an unmistakable world telegraph")
+assertThat(
+	contains(director, "activeEliteCount = math.max(0, activeEliteCount - 1)"),
+	"death must release elite capacity"
+)
+assertThat(contains(director, "operationPressureStartedServerTimestamp"), "protected opening needs operation time")
+assertThat(contains(behavior, "walker.AttackWindupSeconds * cadenceMultiplier"), "windup cadence must be bounded")
+assertThat(contains(behavior, "walker.AttackCooldownSeconds * cadenceMultiplier"), "cooldown cadence must be bounded")
+assertThat(contains(horde, "EliteMovementSpeedMultiplier"), "horde role speed must preserve elite movement")
+assertThat(contains(progression, "EliteBonusFieldXpAttribute"), "Field XP must consume server elite identity")
+assertThat(contains(progression, "awardConfirmedEnemyDeath(model)"), "elite XP must use the one-shot death transition")
+assertThat(contains(combat, 'GetAttribute("EnemyEliteAffixId")'), "elite identity must extend special-enemy damage")
+assertThat(contains(presentation, 'EliteAffixId = "EnemyEliteAffixId"'), "elite identity needs a stable safe attribute")
+assertThat(not contains(director, "RemoteEvent"), "elite assignment must add no client request surface")
+
+print("EliteVerticalSliceSourceAudit: assignment, presentation, behavior, reward, cap, and cleanup passed")

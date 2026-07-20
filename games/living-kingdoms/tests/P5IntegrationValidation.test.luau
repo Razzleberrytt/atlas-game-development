@@ -31,15 +31,39 @@ local worldConfig =
 	loadSimple("games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "WorldFoundationConfig")
 
 local ENEMY_CONTRACTS_TOKEN = {}
+local RPG_CONTRACTS_TOKEN = {}
 local WORLD_TOKEN = {}
 local ENEMY_CONFIG_TOKEN = {}
+local RPG_CONFIG_TOKEN = {}
 local PRESENTATION_TOKEN = {}
 local MISSION_CONFIG_TOKEN = {}
 local MISSION_CONTRACTS_TOKEN = {}
 local RESOLVER_TOKEN = {}
+local ELITE_RESOLVER_TOKEN = {}
 local LIFE_TOKEN = {}
 local FAILURE_TOKEN = {}
 local ENEMY_DIRECTOR_TOKEN = {}
+
+local rpgContracts = { EliteAffixIds = { Frenzied = "elite-affix.frenzied" } }
+local rpgConfig = {
+	FrenziedRuntime = {
+		highlightFillColor = { 255, 74, 24 },
+		highlightOutlineColor = { 255, 214, 74 },
+		highlightFillTransparency = 0.42,
+		highlightOutlineTransparency = 0,
+	},
+}
+local eliteResolver = {
+	resolveAssignment = function()
+		return {
+			affixId = nil,
+			movementSpeedMultiplier = 1,
+			attackCadenceMultiplier = 1,
+			maximumHealthMultiplier = 1,
+			bonusFieldXp = 0,
+		}
+	end,
+}
 
 local enemyConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/EnemyConfig.luau"), {
 	debugName = "EnemyConfig",
@@ -68,10 +92,12 @@ local sharedReplicatedStorage = {
 		Combat = { EnemyContracts = ENEMY_CONTRACTS_TOKEN },
 		Config = {
 			EnemyConfig = ENEMY_CONFIG_TOKEN,
+			RunRpgConfig = RPG_CONFIG_TOKEN,
 			WorldFoundationConfig = WORLD_TOKEN,
 			MissionConfig = MISSION_CONFIG_TOKEN,
 		},
 		Mission = { MissionContracts = MISSION_CONTRACTS_TOKEN },
+		RPG = { RunRpgContracts = RPG_CONTRACTS_TOKEN },
 		Visual = { EnemyPresentationContracts = PRESENTATION_TOKEN },
 	},
 }
@@ -254,20 +280,27 @@ local enemyDirector = luau.load(fs.readFile("games/living-kingdoms/src/server/Sy
 		script = {
 			Parent = {
 				EnemyBehaviorResolver = RESOLVER_TOKEN,
+				EliteAffixResolver = ELITE_RESOLVER_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 			},
 		},
 		require = function(token)
 			if token == ENEMY_CONFIG_TOKEN then
 				return enemyConfig
+			elseif token == RPG_CONFIG_TOKEN then
+				return rpgConfig
 			elseif token == ENEMY_CONTRACTS_TOKEN then
 				return enemyContracts
+			elseif token == RPG_CONTRACTS_TOKEN then
+				return rpgContracts
 			elseif token == PRESENTATION_TOKEN then
 				return presentationContracts
 			elseif token == WORLD_TOKEN then
 				return worldConfig
 			elseif token == RESOLVER_TOKEN then
 				return resolver
+			elseif token == ELITE_RESOLVER_TOKEN then
+				return eliteResolver
 			elseif token == LIFE_TOKEN then
 				return lifeService
 			end

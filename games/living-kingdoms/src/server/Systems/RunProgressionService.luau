@@ -27,6 +27,7 @@ local RunBuildService = require(script.Parent.RunBuildService)
 
 local LifeStateAttribute = EnemyPresentationContracts.AttributeNames.LifeStateId
 local HitSequenceAttribute = EnemyPresentationContracts.AttributeNames.HitSequence
+local EliteBonusFieldXpAttribute = EnemyPresentationContracts.AttributeNames.EliteBonusFieldXp
 local DeadLifeStateId = EnemyPresentationContracts.LifeStateIds.Dead
 
 local ENEMY_FOLDER_NAME = "EnemyEntities"
@@ -233,10 +234,14 @@ local function applyFieldXpAward(amount: number, countAsKill: boolean): boolean
 	return true
 end
 
-local function awardConfirmedEnemyDeath()
+local function awardConfirmedEnemyDeath(model: Model)
 	local upgradeStacks = readUpgradeStacks()
 	local xpGainMultiplier = RunUpgradeResolver.deriveCombatModifiers(upgradeStacks).xpGainMultiplier
-	local base = RunProgressionConfig.FieldXpPerConfirmedEnemyDeath
+	local eliteBonus = model:GetAttribute(EliteBonusFieldXpAttribute)
+	if type(eliteBonus) ~= "number" or eliteBonus ~= eliteBonus or eliteBonus < 0 or eliteBonus > 100 then
+		eliteBonus = 0
+	end
+	local base = RunProgressionConfig.FieldXpPerConfirmedEnemyDeath + math.floor(eliteBonus)
 	local boosted = math.max(base, math.floor(base * xpGainMultiplier + 0.5))
 	applyFieldXpAward(boosted, true)
 end
@@ -281,11 +286,11 @@ local function scanEnemyDeaths()
 		if previousLifeState == nil then
 			trackedLifeStates[model] = lifeState
 			if initialScanComplete and lifeState == DeadLifeStateId and hasConfirmedHit(model) then
-				awardConfirmedEnemyDeath()
+				awardConfirmedEnemyDeath(model)
 			end
 		elseif previousLifeState ~= DeadLifeStateId and lifeState == DeadLifeStateId then
 			trackedLifeStates[model] = lifeState
-			awardConfirmedEnemyDeath()
+			awardConfirmedEnemyDeath(model)
 		else
 			trackedLifeStates[model] = lifeState
 		end
