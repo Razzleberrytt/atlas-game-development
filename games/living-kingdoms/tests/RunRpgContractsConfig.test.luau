@@ -91,6 +91,9 @@ assertThat(
 )
 assertThat(config.ModifierCeilings.maximumKillChainExtensionSeconds == 2, "kill-chain extension must be bounded")
 assertThat(config.ModifierCeilings.maximumGeneralProcChance == 0.35, "general proc chance must be bounded")
+assertThat(config.ModifierCeilings.maximumIncomingDamageReduction == 0.3, "damage reduction must be bounded")
+assertThat(config.ModifierCeilings.maximumLootPickupRadiusBonusStuds == 4.5, "pickup radius must be bounded")
+assertThat(config.ModifierCeilings.maximumConditionalDamageMultiplier == 1.5, "conditional damage must be bounded")
 assertThat(not config.EliteAssignmentPlanning.isRuntimeEnabled, "RPG-0101 must not enable elite assignment")
 
 assertThat(#config.UpgradeCatalog == 17, "the planned RPG upgrade vocabulary must contain seventeen definitions")

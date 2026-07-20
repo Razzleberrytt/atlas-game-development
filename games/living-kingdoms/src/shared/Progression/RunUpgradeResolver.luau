@@ -1,6 +1,7 @@
 --!strict
 
 local RunProgressionConfig = require(script.Parent.Parent.Config.RunProgressionConfig)
+local RunModifierResolver = require(script.Parent.RunModifierResolver)
 
 export type UpgradeStacks = { [string]: number }
 
@@ -217,28 +218,29 @@ end
 
 function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): CombatModifiers
 	if not validateStacks(stacks) then
+		local neutral = RunModifierResolver.neutral()
 		return table.freeze({
-			damageMultiplier = 1,
-			cadenceMultiplier = 1,
-			ammoConservationChance = 0,
-			cullDamageMultiplier = 1,
+			damageMultiplier = neutral.damageMultiplier,
+			cadenceMultiplier = neutral.cadenceMultiplier,
+			ammoConservationChance = neutral.ammunitionConservationChance,
+			cullDamageMultiplier = neutral.cullDamageMultiplier,
 			cullHealthThreshold = RunProgressionConfig.CullHealthThreshold,
-			incomingDamageMultiplier = 1,
-			xpGainMultiplier = 1,
-			reloadDurationMultiplier = 1,
-			patternDamageMultiplier = 1,
-			specialEnemyDamageMultiplier = 1,
-			magazineCapacityMultiplier = 1,
-			lootPickupRadiusBonusStuds = 0,
-			lastMagazineDamageMultiplier = 1,
+			incomingDamageMultiplier = neutral.incomingDamageMultiplier,
+			xpGainMultiplier = neutral.fieldXpMultiplier,
+			reloadDurationMultiplier = neutral.reloadDurationMultiplier,
+			patternDamageMultiplier = neutral.patternDamageMultiplier,
+			specialEnemyDamageMultiplier = neutral.specialEnemyDamageMultiplier,
+			magazineCapacityMultiplier = neutral.magazineCapacityMultiplier,
+			lootPickupRadiusBonusStuds = neutral.lootPickupRadiusBonusStuds,
+			lastMagazineDamageMultiplier = neutral.conditionalDamageMultiplier,
 			lastMagazineReserveFraction = RunProgressionConfig.LastMagazineReserveFraction,
 		})
 	end
 
-	local damageMultiplier = 1
-	local cadenceMultiplier = 1
+	local damageBonus = 0
+	local cadenceReduction = 0
 	local ammoConservationChance = 0
-	local cullDamageMultiplier = 1
+	local cullDamageBonus = 0
 	local incomingDamageReduction = 0
 	local xpGainBonus = 0
 	local reloadDurationReduction = 0
@@ -250,16 +252,16 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 	for _, definition in RunProgressionConfig.UpgradeDefinitions do
 		local stackCount = stacks[definition.Id] or 0
 		if definition.DamageMultiplierPerStack ~= nil then
-			damageMultiplier += stackCount * definition.DamageMultiplierPerStack
+			damageBonus += stackCount * definition.DamageMultiplierPerStack
 		end
 		if definition.CadenceReductionPerStack ~= nil then
-			cadenceMultiplier -= stackCount * definition.CadenceReductionPerStack
+			cadenceReduction += stackCount * definition.CadenceReductionPerStack
 		end
 		if definition.AmmoConservationChancePerStack ~= nil then
 			ammoConservationChance += stackCount * definition.AmmoConservationChancePerStack
 		end
 		if definition.CullDamageMultiplierPerStack ~= nil then
-			cullDamageMultiplier += stackCount * definition.CullDamageMultiplierPerStack
+			cullDamageBonus += stackCount * definition.CullDamageMultiplierPerStack
 		end
 		if definition.IncomingDamageReductionPerStack ~= nil then
 			incomingDamageReduction += stackCount * definition.IncomingDamageReductionPerStack
@@ -287,48 +289,34 @@ function RunUpgradeResolver.deriveCombatModifiers(stacks: UpgradeStacks): Combat
 		end
 	end
 
-	local boundedReduction = math.clamp(incomingDamageReduction, 0, RunProgressionConfig.MaximumIncomingDamageReduction)
+	local resolved = RunModifierResolver.resolve({
+		damageBonus = damageBonus,
+		cadenceReduction = cadenceReduction,
+		ammunitionConservationChance = ammoConservationChance,
+		cullDamageBonus = cullDamageBonus,
+		incomingDamageReduction = incomingDamageReduction,
+		fieldXpBonus = xpGainBonus,
+		reloadDurationReduction = reloadDurationReduction,
+		patternDamageBonus = patternDamageBonus,
+		specialEnemyDamageBonus = specialEnemyDamageBonus,
+		magazineCapacityBonus = magazineCapacityBonus,
+		lootPickupRadiusBonusStuds = lootPickupRadiusBonusStuds,
+		conditionalDamageBonus = lastMagazineDamageBonus,
+	})
 	return table.freeze({
-		damageMultiplier = math.clamp(damageMultiplier, 1, RunProgressionConfig.MaximumDamageMultiplier),
-		cadenceMultiplier = math.max(RunProgressionConfig.MinimumCadenceMultiplier, cadenceMultiplier),
-		ammoConservationChance = math.clamp(
-			ammoConservationChance,
-			0,
-			RunProgressionConfig.MaximumAmmoConservationChance
-		),
-		cullDamageMultiplier = math.clamp(cullDamageMultiplier, 1, RunProgressionConfig.MaximumDamageMultiplier),
+		damageMultiplier = resolved.damageMultiplier,
+		cadenceMultiplier = resolved.cadenceMultiplier,
+		ammoConservationChance = resolved.ammunitionConservationChance,
+		cullDamageMultiplier = resolved.cullDamageMultiplier,
 		cullHealthThreshold = RunProgressionConfig.CullHealthThreshold,
-		incomingDamageMultiplier = 1 - boundedReduction,
-		xpGainMultiplier = math.clamp(1 + xpGainBonus, 1, RunProgressionConfig.MaximumXpGainMultiplier),
-		reloadDurationMultiplier = math.max(
-			RunProgressionConfig.MinimumReloadDurationMultiplier,
-			1 - reloadDurationReduction
-		),
-		patternDamageMultiplier = math.clamp(
-			1 + patternDamageBonus,
-			1,
-			RunProgressionConfig.MaximumPatternDamageMultiplier
-		),
-		specialEnemyDamageMultiplier = math.clamp(
-			1 + specialEnemyDamageBonus,
-			1,
-			RunProgressionConfig.MaximumSpecialEnemyDamageMultiplier
-		),
-		magazineCapacityMultiplier = math.clamp(
-			1 + magazineCapacityBonus,
-			1,
-			RunProgressionConfig.MaximumMagazineCapacityMultiplier
-		),
-		lootPickupRadiusBonusStuds = math.clamp(
-			lootPickupRadiusBonusStuds,
-			0,
-			RunProgressionConfig.MaximumLootPickupRadiusBonusStuds
-		),
-		lastMagazineDamageMultiplier = math.clamp(
-			1 + lastMagazineDamageBonus,
-			1,
-			RunProgressionConfig.MaximumLastMagazineDamageMultiplier
-		),
+		incomingDamageMultiplier = resolved.incomingDamageMultiplier,
+		xpGainMultiplier = resolved.fieldXpMultiplier,
+		reloadDurationMultiplier = resolved.reloadDurationMultiplier,
+		patternDamageMultiplier = resolved.patternDamageMultiplier,
+		specialEnemyDamageMultiplier = resolved.specialEnemyDamageMultiplier,
+		magazineCapacityMultiplier = resolved.magazineCapacityMultiplier,
+		lootPickupRadiusBonusStuds = resolved.lootPickupRadiusBonusStuds,
+		lastMagazineDamageMultiplier = resolved.conditionalDamageMultiplier,
 		lastMagazineReserveFraction = RunProgressionConfig.LastMagazineReserveFraction,
 	})
 end

@@ -250,6 +250,12 @@ The centralized RPG-0102 run-build owner holds the live Field Upgrade stacks con
 
 The pool now satisfies the RPG-0103 12–16 target. Adrenal Response, Second Pulse, Rescue Instinct, Shared Momentum, and Covering Fire remain `Planned` because movement modifiers, horde-phase survival events, squad-proximity facts, and cooperative threat/action events are not yet available. When any lands it must flip its catalog entry to `Implemented` or `RunRpgReconciliation` fails.
 
+### 7.5 Shared modifier resolution (RPG-0104)
+
+`RunModifierResolver` is the pure shared arithmetic boundary for run-build power. It validates nonnegative finite contributions, supplies immutable neutral defaults, and clamps damage, cadence, reload duration, ammunition conservation and capacity, healing, temporary armor, movement, loot, Field XP, kill-chain, pattern, special-enemy, conditional-damage, incoming-damage-reduction, and general-proc outputs to `RunRpgConfig.ModifierCeilings`. Malformed or unknown contributions fail closed to the complete neutral modifier set.
+
+The twelve RPG-0103 upgrades still own only their configured per-stack contributions. `RunUpgradeResolver` validates server-owned stack facts, accumulates those contributions, and delegates all modifier arithmetic to the shared resolver. Existing attribute names, consumers, and player-facing tuning are unchanged. `RunModifierResolver.test` fixture-locks every ceiling and neutral default; `RunUpgradeResolver.test` exercises the live upgrade pipeline through the real shared resolver.
+
 ## 8. Elite enemy affixes
 
 Some otherwise normal enemies become elites. Assignment occurs when the server spawns the enemy; the client cannot request or influence elite creation.
