@@ -231,7 +231,7 @@ V1 does not implement a large skill tree. A small number of mutually exclusive b
 
 ### 7.4 Implementation status (HROI run-progression v4 slice)
 
-Ahead of the full RPG-0102 run-build centralization, the live HROI run-progression owner (`RunProgressionService` / `RunUpgradeResolver` / `RunProgressionConfig`) implements the first seven upgrades of this pool under the canonical RPG-0101 catalog IDs. `RunRpgReconciliation.test` enforces that every live upgrade is a catalog entry marked `Implemented` with a matching display name, and that every live modifier ceiling sits within the shared RPG-0101 `ModifierCeilings`.
+The centralized RPG-0102 run-build owner now holds the live HROI Field Upgrade stacks consumed by `RunProgressionService` / `RunUpgradeResolver` / `RunProgressionConfig`. The pool implements the first eight upgrades under the canonical RPG-0101 catalog IDs. `RunRpgReconciliation.test` enforces that every live upgrade is a catalog entry marked `Implemented` with a matching display name, and that every live modifier ceiling sits within the shared RPG-0101 `ModifierCeilings`.
 
 | Upgrade | Family | Status | Shipped mechanic vs plan |
 |---|---|---|---|
@@ -525,11 +525,13 @@ Delivered as `RunRpgContracts` and `RunRpgConfig` with declaration-only invarian
 
 **Exit:** Frozen vocabulary and invariant fixtures pass. ✔
 
-### RPG-0102 — Centralize run-build state
+### RPG-0102 — Centralize run-build state — **Complete**
 
 Add one server-owned run-build owner for each operative. State includes upgrade stacks, equipped relics, charges, cooldowns, counters, pending reward choices, replacement state, and operation generation. Integrate existing Field Upgrade state rather than creating a parallel owner.
 
-**Exit:** Reset, disconnect, replay, stale-generation, and duplication tests pass.
+Delivered as the pure `RunBuildStateStore` behind the server-only `RunBuildService`. One operation generation owns a bounded record for each of the four admitted operatives; disconnect retains the record for same-operation reconnect, while operation reset and teardown erase it. The live shared Field Upgrade stacks moved out of `RunProgressionService` and commit through this owner with bounded request replay protection. Three empty relic slots establish the future charge, cooldown, counter, reward, and replacement state boundary without activating relic behavior or adding a client remote.
+
+**Exit:** Reset, disconnect/reconnect, replay, stale-generation, duplication, population-bound, copied-snapshot, and teardown fixtures pass. ✔
 
 ### RPG-0103 — Expand Field Upgrade pool
 

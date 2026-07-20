@@ -40,6 +40,7 @@ local Limits = table.freeze({
 	maximumUpgradeStacksPerDefinition = 4,
 	maximumProcessedRequestIdsPerOperative = 64,
 	maximumProcessedRewardIdsPerOperation = 128,
+	maximumTrackedOperativesPerOperation = 4,
 	minimumChoiceRequestIntervalSeconds = 0.2,
 })
 
@@ -419,6 +420,7 @@ assert(
 		and Limits.maximumProcessedRewardIdsPerOperation <= 512,
 	"RPG reward replay history must remain bounded"
 )
+assert(Limits.maximumTrackedOperativesPerOperation == 4, "the run-build owner is bounded to the four-operative MVP")
 assert(
 	isFinitePositive(Limits.minimumChoiceRequestIntervalSeconds) and Limits.minimumChoiceRequestIntervalSeconds <= 1,
 	"RPG choice requests require a responsive server-owned throttle"

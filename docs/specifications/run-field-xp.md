@@ -16,7 +16,7 @@ This slice extends shared squad Field XP with a bounded three-choice run-upgrade
 - Crossing a threshold opens a centered three-card squad upgrade choice.
 - The first valid squad selection locks the upgrade for the run and closes the offer for every client.
 - Multiple unclaimed levels queue one offer at a time.
-- Field XP, level, kills, offers, stacks, and modifiers reset when the progression service starts a new server session.
+- Field XP, level, kills, and offers reset when the progression service starts a new server session. The centralized `RunBuildService` resets owned upgrade stacks and future relic/effect state at the operation boundary; derived modifier attributes reset from that empty state.
 
 ## Upgrade pool (v4)
 
@@ -52,7 +52,7 @@ RPG-PLAN-001 §7.1 describes Trauma Plating as post-level *temporary armor* and 
 
 ## Authority model
 
-The server owns all progression and modifier facts. `RunProgressionService` observes the existing server-authored enemy `LifeStateId` and `HitSequence` attributes under `Workspace.EnemyEntities`.
+The server owns all progression and modifier facts. `RunBuildService` is the operation-scoped owner of the shared Field Upgrade stacks mirrored into each operative's build record; `RunProgressionService` observes the existing server-authored enemy `LifeStateId` and `HitSequence` attributes under `Workspace.EnemyEntities`.
 
 An ordinary death XP award is legal only when a tracked production enemy transitions from a non-dead life state to authoritative `Dead`. A newly observed dead model is accepted only after the initial baseline scan and only when it carries a confirmed hit sequence. Each model can award once.
 
@@ -66,7 +66,7 @@ An ordinary death XP award is legal only when a tracked production enemy transit
 
 `ChooseUpgrade` accepts no client level, stack, magnitude, damage, cadence, chance, XP, or reward values. The server rejects extra arguments, throttles requests, verifies the ID is in the current offer, verifies its stack cap, accepts only the first legal selection, and publishes the resulting shared snapshot.
 
-Accepted stacks are reduced to bounded combat modifiers by the pure `RunUpgradeResolver`. `RunProgressionService` writes those values as server-owned attributes on `ProgressionNetwork` before automatic combat starts. The authoritative resolvers consume those trusted attributes and fail closed on out-of-range values: `AutomaticFireResolver` (cadence, ammo conservation), `DamageResolver` (damage, cull), `EnemyDirectorService` (incoming-damage mitigation, applied to the melee amount before the P3 commit), `ReloadResolver` (reload duration, applied at reload begin), and `DamageResolver.resolvePattern` (Pattern Amplifier, raising secondary cleave/pierce damage toward full primary). Field Discipline's Field XP bonus is applied inside `RunProgressionService` when awarding confirmed-kill XP.
+Accepted stacks commit through `RunBuildService` and are reduced to bounded combat modifiers by the pure `RunUpgradeResolver`. `RunProgressionService` writes those values as server-owned attributes on `ProgressionNetwork` before automatic combat starts. The authoritative resolvers consume those trusted attributes and fail closed on out-of-range values: `AutomaticFireResolver` (cadence, ammo conservation), `DamageResolver` (damage, cull), `EnemyDirectorService` (incoming-damage mitigation, applied to the melee amount before the P3 commit), `ReloadResolver` (reload duration, applied at reload begin), and `DamageResolver.resolvePattern` (Pattern Amplifier, raising secondary cleave/pierce damage toward full primary). Field Discipline's Field XP bonus is applied inside `RunProgressionService` when awarding confirmed-kill XP.
 
 There is no persistence or DataStore access.
 
