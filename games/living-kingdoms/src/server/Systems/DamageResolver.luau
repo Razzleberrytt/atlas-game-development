@@ -108,7 +108,16 @@ local function resolveDamageAmount(
 		if currentHealth <= cullThreshold then
 			cullMultiplier = readProgressionNumber("RunCullDamageMultiplier", 1)
 		end
-		requested = math.floor(configured * damageMultiplier * cullMultiplier + 0.5)
+		-- Each trusted run multiplier must stay within its bounded 1..3 range;
+		-- anomalous values fail closed. Legitimate stacked damage and cull
+		-- multipliers may combine past the ceiling (e.g. maxed Overpressure 1.8x
+		-- and Cull 2.05x), so clamp the product to the hard configured*3 cap
+		-- instead of rejecting -- otherwise a maxed build would deal zero damage
+		-- to wounded enemies rather than capped damage.
+		if damageMultiplier < 1 or damageMultiplier > 3 or cullMultiplier < 1 or cullMultiplier > 3 then
+			return nil
+		end
+		requested = math.min(configured * 3, math.floor(configured * damageMultiplier * cullMultiplier + 0.5))
 	end
 	if patternMultiplier ~= nil then
 		if
