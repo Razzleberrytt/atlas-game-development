@@ -73,8 +73,8 @@ local upgradeIdSet = {}
 for _, definition in config.UpgradeDefinitions do
 	upgradeIdSet[definition.Id] = true
 end
-assert(upgradeIdSet["upgrade.iron_hide"], "the v4 pool must include the Iron Hide defensive pick")
-assert(upgradeIdSet["upgrade.field_promotion"], "the v4 pool must include the Field Promotion economy pick")
+assert(upgradeIdSet["upgrade.trauma_plating"], "the v4 pool must include the Trauma Plating defensive pick")
+assert(upgradeIdSet["upgrade.field_discipline"], "the v4 pool must include the Field Discipline economy pick")
 
 assert(
 	contains(service, 'SetAttribute("RunIncomingDamageMultiplier"'),
