@@ -64,6 +64,12 @@ type SightedCandidate = {
 	hasLineOfSight: boolean,
 }
 
+type PlayerRaycastState = {
+	character: Model?,
+	primary: RaycastParams,
+	pierce: RaycastParams,
+}
+
 type PlayerCombatState = {
 	operativeState: OperativeReloadState,
 	weaponState: WeaponReadinessState,
@@ -107,6 +113,7 @@ local heartbeatConnection: RBXScriptConnection? = nil
 local lifeStateConnection: { Disconnect: (self: any) -> () }? = nil
 local characterAddedConnections: { [Player]: RBXScriptConnection } = {}
 local playerStates: { [Player]: PlayerCombatState } = {}
+local raycastStates: { [Player]: PlayerRaycastState } = {}
 
 local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
 local reloadIntentRemote = combatNetwork:WaitForChild("ReloadIntent") :: RemoteEvent
@@ -259,19 +266,34 @@ local function horizontalDistance(a: Vector3, b: Vector3): number
 	return math.sqrt(dx * dx + dz * dz)
 end
 
+local function raycastStateFor(player: Player): PlayerRaycastState
+	local character = player.Character
+	local state = raycastStates[player]
+	if state == nil then
+		local primary = RaycastParams.new()
+		primary.FilterType = Enum.RaycastFilterType.Exclude
+		local pierce = RaycastParams.new()
+		pierce.FilterType = Enum.RaycastFilterType.Exclude
+		state = {
+			character = nil,
+			primary = primary,
+			pierce = pierce,
+		}
+		raycastStates[player] = state
+	end
+	if state.character ~= character then
+		state.character = character
+		state.primary.FilterDescendantsInstances = if character == nil then {} else { character }
+	end
+	return state
+end
+
 local function hasClearShot(
 	player: Player,
 	operativePosition: Vector3,
 	fact: EnemyDirectorService.EnemyCombatFact
 ): boolean
-	local parameters = RaycastParams.new()
-	parameters.FilterType = Enum.RaycastFilterType.Exclude
-	local exclusions: { Instance } = {}
-	local character = player.Character
-	if character ~= nil then
-		table.insert(exclusions, character)
-	end
-	parameters.FilterDescendantsInstances = exclusions
+	local parameters = raycastStateFor(player).primary
 	local direction = fact.worldPosition - operativePosition
 	local result = Workspace:Raycast(operativePosition, direction, parameters)
 	if result == nil then
@@ -290,10 +312,10 @@ local function hasClearPierceShot(
 	primaryFact: EnemyDirectorService.EnemyCombatFact,
 	secondaryFact: EnemyDirectorService.EnemyCombatFact
 ): boolean
-	local parameters = RaycastParams.new()
-	parameters.FilterType = Enum.RaycastFilterType.Exclude
+	local state = raycastStateFor(player)
+	local parameters = state.pierce
 	local exclusions: { Instance } = { primaryFact.model }
-	local character = player.Character
+	local character = state.character
 	if character ~= nil then
 		table.insert(exclusions, character)
 	end
@@ -315,10 +337,11 @@ end
 local function buildSightedCandidates(
 	player: Player,
 	playerState: PlayerCombatState,
-	operativePosition: Vector3
+	operativePosition: Vector3,
+	enemyFacts: { EnemyDirectorService.EnemyCombatFact }
 ): { TargetCandidate }
 	local sighted: { SightedCandidate } = {}
-	for _, fact in EnemyDirectorService.readEnemyCombatFacts() do
+	for _, fact in enemyFacts do
 		local distance = horizontalDistance(fact.worldPosition, operativePosition)
 		if distance <= EnemyConfig.Combat.GameplayVisibilityRadiusStuds then
 			table.insert(sighted, { fact = fact, distanceStuds = distance, hasLineOfSight = false })
@@ -557,7 +580,12 @@ local function applyLockedLoadout(player: Player, playerState: PlayerCombatState
 	OperativeCombatRuntimeService.publishAmmunitionState(player)
 end
 
-local function evaluatePlayer(player: Player, playerState: PlayerCombatState, nowTimestamp: number)
+local function evaluatePlayer(
+	player: Player,
+	playerState: PlayerCombatState,
+	nowTimestamp: number,
+	enemyFacts: { EnemyDirectorService.EnemyCombatFact }
+)
 	applyLockedLoadout(player, playerState)
 	if not OperativeLifeService.isCombatAllowed(player) then
 		discloseTarget(player, playerState, nil, nowTimestamp)
@@ -572,7 +600,7 @@ local function evaluatePlayer(player: Player, playerState: PlayerCombatState, no
 		discloseTarget(player, playerState, nil, nowTimestamp)
 		return
 	end
-	local candidates = buildSightedCandidates(player, playerState, operativePosition)
+	local candidates = buildSightedCandidates(player, playerState, operativePosition, enemyFacts)
 	local targetingState = {
 		entityId = playerState.operativeState.entityId,
 		worldPosition = operativePosition,
@@ -597,8 +625,9 @@ function OperativeCombatRuntimeService.evaluateAt(serverTimestamp: number)
 	if not started or type(serverTimestamp) ~= "number" or serverTimestamp ~= serverTimestamp then
 		return
 	end
+	local enemyFacts = EnemyDirectorService.readEnemyCombatFacts()
 	for player, playerState in playerStates do
-		evaluatePlayer(player, playerState, serverTimestamp)
+		evaluatePlayer(player, playerState, serverTimestamp, enemyFacts)
 	end
 end
 
@@ -722,6 +751,7 @@ local function removePlayer(player: Player)
 		characterAddedConnections[player] = nil
 	end
 	playerStates[player] = nil
+	raycastStates[player] = nil
 	setPlayerAttribute(player, "LK_EquippedWeaponId", nil)
 end
 
@@ -780,6 +810,7 @@ function OperativeCombatRuntimeService.stop()
 	end
 	table.clear(characterAddedConnections)
 	table.clear(playerStates)
+	table.clear(raycastStates)
 	accumulatedSeconds = 0
 end
 
