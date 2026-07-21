@@ -102,9 +102,13 @@ assertThat(not unknownClass.didSelect, "unknown class must fail")
 assertThat(unknownClass.rejectionReasonId == contracts.ClassActionRejectionReasonIds.UnknownClass, "unknown reason")
 
 local notParticipant = resolver.resolve(assignment(), validIntent, facts({ isParticipant = false }))
-assertThat(notParticipant.rejectionReasonId == contracts.ClassActionRejectionReasonIds.NotParticipant, "participant gate")
+assertThat(
+	notParticipant.rejectionReasonId == contracts.ClassActionRejectionReasonIds.NotParticipant,
+	"participant gate"
+)
 
-local resolved = resolver.resolve(assignment(), validIntent, facts({ missionPhaseId = missionContracts.MissionPhaseIds.Resolved }))
+local resolved =
+	resolver.resolve(assignment(), validIntent, facts({ missionPhaseId = missionContracts.MissionPhaseIds.Resolved }))
 assertThat(resolved.rejectionReasonId == contracts.ClassActionRejectionReasonIds.OperationResolved, "resolved gate")
 
 local wrongPhase = resolver.resolve(
@@ -115,7 +119,10 @@ local wrongPhase = resolver.resolve(
 assertThat(wrongPhase.rejectionReasonId == contracts.ClassActionRejectionReasonIds.SelectionClosed, "phase lock gate")
 
 local exactDeadline = resolver.resolve(assignment(), validIntent, facts({ serverTimestamp = 20 }))
-assertThat(exactDeadline.rejectionReasonId == contracts.ClassActionRejectionReasonIds.SelectionClosed, "exact deadline closes")
+assertThat(
+	exactDeadline.rejectionReasonId == contracts.ClassActionRejectionReasonIds.SelectionClosed,
+	"exact deadline closes"
+)
 
 local locked = resolver.resolve(assignment(contracts.ClassSelectionStateIds.Locked), validIntent, facts())
 assertThat(locked.rejectionReasonId == contracts.ClassActionRejectionReasonIds.ClassLocked, "assignment lock gate")
@@ -125,10 +132,17 @@ local unavailable = resolver.resolve(
 	validIntent,
 	facts({ availableClassIds = { [contracts.ClassIds.CombatSpecialist] = true } })
 )
-assertThat(unavailable.rejectionReasonId == contracts.ClassActionRejectionReasonIds.ClassUnavailable, "availability gate")
+assertThat(
+	unavailable.rejectionReasonId == contracts.ClassActionRejectionReasonIds.ClassUnavailable,
+	"availability gate"
+)
 
-local duplicate = resolver.resolve(assignment(), validIntent, facts({ isDuplicateRequest = true, isRateLimited = true }))
-assertThat(duplicate.rejectionReasonId == contracts.ClassActionRejectionReasonIds.DuplicateRequest, "replay precedes rate limit")
+local duplicate =
+	resolver.resolve(assignment(), validIntent, facts({ isDuplicateRequest = true, isRateLimited = true }))
+assertThat(
+	duplicate.rejectionReasonId == contracts.ClassActionRejectionReasonIds.DuplicateRequest,
+	"replay precedes rate limit"
+)
 
 local rateLimited = resolver.resolve(assignment(), validIntent, facts({ isRateLimited = true }))
 assertThat(rateLimited.rejectionReasonId == contracts.ClassActionRejectionReasonIds.RateLimited, "rate-limit gate")

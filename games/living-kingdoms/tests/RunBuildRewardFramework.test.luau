@@ -91,7 +91,8 @@ assertThat(store:registerOperative("operative-a"), "operative registration faile
 assertThat(store:registerOperative("operative-b"), "second operative registration failed")
 
 -- Enqueue one reward and verify a safe, valid pending offer appears.
-local okOffer, offerReason, sequenceOne = store:enqueueRelicReward(generation, "off:1", "operative-a", SourceIds.EliteKill, EMPTY_LOADOUT)
+local okOffer, offerReason, sequenceOne =
+	store:enqueueRelicReward(generation, "off:1", "operative-a", SourceIds.EliteKill, EMPTY_LOADOUT)
 assertThat(okOffer and offerReason == nil and sequenceOne == 1, "first reward offer failed")
 local snapshot = store:readSafeSnapshot("operative-a")
 assertThat(contracts.validateSafeRunBuildSnapshot(snapshot), "offer snapshot must be valid")
@@ -105,7 +106,8 @@ local otherOfferedRelicId = snapshot.pendingRewards[1].offeredRelicIds[2]
 assertThat(#store:readSafeSnapshot("operative-b").pendingRewards == 0, "rewards must be per-operative")
 
 -- Replaying the offer request must not create a second reward.
-local replayOffer, replayReason = store:enqueueRelicReward(generation, "off:1", "operative-a", SourceIds.EliteKill, EMPTY_LOADOUT)
+local replayOffer, replayReason =
+	store:enqueueRelicReward(generation, "off:1", "operative-a", SourceIds.EliteKill, EMPTY_LOADOUT)
 assertThat(not replayOffer and replayReason == Rejections.DuplicateRequest, "offer replay must be rejected")
 assertThat(#store:readSafeSnapshot("operative-a").pendingRewards == 1, "offer replay created a duplicate reward")
 
@@ -128,13 +130,20 @@ assertThat(
 )
 
 -- The resolved reward sequence cannot be replayed.
-local replayChoice, replayChoiceReason = store:chooseRelic(generation, "ch:2", "operative-a", sequenceOne, otherOfferedRelicId)
+local replayChoice, replayChoiceReason =
+	store:chooseRelic(generation, "ch:2", "operative-a", sequenceOne, otherOfferedRelicId)
 assertThat(not replayChoice and replayChoiceReason == Rejections.RewardNotPending, "resolved reward must not reopen")
 
 -- A duplicate request ID is rejected even for a fresh reward.
 local okOffer2 = store:enqueueRelicReward(generation, "off:2", "operative-a", SourceIds.EliteKill, EMPTY_LOADOUT)
 assertThat(okOffer2, "second reward offer failed")
-local dupRequest, dupReason = store:chooseRelic(generation, "ch:1", "operative-a", 2, store:readSafeSnapshot("operative-a").pendingRewards[1].offeredRelicIds[1])
+local dupRequest, dupReason = store:chooseRelic(
+	generation,
+	"ch:1",
+	"operative-a",
+	2,
+	store:readSafeSnapshot("operative-a").pendingRewards[1].offeredRelicIds[1]
+)
 assertThat(not dupRequest and dupReason == Rejections.DuplicateRequest, "replayed request ID must be rejected")
 
 -- Equipped relics are excluded from later offers.
@@ -198,7 +207,10 @@ store:enqueueRelicReward(generation, "off:reset", "operative-a", SourceIds.Elite
 local resetOffer = store:readSafeSnapshot("operative-a").pendingRewards[1]
 local notRequired, notRequiredReason =
 	store:replaceRelic(generation, "rp:early", "operative-a", 1, resetOffer.offeredRelicIds[1], 1)
-assertThat(not notRequired and notRequiredReason == Rejections.ReplacementNotRequired, "replacement must require full slots")
+assertThat(
+	not notRequired and notRequiredReason == Rejections.ReplacementNotRequired,
+	"replacement must require full slots"
+)
 
 -- Reconnect returns the stored offer without rerolling it.
 local beforeDisconnect = store:readSafeSnapshot("operative-a").pendingRewards[1]
@@ -218,10 +230,14 @@ generation = store:readOperationGeneration()
 store:registerOperative("operative-a")
 local queued = 0
 for index = 1, config.Limits.maximumQueuedRelicRewardsPerOperative do
-	assertThat(store:enqueueRelicReward(generation, "q:" .. index, "operative-a", SourceIds.EliteKill, EMPTY_LOADOUT), "queue fill failed")
+	assertThat(
+		store:enqueueRelicReward(generation, "q:" .. index, "operative-a", SourceIds.EliteKill, EMPTY_LOADOUT),
+		"queue fill failed"
+	)
 	queued += 1
 end
-local overflowOk, overflowReason = store:enqueueRelicReward(generation, "q:overflow", "operative-a", SourceIds.EliteKill, EMPTY_LOADOUT)
+local overflowOk, overflowReason =
+	store:enqueueRelicReward(generation, "q:overflow", "operative-a", SourceIds.EliteKill, EMPTY_LOADOUT)
 assertThat(not overflowOk and overflowReason == Rejections.RewardQueueFull, "reward queue ceiling was exceeded")
 assertThat(#store:readSafeSnapshot("operative-a").pendingRewards == queued, "queue ceiling drifted")
 
@@ -230,13 +246,18 @@ local mutableSnapshot = store:readSafeSnapshot("operative-a")
 mutableSnapshot.pendingRewards[1].offeredRelicIds[1] = "forged-relic"
 mutableSnapshot.relicSlots[1].relicId = RelicIds.SecondWind
 local freshSnapshot = store:readSafeSnapshot("operative-a")
-assertThat(freshSnapshot.pendingRewards[1].offeredRelicIds[1] ~= "forged-relic", "snapshot copy leaked into owned state")
+assertThat(
+	freshSnapshot.pendingRewards[1].offeredRelicIds[1] ~= "forged-relic",
+	"snapshot copy leaked into owned state"
+)
 assertThat(freshSnapshot.relicSlots[1].relicId == nil, "snapshot slot copy leaked into owned state")
 
 -- Stale generation and unknown source and unknown participant are rejected.
-local staleOk, staleReason = store:enqueueRelicReward(generation - 1, "stale", "operative-a", SourceIds.EliteKill, EMPTY_LOADOUT)
+local staleOk, staleReason =
+	store:enqueueRelicReward(generation - 1, "stale", "operative-a", SourceIds.EliteKill, EMPTY_LOADOUT)
 assertThat(not staleOk and staleReason == Rejections.StaleOperationGeneration, "stale generation must reject")
-local sourceOk, sourceReason = store:enqueueRelicReward(generation, "bad-src", "operative-a", "reward-source.fake", EMPTY_LOADOUT)
+local sourceOk, sourceReason =
+	store:enqueueRelicReward(generation, "bad-src", "operative-a", "reward-source.fake", EMPTY_LOADOUT)
 assertThat(not sourceOk and sourceReason == Rejections.InvalidIntent, "unknown reward source must reject")
 local missingOk, missingReason = store:chooseRelic(generation, "missing", "ghost-operative", 1, RelicIds.BloodBattery)
 assertThat(not missingOk and missingReason == Rejections.NotParticipant, "unknown operative must reject")
@@ -244,7 +265,8 @@ assertThat(not missingOk and missingReason == Rejections.NotParticipant, "unknow
 -- Teardown erases every reward and refuses further mutation.
 store:stopOperation()
 assertThat(store:readSafeSnapshot("operative-a") == nil, "teardown retained a snapshot")
-local stoppedOk, stoppedReason = store:enqueueRelicReward(generation, "after-stop", "operative-a", SourceIds.EliteKill, EMPTY_LOADOUT)
+local stoppedOk, stoppedReason =
+	store:enqueueRelicReward(generation, "after-stop", "operative-a", SourceIds.EliteKill, EMPTY_LOADOUT)
 assertThat(not stoppedOk and stoppedReason == Rejections.ServiceStopped, "stopped owner accepted a reward")
 
 print("RunBuildRewardFramework: bounded queue, slot equip/replace, replay, reconnect, isolation, and teardown passed")

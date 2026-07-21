@@ -130,10 +130,13 @@ assertThat(store:readSafeSnapshot("operative-a").revision == 1, "replay changed 
 assertThat(store:disconnectOperative("operative-a"), "disconnect was not recorded")
 local disconnectedSnapshot = store:readSafeSnapshot("operative-a")
 assertThat(disconnectedSnapshot ~= nil, "disconnect must retain the operation-scoped build for reconnect")
-assertThat(store:commitUpgradeStacks(firstGeneration, "upgrade:2", {
-	[contracts.RunUpgradeIds.OverpressureRounds] = 1,
-	[contracts.RunUpgradeIds.CombatLoader] = 1,
-}), "second squad commit failed")
+assertThat(
+	store:commitUpgradeStacks(firstGeneration, "upgrade:2", {
+		[contracts.RunUpgradeIds.OverpressureRounds] = 1,
+		[contracts.RunUpgradeIds.CombatLoader] = 1,
+	}),
+	"second squad commit failed"
+)
 assertThat(store:registerOperative("operative-a"), "same-operation reconnect failed")
 local reconnected = store:readSafeSnapshot("operative-a")
 assertThat(reconnected.revision == 2, "reconnect did not recover the current build revision")

@@ -127,11 +127,6 @@ assertThat(
 )
 
 assertThat(
-	string.find(
-		registry,
-		"canonical imported production approval remains pending.",
-		1,
-		true
-	) ~= nil,
+	string.find(registry, "canonical imported production approval remains pending.", 1, true) ~= nil,
 	"runtime fallback must not falsely claim production approval"
 )

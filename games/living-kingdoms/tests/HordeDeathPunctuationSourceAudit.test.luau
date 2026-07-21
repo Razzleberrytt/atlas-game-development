@@ -35,7 +35,7 @@ for _, token in
 		"createBloodPool(root.Position, definition)",
 		"createKillText(model, root.Position, definition)",
 	}
- do
+do
 	assertThat(contains(effects, token), "special-role death punctuation is missing " .. token)
 end
 
@@ -58,10 +58,13 @@ for _, forbidden in
 		"ParticleEmitter",
 		"task.delay",
 		"task.spawn",
-		"Instance.new(\"Sound\")",
+		'Instance.new("Sound")',
 	}
- do
-	assertThat(not contains(effects, forbidden), "death punctuation cannot own gameplay or new event objects: " .. forbidden)
+do
+	assertThat(
+		not contains(effects, forbidden),
+		"death punctuation cannot own gameplay or new event objects: " .. forbidden
+	)
 end
 
 assertThat(
@@ -73,7 +76,7 @@ assertThat(
 	"death billboards must retain bounded Debris cleanup"
 )
 assertThat(
-	not contains(effects, "GetAttributeChangedSignal(\"HordeRoleId\")"),
+	not contains(effects, 'GetAttributeChangedSignal("HordeRoleId")'),
 	"special punctuation cannot add per-role attribute listeners"
 )
 assertThat(
@@ -81,4 +84,6 @@ assertThat(
 	"special punctuation must reuse the existing life-state death trigger"
 )
 
-print("HordeDeathPunctuationSourceAudit: authoritative facts, missing-identity fallback, reused objects, bounded cleanup, and zero power passed")
+print(
+	"HordeDeathPunctuationSourceAudit: authoritative facts, missing-identity fallback, reused objects, bounded cleanup, and zero power passed"
+)

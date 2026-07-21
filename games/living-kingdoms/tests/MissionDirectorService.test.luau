@@ -440,10 +440,7 @@ assert(
 assert(service.read().escalationLevel == 2)
 assert(latestBroadcast().radio.lineId == "PressureRising")
 assert(not service.evaluateTimersAt(now + 1).didChange)
-assert(
-	#spawnedHostiles == #config.Escalation.Waves[1] + #config.Escalation.Waves[2],
-	"second wave must not respawn"
-)
+assert(#spawnedHostiles == #config.Escalation.Waves[1] + #config.Escalation.Waves[2], "second wave must not respawn")
 
 -- Holdout requires an admitted, alive survivor inside the clearing.
 assert(not service.evaluateExtractionPresenceAt(now).didChange)
@@ -457,10 +454,7 @@ local holdoutRead = service.read()
 assert(holdoutRead.phaseId == "Holdout", "presence heartbeat must begin holdout")
 assert(holdoutRead.holdoutDeadlineServerTimestamp == now + config.Extraction.ArrivalSeconds)
 assert(holdoutRead.escalationLevel == 3)
-assert(
-	#spawnedHostiles
-		== #config.Escalation.Waves[1] + #config.Escalation.Waves[2] + #config.Escalation.Waves[3]
-)
+assert(#spawnedHostiles == #config.Escalation.Waves[1] + #config.Escalation.Waves[2] + #config.Escalation.Waves[3])
 assert(latestBroadcast().radio.lineId == "HoldPosition")
 assert(latestBroadcast().holdoutDeadlineServerTimestamp == holdoutRead.holdoutDeadlineServerTimestamp)
 assert(service.evaluateExtractionPresenceAt(now).rejectionReasonId == "InvalidPhase")

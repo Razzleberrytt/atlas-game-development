@@ -65,9 +65,8 @@ local combatService = {
 	end,
 }
 
-local service = luau.load(
-	fs.readFile("games/living-kingdoms/src/server/Systems/AmmunitionScarcityTelemetryService.luau"),
-	{
+local service =
+	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/AmmunitionScarcityTelemetryService.luau"), {
 		debugName = "AmmunitionScarcityTelemetryService",
 		environment = {
 			game = {
@@ -115,8 +114,7 @@ local service = luau.load(
 			end,
 		},
 		injectGlobals = true,
-	}
-)()
+	})()
 
 local playerOne = { UserId = 101 }
 local playerTwo = { UserId = 202 }
