@@ -162,6 +162,28 @@ function RunBuildService.offerRelicReward(
 	)
 end
 
+--[[
+	RPG-0110 production reward fan-out. One server-confirmed event opens the same
+	bounded choice for every currently registered operative, deriving a distinct
+	deterministic request ID per operative from the event's own ID. Operatives with
+	a full reward queue, a replayed event, or no remaining compatible relic are
+	rejected individually and silently, exactly as a single offer would be.
+	Returns how many operatives actually received an offer.
+]]
+function RunBuildService.offerRelicRewardToParticipants(eventId: string, sourceId: string): number
+	if not started or type(eventId) ~= "string" or eventId == "" then
+		return 0
+	end
+	local offeredCount = 0
+	for _, player in Players:GetPlayers() do
+		local accepted = RunBuildService.offerRelicReward(player, eventId .. ":" .. operativeId(player), sourceId)
+		if accepted then
+			offeredCount += 1
+		end
+	end
+	return offeredCount
+end
+
 function RunBuildService.submitRelicChoice(
 	player: Player,
 	intent: RunRpgContracts.RelicChoiceIntent

@@ -1,7 +1,7 @@
 # Living Kingdoms — Run-Based RPG Integration Plan
 
 **Document ID:** RPG-PLAN-001  
-**Status:** Active — `RPG-0101`–`RPG-0107` and `RPG-0109` complete; `RPG-0108` implementation complete pending Studio validation; `RPG-0110` next<br>
+**Status:** Active — `RPG-0101`–`RPG-0107`, `RPG-0109`, and `RPG-0110` complete for every available owner; `RPG-0108` implementation complete pending Studio validation; `RPG-0111` next<br>
 **Target:** Post-HROI gameplay expansion  
 **Primary objective:** Turn each operation into a distinct, replayable character-build journey while preserving Living Kingdoms' brutal cooperative survival identity.
 
@@ -634,11 +634,15 @@ Add Salvager's Mark, Breach Doctrine, Longwatch Doctrine, Suppression Engine, Gu
 
 **Exit:** Weapon identity and cooperative contribution materially affect build direction. ✔ *(Implementation and fixtures complete; the shared balance and readability evidence remains with the `RPG-0108` Studio gate and `RPG-0113`.)*
 
-### RPG-0110 — Integrate elite and objective reward sources
+### RPG-0110 — Integrate elite and objective reward sources — **Complete for every available owner**
 
 Relic rewards may originate from elite kills, special interruption, authored objectives, horde milestones, and boss milestones. Every source receives deterministic reward IDs and anti-duplication coverage.
 
-**Exit:** Rewards are frequent enough to matter without overwhelming scarcity.
+Delivered through the owners that already observe the confirmed events, with no new reward runtime. `RunProgressionService`'s confirmed-death observer opens an elite choice — reward IDs derive from the enemy's own `CombatEntityId` — and a squad-kill milestone choice, both only after an accepted Field XP award. `ScreamerInterruptRewardService` opens a choice on a configured interval of confirmed interrupts rather than per interrupt. `RunBuildService.offerRelicRewardToParticipants` fans one event out to every registered operative with a distinct deterministic request ID derived from the event, so the RPG-0107 replay history, queue ceiling, and slot rules still apply per operative and one rejection cannot suppress another operative's offer. Pacing lives in the new `RelicRewardSourceConfig`. Fixture: `RelicRewardSourceIntegration.test`.
+
+**Deferred by dependency:** authored objective completion and authored containers wait for P8; boss milestones wait for P9. Those three sources stay Planned and the config deliberately declares no pacing for them.
+
+**Exit:** Rewards are frequent enough to matter without overwhelming scarcity. *(Implementation complete; the frequency judgement itself belongs to the Studio evidence in `RPG-0113`.)*
 
 ### RPG-0111 — Add complete RPG HUD and build panel
 
@@ -670,7 +674,8 @@ Current status:
 | `RPG-0107` | Complete | Bounded reward/slot/replacement framework delivered through the existing run-build owner: pure `RelicRewardResolver`, `RunBuildStateStore` enqueue/choose/replace, and the server-only `RunBuildService` reward source and intent entry points. |
 | `RPG-0108` | Implementation complete; Studio validation outstanding | All six first-batch relics now change authoritative outcomes through their existing owners: conditional damage in `DamageResolver`, wounded reload in `ReloadResolver`, Blood Battery healing through the revisioned P3 healing boundary, and the Grave Momentum kill-chain window in `HordeExperienceService`. The catalog marks exactly these six Implemented. The "three viable build patterns" gate still needs representative Studio evidence. |
 | `RPG-0109` | Complete | Four slices through existing owners: the weapon-pattern pair in `DamageResolver`, Salvager's Mark in `EnemyLootService`, Suppression Engine across `AutomaticFireResolver` and `DamageResolver`, and the cooperative pair inside the P3 life core (expiring temporary armor and a one-charge incapacitation reprieve). All twelve declared relics are now Implemented. |
-| `RPG-0110`–`RPG-0111` | Not started | Add production reward sources and readable UI in order; defer any source whose authoritative P8/P9 owner does not yet exist. |
+| `RPG-0110` | Complete for every available owner | Elite kills, a squad-kill milestone, and confirmed special interrupts open bounded choices through the owners that already observe them, with deterministic per-operative request IDs. Objective, container, and boss sources stay Planned until P8/P9. |
+| `RPG-0111` | Not started | Add the relic bar, reward-choice and replacement interfaces, and build summary so players can read the build the reward sources now hand them. |
 | `RPG-0112` | Blocked by P10 result owner | Attach the operation-bound build summary to the authoritative match result rather than creating an RPG-specific result authority. |
 | `RPG-0113` | Not started | Run the complete solo/2/4-player security, balance, readability, cleanup, and representative-horde validation matrix after `RPG-0112`. |
 

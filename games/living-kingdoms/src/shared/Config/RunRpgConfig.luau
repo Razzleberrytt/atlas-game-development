@@ -474,10 +474,10 @@ local RelicCatalog = table.freeze({
 })
 
 local RewardSourceCatalog = table.freeze({
-	table.freeze({ sourceId = RewardSourceIds.EliteKill, implementationStateId = ImplementationStateIds.Planned }),
+	table.freeze({ sourceId = RewardSourceIds.EliteKill, implementationStateId = ImplementationStateIds.Implemented }),
 	table.freeze({
 		sourceId = RewardSourceIds.SpecialInterrupt,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		sourceId = RewardSourceIds.ObjectiveCompletion,
@@ -487,7 +487,7 @@ local RewardSourceCatalog = table.freeze({
 		sourceId = RewardSourceIds.AuthoredContainer,
 		implementationStateId = ImplementationStateIds.Planned,
 	}),
-	table.freeze({ sourceId = RewardSourceIds.HordeClear, implementationStateId = ImplementationStateIds.Planned }),
+	table.freeze({ sourceId = RewardSourceIds.HordeClear, implementationStateId = ImplementationStateIds.Implemented }),
 	table.freeze({ sourceId = RewardSourceIds.BossMilestone, implementationStateId = ImplementationStateIds.Planned }),
 })
 
@@ -781,14 +781,22 @@ assert(
 )
 
 local seenRewardSourceIds = {}
+local implementedRewardSourceCount = 0
 for _, definition in RewardSourceCatalog do
 	assert(not seenRewardSourceIds[definition.sourceId], "reward source IDs must be unique")
 	seenRewardSourceIds[definition.sourceId] = true
 	assert(
-		definition.implementationStateId == ImplementationStateIds.Planned,
-		"RPG-0101 reward sources remain declarations"
+		definition.implementationStateId == ImplementationStateIds.Implemented
+			or definition.implementationStateId == ImplementationStateIds.Planned,
+		"reward source catalog contains an invalid implementation state"
 	)
+	if definition.implementationStateId == ImplementationStateIds.Implemented then
+		implementedRewardSourceCount += 1
+	end
 end
+-- RPG-0110 connects the three sources whose authoritative owners exist today.
+-- Authored objectives, authored containers, and boss milestones wait for P8/P9.
+assert(implementedRewardSourceCount == 3, "exactly the live reward sources may be implemented")
 assert(#RewardSourceCatalog == countVocabulary(RewardSourceIds), "every reward source requires one catalog entry")
 
 return table.freeze(Config)
