@@ -183,6 +183,23 @@ local function isValidCommonFactsShape(facts: unknown): boolean
 		and type(value.serverTimestamp) == "number"
 		and (value.activeSessionIdForTarget == nil or isNonEmptyString(value.activeSessionIdForTarget))
 		and type(value.hasConflictingActiveSession) == "boolean"
+		and (value.reviveDurationSeconds == nil or (isFiniteNumber(value.reviveDurationSeconds) and value.reviveDurationSeconds > 0 and value.reviveDurationSeconds <= OperativeLifeConfig.ReviveDurationSeconds))
+		and (
+			value.restoredHealth == nil
+			or (
+				isFiniteNumber(value.restoredHealth)
+				and value.restoredHealth >= OperativeLifeConfig.ReviveHealth
+				and value.restoredHealth <= OperativeLifeConfig.MaximumHealth
+			)
+		)
+end
+
+local function reviveDuration(facts: any): number
+	return facts.reviveDurationSeconds or OperativeLifeConfig.ReviveDurationSeconds
+end
+
+local function restoredHealth(facts: any): number
+	return facts.restoredHealth or OperativeLifeConfig.ReviveHealth
 end
 
 local function isKnownWeaponReadinessStateId(value: unknown): boolean
@@ -326,8 +343,8 @@ local function isValidSessionShape(sessionState: unknown): boolean
 	end
 
 	if session.statusId == statusIds.Active then
-		return session.completionServerTimestamp
-			== session.startedAtServerTimestamp + OperativeLifeConfig.ReviveDurationSeconds
+		local duration = session.completionServerTimestamp - session.startedAtServerTimestamp
+		return duration > 0 and duration <= OperativeLifeConfig.ReviveDurationSeconds
 	end
 	return true
 end
@@ -361,7 +378,8 @@ local function copiedProgress(sessionState: any, serverTimestamp: unknown): numb
 		return 0
 	end
 	local elapsed = (serverTimestamp :: number) - sessionState.startedAtServerTimestamp
-	return math.clamp(elapsed / OperativeLifeConfig.ReviveDurationSeconds, 0, 1)
+	local duration = sessionState.completionServerTimestamp - sessionState.startedAtServerTimestamp
+	return math.clamp(elapsed / duration, 0, 1)
 end
 
 local function result(
@@ -460,7 +478,7 @@ function Resolver.beginRevive(
 		targetOperativeEntityId = facts.targetOperativeEntityId,
 		statusId = statusIds.Active,
 		startedAtServerTimestamp = facts.serverTimestamp,
-		completionServerTimestamp = facts.serverTimestamp + OperativeLifeConfig.ReviveDurationSeconds,
+		completionServerTimestamp = facts.serverTimestamp + reviveDuration(facts),
 	}
 	return result(true, nil, 0, sessionState, target, nil)
 end
@@ -497,6 +515,9 @@ function Resolver.continueRevive(
 		or facts.activeSessionIdForTarget ~= session.sessionId
 		or facts.hasConflictingActiveSession
 	then
+		return interrupted(reasons.ReviveInterrupted, session, target, combat)
+	end
+	if session.completionServerTimestamp - session.startedAtServerTimestamp ~= reviveDuration(facts) then
 		return interrupted(reasons.ReviveInterrupted, session, target, combat)
 	end
 	if reviver.lifeStateId ~= lifeStateIds.Alive then
@@ -540,7 +561,7 @@ function Resolver.continueRevive(
 
 	local targetAfter = deepCopy(target) :: OperativeLifeStateSnapshot
 	targetAfter.lifeStateId = lifeStateIds.Alive
-	targetAfter.healthState.currentHealth = OperativeLifeConfig.ReviveHealth
+	targetAfter.healthState.currentHealth = restoredHealth(facts)
 	targetAfter.incapacitationState = nil
 	targetAfter.soloRecoveryState.recoveryStartedAtServerTimestamp = nil
 	targetAfter.soloRecoveryState.recoveryCompletionServerTimestamp = nil

@@ -2,7 +2,7 @@
 
 ## Status
 
-**P7-0103 complete in source.** The shared contracts, selection owner, and Combat Specialist Brace vertical slice are implemented and fixture-validated. `P7-0104` (medic) is the next gameplay task.
+**P7-0104 complete in source.** The shared contracts, selection owner, Combat Specialist Brace, and Medic vertical slices are implemented and fixture-validated. `P7-0105` (engineer) is the next gameplay task; live Medic feel/readability validation remains listed in the Studio smoke test.
 
 ## Purpose
 
@@ -356,7 +356,7 @@ Complete. Brace runs through the production combat owner with finite duration/co
 
 ### P7-0104 — Medic
 
-Deliver Field Treatment and one bounded revive benefit through the P3 authority boundary. No engineer/combat effect.
+Complete. Field Treatment uses three finite server-owned charges, a three-second nearby line-of-sight channel, a 25-health revisioned life-owner commit, movement/damage/target/range/visibility interruption, and a four-second cooldown. Charges are spent only after a successful heal commit. Medic revives continue through the ordinary P3 session and revision boundary with a server-derived `0.75` duration multiplier and 40 restored health; non-medics retain the original duration and health. No self/dead revive or engineer/combat effect.
 
 ### P7-0105 — Engineer
 

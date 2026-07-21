@@ -1,10 +1,9 @@
 --!strict
 
 --[[
-	Server owner for starting-class selection and the bounded P7-0103 Brace
-	lifecycle. Clients request only a declared action and phase; assignment,
-	participation, mission/life state, movement, replay, timing, interruption,
-	cooldown, and the combat modifier are all derived here.
+	Server owner for starting-class selection, Brace, and Field Treatment.
+	Clients request only a declared action, phase, and optional candidate target;
+	all consequential facts and commits are server-derived.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -12,9 +11,12 @@ local Workspace = game:GetService("Workspace")
 
 local ClassContracts = require(ReplicatedStorage.Shared.Classes.ClassContracts)
 local ClassConfig = require(ReplicatedStorage.Shared.Config.ClassConfig)
+local OperativeLifeConfig = require(ReplicatedStorage.Shared.Config.OperativeLifeConfig)
+local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.OperativeLifeContracts)
 local MissionContracts = require(ReplicatedStorage.Shared.Mission.MissionContracts)
 local BraceResolver = require(script.Parent.BraceResolver)
 local ClassSelectionResolver = require(script.Parent.ClassSelectionResolver)
+local FieldTreatmentResolver = require(script.Parent.FieldTreatmentResolver)
 local MissionDirectorService = require(script.Parent.MissionDirectorService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 
@@ -25,6 +27,8 @@ local ActionStateIds = ClassContracts.ClassActionStateIds
 local ActionIds = ClassContracts.ClassActionIds
 local ActionPhaseIds = ClassContracts.ClassActionPhaseIds
 local ClassIds = ClassContracts.ClassIds
+local ResourceIds = ClassContracts.ClassResourceIds
+local LifeStateIds = OperativeLifeContracts.OperativeLifeStateIds
 
 local classNetwork = ReplicatedStorage:WaitForChild("ClassNetwork")
 local selectionIntentRemote = classNetwork:WaitForChild("SelectionIntent") :: RemoteEvent
@@ -42,7 +46,9 @@ type Entry = {
 	operativeEntityId: string,
 	assignment: AuthoritativeClassAssignment,
 	actionState: AuthoritativeClassActionState,
-	braceOriginPosition: Vector3?,
+	actionOriginPosition: Vector3?,
+	treatmentActorProcessedDamageEventIds: { [string]: boolean }?,
+	resources: { [string]: ClassContracts.AuthoritativeClassResourceState },
 	processedRequestIds: { [string]: boolean },
 	processedRequestOrder: { string },
 	lastRequestServerTimestamp: number?,
@@ -124,6 +130,58 @@ local function operativePosition(player: Player): Vector3?
 	return if root ~= nil and root:IsA("BasePart") then root.Position else nil
 end
 
+local function distanceAndLineOfSight(actor: Player, target: Player): (number, boolean)
+	local actorPosition = operativePosition(actor)
+	local targetPosition = operativePosition(target)
+	if actorPosition == nil or targetPosition == nil then
+		return math.huge, false
+	end
+	local parameters = RaycastParams.new()
+	parameters.FilterType = Enum.RaycastFilterType.Exclude
+	local excluded = {}
+	if actor.Character ~= nil then
+		table.insert(excluded, actor.Character)
+	end
+	if target.Character ~= nil then
+		table.insert(excluded, target.Character)
+	end
+	parameters.FilterDescendantsInstances = excluded
+	local displacement = targetPosition - actorPosition
+	return displacement.Magnitude, Workspace:Raycast(actorPosition, displacement, parameters) == nil
+end
+
+local function resourcesForClass(classId: string): { [string]: ClassContracts.AuthoritativeClassResourceState }
+	if classId ~= ClassIds.Medic then
+		return {}
+	end
+	local maximum = ClassConfig.Resources.MedicalCharge.maximumAmount
+	return {
+		[ResourceIds.MedicalCharge] = table.freeze({
+			resourceId = ResourceIds.MedicalCharge,
+			currentAmount = maximum,
+			maximumAmount = maximum,
+		}),
+	}
+end
+
+local function sortedResources(entry: Entry): { ClassContracts.AuthoritativeClassResourceState }
+	local resources = {}
+	for _, resource in entry.resources do
+		table.insert(
+			resources,
+			table.freeze({
+				resourceId = resource.resourceId,
+				currentAmount = resource.currentAmount,
+				maximumAmount = resource.maximumAmount,
+			})
+		)
+	end
+	table.sort(resources, function(left, right)
+		return left.resourceId < right.resourceId
+	end)
+	return table.freeze(resources)
+end
+
 local function operationIsActive(phaseId: string): boolean
 	local phases = MissionContracts.MissionPhaseIds
 	return phaseId == phases.Infiltration or phaseId == phases.Holdout or phaseId == phases.Exfiltration
@@ -171,7 +229,7 @@ local function safeSnapshotForPlayer(player: Player): ClassContracts.SafeClassSe
 		selectionStateId = selectionStateId,
 		ownerAssignment = if entry == nil then nil else copyAssignment(entry.assignment),
 		ownerActionState = if entry == nil then nil else copyActionState(entry.actionState),
-		ownerResources = table.freeze({}),
+		ownerResources = if entry == nil then table.freeze({}) else sortedResources(entry),
 		squadMembers = sortedSquadMembers(),
 	})
 end
@@ -274,7 +332,9 @@ local function registerPlayer(player: Player, allowLockedRegistration: boolean):
 		operativeEntityId = operativeEntityId,
 		assignment = assignment,
 		actionState = idleActionState(),
-		braceOriginPosition = nil,
+		actionOriginPosition = nil,
+		treatmentActorProcessedDamageEventIds = nil,
+		resources = resourcesForClass(ClassConfig.Selection.defaultClassId),
 		processedRequestIds = {},
 		processedRequestOrder = {},
 		lastRequestServerTimestamp = nil,
@@ -376,13 +436,35 @@ function Service.requestSelection(player: Player, payload: unknown): OperationRe
 	if not resolution.didSelect then
 		return reject(player, resolution.rejectionReasonId or RejectionReasonIds.InvalidIntent, resolution.requestId)
 	end
+	local previousClassId = entry.assignment.classId
 	entry.assignment = copyAssignment(resolution.assignmentAfter)
+	if resolution.assignmentAfter.classId ~= previousClassId then
+		entry.resources = resourcesForClass(resolution.assignmentAfter.classId)
+	end
 	if resolution.requestId ~= nil then
 		recordProcessedRequest(entry, resolution.requestId)
 	end
 	rosterRevision += 1
 	publishAll()
 	return result(true, nil, resolution.requestId, entry.assignment)
+end
+
+local function actorTookDamage(entry: Entry, snapshot: OperativeLifeContracts.OperativeLifeStateSnapshot): boolean
+	local baseline = entry.treatmentActorProcessedDamageEventIds
+	if baseline == nil then
+		return false
+	end
+	for damageEventId in snapshot.processedDamageEventIds do
+		if baseline[damageEventId] ~= true then
+			return true
+		end
+	end
+	return false
+end
+
+local function clearActionContinuity(entry: Entry)
+	entry.actionOriginPosition = nil
+	entry.treatmentActorProcessedDamageEventIds = nil
 end
 
 local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBegin: boolean): boolean
@@ -393,22 +475,72 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 	local movementDistanceStuds = 0
 	if state.actionStateId == ActionStateIds.Active then
 		local position = operativePosition(entry.player)
-		local origin = entry.braceOriginPosition
+		local origin = entry.actionOriginPosition
 		movementDistanceStuds = if position == nil or origin == nil then 1e9 else (position - origin).Magnitude
 	end
-	local resolution = BraceResolver.resolveContinuity(state, {
-		isOperationActive = operationIsActive(MissionDirectorService.read().phaseId),
-		isActorAlive = OperativeLifeService.isCombatAllowed(entry.player),
-		movementDistanceStuds = movementDistanceStuds,
-		didReloadBegin = didReloadBegin,
-		serverTimestamp = serverTimestamp,
-	})
+	local resolution
+	if state.actionId == ActionIds.FieldTreatment then
+		local actorRead = OperativeLifeService.read(entry.player)
+		local targetId = state.targetOperativeEntityId
+		local targetEntry = if targetId == nil then nil else entriesByOperativeId[targetId]
+		local targetRead = if targetId == nil then nil else OperativeLifeService.readByOperativeEntityId(targetId)
+		local targetPlayer = if targetEntry == nil then nil else targetEntry.player
+		local distanceStuds, hasLineOfSight = 0, false
+		if targetPlayer ~= nil then
+			distanceStuds, hasLineOfSight = distanceAndLineOfSight(entry.player, targetPlayer)
+		end
+		local targetSnapshot = if targetRead == nil then nil else targetRead.snapshot
+		resolution = FieldTreatmentResolver.resolveContinuity(state, {
+			isOperationActive = operationIsActive(MissionDirectorService.read().phaseId),
+			isActorAlive = actorRead ~= nil and actorRead.snapshot.lifeStateId == LifeStateIds.Alive,
+			movementDistanceStuds = movementDistanceStuds,
+			didActorTakeDamage = actorRead ~= nil and actorTookDamage(entry, actorRead.snapshot),
+			isTargetKnown = targetEntry ~= nil and targetRead ~= nil,
+			isTargetAlive = targetSnapshot ~= nil and targetSnapshot.lifeStateId == LifeStateIds.Alive,
+			isTargetInjured = targetSnapshot ~= nil
+				and targetSnapshot.healthState.currentHealth < targetSnapshot.healthState.maximumHealth,
+			distanceStuds = distanceStuds,
+			hasLineOfSight = hasLineOfSight,
+			serverTimestamp = serverTimestamp,
+		})
+		if resolution.shouldCommitHealing then
+			local medical = entry.resources[ResourceIds.MedicalCharge]
+			local committed = if targetRead == nil
+					or targetId == nil
+					or medical == nil
+				then nil
+				else OperativeLifeService.applyAuthoritativeHealing(targetId, targetRead.revision, {
+					healingEventId = string.format("class-treatment:%s:%d", entry.operativeEntityId, state.revision),
+					sourceEntityId = entry.operativeEntityId,
+					targetEntityId = targetId,
+					healingAmount = ClassConfig.Actions.FieldTreatment.healAmount,
+					serverTimestamp = serverTimestamp,
+				})
+			if committed ~= nil and committed.didCommit and medical ~= nil then
+				entry.resources[ResourceIds.MedicalCharge] = table.freeze({
+					resourceId = medical.resourceId,
+					currentAmount = medical.currentAmount - ClassConfig.Actions.FieldTreatment.resourceCost,
+					maximumAmount = medical.maximumAmount,
+				})
+			else
+				resolution = FieldTreatmentResolver.resolveEffectRejected(state, serverTimestamp)
+			end
+		end
+	else
+		resolution = BraceResolver.resolveContinuity(state, {
+			isOperationActive = operationIsActive(MissionDirectorService.read().phaseId),
+			isActorAlive = OperativeLifeService.isCombatAllowed(entry.player),
+			movementDistanceStuds = movementDistanceStuds,
+			didReloadBegin = didReloadBegin,
+			serverTimestamp = serverTimestamp,
+		})
+	end
 	if not resolution.didChange then
 		return false
 	end
 	entry.actionState = copyActionState(resolution.actionStateAfter)
 	if entry.actionState.actionStateId ~= ActionStateIds.Active then
-		entry.braceOriginPosition = nil
+		clearActionContinuity(entry)
 	end
 	return true
 end
@@ -457,20 +589,57 @@ function Service.requestAction(player: Player, payload: unknown): OperationResul
 		if startPosition == nil then
 			return reject(player, RejectionReasonIds.ActorNotAlive, intent.requestId)
 		end
-		resolution = BraceResolver.resolveStart(entry.actionState, payload, {
-			isParticipant = OperativeLifeService.read(player) ~= nil,
-			isOperationActive = operationIsActive(MissionDirectorService.read().phaseId),
-			assignedClassId = entry.assignment.classId,
-			isActorAlive = OperativeLifeService.isCombatAllowed(player),
-			serverTimestamp = serverTimestamp,
-			isDuplicateRequest = false,
-			isRateLimited = false,
-		})
-		if resolution.didActivate then
-			entry.braceOriginPosition = startPosition
+		if intent.actionId == ActionIds.FieldTreatment then
+			local targetId = intent.candidateTargetOperativeEntityId
+			local targetEntry = if targetId == nil then nil else entriesByOperativeId[targetId]
+			local targetRead = if targetId == nil then nil else OperativeLifeService.readByOperativeEntityId(targetId)
+			local targetPlayer = if targetEntry == nil then nil else targetEntry.player
+			local distanceStuds, hasLineOfSight = 0, false
+			if targetPlayer ~= nil then
+				distanceStuds, hasLineOfSight = distanceAndLineOfSight(player, targetPlayer)
+			end
+			local targetSnapshot = if targetRead == nil then nil else targetRead.snapshot
+			local medical = entry.resources[ResourceIds.MedicalCharge]
+			resolution = FieldTreatmentResolver.resolveStart(entry.actionState, payload, {
+				isParticipant = OperativeLifeService.read(player) ~= nil,
+				isOperationActive = operationIsActive(MissionDirectorService.read().phaseId),
+				assignedClassId = entry.assignment.classId,
+				isActorAlive = OperativeLifeService.isCombatAllowed(player),
+				resourceAmount = if medical == nil then 0 else medical.currentAmount,
+				isTargetKnown = targetEntry ~= nil and targetRead ~= nil,
+				isSelfTarget = targetId == entry.operativeEntityId,
+				isTargetAlive = targetSnapshot ~= nil and targetSnapshot.lifeStateId == LifeStateIds.Alive,
+				isTargetInjured = targetSnapshot ~= nil
+					and targetSnapshot.healthState.currentHealth < targetSnapshot.healthState.maximumHealth,
+				distanceStuds = distanceStuds,
+				hasLineOfSight = hasLineOfSight,
+				serverTimestamp = serverTimestamp,
+			})
+			if resolution.didActivate then
+				local actorRead = OperativeLifeService.read(player)
+				entry.actionOriginPosition = startPosition
+				entry.treatmentActorProcessedDamageEventIds = if actorRead == nil
+					then {}
+					else table.clone(actorRead.snapshot.processedDamageEventIds)
+			end
+		else
+			resolution = BraceResolver.resolveStart(entry.actionState, payload, {
+				isParticipant = OperativeLifeService.read(player) ~= nil,
+				isOperationActive = operationIsActive(MissionDirectorService.read().phaseId),
+				assignedClassId = entry.assignment.classId,
+				isActorAlive = OperativeLifeService.isCombatAllowed(player),
+				serverTimestamp = serverTimestamp,
+				isDuplicateRequest = false,
+				isRateLimited = false,
+			})
+			if resolution.didActivate then
+				entry.actionOriginPosition = startPosition
+			end
 		end
 	else
-		resolution = BraceResolver.resolveCancel(entry.actionState, payload, serverTimestamp)
+		resolution = if entry.actionState.actionId == ActionIds.FieldTreatment
+			then FieldTreatmentResolver.resolveCancel(entry.actionState, payload, serverTimestamp)
+			else BraceResolver.resolveCancel(entry.actionState, payload, serverTimestamp)
 	end
 	if not resolution.didChange then
 		if didAdvance then
@@ -481,7 +650,7 @@ function Service.requestAction(player: Player, payload: unknown): OperationResul
 	end
 	entry.actionState = copyActionState(resolution.actionStateAfter)
 	if not resolution.didActivate then
-		entry.braceOriginPosition = nil
+		clearActionContinuity(entry)
 	end
 	recordProcessedActionRequest(entry, intent.requestId)
 	rosterRevision += 1
@@ -525,6 +694,16 @@ function Service.readBraceCadenceMultiplier(player: Player): number
 		return ClassConfig.Actions.Brace.cadenceIntervalMultiplier
 	end
 	return 1
+end
+
+function Service.readMedicReviveBenefits(player: Player): (number, number, boolean)
+	local entry = entryByPlayer[player]
+	if entry ~= nil and entry.assignment.classId == ClassIds.Medic then
+		return OperativeLifeConfig.ReviveDurationSeconds * ClassConfig.Actions.ReviveAssistance.reviveDurationMultiplier,
+			ClassConfig.Actions.ReviveAssistance.restoredHealth,
+			true
+	end
+	return OperativeLifeConfig.ReviveDurationSeconds, OperativeLifeConfig.ReviveHealth, false
 end
 
 function Service.read(player: Player): AuthoritativeClassAssignment?

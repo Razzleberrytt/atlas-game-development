@@ -633,6 +633,34 @@ assert(
 local completedTwice = resolver.continueRevive(reviver, target, session, completionFacts, completionCombatInput)
 assert(deepEqual(completedOnce, completedTwice), "equivalent completion calls must be deterministic")
 
+local medicBeginFacts = beginFacts()
+medicBeginFacts.sessionId = "revive.medic"
+medicBeginFacts.reviveDurationSeconds = 3
+medicBeginFacts.restoredHealth = 40
+local medicBegin = resolver.beginRevive(reviver, target, medicBeginFacts)
+assert(medicBegin.didTransition, "bounded medic revive must begin")
+assert(medicBegin.sessionStateAfter.completionServerTimestamp == 23, "medic deadline must use server benefit")
+local medicCompletionFacts = continueFacts(23)
+medicCompletionFacts.sessionId = "revive.medic"
+medicCompletionFacts.activeSessionIdForTarget = "revive.medic"
+medicCompletionFacts.reviveDurationSeconds = 3
+medicCompletionFacts.restoredHealth = 40
+local medicCompletion = resolver.continueRevive(
+	reviver,
+	target,
+	medicBegin.sessionStateAfter,
+	medicCompletionFacts,
+	combatState()
+)
+assert(medicCompletion.didTransition, "medic deadline must complete")
+assert(medicCompletion.targetSnapshotAfter.healthState.currentHealth == 40, "medic restore must be bounded")
+local forgedMedicFacts = deepCopy(medicCompletionFacts)
+forgedMedicFacts.restoredHealth = 101
+assertRejected(
+	resolver.continueRevive(reviver, target, medicBegin.sessionStateAfter, forgedMedicFacts, combatState()),
+	"InvalidReviveInput"
+)
+
 local sessionImmutability = deepCopy(session)
 local factsImmutability = continueFacts(22)
 local factsImmutabilityBefore = deepCopy(factsImmutability)

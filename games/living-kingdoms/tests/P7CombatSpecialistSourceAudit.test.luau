@@ -51,12 +51,12 @@ assertThat(
 	"automatic fire must compose bounded class cadence"
 )
 
-local payloadStart = string.find(controller, "actionIntentRemote:FireServer({", 1, true)
+local payloadStart = string.find(controller, 'requestId = string.format("class-action:', 1, true)
 assertThat(payloadStart ~= nil, "client action payload must exist")
-local payloadEnd = string.find(controller, "\n\t})", payloadStart :: number, true)
+local payloadEnd = string.find(controller, "\n\t\t})", payloadStart :: number, true)
 assertThat(payloadEnd ~= nil, "client action payload must have a bounded literal")
 local payload = string.sub(controller, payloadStart :: number, payloadEnd :: number)
-for _, required in { "requestId =", "actionId = ActionIds.Brace", "phaseId = phaseId" } do
+for _, required in { "requestId =", "actionId = actionId", "phaseId = phaseId" } do
 	assertThat(string.find(payload, required, 1, true) ~= nil, "action payload missing " .. required)
 end
 for _, forbidden in
