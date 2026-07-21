@@ -37,6 +37,8 @@ Moonlight and a low blue-gray ambient floor preserve terrain silhouettes. Fog sh
 
 P5-0102 lengthens the readable fog range, opens cloud cover slightly, defines the moon direction through clock time and Appalachian latitude, and increases path/terrain contrast. The lookout blink, checkpoint floodlights, ranger generator, and extraction work light establish a restrained hierarchy: cold moonlight defines terrain while red and amber infrastructure identifies destinations.
 
+The later combat-readability correction raises the pre-dawn ambient floor, reduces atmosphere density and color-grade contrast, and moves fog outside the immediate combat camera. Threat response may still cool and desaturate the scene, but its maximum darkening is deliberately small so high threat cannot crush terrain and enemy silhouettes. The default tactical height is now 76 studs instead of 92, keeping combatants large enough to parse without removing mouse-wheel zoom or the wider tactical range.
+
 HROI-ENV-001 layers one client-local color grade and one client-local bloom effect over the existing server-authored lighting. The controller accepts only monotonic `HordeNetwork.State` revisions, clamps disclosed threat to `0..1`, and smooths the visual response before increasing wind motion, emergency-power instability, contrast, desaturation, and bloom. Occasional deterministic double-flash storm pulses briefly surge the grade and dip tagged emergency lights; their cadence has a strict 9–24 second bound and uses no task loop. This is atmosphere, not threat detection: the controller performs no raycast, hostile scan, gameplay-light activation, mission mutation, or client-to-server request.
 
 No music or unlicensed audio asset IDs are included. Wind, insects, wildlife, distant sirens, helicopters, and radio chatter remain an audio-content pass once approved source assets and a mix budget exist. Burning wreckage is also deferred until an effects budget and authored asset pass; current emergency light communicates the intended contrast without adding particles.
@@ -72,6 +74,7 @@ The generated geometry is intentionally graybox. Primitive tree crowns, building
 - Several landmarks had similar low primitive mass. The radio mast, lookout tower/blink, floodlight pair, open landing composition, log loader, campground furniture, and overlook edge give each a distinct silhouette and purpose.
 - The original complete bridge did not tell a convincing evacuation or alternate-traversal story. A missing plank, collapsed rail, exposed rocks, and fallen tree now make the shallow crossing legible while preserving a traversable route.
 - Story evidence is concentrated at believable interruption points—station departure, campground abandonment, roadside vehicle, damaged utilities, and quarantine checkpoint—rather than scattered uniformly as clutter.
+- A one-client combat review found that the 92-stud default camera, low exposure, dense haze, and threat-grade contrast compounded into a muddy image. The closer 76-stud default and bounded lighting correction preserve the night identity while restoring route and silhouette readability.
 
 ## Known limitations
 

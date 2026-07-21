@@ -19,20 +19,25 @@ local weaponSelection = fs.readFile("games/living-kingdoms/src/client/Controller
 local hordeHud = fs.readFile("games/living-kingdoms/src/client/Controllers/HordeHUDController.luau")
 local massacre = fs.readFile("games/living-kingdoms/src/client/Controllers/MassacreCrescendoController.luau")
 local runBuildHud = fs.readFile("games/living-kingdoms/src/client/Controllers/RunBuildHUDController.luau")
+local camera = fs.readFile("games/living-kingdoms/src/client/Controllers/CameraController.luau")
 
 for _, source in { enemy, harness } do
 	assertThat(contains(source, "billboard.AlwaysOnTop = false"), "enemy labels must respect world occlusion")
 	assertThat(contains(source, "billboard.MaxDistance = 70"), "enemy labels need a short readability range")
 	assertThat(
-		contains(source, "billboard.Enabled = fixture.isAlive") or contains(source, "billboard.Enabled = entry.isAlive"),
+		contains(source, "billboard.Enabled = fixture.isAlive") or contains(source, "entry.isAlive"),
 		"enemy labels must disable at death"
 	)
 	assertThat(not contains(source, "Health: %d"), "large two-line debug health labels must stay removed")
 end
 
 assertThat(
-	contains(enemy, "entry.healthState.currentHealth < entry.maximumHealth"),
-	"standard labels should remain hidden until damaged"
+	contains(enemy, "billboard.Enabled = entry.isAlive and entry.eliteAffixId ~= nil"),
+	"persistent world labels must be reserved for living elites"
+)
+assertThat(
+	not contains(enemy, "entry.healthState.currentHealth < entry.maximumHealth or entry.eliteAffixId ~= nil"),
+	"damaging an ordinary horde must not create persistent nameplate clutter"
 )
 assertThat(contains(classSelection, "currentPanel.Visible = false"), "locked class picker must leave combat view")
 assertThat(contains(weaponSelection, "panel.Visible = false"), "locked loadout picker must leave combat view")
@@ -41,10 +46,15 @@ assertThat(contains(hordeHud, "Enum.CoreGuiType.PlayerList"), "the duplicate Rob
 assertThat(contains(hordeHud, "overlay.BackgroundTransparency = 1"), "upgrade choices must not dim all combat")
 assertThat(contains(hordeHud, "UDim2.fromOffset(430, 330)"), "upgrade choices must remain a compact side card")
 assertThat(contains(hordeHud, "hasUpgradeChoices and not relicChoiceVisible"), "only one reward choice may show")
+assertThat(
+	not contains(hordeHud, "FIELD LEVEL %02d — CHOOSE AN UPGRADE"),
+	"the upgrade card must not duplicate its call to action over combat"
+)
 assertThat(contains(massacre, "isBlockingChoiceVisible"), "crescendo must detect blocking choice UI")
 assertThat(contains(massacre, "not isBlockingChoiceVisible()"), "crescendo must yield while choices are visible")
 assertThat(contains(massacre, 'FindFirstChild("RelicReward")'), "crescendo must also yield to relic choices")
 assertThat(contains(runBuildHud, "UDim2.fromOffset(430, 300)"), "relic choices must remain a compact side card")
 assertThat(contains(runBuildHud, "Enum.FillDirection.Vertical"), "relic choices must stack without crossing the HUD")
+assertThat(contains(camera, "InitialHeight = 76"), "combat must start at the closer readability-tested camera height")
 
 print("Combat presentation clutter and death-label lifecycle audit passed")

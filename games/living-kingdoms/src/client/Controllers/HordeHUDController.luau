@@ -384,15 +384,11 @@ local function applyProgressionState(snapshot: any)
 		then snapshot.lastSelectedUpgradeName
 		else ""
 	local gainSequence = tonumber(snapshot.lastGainSequence) or 0
-	local levelsGained = tonumber(snapshot.levelsGainedLastAward) or 0
 	if selectionSequence > lastSelectionSequence and selectedName ~= "" then
 		lastSelectionSequence = selectionSequence
 		showEvent(string.format("SQUAD UPGRADE  //  %s", string.upper(selectedName)), Color3.fromRGB(247, 198, 79))
 	elseif gainSequence > lastProgressionGainSequence then
 		lastProgressionGainSequence = gainSequence
-		if levelsGained > 0 then
-			showEvent(string.format("FIELD LEVEL %02d — CHOOSE AN UPGRADE", level), Color3.fromRGB(247, 198, 79))
-		end
 	end
 
 	renderUpgradeChoices(if type(snapshot.pendingChoices) == "table" then snapshot.pendingChoices else {})

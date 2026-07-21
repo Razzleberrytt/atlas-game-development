@@ -27,7 +27,7 @@ local CameraConfig = table.freeze({
 	MinimumHeight = 40,
 	MaximumHeight = 160,
 	ZoomSensitivity = 10,
-	InitialHeight = 92,
+	InitialHeight = 76,
 })
 
 local SurvivorFollowConfig = table.freeze({

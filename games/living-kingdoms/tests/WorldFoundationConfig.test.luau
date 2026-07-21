@@ -48,8 +48,11 @@ assert(
 	"readability pass exceeded the prototype tree budget"
 )
 assert(config.Lighting.FogStart < config.Lighting.FogEnd, "fog bounds must be ordered")
-assert(config.Lighting.FogStart >= 60, "near-route fog should preserve gameplay-camera readability")
-assert(config.Lighting.FogEnd >= 500, "landmarks need a useful long-range reveal distance")
+assert(config.Lighting.ClockTime >= 3, "night presentation must retain enough pre-dawn ambient light")
+assert(config.Lighting.Brightness >= 2.7, "world lighting must preserve terrain silhouettes")
+assert(config.Lighting.ExposureCompensation >= 0.45, "dark materials must remain readable during combat")
+assert(config.Lighting.FogStart >= 90, "near-route fog should preserve gameplay-camera readability")
+assert(config.Lighting.FogEnd >= 580, "landmarks need a useful long-range reveal distance")
 assert(
 	config.InsertionPosition.x == -224 and config.InsertionPosition.z == -208,
 	"insertion must remain at the ranger station"

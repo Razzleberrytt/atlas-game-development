@@ -155,8 +155,8 @@ local function createMoodEffects()
 
 	local grade = Instance.new("ColorCorrectionEffect")
 	grade.Name = MOOD_GRADE_NAME
-	grade.Brightness = -0.005
-	grade.Contrast = 0.02
+	grade.Brightness = 0
+	grade.Contrast = 0.01
 	grade.Saturation = -0.025
 	grade.TintColor = BASE_TINT
 	grade.Parent = Lighting
@@ -179,8 +179,8 @@ local function updateMood(stormPulse: number)
 	end
 
 	local ambientDrift = math.noise(elapsed * 0.08, 2.7, 5.2) * 0.004
-	grade.Brightness = -0.005 - threatVisual * 0.032 + ambientDrift + stormPulse * 0.22
-	grade.Contrast = 0.02 + threatVisual * 0.075 + stormPulse * 0.05
+	grade.Brightness = -threatVisual * 0.008 + ambientDrift + stormPulse * 0.22
+	grade.Contrast = 0.01 + threatVisual * 0.025 + stormPulse * 0.05
 	grade.Saturation = -0.025 - threatVisual * 0.11
 	grade.TintColor = BASE_TINT:Lerp(ALERT_TINT, threatVisual * 0.68)
 
