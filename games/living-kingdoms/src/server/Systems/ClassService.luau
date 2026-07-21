@@ -1,13 +1,10 @@
 --!strict
 
 --[[
-	P7-0102 server owner for starting-class selection and assignment. The only
-	client mutation request contains a request ID and class ID. Operative identity,
-	participation, mission phase/deadline, availability, request bounds, assignment,
-	lock state, revisions, roster disclosure, and cleanup are derived here.
-
-	This service owns no class action, healing, revive effect, weapon effect,
-	ammunition grant, objective repair, or persistent unlock state.
+	Server owner for starting-class selection and the bounded P7-0103 Brace
+	lifecycle. Clients request only a declared action and phase; assignment,
+	participation, mission/life state, movement, replay, timing, interruption,
+	cooldown, and the combat modifier are all derived here.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,6 +12,8 @@ local Workspace = game:GetService("Workspace")
 
 local ClassContracts = require(ReplicatedStorage.Shared.Classes.ClassContracts)
 local ClassConfig = require(ReplicatedStorage.Shared.Config.ClassConfig)
+local MissionContracts = require(ReplicatedStorage.Shared.Mission.MissionContracts)
+local BraceResolver = require(script.Parent.BraceResolver)
 local ClassSelectionResolver = require(script.Parent.ClassSelectionResolver)
 local MissionDirectorService = require(script.Parent.MissionDirectorService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
@@ -23,23 +22,33 @@ local NetworkOperationIds = ClassContracts.ClassSelectionNetworkOperationIds
 local RejectionReasonIds = ClassContracts.ClassActionRejectionReasonIds
 local SelectionStateIds = ClassContracts.ClassSelectionStateIds
 local ActionStateIds = ClassContracts.ClassActionStateIds
+local ActionIds = ClassContracts.ClassActionIds
+local ActionPhaseIds = ClassContracts.ClassActionPhaseIds
+local ClassIds = ClassContracts.ClassIds
 
 local classNetwork = ReplicatedStorage:WaitForChild("ClassNetwork")
 local selectionIntentRemote = classNetwork:WaitForChild("SelectionIntent") :: RemoteEvent
+local actionIntentRemote = classNetwork:WaitForChild("ActionIntent") :: RemoteEvent
 local stateRemote = classNetwork:WaitForChild("State") :: RemoteEvent
 local readStateFunction = classNetwork:WaitForChild("ReadState") :: RemoteFunction
 
 type ClassSelectionStateId = ClassContracts.ClassSelectionStateId
 type AuthoritativeClassAssignment = ClassContracts.AuthoritativeClassAssignment
+type AuthoritativeClassActionState = ClassContracts.AuthoritativeClassActionState
 type ListenerConnection = { Disconnect: (self: ListenerConnection) -> () }
 
 type Entry = {
 	player: Player,
 	operativeEntityId: string,
 	assignment: AuthoritativeClassAssignment,
+	actionState: AuthoritativeClassActionState,
+	braceOriginPosition: Vector3?,
 	processedRequestIds: { [string]: boolean },
 	processedRequestOrder: { string },
 	lastRequestServerTimestamp: number?,
+	processedActionRequestIds: { [string]: boolean },
+	processedActionRequestOrder: { string },
+	lastActionRequestServerTimestamp: number?,
 }
 
 export type OperationResult = {
@@ -63,6 +72,7 @@ local serviceGeneration = 0
 local lockGeneration = 0
 local lockThread: thread? = nil
 local remoteConnection: RBXScriptConnection? = nil
+local actionRemoteConnection: RBXScriptConnection? = nil
 local rosterConnection: ListenerConnection? = nil
 
 for _, classId in ClassConfig.Selection.startingClassIds do
@@ -80,6 +90,43 @@ local function copyAssignment(assignment: AuthoritativeClassAssignment): Authori
 		selectionStateId = assignment.selectionStateId,
 		revision = assignment.revision,
 	})
+end
+
+local function idleActionState(): AuthoritativeClassActionState
+	return table.freeze({
+		actionStateId = ActionStateIds.Idle,
+		actionId = nil,
+		targetOperativeEntityId = nil,
+		startedAtServerTimestamp = nil,
+		completionServerTimestamp = nil,
+		cooldownEndServerTimestamp = nil,
+		statusReasonId = nil,
+		revision = 1,
+	})
+end
+
+local function copyActionState(state: AuthoritativeClassActionState): AuthoritativeClassActionState
+	return table.freeze({
+		actionStateId = state.actionStateId,
+		actionId = state.actionId,
+		targetOperativeEntityId = state.targetOperativeEntityId,
+		startedAtServerTimestamp = state.startedAtServerTimestamp,
+		completionServerTimestamp = state.completionServerTimestamp,
+		cooldownEndServerTimestamp = state.cooldownEndServerTimestamp,
+		statusReasonId = state.statusReasonId,
+		revision = state.revision,
+	})
+end
+
+local function operativePosition(player: Player): Vector3?
+	local character = player.Character
+	local root = if character == nil then nil else character:FindFirstChild("HumanoidRootPart")
+	return if root ~= nil and root:IsA("BasePart") then root.Position else nil
+end
+
+local function operationIsActive(phaseId: string): boolean
+	local phases = MissionContracts.MissionPhaseIds
+	return phaseId == phases.Infiltration or phaseId == phases.Holdout or phaseId == phases.Exfiltration
 end
 
 local function result(
@@ -105,8 +152,8 @@ local function sortedSquadMembers(): { ClassContracts.ClassSquadMemberPresentati
 			table.freeze({
 				operativeEntityId = entry.operativeEntityId,
 				classId = entry.assignment.classId,
-				actionStateId = ActionStateIds.Idle,
-				actionId = nil,
+				actionStateId = entry.actionState.actionStateId,
+				actionId = entry.actionState.actionId,
 			})
 		)
 	end
@@ -123,6 +170,8 @@ local function safeSnapshotForPlayer(player: Player): ClassContracts.SafeClassSe
 		rosterRevision = rosterRevision,
 		selectionStateId = selectionStateId,
 		ownerAssignment = if entry == nil then nil else copyAssignment(entry.assignment),
+		ownerActionState = if entry == nil then nil else copyActionState(entry.actionState),
+		ownerResources = table.freeze({}),
 		squadMembers = sortedSquadMembers(),
 	})
 end
@@ -224,9 +273,14 @@ local function registerPlayer(player: Player, allowLockedRegistration: boolean):
 		player = player,
 		operativeEntityId = operativeEntityId,
 		assignment = assignment,
+		actionState = idleActionState(),
+		braceOriginPosition = nil,
 		processedRequestIds = {},
 		processedRequestOrder = {},
 		lastRequestServerTimestamp = nil,
+		processedActionRequestIds = {},
+		processedActionRequestOrder = {},
+		lastActionRequestServerTimestamp = nil,
 	}
 	entriesByOperativeId[operativeEntityId] = entry
 	entryByPlayer[player] = entry
@@ -253,6 +307,18 @@ local function recordProcessedRequest(entry: Entry, requestId: string)
 		local expiredRequestId = table.remove(entry.processedRequestOrder, 1)
 		if expiredRequestId ~= nil then
 			entry.processedRequestIds[expiredRequestId] = nil
+		end
+	end
+end
+
+local function recordProcessedActionRequest(entry: Entry, requestId: string)
+	entry.processedActionRequestIds[requestId] = true
+	table.insert(entry.processedActionRequestOrder, requestId)
+	local maximum = ClassConfig.ActionRequests.maximumProcessedRequestIdsPerOperative
+	while #entry.processedActionRequestOrder > maximum do
+		local expiredRequestId = table.remove(entry.processedActionRequestOrder, 1)
+		if expiredRequestId ~= nil then
+			entry.processedActionRequestIds[expiredRequestId] = nil
 		end
 	end
 end
@@ -319,6 +385,148 @@ function Service.requestSelection(player: Player, payload: unknown): OperationRe
 	return result(true, nil, resolution.requestId, entry.assignment)
 end
 
+local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBegin: boolean): boolean
+	local state = entry.actionState
+	if state.actionStateId == ActionStateIds.Idle then
+		return false
+	end
+	local movementDistanceStuds = 0
+	if state.actionStateId == ActionStateIds.Active then
+		local position = operativePosition(entry.player)
+		local origin = entry.braceOriginPosition
+		movementDistanceStuds = if position == nil or origin == nil then 1e9 else (position - origin).Magnitude
+	end
+	local resolution = BraceResolver.resolveContinuity(state, {
+		isOperationActive = operationIsActive(MissionDirectorService.read().phaseId),
+		isActorAlive = OperativeLifeService.isCombatAllowed(entry.player),
+		movementDistanceStuds = movementDistanceStuds,
+		didReloadBegin = didReloadBegin,
+		serverTimestamp = serverTimestamp,
+	})
+	if not resolution.didChange then
+		return false
+	end
+	entry.actionState = copyActionState(resolution.actionStateAfter)
+	if entry.actionState.actionStateId ~= ActionStateIds.Active then
+		entry.braceOriginPosition = nil
+	end
+	return true
+end
+
+function Service.requestAction(player: Player, payload: unknown): OperationResult
+	local requestId = if type(payload) == "table" and type((payload :: any).requestId) == "string"
+		then (payload :: any).requestId
+		else nil
+	if not started then
+		return reject(player, RejectionReasonIds.ServiceStopped, requestId)
+	end
+	local entry = entryByPlayer[player]
+	if entry == nil then
+		return reject(player, RejectionReasonIds.NotParticipant, requestId)
+	end
+	if not ClassContracts.validateClassActionIntent(payload) then
+		return reject(player, RejectionReasonIds.InvalidIntent, requestId)
+	end
+	local intent = payload :: ClassContracts.ClassActionIntent
+	local serverTimestamp = now()
+	local previousTimestamp = entry.lastActionRequestServerTimestamp
+	local isRateLimited = previousTimestamp ~= nil
+		and serverTimestamp - previousTimestamp < ClassConfig.ActionRequests.minimumRequestIntervalSeconds
+	entry.lastActionRequestServerTimestamp = serverTimestamp
+	local isDuplicateRequest = entry.processedActionRequestIds[intent.requestId] == true
+
+	local didAdvance = evaluateEntry(entry, serverTimestamp, false)
+	if isDuplicateRequest then
+		if didAdvance then
+			rosterRevision += 1
+			publishAll()
+		end
+		return reject(player, RejectionReasonIds.DuplicateRequest, intent.requestId)
+	end
+	if isRateLimited then
+		if didAdvance then
+			rosterRevision += 1
+			publishAll()
+		end
+		return reject(player, RejectionReasonIds.RateLimited, intent.requestId)
+	end
+
+	local resolution
+	if intent.phaseId == ActionPhaseIds.Begin then
+		local startPosition = operativePosition(player)
+		if startPosition == nil then
+			return reject(player, RejectionReasonIds.ActorNotAlive, intent.requestId)
+		end
+		resolution = BraceResolver.resolveStart(entry.actionState, payload, {
+			isParticipant = OperativeLifeService.read(player) ~= nil,
+			isOperationActive = operationIsActive(MissionDirectorService.read().phaseId),
+			assignedClassId = entry.assignment.classId,
+			isActorAlive = OperativeLifeService.isCombatAllowed(player),
+			serverTimestamp = serverTimestamp,
+			isDuplicateRequest = false,
+			isRateLimited = false,
+		})
+		if resolution.didActivate then
+			entry.braceOriginPosition = startPosition
+		end
+	else
+		resolution = BraceResolver.resolveCancel(entry.actionState, payload, serverTimestamp)
+	end
+	if not resolution.didChange then
+		if didAdvance then
+			rosterRevision += 1
+			publishAll()
+		end
+		return reject(player, resolution.rejectionReasonId or RejectionReasonIds.InvalidIntent, resolution.requestId)
+	end
+	entry.actionState = copyActionState(resolution.actionStateAfter)
+	if not resolution.didActivate then
+		entry.braceOriginPosition = nil
+	end
+	recordProcessedActionRequest(entry, intent.requestId)
+	rosterRevision += 1
+	publishAll()
+	return result(true, nil, intent.requestId, entry.assignment)
+end
+
+function Service.evaluateActionsAt(serverTimestamp: number)
+	if not started or type(serverTimestamp) ~= "number" or serverTimestamp ~= serverTimestamp then
+		return
+	end
+	local didChange = false
+	for _, entry in entriesByOperativeId do
+		didChange = evaluateEntry(entry, serverTimestamp, false) or didChange
+	end
+	if didChange then
+		rosterRevision += 1
+		publishAll()
+	end
+end
+
+function Service.interruptBraceForReload(player: Player, serverTimestamp: number)
+	if not started then
+		return
+	end
+	local entry = entryByPlayer[player]
+	if entry ~= nil and evaluateEntry(entry, serverTimestamp, true) then
+		rosterRevision += 1
+		publishAll()
+	end
+end
+
+function Service.readBraceCadenceMultiplier(player: Player): number
+	local entry = entryByPlayer[player]
+	if
+		entry ~= nil
+		and entry.assignment.classId == ClassIds.CombatSpecialist
+		and entry.actionState.actionStateId == ActionStateIds.Active
+		and entry.actionState.actionId == ActionIds.Brace
+	then
+		return ClassConfig.Actions.Brace.cadenceIntervalMultiplier
+	end
+	return 1
+end
+
 function Service.read(player: Player): AuthoritativeClassAssignment?
 	local entry = entryByPlayer[player]
 	return if entry == nil then nil else copyAssignment(entry.assignment)
@@ -375,6 +583,9 @@ function Service.start()
 	remoteConnection = selectionIntentRemote.OnServerEvent:Connect(function(player: Player, payload: unknown)
 		Service.requestSelection(player, payload)
 	end)
+	actionRemoteConnection = actionIntentRemote.OnServerEvent:Connect(function(player: Player, payload: unknown)
+		Service.requestAction(player, payload)
+	end)
 	readStateFunction.OnServerInvoke = function(player: Player)
 		return safeSnapshotForPlayer(player)
 	end
@@ -392,6 +603,10 @@ function Service.stop()
 	if remoteConnection ~= nil then
 		remoteConnection:Disconnect()
 		remoteConnection = nil
+	end
+	if actionRemoteConnection ~= nil then
+		actionRemoteConnection:Disconnect()
+		actionRemoteConnection = nil
 	end
 	if rosterConnection ~= nil then
 		rosterConnection:Disconnect()

@@ -33,6 +33,7 @@ local COMBAT_CONTRACTS_TOKEN = {}
 local FIREARM_CONFIG_TOKEN = {}
 local HORDE_CONFIG_TOKEN = {}
 local VALIDATOR_TOKEN = {}
+local CLASS_SERVICE_TOKEN = {}
 
 local hordeConfig =
 	loadSimple("games/living-kingdoms/src/shared/Config/HordeExperienceConfig.luau", "HordeExperienceConfig")
@@ -436,6 +437,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 		script = {
 			Parent = {
 				AutomaticFireResolver = FIRE_TOKEN,
+				ClassService = CLASS_SERVICE_TOKEN,
 				DamageResolver = DAMAGE_TOKEN,
 				EnemyDirectorService = DIRECTOR_TOKEN,
 				FirearmHitResolver = HIT_TOKEN,
@@ -458,6 +460,14 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return hordeConfig
 			elseif token == FIRE_TOKEN then
 				return fireResolver
+			elseif token == CLASS_SERVICE_TOKEN then
+				return table.freeze({
+					evaluateActionsAt = function() end,
+					interruptBraceForReload = function() end,
+					readBraceCadenceMultiplier = function()
+						return 1
+					end,
+				})
 			elseif token == DAMAGE_TOKEN then
 				return damageResolver
 			elseif token == DIRECTOR_TOKEN then

@@ -173,8 +173,14 @@ end
 -- squad Hair Trigger multiplier and this per-operative one compose, and the
 -- product still cannot pass MINIMUM_CADENCE_SECONDS below.
 local RELIC_CADENCE_MULTIPLIER_FLOOR = 0.55
+local CLASS_CADENCE_MULTIPLIER_FLOOR = 0.75
 
-local function resolveCadenceSeconds(weaponId: string, override: number?, relicCadenceMultiplier: number?): number?
+local function resolveCadenceSeconds(
+	weaponId: string,
+	override: number?,
+	relicCadenceMultiplier: number?,
+	classCadenceMultiplier: number?
+): number?
 	local definition = resolveWeaponDefinition(weaponId)
 	if definition == nil then
 		return nil
@@ -195,7 +201,19 @@ local function resolveCadenceSeconds(weaponId: string, override: number?, relicC
 			end
 			relicMultiplier = relicCadenceMultiplier
 		end
-		requested = configured * multiplier * relicMultiplier
+		local classMultiplier = 1
+		if classCadenceMultiplier ~= nil then
+			if
+				type(classCadenceMultiplier) ~= "number"
+				or classCadenceMultiplier ~= classCadenceMultiplier
+				or classCadenceMultiplier < CLASS_CADENCE_MULTIPLIER_FLOOR
+				or classCadenceMultiplier > 1
+			then
+				return nil
+			end
+			classMultiplier = classCadenceMultiplier
+		end
+		requested = configured * multiplier * relicMultiplier * classMultiplier
 	end
 	if
 		type(requested) ~= "number"
@@ -222,7 +240,8 @@ function AutomaticFireResolver.resolve(
 	weaponState: WeaponReadinessState,
 	serverTimestamp: number,
 	cadenceSecondsOverride: number?,
-	relicCadenceMultiplier: number?
+	relicCadenceMultiplier: number?,
+	classCadenceMultiplier: number?
 ): AutomaticFireResolution
 	local targetEntityId = if selectedTarget == nil then nil else selectedTarget.targetEntityId
 
@@ -254,7 +273,12 @@ function AutomaticFireResolver.resolve(
 		)
 	end
 
-	local cadenceSeconds = resolveCadenceSeconds(weaponState.weaponId, cadenceSecondsOverride, relicCadenceMultiplier)
+	local cadenceSeconds = resolveCadenceSeconds(
+		weaponState.weaponId,
+		cadenceSecondsOverride,
+		relicCadenceMultiplier,
+		classCadenceMultiplier
+	)
 	local ammoConservationChance = resolveAmmoConservationChance()
 	local configuredWeapon = resolveWeaponDefinition(weaponState.weaponId)
 	if

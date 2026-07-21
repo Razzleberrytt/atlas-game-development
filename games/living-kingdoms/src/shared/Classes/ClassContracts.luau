@@ -1,10 +1,10 @@
 --!strict
 
 --[[
-	P7 shared specialist-class declarations. These IDs and copied shapes are
-	safe to require on either side of the boundary. P7-0102 adds only the
-	selection/assignment network vocabulary and validators; class actions,
-	healing, ammunition grants, objective effects, and timers remain absent.
+	P7 shared specialist-class declarations. These IDs, action-intent shapes,
+	and copied presentation records are safe on either side of the boundary.
+	P7-0103 activates only Brace; healing, ammunition grants, objective effects,
+	and client-authored authority remain absent.
 ]]
 
 local ClassContracts = {}
@@ -52,6 +52,9 @@ export type ClassActionRejectionReasonId =
 	| "NoLineOfSight"
 	| "MovementInterrupted"
 	| "DamageInterrupted"
+	| "ReloadInterrupted"
+	| "ActionCancelled"
+	| "ActionCompleted"
 	| "StaleRevision"
 	| "DuplicateRequest"
 	| "RateLimited"
@@ -71,6 +74,7 @@ export type AuthoritativeClassActionState = {
 	startedAtServerTimestamp: number?,
 	completionServerTimestamp: number?,
 	cooldownEndServerTimestamp: number?,
+	statusReasonId: ClassActionRejectionReasonId?,
 	revision: number,
 }
 
@@ -110,6 +114,8 @@ export type SafeClassSelectionSnapshot = {
 	rosterRevision: number,
 	selectionStateId: ClassSelectionStateId,
 	ownerAssignment: AuthoritativeClassAssignment?,
+	ownerActionState: AuthoritativeClassActionState?,
+	ownerResources: { AuthoritativeClassResourceState },
 	squadMembers: { ClassSquadMemberPresentationSnapshot },
 }
 
@@ -194,6 +200,9 @@ ClassContracts.ClassActionRejectionReasonIds = table.freeze({
 	NoLineOfSight = "NoLineOfSight",
 	MovementInterrupted = "MovementInterrupted",
 	DamageInterrupted = "DamageInterrupted",
+	ReloadInterrupted = "ReloadInterrupted",
+	ActionCancelled = "ActionCancelled",
+	ActionCompleted = "ActionCompleted",
 	StaleRevision = "StaleRevision",
 	DuplicateRequest = "DuplicateRequest",
 	RateLimited = "RateLimited",
@@ -238,6 +247,34 @@ function ClassContracts.isKnownClassId(value: unknown): boolean
 	return containsValue(ClassContracts.ClassIds, value)
 end
 
+function ClassContracts.isKnownActionId(value: unknown): boolean
+	return containsValue(ClassContracts.ClassActionIds, value)
+end
+
+function ClassContracts.validateClassActionIntent(value: unknown): boolean
+	if type(value) ~= "table" then
+		return false
+	end
+	local intent = value :: { [any]: any }
+	if
+		not hasOnlyKeys(intent, {
+			requestId = true,
+			actionId = true,
+			phaseId = true,
+			candidateTargetOperativeEntityId = true,
+		})
+	then
+		return false
+	end
+	return isNonEmptyBoundedString(intent.requestId, 128)
+		and isNonEmptyBoundedString(intent.actionId, 64)
+		and containsValue(ClassContracts.ClassActionPhaseIds, intent.phaseId)
+		and (
+			intent.candidateTargetOperativeEntityId == nil
+			or isNonEmptyBoundedString(intent.candidateTargetOperativeEntityId, 128)
+		)
+end
+
 function ClassContracts.validateClassSelectionIntent(value: unknown): boolean
 	if type(value) ~= "table" then
 		return false
@@ -268,6 +305,59 @@ function ClassContracts.validateAuthoritativeClassAssignment(value: unknown): bo
 		and ClassContracts.isKnownClassId(assignment.classId)
 		and containsValue(ClassContracts.ClassSelectionStateIds, assignment.selectionStateId)
 		and isNonnegativeInteger(assignment.revision)
+end
+
+function ClassContracts.validateAuthoritativeClassActionState(value: unknown): boolean
+	if type(value) ~= "table" then
+		return false
+	end
+	local action = value :: { [any]: any }
+	if
+		not hasOnlyKeys(action, {
+			actionStateId = true,
+			actionId = true,
+			targetOperativeEntityId = true,
+			startedAtServerTimestamp = true,
+			completionServerTimestamp = true,
+			cooldownEndServerTimestamp = true,
+			statusReasonId = true,
+			revision = true,
+		})
+	then
+		return false
+	end
+	local function optionalFiniteTimestamp(candidate: unknown): boolean
+		return candidate == nil
+			or (
+				type(candidate) == "number"
+				and candidate == candidate
+				and candidate ~= math.huge
+				and candidate ~= -math.huge
+			)
+	end
+	return containsValue(ClassContracts.ClassActionStateIds, action.actionStateId)
+		and (action.actionId == nil or ClassContracts.isKnownActionId(action.actionId))
+		and (action.targetOperativeEntityId == nil or isNonEmptyBoundedString(action.targetOperativeEntityId, 128))
+		and optionalFiniteTimestamp(action.startedAtServerTimestamp)
+		and optionalFiniteTimestamp(action.completionServerTimestamp)
+		and optionalFiniteTimestamp(action.cooldownEndServerTimestamp)
+		and (action.statusReasonId == nil or containsValue(
+			ClassContracts.ClassActionRejectionReasonIds,
+			action.statusReasonId
+		))
+		and isNonnegativeInteger(action.revision)
+end
+
+local function validateResourceState(value: unknown): boolean
+	if type(value) ~= "table" then
+		return false
+	end
+	local resource = value :: { [any]: any }
+	return hasOnlyKeys(resource, { resourceId = true, currentAmount = true, maximumAmount = true })
+		and containsValue(ClassContracts.ClassResourceIds, resource.resourceId)
+		and isNonnegativeInteger(resource.currentAmount)
+		and isNonnegativeInteger(resource.maximumAmount)
+		and resource.currentAmount <= resource.maximumAmount
 end
 
 local function validateSquadMember(value: unknown): boolean
@@ -302,6 +392,8 @@ function ClassContracts.validateSafeClassSelectionSnapshot(value: unknown): bool
 			rosterRevision = true,
 			selectionStateId = true,
 			ownerAssignment = true,
+			ownerActionState = true,
+			ownerResources = true,
 			squadMembers = true,
 		})
 	then
@@ -316,9 +408,18 @@ function ClassContracts.validateSafeClassSelectionSnapshot(value: unknown): bool
 		or (snapshot.ownerAssignment ~= nil and not ClassContracts.validateAuthoritativeClassAssignment(
 			snapshot.ownerAssignment
 		))
+		or (snapshot.ownerActionState ~= nil and not ClassContracts.validateAuthoritativeClassActionState(
+			snapshot.ownerActionState
+		))
+		or type(snapshot.ownerResources) ~= "table"
 		or type(snapshot.squadMembers) ~= "table"
 	then
 		return false
+	end
+	for index, resource in snapshot.ownerResources :: { [any]: any } do
+		if type(index) ~= "number" or index % 1 ~= 0 or index < 1 or not validateResourceState(resource) then
+			return false
+		end
 	end
 	local seenOperativeIds = {}
 	for index, member in snapshot.squadMembers :: { [any]: any } do
