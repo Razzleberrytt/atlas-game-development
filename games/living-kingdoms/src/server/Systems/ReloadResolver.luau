@@ -30,11 +30,20 @@ type ReloadState = CombatContracts.ReloadState
 type WeaponCadenceState = CombatContracts.WeaponCadenceState
 type WeaponReadinessState = CombatContracts.WeaponReadinessState
 
+-- RPG-0108 per-operative relic reload context. Emergency Chamber shortens only
+-- reloads accepted while the operative is critically wounded, so the caller
+-- supplies the authoritative wounded fact alongside the bounded multiplier.
+export type RelicReloadContext = {
+	woundedReloadDurationMultiplier: number,
+	isCriticallyWounded: boolean,
+}
+
 type ReloadResolver = {
 	begin: (
 		operativeState: OperativeReloadState,
 		weaponState: WeaponReadinessState,
-		serverTimestamp: number
+		serverTimestamp: number,
+		relicContext: RelicReloadContext?
 	) -> ReloadBeginResolution,
 	complete: (
 		operativeState: OperativeReloadState,
@@ -69,9 +78,22 @@ local function readProgressionNumber(attributeName: string, fallback: number): n
 	return value
 end
 
-local function readReloadDurationMultiplier(): number
+-- The squad Combat Loader multiplier and the per-operative Emergency Chamber
+-- multiplier compose, and the product is clamped to the same reload floor so no
+-- combination can erase the authoritative reload commitment.
+local function readReloadDurationMultiplier(relicContext: RelicReloadContext?): number
 	local value = readProgressionNumber("RunReloadDurationMultiplier", 1)
-	return math.clamp(value, RELOAD_DURATION_FLOOR, 1)
+	local relicMultiplier = 1
+	if
+		relicContext ~= nil
+		and type(relicContext) == "table"
+		and relicContext.isCriticallyWounded == true
+		and type(relicContext.woundedReloadDurationMultiplier) == "number"
+		and relicContext.woundedReloadDurationMultiplier == relicContext.woundedReloadDurationMultiplier
+	then
+		relicMultiplier = math.clamp(relicContext.woundedReloadDurationMultiplier, RELOAD_DURATION_FLOOR, 1)
+	end
+	return math.clamp(value * relicMultiplier, RELOAD_DURATION_FLOOR, 1)
 end
 
 local function copyAmmunition(ammunition: AmmunitionState): AmmunitionState
@@ -204,7 +226,8 @@ end
 function ReloadResolver.begin(
 	operativeState: OperativeReloadState,
 	weaponState: WeaponReadinessState,
-	serverTimestamp: number
+	serverTimestamp: number,
+	relicContext: RelicReloadContext?
 ): ReloadBeginResolution
 	if operativeState.combatStateId ~= CombatContracts.OperativeCombatStateIds.Ready then
 		return rejectBegin(operativeState, weaponState, reasons.OperativeStateInvalid)
@@ -241,7 +264,8 @@ function ReloadResolver.begin(
 	weaponStateAfter.reloadState = {
 		weaponId = weapon.WeaponId,
 		startedAtServerTimestamp = serverTimestamp,
-		completionServerTimestamp = serverTimestamp + weapon.ReloadDurationSeconds * readReloadDurationMultiplier(),
+		completionServerTimestamp = serverTimestamp
+			+ weapon.ReloadDurationSeconds * readReloadDurationMultiplier(relicContext),
 	}
 
 	return {

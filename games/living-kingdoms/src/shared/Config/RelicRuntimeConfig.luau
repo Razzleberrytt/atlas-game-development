@@ -1,15 +1,14 @@
 --!strict
 
 --[[
-	RPG-0108 (part 1) per-relic runtime tuning for the first relic batch:
-	Blood Battery, Grave Momentum, Choir Breaker, Last Light, Emergency Chamber,
-	and Execution Protocol.
+	RPG-0108 per-relic runtime tuning for the first relic batch: Blood Battery,
+	Grave Momentum, Choir Breaker, Last Light, Emergency Chamber, and Execution
+	Protocol.
 
-	This declares the bounded per-stack contributions each relic will feed through
-	the shared RunModifierResolver ceilings. It grants no power on its own: the
-	relics remain gameplay-inert (RunRpgConfig marks them Planned) until the
-	RPG-0108 runtime integration wires these values into the authoritative combat,
-	reload, and life passes. Every value is asserted within the canonical
+	This declares the bounded per-stack contributions each relic feeds through the
+	shared RunModifierResolver ceilings. It grants no power on its own: every
+	effect is applied by the authoritative combat, reload, and life owners through
+	RelicModifierResolver. Every value is asserted within the canonical
 	RunRpgConfig.ModifierCeilings so tuning can never drift past a global bound.
 ]]
 
@@ -55,9 +54,11 @@ local LastLight = table.freeze({
 })
 
 -- Emergency Chamber: reduced reload duration for reloads accepted while
--- critically wounded.
+-- critically wounded, meaning current health at or below `woundedHealthFraction`
+-- of the operative's authoritative maximum health.
 local EmergencyChamber = table.freeze({
 	reloadDurationReduction = 0.25,
+	woundedHealthFraction = 0.35,
 })
 
 -- Execution Protocol: damage bonus against enemies at or below `healthFraction`
@@ -86,7 +87,7 @@ local FirstBatchRelicIds = table.freeze({
 })
 
 local Config = {
-	Version = "RPG-0108-part1-first-batch-tuning",
+	Version = "RPG-0108-part2-first-batch-tuning",
 	BloodBattery = BloodBattery,
 	GraveMomentum = GraveMomentum,
 	ChoirBreaker = ChoirBreaker,
@@ -134,6 +135,12 @@ assert(
 		and EmergencyChamber.reloadDurationReduction > 0
 		and 1 - EmergencyChamber.reloadDurationReduction >= Ceilings.minimumReloadDurationMultiplier,
 	"Emergency Chamber reduction must be positive and preserve the reload floor"
+)
+assert(
+	isFinite(EmergencyChamber.woundedHealthFraction)
+		and EmergencyChamber.woundedHealthFraction > 0
+		and EmergencyChamber.woundedHealthFraction <= 0.5,
+	"Emergency Chamber must only reward genuinely wounded operatives"
 )
 assert(
 	isFinite(ExecutionProtocol.conditionalDamageBonus)

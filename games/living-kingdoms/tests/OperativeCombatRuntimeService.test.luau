@@ -205,6 +205,7 @@ local enemyDirector = {
 				return {
 					revision = enemy.revision,
 					isAlive = enemy.isAlive,
+					maximumHealth = enemyConfig.Walker.MaximumHealth,
 					healthState = {
 						entityId = enemy.entityId,
 						currentHealth = enemy.currentHealth,
@@ -292,6 +293,35 @@ local lifeService = {
 	end,
 }
 
+local neutralRelicModifiers = table.freeze({
+	killChainExtensionSeconds = 0,
+	specialEnemyDamageMultiplier = 1,
+	lowReserveDamageMultiplier = 1,
+	lowReserveFraction = 0,
+	woundedReloadDurationMultiplier = 1,
+	woundedHealthFraction = 0,
+	executionDamageMultiplier = 1,
+	executionHealthFraction = 0,
+	bloodBatteryKillThreshold = 0,
+	bloodBatteryHealAmount = 0,
+})
+
+-- Relic modifier adapter mock: no operative has a relic equipped, so every read
+-- returns the neutral bundle and the combat pass must behave exactly as before.
+local relicForgetCalls = {}
+local relicClearCalls = 0
+local relicModifierService = {
+	read = function()
+		return neutralRelicModifiers
+	end,
+	forget = function(player)
+		table.insert(relicForgetCalls, player)
+	end,
+	clear = function()
+		relicClearCalls += 1
+	end,
+}
+
 -- Roblox service mocks.
 local now = 0
 local raycastCalls = {}
@@ -369,6 +399,7 @@ local DAMAGE_TOKEN = {}
 local DIRECTOR_TOKEN = {}
 local HIT_TOKEN = {}
 local LIFE_TOKEN = {}
+local RELIC_TOKEN = {}
 local RELOAD_TOKEN = {}
 local SELECTOR_TOKEN = {}
 local PATTERN_TOKEN = {}
@@ -397,6 +428,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				EnemyDirectorService = DIRECTOR_TOKEN,
 				FirearmHitResolver = HIT_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
+				RelicModifierService = RELIC_TOKEN,
 				ReloadResolver = RELOAD_TOKEN,
 				WeaponTargetSelector = SELECTOR_TOKEN,
 				WeaponPatternResolver = PATTERN_TOKEN,
@@ -422,6 +454,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return hitResolver
 			elseif token == LIFE_TOKEN then
 				return lifeService
+			elseif token == RELIC_TOKEN then
+				return relicModifierService
 			elseif token == RELOAD_TOKEN then
 				return reloadResolver
 			elseif token == SELECTOR_TOKEN then

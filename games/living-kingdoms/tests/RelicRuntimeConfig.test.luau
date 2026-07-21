@@ -61,7 +61,7 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Re
 
 local Ceilings = rpgConfig.ModifierCeilings
 
-assertThat(config.Version == "RPG-0108-part1-first-batch-tuning", "relic tuning version drifted")
+assertThat(config.Version == "RPG-0108-part2-first-batch-tuning", "relic tuning version drifted")
 assertThat(#config.FirstBatchRelicIds == 6, "the first relic batch must contain six relics")
 
 -- Every runtime tuning value must sit within the shared ceilings.
@@ -86,6 +86,10 @@ assertThat(
 assertThat(
 	1 - config.EmergencyChamber.reloadDurationReduction >= Ceilings.minimumReloadDurationMultiplier,
 	"Emergency Chamber must preserve the reload floor"
+)
+assertThat(
+	config.EmergencyChamber.woundedHealthFraction > 0 and config.EmergencyChamber.woundedHealthFraction <= 0.5,
+	"Emergency Chamber must only reward genuinely wounded operatives"
 )
 assertThat(
 	1 + config.ExecutionProtocol.conditionalDamageBonus <= Ceilings.maximumConditionalDamageMultiplier
