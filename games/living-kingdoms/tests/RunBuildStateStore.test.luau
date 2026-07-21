@@ -38,11 +38,41 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Ru
 	injectGlobals = true,
 })()
 
+local RESOLVER_CONTRACTS_TOKEN = {}
+local RESOLVER_CONFIG_TOKEN = {}
+local resolverReplicatedStorage = {
+	Shared = {
+		RPG = { RunRpgContracts = RESOLVER_CONTRACTS_TOKEN },
+		Config = { RunRpgConfig = RESOLVER_CONFIG_TOKEN },
+	},
+}
+local resolver = luau.load(fs.readFile("games/living-kingdoms/src/shared/RPG/RelicRewardResolver.luau"), {
+	debugName = "RelicRewardResolver",
+	environment = {
+		game = {
+			GetService = function(_self: unknown, serviceName: string)
+				assertThat(serviceName == "ReplicatedStorage", "resolver may only require replicated declarations")
+				return resolverReplicatedStorage
+			end,
+		},
+		require = function(token: unknown)
+			if token == RESOLVER_CONTRACTS_TOKEN then
+				return contracts
+			elseif token == RESOLVER_CONFIG_TOKEN then
+				return config
+			end
+			error("unexpected RelicRewardResolver dependency", 2)
+		end,
+	},
+	injectGlobals = true,
+})()
+
 local STORE_CONTRACTS_TOKEN = {}
 local STORE_CONFIG_TOKEN = {}
+local STORE_RESOLVER_TOKEN = {}
 local replicatedStorage = {
 	Shared = {
-		RPG = { RunRpgContracts = STORE_CONTRACTS_TOKEN },
+		RPG = { RunRpgContracts = STORE_CONTRACTS_TOKEN, RelicRewardResolver = STORE_RESOLVER_TOKEN },
 		Config = { RunRpgConfig = STORE_CONFIG_TOKEN },
 	},
 }
@@ -60,6 +90,8 @@ local storeModule = luau.load(fs.readFile("games/living-kingdoms/src/server/Syst
 				return contracts
 			elseif token == STORE_CONFIG_TOKEN then
 				return config
+			elseif token == STORE_RESOLVER_TOKEN then
+				return resolver
 			end
 			error("unexpected RunBuildStateStore dependency", 2)
 		end,
