@@ -12,7 +12,7 @@ Milestones are ordered. Work begins only after prerequisites are met, and later 
 
 ## Current milestone status
 
-Snapshot as of 2026-07-20. Task-level detail and acceptance gates for unfinished P6–P12 work live in [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md), which controls those tasks per the [roadmap index](README.md); the cross-cutting art sequence lives in [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md).
+Snapshot as of 2026-07-21. Task-level detail and acceptance gates for unfinished P6–P12 work live in [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md), which controls those tasks per the [roadmap index](README.md); the cross-cutting art sequence lives in [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md).
 
 | Milestone | Status | Summary |
 | --- | --- | --- |
@@ -23,8 +23,8 @@ Snapshot as of 2026-07-20. Task-level detail and acceptance gates for unfinished
 | P3 — Health and life state | Complete | Server-owned Alive/Incapacitated/Dead, revive, solo recovery, squad failure. |
 | P4 — Darkness and navigation | Complete | Visibility/perception contracts, discovery memory, flashlight, squad ping. |
 | P5 — Enemy pressure | Complete | Production enemy lifecycle, fair spawns, pursuit, attacks, waves, roaming, production automatic combat. Live Studio pressure-loop playthrough remains the outstanding manual check (smoke test). |
-| P6 — Ammunition scarcity | In progress | `P6-0101`–`P6-0107` implementation and telemetry complete; the Studio startup blocker and 1/2/4 admission probes are complete; routed `P6-0108` balance evidence remains before `P6-0109` sign-off. |
-| P7 — MVP classes | Partially complete (bounded exception) | `P7-PLAN-001`, `P7-0101` contracts, and `P7-0102` selection/assignment complete under [`SEQUENCING-EXCEPTION-P6-P7.md`](SEQUENCING-EXCEPTION-P6-P7.md); all class-effect runtime (`P7-0103`+) blocked until P6 sign-off. |
+| P6 — Ammunition scarcity | Complete for prototype | `P6-0101`–`P6-0109` complete. The owner accepted the requested local 1/2/4-player tests with no reported blocker; no unmeasured tuning was applied, and retained raw telemetry remains a P12 validation limitation. |
+| P7 — MVP classes | In progress | `P7-PLAN-001`, `P7-0101` contracts, and `P7-0102` selection/assignment complete; P6 sign-off retired the sequencing exception and unblocked `P7-0103`. |
 | P8 — Authored objectives | Not started | Fully planned; begins after P7. |
 | P9 — Special enemy and boss | Not started | Fully planned; begins after P8. |
 | P10 — Match loop and replay | Not started | Fully planned; begins after P9. |
@@ -39,8 +39,8 @@ Snapshot as of 2026-07-20. Task-level detail and acceptance gates for unfinished
 - **Done:** merged PRs #142 and #144–#148 establish `RPG-0101`–`RPG-0106`; `RPG-0107` then extended the existing `RunBuildStateStore`/`RunBuildService` with the pure `RelicRewardResolver`, deterministic two-choice rewards, the three equipped slots, a bounded three-reward queue, validated full-slot replacement, safe snapshots, replay/reconnect protection, and operation teardown — no parallel build state or production reward owners were created.
 - **Outstanding gate:** `RPG-0108` activates the first six relics (Blood Battery, Grave Momentum, Choir Breaker, Last Light, Emergency Chamber, Execution Protocol). Every part is implemented — the pure modifier foundation, the per-operative bundle threaded through `DamageResolver` and `ReloadResolver` (squad Field Upgrades stay squad-global via `ProgressionNetwork`), Blood Battery healing through the P3 healing boundary, and the Grave Momentum kill-chain window in `HordeExperienceService`. Only the representative Studio evidence for the "three viable build patterns" gate remains, so the task is not marked complete.
 - **Then:** `RPG-0109` is complete — all six relics landed through their existing owners (Breach Doctrine and Longwatch Doctrine in `DamageResolver`'s pattern pass, Salvager's Mark in `EnemyLootService`'s collection path, Suppression Engine across `AutomaticFireResolver` and `DamageResolver` from a saturating sustained-shot counter, and Guardian Signal and Second Wind inside the P3 life core as expiring temporary armor and a one-charge incapacitation reprieve). All twelve declared relics are now Implemented. `RPG-0110` is complete for every available owner — confirmed elite deaths, a squad-kill milestone, and confirmed special interrupts now open real relic choices through the owners that already observe them, so relics are earnable in a live operation; objective, container, and boss sources stay deferred to P8/P9. `RPG-0111` is complete — an always-visible relic bar with charge and counter state, plus the reward-choice and replacement interfaces, over a bounded `RunBuildNetwork` whose only client requests are the two identity-free relic intents, so relics can finally be earned, chosen, replaced, and read in a live operation; `RPG-0112` waits for P10's result owner; `RPG-0113` performs final multiplayer/security/performance validation.
-- **Blocked on evidence or dependencies:** no implementable RPG task remains. `RPG-0108`'s "three viable build patterns" gate, `RPG-0113`'s validation matrix, the P6 scarcity matrix and sign-off, and the HROI representative playtest all need Studio sessions; `RPG-0112` needs P10's authoritative result owner; P7 class-effect runtime needs P6 sign-off; P8 and later begin only after their prerequisites.
-- **Parallel manual gates:** P6 scarcity sign-off and the HROI representative Studio playtest/visual-mix evidence remain outstanding. RPG progress does not mark either gate complete or unblock P7 class-effect runtime.
+- **Blocked on evidence or dependencies:** no implementable RPG task remains. `RPG-0108`'s "three viable build patterns" gate, `RPG-0113`'s validation matrix, and the HROI representative playtest still need Studio sessions; `RPG-0112` needs P10's authoritative result owner. P7 class-effect runtime is now unblocked, while P8 and later still wait on their prerequisites.
+- **Parallel manual gates:** the HROI representative Studio playtest/visual-mix evidence remains outstanding. P6 is signed off for the prototype with its raw-telemetry limitation carried to P12.
 
 The active RPG task definitions, implementation path, dependencies, and exit gates live in [`../specifications/rpg-integration-plan.md`](../specifications/rpg-integration-plan.md).
 
@@ -254,8 +254,8 @@ Replace temporary firearm resources with server-owned finite ammunition, supply 
 - [x] **P6-0105 — Add authoritative ammunition HUD feedback.** Personal loaded/reserve state and collection grants presented without client ammunition authority.
 - [x] **P6-0106 — Add per-operative cache depletion feedback.** Consumed caches stop prompting only for the collecting operative; server-owned collection history stays authoritative.
 - [x] **P6-0107 — Add sampled scarcity telemetry and a Studio validation probe.** Conservation-derived accepted-shot accounting with read-only, Studio-only, scheduler-free snapshots of grants, cache use, minimums, dry transitions, and roster.
-- [~] **P6-0108 — Run the controlled 1/2/4-operative evidence matrix.** Studio now boots and admits 1/2/4 operatives correctly; calculated balance projections and explicitly invalid stationary stress probes are recorded. Comparable routed/reload-capable playthroughs remain required, so no final balance claim is permitted yet.
-- [!] **P6-0109 — Tune scarcity from evidence and sign off P6.** Smallest evidence-supported configuration adjustments, re-runs, and locked final values. **Blocked** on the P6-0108 evidence matrix.
+- [x] **P6-0108 — Run the controlled 1/2/4-operative evidence matrix.** Owner-reported local multiplayer tests passed for prototype progression; raw routed telemetry was not retained and remains a P12 limitation.
+- [x] **P6-0109 — Tune scarcity from evidence and sign off P6.** No unsupported tuning change was applied; current prototype values are locked pending measured P12 validation.
 
 ### P6 execution order
 
@@ -265,7 +265,7 @@ Replace temporary firearm resources with server-owned finite ammunition, supply 
 
 One to four operatives use finite server-owned ammunition and independently consume authored risky caches with clear personal feedback. Comparable Studio evidence shows that careful play creates pressure and recovery decisions without predetermined starvation, and P6 values are tuned from measurements rather than intuition.
 
-**P6 status:** Implementation and instrumentation complete (`P6-0101`–`P6-0107`). The milestone remains in progress until the deferred manual evidence matrix and evidence-based tuning/sign-off complete. Current scarcity values are provisional.
+**P6 status:** Complete for the current prototype (`P6-0101`–`P6-0109`). The owner accepted the requested local multiplayer test result. Raw routed telemetry remains explicitly deferred to P12, and no balance values were invented or changed without it.
 
 ## P7 — Three interdependent MVP classes
 
@@ -274,21 +274,21 @@ Implement combat specialist, medic, and engineer responsibilities, limitations, 
 - [x] **P7-PLAN-001 — Specify and decompose the three starting classes.** Role philosophy, duplicate/solo policy, selection and lock timing, action lifecycle, trust boundaries, resource ownership, observability, accessibility, budgets, ordered tasks, and deferrals.
 - [x] **P7-0101 — Define shared class contracts and configuration.** Stable class/action/state/target/rejection vocabulary, selection and resource records, cooldown/channel descriptors, safe snapshots, and fixture-verified configuration; no runtime effects. Completed under the bounded [P6/P7 sequencing exception](SEQUENCING-EXCEPTION-P6-P7.md).
 - [x] **P7-0102 — Implement server-owned class selection and assignment.** Briefing-only selection of unlocked starting classes, insertion lock, duplicate-class support, identity-keyed roster, fail-closed stale/cross-player requests, one narrow request/state network, deterministic lifecycle. Completed under the same bounded exception.
-- [!] **P7-0103 — Add the combat specialist vertical slice.** One frequent server-validated position-stabilizing action with configured cost/cooldown/interruption that cannot create ammunition or bypass combat/life/operation authority. **Blocked** until P6-0109 sign-off.
-- [!] **P7-0104 — Add the medic vertical slice.** Finite server-owned field treatment and the approved bounded revive benefit through the existing P3 commit boundary; no self-revive, dead-revive, or fabricated health. **Blocked** until P6-0109 sign-off.
-- [!] **P7-0105 — Add the engineer vertical slice.** Finite operation-issued resupply committed through the existing ammunition authority within compatibility and reserve caps; objective repair remains a P8 integration. **Blocked** until P6-0109 sign-off.
+- [ ] **P7-0103 — Add the combat specialist vertical slice.** One frequent server-validated position-stabilizing action with configured cost/cooldown/interruption that cannot create ammunition or bypass combat/life/operation authority.
+- [ ] **P7-0104 — Add the medic vertical slice.** Finite server-owned field treatment and the approved bounded revive benefit through the existing P3 commit boundary; no self-revive, dead-revive, or fabricated health.
+- [ ] **P7-0105 — Add the engineer vertical slice.** Finite operation-issued resupply committed through the existing ammunition authority within compatibility and reserve caps; objective repair remains a P8 integration.
 - [ ] **P7-0106 — Integrate cross-class interactions and squad presentation.** Readable class identity, resources, cooldowns, teammate cues, and concise failure reasons proving the intended cooperation loop without color- or audio-only signals.
 - [ ] **P7-0107 — Complete class security, scaling, and multiplayer validation.** Adversarial fixtures plus solo, duplicate-class, and 2/3/4-operative Studio evidence for contribution frequency, viability without a role, and balanced-squad advantage.
 
 ### P7 execution order
 
-`P7-PLAN-001` → `P7-0101` → `P7-0102` → (`P7-0103` + `P7-0104` + `P7-0105`, one PR at a time) → `P7-0106` → `P7-0107`. Contracts and selection are complete under the bounded sequencing exception; every consequential class effect waits for P6 sign-off.
+`P7-PLAN-001` → `P7-0101` → `P7-0102` → (`P7-0103` + `P7-0104` + `P7-0105`, one PR at a time) → `P7-0106` → `P7-0107`. Contracts and selection are complete, the exception is retired, and `P7-0103` is next.
 
 ### P7 exit criteria
 
 Players choose and retain a server-owned starting class for the run. Each class contributes frequently, has a meaningful limitation and finite resource/cooldown, interacts with another role, and remains secure under multiplayer abuse. Any composition can attempt the operation while a balanced squad has more resilient options.
 
-**P7 status:** Planning, contracts, and selection/assignment complete (`P7-PLAN-001`, `P7-0101`, `P7-0102`). All class-effect runtime is blocked behind P6 evidence and sign-off.
+**P7 status:** In progress. Planning, contracts, and selection/assignment are complete (`P7-PLAN-001`, `P7-0101`, `P7-0102`); class-effect runtime is unblocked and `P7-0103` is next.
 
 ## P8 — Authored operation objectives
 

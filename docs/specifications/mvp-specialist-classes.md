@@ -2,7 +2,7 @@
 
 ## Status
 
-**P7-PLAN-001 complete.** This specification defines the implementation boundary and ordered tasks for the three starting classes. P7 gameplay implementation remains blocked until P6 scarcity validation and tuning sign-off are complete.
+**P7-PLAN-001 complete.** This specification defines the implementation boundary and ordered tasks for the three starting classes. P6 is signed off for the current prototype, so `P7-0103` is the next unblocked gameplay task.
 
 ## Purpose
 

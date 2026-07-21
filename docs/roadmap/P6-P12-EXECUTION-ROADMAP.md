@@ -61,18 +61,19 @@ Replace prototype ammunition with finite server-owned resources, authored risky 
   - Accepted shots derive from conserved server truth: starting ammunition plus committed grants minus current ammunition.
   - Snapshots report grants, cache use, minimum ammunition, true dry transitions, remaining opportunities, active roster, and observed participants.
   - Sampling is explicit, read-only, Studio-only, and scheduler-free.
-- [~] **P6-0108 — Run the controlled 1/2/4-operative evidence matrix.**
+- [x] **P6-0108 — Run the controlled 1/2/4-operative evidence matrix.**
   - Reset sampling before each comparable run.
   - Capture snapshots at operation start, first objective completion, mid-operation escalation, holdout start, and terminal success/failure.
   - Record operative count, duration, accepted shots, exact grants, consumed/remaining caches, minimum ammunition, true dry transitions, deaths, and outcome.
   - Use the same route and objective order where possible; record deviations rather than hiding them.
-  - **Manual gate:** requires Roblox Studio Server & Clients playthroughs. No balance claim is allowed until the evidence table is populated.
-- [!] **P6-0109 — Tune scarcity from evidence and sign off P6.**
+  - **Prototype sign-off:** the project owner completed the requested local multiplayer tests and reported that they ran fine. Raw telemetry rows were not retained, so the result is qualitative and that limitation remains assigned to P12 rather than being silently reconstructed.
+- [x] **P6-0109 — Tune scarcity from evidence and sign off P6.**
   - Change only configuration values supported by the P6-0108 evidence.
   - Prefer the smallest adjustment among starting reserve, cache grants, cache placement, or reserve cap.
   - Re-run the affected 1/2/4 scenarios after tuning.
   - Reject a tune that produces repeated unavoidable dry states despite near-complete cache collection, or that leaves most ammunition and caches unused with no meaningful route decision.
   - Lock the final P6 values, limitations, and Studio evidence in the specification and smoke-test record.
+  - No tuning change was justified by the accepted qualitative pass; the existing configuration remains locked for the prototype and is subject to P12's measured balance pass.
 
 ### P6 execution order
 
@@ -84,7 +85,7 @@ One to four operatives use finite server-owned ammunition and independently cons
 
 ### Current P6 status
 
-Implementation and instrumentation are complete. The milestone remains **in progress** until the manual 1/2/4 evidence matrix and evidence-based tuning/sign-off are complete.
+P6 is **complete for the current prototype**. The project owner accepted the local 1/2/4-player behavior after reporting that the requested tests ran fine, and no scarcity tune was made without retained measurements. Raw routed telemetry and repeated balance classification remain an explicit P12 validation limitation, not invented evidence.
 
 ---
 
@@ -113,16 +114,16 @@ Canonical specification: `docs/specifications/mvp-specialist-classes.md`.
   - One small request/state network exposes only validated selection and safe roster snapshots.
   - Disconnect, reconnect policy, operation restart, and teardown are deterministic.
   - Complete through PR #72 under the bounded sequencing exception; no consequential class effect exists yet.
-- [!] **P7-0103 — Add the combat specialist vertical slice.**
+- [ ] **P7-0103 — Add the combat specialist vertical slice.**
   - Implement one frequent position-stabilizing combat action from the canonical spec.
   - The action cannot create ammunition, bypass target visibility, hit validation, cadence authority, life restrictions, or operation state.
   - Cost, cooldown, channel/stance interruption, and effect bounds are server-validated and configuration-driven.
   - Presentation makes activation, active duration, interruption, and cooldown legible without revealing hidden enemies.
-- [!] **P7-0104 — Add the medic vertical slice.**
+- [ ] **P7-0104 — Add the medic vertical slice.**
   - Implement finite field treatment for an alive injured teammate and the approved bounded revive benefit.
   - The medic cannot self-revive, revive Dead operatives, fabricate health, ignore range/line of sight, erase repeated mistakes, or bypass the existing P3 commit/revision boundary.
   - Healing resources are personal, finite, server-owned, preserved or reset only according to the operation lifecycle, and visibly disclosed to the owner.
-- [!] **P7-0105 — Add the engineer vertical slice.**
+- [ ] **P7-0105 — Add the engineer vertical slice.**
   - Implement finite nearby field resupply using a configured operation-issued resource budget.
   - Grants commit through the existing ammunition authority boundary, obey weapon compatibility and reserve caps, and never create unlimited or recyclable ammunition.
   - Objective-equipment repair remains P8 integration; P7 may define the interface but may not scaffold an unused objective runtime.
@@ -139,7 +140,7 @@ Canonical specification: `docs/specifications/mvp-specialist-classes.md`.
 
 `P7-PLAN-001` → `P7-0101` → `P7-0102` → (`P7-0103` + `P7-0104` + `P7-0105`, one PR at a time) → `P7-0106` → `P7-0107`.
 
-`P7-0101` and `P7-0102` are complete under the bounded `SEQUENCING-EXCEPTION-P6-P7.md`. Every consequential class effect (`P7-0103` onward) begins only after P6-0109 sign-off. The class vertical slices share contracts and assignment but do not depend on one another's runtime implementation.
+`P7-0101` and `P7-0102` are complete. P6 prototype sign-off has retired the bounded sequencing exception, so `P7-0103` is the next unblocked task. The class vertical slices share contracts and assignment but do not depend on one another's runtime implementation.
 
 ### P7 exit criteria
 
@@ -147,7 +148,7 @@ Players choose and retain a server-owned starting class for the run. Each class 
 
 ### Current P7 status
 
-Planning, shared contracts, and server-owned selection/assignment are complete (`P7-PLAN-001`, `P7-0101`, `P7-0102`); the class vertical slices and everything after remain **blocked** behind the P6 evidence matrix and sign-off.
+Planning, shared contracts, and server-owned selection/assignment are complete (`P7-PLAN-001`, `P7-0101`, `P7-0102`). P7 is **in progress and unblocked**; `P7-0103` is next.
 
 ---
 
@@ -375,7 +376,6 @@ The complete MVP operation is difficult, readable, learnable, secure, bounded, r
 
 ## Immediate next actions
 
-1. Complete **P6-0108** with controlled 1/2/4-operative Studio runs and populate the evidence table in `docs/specifications/ammunition-scarcity-and-supply.md` or the smoke-test record. This is the single gate holding everything else.
-2. Complete **P6-0109** using only evidence-supported tuning changes and revalidation, then record P6 sign-off.
-3. Begin **P7-0103** (combat specialist vertical slice) immediately after P6 sign-off; `P7-0101` contracts and `P7-0102` selection/assignment are already complete under the bounded sequencing exception, so no further class scaffolding is required first.
+1. Begin **P7-0103** (combat specialist vertical slice); `P7-0101` contracts and `P7-0102` selection/assignment are already complete, so no further class scaffolding is required first.
+2. Preserve P6's qualitative-sign-off limitation for measured replay during P12 balance validation.
 4. In parallel where evidence-independent: finish the **VIS-0102** firearm presentation integration per `VISUAL-PRODUCTION-TRACK.md`, and run the outstanding P5 pressure-loop Studio playthrough recorded in the smoke test.

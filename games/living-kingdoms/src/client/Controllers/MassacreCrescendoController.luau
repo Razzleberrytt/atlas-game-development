@@ -100,8 +100,8 @@ local function createPresentation()
 	local createdGroup = Instance.new("CanvasGroup")
 	createdGroup.Name = "Crescendo"
 	createdGroup.AnchorPoint = Vector2.new(0.5, 0.5)
-	createdGroup.Position = UDim2.fromScale(0.5, 0.7)
-	createdGroup.Size = UDim2.fromOffset(610, 116)
+	createdGroup.Position = UDim2.fromScale(0.5, 0.76)
+	createdGroup.Size = UDim2.fromOffset(460, 82)
 	createdGroup.BackgroundColor3 = Color3.fromRGB(13, 8, 11)
 	createdGroup.BackgroundTransparency = 0.18
 	createdGroup.BorderSizePixel = 0
@@ -134,17 +134,17 @@ local function createPresentation()
 	scale.Parent = createdGroup
 	presentationScale = scale
 
-	titleLabel = makeLabel(createdGroup, "TierTitle", UDim2.fromOffset(16, 5), UDim2.new(1, -32, 0, 47), 34)
-	countLabel = makeLabel(createdGroup, "ChainCount", UDim2.fromOffset(18, 48), UDim2.fromOffset(126, 32), 24)
+	titleLabel = makeLabel(createdGroup, "TierTitle", UDim2.fromOffset(16, 3), UDim2.new(1, -32, 0, 34), 24)
+	countLabel = makeLabel(createdGroup, "ChainCount", UDim2.fromOffset(16, 34), UDim2.fromOffset(112, 24), 18)
 	countLabel.TextXAlignment = Enum.TextXAlignment.Left
-	subtitleLabel = makeLabel(createdGroup, "TierSubtitle", UDim2.fromOffset(138, 50), UDim2.new(1, -156, 0, 28), 15)
+	subtitleLabel = makeLabel(createdGroup, "TierSubtitle", UDim2.fromOffset(124, 35), UDim2.new(1, -140, 0, 22), 12)
 	subtitleLabel.Font = Enum.Font.GothamBold
 	subtitleLabel.TextXAlignment = Enum.TextXAlignment.Right
 
 	local timeTrack = Instance.new("Frame")
 	timeTrack.Name = "StreakWindow"
-	timeTrack.Position = UDim2.fromOffset(18, 88)
-	timeTrack.Size = UDim2.new(1, -36, 0, 10)
+	timeTrack.Position = UDim2.fromOffset(16, 65)
+	timeTrack.Size = UDim2.new(1, -32, 0, 6)
 	timeTrack.BackgroundColor3 = Color3.fromRGB(38, 31, 36)
 	timeTrack.BorderSizePixel = 0
 	timeTrack.ClipsDescendants = true

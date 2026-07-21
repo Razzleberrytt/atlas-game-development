@@ -22,12 +22,12 @@ local CameraConfig = table.freeze({
 	MaximumFocusX = 320,
 	MinimumFocusZ = -320,
 	MaximumFocusZ = 320,
-	PitchDegrees = -60,
+	PitchDegrees = -56,
 	YawDegrees = 45,
 	MinimumHeight = 40,
-	MaximumHeight = 160,
+	MaximumHeight = 132,
 	ZoomSensitivity = 10,
-	InitialHeight = 76,
+	InitialHeight = 68,
 })
 
 local SurvivorFollowConfig = table.freeze({
