@@ -76,6 +76,29 @@ function RelicModifierService.advanceBloodBatteryKills(player: Player, kills: nu
 	return if advance == nil then 0 else advance.triggerCount
 end
 
+--[[
+	Suppression Engine's sustained-shot progress. The counter saturates in the
+	equipped relic slot, so it survives nothing the relic is not equipped for and
+	is released with the operation like every other slot fact. Reading an
+	unequipped relic returns zero and resetting it is a no-op.
+]]
+function RelicModifierService.readSustainedShots(player: Player): number
+	local counter = RunBuildService.readRelicCounter(player, RunRpgContracts.RelicIds.SuppressionEngine)
+	return if type(counter) == "number" then counter else 0
+end
+
+function RelicModifierService.recordSustainedShot(player: Player)
+	local counter = RunBuildService.readRelicCounter(player, RunRpgContracts.RelicIds.SuppressionEngine)
+	if type(counter) ~= "number" then
+		return
+	end
+	RunBuildService.setRelicCounter(player, RunRpgContracts.RelicIds.SuppressionEngine, counter + 1)
+end
+
+function RelicModifierService.resetSustainedShots(player: Player)
+	RunBuildService.setRelicCounter(player, RunRpgContracts.RelicIds.SuppressionEngine, 0)
+end
+
 function RelicModifierService.forget(player: Player)
 	cache[player] = nil
 end

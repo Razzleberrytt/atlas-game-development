@@ -48,7 +48,8 @@ type AutomaticFireResolver = {
 		selectedTarget: SelectedTargetState?,
 		weaponState: WeaponReadinessState,
 		serverTimestamp: number,
-		cadenceSecondsOverride: number?
+		cadenceSecondsOverride: number?,
+		relicCadenceMultiplier: number?
 	) -> AutomaticFireResolution,
 }
 
@@ -167,7 +168,13 @@ local function readProgressionNumber(attributeName: string, fallback: number): n
 	return if type(value) == "number" and value == value then value else fallback
 end
 
-local function resolveCadenceSeconds(weaponId: string, override: number?): number?
+-- Hard safety floor for the caller-supplied Suppression Engine (RPG-0109)
+-- multiplier, matching the shared ModifierCeilings.minimumCadenceMultiplier. The
+-- squad Hair Trigger multiplier and this per-operative one compose, and the
+-- product still cannot pass MINIMUM_CADENCE_SECONDS below.
+local RELIC_CADENCE_MULTIPLIER_FLOOR = 0.55
+
+local function resolveCadenceSeconds(weaponId: string, override: number?, relicCadenceMultiplier: number?): number?
 	local definition = resolveWeaponDefinition(weaponId)
 	if definition == nil then
 		return nil
@@ -176,7 +183,19 @@ local function resolveCadenceSeconds(weaponId: string, override: number?): numbe
 	local requested = override
 	if requested == nil then
 		local multiplier = readProgressionNumber("RunCadenceMultiplier", 1)
-		requested = configured * multiplier
+		local relicMultiplier = 1
+		if relicCadenceMultiplier ~= nil then
+			if
+				type(relicCadenceMultiplier) ~= "number"
+				or relicCadenceMultiplier ~= relicCadenceMultiplier
+				or relicCadenceMultiplier < RELIC_CADENCE_MULTIPLIER_FLOOR
+				or relicCadenceMultiplier > 1
+			then
+				return nil
+			end
+			relicMultiplier = relicCadenceMultiplier
+		end
+		requested = configured * multiplier * relicMultiplier
 	end
 	if
 		type(requested) ~= "number"
@@ -202,7 +221,8 @@ function AutomaticFireResolver.resolve(
 	selectedTarget: SelectedTargetState?,
 	weaponState: WeaponReadinessState,
 	serverTimestamp: number,
-	cadenceSecondsOverride: number?
+	cadenceSecondsOverride: number?,
+	relicCadenceMultiplier: number?
 ): AutomaticFireResolution
 	local targetEntityId = if selectedTarget == nil then nil else selectedTarget.targetEntityId
 
@@ -234,7 +254,7 @@ function AutomaticFireResolver.resolve(
 		)
 	end
 
-	local cadenceSeconds = resolveCadenceSeconds(weaponState.weaponId, cadenceSecondsOverride)
+	local cadenceSeconds = resolveCadenceSeconds(weaponState.weaponId, cadenceSecondsOverride, relicCadenceMultiplier)
 	local ammoConservationChance = resolveAmmoConservationChance()
 	local configuredWeapon = resolveWeaponDefinition(weaponState.weaponId)
 	if

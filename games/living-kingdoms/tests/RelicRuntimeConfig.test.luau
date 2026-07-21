@@ -61,7 +61,7 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Re
 
 local Ceilings = rpgConfig.ModifierCeilings
 
-assertThat(config.Version == "RPG-0109-weapon-and-salvage-batch-tuning", "relic tuning version drifted")
+assertThat(config.Version == "RPG-0109-weapon-batch-tuning", "relic tuning version drifted")
 assertThat(#config.FirstBatchRelicIds == 6, "the first relic batch must contain six relics")
 
 -- Every runtime tuning value must sit within the shared ceilings.
@@ -90,6 +90,13 @@ assertThat(
 assertThat(
 	config.EmergencyChamber.woundedHealthFraction > 0 and config.EmergencyChamber.woundedHealthFraction <= 0.5,
 	"Emergency Chamber must only reward genuinely wounded operatives"
+)
+assertThat(
+	config.SuppressionEngine.shotThreshold > 0
+		and config.SuppressionEngine.shotThreshold % 1 == 0
+		and 1 - config.SuppressionEngine.cadenceReduction >= Ceilings.minimumCadenceMultiplier
+		and 1 + config.SuppressionEngine.damageBonus <= Ceilings.maximumConditionalDamageMultiplier,
+	"Suppression Engine must ramp over whole shots within the cadence and damage ceilings"
 )
 assertThat(
 	config.SalvagersMark.lootRoundsAdditiveBonus > 0
@@ -122,7 +129,7 @@ for relicId in config.RuntimeByRelicId do
 	assertThat(contracts.isKnownRelicId(relicId), "relic tuning references an unknown relic")
 	runtimeCount += 1
 end
-assertThat(runtimeCount == 9, "runtime tuning must cover exactly the implemented relics")
+assertThat(runtimeCount == 10, "runtime tuning must cover exactly the implemented relics")
 
 -- Exactly the relics with runtime tuning carry effects, so exactly those relics
 -- may be marked Implemented in the canonical relic catalog.
@@ -153,7 +160,7 @@ for _, definition in rpgConfig.RelicCatalog do
 	end
 end
 assertThat(
-	implementedRelicCount == 9,
+	implementedRelicCount == 10,
 	"the implemented relics must be the RPG-0108 first batch plus the delivered RPG-0109 slices"
 )
 

@@ -43,6 +43,9 @@ export type RelicModifiers = {
 	sniperPatternDamageMultiplier: number,
 	sniperSpecialEnemyDamageMultiplier: number,
 	lootRoundsAdditiveBonus: number,
+	sustainedFireShotThreshold: number,
+	sustainedFireCadenceMultiplier: number,
+	sustainedFireDamageMultiplier: number,
 }
 
 export type BloodBatteryResult = {
@@ -73,6 +76,9 @@ local function neutralModifiers(): RelicModifiers
 		sniperPatternDamageMultiplier = 1,
 		sniperSpecialEnemyDamageMultiplier = 1,
 		lootRoundsAdditiveBonus = 0,
+		sustainedFireShotThreshold = 0,
+		sustainedFireCadenceMultiplier = 1,
+		sustainedFireDamageMultiplier = 1,
 	}
 end
 
@@ -157,6 +163,17 @@ function RelicModifierResolver.deriveModifiers(equippedRelicIds: { string }): Re
 		modifiers.lootRoundsAdditiveBonus = RunModifierResolver.resolve({
 			lootRoundsAdditiveBonus = RelicRuntimeConfig.SalvagersMark.lootRoundsAdditiveBonus,
 		}).lootRoundsAdditiveBonus
+	end
+
+	if equipped[RelicIds.SuppressionEngine] then
+		local tuning = RelicRuntimeConfig.SuppressionEngine
+		local resolved = RunModifierResolver.resolve({
+			cadenceReduction = tuning.cadenceReduction,
+			conditionalDamageBonus = tuning.damageBonus,
+		})
+		modifiers.sustainedFireShotThreshold = tuning.shotThreshold
+		modifiers.sustainedFireCadenceMultiplier = resolved.cadenceMultiplier
+		modifiers.sustainedFireDamageMultiplier = resolved.conditionalDamageMultiplier
 	end
 
 	return table.freeze(modifiers)

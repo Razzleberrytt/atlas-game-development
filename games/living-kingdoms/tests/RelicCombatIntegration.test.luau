@@ -63,6 +63,15 @@ local contracts = {
 		ReloadNotComplete = "ReloadNotComplete",
 		ReloadInterrupted = "ReloadInterrupted",
 	}),
+	AuthoritativeFireStatusIds = table.freeze({ Fired = "Fired", Rejected = "Rejected" }),
+	AutomaticFireRejectionReasonIds = table.freeze({
+		NoSelectedTarget = "NoSelectedTarget",
+		SelectedTargetInvalid = "SelectedTargetInvalid",
+		OperativeStateInvalid = "OperativeStateInvalid",
+		NoAmmunition = "NoAmmunition",
+		WeaponNotReady = "WeaponNotReady",
+		CadenceBlocked = "CadenceBlocked",
+	}),
 	WeaponIds = table.freeze({
 		BreachShotgun = "weapon.breach-shotgun",
 		SniperRifle = "weapon.sniper-rifle",
@@ -153,6 +162,7 @@ local function relicModifiers(overrides: { [string]: number }?)
 		shotgunPatternDamageMultiplier = 1,
 		sniperPatternDamageMultiplier = 1,
 		sniperSpecialEnemyDamageMultiplier = 1,
+		sustainedFireDamageMultiplier = 1,
 	}
 	for key, value in overrides or {} do
 		modifiers[key] = value
@@ -422,6 +432,89 @@ assertThat(
 	"a malformed relic pattern bundle must fail the impact closed"
 )
 
+-- Suppression Engine applies only while the caller reports sustained fire, and
+-- its cadence reduction composes with Hair Trigger without passing the floor.
+local suppressionModifiers = relicModifiers({ sustainedFireDamageMultiplier = 1.2 })
+local unsustained = damageResolver.resolve(
+	hit("shot.suppression.cold"),
+	health(100),
+	40,
+	nil,
+	damageContext({ relicModifiers = suppressionModifiers })
+)
+assertThat(unsustained.damageEvent.damageAmount == 20, "an unsustained burst must deal configured damage")
+local sustained = damageResolver.resolve(
+	hit("shot.suppression.hot"),
+	health(100),
+	41,
+	nil,
+	damageContext({ relicModifiers = suppressionModifiers, isSustainedFireActive = true })
+)
+assertThat(sustained.damageEvent.damageAmount == 24, "sustained fire must raise damage")
+
+local fireResolver = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/AutomaticFireResolver.luau"), {
+	debugName = "AutomaticFireResolver",
+	environment = environment,
+	injectGlobals = true,
+})()
+firearmConfig.BasicFirearm = table.freeze({
+	WeaponId = "weapon.basic_firearm",
+	DamageTypeId = "Ballistic",
+	DamagePerHit = 20,
+	MagazineCapacity = 12,
+	ReloadDurationSeconds = 2,
+	CadenceSeconds = 0.2,
+})
+
+local function fireOperative()
+	return { entityId = "operative.alpha", combatStateId = "Ready" }
+end
+
+local function fireTarget()
+	return {
+		operativeEntityId = "operative.alpha",
+		targetEntityId = "hostile.fixture",
+		isValid = true,
+		selectionReasonId = "ValidClosest",
+		selectedAtServerTimestamp = nil,
+	}
+end
+
+local function fireWeaponState()
+	return {
+		weaponId = "weapon.basic_firearm",
+		readinessStateId = "Ready",
+		ammunition = {
+			weaponId = "weapon.basic_firearm",
+			loadedRounds = 10,
+			reserveRounds = 24,
+			magazineCapacity = 12,
+		},
+		cadence = {
+			weaponId = "weapon.basic_firearm",
+			lastFireServerTimestamp = nil,
+			nextAllowedFireServerTimestamp = 0,
+		},
+		reloadState = nil,
+	}
+end
+
+local baselineFire = fireResolver.resolve(fireOperative(), fireTarget(), fireWeaponState(), 5)
+assertThat(
+	math.abs(baselineFire.weaponStateAfter.cadence.nextAllowedFireServerTimestamp - 5.2) < 1e-9,
+	"an unmodified cadence must keep the configured interval"
+)
+local suppressedFire = fireResolver.resolve(fireOperative(), fireTarget(), fireWeaponState(), 5, nil, 0.85)
+assertThat(
+	math.abs(suppressedFire.weaponStateAfter.cadence.nextAllowedFireServerTimestamp - 5.17) < 1e-9,
+	"sustained fire must shorten the cadence interval"
+)
+local forgedCadence = fireResolver.resolve(fireOperative(), fireTarget(), fireWeaponState(), 5, nil, 0.1)
+assertThat(
+	not forgedCadence.decision.shouldFire,
+	"a relic cadence multiplier below the shared floor must fail the shot closed"
+)
+
 -- Emergency Chamber shortens only reloads accepted while critically wounded and
 -- never crosses the shared reload floor.
 local function operative()
@@ -639,6 +732,20 @@ assertThat(
 assertThat(
 	not contains(combatRuntime, "healthState.currentHealth ="),
 	"the combat owner must never write operative health directly"
+)
+
+assertThat(
+	contains(combatRuntime, "isAutomaticFirearm(playerState.weaponState.weaponId)"),
+	"Suppression Engine must be gated on an automatic firearm"
+)
+assertThat(
+	contains(combatRuntime, "RelicModifierService.recordSustainedShot(player)")
+		and contains(combatRuntime, "RelicModifierService.resetSustainedShots(player)"),
+	"the sustained-shot counter must advance on accepted shots and reset on reload, loadout, and life transitions"
+)
+assertThat(
+	contains(buildStore, "function store:setRelicCounter") and contains(buildStore, "MAXIMUM_RELIC_COUNTER_VALUE"),
+	"the saturating relic counter must stay bounded in its canonical owner"
 )
 
 local lootService = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyLootService.luau")
