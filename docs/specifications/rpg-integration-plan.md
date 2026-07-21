@@ -1,7 +1,7 @@
 # Living Kingdoms — Run-Based RPG Integration Plan
 
 **Document ID:** RPG-PLAN-001  
-**Status:** Active — `RPG-0101`–`RPG-0107` complete; `RPG-0108` implementation complete pending Studio validation; `RPG-0109` in progress<br>
+**Status:** Active — `RPG-0101`–`RPG-0107` and `RPG-0109` complete; `RPG-0108` implementation complete pending Studio validation; `RPG-0110` next<br>
 **Target:** Post-HROI gameplay expansion  
 **Primary objective:** Turn each operation into a distinct, replayable character-build journey while preserving Living Kingdoms' brutal cooperative survival identity.
 
@@ -620,9 +620,9 @@ Recommended first batch: Blood Battery, Grave Momentum, Choir Breaker, Last Ligh
 
 **Exit:** At least three clearly different viable build patterns emerge. *(Implementation is complete; the exit gate still requires representative Studio evidence and is not claimed.)*
 
-### RPG-0109 — Add weapon and cooperation relics — **In progress (all four weapon relics delivered)**
+### RPG-0109 — Add weapon and cooperation relics — **Complete**
 
-Add Salvager's Mark, Breach Doctrine, Longwatch Doctrine, Suppression Engine, Guardian Signal, and Second Wind. This task depends on the relevant class and result boundaries being available, so it lands in slices as each effect's authoritative owner becomes usable.
+Add Salvager's Mark, Breach Doctrine, Longwatch Doctrine, Suppression Engine, Guardian Signal, and Second Wind. Delivered in four slices, each through the effect's existing authoritative owner. Every declared relic now carries a runtime effect, so the catalog marks all twelve Implemented.
 
 **Weapon-pattern slice (delivered).** Breach Doctrine and Longwatch Doctrine reuse the RPG-0108 per-operative bundle and the existing `DamageResolver` pattern pass. Breach Doctrine raises Breach Shotgun cone-cleave secondary damage; Longwatch Doctrine raises Sniper Rifle line-pierce secondary damage and every sniper impact against a special enemy. Both are gated on the firing weapon inside the resolver, so a relic can never affect another firearm's pattern, and both share the pattern ceiling and the never-exceed-primary cap with the Pattern Amplifier upgrade — a maxed build reaches the cap sooner rather than passing it. A malformed bundle fails the impact closed. `RelicRuntimeConfig` now declares a `SecondBatchRelicIds` set, and the catalog marks exactly the eight relics that have runtime tuning as Implemented.
 
@@ -630,9 +630,9 @@ Add Salvager's Mark, Breach Doctrine, Longwatch Doctrine, Suppression Engine, Gu
 
 **Sustained-fire slice (delivered).** Suppression Engine rewards holding an automatic weapon on target: once the operative has fired a configured number of rounds without reloading, the rest of that magazine fires faster and hits harder. The sustained-shot count saturates in the equipped relic slot — `RunBuildStateStore` gained a bounded `readRelicCounter`/`setRelicCounter` pair beside the existing counted-relic advance — and `OperativeCombatRuntimeService` gates the effect on an automatic firearm, advances the counter only on accepted shots, and resets it on reload, loadout change, and any loss of combat rights. `AutomaticFireResolver` accepts a per-operative cadence multiplier that composes with the squad Hair Trigger multiplier and fails the shot closed below the shared cadence floor; `DamageResolver` applies the sustained damage multiplier only when the caller reports sustained fire.
 
-**Remaining slices.** Guardian Signal (temporary armor on teammate revive) and Second Wind (a once-per-operation incapacitation reprieve through the P3 life boundary).
+**Cooperation slice (delivered).** Guardian Signal and Second Wind act inside the authoritative P3 life core rather than beside it. Completing a revive grants the reviver and the operative they brought back an expiring pool of temporary armor, sized from each operative's own maximum health and held by `OperativeLifeService` — never part of the replicated life snapshot. Armor absorbs incoming damage before health but never the entire event: it leaves at least one point so every authoritative damage event still commits and stays replay-protected through the existing processed-event set. Second Wind spends the single operation charge that `RunBuildStateStore` now initialises from the relic's declared `maximumCharges` at equip time; when a resolved transition would incapacitate a living operative, the damage is reduced to leave them alive but fragile and re-resolved through the same pure `OperativeHealthResolver` boundary. The charge is spent before the re-resolve, so a failed reprieve cannot retry, and the reduced event keeps its identity.
 
-**Exit:** Weapon identity and cooperative contribution materially affect build direction. *(Not claimed: the cooperative relics are outstanding.)*
+**Exit:** Weapon identity and cooperative contribution materially affect build direction. ✔ *(Implementation and fixtures complete; the shared balance and readability evidence remains with the `RPG-0108` Studio gate and `RPG-0113`.)*
 
 ### RPG-0110 — Integrate elite and objective reward sources
 
@@ -669,7 +669,7 @@ Current status:
 | `RPG-0101`–`RPG-0106` | Complete | Merged in PRs #142 and #144–#148: contracts/config, centralized operation state, twelve upgrades, shared modifier resolution, and five elite affixes. |
 | `RPG-0107` | Complete | Bounded reward/slot/replacement framework delivered through the existing run-build owner: pure `RelicRewardResolver`, `RunBuildStateStore` enqueue/choose/replace, and the server-only `RunBuildService` reward source and intent entry points. |
 | `RPG-0108` | Implementation complete; Studio validation outstanding | All six first-batch relics now change authoritative outcomes through their existing owners: conditional damage in `DamageResolver`, wounded reload in `ReloadResolver`, Blood Battery healing through the revisioned P3 healing boundary, and the Grave Momentum kill-chain window in `HordeExperienceService`. The catalog marks exactly these six Implemented. The "three viable build patterns" gate still needs representative Studio evidence. |
-| `RPG-0109` | In progress (all four weapon relics delivered) | Breach Doctrine and Longwatch Doctrine are weapon-gated inside `DamageResolver`'s pattern pass, Salvager's Mark adds bounded rounds inside `EnemyLootService`'s collection path, and Suppression Engine ramps cadence and damage from a saturating sustained-shot counter. The cooperative pair — Guardian Signal and Second Wind — remains. |
+| `RPG-0109` | Complete | Four slices through existing owners: the weapon-pattern pair in `DamageResolver`, Salvager's Mark in `EnemyLootService`, Suppression Engine across `AutomaticFireResolver` and `DamageResolver`, and the cooperative pair inside the P3 life core (expiring temporary armor and a one-charge incapacitation reprieve). All twelve declared relics are now Implemented. |
 | `RPG-0110`–`RPG-0111` | Not started | Add production reward sources and readable UI in order; defer any source whose authoritative P8/P9 owner does not yet exist. |
 | `RPG-0112` | Blocked by P10 result owner | Attach the operation-bound build summary to the authoritative match result rather than creating an RPG-specific result authority. |
 | `RPG-0113` | Not started | Run the complete solo/2/4-player security, balance, readability, cleanup, and representative-horde validation matrix after `RPG-0112`. |

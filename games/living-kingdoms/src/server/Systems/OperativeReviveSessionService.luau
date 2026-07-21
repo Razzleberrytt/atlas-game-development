@@ -15,6 +15,7 @@ local Workspace = game:GetService("Workspace")
 local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.OperativeLifeContracts)
 local OperativeCombatRuntimeService = require(script.Parent.OperativeCombatRuntimeService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
+local RelicModifierService = require(script.Parent.RelicModifierService)
 local OperativeReviveResolver = require(script.Parent.OperativeReviveResolver)
 local SquadFailureService = require(script.Parent.SquadFailureService)
 
@@ -171,6 +172,34 @@ local function cancelSession(session: Session)
 	removeSession(session)
 end
 
+--[[
+	Guardian Signal (RPG-0109) is a cooperative relic: when its owner completes a
+	revive, both the reviver and the operative they brought back receive a bounded,
+	expiring pool of temporary armor. The armor amount derives from each operative's
+	own authoritative maximum health, and the life owner holds the pool.
+]]
+local function grantGuardianSignalArmor(session: Session, serverTimestamp: number)
+	local modifiers = RelicModifierService.read(session.reviverPlayer)
+	local fraction = modifiers.temporaryArmorFractionOfMaximumHealth
+	local durationSeconds = modifiers.temporaryArmorDurationSeconds
+	if fraction <= 0 or durationSeconds <= 0 then
+		return
+	end
+	local expiresAt = serverTimestamp + durationSeconds
+	for _, operativeEntityId in
+		{ session.sessionState.reviverOperativeEntityId, session.sessionState.targetOperativeEntityId }
+	do
+		local read = OperativeLifeService.readByOperativeEntityId(operativeEntityId)
+		if read == nil then
+			continue
+		end
+		local armorAmount = math.floor(read.snapshot.healthState.maximumHealth * fraction)
+		if armorAmount >= 1 then
+			OperativeLifeService.grantTemporaryArmor(operativeEntityId, armorAmount, expiresAt)
+		end
+	end
+end
+
 local function evaluateSession(session: Session, serverTimestamp: number)
 	if sessionsByTarget[session.sessionState.targetOperativeEntityId] ~= session then
 		return
@@ -233,6 +262,9 @@ local function evaluateSession(session: Session, serverTimestamp: number)
 			end
 			local committed =
 				OperativeLifeService.commitAcceptedTransition(session.targetPlayer, targetRead.revision, continued)
+			if committed.didCommit then
+				grantGuardianSignalArmor(session, serverTimestamp)
+			end
 			if not committed.didCommit then
 				OperativeCombatRuntimeService.commitReviveCombatState(
 					session.targetPlayer,

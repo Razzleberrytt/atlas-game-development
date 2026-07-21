@@ -46,6 +46,9 @@ export type RelicModifiers = {
 	sustainedFireShotThreshold: number,
 	sustainedFireCadenceMultiplier: number,
 	sustainedFireDamageMultiplier: number,
+	temporaryArmorFractionOfMaximumHealth: number,
+	temporaryArmorDurationSeconds: number,
+	secondWindSurvivalHealth: number,
 }
 
 export type BloodBatteryResult = {
@@ -79,6 +82,9 @@ local function neutralModifiers(): RelicModifiers
 		sustainedFireShotThreshold = 0,
 		sustainedFireCadenceMultiplier = 1,
 		sustainedFireDamageMultiplier = 1,
+		temporaryArmorFractionOfMaximumHealth = 0,
+		temporaryArmorDurationSeconds = 0,
+		secondWindSurvivalHealth = 0,
 	}
 end
 
@@ -174,6 +180,17 @@ function RelicModifierResolver.deriveModifiers(equippedRelicIds: { string }): Re
 		modifiers.sustainedFireShotThreshold = tuning.shotThreshold
 		modifiers.sustainedFireCadenceMultiplier = resolved.cadenceMultiplier
 		modifiers.sustainedFireDamageMultiplier = resolved.conditionalDamageMultiplier
+	end
+
+	if equipped[RelicIds.GuardianSignal] then
+		local tuning = RelicRuntimeConfig.GuardianSignal
+		modifiers.temporaryArmorFractionOfMaximumHealth = RunModifierResolver.resolve({
+			temporaryArmorFractionOfMaximumHealth = tuning.temporaryArmorFractionOfMaximumHealth,
+		}).temporaryArmorFractionOfMaximumHealth
+		modifiers.temporaryArmorDurationSeconds = tuning.armorDurationSeconds
+	end
+	if equipped[RelicIds.SecondWind] then
+		modifiers.secondWindSurvivalHealth = RelicRuntimeConfig.SecondWind.survivalHealth
 	end
 
 	return table.freeze(modifiers)

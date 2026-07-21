@@ -11,6 +11,9 @@ local CONFIG_TOKEN = {}
 local CONTRACTS_TOKEN = {}
 local HEALTH_RESOLVER_TOKEN = {}
 local HEALING_RESOLVER_TOKEN = {}
+-- No operative has a relic equipped in these fixtures, so the life core must
+-- behave exactly as it did before RPG-0109.
+local RELIC_MODIFIER_TOKEN = {}
 
 local lifeStateIds = table.freeze({ Alive = "Alive", Incapacitated = "Incapacitated", Dead = "Dead" })
 local reasons = table.freeze({
@@ -162,12 +165,27 @@ local serviceLoader = luau.load(fs.readFile("games/living-kingdoms/src/server/Sy
 					end,
 				}
 			end
+			if token == RELIC_MODIFIER_TOKEN then
+				return {
+					read = function()
+						return {
+							secondWindSurvivalHealth = 0,
+							temporaryArmorFractionOfMaximumHealth = 0,
+							temporaryArmorDurationSeconds = 0,
+						}
+					end,
+					consumeSecondWindCharge = function()
+						return false
+					end,
+				}
+			end
 			return baseRequire(token)
 		end,
 		script = {
 			Parent = {
 				OperativeHealingResolver = HEALING_RESOLVER_TOKEN,
 				OperativeHealthResolver = HEALTH_RESOLVER_TOKEN,
+				RelicModifierService = RELIC_MODIFIER_TOKEN,
 			},
 		},
 		typeof = function(value)

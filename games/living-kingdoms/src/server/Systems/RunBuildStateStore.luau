@@ -73,6 +73,7 @@ export type Store = {
 		threshold: number
 	) -> RelicCounterAdvance?,
 	readRelicCounter: (self: Store, operativeId: string, relicId: string) -> number?,
+	consumeRelicCharge: (self: Store, operativeId: string, relicId: string) -> boolean,
 	setRelicCounter: (self: Store, operativeId: string, relicId: string, value: number) -> boolean,
 	commitUpgradeStacks: (
 		self: Store,
@@ -203,12 +204,23 @@ local function clearRelicSlot(slot: any)
 	slot.cooldownEndServerTimestamp = nil
 end
 
--- Equip an inert relic. RPG-0108 owns charge/cooldown/counter initialization.
+local function catalogDefinition(relicId: string): any?
+	for _, definition in RunRpgConfig.RelicCatalog do
+		if definition.relicId == relicId then
+			return definition
+		end
+	end
+	return nil
+end
+
+-- Equip a relic with its declared operation charges. Counters start empty; the
+-- authoritative effect owners advance them.
 local function equipRelicIntoSlot(slot: any, relicId: string)
+	local definition = catalogDefinition(relicId)
 	slot.slotStateId = SlotStates.Equipped
 	slot.relicId = relicId
 	slot.effectStateId = EffectStates.Inactive
-	slot.chargeCount = 0
+	slot.chargeCount = if definition == nil then 0 else definition.maximumCharges
 	slot.counterValue = 0
 	slot.cooldownEndServerTimestamp = nil
 	slot.revision += 1
@@ -441,6 +453,20 @@ function RunBuildStateStore.new(): Store
 			return false
 		end
 		slot.counterValue = math.min(value, MAXIMUM_RELIC_COUNTER_VALUE)
+		return true
+	end
+
+	--[[
+		Spends one declared operation charge from an equipped relic, such as Second
+		Wind's single reprieve. Returns false when the relic is not equipped or has
+		no charge left, so a once-per-operation effect can never fire twice.
+	]]
+	function store:consumeRelicCharge(operativeId: string, relicId: string): boolean
+		local slot = equippedSlot(operativeId, relicId)
+		if slot == nil or type(slot.chargeCount) ~= "number" or slot.chargeCount < 1 then
+			return false
+		end
+		slot.chargeCount -= 1
 		return true
 	end
 

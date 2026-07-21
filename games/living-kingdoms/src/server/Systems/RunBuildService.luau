@@ -124,6 +124,10 @@ function RunBuildService.setRelicCounter(player: Player, relicId: string, value:
 	return store:setRelicCounter(operativeId(player), relicId, value)
 end
 
+function RunBuildService.consumeRelicCharge(player: Player, relicId: string): boolean
+	return store:consumeRelicCharge(operativeId(player), relicId)
+end
+
 -- Server-only counted-relic advance for the authoritative effect owners.
 function RunBuildService.advanceRelicCounter(
 	player: Player,

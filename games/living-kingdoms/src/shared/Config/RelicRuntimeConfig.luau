@@ -3,7 +3,7 @@
 --[[
 	Per-relic runtime tuning for the implemented relics: the RPG-0108 first batch
 	(Blood Battery, Grave Momentum, Choir Breaker, Last Light, Emergency Chamber,
-	Execution Protocol) and the delivered RPG-0109 weapon-pattern slice (Breach
+	Execution Protocol) and the RPG-0109 weapon and cooperation (Breach
 	Doctrine, Longwatch Doctrine).
 
 	This declares the bounded per-stack contributions each relic feeds through the
@@ -98,6 +98,21 @@ local SuppressionEngine = table.freeze({
 	damageBonus = 0.2,
 })
 
+-- Guardian Signal: completing a revive grants the reviver and the revived
+-- operative a bounded, expiring pool of temporary armor that absorbs incoming
+-- damage before health.
+local GuardianSignal = table.freeze({
+	temporaryArmorFractionOfMaximumHealth = 0.2,
+	armorDurationSeconds = 12,
+})
+
+-- Second Wind: once per operation, damage that would incapacitate the operative
+-- instead leaves them alive at `survivalHealth` (or one point, when they were
+-- already below it).
+local SecondWind = table.freeze({
+	survivalHealth = 20,
+})
+
 local RuntimeByRelicId = table.freeze({
 	[RelicIds.BloodBattery] = BloodBattery,
 	[RelicIds.GraveMomentum] = GraveMomentum,
@@ -109,6 +124,8 @@ local RuntimeByRelicId = table.freeze({
 	[RelicIds.LongwatchDoctrine] = LongwatchDoctrine,
 	[RelicIds.SalvagersMark] = SalvagersMark,
 	[RelicIds.SuppressionEngine] = SuppressionEngine,
+	[RelicIds.GuardianSignal] = GuardianSignal,
+	[RelicIds.SecondWind] = SecondWind,
 })
 
 local FirstBatchRelicIds = table.freeze({
@@ -127,10 +144,12 @@ local SecondBatchRelicIds = table.freeze({
 	RelicIds.LongwatchDoctrine,
 	RelicIds.SalvagersMark,
 	RelicIds.SuppressionEngine,
+	RelicIds.GuardianSignal,
+	RelicIds.SecondWind,
 })
 
 local Config = {
-	Version = "RPG-0109-weapon-batch-tuning",
+	Version = "RPG-0109-weapon-and-cooperation-batch-tuning",
 	BloodBattery = BloodBattery,
 	GraveMomentum = GraveMomentum,
 	ChoirBreaker = ChoirBreaker,
@@ -141,6 +160,8 @@ local Config = {
 	LongwatchDoctrine = LongwatchDoctrine,
 	SalvagersMark = SalvagersMark,
 	SuppressionEngine = SuppressionEngine,
+	GuardianSignal = GuardianSignal,
+	SecondWind = SecondWind,
 	RuntimeByRelicId = RuntimeByRelicId,
 	FirstBatchRelicIds = FirstBatchRelicIds,
 	SecondBatchRelicIds = SecondBatchRelicIds,
@@ -260,6 +281,24 @@ assert(
 	"Suppression Engine damage must be positive and within the conditional damage ceiling"
 )
 
+assert(
+	isFinite(GuardianSignal.temporaryArmorFractionOfMaximumHealth)
+		and GuardianSignal.temporaryArmorFractionOfMaximumHealth > 0
+		and GuardianSignal.temporaryArmorFractionOfMaximumHealth
+			<= Ceilings.maximumTemporaryArmorFractionOfMaximumHealth,
+	"Guardian Signal armor must be positive and within the temporary armor ceiling"
+)
+assert(
+	isFinite(GuardianSignal.armorDurationSeconds)
+		and GuardianSignal.armorDurationSeconds >= 4
+		and GuardianSignal.armorDurationSeconds <= 20,
+	"Guardian Signal armor must expire on a short readable timer"
+)
+assert(
+	isPositiveInteger(SecondWind.survivalHealth) and SecondWind.survivalHealth <= 30,
+	"Second Wind must leave a whole, deliberately fragile amount of health"
+)
+
 local runtimeRelicCount = 0
 for relicId in RuntimeByRelicId do
 	assert(RunRpgContracts.isKnownRelicId(relicId), "relic runtime tuning references an unknown relic")
@@ -270,6 +309,6 @@ assert(
 	"the runtime tuning map must cover exactly the implemented relic batches"
 )
 assert(#FirstBatchRelicIds == 6, "the RPG-0108 first batch contains six relics")
-assert(#SecondBatchRelicIds == 4, "the delivered RPG-0109 slices contain the four weapon-facing relics")
+assert(#SecondBatchRelicIds == 6, "the RPG-0109 batch contains four weapon relics and two cooperative relics")
 
 return table.freeze(Config)
