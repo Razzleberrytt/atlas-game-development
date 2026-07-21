@@ -12,8 +12,9 @@ This slice extends shared squad Field XP with a bounded three-choice run-upgrade
 - Killing a Choir Screamer during its authoritative reinforcement windup awards an additional **10 Field XP** exactly once.
 - Field Level 2 requires 80 XP, so the first level-up occurs after four ordinary confirmed deaths under current tuning.
 - Later thresholds grow by 1.4× per level, rounded to whole XP.
-- The unified combat HUD shows current Field Level, XP progress, and level/selection confirmations.
-- Crossing a threshold opens a centered three-card squad upgrade choice.
+- The unified combat HUD shows current Field Level, XP progress, squad kills, and compact derived run stats for damage, fire rate, mitigation, reload speed, ammunition conservation, and XP gain.
+- Crossing a threshold opens a three-card **Field Upgrade** choice. Player-facing text does not call these upgrades mutations.
+- Every choice card shows its concrete current → next stat impact before selection, alongside its stack count and behavior description.
 - The first valid squad selection locks the upgrade for the run and closes the offer for every client.
 - Multiple unclaimed levels queue one offer at a time.
 - Field XP, level, kills, and offers reset when the progression service starts a new server session. The centralized `RunBuildService` resets owned upgrade stacks and future relic/effect state at the operation boundary; derived modifier attributes reset from that empty state.
@@ -122,3 +123,4 @@ Automated validation must pass StyLua, Selene, every Lune fixture, and Rojo buil
 9. a Screamer killed during reinforcement windup grants one +10 bonus, displays +30 combined XP, and cannot duplicate after cleanup
 10. the choice panel is usable with mouse and touch without obscuring critical combat space
 11. the 24-enemy representative load remains playable with both bounded progression observers active
+12. the HUD exposes current derived run stats and every Field Upgrade card shows an accurate current → next stat preview

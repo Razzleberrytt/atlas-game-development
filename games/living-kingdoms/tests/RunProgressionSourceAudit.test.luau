@@ -57,6 +57,8 @@ assert(
 )
 assert(contains(service, "stateRemote:FireAllClients"), "confirmed awards must publish a server snapshot")
 assert(contains(service, "readStateRemote.OnServerInvoke"), "late clients require read-only state recovery")
+assert(contains(service, "statPreview = choiceStatPreview"), "upgrade cards require server-derived stat previews")
+assert(contains(service, "runStats = publicRunStats()"), "safe snapshots require current derived run stats")
 assert(
 	contains(service, "chooseUpgradeRemote.OnServerEvent:Connect(onChooseUpgrade)"),
 	"one upgrade intent must reach server validation"
@@ -166,6 +168,7 @@ assert(
 )
 assert(occurrenceCount(controller, ":FireServer(") == 1, "the progression HUD must expose exactly one mutation call")
 assert(contains(controller, "button.Activated:Connect"), "touch and mouse must use fixed choice buttons")
+assert(contains(controller, "statPreview"), "the fallback progression HUD must render concrete stat impact")
 for _, prohibited in { "OnServerEvent", "DataStoreService", "Humanoid.Health", "SetAttribute(" } do
 	assert(
 		not contains(controller, prohibited),
