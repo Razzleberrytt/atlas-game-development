@@ -304,6 +304,9 @@ local neutralRelicModifiers = table.freeze({
 	executionHealthFraction = 0,
 	bloodBatteryKillThreshold = 0,
 	bloodBatteryHealAmount = 0,
+	shotgunPatternDamageMultiplier = 1,
+	sniperPatternDamageMultiplier = 1,
+	sniperSpecialEnemyDamageMultiplier = 1,
 })
 
 -- Relic modifier adapter mock: no operative has a relic equipped, so every read

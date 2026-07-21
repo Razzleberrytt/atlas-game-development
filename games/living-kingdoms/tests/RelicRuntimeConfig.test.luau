@@ -61,7 +61,7 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Re
 
 local Ceilings = rpgConfig.ModifierCeilings
 
-assertThat(config.Version == "RPG-0108-part2-first-batch-tuning", "relic tuning version drifted")
+assertThat(config.Version == "RPG-0109-weapon-pattern-batch-tuning", "relic tuning version drifted")
 assertThat(#config.FirstBatchRelicIds == 6, "the first relic batch must contain six relics")
 
 -- Every runtime tuning value must sit within the shared ceilings.
@@ -116,32 +116,44 @@ for relicId in config.RuntimeByRelicId do
 	assertThat(contracts.isKnownRelicId(relicId), "relic tuning references an unknown relic")
 	runtimeCount += 1
 end
-assertThat(runtimeCount == 6, "runtime tuning must cover exactly the first six relics")
+assertThat(runtimeCount == 8, "runtime tuning must cover exactly the implemented relics")
 
--- Exactly the six first-batch relics carry runtime effects, so exactly those six
+-- Exactly the relics with runtime tuning carry effects, so exactly those relics
 -- may be marked Implemented in the canonical relic catalog.
-local firstBatch = {}
+local implementedRelics = {}
 for _, relicId in config.FirstBatchRelicIds do
-	firstBatch[relicId] = true
+	implementedRelics[relicId] = true
+end
+for _, relicId in config.SecondBatchRelicIds do
+	implementedRelics[relicId] = true
 end
 local implementedRelicCount = 0
 for _, definition in rpgConfig.RelicCatalog do
 	if definition.implementationStateId == contracts.ImplementationStateIds.Implemented then
 		implementedRelicCount += 1
-		assertThat(firstBatch[definition.relicId] == true, "only first-batch relics may be marked Implemented")
+		assertThat(
+			implementedRelics[definition.relicId] == true,
+			"only relics with runtime tuning may be marked Implemented"
+		)
 	else
 		assertThat(
 			definition.implementationStateId == contracts.ImplementationStateIds.Planned,
 			"invalid relic implementation state"
 		)
-		assertThat(firstBatch[definition.relicId] == nil, "every first-batch relic must be marked Implemented")
+		assertThat(
+			implementedRelics[definition.relicId] == nil,
+			"every relic with runtime tuning must be marked Implemented"
+		)
 	end
 end
-assertThat(implementedRelicCount == 6, "the RPG-0108 first batch must be the only implemented relics")
+assertThat(
+	implementedRelicCount == 8,
+	"the implemented relics must be the RPG-0108 first batch plus the delivered RPG-0109 weapon-pattern slice"
+)
 
 local frozen = pcall(function()
 	config.BloodBattery.healAmount = 999
 end)
 assertThat(not frozen, "relic tuning must be frozen")
 
-print("RelicRuntimeConfig: first-batch tuning is ceiling-bound, catalog-matched, and the only implemented batch")
+print("RelicRuntimeConfig: relic tuning is ceiling-bound, catalog-matched, and matches the implemented set")

@@ -420,7 +420,7 @@ local RelicCatalog = table.freeze({
 		slotCost = 1,
 		counterThreshold = 0,
 		maximumCharges = 0,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		relicId = RelicIds.LongwatchDoctrine,
@@ -432,7 +432,7 @@ local RelicCatalog = table.freeze({
 		slotCost = 1,
 		counterThreshold = 0,
 		maximumCharges = 0,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		relicId = RelicIds.SuppressionEngine,
@@ -768,7 +768,10 @@ for _, definition in RelicCatalog do
 	assert(#definition.modifierCategoryIds >= 1, "every relic requires a modifier category")
 end
 assert(#RelicCatalog == countVocabulary(RelicIds), "every relic ID requires exactly one catalog entry")
-assert(implementedRelicCount == 6, "RPG-0108 implements exactly the first relic batch")
+assert(
+	implementedRelicCount == 8,
+	"the implemented relic set is the RPG-0108 first batch plus the delivered RPG-0109 weapon-pattern slice"
+)
 
 local seenRewardSourceIds = {}
 for _, definition in RewardSourceCatalog do

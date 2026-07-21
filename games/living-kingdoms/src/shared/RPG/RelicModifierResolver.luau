@@ -39,6 +39,9 @@ export type RelicModifiers = {
 	executionHealthFraction: number,
 	bloodBatteryKillThreshold: number,
 	bloodBatteryHealAmount: number,
+	shotgunPatternDamageMultiplier: number,
+	sniperPatternDamageMultiplier: number,
+	sniperSpecialEnemyDamageMultiplier: number,
 }
 
 export type BloodBatteryResult = {
@@ -65,6 +68,9 @@ local function neutralModifiers(): RelicModifiers
 		executionHealthFraction = 0,
 		bloodBatteryKillThreshold = 0,
 		bloodBatteryHealAmount = 0,
+		shotgunPatternDamageMultiplier = 1,
+		sniperPatternDamageMultiplier = 1,
+		sniperSpecialEnemyDamageMultiplier = 1,
 	}
 end
 
@@ -128,6 +134,21 @@ function RelicModifierResolver.deriveModifiers(equippedRelicIds: { string }): Re
 			conditionalDamageBonus = tuning.conditionalDamageBonus,
 		}).conditionalDamageMultiplier
 		modifiers.executionHealthFraction = tuning.healthFraction
+	end
+
+	if equipped[RelicIds.BreachDoctrine] then
+		modifiers.shotgunPatternDamageMultiplier = RunModifierResolver.resolve({
+			patternDamageBonus = RelicRuntimeConfig.BreachDoctrine.patternDamageBonus,
+		}).patternDamageMultiplier
+	end
+	if equipped[RelicIds.LongwatchDoctrine] then
+		local tuning = RelicRuntimeConfig.LongwatchDoctrine
+		local resolved = RunModifierResolver.resolve({
+			patternDamageBonus = tuning.patternDamageBonus,
+			specialEnemyDamageBonus = tuning.specialEnemyDamageBonus,
+		})
+		modifiers.sniperPatternDamageMultiplier = resolved.patternDamageMultiplier
+		modifiers.sniperSpecialEnemyDamageMultiplier = resolved.specialEnemyDamageMultiplier
 	end
 
 	return table.freeze(modifiers)
