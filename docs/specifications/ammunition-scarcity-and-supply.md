@@ -90,7 +90,11 @@ Use the server output to copy the aggregate and per-operative facts into the evi
 
 ## P6-0108 controlled evidence process
 
-Complete these steps separately for one, two, and four operatives.
+Complete these steps separately for one, two, and four operatives. For a
+turnkey single-sitting script that pins this process to the Blackwater Relay
+route, cache order, and snapshot checkpoints, follow
+[`../production/P6-0108-EVIDENCE-CAPTURE-RUNBOOK.md`](../production/P6-0108-EVIDENCE-CAPTURE-RUNBOOK.md);
+this section remains the authority on the required columns and classification.
 
 ### Before each run
 
