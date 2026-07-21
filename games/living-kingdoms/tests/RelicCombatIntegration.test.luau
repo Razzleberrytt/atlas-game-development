@@ -1,9 +1,9 @@
 --!strict
 
--- RPG-0108 (part 2) per-operative relic effects reach the authoritative combat
--- core: conditional damage through DamageResolver, wounded reload reduction
--- through ReloadResolver, and one revision-cached modifier adapter over the
--- existing run-build owner. Malformed bundles fail the shot closed.
+-- Per-operative relic effects reach the authoritative combat core: RPG-0108
+-- conditional damage and counted healing, the wounded reload reduction, the
+-- RPG-0109 weapon-gated pattern relics, and one revision-cached modifier adapter
+-- over the existing run-build owner. Malformed bundles fail the shot closed.
 
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
@@ -62,6 +62,10 @@ local contracts = {
 		ReloadNotInProgress = "ReloadNotInProgress",
 		ReloadNotComplete = "ReloadNotComplete",
 		ReloadInterrupted = "ReloadInterrupted",
+	}),
+	WeaponIds = table.freeze({
+		BreachShotgun = "weapon.breach-shotgun",
+		SniperRifle = "weapon.sniper-rifle",
 	}),
 	FirearmHitRejectionReasonIds = table.freeze({
 		MissingShotIdentity = "MissingShotIdentity",
@@ -146,6 +150,9 @@ local function relicModifiers(overrides: { [string]: number }?)
 		lowReserveFraction = 0,
 		executionDamageMultiplier = 1,
 		executionHealthFraction = 0,
+		shotgunPatternDamageMultiplier = 1,
+		sniperPatternDamageMultiplier = 1,
+		sniperSpecialEnemyDamageMultiplier = 1,
 	}
 	for key, value in overrides or {} do
 		modifiers[key] = value
@@ -322,6 +329,98 @@ do
 		"a malformed relic bundle must fail the shot closed"
 	)
 end
+
+-- RPG-0109 weapon relics are gated to their own firearm. Breach Doctrine raises
+-- shotgun cleave damage, Longwatch Doctrine raises sniper pierce damage and every
+-- sniper impact against special enemies, and neither may leak onto another
+-- weapon or past the never-exceed-primary cap.
+local function weaponHit(shotId: string, weaponId: string)
+	local resolution = hit(shotId)
+	resolution.weaponId = weaponId
+	return resolution
+end
+
+firearmConfig["weapon.breach-shotgun"] = firearmConfig.BasicFirearm
+firearmConfig["weapon.sniper-rifle"] = firearmConfig.BasicFirearm
+firearmConfig.get = function(weaponId: unknown)
+	if weaponId == "weapon.basic_firearm" then
+		return firearmConfig.BasicFirearm
+	end
+	return (firearmConfig :: any)[weaponId]
+end
+
+local breachModifiers = relicModifiers({ shotgunPatternDamageMultiplier = 1.4 })
+local unamplifiedCleave = damageResolver.resolvePattern(
+	weaponHit("shot.cleave.base", "weapon.breach-shotgun"),
+	health(100),
+	30,
+	0.7,
+	damageContext()
+)
+assertThat(unamplifiedCleave.damageEvent.damageAmount == 14, "an unmodified 0.7 cleave of base 20 deals 14")
+local breachCleave = damageResolver.resolvePattern(
+	weaponHit("shot.cleave.breach", "weapon.breach-shotgun"),
+	health(100),
+	31,
+	0.7,
+	damageContext({ relicModifiers = breachModifiers })
+)
+assertThat(breachCleave.damageEvent.damageAmount == 20, "Breach Doctrine raises shotgun cleave toward primary damage")
+local breachOnSniper = damageResolver.resolvePattern(
+	weaponHit("shot.pierce.breach", "weapon.sniper-rifle"),
+	health(100),
+	32,
+	0.72,
+	damageContext({ relicModifiers = breachModifiers })
+)
+assertThat(breachOnSniper.damageEvent.damageAmount == 14, "Breach Doctrine must not affect another weapon's pattern")
+
+local longwatchModifiers =
+	relicModifiers({ sniperPatternDamageMultiplier = 1.35, sniperSpecialEnemyDamageMultiplier = 1.25 })
+local longwatchPierce = damageResolver.resolvePattern(
+	weaponHit("shot.pierce.longwatch", "weapon.sniper-rifle"),
+	health(100),
+	33,
+	0.72,
+	damageContext({ relicModifiers = longwatchModifiers })
+)
+assertThat(longwatchPierce.damageEvent.damageAmount == 19, "Longwatch Doctrine raises sniper pierce damage")
+local longwatchOrdinary = damageResolver.resolve(
+	weaponHit("shot.sniper.ordinary", "weapon.sniper-rifle"),
+	health(100),
+	34,
+	nil,
+	damageContext({ relicModifiers = longwatchModifiers })
+)
+assertThat(longwatchOrdinary.damageEvent.damageAmount == 20, "Longwatch Doctrine must not affect ordinary enemies")
+local longwatchSpecial = damageResolver.resolve(
+	weaponHit("shot.sniper.special", "weapon.sniper-rifle"),
+	health(100),
+	35,
+	nil,
+	damageContext({ relicModifiers = longwatchModifiers, isSpecialEnemy = true })
+)
+assertThat(longwatchSpecial.damageEvent.damageAmount == 25, "Longwatch Doctrine raises sniper special-enemy damage")
+local longwatchOnShotgun = damageResolver.resolve(
+	weaponHit("shot.shotgun.special", "weapon.breach-shotgun"),
+	health(100),
+	36,
+	nil,
+	damageContext({ relicModifiers = longwatchModifiers, isSpecialEnemy = true })
+)
+assertThat(longwatchOnShotgun.damageEvent.damageAmount == 20, "Longwatch Doctrine must not affect another weapon")
+
+local malformedPattern = damageResolver.resolvePattern(
+	weaponHit("shot.cleave.malformed", "weapon.breach-shotgun"),
+	health(100),
+	37,
+	0.7,
+	damageContext({ relicModifiers = relicModifiers({ shotgunPatternDamageMultiplier = 4 }) })
+)
+assertThat(
+	not malformedPattern.didApplyDamage and malformedPattern.rejectionReasonId == "WeaponInvalid",
+	"a malformed relic pattern bundle must fail the impact closed"
+)
 
 -- Emergency Chamber shortens only reloads accepted while critically wounded and
 -- never crosses the shared reload floor.
@@ -553,4 +652,4 @@ assertThat(
 	"every kill-chain window check must read the per-operative window"
 )
 
-print("RelicCombatIntegration: bounded per-operative relic damage, reload, caching, and audits passed")
+print("RelicCombatIntegration: bounded per-operative relic damage, weapon gating, reload, caching, and audits passed")

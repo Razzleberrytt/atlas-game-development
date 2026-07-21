@@ -1,9 +1,10 @@
 --!strict
 
 --[[
-	RPG-0108 per-relic runtime tuning for the first relic batch: Blood Battery,
-	Grave Momentum, Choir Breaker, Last Light, Emergency Chamber, and Execution
-	Protocol.
+	Per-relic runtime tuning for the implemented relics: the RPG-0108 first batch
+	(Blood Battery, Grave Momentum, Choir Breaker, Last Light, Emergency Chamber,
+	Execution Protocol) and the delivered RPG-0109 weapon-pattern slice (Breach
+	Doctrine, Longwatch Doctrine).
 
 	This declares the bounded per-stack contributions each relic feeds through the
 	shared RunModifierResolver ceilings. It grants no power on its own: every
@@ -68,6 +69,20 @@ local ExecutionProtocol = table.freeze({
 	healthFraction = 0.3,
 })
 
+-- Breach Doctrine: raises shotgun cone-cleave secondary damage toward full
+-- primary damage. It shares the pattern ceiling with the Pattern Amplifier
+-- upgrade, so a maxed build reaches the cap sooner rather than exceeding it.
+local BreachDoctrine = table.freeze({
+	patternDamageBonus = 0.4,
+})
+
+-- Longwatch Doctrine: raises sniper line-pierce secondary damage and every
+-- sniper impact against special enemies.
+local LongwatchDoctrine = table.freeze({
+	patternDamageBonus = 0.35,
+	specialEnemyDamageBonus = 0.25,
+})
+
 local RuntimeByRelicId = table.freeze({
 	[RelicIds.BloodBattery] = BloodBattery,
 	[RelicIds.GraveMomentum] = GraveMomentum,
@@ -75,6 +90,8 @@ local RuntimeByRelicId = table.freeze({
 	[RelicIds.LastLight] = LastLight,
 	[RelicIds.EmergencyChamber] = EmergencyChamber,
 	[RelicIds.ExecutionProtocol] = ExecutionProtocol,
+	[RelicIds.BreachDoctrine] = BreachDoctrine,
+	[RelicIds.LongwatchDoctrine] = LongwatchDoctrine,
 })
 
 local FirstBatchRelicIds = table.freeze({
@@ -86,16 +103,26 @@ local FirstBatchRelicIds = table.freeze({
 	RelicIds.ExecutionProtocol,
 })
 
+-- RPG-0109 weapon and cooperation relics, delivered in slices as each effect's
+-- authoritative owner becomes available.
+local SecondBatchRelicIds = table.freeze({
+	RelicIds.BreachDoctrine,
+	RelicIds.LongwatchDoctrine,
+})
+
 local Config = {
-	Version = "RPG-0108-part2-first-batch-tuning",
+	Version = "RPG-0109-weapon-pattern-batch-tuning",
 	BloodBattery = BloodBattery,
 	GraveMomentum = GraveMomentum,
 	ChoirBreaker = ChoirBreaker,
 	LastLight = LastLight,
 	EmergencyChamber = EmergencyChamber,
 	ExecutionProtocol = ExecutionProtocol,
+	BreachDoctrine = BreachDoctrine,
+	LongwatchDoctrine = LongwatchDoctrine,
 	RuntimeByRelicId = RuntimeByRelicId,
 	FirstBatchRelicIds = FirstBatchRelicIds,
+	SecondBatchRelicIds = SecondBatchRelicIds,
 }
 
 assert(
@@ -168,12 +195,35 @@ assert(
 	"Blood Battery kill threshold must match its declared catalog counter"
 )
 
+assert(
+	isFinite(BreachDoctrine.patternDamageBonus)
+		and BreachDoctrine.patternDamageBonus > 0
+		and 1 + BreachDoctrine.patternDamageBonus <= Ceilings.maximumPatternDamageMultiplier,
+	"Breach Doctrine pattern damage must be positive and within the pattern ceiling"
+)
+assert(
+	isFinite(LongwatchDoctrine.patternDamageBonus)
+		and LongwatchDoctrine.patternDamageBonus > 0
+		and 1 + LongwatchDoctrine.patternDamageBonus <= Ceilings.maximumPatternDamageMultiplier,
+	"Longwatch Doctrine pattern damage must be positive and within the pattern ceiling"
+)
+assert(
+	isFinite(LongwatchDoctrine.specialEnemyDamageBonus)
+		and LongwatchDoctrine.specialEnemyDamageBonus > 0
+		and 1 + LongwatchDoctrine.specialEnemyDamageBonus <= Ceilings.maximumSpecialEnemyDamageMultiplier,
+	"Longwatch Doctrine special-enemy damage must be positive and within the special-enemy ceiling"
+)
+
 local runtimeRelicCount = 0
 for relicId in RuntimeByRelicId do
 	assert(RunRpgContracts.isKnownRelicId(relicId), "relic runtime tuning references an unknown relic")
 	runtimeRelicCount += 1
 end
-assert(runtimeRelicCount == #FirstBatchRelicIds, "the runtime tuning map must cover exactly the first relic batch")
+assert(
+	runtimeRelicCount == #FirstBatchRelicIds + #SecondBatchRelicIds,
+	"the runtime tuning map must cover exactly the implemented relic batches"
+)
 assert(#FirstBatchRelicIds == 6, "the RPG-0108 first batch contains six relics")
+assert(#SecondBatchRelicIds == 2, "the delivered RPG-0109 slice contains the two weapon-pattern relics")
 
 return table.freeze(Config)

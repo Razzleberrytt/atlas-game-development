@@ -39,6 +39,9 @@ export type RelicDamageModifiers = {
 	lowReserveFraction: number,
 	executionDamageMultiplier: number,
 	executionHealthFraction: number,
+	shotgunPatternDamageMultiplier: number,
+	sniperPatternDamageMultiplier: number,
+	sniperSpecialEnemyDamageMultiplier: number,
 }
 
 export type RunDamageContext = {
@@ -132,7 +135,7 @@ end
 	fraction, and Execution Protocol at or below its target health fraction.
 	Returns `nil` when the supplied bundle is malformed.
 ]]
-local function resolveRelicMultiplier(currentHealth: number, runContext: RunDamageContext): number?
+local function resolveRelicMultiplier(weaponId: string, currentHealth: number, runContext: RunDamageContext): number?
 	local relic = runContext.relicModifiers
 	if relic == nil then
 		return 1
@@ -142,6 +145,7 @@ local function resolveRelicMultiplier(currentHealth: number, runContext: RunDama
 		or not isBoundedMultiplier(relic.specialEnemyDamageMultiplier)
 		or not isBoundedMultiplier(relic.lowReserveDamageMultiplier)
 		or not isBoundedMultiplier(relic.executionDamageMultiplier)
+		or not isBoundedMultiplier(relic.sniperSpecialEnemyDamageMultiplier)
 		or not isBoundedFraction(relic.lowReserveFraction)
 		or not isBoundedFraction(relic.executionHealthFraction)
 	then
@@ -150,6 +154,9 @@ local function resolveRelicMultiplier(currentHealth: number, runContext: RunDama
 	local multiplier = 1
 	if runContext.isSpecialEnemy then
 		multiplier *= relic.specialEnemyDamageMultiplier
+		if weaponId == CombatContracts.WeaponIds.SniperRifle then
+			multiplier *= relic.sniperSpecialEnemyDamageMultiplier
+		end
 	end
 	if runContext.reserveRounds <= math.floor(runContext.maximumReserveRounds * relic.lowReserveFraction) then
 		multiplier *= relic.lowReserveDamageMultiplier
@@ -164,6 +171,30 @@ local function resolveRelicMultiplier(currentHealth: number, runContext: RunDama
 		multiplier *= relic.executionDamageMultiplier
 	end
 	return math.min(multiplier, RELIC_COMBINED_MULTIPLIER_CEILING)
+end
+
+--[[
+	Derives the weapon-gated relic multiplier for one secondary pattern impact.
+	Returns `nil` when the supplied bundle is malformed.
+]]
+local function resolveRelicPatternMultiplier(weaponId: string, runContext: RunDamageContext?): number?
+	local relic = if runContext == nil then nil else runContext.relicModifiers
+	if relic == nil then
+		return 1
+	end
+	if
+		type(relic) ~= "table"
+		or not isBoundedMultiplier(relic.shotgunPatternDamageMultiplier)
+		or not isBoundedMultiplier(relic.sniperPatternDamageMultiplier)
+	then
+		return nil
+	end
+	if weaponId == CombatContracts.WeaponIds.BreachShotgun then
+		return relic.shotgunPatternDamageMultiplier
+	elseif weaponId == CombatContracts.WeaponIds.SniperRifle then
+		return relic.sniperPatternDamageMultiplier
+	end
+	return 1
 end
 
 local function resolveDamageAmount(
@@ -220,7 +251,7 @@ local function resolveDamageAmount(
 			if runContext.reserveRounds <= math.floor(runContext.maximumReserveRounds * reserveFraction) then
 				lastMagazineMultiplier = readProgressionNumber("RunLastMagazineDamageMultiplier", 1)
 			end
-			local resolvedRelicMultiplier = resolveRelicMultiplier(currentHealth, runContext)
+			local resolvedRelicMultiplier = resolveRelicMultiplier(weaponId, currentHealth, runContext)
 			if resolvedRelicMultiplier == nil then
 				return nil
 			end
@@ -270,7 +301,15 @@ local function resolveDamageAmount(
 		-- damage can never exceed primary or reach the hard configured*3 cap here.
 		local runPatternMultiplier =
 			math.clamp(readProgressionNumber("RunPatternDamageMultiplier", 1), 1, RUN_PATTERN_DAMAGE_CEILING)
-		local effectiveMultiplier = math.min(1, patternMultiplier * runPatternMultiplier)
+		-- Breach Doctrine and Longwatch Doctrine (RPG-0109) raise their own
+		-- weapon's secondary damage. They share the pattern ceiling and the
+		-- never-exceed-primary cap with Pattern Amplifier, so a maxed build
+		-- reaches the cap sooner rather than passing it.
+		local relicPatternMultiplier = resolveRelicPatternMultiplier(weaponId, runContext)
+		if relicPatternMultiplier == nil then
+			return nil
+		end
+		local effectiveMultiplier = math.min(1, patternMultiplier * runPatternMultiplier * relicPatternMultiplier)
 		requested = math.max(1, math.floor(requested * effectiveMultiplier + 0.5))
 	end
 	local minimumDamage = if patternMultiplier == nil then configured else 1
