@@ -58,10 +58,34 @@ local rpgConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config
 })()
 
 local players = {}
+local firedSnapshots = {}
+local function makeRemote(name: string)
+	return {
+		Name = name,
+		FireClient = function(_self, player, payload)
+			table.insert(firedSnapshots, { player = player, payload = payload })
+		end,
+		OnServerEvent = {
+			Connect = function()
+				return { Disconnect = function() end }
+			end,
+		},
+	}
+end
+local runBuildNetwork = {
+	State = makeRemote("State"),
+	ReadState = { Name = "ReadState" },
+	SubmitRelicChoice = makeRemote("SubmitRelicChoice"),
+	SubmitRelicReplacement = makeRemote("SubmitRelicReplacement"),
+}
+runBuildNetwork.WaitForChild = function(_self, name: string)
+	return runBuildNetwork[name]
+end
 local STORE_TOKEN = {}
 local RPG_CONTRACTS = {}
 local FIREARM_TOKEN = {}
 local COMBAT_TOKEN = {}
+local RPG_CONFIG_TOKEN = {}
 local offers = {}
 local storeStub = {
 	new = function()
@@ -78,6 +102,9 @@ local storeStub = {
 			end,
 			readOperationGeneration = function()
 				return 1
+			end,
+			readSafeSnapshot = function()
+				return { operationId = "Snapshot", operationGeneration = 1, revision = 1 }
 			end,
 			enqueueRelicReward = function(_self, _generation, requestId, operativeId, sourceId)
 				table.insert(offers, { requestId = requestId, operativeId = operativeId, sourceId = sourceId })
@@ -109,9 +136,13 @@ local runBuildService = luau.load(fs.readFile("games/living-kingdoms/src/server/
 				return {
 					Shared = {
 						RPG = { RunRpgContracts = RPG_CONTRACTS },
-						Config = { FirearmConfig = FIREARM_TOKEN },
+						Config = { FirearmConfig = FIREARM_TOKEN, RunRpgConfig = RPG_CONFIG_TOKEN },
 						Combat = { CombatContracts = COMBAT_TOKEN },
 					},
+					WaitForChild = function(_self, name: string)
+						assertThat(name == "RunBuildNetwork", "the run-build owner may only claim its own network")
+						return runBuildNetwork
+					end,
 				}
 			end,
 		},
@@ -128,6 +159,8 @@ local runBuildService = luau.load(fs.readFile("games/living-kingdoms/src/server/
 						return true
 					end,
 				}
+			elseif token == RPG_CONFIG_TOKEN then
+				return rpgConfig
 			elseif token == COMBAT_TOKEN then
 				return {
 					WeaponIds = {
