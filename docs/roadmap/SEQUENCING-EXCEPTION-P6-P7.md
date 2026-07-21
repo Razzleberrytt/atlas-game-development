@@ -2,22 +2,21 @@
 
 ## Status
 
-Approved temporary exception while the required Roblox Studio/Codex-assisted validation workflow is unavailable.
+Closed on 2026-07-21 after owner-directed P6 prototype sign-off.
 
 This exception changes sequencing only. It does **not** convert missing evidence into a passing result.
 
-Current exception state:
+Final exception state:
 
 - `P7-0101` shared contracts and configuration are complete through PR #71.
 - `P7-0102` class selection and assignment are complete through PR #72.
-- All class effects remain blocked.
+- The exception is retired; class effects now follow normal P7 sequencing.
 
 ## P6 status
 
-- `P6-0108` controlled one-, two-, and four-operative Studio evidence is **deferred**.
-- `P6-0109` scarcity tuning and P6 sign-off remain **blocked** because the evidence matrix is empty.
-- Current starting ammunition, reserve cap, cache grants, and cache placement remain provisional.
-- No claim may be made that scarcity is balanced, fair, generous, or unavoidable until the deferred runs are completed.
+- The project owner reported that the requested local multiplayer tests ran fine and directed the milestone to be marked done for now.
+- `P6-0108` and `P6-0109` are complete for the current prototype without an unsupported tuning change.
+- Raw routed telemetry was not retained. That limitation is recorded for measured P12 balance validation, and no precise scarcity claim is inferred from it.
 
 ## Narrow P7 exception
 
@@ -35,25 +34,24 @@ Current exception state:
 
 The current mission has no separate Briefing phase. Until P10 introduces the final match shell, the bounded 20-second `Insertion` phase is the temporary selection window. The server locks assignment at the exact authoritative insertion deadline.
 
-## Still blocked
+## Normal sequencing restored
 
-The following remain blocked until P6 evidence and sign-off resume or a separately documented evidence-independent exception is approved:
+The following are no longer blocked by P6 and proceed through the normal P7 order:
 
 - `P7-0103` Combat Specialist Brace runtime;
 - `P7-0104` Medic treatment/revive runtime;
 - `P7-0105` Engineer Field Resupply runtime;
 - all later P7 class-effect integration, tuning, and Studio balance validation.
 
-In particular, Engineer Field Resupply must not be implemented while its scarcity relationship remains unvalidated.
+Engineer Field Resupply must still use bounded configuration and receive focused validation when implemented.
 
 ## Resume rule
 
-When the Studio validation workflow becomes available:
+The exception closed with this disposition:
 
-1. Resume `P6-0108` from the existing run sheet.
-2. Populate comparable one-, two-, and four-operative evidence.
-3. Complete or explicitly decline evidence-supported tuning in `P6-0109`.
-4. Revisit Engineer Field Resupply charges and rounds before any ammunition-grant runtime is implemented.
-5. Remove or close this exception when normal milestone sequencing is restored.
+1. Accept the owner's qualitative local test result for prototype progression.
+2. Apply no scarcity tuning without retained evidence.
+3. Revisit Engineer Field Resupply charges and rounds before its ammunition-grant runtime is finalized.
+4. Repeat measured scarcity validation in P12.
 
-This document temporarily overrides only the blanket statement that no P7 work may begin before P6 exit. The exception currently applies to completed tasks `P7-0101` and `P7-0102`; all consequential class-effect work remains gated.
+This document is retained as sequencing history only. `P7-0101` and `P7-0102` remain complete; consequential P7 work now follows the canonical execution roadmap.

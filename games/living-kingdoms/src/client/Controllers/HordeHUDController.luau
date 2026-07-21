@@ -57,6 +57,16 @@ local upgradeContainer: Frame? = nil
 local playerListWasDisabled = false
 local hasUpgradeChoices = false
 
+local COLORS = table.freeze({
+	panel = Color3.fromRGB(12, 15, 18),
+	panelLow = Color3.fromRGB(20, 24, 27),
+	line = Color3.fromRGB(164, 139, 91),
+	text = Color3.fromRGB(242, 239, 229),
+	muted = Color3.fromRGB(176, 183, 178),
+	gold = Color3.fromRGB(237, 185, 77),
+	danger = Color3.fromRGB(218, 58, 49),
+})
+
 local function addCorner(instance: GuiObject, radius: number)
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, radius)
@@ -65,10 +75,28 @@ end
 
 local function addStroke(instance: GuiObject, transparency: number, thickness: number)
 	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(173, 46, 42)
+	stroke.Color = COLORS.line
 	stroke.Transparency = transparency
 	stroke.Thickness = thickness
 	stroke.Parent = instance
+end
+
+local function addPanelFinish(panel: Frame)
+	local gradient = Instance.new("UIGradient")
+	gradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, COLORS.panelLow),
+		ColorSequenceKeypoint.new(1, COLORS.panel),
+	})
+	gradient.Rotation = 90
+	gradient.Parent = panel
+	local accent = Instance.new("Frame")
+	accent.Name = "Accent"
+	accent.Position = UDim2.fromOffset(12, 0)
+	accent.Size = UDim2.new(1, -24, 0, 2)
+	accent.BackgroundColor3 = COLORS.line
+	accent.BackgroundTransparency = 0.28
+	accent.BorderSizePixel = 0
+	accent.Parent = panel
 end
 
 local function createPanel(parent: Instance, name: string, position: UDim2, size: UDim2, anchor: Vector2): Frame
@@ -77,12 +105,13 @@ local function createPanel(parent: Instance, name: string, position: UDim2, size
 	panel.AnchorPoint = anchor
 	panel.Position = position
 	panel.Size = size
-	panel.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
-	panel.BackgroundTransparency = 0.12
+	panel.BackgroundColor3 = COLORS.panel
+	panel.BackgroundTransparency = 0.08
 	panel.BorderSizePixel = 0
 	panel.Parent = parent
-	addCorner(panel, 8)
-	addStroke(panel, 0.52, 1)
+	addCorner(panel, 10)
+	addStroke(panel, 0.42, 1)
+	addPanelFinish(panel)
 	return panel
 end
 
@@ -103,7 +132,7 @@ local function createLabel(
 	label.BorderSizePixel = 0
 	label.Font = font
 	label.Text = ""
-	label.TextColor3 = Color3.fromRGB(239, 236, 226)
+	label.TextColor3 = COLORS.text
 	label.TextSize = textSize
 	label.TextXAlignment = alignment
 	label.TextYAlignment = Enum.TextYAlignment.Center
@@ -117,7 +146,7 @@ local function createBar(parent: Instance, name: string, position: UDim2, size: 
 	track.Name = name
 	track.Position = position
 	track.Size = size
-	track.BackgroundColor3 = Color3.fromRGB(38, 36, 40)
+	track.BackgroundColor3 = Color3.fromRGB(43, 46, 47)
 	track.BorderSizePixel = 0
 	track.ClipsDescendants = true
 	track.Parent = parent
@@ -125,7 +154,7 @@ local function createBar(parent: Instance, name: string, position: UDim2, size: 
 	local fill = Instance.new("Frame")
 	fill.Name = "Fill"
 	fill.Size = UDim2.fromScale(0, 1)
-	fill.BackgroundColor3 = Color3.fromRGB(177, 41, 41)
+	fill.BackgroundColor3 = COLORS.danger
 	fill.BorderSizePixel = 0
 	fill.Parent = track
 	addCorner(fill, 4)
@@ -216,7 +245,7 @@ local function updateCombatPresentation(serverTimestamp: number)
 	local capacity = readNumberAttribute("LK_HUD_MagazineCapacity", 0)
 	if ammoLabel ~= nil then
 		local weaponName = readStringAttribute("LK_HUD_WeaponName", "WEAPON")
-		ammoLabel.Text = string.format("%s\n%02d / %02d   RESERVE %03d", weaponName, loaded, capacity, reserve)
+		ammoLabel.Text = string.format("%s\n%02d / %02d   ·   %03d RES", weaponName, loaded, capacity, reserve)
 		ammoLabel.TextColor3 = if loaded == 0 then Color3.fromRGB(255, 72, 60) else Color3.fromRGB(239, 236, 226)
 	end
 	if combatStatusLabel ~= nil then
@@ -414,35 +443,35 @@ local function createPresentation()
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 	local objectivePanel =
-		createPanel(gui, "ObjectivePanel", UDim2.new(0.5, 0, 0, 14), UDim2.fromOffset(560, 62), Vector2.new(0.5, 0))
+		createPanel(gui, "ObjectivePanel", UDim2.new(0.5, 0, 0, 14), UDim2.fromOffset(520, 54), Vector2.new(0.5, 0))
 	objectiveLabel = createLabel(
 		objectivePanel,
 		"Objective",
-		UDim2.fromOffset(18, 8),
-		UDim2.new(1, -36, 0, 28),
-		17,
+		UDim2.fromOffset(18, 6),
+		UDim2.new(1, -36, 0, 25),
+		16,
 		Enum.Font.GothamBold,
 		Enum.TextXAlignment.Center
 	)
 	radioLabel = createLabel(
 		objectivePanel,
 		"Radio",
-		UDim2.fromOffset(18, 34),
-		UDim2.new(1, -36, 0, 20),
-		12,
+		UDim2.fromOffset(18, 30),
+		UDim2.new(1, -36, 0, 18),
+		11,
 		Enum.Font.GothamMedium,
 		Enum.TextXAlignment.Center
 	)
-	radioLabel.TextColor3 = Color3.fromRGB(199, 182, 148)
+	radioLabel.TextColor3 = COLORS.muted
 
 	local threatPanel =
-		createPanel(gui, "ThreatPanel", UDim2.new(0.5, 0, 0, 82), UDim2.fromOffset(440, 45), Vector2.new(0.5, 0))
+		createPanel(gui, "ThreatPanel", UDim2.new(0.5, 0, 0, 74), UDim2.fromOffset(420, 42), Vector2.new(0.5, 0))
 	threatLabel = createLabel(
 		threatPanel,
 		"Threat",
 		UDim2.fromOffset(14, 3),
 		UDim2.new(1, -160, 0, 26),
-		16,
+		15,
 		Enum.Font.GothamBold,
 		Enum.TextXAlignment.Left
 	)
@@ -451,7 +480,7 @@ local function createPresentation()
 		"EnemyCount",
 		UDim2.new(1, -145, 0, 3),
 		UDim2.fromOffset(130, 26),
-		14,
+		13,
 		Enum.Font.GothamBold,
 		Enum.TextXAlignment.Right
 	)
@@ -460,7 +489,7 @@ local function createPresentation()
 	threatFill = createdThreatFill
 
 	local lifePanel =
-		createPanel(gui, "LifePanel", UDim2.new(0, 16, 1, -16), UDim2.fromOffset(280, 108), Vector2.new(0, 1))
+		createPanel(gui, "LifePanel", UDim2.new(0, 16, 1, -16), UDim2.fromOffset(260, 104), Vector2.new(0, 1))
 	lifeStateLabel = createLabel(
 		lifePanel,
 		"LifeState",
@@ -504,13 +533,13 @@ local function createPresentation()
 	xpFill = createdXpFill
 
 	local ammoPanel =
-		createPanel(gui, "AmmoPanel", UDim2.new(1, -16, 1, -16), UDim2.fromOffset(240, 90), Vector2.new(1, 1))
+		createPanel(gui, "AmmoPanel", UDim2.new(1, -16, 1, -16), UDim2.fromOffset(224, 84), Vector2.new(1, 1))
 	ammoLabel = createLabel(
 		ammoPanel,
 		"Ammo",
 		UDim2.fromOffset(14, 8),
 		UDim2.new(1, -28, 0, 66),
-		23,
+		18,
 		Enum.Font.GothamBold,
 		Enum.TextXAlignment.Right
 	)
@@ -584,30 +613,30 @@ local function createPresentation()
 		overlay,
 		"UpgradeModal",
 		UDim2.new(1, -18, 0.5, -36),
-		UDim2.fromOffset(430, 330),
+		UDim2.fromOffset(400, 310),
 		Vector2.new(1, 0.5)
 	)
-	modal.BackgroundTransparency = 0.04
+	modal.BackgroundTransparency = 0.02
 	modal.ZIndex = 21
 	upgradeTitle = createLabel(
 		modal,
 		"Title",
 		UDim2.fromOffset(18, 12),
 		UDim2.new(1, -36, 0, 42),
-		19,
+		18,
 		Enum.Font.GothamBlack,
 		Enum.TextXAlignment.Center
 	)
 	upgradeTitle.ZIndex = 22
 	local container = Instance.new("Frame")
 	container.Name = "Choices"
-	container.Position = UDim2.fromOffset(12, 65)
-	container.Size = UDim2.new(1, -24, 1, -78)
+	container.Position = UDim2.fromOffset(14, 62)
+	container.Size = UDim2.new(1, -28, 1, -76)
 	container.BackgroundTransparency = 1
 	container.ZIndex = 22
 	container.Parent = modal
 	local layout = Instance.new("UIListLayout")
-	layout.Padding = UDim.new(0, 10)
+	layout.Padding = UDim.new(0, 8)
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	layout.VerticalAlignment = Enum.VerticalAlignment.Center
 	layout.Parent = container

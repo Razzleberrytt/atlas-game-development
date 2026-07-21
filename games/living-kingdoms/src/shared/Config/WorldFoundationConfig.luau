@@ -33,12 +33,12 @@ local WorldFoundationConfig = {
 		RouteClearanceStuds = 18,
 	}),
 	Lighting = table.freeze({
-		ClockTime = 4.2,
+		ClockTime = 4.7,
 		GeographicLatitude = 38,
-		Brightness = 2.8,
-		ExposureCompensation = 0.5,
-		FogStart = 96,
-		FogEnd = 600,
+		Brightness = 3,
+		ExposureCompensation = 0.58,
+		FogStart = 120,
+		FogEnd = 650,
 	}),
 }
 

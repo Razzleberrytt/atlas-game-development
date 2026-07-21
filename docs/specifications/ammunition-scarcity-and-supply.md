@@ -1,7 +1,8 @@
 # Ammunition Scarcity and Supply
 
-**Status:** P6 implementation complete; balance validation and tuning in progress  
-**Current task:** P6-0108 — controlled one/two/four-operative evidence matrix  
+**Status:** P6 complete for the current prototype; measured balance replay deferred to P12
+
+**Current task:** Closed — no unsupported tuning change applied
 **Execution roadmap:** `docs/roadmap/P6-P12-EXECUTION-ROADMAP.md`
 
 ## Goal
@@ -222,9 +223,8 @@ P6 may be marked complete only when:
 - Studio findings and limitations are recorded in the smoke-test/evidence record;
 - the roadmap is updated from P6 in progress to P6 complete.
 
-## Remaining P6 work
+## P6 disposition and deferred measurement
 
-1. Complete and record routed, reload-capable one-, two-, and four-operative Studio evidence (`P6-0108`); startup/admission and unattended stress probes are now complete.
-2. Repair only telemetry, presentation, collection, or integration defects exposed by those runs.
-3. Adjust prototype values only when repeated evidence distinguishes oversupply from unavoidable starvation (`P6-0109`).
-4. Revalidate the affected scenarios and close P6 with documented security, regression, and balance findings.
+P6 is complete for the current prototype by owner direction. The requested local multiplayer tests were reported as running fine, no blocker was reported, and no configuration tune was made without retained measurement. The detailed routed telemetry rows above remain blank rather than being reconstructed from memory.
+
+The remaining work is intentionally reassigned to P12: repeat measured routed 1/2/4-player runs, retain raw snapshots, and revisit scarcity only if repeated evidence supports a change. Engineer Field Resupply receives its own focused conservation and balance validation during P7 implementation.

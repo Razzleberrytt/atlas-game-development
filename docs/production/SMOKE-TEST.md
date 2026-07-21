@@ -474,4 +474,10 @@ A live multiplayer Roblox Studio playthrough remains required and has not been p
 - Live visual review confirmed defeated-enemy label cleanup from the prior UI repair. This pass additionally hid the redundant Roblox player list, changed the full-screen level-up blocker to a compact right-side card, serialized relic and level-up choice presentation, and made Massacre crescendo presentation yield to either choice. A four-client rerun showed one readable reward surface, the squad/objective/ammunition HUD, and unobstructed combat space instead of three overlapping overlays.
 - Roblox-owned `ChatScript` `SetCoreGuiChatConnections` errors remain local Studio environment noise. No new Living Kingdoms-originated runtime error appeared.
 
-The controlled P6 route, cache collection, reload, terminal outcome, and repeated comparable balance rows remain outstanding. The evidence above validates startup, scaling, telemetry visibility, and presentation only; it does not close P6 or unblock P7 class effects.
+## 2026-07-21 owner-directed P6 prototype sign-off
+
+- The project owner completed the requested local multiplayer testing and reported that the tests ran fine, then directed the milestone to be marked done for now.
+- This is accepted as qualitative prototype sign-off for `P6-0108`/`P6-0109`; it closes the P6 sequencing gate and unblocks `P7-0103`.
+- Raw routed telemetry and repeated comparable balance rows were not retained. No values, route outcomes, cache totals, or starvation classifications are invented in their place.
+- No scarcity configuration change was made. Measured routed 1/2/4-player balance validation remains an explicit P12 obligation, and Engineer resupply receives focused conservation validation in P7.
+- The repository's automated validation and the presentation-focused Studio pass remain separate evidence for implementation integrity and visual behavior.

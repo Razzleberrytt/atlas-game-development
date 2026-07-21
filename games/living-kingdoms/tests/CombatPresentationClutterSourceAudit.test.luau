@@ -44,7 +44,9 @@ assertThat(contains(weaponSelection, "panel.Visible = false"), "locked loadout p
 assertThat(contains(hordeHud, "#Players:GetPlayers() > 1"), "solo play must not reserve a squad panel")
 assertThat(contains(hordeHud, "Enum.CoreGuiType.PlayerList"), "the duplicate Roblox player list must stay hidden")
 assertThat(contains(hordeHud, "overlay.BackgroundTransparency = 1"), "upgrade choices must not dim all combat")
-assertThat(contains(hordeHud, "UDim2.fromOffset(430, 330)"), "upgrade choices must remain a compact side card")
+assertThat(contains(hordeHud, "UDim2.fromOffset(400, 310)"), "upgrade choices must remain a compact side card")
+assertThat(contains(hordeHud, 'Instance.new("UIGradient")'), "HUD panels need a restrained depth treatment")
+assertThat(contains(hordeHud, 'accent.Name = "Accent"'), "HUD panels need a consistent hierarchy accent")
 assertThat(contains(hordeHud, "hasUpgradeChoices and not relicChoiceVisible"), "only one reward choice may show")
 assertThat(
 	not contains(hordeHud, "FIELD LEVEL %02d — CHOOSE AN UPGRADE"),
@@ -53,8 +55,10 @@ assertThat(
 assertThat(contains(massacre, "isBlockingChoiceVisible"), "crescendo must detect blocking choice UI")
 assertThat(contains(massacre, "not isBlockingChoiceVisible()"), "crescendo must yield while choices are visible")
 assertThat(contains(massacre, 'FindFirstChild("RelicReward")'), "crescendo must also yield to relic choices")
+assertThat(contains(massacre, "UDim2.fromOffset(460, 82)"), "crescendo must remain a compact combat toast")
 assertThat(contains(runBuildHud, "UDim2.fromOffset(430, 300)"), "relic choices must remain a compact side card")
 assertThat(contains(runBuildHud, "Enum.FillDirection.Vertical"), "relic choices must stack without crossing the HUD")
-assertThat(contains(camera, "InitialHeight = 76"), "combat must start at the closer readability-tested camera height")
+assertThat(contains(camera, "InitialHeight = 68"), "combat must start at the closer readability-tested camera height")
+assertThat(contains(camera, "PitchDegrees = -56"), "camera pitch must preserve near-to-far parallax")
 
 print("Combat presentation clutter and death-label lifecycle audit passed")

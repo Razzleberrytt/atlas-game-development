@@ -48,7 +48,7 @@ VIS-0102–VIS-0105 output from the gameplay camera, not more generated geometry
 
 | Pass | What it covers | Source | Gate / track | Status |
 |---|---|---|---|---|
-| P6 scarcity tuning pass(es) | Smallest evidence-supported ammunition adjustments after the 1/2/4-operative evidence matrix, changing "one logical lever per tuning pass where practical," with re-runs and locked final values. | [`../specifications/ammunition-scarcity-and-supply.md`](../specifications/ammunition-scarcity-and-supply.md) | P6-0109, blocked on P6-0108 evidence | Blocked |
+| P6/P12 scarcity measurement pass | Repeat routed 1/2/4-operative runs with retained raw telemetry; change one logical lever only if repeated evidence supports it. | [`../specifications/ammunition-scarcity-and-supply.md`](../specifications/ammunition-scarcity-and-supply.md) | P12-0104 follow-up to prototype P6 sign-off | Deferred |
 | Pressure-scaling tuning pass | Solo-to-four-player pressure scaling; evidence-supported configuration adjustments only, avoiding fixed player slots. | [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md) | P12-0102 | Not started |
 | Class-dependence tuning pass | Balanced squads gain materially better options while solo and duplicate-role squads keep a difficult but possible path. | [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md) | P12-0103 | Not started |
 | Pacing tuning pass | Aligned ammunition, medical, objective, recovery, defense, disruption, and climax pacing without dominant camping routes or predetermined starvation. | [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md) | P12-0104 | Not started |

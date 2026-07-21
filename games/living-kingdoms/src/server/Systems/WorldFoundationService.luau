@@ -1358,12 +1358,12 @@ local function configureLighting()
 	Lighting.GeographicLatitude = Config.Lighting.GeographicLatitude
 	Lighting.Brightness = Config.Lighting.Brightness
 	Lighting.ExposureCompensation = Config.Lighting.ExposureCompensation
-	Lighting.Ambient = Color3.fromRGB(105, 116, 132)
-	Lighting.OutdoorAmbient = Color3.fromRGB(120, 132, 148)
-	Lighting.EnvironmentDiffuseScale = 0.62
+	Lighting.Ambient = Color3.fromRGB(112, 124, 140)
+	Lighting.OutdoorAmbient = Color3.fromRGB(132, 144, 160)
+	Lighting.EnvironmentDiffuseScale = 0.72
 	Lighting.EnvironmentSpecularScale = 0.25
 	Lighting.GlobalShadows = true
-	Lighting.ShadowSoftness = 0.58
+	Lighting.ShadowSoftness = 0.38
 	Lighting.FogColor = Color3.fromRGB(79, 92, 102)
 	Lighting.FogStart = Config.Lighting.FogStart
 	Lighting.FogEnd = Config.Lighting.FogEnd
@@ -1378,15 +1378,15 @@ local function configureLighting()
 	atmosphere.Name = "LivingKingdomsAtmosphere"
 	atmosphere.Color = Color3.fromRGB(126, 142, 151)
 	atmosphere.Decay = Color3.fromRGB(47, 57, 65)
-	atmosphere.Density = 0.17
+	atmosphere.Density = 0.14
 	atmosphere.Offset = 0.1
 	atmosphere.Glare = 0.03
-	atmosphere.Haze = 0.9
+	atmosphere.Haze = 0.65
 	atmosphere.Parent = Lighting
 	local grade = Instance.new("ColorCorrectionEffect")
 	grade.Name = "LivingKingdomsColorGrade"
 	grade.Brightness = 0.1
-	grade.Contrast = 0
+	grade.Contrast = 0.03
 	grade.Saturation = -0.08
 	grade.TintColor = Color3.fromRGB(205, 216, 221)
 	grade.Parent = Lighting
@@ -1396,8 +1396,8 @@ local function configureLighting()
 	end
 	local clouds = Instance.new("Clouds")
 	clouds.Name = "LivingKingdomsClouds"
-	clouds.Cover = 0.68
-	clouds.Density = 0.62
+	clouds.Cover = 0.56
+	clouds.Density = 0.5
 	clouds.Color = Color3.fromRGB(88, 97, 104)
 	clouds.Parent = Workspace.Terrain
 end
