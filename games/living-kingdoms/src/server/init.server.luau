@@ -111,7 +111,7 @@ local function ensureClassNetwork()
 		assert(existingNetwork:IsA("Folder"), "ClassNetwork must be a Folder")
 		network = existingNetwork
 	end
-	for _, remoteName in { "SelectionIntent", "State" } do
+	for _, remoteName in { "SelectionIntent", "ActionIntent", "State" } do
 		local existingRemote = network:FindFirstChild(remoteName)
 		if existingRemote == nil then
 			local remote = Instance.new("RemoteEvent")

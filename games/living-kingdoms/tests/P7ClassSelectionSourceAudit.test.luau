@@ -42,7 +42,6 @@ assertThat(not string.find(service, "FireAllClients", 1, true), "roster snapshot
 
 for _, forbidden in
 	{
-		"ActionIntent",
 		"applyAuthoritativeDamage",
 		"commitAcceptedTransition",
 		"applyCombatRestrictions",
@@ -51,7 +50,6 @@ for _, forbidden in
 		"FieldTreatment",
 		"FieldResupply",
 		"ReviveAssistance",
-		"Brace",
 	}
 do
 	assertThat(not string.find(service, forbidden, 1, true), "selection owner must not implement " .. forbidden)
@@ -114,7 +112,7 @@ end
 assertThat(string.find(serverBootstrap, "ensureClassNetwork", 1, true) ~= nil, "server must create class network")
 assertThat(string.find(serverBootstrap, "SelectionIntent", 1, true) ~= nil, "server must create selection remote")
 assertThat(string.find(serverBootstrap, "ReadState", 1, true) ~= nil, "server must create read-only snapshot function")
-assertThat(not string.find(serverBootstrap, "ActionIntent", 1, true), "P7-0102 must not create an action remote")
+assertThat(string.find(serverBootstrap, "ActionIntent", 1, true) ~= nil, "P7-0103 must create the action remote")
 local missionStart = string.find(serverBootstrap, "MissionDirectorService.start()", 1, true)
 local classStart = string.find(serverBootstrap, "ClassService.start()", 1, true)
 assertThat(

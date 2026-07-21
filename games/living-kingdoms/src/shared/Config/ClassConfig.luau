@@ -1,9 +1,9 @@
 --!strict
 
 --[[
-	Configuration-backed values for the three MVP specialist classes. P7-0102
-	adds only selection-window, fallback-assignment, request-bound, and roster
-	limits. Class actions remain unimplemented.
+	Configuration-backed values for the three MVP specialist classes. P7-0103
+	activates only the Combat Specialist Brace values; medic and engineer values
+	remain declarations for their ordered vertical slices.
 
 	Engineer resupply values remain provisional while the deferred P6 Studio
 	evidence matrix is unavailable. They must be revisited before P7 gameplay
@@ -53,6 +53,8 @@ local Actions = table.freeze({
 		movementToleranceStuds = 1.5,
 		cadenceIntervalMultiplier = 0.85,
 		targetRetentionGraceSeconds = 0.35,
+		interruptOnReload = true,
+		interruptOnDamage = false,
 	}),
 	FieldTreatment = table.freeze({
 		actionId = ActionIds.FieldTreatment,
@@ -110,7 +112,11 @@ local ClassDefinitions = table.freeze({
 })
 
 local Config = {
-	Version = "P7-0102-v1",
+	Version = "P7-0103-v1-brace",
+	ActionRequests = table.freeze({
+		minimumRequestIntervalSeconds = 0.15,
+		maximumProcessedRequestIdsPerOperative = 64,
+	}),
 	Selection = table.freeze({
 		allowDuplicateStartingClasses = true,
 		defaultClassId = ClassIds.CombatSpecialist,
@@ -177,6 +183,19 @@ assert(
 	"Brace cadence multiplier must be in (0, 1]"
 )
 assert(Actions.Brace.targetRetentionGraceSeconds >= 0, "Brace retention grace must be nonnegative")
+assert(Actions.Brace.interruptOnReload, "Brace must preserve the configured reload interruption cost")
+assert(not Actions.Brace.interruptOnDamage, "ordinary damage does not interrupt the initial Brace stance")
+assert(
+	isFinitePositive(Config.ActionRequests.minimumRequestIntervalSeconds)
+		and Config.ActionRequests.minimumRequestIntervalSeconds <= 1,
+	"action request interval must be bounded and responsive"
+)
+assert(
+	isNonnegativeInteger(Config.ActionRequests.maximumProcessedRequestIdsPerOperative)
+		and Config.ActionRequests.maximumProcessedRequestIdsPerOperative > 0
+		and Config.ActionRequests.maximumProcessedRequestIdsPerOperative <= 256,
+	"processed action request history must be bounded"
+)
 
 assert(isNonnegativeInteger(Resources.MedicalCharge.maximumAmount), "medical charges must be a whole amount")
 assert(Resources.MedicalCharge.maximumAmount > 0, "medical charges must be finite")

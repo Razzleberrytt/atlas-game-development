@@ -177,6 +177,21 @@ assert(validResult.weaponStateAfter.ammunition.reserveRounds == 24, "accepted sh
 assert(validResult.weaponStateAfter.ammunition.magazineCapacity == 12, "accepted shot changed magazine capacity")
 assert(validResult.weaponStateAfter.readinessStateId == "Ready", "accepted shot changed readiness")
 
+local braceResult = resolver.resolve(operative(), selectedTarget(), weaponState(), 5, nil, nil, 0.85)
+assert(braceResult.decision.shouldFire, "valid Brace cadence must fire")
+assertClose(
+	braceResult.weaponStateAfter.cadence.nextAllowedFireServerTimestamp,
+	5.17,
+	"Brace must compose the configured 15% interval reduction"
+)
+local invalidBraceState = weaponState()
+assertRejected(
+	resolver.resolve(operative(), selectedTarget(), invalidBraceState, 5, nil, nil, 0.5),
+	rejectionReasons.WeaponNotReady,
+	invalidBraceState,
+	"out-of-bounds class cadence"
+)
+
 local boundaryResult = resolver.resolve(operative(), selectedTarget(), weaponState(12, 10), 10)
 assertAccepted(boundaryResult, 11, 10, "exact cadence boundary")
 

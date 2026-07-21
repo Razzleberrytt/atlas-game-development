@@ -36,6 +36,7 @@ local function resolveWeaponDefinition(weaponId: unknown)
 	return if basic ~= nil and weaponId == basic.WeaponId then basic else nil
 end
 local AutomaticFireResolver = require(script.Parent.AutomaticFireResolver)
+local ClassService = require(script.Parent.ClassService)
 local DamageResolver = require(script.Parent.DamageResolver)
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 local FirearmHitResolver = require(script.Parent.FirearmHitResolver)
@@ -773,7 +774,8 @@ local function evaluatePlayer(
 		playerState.weaponState,
 		nowTimestamp,
 		nil,
-		if sustainedFireActive then RelicModifierService.read(player).sustainedFireCadenceMultiplier else nil
+		if sustainedFireActive then RelicModifierService.read(player).sustainedFireCadenceMultiplier else nil,
+		ClassService.readBraceCadenceMultiplier(player)
 	)
 	playerState.weaponState = fireResolution.weaponStateAfter
 	if fireResolution.decision.shouldFire then
@@ -796,6 +798,7 @@ function OperativeCombatRuntimeService.evaluateAt(serverTimestamp: number)
 	if not started or type(serverTimestamp) ~= "number" or serverTimestamp ~= serverTimestamp then
 		return
 	end
+	ClassService.evaluateActionsAt(serverTimestamp)
 	local enemyFacts = EnemyDirectorService.readEnemyCombatFacts()
 	for player, playerState in playerStates do
 		evaluatePlayer(player, playerState, serverTimestamp, enemyFacts)
@@ -882,6 +885,7 @@ local function onReloadIntent(player: Player, weaponId: unknown, ...: unknown)
 	if not resolution.didBegin then
 		return
 	end
+	ClassService.interruptBraceForReload(player, nowTimestamp)
 	local reloadState = resolution.weaponStateAfter.reloadState
 	assert(reloadState ~= nil, "accepted reload must include authoritative timing")
 	broadcastReloadPresentation(

@@ -114,11 +114,12 @@ Canonical specification: `docs/specifications/mvp-specialist-classes.md`.
   - One small request/state network exposes only validated selection and safe roster snapshots.
   - Disconnect, reconnect policy, operation restart, and teardown are deterministic.
   - Complete through PR #72 under the bounded sequencing exception; no consequential class effect exists yet.
-- [ ] **P7-0103 — Add the combat specialist vertical slice.**
+- [x] **P7-0103 — Add the combat specialist vertical slice.**
   - Implement one frequent position-stabilizing combat action from the canonical spec.
   - The action cannot create ammunition, bypass target visibility, hit validation, cadence authority, life restrictions, or operation state.
   - Cost, cooldown, channel/stance interruption, and effect bounds are server-validated and configuration-driven.
-  - Presentation makes activation, active duration, interruption, and cooldown legible without revealing hidden enemies.
+	- Presentation makes activation, active duration, interruption, and cooldown legible without revealing hidden enemies.
+	- Complete in source with server-owned Brace activation/replay/lifecycle, six-second stance, movement/life/reload/mission interruption, fourteen-second cooldown, bounded cadence composition through the production combat owner, and compact keyboard/gamepad/touch feedback. All 135 Lune fixtures pass.
 - [ ] **P7-0104 — Add the medic vertical slice.**
   - Implement finite field treatment for an alive injured teammate and the approved bounded revive benefit.
   - The medic cannot self-revive, revive Dead operatives, fabricate health, ignore range/line of sight, erase repeated mistakes, or bypass the existing P3 commit/revision boundary.
@@ -140,7 +141,7 @@ Canonical specification: `docs/specifications/mvp-specialist-classes.md`.
 
 `P7-PLAN-001` → `P7-0101` → `P7-0102` → (`P7-0103` + `P7-0104` + `P7-0105`, one PR at a time) → `P7-0106` → `P7-0107`.
 
-`P7-0101` and `P7-0102` are complete. P6 prototype sign-off has retired the bounded sequencing exception, so `P7-0103` is the next unblocked task. The class vertical slices share contracts and assignment but do not depend on one another's runtime implementation.
+`P7-0101` through `P7-0103` are complete. The combat specialist slice established the shared action-state disclosure and bounded action-intent path; `P7-0104` is next. The class vertical slices share contracts and assignment but do not depend on one another's runtime implementation.
 
 ### P7 exit criteria
 
@@ -148,7 +149,7 @@ Players choose and retain a server-owned starting class for the run. Each class 
 
 ### Current P7 status
 
-Planning, shared contracts, and server-owned selection/assignment are complete (`P7-PLAN-001`, `P7-0101`, `P7-0102`). P7 is **in progress and unblocked**; `P7-0103` is next.
+Planning, shared contracts, server-owned selection/assignment, and the combat specialist Brace slice are complete (`P7-PLAN-001` through `P7-0103`). P7 is **in progress and unblocked**; `P7-0104` (medic) is next.
 
 ---
 
@@ -376,6 +377,6 @@ The complete MVP operation is difficult, readable, learnable, secure, bounded, r
 
 ## Immediate next actions
 
-1. Begin **P7-0103** (combat specialist vertical slice); `P7-0101` contracts and `P7-0102` selection/assignment are already complete, so no further class scaffolding is required first.
+1. Begin **P7-0104** (medic vertical slice); the shared class owner and action-state disclosure now include the completed combat specialist Brace path.
 2. Preserve P6's qualitative-sign-off limitation for measured replay during P12 balance validation.
 4. In parallel where evidence-independent: finish the **VIS-0102** firearm presentation integration per `VISUAL-PRODUCTION-TRACK.md`, and run the outstanding P5 pressure-loop Studio playthrough recorded in the smoke test.

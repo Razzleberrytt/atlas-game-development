@@ -96,7 +96,9 @@ local contractsMutationSucceeded = pcall(function()
 end)
 assertThat(not contractsMutationSucceeded, "class ID vocabulary must be frozen")
 
-assertThat(config.Version == "P7-0102-v1", "class config version must identify selection integration")
+assertThat(config.Version == "P7-0103-v1-brace", "class config version must identify Brace integration")
+assertThat(config.ActionRequests.minimumRequestIntervalSeconds == 0.15, "action rate limit must be configured")
+assertThat(config.ActionRequests.maximumProcessedRequestIdsPerOperative == 64, "action replay history must be bounded")
 assertThat(config.Selection.allowDuplicateStartingClasses, "duplicate starting classes must remain allowed")
 assertThat(
 	config.Selection.defaultClassId == contracts.ClassIds.CombatSpecialist,
@@ -110,6 +112,10 @@ assertThat(#config.ClassDefinitions == 3, "each starting class requires one defi
 assertThat(config.Resources.MedicalCharge.maximumAmount == 3, "medical supply must be finite")
 assertThat(config.Resources.ResupplyCharge.maximumAmount == 2, "resupply supply must be finite")
 assertThat(config.Actions.Brace.targetKindId == contracts.ClassTargetKindIds.None, "Brace must not trust a target")
+assertThat(config.Actions.Brace.durationSeconds == 6, "Brace duration must remain configuration-driven")
+assertThat(config.Actions.Brace.cooldownSeconds == 14, "Brace cooldown must remain configuration-driven")
+assertThat(config.Actions.Brace.cadenceIntervalMultiplier == 0.85, "Brace cadence gain must remain bounded")
+assertThat(config.Actions.Brace.interruptOnReload, "Brace must end when an accepted reload begins")
 assertThat(config.Actions.FieldTreatment.healAmount == 25, "treatment starting heal must be configuration-driven")
 assertThat(
 	config.Actions.ReviveAssistance.restoredHealth > lifeConfig.ReviveHealth,
@@ -144,13 +150,40 @@ local assignment = table.freeze({
 	selectionStateId = contracts.ClassSelectionStateIds.Open,
 	revision = 2,
 })
+local idleActionState = table.freeze({
+	actionStateId = contracts.ClassActionStateIds.Idle,
+	actionId = nil,
+	targetOperativeEntityId = nil,
+	startedAtServerTimestamp = nil,
+	completionServerTimestamp = nil,
+	cooldownEndServerTimestamp = nil,
+	statusReasonId = nil,
+	revision = 1,
+})
 assertThat(contracts.validateAuthoritativeClassAssignment(assignment), "valid assignment must validate")
+assertThat(contracts.validateAuthoritativeClassActionState(idleActionState), "valid action state must validate")
+assertThat(
+	contracts.validateClassActionIntent({
+		requestId = "brace-1",
+		actionId = contracts.ClassActionIds.Brace,
+		phaseId = contracts.ClassActionPhaseIds.Begin,
+	}),
+	"minimal Brace intent must validate"
+)
+assertThat(not contracts.validateClassActionIntent({
+	requestId = "brace-2",
+	actionId = contracts.ClassActionIds.Brace,
+	phaseId = contracts.ClassActionPhaseIds.Begin,
+	serverTimestamp = 12,
+}), "action intent must reject client authority fields")
 assertThat(
 	contracts.validateSafeClassSelectionSnapshot({
 		operationId = contracts.ClassSelectionNetworkOperationIds.Snapshot,
 		rosterRevision = 3,
 		selectionStateId = contracts.ClassSelectionStateIds.Open,
 		ownerAssignment = assignment,
+		ownerActionState = idleActionState,
+		ownerResources = {},
 		squadMembers = {
 			{
 				operativeEntityId = assignment.operativeEntityId,

@@ -2,7 +2,7 @@
 
 ## Status
 
-**P7-PLAN-001 complete.** This specification defines the implementation boundary and ordered tasks for the three starting classes. P6 is signed off for the current prototype, so `P7-0103` is the next unblocked gameplay task.
+**P7-0103 complete in source.** The shared contracts, selection owner, and Combat Specialist Brace vertical slice are implemented and fixture-validated. `P7-0104` (medic) is the next gameplay task.
 
 ## Purpose
 
@@ -28,7 +28,7 @@ The combat specialist provides dependable position stabilization during dangerou
 - Brace never creates ammunition, ignores visibility, bypasses line of sight, chooses an illegal target, forges a hit, or exceeds the configured effect/cooldown;
 - the cost is positional commitment, vulnerability during the stance, ammunition consumption, and cooldown.
 
-The exact cadence/retention values are P7-0103 tuning values. The responsibility is fixed: create a safer action window for teammates by stabilizing a threatened position.
+The initial slice uses a six-second stance, fourteen-second cooldown, 1.5-stud movement tolerance, and a server-composed `0.85` cadence-interval multiplier. Target-retention grace remains declared for later evidence-driven tuning; P7-0103 does not alter target legality or reveal hidden enemies.
 
 ### Medic
 
@@ -352,7 +352,7 @@ Deliver server-owned briefing selection, operation lock, duplicate support, safe
 
 ### P7-0103 — Combat specialist
 
-Deliver Brace through the production combat owner with finite duration/cooldown and positional interruption. No healing, resupply, or objective repair.
+Complete. Brace runs through the production combat owner with finite duration/cooldown, positional/life/reload/mission interruption, replay/rate bounds, explicit cancellation, compact keyboard/gamepad/touch feedback, and no healing, resupply, objective repair, ammunition creation, or target-authority bypass.
 
 ### P7-0104 — Medic
 
