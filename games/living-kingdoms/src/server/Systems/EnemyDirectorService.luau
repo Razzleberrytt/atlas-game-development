@@ -200,6 +200,15 @@ local function horizontalDistanceSquared(a: Vector3, b: Vector3): number
 end
 
 local function setHealthPresentation(entry: EnemyEntry)
+	local billboard = entry.healthLabel.Parent
+	if billboard ~= nil and billboard:IsA("BillboardGui") then
+		-- Corpses retain their model briefly for death punctuation, but their
+		-- target UI must disappear on the authoritative death transition.
+		-- Standard enemies only disclose a label after taking damage; elites keep
+		-- their identity cue while alive.
+		billboard.Enabled = entry.isAlive
+			and (entry.healthState.currentHealth < entry.maximumHealth or entry.eliteAffixId ~= nil)
+	end
 	local displayName = if entry.eliteAffixId == nil then nil else ELITE_DISPLAY_NAMES[entry.eliteAffixId]
 	if entry.volatileDetonateServerTimestamp ~= nil and not entry.volatileDidDetonate then
 		displayName = "VOLATILE — DETONATING"
@@ -207,7 +216,7 @@ local function setHealthPresentation(entry: EnemyEntry)
 	local armorLine = if entry.armorRemaining > 0 then string.format(" • Armor: %d", entry.armorRemaining) else ""
 	local eliteLine = if displayName == nil then "" else displayName .. armorLine .. " • "
 	entry.healthLabel.Text =
-		string.format("%s%s\nHealth: %d", eliteLine, entry.model.Name, math.max(0, entry.healthState.currentHealth))
+		string.format("%s%s  •  %d HP", eliteLine, entry.model.Name, math.max(0, entry.healthState.currentHealth))
 	entry.root.Color = if entry.isAlive then Color3.fromRGB(126, 46, 46) else Color3.fromRGB(74, 74, 74)
 end
 
@@ -334,21 +343,23 @@ local function createEnemyBody(request: EnemySpawnRequest): (Model, BasePart, Hu
 
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "EnemyLabel"
-	billboard.AlwaysOnTop = true
-	billboard.Size = UDim2.fromOffset(200, 48)
-	billboard.StudsOffset = Vector3.new(0, 4.2, 0)
-	billboard.MaxDistance = 220
+	billboard.AlwaysOnTop = false
+	billboard.Enabled = false
+	billboard.Size = UDim2.fromOffset(168, 26)
+	billboard.StudsOffset = Vector3.new(0, 3.8, 0)
+	billboard.MaxDistance = 70
 	billboard.Parent = root
 
 	local label = Instance.new("TextLabel")
 	label.Name = "Health"
 	label.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
-	label.BackgroundTransparency = 0.25
+	label.BackgroundTransparency = 0.42
 	label.BorderSizePixel = 0
 	label.Size = UDim2.fromScale(1, 1)
 	label.Font = Enum.Font.GothamMedium
 	label.TextColor3 = Color3.fromRGB(255, 255, 255)
-	label.TextScaled = true
+	label.TextSize = 12
+	label.TextTruncate = Enum.TextTruncate.AtEnd
 	label.Parent = billboard
 
 	return model, root, humanoid, label

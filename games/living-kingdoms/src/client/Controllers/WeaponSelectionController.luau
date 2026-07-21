@@ -59,11 +59,12 @@ local function updatePresentation()
 			end
 		end
 	else
-		statusLabel.Text = "LOADOUT LOCKED: " .. (if selected == nil then "Unknown" else selected.DisplayName)
+		-- Ammo and weapon identity remain available in the combat HUD; keeping the
+		-- insertion picker open after lock only duplicates that information.
+		panel.Visible = false
 		for _, button in buttons do
 			button.Visible = false
 		end
-		panel.Size = UDim2.fromOffset(360, 92)
 	end
 end
 

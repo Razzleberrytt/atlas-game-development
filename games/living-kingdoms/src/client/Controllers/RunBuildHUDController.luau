@@ -120,8 +120,8 @@ local function createGui()
 	local bar = Instance.new("Frame")
 	bar.Name = "RelicBar"
 	bar.AnchorPoint = Vector2.new(0.5, 1)
-	bar.Position = UDim2.new(0.5, 0, 1, -96)
-	bar.Size = UDim2.fromOffset(SLOT_COUNT * 186 + (SLOT_COUNT - 1) * 8, 62)
+	bar.Position = UDim2.new(0.5, 0, 1, -28)
+	bar.Size = UDim2.fromOffset(SLOT_COUNT * 140 + (SLOT_COUNT - 1) * 6, 42)
 	bar.BackgroundTransparency = 1
 	bar.Parent = gui
 
@@ -129,14 +129,14 @@ local function createGui()
 	layout.FillDirection = Enum.FillDirection.Horizontal
 	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	layout.VerticalAlignment = Enum.VerticalAlignment.Center
-	layout.Padding = UDim.new(0, 8)
+	layout.Padding = UDim.new(0, 6)
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
 	layout.Parent = bar
 
 	for slotIndex = 1, SLOT_COUNT do
 		local slot = makeButton(bar, "Slot" .. tostring(slotIndex))
 		slot.LayoutOrder = slotIndex
-		slot.Size = UDim2.fromOffset(186, 62)
+		slot.Size = UDim2.fromOffset(140, 42)
 		slot.Text = string.format("SLOT %d\nEMPTY", slotIndex)
 		addStroke(slot, Color3.fromRGB(120, 128, 118), 0.4, 1)
 		slotButtons[slotIndex] = slot
@@ -145,14 +145,14 @@ local function createGui()
 	local status = Instance.new("TextLabel")
 	status.Name = "Status"
 	status.AnchorPoint = Vector2.new(0.5, 1)
-	status.Position = UDim2.new(0.5, 0, 1, -164)
-	status.Size = UDim2.fromOffset(560, 24)
+	status.Position = UDim2.new(0.5, 0, 1, -76)
+	status.Size = UDim2.fromOffset(440, 20)
 	status.BackgroundTransparency = 1
 	status.Font = Enum.Font.GothamBold
 	status.TextColor3 = Color3.fromRGB(255, 207, 90)
 	status.TextStrokeColor3 = Color3.fromRGB(10, 12, 13)
 	status.TextStrokeTransparency = 0.5
-	status.TextSize = 16
+	status.TextSize = 13
 	status.Text = ""
 	status.Parent = gui
 	statusLabel = status
