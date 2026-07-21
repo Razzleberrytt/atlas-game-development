@@ -336,7 +336,7 @@ local RelicCatalog = table.freeze({
 		slotCost = 1,
 		counterThreshold = 8,
 		maximumCharges = 0,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		relicId = RelicIds.GraveMomentum,
@@ -348,7 +348,7 @@ local RelicCatalog = table.freeze({
 		slotCost = 1,
 		counterThreshold = 0,
 		maximumCharges = 0,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		relicId = RelicIds.ChoirBreaker,
@@ -360,7 +360,7 @@ local RelicCatalog = table.freeze({
 		slotCost = 1,
 		counterThreshold = 0,
 		maximumCharges = 0,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		relicId = RelicIds.LastLight,
@@ -372,7 +372,7 @@ local RelicCatalog = table.freeze({
 		slotCost = 1,
 		counterThreshold = 0,
 		maximumCharges = 0,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		relicId = RelicIds.EmergencyChamber,
@@ -384,7 +384,7 @@ local RelicCatalog = table.freeze({
 		slotCost = 1,
 		counterThreshold = 0,
 		maximumCharges = 0,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		relicId = RelicIds.SalvagersMark,
@@ -408,7 +408,7 @@ local RelicCatalog = table.freeze({
 		slotCost = 1,
 		counterThreshold = 0,
 		maximumCharges = 0,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		relicId = RelicIds.BreachDoctrine,
@@ -747,6 +747,7 @@ assert(#EliteAffixCatalog == countVocabulary(AffixIds), "every elite affix ID re
 assert(implementedAffixCount == 5, "RPG-0106 requires the complete five-affix elite roster")
 
 local seenRelicIds = {}
+local implementedRelicCount = 0
 for _, definition in RelicCatalog do
 	assert(not seenRelicIds[definition.relicId], "relic IDs must be unique")
 	seenRelicIds[definition.relicId] = true
@@ -756,10 +757,18 @@ for _, definition in RelicCatalog do
 	assert(definition.slotCost == 1, "initial relics must consume one slot")
 	assert(isNonnegativeInteger(definition.counterThreshold), "relic counter thresholds must be whole")
 	assert(isNonnegativeInteger(definition.maximumCharges), "relic charges must be whole")
-	assert(definition.implementationStateId == ImplementationStateIds.Planned, "RPG-0101 relics remain declarations")
+	assert(
+		definition.implementationStateId == ImplementationStateIds.Implemented
+			or definition.implementationStateId == ImplementationStateIds.Planned,
+		"relic catalog contains an invalid implementation state"
+	)
+	if definition.implementationStateId == ImplementationStateIds.Implemented then
+		implementedRelicCount += 1
+	end
 	assert(#definition.modifierCategoryIds >= 1, "every relic requires a modifier category")
 end
 assert(#RelicCatalog == countVocabulary(RelicIds), "every relic ID requires exactly one catalog entry")
+assert(implementedRelicCount == 6, "RPG-0108 implements exactly the first relic batch")
 
 local seenRewardSourceIds = {}
 for _, definition in RewardSourceCatalog do

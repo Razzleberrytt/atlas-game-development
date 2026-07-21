@@ -1,7 +1,7 @@
 # Living Kingdoms — Run-Based RPG Integration Plan
 
 **Document ID:** RPG-PLAN-001  
-**Status:** Active — `RPG-0101`–`RPG-0107` complete; `RPG-0108` in progress (parts 1 and 2a delivered)<br>
+**Status:** Active — `RPG-0101`–`RPG-0107` complete; `RPG-0108` implementation complete pending Studio validation<br>
 **Target:** Post-HROI gameplay expansion  
 **Primary objective:** Turn each operation into a distinct, replayable character-build journey while preserving Living Kingdoms' brutal cooperative survival identity.
 
@@ -608,7 +608,7 @@ Implementation path:
 
 **Exit:** Relics cannot duplicate, reroll through reconnects, exceed slots, or survive operation teardown. ✔
 
-### RPG-0108 — Add first six relics — **In progress (part 2a of 2)**
+### RPG-0108 — Add first six relics — **Implementation complete; Studio validation outstanding**
 
 Recommended first batch: Blood Battery, Grave Momentum, Choir Breaker, Last Light, Emergency Chamber, and Execution Protocol.
 
@@ -616,9 +616,9 @@ Recommended first batch: Blood Battery, Grave Momentum, Choir Breaker, Last Ligh
 
 **Part 2a — combat and reload integration (delivered).** Three conditional relics and the reload relic now change authoritative outcomes. `RunBuildStateStore:readEquippedRelicIds` exposes a revisioned server-only relic read from the existing run-build owner; the thin `RelicModifierService` derives one bounded bundle per operative through `RelicModifierResolver` and caches it against that revision, so a stable build costs one lookup per shot and no parallel relic state exists. `OperativeCombatRuntimeService` supplies the bundle to `DamageResolver` (Choir Breaker against special enemies, Last Light at or below its own reserve fraction, Execution Protocol at or below the target's own maximum-health fraction — `EnemyDirectorService.readHealthState` now reports `maximumHealth` so elite health scaling moves the execute threshold) and the wounded reload context to `ReloadResolver` (Emergency Chamber, with the wounded fact read from the authoritative P3 life snapshot). Every relic multiplier is re-bounded inside the resolvers, the composed squad + relic product still clamps to the hard configured×3 damage ceiling and the shared reload floor, and a malformed bundle fails the shot closed rather than silently dropping the relic. One related defect was fixed: the reload completion pass was scheduled at the unmodified configured duration, so Combat Loader (and now Emergency Chamber) shortened only the deadline check and not the actual wait. Fixture: `RelicCombatIntegration.test`.
 
-**Part 2b — life and kill-chain integration (not started).** Blood Battery healing must commit through the existing operative-healing boundary on confirmed kills, and Grave Momentum must extend the authoritative kill-chain window owned by `HordeExperienceService`. Completing 2b flips the six catalog entries to Implemented. The task's acceptance gate then requires representative Studio evidence.
+**Part 2b — life and kill-chain integration (delivered).** Blood Battery counts confirmed kills in its equipped slot — `RunBuildStateStore:advanceRelicCounter` is the only home for relic progress and delegates the arithmetic to the pure `RelicModifierResolver.advanceCounter` — and commits its bounded healing through the existing revisioned `OperativeLifeService.applyAuthoritativeHealing` boundary; the combat owner never writes health directly. Kill credit comes only from a lethal shot this owner committed (primary or weapon-pattern secondary), so an idle operative earns nothing, and a full-health operative still consumes the trigger like every other authoritative healing source. Grave Momentum extends the authoritative kill-chain window inside its existing owner: `HordeExperienceService` now derives the window per operative as the configured base plus the bounded relic modifier, and every streak increment, expiry disclosure, and expiry sweep reads it. With both parts landed the six first-batch relics are marked Implemented in the canonical catalog, which `RunRpgConfig` and the fixtures now bound to exactly that batch. Fixtures: `RelicCombatIntegration.test` (counter advance validation, healing and kill-chain source audits) and `RunBuildRewardFramework.test` (slot-counter ownership, trigger arithmetic, fail-closed advances).
 
-**Exit:** At least three clearly different viable build patterns emerge. *(Requires part 2b and Studio validation; the delivered parts alone do not satisfy it.)*
+**Exit:** At least three clearly different viable build patterns emerge. *(Implementation is complete; the exit gate still requires representative Studio evidence and is not claimed.)*
 
 ### RPG-0109 — Add weapon and cooperation relics
 
@@ -660,7 +660,7 @@ Current status:
 |---|---|---|
 | `RPG-0101`–`RPG-0106` | Complete | Merged in PRs #142 and #144–#148: contracts/config, centralized operation state, twelve upgrades, shared modifier resolution, and five elite affixes. |
 | `RPG-0107` | Complete | Bounded reward/slot/replacement framework delivered through the existing run-build owner: pure `RelicRewardResolver`, `RunBuildStateStore` enqueue/choose/replace, and the server-only `RunBuildService` reward source and intent entry points. |
-| `RPG-0108` | In progress (parts 1 and 2a complete) | Part 1 delivered the pure `RelicModifierResolver` + `RelicRuntimeConfig` foundation. Part 2a made Choir Breaker, Last Light, Execution Protocol, and Emergency Chamber consequential through the authoritative damage and reload passes with a revision-cached per-operative bundle. Part 2b adds Blood Battery healing and the Grave Momentum kill-chain window, then Studio validation completes the high-ROI checkpoint. |
+| `RPG-0108` | Implementation complete; Studio validation outstanding | All six first-batch relics now change authoritative outcomes through their existing owners: conditional damage in `DamageResolver`, wounded reload in `ReloadResolver`, Blood Battery healing through the revisioned P3 healing boundary, and the Grave Momentum kill-chain window in `HordeExperienceService`. The catalog marks exactly these six Implemented. The "three viable build patterns" gate still needs representative Studio evidence. |
 | `RPG-0109`–`RPG-0111` | Not started | Add weapon/cooperation relics, production reward sources, and readable UI in order; defer any source whose authoritative P8/P9 owner does not yet exist. |
 | `RPG-0112` | Blocked by P10 result owner | Attach the operation-bound build summary to the authoritative match result rather than creating an RPG-specific result authority. |
 | `RPG-0113` | Not started | Run the complete solo/2/4-player security, balance, readability, cleanup, and representative-horde validation matrix after `RPG-0112`. |

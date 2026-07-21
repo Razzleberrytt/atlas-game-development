@@ -70,9 +70,35 @@ local resolver = luau.load(fs.readFile("games/living-kingdoms/src/shared/RPG/Rel
 local STORE_CONTRACTS_TOKEN = {}
 local STORE_CONFIG_TOKEN = {}
 local STORE_RESOLVER_TOKEN = {}
+local STORE_MODIFIER_TOKEN = {}
+-- The store delegates counted-relic arithmetic to the pure shared resolver.
+local modifierResolver = luau.load(fs.readFile("games/living-kingdoms/src/shared/RPG/RelicModifierResolver.luau"), {
+	debugName = "RelicModifierResolver",
+	environment = {
+		game = {
+			GetService = function()
+				return {
+					Shared = {
+						RPG = { RunRpgContracts = {} },
+						Config = { RelicRuntimeConfig = {} },
+						Progression = { RunModifierResolver = {} },
+					},
+				}
+			end,
+		},
+		require = function()
+			return {}
+		end,
+	},
+	injectGlobals = true,
+})()
 local replicatedStorage = {
 	Shared = {
-		RPG = { RunRpgContracts = STORE_CONTRACTS_TOKEN, RelicRewardResolver = STORE_RESOLVER_TOKEN },
+		RPG = {
+			RunRpgContracts = STORE_CONTRACTS_TOKEN,
+			RelicModifierResolver = STORE_MODIFIER_TOKEN,
+			RelicRewardResolver = STORE_RESOLVER_TOKEN,
+		},
 		Config = { RunRpgConfig = STORE_CONFIG_TOKEN },
 	},
 }
@@ -92,6 +118,8 @@ local storeModule = luau.load(fs.readFile("games/living-kingdoms/src/server/Syst
 				return config
 			elseif token == STORE_RESOLVER_TOKEN then
 				return resolver
+			elseif token == STORE_MODIFIER_TOKEN then
+				return modifierResolver
 			end
 			error("unexpected RunBuildStateStore dependency", 2)
 		end,

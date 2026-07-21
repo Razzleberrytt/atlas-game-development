@@ -386,8 +386,10 @@ attributes.RunReloadDurationMultiplier = 1
 
 -- The modifier adapter derives once per build revision and releases its cache.
 local RESOLVER_TOKEN = {}
+local RPG_CONTRACTS_TOKEN = {}
 local BUILD_SERVICE_TOKEN = {}
 local deriveCalls = 0
+local rpgContracts = { RelicIds = table.freeze({ BloodBattery = "Relic.BloodBattery" }) }
 local relicResolver = {
 	deriveModifiers = function(relicIds)
 		deriveCalls += 1
@@ -395,9 +397,20 @@ local relicResolver = {
 	end,
 }
 local equippedRead: any = nil
+local counterAdvanceCalls = {}
+local counterAdvanceResult: any = nil
 local buildService = {
 	readEquippedRelicIds = function()
 		return equippedRead
+	end,
+	advanceRelicCounter = function(player, relicId, increment, threshold)
+		table.insert(counterAdvanceCalls, {
+			player = player,
+			relicId = relicId,
+			increment = increment,
+			threshold = threshold,
+		})
+		return counterAdvanceResult
 	end,
 }
 local relicModifierService =
@@ -407,13 +420,22 @@ local relicModifierService =
 			game = {
 				GetService = function(_self: unknown, serviceName: string)
 					assertThat(serviceName == "ReplicatedStorage", "unexpected service request")
-					return { Shared = { RPG = { RelicModifierResolver = RESOLVER_TOKEN } } }
+					return {
+						Shared = {
+							RPG = {
+								RelicModifierResolver = RESOLVER_TOKEN,
+								RunRpgContracts = RPG_CONTRACTS_TOKEN,
+							},
+						},
+					}
 				end,
 			},
 			script = { Parent = { RunBuildService = BUILD_SERVICE_TOKEN } },
 			require = function(token: unknown)
 				if token == RESOLVER_TOKEN then
 					return relicResolver
+				elseif token == RPG_CONTRACTS_TOKEN then
+					return rpgContracts
 				elseif token == BUILD_SERVICE_TOKEN then
 					return buildService
 				end
@@ -444,6 +466,32 @@ assertThat(deriveCalls == 4, "a forgotten operative must derive again")
 relicModifierService.clear()
 relicModifierService.read(player)
 assertThat(deriveCalls == 5, "a cleared cache must derive again")
+
+-- Blood Battery advances only through the canonical slot counter, and only for
+-- whole positive kill counts.
+counterAdvanceResult = table.freeze({ counterAfter = 2, triggerCount = 1 })
+assertThat(
+	relicModifierService.advanceBloodBatteryKills(player, 2, 8) == 1,
+	"a confirmed kill must advance the counter"
+)
+local advanceCall = counterAdvanceCalls[#counterAdvanceCalls]
+assertThat(
+	advanceCall.relicId == "Relic.BloodBattery" and advanceCall.increment == 2 and advanceCall.threshold == 8,
+	"the advance must address the Blood Battery slot with the server-owned threshold"
+)
+local callsBefore = #counterAdvanceCalls
+for _, invalid in { { 0, 8 }, { -1, 8 }, { 1.5, 8 }, { 2, 0 } } do
+	assertThat(
+		relicModifierService.advanceBloodBatteryKills(player, invalid[1], invalid[2]) == 0,
+		"an invalid kill count or threshold must trigger nothing"
+	)
+end
+assertThat(#counterAdvanceCalls == callsBefore, "an invalid advance must not reach the run-build owner")
+counterAdvanceResult = nil
+assertThat(
+	relicModifierService.advanceBloodBatteryKills(player, 1, 8) == 0,
+	"an unequipped Blood Battery must trigger nothing"
+)
 
 -- Source audits: the authoritative owners, not a parallel relic runtime, apply
 -- the effects, and the relic read never becomes a client surface.
@@ -480,6 +528,29 @@ assertThat(
 assertThat(
 	contains(buildServiceSource, "RunBuildService.readEquippedRelicIds"),
 	"the run-build service must expose the server-only relic read"
+)
+assertThat(
+	contains(buildStore, "function store:advanceRelicCounter") and contains(buildStore, "slot.counterValue = "),
+	"the equipped slot counter must remain the only home for counted relic progress"
+)
+assertThat(
+	contains(combatRuntime, "OperativeLifeService.applyAuthoritativeHealing"),
+	"Blood Battery healing must commit through the existing revisioned life boundary"
+)
+assertThat(
+	not contains(combatRuntime, "healthState.currentHealth ="),
+	"the combat owner must never write operative health directly"
+)
+
+local hordeService = fs.readFile("games/living-kingdoms/src/server/Systems/HordeExperienceService.luau")
+assertThat(
+	contains(hordeService, "HordeConfig.Streak.KillStreakWindowSeconds + RelicModifierService.read(player)"),
+	"Grave Momentum must extend the authoritative kill-chain window in its existing owner"
+)
+assertThat(
+	not contains(hordeService, "state.lastKillServerTimestamp <= HordeConfig.Streak.KillStreakWindowSeconds")
+		and not contains(hordeService, "state.lastKillServerTimestamp > HordeConfig.Streak.KillStreakWindowSeconds"),
+	"every kill-chain window check must read the per-operative window"
 )
 
 print("RelicCombatIntegration: bounded per-operative relic damage, reload, caching, and audits passed")

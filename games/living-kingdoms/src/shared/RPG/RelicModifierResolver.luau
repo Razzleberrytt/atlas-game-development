@@ -46,6 +46,11 @@ export type BloodBatteryResult = {
 	healAmount: number,
 }
 
+export type CounterAdvance = {
+	counterAfter: number,
+	triggerCount: number,
+}
+
 local RelicModifierResolver = {}
 
 local function neutralModifiers(): RelicModifiers
@@ -129,6 +134,35 @@ function RelicModifierResolver.deriveModifiers(equippedRelicIds: { string }): Re
 end
 
 --[[
+	Pure counted-relic advance. Given the counter before, the whole number of
+	events to apply, and the trigger threshold, returns the counter remainder and
+	how many times the relic triggered. Invalid input leaves the counter unchanged
+	and triggers nothing, so a malformed caller can never manufacture an effect.
+]]
+function RelicModifierResolver.advanceCounter(
+	counterBefore: number,
+	increment: number,
+	threshold: number
+): CounterAdvance
+	if
+		not isNonnegativeInteger(counterBefore)
+		or not isNonnegativeInteger(increment)
+		or not isNonnegativeInteger(threshold)
+		or threshold <= 0
+	then
+		return table.freeze({
+			counterAfter = if isNonnegativeInteger(counterBefore) then counterBefore else 0,
+			triggerCount = 0,
+		})
+	end
+	local total = counterBefore + increment
+	return table.freeze({
+		counterAfter = total % threshold,
+		triggerCount = math.floor(total / threshold),
+	})
+end
+
+--[[
 	Pure Blood Battery kill-counter advance. Given the counter before, the whole
 	number of confirmed kills to apply, and the tuning threshold/heal amount,
 	returns the counter remainder and the total health to restore. The caller
@@ -141,25 +175,16 @@ function RelicModifierResolver.advanceBloodBattery(
 	killThreshold: number,
 	healAmount: number
 ): BloodBatteryResult
-	if
-		not isNonnegativeInteger(counterBefore)
-		or not isNonnegativeInteger(kills)
-		or not isNonnegativeInteger(killThreshold)
-		or type(healAmount) ~= "number"
-		or healAmount ~= healAmount
-		or healAmount < 0
-		or killThreshold <= 0
-	then
+	if type(healAmount) ~= "number" or healAmount ~= healAmount or healAmount < 0 then
 		return table.freeze({
 			counterAfter = if isNonnegativeInteger(counterBefore) then counterBefore else 0,
 			healAmount = 0,
 		})
 	end
-	local total = counterBefore + kills
-	local triggers = math.floor(total / killThreshold)
+	local advance = RelicModifierResolver.advanceCounter(counterBefore, kills, killThreshold)
 	return table.freeze({
-		counterAfter = total % killThreshold,
-		healAmount = triggers * healAmount,
+		counterAfter = advance.counterAfter,
+		healAmount = advance.triggerCount * healAmount,
 	})
 end
 

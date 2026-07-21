@@ -152,8 +152,9 @@ for _, definition in config.RelicCatalog do
 	assertThat(definition.maximumStacks == 1, "initial relics must be non-stackable")
 	assertThat(definition.slotCost == 1, "initial relics must consume one slot")
 	assertThat(
-		definition.implementationStateId == contracts.ImplementationStateIds.Planned,
-		"relics must remain planned"
+		definition.implementationStateId == contracts.ImplementationStateIds.Implemented
+			or definition.implementationStateId == contracts.ImplementationStateIds.Planned,
+		"invalid relic implementation state"
 	)
 end
 assertThat(
