@@ -75,7 +75,7 @@ There is no client movement-state remote and the server accepts no client-suppli
 
 The client bootstrap initializes and starts `CameraController`. The controller exposes `init()`, `start()`, `stop()`, and `destroy()`; repeated lifecycle calls are safe no-ops when the requested state is already satisfied, and destruction is terminal.
 
-The current view uses initial focus point `(-224, 0, -208)` at the ranger-station insertion, pitch `-60` degrees, yaw `45` degrees, and height `92` studs. Mouse-wheel zoom changes height by `10` studs per wheel unit and clamps it from `40` to `160` studs. The focus point is clamped from `-320` to `320` on X and Z to contain the authored operation. Keyboard panning remains available to the camera controller at `48` studs per second, but `SurvivorController` disables it while active and restores it on stop.
+The current view uses initial focus point `(-224, 0, -208)` at the ranger-station insertion, pitch `-60` degrees, yaw `45` degrees, and height `76` studs. Mouse-wheel zoom changes height by `10` studs per wheel unit and clamps it from `40` to `160` studs. The closer default keeps operative, enemy, and route silhouettes readable while preserving tactical context. The focus point is clamped from `-320` to `320` on X and Z to contain the authored operation. Keyboard panning remains available to the camera controller at `48` studs per second, but `SurvivorController` disables it while active and restores it on stop.
 
 These values and controls are not the final survival-camera design. Survivor movement owns the shared movement keys while active. Bounds must later be adapted to one authored operation map. Working camera code remains intact unless a focused survival task demonstrates a change is needed.
 

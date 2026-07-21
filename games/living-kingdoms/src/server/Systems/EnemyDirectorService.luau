@@ -204,10 +204,10 @@ local function setHealthPresentation(entry: EnemyEntry)
 	if billboard ~= nil and billboard:IsA("BillboardGui") then
 		-- Corpses retain their model briefly for death punctuation, but their
 		-- target UI must disappear on the authoritative death transition.
-		-- Standard enemies only disclose a label after taking damage; elites keep
-		-- their identity cue while alive.
-		billboard.Enabled = entry.isAlive
-			and (entry.healthState.currentHealth < entry.maximumHealth or entry.eliteAffixId ~= nil)
+		-- Ordinary enemy health is already communicated by hit punctuation and
+		-- silhouettes. Persistent labels are reserved for living elites so a
+		-- damaged horde cannot turn into a wall of names and numbers.
+		billboard.Enabled = entry.isAlive and entry.eliteAffixId ~= nil
 	end
 	local displayName = if entry.eliteAffixId == nil then nil else ELITE_DISPLAY_NAMES[entry.eliteAffixId]
 	if entry.volatileDetonateServerTimestamp ~= nil and not entry.volatileDidDetonate then
