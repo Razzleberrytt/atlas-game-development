@@ -11,8 +11,9 @@
 	reward offer, which is never rerolled), while reset/stop destroys every
 	operation-bound fact.
 
-	Relic effect mechanics remain deferred to RPG-0108: equipping stores an inert
-	relic in a slot. This owner guarantees the framework invariants — rewards
+	Relic effects are applied by the authoritative combat, reload, and life owners
+	(RPG-0108); this store remains the single home for the equipped relics and
+	their counted progress. It guarantees the framework invariants — rewards
 	cannot duplicate, reroll through reconnects, exceed the slot cap, or survive
 	operation teardown.
 ]]
@@ -21,6 +22,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
 local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
+local RelicModifierResolver = require(ReplicatedStorage.Shared.RPG.RelicModifierResolver)
 local RelicRewardResolver = require(ReplicatedStorage.Shared.RPG.RelicRewardResolver)
 
 export type UpgradeStacks = { [string]: number }
@@ -32,6 +34,14 @@ export type CompatibilityIdSet = { [string]: boolean }
 export type EquippedRelicRead = {
 	revision: number,
 	relicIds: { string },
+}
+
+-- Result of one counted-relic advance: the slot's stored counter after the
+-- advance and how many times the relic triggered, which the caller commits
+-- through the effect's own authoritative boundary.
+export type RelicCounterAdvance = {
+	counterAfter: number,
+	triggerCount: number,
 }
 
 type OperativeState = {
@@ -55,6 +65,13 @@ export type Store = {
 	readUpgradeStacks: (self: Store) -> UpgradeStacks,
 	readSafeSnapshot: (self: Store, operativeId: string) -> any?,
 	readEquippedRelicIds: (self: Store, operativeId: string) -> EquippedRelicRead?,
+	advanceRelicCounter: (
+		self: Store,
+		operativeId: string,
+		relicId: string,
+		increment: number,
+		threshold: number
+	) -> RelicCounterAdvance?,
 	commitUpgradeStacks: (
 		self: Store,
 		operationGeneration: number,
@@ -378,6 +395,40 @@ function RunBuildStateStore.new(): Store
 			revision = state.revision,
 			relicIds = table.freeze(relicIds),
 		})
+	end
+
+	--[[
+		Server-only counted-relic advance. The equipped slot's canonical
+		counterValue is the only home for relic progress, and the pure resolver
+		owns the arithmetic, so this store only holds and bounds the state. Returns
+		`nil` when the operation is stopped, the operative is untracked, or the
+		relic is not equipped; a stale or malformed increment simply triggers
+		nothing.
+	]]
+	function store:advanceRelicCounter(
+		operativeId: string,
+		relicId: string,
+		increment: number,
+		threshold: number
+	): RelicCounterAdvance?
+		if not started or type(relicId) ~= "string" then
+			return nil
+		end
+		local state = operativeStates[operativeId]
+		if state == nil then
+			return nil
+		end
+		for _, slot in state.relicSlots do
+			if slot.slotStateId == SlotStates.Equipped and slot.relicId == relicId then
+				local advance = RelicModifierResolver.advanceCounter(slot.counterValue, increment, threshold)
+				slot.counterValue = advance.counterAfter
+				return table.freeze({
+					counterAfter = advance.counterAfter,
+					triggerCount = advance.triggerCount,
+				})
+			end
+		end
+		return nil
 	end
 
 	-- Shared entry validation for every operative-scoped request. Returns the

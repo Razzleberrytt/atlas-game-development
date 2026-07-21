@@ -116,6 +116,16 @@ function RunBuildService.readEquippedRelicIds(player: Player): RunBuildStateStor
 	return store:readEquippedRelicIds(operativeId(player))
 end
 
+-- Server-only counted-relic advance for the authoritative effect owners.
+function RunBuildService.advanceRelicCounter(
+	player: Player,
+	relicId: string,
+	increment: number,
+	threshold: number
+): RunBuildStateStore.RelicCounterAdvance?
+	return store:advanceRelicCounter(operativeId(player), relicId, increment, threshold)
+end
+
 function RunBuildService.commitSquadUpgradeStacks(
 	operationGeneration: number,
 	requestId: string,

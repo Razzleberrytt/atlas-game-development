@@ -500,6 +500,41 @@ local function runDamageContext(
 	}
 end
 
+--[[
+	Blood Battery restores bounded health every configured number of confirmed
+	kills. Kill credit comes only from a committed lethal shot resolved by this
+	owner, the counter lives in the operative's equipped relic slot, and the
+	healing commits through the existing revisioned P3 healing boundary — this
+	owner never writes health directly. A full-health operative still consumes the
+	trigger, matching every other authoritative healing source.
+]]
+local function applyBloodBattery(player: Player, killCount: number, shotId: string, nowTimestamp: number)
+	if killCount <= 0 then
+		return
+	end
+	local modifiers = RelicModifierService.read(player)
+	if modifiers.bloodBatteryKillThreshold <= 0 or modifiers.bloodBatteryHealAmount <= 0 then
+		return
+	end
+	local triggerCount =
+		RelicModifierService.advanceBloodBatteryKills(player, killCount, modifiers.bloodBatteryKillThreshold)
+	if triggerCount <= 0 then
+		return
+	end
+	local lifeRead = OperativeLifeService.read(player)
+	if lifeRead == nil then
+		return
+	end
+	local snapshot = lifeRead.snapshot
+	OperativeLifeService.applyAuthoritativeHealing(snapshot.operativeEntityId, lifeRead.revision, {
+		healingEventId = "healing:relic.blood-battery:" .. shotId,
+		sourceEntityId = snapshot.operativeEntityId,
+		targetEntityId = snapshot.operativeEntityId,
+		healingAmount = math.min(snapshot.healthState.maximumHealth, triggerCount * modifiers.bloodBatteryHealAmount),
+		serverTimestamp = nowTimestamp,
+	})
+end
+
 local function commitPatternImpacts(
 	player: Player,
 	playerState: PlayerCombatState,
@@ -507,10 +542,10 @@ local function commitPatternImpacts(
 	primaryTargetEntityId: string,
 	primaryShotId: string,
 	nowTimestamp: number
-): { CombatContracts.SecondaryShotImpactPresentation }
+): ({ CombatContracts.SecondaryShotImpactPresentation }, number)
 	local primaryEntry = playerState.sightedByEntityId[primaryTargetEntityId]
 	if primaryEntry == nil then
-		return {}
+		return {}, 0
 	end
 	local selectedImpacts = WeaponPatternResolver.resolve(
 		playerState.weaponState.weaponId,
@@ -519,6 +554,7 @@ local function commitPatternImpacts(
 		buildPatternTargetFacts(playerState)
 	)
 	local disclosedImpacts = {}
+	local killCount = 0
 	for index, impact in selectedImpacts do
 		local sightedEntry = playerState.sightedByEntityId[impact.targetEntityId]
 		local healthRead = EnemyDirectorService.readHealthState(impact.targetEntityId)
@@ -555,6 +591,9 @@ local function commitPatternImpacts(
 		)
 		local damageEvent = damageResolution.damageEvent
 		if didCommit and damageResolution.didApplyDamage and damageEvent ~= nil then
+			if damageResolution.becameDead then
+				killCount += 1
+			end
 			table.insert(disclosedImpacts, {
 				targetEntityId = impact.targetEntityId,
 				impactWorldPosition = sightedEntry.fact.worldPosition,
@@ -562,7 +601,7 @@ local function commitPatternImpacts(
 			})
 		end
 	end
-	return disclosedImpacts
+	return disclosedImpacts, killCount
 end
 
 local function resolveAcceptedShot(
@@ -617,9 +656,15 @@ local function resolveAcceptedShot(
 	local damageAmount = if didApplyPrimaryDamage and damageResolution.damageEvent ~= nil
 		then committedDamage or damageResolution.damageEvent.damageAmount
 		else nil
-	local secondaryImpacts = if didApplyPrimaryDamage
-		then commitPatternImpacts(player, playerState, operativePosition, targetEntityId, shotId, nowTimestamp)
-		else {}
+	local secondaryImpacts: { CombatContracts.SecondaryShotImpactPresentation } = {}
+	local killCount = if didApplyPrimaryDamage and damageResolution.becameDead then 1 else 0
+	if didApplyPrimaryDamage then
+		local impacts, secondaryKills =
+			commitPatternImpacts(player, playerState, operativePosition, targetEntityId, shotId, nowTimestamp)
+		secondaryImpacts = impacts
+		killCount += secondaryKills
+	end
+	applyBloodBattery(player, killCount, shotId, nowTimestamp)
 	presentationRemote:FireAllClients({
 		kindId = CombatContracts.PresentationMessageKindIds.ShotFired,
 		shotId = shotId,

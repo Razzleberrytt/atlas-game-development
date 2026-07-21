@@ -35,10 +35,18 @@ local function loadWithReplicatedStorage(path: string, debugName: string, module
 	local R_CONTRACTS = {}
 	local R_CONFIG = {}
 	local R_RESOLVER = {}
+	local R_MODIFIER = {}
+	-- Placeholder for dependencies the module under test never exercises here.
+	local R_UNUSED = {}
 	local replicatedStorage = {
 		Shared = {
-			RPG = { RunRpgContracts = R_CONTRACTS, RelicRewardResolver = R_RESOLVER },
-			Config = { RunRpgConfig = R_CONFIG },
+			RPG = {
+				RunRpgContracts = R_CONTRACTS,
+				RelicModifierResolver = R_MODIFIER,
+				RelicRewardResolver = R_RESOLVER,
+			},
+			Config = { RunRpgConfig = R_CONFIG, RelicRuntimeConfig = R_UNUSED },
+			Progression = { RunModifierResolver = R_UNUSED },
 		},
 	}
 	return luau.load(fs.readFile(path), {
@@ -57,6 +65,10 @@ local function loadWithReplicatedStorage(path: string, debugName: string, module
 					return config
 				elseif token == R_RESOLVER then
 					return modulesByToken.resolver
+				elseif token == R_MODIFIER then
+					return modulesByToken.modifierResolver
+				elseif token == R_UNUSED then
+					return {}
 				end
 				error("unexpected " .. debugName .. " dependency", 2)
 			end,
@@ -70,10 +82,16 @@ local resolver = loadWithReplicatedStorage(
 	"RelicRewardResolver",
 	{}
 )
+-- The store delegates counted-relic arithmetic to the pure shared resolver.
+local modifierResolver = loadWithReplicatedStorage(
+	"games/living-kingdoms/src/shared/RPG/RelicModifierResolver.luau",
+	"RelicModifierResolver",
+	{}
+)
 local storeModule = loadWithReplicatedStorage(
 	"games/living-kingdoms/src/server/Systems/RunBuildStateStore.luau",
 	"RunBuildStateStore",
-	{ resolver = resolver }
+	{ resolver = resolver, modifierResolver = modifierResolver }
 )
 
 local Rejections = contracts.RunRpgRejectionReasonIds
@@ -127,6 +145,36 @@ assertThat(#snapshot.pendingRewards == 0, "resolved reward must leave the queue"
 assertThat(
 	snapshot.relicSlots[1].slotStateId == SlotStates.Equipped and snapshot.relicSlots[1].relicId == offeredRelicId,
 	"chosen relic must occupy the first slot"
+)
+
+-- RPG-0108 counted relics: the equipped slot's counterValue is the only home for
+-- relic progress, and the pure resolver owns the arithmetic.
+local firstAdvance = store:advanceRelicCounter("operative-a", offeredRelicId, 5, 8)
+assertThat(
+	firstAdvance ~= nil and firstAdvance.counterAfter == 5 and firstAdvance.triggerCount == 0,
+	"a partial counter advance must not trigger"
+)
+assertThat(
+	store:readSafeSnapshot("operative-a").relicSlots[1].counterValue == 5,
+	"the advanced counter must be stored in the equipped slot"
+)
+local triggeringAdvance = store:advanceRelicCounter("operative-a", offeredRelicId, 11, 8)
+assertThat(
+	triggeringAdvance ~= nil and triggeringAdvance.triggerCount == 2 and triggeringAdvance.counterAfter == 0,
+	"a counter advance must report every whole trigger and keep the remainder"
+)
+assertThat(
+	store:advanceRelicCounter("operative-a", otherOfferedRelicId, 1, 8) == nil,
+	"an unequipped relic must not advance a counter"
+)
+assertThat(
+	store:advanceRelicCounter("ghost-operative", offeredRelicId, 1, 8) == nil,
+	"an unknown operative must not advance a counter"
+)
+local invalidAdvance = store:advanceRelicCounter("operative-a", offeredRelicId, -3, 8)
+assertThat(
+	invalidAdvance ~= nil and invalidAdvance.triggerCount == 0 and invalidAdvance.counterAfter == 0,
+	"an invalid increment must trigger nothing and leave the counter unchanged"
 )
 
 -- The resolved reward sequence cannot be replayed.

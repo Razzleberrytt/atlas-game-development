@@ -26,6 +26,7 @@ local WorldFoundationConfig = require(ReplicatedStorage.Shared.Config.WorldFound
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 local HordeRolePresentationService = require(script.Parent.HordeRolePresentationService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
+local RelicModifierService = require(script.Parent.RelicModifierService)
 
 local LifeAttribute = EnemyPresentationContracts.AttributeNames.LifeStateId
 local HitSequenceAttribute = EnemyPresentationContracts.AttributeNames.HitSequence
@@ -125,6 +126,15 @@ local function createPlayerState(): PlayerState
 	}
 end
 
+--[[
+	This service owns the authoritative kill-chain window. Grave Momentum (RPG-0108)
+	extends it per operative through the bounded shared relic modifier, so the
+	window is read here rather than assumed constant.
+]]
+local function streakWindowSeconds(player: Player): number
+	return HordeConfig.Streak.KillStreakWindowSeconds + RelicModifierService.read(player).killChainExtensionSeconds
+end
+
 local function alivePlayerPosition(player: Player): Vector3?
 	if not OperativeLifeService.isAlive(player) then
 		return nil
@@ -173,7 +183,7 @@ local function publishPlayer(player: Player, serverTimestamp: number)
 		kills = state.kills,
 		streak = state.streak,
 		streakExpiresServerTimestamp = if state.streak >= 2
-			then state.lastKillServerTimestamp + HordeConfig.Streak.KillStreakWindowSeconds
+			then state.lastKillServerTimestamp + streakWindowSeconds(player)
 			else 0,
 		threat = value,
 		threatLabel = threatLabel(value),
@@ -429,8 +439,8 @@ local function handleEnemyDeath(record: EnemyRecord, serverTimestamp: number)
 	if record.pendingSpecialKindId == SpecialKindIds.ScreamerReinforcement then
 		interruptPendingSpecial(record)
 	end
-	for _, state in playerStates do
-		if serverTimestamp - state.lastKillServerTimestamp <= HordeConfig.Streak.KillStreakWindowSeconds then
+	for player, state in playerStates do
+		if serverTimestamp - state.lastKillServerTimestamp <= streakWindowSeconds(player) then
 			state.streak += 1
 		else
 			state.streak = 1
@@ -544,8 +554,8 @@ local function evaluate(serverTimestamp: number)
 		spawnHorde(serverTimestamp)
 		nextHordeServerTimestamp = serverTimestamp + currentSpawnInterval(serverTimestamp)
 	end
-	for _, state in playerStates do
-		if serverTimestamp - state.lastKillServerTimestamp > HordeConfig.Streak.KillStreakWindowSeconds then
+	for player, state in playerStates do
+		if serverTimestamp - state.lastKillServerTimestamp > streakWindowSeconds(player) then
 			state.streak = 0
 		end
 	end

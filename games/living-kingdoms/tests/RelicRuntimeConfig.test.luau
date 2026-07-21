@@ -1,7 +1,7 @@
 --!strict
 
--- RPG-0108 (part 1) first-batch relic tuning stays within the shared RPG
--- ceilings and matches the canonical relic catalog.
+-- RPG-0108 first-batch relic tuning stays within the shared RPG ceilings, matches
+-- the canonical relic catalog, and is the only implemented relic batch.
 
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
@@ -118,18 +118,30 @@ for relicId in config.RuntimeByRelicId do
 end
 assertThat(runtimeCount == 6, "runtime tuning must cover exactly the first six relics")
 
--- The first batch must remain gameplay-inert until runtime integration: the
--- canonical relic catalog still marks every relic Planned.
-for _, definition in rpgConfig.RelicCatalog do
-	assertThat(
-		definition.implementationStateId == contracts.ImplementationStateIds.Planned,
-		"relics must remain Planned until the RPG-0108 runtime integration lands"
-	)
+-- Exactly the six first-batch relics carry runtime effects, so exactly those six
+-- may be marked Implemented in the canonical relic catalog.
+local firstBatch = {}
+for _, relicId in config.FirstBatchRelicIds do
+	firstBatch[relicId] = true
 end
+local implementedRelicCount = 0
+for _, definition in rpgConfig.RelicCatalog do
+	if definition.implementationStateId == contracts.ImplementationStateIds.Implemented then
+		implementedRelicCount += 1
+		assertThat(firstBatch[definition.relicId] == true, "only first-batch relics may be marked Implemented")
+	else
+		assertThat(
+			definition.implementationStateId == contracts.ImplementationStateIds.Planned,
+			"invalid relic implementation state"
+		)
+		assertThat(firstBatch[definition.relicId] == nil, "every first-batch relic must be marked Implemented")
+	end
+end
+assertThat(implementedRelicCount == 6, "the RPG-0108 first batch must be the only implemented relics")
 
 local frozen = pcall(function()
 	config.BloodBattery.healAmount = 999
 end)
 assertThat(not frozen, "relic tuning must be frozen")
 
-print("RelicRuntimeConfig: first-batch tuning is ceiling-bound, catalog-matched, and still inert")
+print("RelicRuntimeConfig: first-batch tuning is ceiling-bound, catalog-matched, and the only implemented batch")

@@ -26,7 +26,13 @@ local hud = fs.readFile("games/living-kingdoms/src/client/Controllers/HordeHUDCo
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 
 assert(contains(server, "streakExpiresServerTimestamp"), "server must disclose the exact authoritative streak expiry")
-assert(contains(server, "state.lastKillServerTimestamp + HordeConfig.Streak.KillStreakWindowSeconds"))
+-- The disclosed expiry must be the operative's own authoritative window, which
+-- Grave Momentum (RPG-0108) may extend beyond the configured base.
+assert(contains(server, "state.lastKillServerTimestamp + streakWindowSeconds(player)"))
+assert(
+	contains(server, "HordeConfig.Streak.KillStreakWindowSeconds + RelicModifierService.read(player)"),
+	"the kill-chain window must stay derived from the configured base plus the bounded relic modifier"
+)
 assert(contains(server, "state.streak >= 2"), "expiry disclosure must be absent below the visible streak floor")
 assert(not contains(server, "MassacreCrescendoConfig"), "server must not depend on client presentation config")
 
