@@ -445,7 +445,7 @@ local RelicCatalog = table.freeze({
 		slotCost = 1,
 		counterThreshold = 6,
 		maximumCharges = 0,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		relicId = RelicIds.GuardianSignal,
@@ -776,7 +776,7 @@ for _, definition in RelicCatalog do
 end
 assert(#RelicCatalog == countVocabulary(RelicIds), "every relic ID requires exactly one catalog entry")
 assert(
-	implementedRelicCount == 9,
+	implementedRelicCount == 10,
 	"the implemented relic set is the RPG-0108 first batch plus the delivered RPG-0109 slices"
 )
 

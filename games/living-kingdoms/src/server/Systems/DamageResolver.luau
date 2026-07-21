@@ -42,6 +42,7 @@ export type RelicDamageModifiers = {
 	shotgunPatternDamageMultiplier: number,
 	sniperPatternDamageMultiplier: number,
 	sniperSpecialEnemyDamageMultiplier: number,
+	sustainedFireDamageMultiplier: number,
 }
 
 export type RunDamageContext = {
@@ -49,6 +50,10 @@ export type RunDamageContext = {
 	maximumReserveRounds: number,
 	isSpecialEnemy: boolean,
 	targetMaximumHealth: number?,
+	-- Server-derived Suppression Engine state for this shot. The caller owns the
+	-- sustained-shot counter and the weapon gate; this resolver only bounds the
+	-- multiplier it applies.
+	isSustainedFireActive: boolean?,
 	relicModifiers: RelicDamageModifiers?,
 }
 
@@ -146,6 +151,7 @@ local function resolveRelicMultiplier(weaponId: string, currentHealth: number, r
 		or not isBoundedMultiplier(relic.lowReserveDamageMultiplier)
 		or not isBoundedMultiplier(relic.executionDamageMultiplier)
 		or not isBoundedMultiplier(relic.sniperSpecialEnemyDamageMultiplier)
+		or not isBoundedMultiplier(relic.sustainedFireDamageMultiplier)
 		or not isBoundedFraction(relic.lowReserveFraction)
 		or not isBoundedFraction(relic.executionHealthFraction)
 	then
@@ -160,6 +166,9 @@ local function resolveRelicMultiplier(weaponId: string, currentHealth: number, r
 	end
 	if runContext.reserveRounds <= math.floor(runContext.maximumReserveRounds * relic.lowReserveFraction) then
 		multiplier *= relic.lowReserveDamageMultiplier
+	end
+	if runContext.isSustainedFireActive == true then
+		multiplier *= relic.sustainedFireDamageMultiplier
 	end
 	local maximumHealth = runContext.targetMaximumHealth
 	if

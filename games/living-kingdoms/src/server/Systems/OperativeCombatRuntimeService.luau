@@ -473,11 +473,31 @@ local function buildPatternTargetFacts(playerState: PlayerCombatState): { Weapon
 	return facts
 end
 
+--[[
+	Suppression Engine (RPG-0109) rewards sustained automatic fire. The
+	sustained-shot counter lives in the operative's equipped relic slot, and this
+	owner gates it on an automatic firearm so a relic offered for one loadout can
+	never power another. Reloading, a loadout change, or losing combat rights
+	resets the counter.
+]]
+local function isAutomaticFirearm(weaponId: string): boolean
+	return weaponId == CombatContracts.WeaponIds.LightMachineGun or weaponId == CombatContracts.WeaponIds.SubmachineGun
+end
+
+local function isSustainedFireActive(player: Player, playerState: PlayerCombatState): boolean
+	local threshold = RelicModifierService.read(player).sustainedFireShotThreshold
+	if threshold <= 0 or not isAutomaticFirearm(playerState.weaponState.weaponId) then
+		return false
+	end
+	return RelicModifierService.readSustainedShots(player) >= threshold
+end
+
 local function runDamageContext(
 	player: Player,
 	playerState: PlayerCombatState,
 	fact: EnemyDirectorService.EnemyCombatFact,
-	targetMaximumHealth: number?
+	targetMaximumHealth: number?,
+	sustainedFireActive: boolean
 ): DamageResolver.RunDamageContext?
 	local ammunition = playerState.weaponState.ammunition
 	local definition = resolveWeaponDefinition(ammunition.weaponId)
@@ -496,6 +516,7 @@ local function runDamageContext(
 		maximumReserveRounds = definition.MaximumReserveRounds,
 		isSpecialEnemy = isSpecialEnemy,
 		targetMaximumHealth = targetMaximumHealth,
+		isSustainedFireActive = sustainedFireActive,
 		relicModifiers = RelicModifierService.read(player),
 	}
 end
@@ -541,7 +562,8 @@ local function commitPatternImpacts(
 	operativePosition: Vector3,
 	primaryTargetEntityId: string,
 	primaryShotId: string,
-	nowTimestamp: number
+	nowTimestamp: number,
+	sustainedFireActive: boolean
 ): ({ CombatContracts.SecondaryShotImpactPresentation }, number)
 	local primaryEntry = playerState.sightedByEntityId[primaryTargetEntityId]
 	if primaryEntry == nil then
@@ -581,7 +603,7 @@ local function commitPatternImpacts(
 			healthRead.healthState,
 			nowTimestamp,
 			impact.damageMultiplier,
-			runDamageContext(player, playerState, sightedEntry.fact, healthRead.maximumHealth)
+			runDamageContext(player, playerState, sightedEntry.fact, healthRead.maximumHealth, sustainedFireActive)
 		)
 		local didCommit, committedDamage = EnemyDirectorService.commitHealthState(
 			impact.targetEntityId,
@@ -609,7 +631,8 @@ local function resolveAcceptedShot(
 	playerState: PlayerCombatState,
 	operativePosition: Vector3,
 	fireResult: CombatContracts.AuthoritativeFireResult,
-	nowTimestamp: number
+	nowTimestamp: number,
+	sustainedFireActive: boolean
 )
 	local targetEntityId = fireResult.targetEntityId
 	local shotId = fireResult.shotId
@@ -644,7 +667,7 @@ local function resolveAcceptedShot(
 		healthRead.healthState,
 		nowTimestamp,
 		nil,
-		runDamageContext(player, playerState, fact, healthRead.maximumHealth)
+		runDamageContext(player, playerState, fact, healthRead.maximumHealth, sustainedFireActive)
 	)
 	local didCommitPrimary, committedDamage = EnemyDirectorService.commitHealthState(
 		targetEntityId,
@@ -659,8 +682,15 @@ local function resolveAcceptedShot(
 	local secondaryImpacts: { CombatContracts.SecondaryShotImpactPresentation } = {}
 	local killCount = if didApplyPrimaryDamage and damageResolution.becameDead then 1 else 0
 	if didApplyPrimaryDamage then
-		local impacts, secondaryKills =
-			commitPatternImpacts(player, playerState, operativePosition, targetEntityId, shotId, nowTimestamp)
+		local impacts, secondaryKills = commitPatternImpacts(
+			player,
+			playerState,
+			operativePosition,
+			targetEntityId,
+			shotId,
+			nowTimestamp,
+			sustainedFireActive
+		)
 		secondaryImpacts = impacts
 		killCount += secondaryKills
 	end
@@ -697,6 +727,7 @@ local function applyLockedLoadout(player: Player, playerState: PlayerCombatState
 	table.clear(playerState.processedShotIds)
 	table.clear(playerState.sightedByEntityId)
 	setPlayerAttribute(player, "LK_EquippedWeaponId", assignment.weaponId)
+	RelicModifierService.resetSustainedShots(player)
 	OperativeCombatRuntimeService.publishAmmunitionState(player)
 end
 
@@ -710,6 +741,7 @@ local function evaluatePlayer(
 	reconcileMagazineCapacity(player, playerState)
 	if not OperativeLifeService.isCombatAllowed(player) then
 		discloseTarget(player, playerState, nil, nowTimestamp)
+		RelicModifierService.resetSustainedShots(player)
 		local restricted = OperativeLifeService.applyCombatRestrictions(player, playerState)
 		if restricted ~= nil then
 			playerStates[player] = restricted
@@ -731,13 +763,31 @@ local function evaluatePlayer(
 	local selectedTarget = WeaponTargetSelector.select(targetingState, candidates, playerState.selectedTargetEntityId)
 	local targetEntityId = if selectedTarget == nil then nil else selectedTarget.targetEntityId
 	discloseTarget(player, playerState, targetEntityId, nowTimestamp)
-	local fireResolution = AutomaticFireResolver.resolve({
-		entityId = playerState.operativeState.entityId,
-		combatStateId = playerState.operativeState.combatStateId,
-	}, selectedTarget, playerState.weaponState, nowTimestamp)
+	local sustainedFireActive = isSustainedFireActive(player, playerState)
+	local fireResolution = AutomaticFireResolver.resolve(
+		{
+			entityId = playerState.operativeState.entityId,
+			combatStateId = playerState.operativeState.combatStateId,
+		},
+		selectedTarget,
+		playerState.weaponState,
+		nowTimestamp,
+		nil,
+		if sustainedFireActive then RelicModifierService.read(player).sustainedFireCadenceMultiplier else nil
+	)
 	playerState.weaponState = fireResolution.weaponStateAfter
 	if fireResolution.decision.shouldFire then
-		resolveAcceptedShot(player, playerState, operativePosition, fireResolution.fireResult, nowTimestamp)
+		resolveAcceptedShot(
+			player,
+			playerState,
+			operativePosition,
+			fireResolution.fireResult,
+			nowTimestamp,
+			sustainedFireActive
+		)
+		if isAutomaticFirearm(playerState.weaponState.weaponId) then
+			RelicModifierService.recordSustainedShot(player)
+		end
 		OperativeCombatRuntimeService.publishAmmunitionState(player)
 	end
 end
@@ -820,6 +870,7 @@ local function onReloadIntent(player: Player, weaponId: unknown, ...: unknown)
 		return
 	end
 	playerState.lastRequestServerTimestamp = nowTimestamp
+	RelicModifierService.resetSustainedShots(player)
 	local resolution = ReloadResolver.begin(
 		playerState.operativeState,
 		playerState.weaponState,

@@ -116,6 +116,14 @@ function RunBuildService.readEquippedRelicIds(player: Player): RunBuildStateStor
 	return store:readEquippedRelicIds(operativeId(player))
 end
 
+function RunBuildService.readRelicCounter(player: Player, relicId: string): number?
+	return store:readRelicCounter(operativeId(player), relicId)
+end
+
+function RunBuildService.setRelicCounter(player: Player, relicId: string, value: number): boolean
+	return store:setRelicCounter(operativeId(player), relicId, value)
+end
+
 -- Server-only counted-relic advance for the authoritative effect owners.
 function RunBuildService.advanceRelicCounter(
 	player: Player,

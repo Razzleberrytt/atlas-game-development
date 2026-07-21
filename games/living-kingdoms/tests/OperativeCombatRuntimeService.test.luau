@@ -307,6 +307,10 @@ local neutralRelicModifiers = table.freeze({
 	shotgunPatternDamageMultiplier = 1,
 	sniperPatternDamageMultiplier = 1,
 	sniperSpecialEnemyDamageMultiplier = 1,
+	lootRoundsAdditiveBonus = 0,
+	sustainedFireShotThreshold = 0,
+	sustainedFireCadenceMultiplier = 1,
+	sustainedFireDamageMultiplier = 1,
 })
 
 -- Relic modifier adapter mock: no operative has a relic equipped, so every read
@@ -317,6 +321,11 @@ local relicModifierService = {
 	read = function()
 		return neutralRelicModifiers
 	end,
+	readSustainedShots = function()
+		return 0
+	end,
+	recordSustainedShot = function() end,
+	resetSustainedShots = function() end,
 	forget = function(player)
 		table.insert(relicForgetCalls, player)
 	end,

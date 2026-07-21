@@ -89,6 +89,15 @@ local SalvagersMark = table.freeze({
 	lootRoundsAdditiveBonus = 4,
 })
 
+-- Suppression Engine: once an automatic weapon has fired `shotThreshold` rounds
+-- without reloading, the remainder of that magazine fires faster and hits harder.
+-- Reloading, holstering a different weapon, or losing combat rights resets it.
+local SuppressionEngine = table.freeze({
+	shotThreshold = 6,
+	cadenceReduction = 0.15,
+	damageBonus = 0.2,
+})
+
 local RuntimeByRelicId = table.freeze({
 	[RelicIds.BloodBattery] = BloodBattery,
 	[RelicIds.GraveMomentum] = GraveMomentum,
@@ -99,6 +108,7 @@ local RuntimeByRelicId = table.freeze({
 	[RelicIds.BreachDoctrine] = BreachDoctrine,
 	[RelicIds.LongwatchDoctrine] = LongwatchDoctrine,
 	[RelicIds.SalvagersMark] = SalvagersMark,
+	[RelicIds.SuppressionEngine] = SuppressionEngine,
 })
 
 local FirstBatchRelicIds = table.freeze({
@@ -116,10 +126,11 @@ local SecondBatchRelicIds = table.freeze({
 	RelicIds.BreachDoctrine,
 	RelicIds.LongwatchDoctrine,
 	RelicIds.SalvagersMark,
+	RelicIds.SuppressionEngine,
 })
 
 local Config = {
-	Version = "RPG-0109-weapon-and-salvage-batch-tuning",
+	Version = "RPG-0109-weapon-batch-tuning",
 	BloodBattery = BloodBattery,
 	GraveMomentum = GraveMomentum,
 	ChoirBreaker = ChoirBreaker,
@@ -129,6 +140,7 @@ local Config = {
 	BreachDoctrine = BreachDoctrine,
 	LongwatchDoctrine = LongwatchDoctrine,
 	SalvagersMark = SalvagersMark,
+	SuppressionEngine = SuppressionEngine,
 	RuntimeByRelicId = RuntimeByRelicId,
 	FirstBatchRelicIds = FirstBatchRelicIds,
 	SecondBatchRelicIds = SecondBatchRelicIds,
@@ -231,6 +243,23 @@ assert(
 	"Salvager's Mark must grant whole positive rounds within the salvage ceiling"
 )
 
+assert(
+	isPositiveInteger(SuppressionEngine.shotThreshold) and SuppressionEngine.shotThreshold <= 12,
+	"Suppression Engine must ramp over a whole, reachable number of shots"
+)
+assert(
+	isFinite(SuppressionEngine.cadenceReduction)
+		and SuppressionEngine.cadenceReduction > 0
+		and 1 - SuppressionEngine.cadenceReduction >= Ceilings.minimumCadenceMultiplier,
+	"Suppression Engine cadence must be positive and preserve the cadence floor"
+)
+assert(
+	isFinite(SuppressionEngine.damageBonus)
+		and SuppressionEngine.damageBonus > 0
+		and 1 + SuppressionEngine.damageBonus <= Ceilings.maximumConditionalDamageMultiplier,
+	"Suppression Engine damage must be positive and within the conditional damage ceiling"
+)
+
 local runtimeRelicCount = 0
 for relicId in RuntimeByRelicId do
 	assert(RunRpgContracts.isKnownRelicId(relicId), "relic runtime tuning references an unknown relic")
@@ -241,6 +270,6 @@ assert(
 	"the runtime tuning map must cover exactly the implemented relic batches"
 )
 assert(#FirstBatchRelicIds == 6, "the RPG-0108 first batch contains six relics")
-assert(#SecondBatchRelicIds == 3, "the delivered RPG-0109 slices contain the weapon-pattern pair and Salvager's Mark")
+assert(#SecondBatchRelicIds == 4, "the delivered RPG-0109 slices contain the four weapon-facing relics")
 
 return table.freeze(Config)

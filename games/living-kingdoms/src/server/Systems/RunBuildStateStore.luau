@@ -72,6 +72,8 @@ export type Store = {
 		increment: number,
 		threshold: number
 	) -> RelicCounterAdvance?,
+	readRelicCounter: (self: Store, operativeId: string, relicId: string) -> number?,
+	setRelicCounter: (self: Store, operativeId: string, relicId: string, value: number) -> boolean,
 	commitUpgradeStacks: (
 		self: Store,
 		operationGeneration: number,
@@ -397,6 +399,51 @@ function RunBuildStateStore.new(): Store
 		})
 	end
 
+	-- Saturating ceiling for a stored relic counter. Counters express bounded
+	-- progress (kills, sustained shots), never an unbounded accumulator.
+	local MAXIMUM_RELIC_COUNTER_VALUE = 999
+
+	local function equippedSlot(operativeId: string, relicId: string): any?
+		if not started or type(relicId) ~= "string" then
+			return nil
+		end
+		local state = operativeStates[operativeId]
+		if state == nil then
+			return nil
+		end
+		for _, slot in state.relicSlots do
+			if slot.slotStateId == SlotStates.Equipped and slot.relicId == relicId then
+				return slot
+			end
+		end
+		return nil
+	end
+
+	-- Reads one equipped relic's stored counter, or `nil` when it is not equipped.
+	function store:readRelicCounter(operativeId: string, relicId: string): number?
+		local slot = equippedSlot(operativeId, relicId)
+		return if slot == nil then nil else slot.counterValue
+	end
+
+	--[[
+		Sets one equipped relic's counter directly, for saturating progress such as
+		Suppression Engine's sustained-shot count. The value is clamped to a whole
+		number inside the counter ceiling; a malformed value resets to zero rather
+		than storing garbage.
+	]]
+	function store:setRelicCounter(operativeId: string, relicId: string, value: number): boolean
+		local slot = equippedSlot(operativeId, relicId)
+		if slot == nil then
+			return false
+		end
+		if type(value) ~= "number" or value ~= value or value < 0 or value % 1 ~= 0 then
+			slot.counterValue = 0
+			return false
+		end
+		slot.counterValue = math.min(value, MAXIMUM_RELIC_COUNTER_VALUE)
+		return true
+	end
+
 	--[[
 		Server-only counted-relic advance. The equipped slot's canonical
 		counterValue is the only home for relic progress, and the pure resolver
@@ -411,24 +458,16 @@ function RunBuildStateStore.new(): Store
 		increment: number,
 		threshold: number
 	): RelicCounterAdvance?
-		if not started or type(relicId) ~= "string" then
+		local slot = equippedSlot(operativeId, relicId)
+		if slot == nil then
 			return nil
 		end
-		local state = operativeStates[operativeId]
-		if state == nil then
-			return nil
-		end
-		for _, slot in state.relicSlots do
-			if slot.slotStateId == SlotStates.Equipped and slot.relicId == relicId then
-				local advance = RelicModifierResolver.advanceCounter(slot.counterValue, increment, threshold)
-				slot.counterValue = advance.counterAfter
-				return table.freeze({
-					counterAfter = advance.counterAfter,
-					triggerCount = advance.triggerCount,
-				})
-			end
-		end
-		return nil
+		local advance = RelicModifierResolver.advanceCounter(slot.counterValue, increment, threshold)
+		slot.counterValue = advance.counterAfter
+		return table.freeze({
+			counterAfter = advance.counterAfter,
+			triggerCount = advance.triggerCount,
+		})
 	end
 
 	-- Shared entry validation for every operative-scoped request. Returns the
