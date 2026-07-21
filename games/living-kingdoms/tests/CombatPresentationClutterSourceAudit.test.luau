@@ -17,6 +17,8 @@ local harness = fs.readFile("games/living-kingdoms/src/server/Systems/AutomaticC
 local classSelection = fs.readFile("games/living-kingdoms/src/client/Controllers/ClassSelectionController.luau")
 local weaponSelection = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponSelectionController.luau")
 local hordeHud = fs.readFile("games/living-kingdoms/src/client/Controllers/HordeHUDController.luau")
+local massacre = fs.readFile("games/living-kingdoms/src/client/Controllers/MassacreCrescendoController.luau")
+local runBuildHud = fs.readFile("games/living-kingdoms/src/client/Controllers/RunBuildHUDController.luau")
 
 for _, source in { enemy, harness } do
 	assertThat(contains(source, "billboard.AlwaysOnTop = false"), "enemy labels must respect world occlusion")
@@ -35,5 +37,14 @@ assertThat(
 assertThat(contains(classSelection, "currentPanel.Visible = false"), "locked class picker must leave combat view")
 assertThat(contains(weaponSelection, "panel.Visible = false"), "locked loadout picker must leave combat view")
 assertThat(contains(hordeHud, "#Players:GetPlayers() > 1"), "solo play must not reserve a squad panel")
+assertThat(contains(hordeHud, "Enum.CoreGuiType.PlayerList"), "the duplicate Roblox player list must stay hidden")
+assertThat(contains(hordeHud, "overlay.BackgroundTransparency = 1"), "upgrade choices must not dim all combat")
+assertThat(contains(hordeHud, "UDim2.fromOffset(430, 330)"), "upgrade choices must remain a compact side card")
+assertThat(contains(hordeHud, "hasUpgradeChoices and not relicChoiceVisible"), "only one reward choice may show")
+assertThat(contains(massacre, "isBlockingChoiceVisible"), "crescendo must detect blocking choice UI")
+assertThat(contains(massacre, "not isBlockingChoiceVisible()"), "crescendo must yield while choices are visible")
+assertThat(contains(massacre, 'FindFirstChild("RelicReward")'), "crescendo must also yield to relic choices")
+assertThat(contains(runBuildHud, "UDim2.fromOffset(430, 300)"), "relic choices must remain a compact side card")
+assertThat(contains(runBuildHud, "Enum.FillDirection.Vertical"), "relic choices must stack without crossing the HUD")
 
 print("Combat presentation clutter and death-label lifecycle audit passed")

@@ -23,7 +23,7 @@ Snapshot as of 2026-07-20. Task-level detail and acceptance gates for unfinished
 | P3 — Health and life state | Complete | Server-owned Alive/Incapacitated/Dead, revive, solo recovery, squad failure. |
 | P4 — Darkness and navigation | Complete | Visibility/perception contracts, discovery memory, flashlight, squad ping. |
 | P5 — Enemy pressure | Complete | Production enemy lifecycle, fair spawns, pursuit, attacks, waves, roaming, production automatic combat. Live Studio pressure-loop playthrough remains the outstanding manual check (smoke test). |
-| P6 — Ammunition scarcity | In progress | `P6-0101`–`P6-0107` implementation and telemetry complete; `P6-0108` 1/2/4 evidence matrix deferred; `P6-0109` tuning/sign-off blocked on that evidence. |
+| P6 — Ammunition scarcity | In progress | `P6-0101`–`P6-0107` implementation and telemetry complete; the Studio startup blocker and 1/2/4 admission probes are complete; routed `P6-0108` balance evidence remains before `P6-0109` sign-off. |
 | P7 — MVP classes | Partially complete (bounded exception) | `P7-PLAN-001`, `P7-0101` contracts, and `P7-0102` selection/assignment complete under [`SEQUENCING-EXCEPTION-P6-P7.md`](SEQUENCING-EXCEPTION-P6-P7.md); all class-effect runtime (`P7-0103`+) blocked until P6 sign-off. |
 | P8 — Authored objectives | Not started | Fully planned; begins after P7. |
 | P9 — Special enemy and boss | Not started | Fully planned; begins after P8. |
@@ -254,7 +254,7 @@ Replace temporary firearm resources with server-owned finite ammunition, supply 
 - [x] **P6-0105 — Add authoritative ammunition HUD feedback.** Personal loaded/reserve state and collection grants presented without client ammunition authority.
 - [x] **P6-0106 — Add per-operative cache depletion feedback.** Consumed caches stop prompting only for the collecting operative; server-owned collection history stays authoritative.
 - [x] **P6-0107 — Add sampled scarcity telemetry and a Studio validation probe.** Conservation-derived accepted-shot accounting with read-only, Studio-only, scheduler-free snapshots of grants, cache use, minimums, dry transitions, and roster.
-- [~] **P6-0108 — Run the controlled 1/2/4-operative evidence matrix.** Comparable Studio playthroughs populating the scarcity evidence table. **Deferred** while the required Studio workflow is unavailable; no balance claim is permitted until populated.
+- [~] **P6-0108 — Run the controlled 1/2/4-operative evidence matrix.** Studio now boots and admits 1/2/4 operatives correctly; calculated balance projections and explicitly invalid stationary stress probes are recorded. Comparable routed/reload-capable playthroughs remain required, so no final balance claim is permitted yet.
 - [!] **P6-0109 — Tune scarcity from evidence and sign off P6.** Smallest evidence-supported configuration adjustments, re-runs, and locked final values. **Blocked** on the P6-0108 evidence matrix.
 
 ### P6 execution order

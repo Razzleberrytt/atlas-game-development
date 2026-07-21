@@ -219,6 +219,15 @@ local function scheduleTimers()
 	end)
 end
 
+local function armInsertionCountdown(serverTimestamp: number)
+	if phaseId ~= PhaseIds.Insertion or insertionDeadlineServerTimestamp ~= nil then
+		return
+	end
+	insertionDeadlineServerTimestamp = serverTimestamp + MissionConfig.InsertionHoldSeconds
+	scheduleTimers()
+	publish()
+end
+
 local function markObjectiveConsoleCompleted()
 	local prompt = objectivePrompt
 	if prompt ~= nil then
@@ -553,7 +562,10 @@ function Service.start()
 	extractionUnlocked = false
 	escalationLevel = 0
 	outcomeId = nil
-	insertionDeadlineServerTimestamp = startTimestamp + MissionConfig.InsertionHoldSeconds
+	-- Studio can boot an empty server several seconds before its first client is
+	-- connected. Do not spend the insertion window or freeze a zero-player roster
+	-- before an actual player exists.
+	insertionDeadlineServerTimestamp = nil
 	secondWaveDeadlineServerTimestamp = nil
 	holdoutDeadlineServerTimestamp = nil
 	objectiveCompletedAtServerTimestamp = nil
@@ -568,10 +580,14 @@ function Service.start()
 		end
 	end)
 	playerAddedConnection = Players.PlayerAdded:Connect(function(player)
+		armInsertionCountdown(now())
 		pcall(function()
 			stateRemote:FireClient(player, safeSnapshot())
 		end)
 	end)
+	if #Players:GetPlayers() > 0 then
+		armInsertionCountdown(startTimestamp)
+	end
 	heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
 		presenceAccumulatedSeconds += deltaTime
 		if presenceAccumulatedSeconds < MissionConfig.ExtractionPresenceIntervalSeconds then
@@ -582,7 +598,9 @@ function Service.start()
 			Service.evaluateExtractionPresenceAt(now())
 		end
 	end)
-	scheduleTimers()
+	if insertionDeadlineServerTimestamp ~= nil then
+		scheduleTimers()
+	end
 	publish()
 	print("[Living Kingdoms] Mission director started: " .. MissionConfig.OperationDisplayName)
 end

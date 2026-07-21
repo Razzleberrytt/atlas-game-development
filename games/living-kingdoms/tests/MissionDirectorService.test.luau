@@ -115,7 +115,13 @@ local taskMock = {
 local playersSignal = signal()
 local heartbeatSignal = signal()
 local failureSignal = signal()
-local playersMock = { PlayerAdded = playersSignal }
+local connectedPlayers = {}
+local playersMock = {
+	PlayerAdded = playersSignal,
+	GetPlayers = function()
+		return table.clone(connectedPlayers)
+	end,
+}
 local runServiceMock = { Heartbeat = heartbeatSignal }
 local stateRemote = {
 	FireAllClients = function(_, payload)
@@ -300,6 +306,8 @@ local function admit(player, operativeEntityId: string, lifeStateId: string?)
 		snapshot = { operativeEntityId = operativeEntityId, lifeStateId = lifeStateId or "Alive" },
 	}
 	table.insert(roster, operativeEntityId)
+	table.insert(connectedPlayers, player)
+	playersSignal:Fire(player)
 end
 
 local function disconnectOperative(operativeEntityId: string)
@@ -324,6 +332,7 @@ local function reset()
 	table.clear(lifeByPlayer)
 	table.clear(playerById)
 	table.clear(roster)
+	table.clear(connectedPlayers)
 	table.clear(admitted)
 	table.clear(broadcasts)
 	table.clear(directMessages)
@@ -380,8 +389,10 @@ assert(latestBroadcast().radio.lineId == "ProceedToObjective")
 assert(contracts.validateSafeMissionSnapshot(latestBroadcast()))
 
 -- New joiner receives the current snapshot directly.
+local directMessageCountBeforeLateJoin = #directMessages
 playersSignal:Fire(makePlayer(99))
-assert(#directMessages == 1 and directMessages[1].payload.phaseId == "Infiltration")
+assert(#directMessages == directMessageCountBeforeLateJoin + 1)
+assert(directMessages[#directMessages].payload.phaseId == "Infiltration")
 
 -- Objective validation chain.
 local ghost = makePlayer(3, consolePosition)
@@ -542,8 +553,11 @@ service.stop()
 
 -- Restart produces a fresh mission.
 now = 500
+table.clear(connectedPlayers)
 service.start()
 assert(service.read().revision == 1 and service.read().phaseId == "Insertion")
+assert(service.read().insertionDeadlineServerTimestamp == nil, "empty servers must not consume insertion")
+playersSignal:Fire(makePlayer(501, farPosition))
 assert(service.read().insertionDeadlineServerTimestamp == 500 + config.InsertionHoldSeconds)
 service.stop()
 
@@ -555,6 +569,10 @@ local serviceSource = fs.readFile("games/living-kingdoms/src/server/Systems/Miss
 local controllerSource = fs.readFile("games/living-kingdoms/src/client/Controllers/MissionController.luau")
 assert(string.find(project, '"MissionNetwork"', 1, true))
 assert(string.find(serverBootstrap, "MissionDirectorService.start()", 1, true))
+local _, missionStartCount = string.gsub(serverBootstrap, "MissionDirectorService.start%(%s*%)", "")
+local _, classStartCount = string.gsub(serverBootstrap, "ClassService.start%(%s*%)", "")
+assert(missionStartCount == 1, "mission director must start exactly once")
+assert(classStartCount == 1, "class service must start exactly once")
 assert(string.find(clientBootstrap, "MissionController.start()", 1, true))
 for _, prohibited in { "OnServerEvent", "FireServer", "InvokeServer", "RemoteFunction" } do
 	assert(

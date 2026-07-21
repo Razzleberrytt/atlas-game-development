@@ -379,7 +379,12 @@ local mission = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 		game = {
 			GetService = function(_, name)
 				if name == "Players" then
-					return { PlayerAdded = playersSignal }
+					return {
+						PlayerAdded = playersSignal,
+						GetPlayers = function()
+							return {}
+						end,
+					}
 				elseif name == "ReplicatedStorage" then
 					return missionReplicatedStorage
 				elseif name == "RunService" then
@@ -480,6 +485,7 @@ enemyDirector.start()
 mission.start()
 local alpha, alphaRoot = addOperative("operative.player:1", 1, -224, -208)
 local _bravo, bravoRoot = addOperative("operative.player:2", 2, -224, -200)
+playersSignal:Fire(alpha)
 
 assert(not enemyDirector.readPressureState().isPressureActive, "pressure must wait for infiltration")
 now = missionConfig.InsertionHoldSeconds
@@ -554,7 +560,8 @@ table.clear(damageCalls)
 now = 1000
 enemyDirector.start()
 mission.start()
-addOperative("operative.player:9", 9, -224, -208)
+local restartPlayer = addOperative("operative.player:9", 9, -224, -208)
+playersSignal:Fire(restartPlayer)
 now = 1000 + missionConfig.InsertionHoldSeconds
 mission.evaluateTimersAt(now)
 assert(enemyDirector.readPressureState().isPressureActive)

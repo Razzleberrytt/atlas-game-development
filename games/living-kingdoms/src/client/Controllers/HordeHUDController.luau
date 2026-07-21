@@ -9,6 +9,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
 local Workspace = game:GetService("Workspace")
 
 local Controller = {}
@@ -53,6 +54,8 @@ local extractionLabel: TextLabel? = nil
 local upgradeOverlay: Frame? = nil
 local upgradeTitle: TextLabel? = nil
 local upgradeContainer: Frame? = nil
+local playerListWasDisabled = false
+local hasUpgradeChoices = false
 
 local function addCorner(instance: GuiObject, radius: number)
 	local corner = Instance.new("UICorner")
@@ -274,10 +277,11 @@ local function renderUpgradeChoices(choices: { any })
 	end
 	clearUpgradeButtons()
 	if #choices == 0 then
+		hasUpgradeChoices = false
 		overlay.Visible = false
 		return
 	end
-	overlay.Visible = true
+	hasUpgradeChoices = true
 	if upgradeTitle ~= nil then
 		upgradeTitle.Text = "LEVEL UP  //  CHOOSE YOUR MUTATION"
 	end
@@ -288,13 +292,13 @@ local function renderUpgradeChoices(choices: { any })
 		local button = Instance.new("TextButton")
 		button.Name = "Choice" .. tostring(index)
 		button.LayoutOrder = index
-		button.Size = UDim2.new(1, -16, 0, 88)
+		button.Size = UDim2.new(1, -16, 0, 72)
 		button.BackgroundColor3 = Color3.fromRGB(24, 20, 23)
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = true
 		button.Font = Enum.Font.GothamBold
 		button.TextColor3 = Color3.fromRGB(244, 232, 215)
-		button.TextSize = 17
+		button.TextSize = 15
 		button.TextWrapped = true
 		button.Text = string.format(
 			"%s   [%d/%d]\n%s",
@@ -574,37 +578,37 @@ local function createPresentation()
 	local overlay = Instance.new("Frame")
 	overlay.Name = "UpgradeOverlay"
 	overlay.Size = UDim2.fromScale(1, 1)
-	overlay.BackgroundColor3 = Color3.fromRGB(3, 2, 4)
-	overlay.BackgroundTransparency = 0.22
+	overlay.BackgroundTransparency = 1
 	overlay.BorderSizePixel = 0
 	overlay.Visible = false
-	overlay.ZIndex = 100
+	overlay.ZIndex = 20
 	overlay.Parent = gui
 	upgradeOverlay = overlay
 	local modal = createPanel(
 		overlay,
 		"UpgradeModal",
-		UDim2.fromScale(0.5, 0.5),
-		UDim2.fromOffset(620, 390),
-		Vector2.new(0.5, 0.5)
+		UDim2.new(1, -18, 0.5, -36),
+		UDim2.fromOffset(430, 330),
+		Vector2.new(1, 0.5)
 	)
-	modal.ZIndex = 101
+	modal.BackgroundTransparency = 0.04
+	modal.ZIndex = 21
 	upgradeTitle = createLabel(
 		modal,
 		"Title",
 		UDim2.fromOffset(18, 12),
 		UDim2.new(1, -36, 0, 42),
-		22,
+		19,
 		Enum.Font.GothamBlack,
 		Enum.TextXAlignment.Center
 	)
-	upgradeTitle.ZIndex = 102
+	upgradeTitle.ZIndex = 22
 	local container = Instance.new("Frame")
 	container.Name = "Choices"
 	container.Position = UDim2.fromOffset(12, 65)
 	container.Size = UDim2.new(1, -24, 1, -78)
 	container.BackgroundTransparency = 1
-	container.ZIndex = 102
+	container.ZIndex = 22
 	container.Parent = modal
 	local layout = Instance.new("UIListLayout")
 	layout.Padding = UDim.new(0, 10)
@@ -623,6 +627,14 @@ local function updateFrame()
 	updateLifePresentation()
 	updateCombatPresentation(serverTimestamp)
 	updateSquadPresentation()
+	local overlay = upgradeOverlay
+	if overlay ~= nil then
+		local playerGui = localPlayer:FindFirstChildOfClass("PlayerGui")
+		local runBuildHud = if playerGui == nil then nil else playerGui:FindFirstChild("LK_RunBuildHUD")
+		local relicReward = if runBuildHud == nil then nil else runBuildHud:FindFirstChild("RelicReward")
+		local relicChoiceVisible = relicReward ~= nil and relicReward:IsA("GuiObject") and relicReward.Visible
+		overlay.Visible = hasUpgradeChoices and not relicChoiceVisible
+	end
 	if eventLabel ~= nil and eventLabel.Visible and serverTimestamp > eventVisibleUntil then
 		eventLabel.Visible = false
 	end
@@ -633,6 +645,12 @@ function Controller.start()
 		return
 	end
 	started = true
+	-- The production squad panel already provides the useful roster facts. The
+	-- default leaderboard duplicates it and obscures the right side at four
+	-- players, so keep the gameplay surface clear.
+	playerListWasDisabled = pcall(function()
+		StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
+	end)
 	createPresentation()
 	table.insert(connections, stateRemote.OnClientEvent:Connect(onState))
 	table.insert(connections, progressionStateRemote.OnClientEvent:Connect(onProgressionState))
@@ -662,11 +680,18 @@ function Controller.stop()
 		screenGui:Destroy()
 		screenGui = nil
 	end
+	if playerListWasDisabled then
+		pcall(function()
+			StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, true)
+		end)
+		playerListWasDisabled = false
+	end
 	lastRevision = -1
 	lastProgressionRevision = -1
 	lastEventSequence = -1
 	lastProgressionGainSequence = -1
 	lastSelectionSequence = -1
+	hasUpgradeChoices = false
 end
 
 return Controller

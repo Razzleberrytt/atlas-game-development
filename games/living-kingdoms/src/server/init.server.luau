@@ -250,7 +250,5 @@ AmmunitionScarcityValidationProbeService.start()
 MissionDirectorService.start()
 ClassService.start()
 WeaponLoadoutService.start()
-MissionDirectorService.start()
-ClassService.start()
 
 print("[Living Kingdoms] Server bootstrap started")
