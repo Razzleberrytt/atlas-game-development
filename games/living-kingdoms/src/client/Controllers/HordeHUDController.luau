@@ -252,6 +252,10 @@ local function updateSquadPresentation()
 	end
 	if squadLabel ~= nil then
 		squadLabel.Text = table.concat(lines, "\n")
+		local squadPanel = squadLabel.Parent
+		if squadPanel ~= nil and squadPanel:IsA("GuiObject") then
+			squadPanel.Visible = #Players:GetPlayers() > 1
+		end
 	end
 end
 
@@ -410,7 +414,7 @@ local function createPresentation()
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 	local objectivePanel =
-		createPanel(gui, "ObjectivePanel", UDim2.new(0.5, 0, 0, 18), UDim2.fromOffset(720, 74), Vector2.new(0.5, 0))
+		createPanel(gui, "ObjectivePanel", UDim2.new(0.5, 0, 0, 14), UDim2.fromOffset(560, 62), Vector2.new(0.5, 0))
 	objectiveLabel = createLabel(
 		objectivePanel,
 		"Objective",
@@ -423,16 +427,16 @@ local function createPresentation()
 	radioLabel = createLabel(
 		objectivePanel,
 		"Radio",
-		UDim2.fromOffset(18, 38),
-		UDim2.new(1, -36, 0, 26),
-		14,
+		UDim2.fromOffset(18, 34),
+		UDim2.new(1, -36, 0, 20),
+		12,
 		Enum.Font.GothamMedium,
 		Enum.TextXAlignment.Center
 	)
 	radioLabel.TextColor3 = Color3.fromRGB(199, 182, 148)
 
 	local threatPanel =
-		createPanel(gui, "ThreatPanel", UDim2.new(0.5, 0, 0, 100), UDim2.fromOffset(520, 55), Vector2.new(0.5, 0))
+		createPanel(gui, "ThreatPanel", UDim2.new(0.5, 0, 0, 82), UDim2.fromOffset(440, 45), Vector2.new(0.5, 0))
 	threatLabel = createLabel(
 		threatPanel,
 		"Threat",
@@ -451,12 +455,12 @@ local function createPresentation()
 		Enum.Font.GothamBold,
 		Enum.TextXAlignment.Right
 	)
-	local _, createdThreatFill = createBar(threatPanel, "ThreatBar", UDim2.fromOffset(14, 34), UDim2.new(1, -28, 0, 10))
+	local _, createdThreatFill = createBar(threatPanel, "ThreatBar", UDim2.fromOffset(14, 31), UDim2.new(1, -28, 0, 7))
 	createdThreatFill.BackgroundColor3 = Color3.fromRGB(207, 50, 43)
 	threatFill = createdThreatFill
 
 	local lifePanel =
-		createPanel(gui, "LifePanel", UDim2.new(0, 20, 1, -22), UDim2.fromOffset(330, 126), Vector2.new(0, 1))
+		createPanel(gui, "LifePanel", UDim2.new(0, 16, 1, -16), UDim2.fromOffset(280, 108), Vector2.new(0, 1))
 	lifeStateLabel = createLabel(
 		lifePanel,
 		"LifeState",
@@ -495,12 +499,12 @@ local function createPresentation()
 		Enum.Font.GothamMedium,
 		Enum.TextXAlignment.Right
 	)
-	local _, createdXpFill = createBar(lifePanel, "XPBar", UDim2.fromOffset(14, 107), UDim2.new(1, -28, 0, 7))
+	local _, createdXpFill = createBar(lifePanel, "XPBar", UDim2.fromOffset(14, 98), UDim2.new(1, -28, 0, 5))
 	createdXpFill.BackgroundColor3 = Color3.fromRGB(231, 173, 57)
 	xpFill = createdXpFill
 
 	local ammoPanel =
-		createPanel(gui, "AmmoPanel", UDim2.new(1, -20, 1, -22), UDim2.fromOffset(265, 106), Vector2.new(1, 1))
+		createPanel(gui, "AmmoPanel", UDim2.new(1, -16, 1, -16), UDim2.fromOffset(240, 90), Vector2.new(1, 1))
 	ammoLabel = createLabel(
 		ammoPanel,
 		"Ammo",
@@ -513,7 +517,7 @@ local function createPresentation()
 	combatStatusLabel = createLabel(
 		ammoPanel,
 		"CombatStatus",
-		UDim2.fromOffset(14, 76),
+		UDim2.fromOffset(14, 64),
 		UDim2.new(1, -28, 0, 22),
 		13,
 		Enum.Font.GothamBold,

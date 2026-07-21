@@ -92,8 +92,9 @@ local function updatePresentation()
 			button.Visible = true
 		end
 	else
-		currentPanel.Visible = true
-		status.Text = "SPECIALIST LOCKED: " .. selectedName
+		-- The combat HUD already owns the persistent run state. Once insertion
+		-- locks, this temporary choice surface has completed its job.
+		currentPanel.Visible = false
 		for _, button in buttonsByClassId do
 			button.Visible = false
 		end

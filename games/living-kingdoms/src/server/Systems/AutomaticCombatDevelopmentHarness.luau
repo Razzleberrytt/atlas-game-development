@@ -199,7 +199,11 @@ function AutomaticCombatDevelopmentHarness.readDevelopmentCombatState(player: Pl
 end
 
 local function setFixtureHealthPresentation(fixture: HostileFixture)
-	fixture.healthLabel.Text = string.format("%s\nHealth: %d", fixture.model.Name, fixture.healthState.currentHealth)
+	local billboard = fixture.healthLabel.Parent
+	if billboard ~= nil and billboard:IsA("BillboardGui") then
+		billboard.Enabled = fixture.isAlive
+	end
+	fixture.healthLabel.Text = string.format("%s  •  %d HP", fixture.model.Name, fixture.healthState.currentHealth)
 	fixture.root.Color = if fixture.isAlive then Color3.fromRGB(172, 52, 52) else Color3.fromRGB(74, 74, 74)
 end
 
@@ -219,20 +223,22 @@ local function createHostileFixture(parent: Folder, definition): HostileFixture
 
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "FixtureLabel"
-	billboard.AlwaysOnTop = true
-	billboard.Size = UDim2.fromOffset(220, 54)
-	billboard.StudsOffset = Vector3.new(0, 4.5, 0)
+	billboard.AlwaysOnTop = false
+	billboard.Size = UDim2.fromOffset(168, 26)
+	billboard.StudsOffset = Vector3.new(0, 4, 0)
+	billboard.MaxDistance = 70
 	billboard.Parent = root
 
 	local label = Instance.new("TextLabel")
 	label.Name = "Health"
 	label.BackgroundColor3 = Color3.fromRGB(24, 24, 28)
-	label.BackgroundTransparency = 0.2
+	label.BackgroundTransparency = 0.42
 	label.BorderSizePixel = 0
 	label.Size = UDim2.fromScale(1, 1)
 	label.Font = Enum.Font.GothamMedium
 	label.TextColor3 = Color3.fromRGB(255, 255, 255)
-	label.TextScaled = true
+	label.TextSize = 12
+	label.TextTruncate = Enum.TextTruncate.AtEnd
 	label.Parent = billboard
 
 	model.Parent = parent
