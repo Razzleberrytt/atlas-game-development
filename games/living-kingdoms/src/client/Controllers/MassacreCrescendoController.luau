@@ -43,6 +43,18 @@ local visibleAlpha = 0
 local lastPulseClock = -math.huge
 local lastStingerClock = -math.huge
 
+local function isBlockingChoiceVisible(): boolean
+	local playerGui = localPlayer:FindFirstChildOfClass("PlayerGui")
+	local hordeHud = if playerGui == nil then nil else playerGui:FindFirstChild("LivingKingdomsHordeHUD")
+	local upgradeOverlay = if hordeHud == nil then nil else hordeHud:FindFirstChild("UpgradeOverlay")
+	if upgradeOverlay ~= nil and upgradeOverlay:IsA("GuiObject") and upgradeOverlay.Visible then
+		return true
+	end
+	local runBuildHud = if playerGui == nil then nil else playerGui:FindFirstChild("LK_RunBuildHUD")
+	local relicReward = if runBuildHud == nil then nil else runBuildHud:FindFirstChild("RelicReward")
+	return relicReward ~= nil and relicReward:IsA("GuiObject") and relicReward.Visible
+end
+
 local function colorFromTuple(tuple: { number }): Color3
 	return Color3.fromRGB(tuple[1], tuple[2], tuple[3])
 end
@@ -240,7 +252,10 @@ local function updatePresentation(deltaTime: number)
 	local tier = MassacreCrescendoConfig.tierForStreak(currentStreak)
 	local remainingFraction =
 		math.clamp((streakExpiresServerTimestamp - serverTimestamp) / MassacreCrescendoConfig.StreakWindowSeconds, 0, 1)
-	local shouldShow = tier ~= nil and remainingFraction > 0
+	-- A progression choice needs an unobstructed reading and input surface. The
+	-- crescendo remains time-correct while hidden and can resume if its streak
+	-- window is still active after the choice closes.
+	local shouldShow = tier ~= nil and remainingFraction > 0 and not isBlockingChoiceVisible()
 	local alphaStep = deltaTime / MassacreCrescendoConfig.FadeDurationSeconds
 	visibleAlpha = math.clamp(visibleAlpha + (if shouldShow then alphaStep else -alphaStep), 0, 1)
 	createdGroup.Visible = visibleAlpha > 0.001

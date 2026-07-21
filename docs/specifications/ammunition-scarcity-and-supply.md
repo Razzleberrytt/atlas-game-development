@@ -135,6 +135,41 @@ Create one row for every captured run. Add per-operative detail beneath the row 
 | P6-2P-01 |  | 2 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | P6-4P-01 |  | 4 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 
+### 2026-07-21 calculated and unattended Studio evidence
+
+These rows are deliberately separated from the controlled matrix above. They
+unblocked the local Studio workflow and verified 1/2/4-operative admission,
+but stationary unattended clients neither travel to caches nor issue reload
+intent. They are stress/integration probes, not competent-route balance runs.
+
+| Probe | Operatives | Observed integration result | Ammunition snapshot | Classification |
+| --- | ---: | --- | --- | --- |
+| P6-AUTO-1P-01 | 1 | One operative admitted; insertion advanced to the live objective instead of resolving an empty roster. | After a late sampling reset: loaded `19 → 0`, reserve `48`, 3 opportunities remained, no dry transition. | Invalid for balance comparison; stationary/no reload/no route. |
+| P6-AUTO-2P-01 | 2 | Both operatives admitted Alive and the operation remained active. | Loaded `0 + 0`, reserve `48 + 48`, 6 opportunities remained, no dry transition. | Invalid for balance comparison; snapshot began after magazine expenditure. |
+| P6-AUTO-4P-01 | 4 | All four operatives admitted Alive with the shared objective and stable squad disclosure. | Aggregate loaded `1`, reserve `192`, 12 opportunities remained, no dry transition. | Invalid for balance comparison; stationary/no reload/no route. |
+
+The same configuration was also evaluated with a transparent demand/supply
+projection. It assumes 45-health hostiles; representative per-operative kill
+loads of 60/38/26 for 1/2/4 operatives; weapon-specific accuracy and bounded
+multi-target effectiveness; all three authored caches; and the configured
+expected enemy-ammunition recovery of `0.76` rounds per kill. A negative margin
+means the modeled shots exceed initial ammunition, cache grants, and expected
+loot combined.
+
+| Operatives | LMG margin | Shotgun margin | Sniper margin | Pistol margin | SMG margin |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | -95 | +31 | +14 | -61 | -275 |
+| 2 | +1 | +36 | +19 | +2 | -109 |
+| 4 | +53 | +40 | +22 | +37 | -18 |
+
+Perceived result: the current roster is not uniformly balanced under a
+kill-heavy route. Shotgun and sniper retain recovery margin; solo LMG/pistol
+and all tested SMG squad sizes are projected to starve, while duo LMG/pistol
+sit on effectively zero margin. This is a high-value hypothesis for the next
+controlled run, not authority to tune: the operation permits evasion, actual
+accuracy and multi-target hits vary, and no comparable routed run has yet
+measured cache access or successful completion.
+
 Recommended minimum before tuning:
 
 - at least two comparable valid one-operative runs;
@@ -189,7 +224,7 @@ P6 may be marked complete only when:
 
 ## Remaining P6 work
 
-1. Complete and record the controlled one-, two-, and four-operative Studio evidence matrix (`P6-0108`).
+1. Complete and record routed, reload-capable one-, two-, and four-operative Studio evidence (`P6-0108`); startup/admission and unattended stress probes are now complete.
 2. Repair only telemetry, presentation, collection, or integration defects exposed by those runs.
 3. Adjust prototype values only when repeated evidence distinguishes oversupply from unavoidable starvation (`P6-0109`).
 4. Revalidate the affected scenarios and close P6 with documented security, regression, and balance findings.

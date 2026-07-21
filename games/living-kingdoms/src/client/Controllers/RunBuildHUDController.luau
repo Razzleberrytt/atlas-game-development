@@ -160,9 +160,9 @@ local function createGui()
 	-- Reward panel: the two server-authored choices.
 	local panel = Instance.new("Frame")
 	panel.Name = "RelicReward"
-	panel.AnchorPoint = Vector2.new(0.5, 0.5)
-	panel.Position = UDim2.fromScale(0.5, 0.3)
-	panel.Size = UDim2.fromOffset(640, 232)
+	panel.AnchorPoint = Vector2.new(1, 0.5)
+	panel.Position = UDim2.new(1, -18, 0.5, -36)
+	panel.Size = UDim2.fromOffset(430, 300)
 	panel.BackgroundColor3 = Color3.fromRGB(13, 16, 17)
 	panel.BackgroundTransparency = 0.04
 	panel.BorderSizePixel = 0
@@ -200,13 +200,13 @@ local function createGui()
 
 	local choiceRow = Instance.new("Frame")
 	choiceRow.Name = "Choices"
-	choiceRow.Position = UDim2.fromOffset(22, 76)
-	choiceRow.Size = UDim2.new(1, -44, 0, 138)
+	choiceRow.Position = UDim2.fromOffset(22, 72)
+	choiceRow.Size = UDim2.new(1, -44, 1, -88)
 	choiceRow.BackgroundTransparency = 1
 	choiceRow.Parent = panel
 
 	local choiceLayout = Instance.new("UIListLayout")
-	choiceLayout.FillDirection = Enum.FillDirection.Horizontal
+	choiceLayout.FillDirection = Enum.FillDirection.Vertical
 	choiceLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	choiceLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 	choiceLayout.Padding = UDim.new(0, 12)
@@ -216,7 +216,7 @@ local function createGui()
 	for choiceIndex = 1, CHOICE_COUNT do
 		local button = makeButton(choiceRow, "Choice" .. tostring(choiceIndex))
 		button.LayoutOrder = choiceIndex
-		button.Size = UDim2.fromOffset(288, 138)
+		button.Size = UDim2.new(1, 0, 0, 96)
 		addStroke(button, Color3.fromRGB(185, 133, 45), 0.35, 1)
 		choiceButtons[choiceIndex] = button
 	end
