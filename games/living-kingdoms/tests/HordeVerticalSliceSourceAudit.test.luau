@@ -164,6 +164,9 @@ for _, required in
 		"progressionReadStateRemote:InvokeServer()",
 		"progressionStateRemote.OnClientEvent",
 		"pendingChoices",
+		"choice.statPreview",
+		"snapshot.runStats",
+		"CHOOSE A FIELD UPGRADE",
 		"LK_P3_CurrentHealth",
 		"LK_HUD_LoadedRounds",
 		"LK_HUD_Objective",
@@ -174,6 +177,7 @@ do
 end
 assertThat(not contains(hud, "streakLabel"), "the unified HUD must not retain a duplicate streak presentation owner")
 assertThat(not contains(hud, "MASSACRE x%d"), "the legacy static streak label must stay removed")
+assertThat(not contains(hud, "CHOOSE YOUR MUTATION"), "player-facing upgrades must use the Field Upgrade vocabulary")
 
 for _, required in
 	{

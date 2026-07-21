@@ -84,7 +84,7 @@ local function createChoicePanel(gui: ScreenGui)
 	local title = makeTextLabel(panel, "Title")
 	title.Position = UDim2.fromOffset(24, 15)
 	title.Size = UDim2.new(1, -48, 0, 34)
-	title.Text = "FIELD LEVEL UP — CHOOSE A SQUAD UPGRADE"
+	title.Text = "FIELD LEVEL UP — CHOOSE A FIELD UPGRADE"
 	title.TextColor3 = Color3.fromRGB(255, 207, 90)
 
 	local subtitle = makeTextLabel(panel, "Subtitle")
@@ -242,12 +242,14 @@ local function updateChoicePanel(pendingChoices: unknown)
 		local id = choice.id
 		local name = choice.name
 		local description = choice.description
+		local statPreview = choice.statPreview
 		local stacks = choice.stacks
 		local maximumStacks = choice.maximumStacks
 		if
 			type(id) ~= "string"
 			or type(name) ~= "string"
 			or type(description) ~= "string"
+			or type(statPreview) ~= "string"
 			or not isFiniteNumber(stacks)
 			or not isFiniteNumber(maximumStacks)
 		then
@@ -259,8 +261,15 @@ local function updateChoicePanel(pendingChoices: unknown)
 		end
 		validChoiceCount += 1
 		buttonUpgradeIds[index] = id
-		button.Text =
-			string.format("%s\n\n%s\n\nSTACK %d → %d / %d", name, description, stacks, stacks + 1, maximumStacks)
+		button.Text = string.format(
+			"%s\n\n%s\n%s\n\nSTACK %d → %d / %d",
+			name,
+			statPreview,
+			description,
+			stacks,
+			stacks + 1,
+			maximumStacks
+		)
 		button.Visible = true
 	end
 	panel.Visible = validChoiceCount > 0
@@ -315,7 +324,7 @@ local function applySnapshot(snapshot: unknown)
 	updateChoicePanel(snapshot.pendingChoices)
 	if selectionSequence > lastSelectionSequence and lastSelectedUpgradeName ~= "" then
 		lastSelectionSequence = selectionSequence
-		showGain(string.format("SQUAD UPGRADE: %s  •  STACK %d", lastSelectedUpgradeName, lastSelectedUpgradeStack))
+		showGain(string.format("FIELD UPGRADE: %s  •  STACK %d", lastSelectedUpgradeName, lastSelectedUpgradeStack))
 	elseif gainSequence > lastGainSequence and gainAmount > 0 then
 		lastGainSequence = gainSequence
 		showGain(

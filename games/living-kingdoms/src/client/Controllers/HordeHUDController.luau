@@ -46,6 +46,8 @@ local lifeStateLabel: TextLabel? = nil
 local xpText: TextLabel? = nil
 local xpFill: Frame? = nil
 local levelLabel: TextLabel? = nil
+local runStatsPrimaryLabel: TextLabel? = nil
+local runStatsSecondaryLabel: TextLabel? = nil
 local ammoLabel: TextLabel? = nil
 local combatStatusLabel: TextLabel? = nil
 local squadLabel: TextLabel? = nil
@@ -312,7 +314,7 @@ local function renderUpgradeChoices(choices: { any })
 	end
 	hasUpgradeChoices = true
 	if upgradeTitle ~= nil then
-		upgradeTitle.Text = "LEVEL UP  //  CHOOSE YOUR MUTATION"
+		upgradeTitle.Text = "FIELD LEVEL UP  //  CHOOSE A FIELD UPGRADE"
 	end
 	for index, choice in choices do
 		if type(choice) ~= "table" or type(choice.id) ~= "string" then
@@ -327,13 +329,16 @@ local function renderUpgradeChoices(choices: { any })
 		button.AutoButtonColor = true
 		button.Font = Enum.Font.GothamBold
 		button.TextColor3 = Color3.fromRGB(244, 232, 215)
-		button.TextSize = 15
+		button.TextSize = 13
 		button.TextWrapped = true
+		button.RichText = true
+		local statPreview = if type(choice.statPreview) == "string" then choice.statPreview else "RUN POWER INCREASE"
 		button.Text = string.format(
-			"%s   [%d/%d]\n%s",
+			'<b>%s</b>   <font color="#C7A85F">[%d/%d]</font>\n<font color="#F2C65D">%s</font>\n<font color="#C5CBC5">%s</font>',
 			string.upper(tostring(choice.name or choice.id)),
 			tonumber(choice.stacks) or 0,
 			tonumber(choice.maximumStacks) or 1,
+			statPreview,
 			tostring(choice.description or "")
 		)
 		button.Parent = container
@@ -408,6 +413,29 @@ local function applyProgressionState(snapshot: any)
 	end
 	setBar(xpFill, if xpForNext <= 0 then 1 else xp / xpForNext)
 
+	local runStats = snapshot.runStats
+	if type(runStats) == "table" then
+		local damageBonus = tonumber(runStats.damageBonusPercent) or 0
+		local fireRateBonus = tonumber(runStats.fireRateBonusPercent) or 0
+		local damageReduction = tonumber(runStats.damageReductionPercent) or 0
+		local reloadBonus = tonumber(runStats.reloadSpeedBonusPercent) or 0
+		local ammoSave = tonumber(runStats.ammoConservationPercent) or 0
+		local xpBonus = tonumber(runStats.xpBonusPercent) or 0
+		if runStatsPrimaryLabel ~= nil then
+			runStatsPrimaryLabel.Text =
+				string.format("DMG +%d%%   RATE +%d%%   MIT %d%%", damageBonus, fireRateBonus, damageReduction)
+		end
+		if runStatsSecondaryLabel ~= nil then
+			runStatsSecondaryLabel.Text = string.format(
+				"RELOAD +%d%%   SAVE %d%%   XP +%d%%   KILLS %d",
+				reloadBonus,
+				ammoSave,
+				xpBonus,
+				tonumber(snapshot.squadKills) or 0
+			)
+		end
+	end
+
 	local selectionSequence = tonumber(snapshot.selectionSequence) or 0
 	local selectedName = if type(snapshot.lastSelectedUpgradeName) == "string"
 		then snapshot.lastSelectedUpgradeName
@@ -415,7 +443,7 @@ local function applyProgressionState(snapshot: any)
 	local gainSequence = tonumber(snapshot.lastGainSequence) or 0
 	if selectionSequence > lastSelectionSequence and selectedName ~= "" then
 		lastSelectionSequence = selectionSequence
-		showEvent(string.format("SQUAD UPGRADE  //  %s", string.upper(selectedName)), Color3.fromRGB(247, 198, 79))
+		showEvent(string.format("FIELD UPGRADE  //  %s", string.upper(selectedName)), Color3.fromRGB(247, 198, 79))
 	elseif gainSequence > lastProgressionGainSequence then
 		lastProgressionGainSequence = gainSequence
 	end
@@ -489,7 +517,7 @@ local function createPresentation()
 	threatFill = createdThreatFill
 
 	local lifePanel =
-		createPanel(gui, "LifePanel", UDim2.new(0, 16, 1, -16), UDim2.fromOffset(260, 104), Vector2.new(0, 1))
+		createPanel(gui, "LifePanel", UDim2.new(0, 16, 1, -16), UDim2.fromOffset(274, 142), Vector2.new(0, 1))
 	lifeStateLabel = createLabel(
 		lifePanel,
 		"LifeState",
@@ -531,6 +559,26 @@ local function createPresentation()
 	local _, createdXpFill = createBar(lifePanel, "XPBar", UDim2.fromOffset(14, 98), UDim2.new(1, -28, 0, 5))
 	createdXpFill.BackgroundColor3 = Color3.fromRGB(231, 173, 57)
 	xpFill = createdXpFill
+	runStatsPrimaryLabel = createLabel(
+		lifePanel,
+		"RunStatsPrimary",
+		UDim2.fromOffset(14, 108),
+		UDim2.new(1, -28, 0, 14),
+		10,
+		Enum.Font.Code,
+		Enum.TextXAlignment.Left
+	)
+	runStatsPrimaryLabel.TextColor3 = COLORS.gold
+	runStatsSecondaryLabel = createLabel(
+		lifePanel,
+		"RunStatsSecondary",
+		UDim2.fromOffset(14, 123),
+		UDim2.new(1, -28, 0, 14),
+		9,
+		Enum.Font.Code,
+		Enum.TextXAlignment.Left
+	)
+	runStatsSecondaryLabel.TextColor3 = COLORS.muted
 
 	local ammoPanel =
 		createPanel(gui, "AmmoPanel", UDim2.new(1, -16, 1, -16), UDim2.fromOffset(224, 84), Vector2.new(1, 1))
@@ -717,6 +765,8 @@ function Controller.stop()
 	lastProgressionGainSequence = -1
 	lastSelectionSequence = -1
 	hasUpgradeChoices = false
+	runStatsPrimaryLabel = nil
+	runStatsSecondaryLabel = nil
 end
 
 return Controller

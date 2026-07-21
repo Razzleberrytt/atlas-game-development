@@ -41,6 +41,7 @@ export type PublicUpgradeChoice = {
 	id: string,
 	name: string,
 	description: string,
+	statPreview: string,
 	stacks: number,
 	maximumStacks: number,
 }
@@ -49,6 +50,15 @@ export type PublicActiveUpgrade = {
 	id: string,
 	name: string,
 	stacks: number,
+}
+
+export type PublicRunStats = {
+	damageBonusPercent: number,
+	fireRateBonusPercent: number,
+	ammoConservationPercent: number,
+	damageReductionPercent: number,
+	reloadSpeedBonusPercent: number,
+	xpBonusPercent: number,
 }
 
 export type SafeRunProgressionSnapshot = {
@@ -64,6 +74,7 @@ export type SafeRunProgressionSnapshot = {
 	levelsGainedLastAward: number,
 	pendingChoices: { PublicUpgradeChoice },
 	activeUpgrades: { PublicActiveUpgrade },
+	runStats: PublicRunStats,
 	unclaimedUpgradeChoices: number,
 	selectionSequence: number,
 	lastSelectedUpgradeId: string,
@@ -111,6 +122,111 @@ local function readUpgradeStacks(): RunUpgradeResolver.UpgradeStacks
 	return RunBuildService.readSquadUpgradeStacks()
 end
 
+local function roundedPercent(value: number): number
+	return math.floor(value * 100 + 0.5)
+end
+
+local function bonusPercent(multiplier: number): number
+	return roundedPercent(math.max(0, multiplier - 1))
+end
+
+local function reductionPercent(multiplier: number): number
+	return roundedPercent(math.max(0, 1 - multiplier))
+end
+
+local function choiceStatPreview(definition: any, stacks: RunUpgradeResolver.UpgradeStacks): string
+	local stacksAfter = table.clone(stacks)
+	stacksAfter[definition.Id] = (stacksAfter[definition.Id] or 0) + 1
+	local before = RunUpgradeResolver.deriveCombatModifiers(stacks)
+	local after = RunUpgradeResolver.deriveCombatModifiers(stacksAfter)
+	if definition.DamageMultiplierPerStack ~= nil then
+		return string.format(
+			"FIREARM DAMAGE  %d%% → %d%%",
+			roundedPercent(before.damageMultiplier),
+			roundedPercent(after.damageMultiplier)
+		)
+	elseif definition.CadenceReductionPerStack ~= nil then
+		return string.format(
+			"SHOT DELAY  %d%% → %d%%",
+			roundedPercent(before.cadenceMultiplier),
+			roundedPercent(after.cadenceMultiplier)
+		)
+	elseif definition.AmmoConservationChancePerStack ~= nil then
+		return string.format(
+			"AMMO SAVED  %d%% → %d%%",
+			roundedPercent(before.ammoConservationChance),
+			roundedPercent(after.ammoConservationChance)
+		)
+	elseif definition.CullDamageMultiplierPerStack ~= nil then
+		return string.format(
+			"EXECUTE DAMAGE  %d%% → %d%%",
+			roundedPercent(before.cullDamageMultiplier),
+			roundedPercent(after.cullDamageMultiplier)
+		)
+	elseif definition.IncomingDamageReductionPerStack ~= nil then
+		return string.format(
+			"DAMAGE REDUCTION  %d%% → %d%%",
+			reductionPercent(before.incomingDamageMultiplier),
+			reductionPercent(after.incomingDamageMultiplier)
+		)
+	elseif definition.XpGainMultiplierPerStack ~= nil then
+		return string.format(
+			"FIELD XP  %d%% → %d%%",
+			roundedPercent(before.xpGainMultiplier),
+			roundedPercent(after.xpGainMultiplier)
+		)
+	elseif definition.ReloadDurationReductionPerStack ~= nil then
+		return string.format(
+			"RELOAD TIME  %d%% → %d%%",
+			roundedPercent(before.reloadDurationMultiplier),
+			roundedPercent(after.reloadDurationMultiplier)
+		)
+	elseif definition.PatternDamageMultiplierPerStack ~= nil then
+		return string.format(
+			"CLEAVE / PIERCE  %d%% → %d%%",
+			roundedPercent(before.patternDamageMultiplier),
+			roundedPercent(after.patternDamageMultiplier)
+		)
+	elseif definition.SpecialEnemyDamageMultiplierPerStack ~= nil then
+		return string.format(
+			"SPECIAL DAMAGE  %d%% → %d%%",
+			roundedPercent(before.specialEnemyDamageMultiplier),
+			roundedPercent(after.specialEnemyDamageMultiplier)
+		)
+	elseif definition.MagazineCapacityMultiplierPerStack ~= nil then
+		return string.format(
+			"MAGAZINE SIZE  %d%% → %d%%",
+			roundedPercent(before.magazineCapacityMultiplier),
+			roundedPercent(after.magazineCapacityMultiplier)
+		)
+	elseif definition.LootPickupRadiusBonusStudsPerStack ~= nil then
+		return string.format(
+			"PICKUP REACH  +%.1f → +%.1f STUDS",
+			before.lootPickupRadiusBonusStuds,
+			after.lootPickupRadiusBonusStuds
+		)
+	elseif definition.LastMagazineDamageMultiplierPerStack ~= nil then
+		return string.format(
+			"LOW-AMMO DAMAGE  %d%% → %d%%",
+			roundedPercent(before.lastMagazineDamageMultiplier),
+			roundedPercent(after.lastMagazineDamageMultiplier)
+		)
+	end
+	return "RUN POWER INCREASE"
+end
+
+local function publicRunStats(): PublicRunStats
+	local modifiers = RunUpgradeResolver.deriveCombatModifiers(readUpgradeStacks())
+	return table.freeze({
+		damageBonusPercent = bonusPercent(modifiers.damageMultiplier),
+		fireRateBonusPercent = bonusPercent(1 / modifiers.cadenceMultiplier),
+		ammoConservationPercent = roundedPercent(modifiers.ammoConservationChance),
+		damageReductionPercent = reductionPercent(modifiers.incomingDamageMultiplier),
+		reloadSpeedBonusPercent = bonusPercent(1 / modifiers.reloadDurationMultiplier),
+		xpBonusPercent = bonusPercent(modifiers.xpGainMultiplier),
+	})
+end
+
 local function publicPendingChoices(): { PublicUpgradeChoice }
 	local result = {}
 	local upgradeStacks = readUpgradeStacks()
@@ -121,6 +237,7 @@ local function publicPendingChoices(): { PublicUpgradeChoice }
 				id = definition.Id,
 				name = definition.Name,
 				description = definition.Description,
+				statPreview = choiceStatPreview(definition, upgradeStacks),
 				stacks = upgradeStacks[definition.Id] or 0,
 				maximumStacks = definition.MaximumStacks,
 			})
@@ -159,6 +276,7 @@ local function safeSnapshot(): SafeRunProgressionSnapshot
 		levelsGainedLastAward = levelsGainedLastAward,
 		pendingChoices = publicPendingChoices(),
 		activeUpgrades = publicActiveUpgrades(),
+		runStats = publicRunStats(),
 		unclaimedUpgradeChoices = unclaimedUpgradeChoices,
 		selectionSequence = selectionSequence,
 		lastSelectedUpgradeId = lastSelectedUpgradeId,
