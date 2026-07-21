@@ -83,6 +83,12 @@ local LongwatchDoctrine = table.freeze({
 	specialEnemyDamageBonus = 0.25,
 })
 
+-- Salvager's Mark: every collected ammunition drop yields extra whole rounds,
+-- still capped by the weapon's authoritative maximum reserve.
+local SalvagersMark = table.freeze({
+	lootRoundsAdditiveBonus = 4,
+})
+
 local RuntimeByRelicId = table.freeze({
 	[RelicIds.BloodBattery] = BloodBattery,
 	[RelicIds.GraveMomentum] = GraveMomentum,
@@ -92,6 +98,7 @@ local RuntimeByRelicId = table.freeze({
 	[RelicIds.ExecutionProtocol] = ExecutionProtocol,
 	[RelicIds.BreachDoctrine] = BreachDoctrine,
 	[RelicIds.LongwatchDoctrine] = LongwatchDoctrine,
+	[RelicIds.SalvagersMark] = SalvagersMark,
 })
 
 local FirstBatchRelicIds = table.freeze({
@@ -108,10 +115,11 @@ local FirstBatchRelicIds = table.freeze({
 local SecondBatchRelicIds = table.freeze({
 	RelicIds.BreachDoctrine,
 	RelicIds.LongwatchDoctrine,
+	RelicIds.SalvagersMark,
 })
 
 local Config = {
-	Version = "RPG-0109-weapon-pattern-batch-tuning",
+	Version = "RPG-0109-weapon-and-salvage-batch-tuning",
 	BloodBattery = BloodBattery,
 	GraveMomentum = GraveMomentum,
 	ChoirBreaker = ChoirBreaker,
@@ -120,6 +128,7 @@ local Config = {
 	ExecutionProtocol = ExecutionProtocol,
 	BreachDoctrine = BreachDoctrine,
 	LongwatchDoctrine = LongwatchDoctrine,
+	SalvagersMark = SalvagersMark,
 	RuntimeByRelicId = RuntimeByRelicId,
 	FirstBatchRelicIds = FirstBatchRelicIds,
 	SecondBatchRelicIds = SecondBatchRelicIds,
@@ -214,6 +223,14 @@ assert(
 	"Longwatch Doctrine special-enemy damage must be positive and within the special-enemy ceiling"
 )
 
+assert(
+	isFinite(SalvagersMark.lootRoundsAdditiveBonus)
+		and SalvagersMark.lootRoundsAdditiveBonus > 0
+		and SalvagersMark.lootRoundsAdditiveBonus % 1 == 0
+		and SalvagersMark.lootRoundsAdditiveBonus <= Ceilings.maximumLootRoundsAdditiveBonus,
+	"Salvager's Mark must grant whole positive rounds within the salvage ceiling"
+)
+
 local runtimeRelicCount = 0
 for relicId in RuntimeByRelicId do
 	assert(RunRpgContracts.isKnownRelicId(relicId), "relic runtime tuning references an unknown relic")
@@ -224,6 +241,6 @@ assert(
 	"the runtime tuning map must cover exactly the implemented relic batches"
 )
 assert(#FirstBatchRelicIds == 6, "the RPG-0108 first batch contains six relics")
-assert(#SecondBatchRelicIds == 2, "the delivered RPG-0109 slice contains the two weapon-pattern relics")
+assert(#SecondBatchRelicIds == 3, "the delivered RPG-0109 slices contain the weapon-pattern pair and Salvager's Mark")
 
 return table.freeze(Config)

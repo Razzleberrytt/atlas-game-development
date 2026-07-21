@@ -42,6 +42,7 @@ export type RelicModifiers = {
 	shotgunPatternDamageMultiplier: number,
 	sniperPatternDamageMultiplier: number,
 	sniperSpecialEnemyDamageMultiplier: number,
+	lootRoundsAdditiveBonus: number,
 }
 
 export type BloodBatteryResult = {
@@ -71,6 +72,7 @@ local function neutralModifiers(): RelicModifiers
 		shotgunPatternDamageMultiplier = 1,
 		sniperPatternDamageMultiplier = 1,
 		sniperSpecialEnemyDamageMultiplier = 1,
+		lootRoundsAdditiveBonus = 0,
 	}
 end
 
@@ -149,6 +151,12 @@ function RelicModifierResolver.deriveModifiers(equippedRelicIds: { string }): Re
 		})
 		modifiers.sniperPatternDamageMultiplier = resolved.patternDamageMultiplier
 		modifiers.sniperSpecialEnemyDamageMultiplier = resolved.specialEnemyDamageMultiplier
+	end
+
+	if equipped[RelicIds.SalvagersMark] then
+		modifiers.lootRoundsAdditiveBonus = RunModifierResolver.resolve({
+			lootRoundsAdditiveBonus = RelicRuntimeConfig.SalvagersMark.lootRoundsAdditiveBonus,
+		}).lootRoundsAdditiveBonus
 	end
 
 	return table.freeze(modifiers)

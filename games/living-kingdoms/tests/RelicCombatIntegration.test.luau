@@ -641,6 +641,16 @@ assertThat(
 	"the combat owner must never write operative health directly"
 )
 
+local lootService = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyLootService.luau")
+assertThat(
+	contains(lootService, "record.rounds + RelicModifierService.read(player).lootRoundsAdditiveBonus"),
+	"Salvager's Mark must add rounds through the existing loot collection owner"
+)
+assertThat(
+	contains(lootService, "AmmunitionSupplyResolver.collect"),
+	"salvaged rounds must still pass through the authoritative supply resolver's reserve cap"
+)
+
 local hordeService = fs.readFile("games/living-kingdoms/src/server/Systems/HordeExperienceService.luau")
 assertThat(
 	contains(hordeService, "HordeConfig.Streak.KillStreakWindowSeconds + RelicModifierService.read(player)"),

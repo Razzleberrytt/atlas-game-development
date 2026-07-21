@@ -75,6 +75,7 @@ local capped = resolver.resolve({
 	automaticHealingPerTrigger = 99,
 	temporaryArmorFractionOfMaximumHealth = 99,
 	lootChanceAdditiveBonus = 99,
+	lootRoundsAdditiveBonus = 99,
 	killChainExtensionSeconds = 99,
 	generalProcChance = 99,
 })
@@ -129,6 +130,14 @@ assertThat(
 assertThat(
 	capped.lootChanceAdditiveBonus == ceilings.maximumLootChanceAdditiveBonus,
 	"loot chance ceiling must be fixture-locked"
+)
+assertThat(
+	capped.lootRoundsAdditiveBonus == ceilings.maximumLootRoundsAdditiveBonus,
+	"salvaged rounds ceiling must be fixture-locked"
+)
+assertThat(
+	resolver.resolve({ lootRoundsAdditiveBonus = 2.7 }).lootRoundsAdditiveBonus == 2,
+	"salvaged rounds must be granted as whole rounds"
 )
 assertThat(
 	capped.killChainExtensionSeconds == ceilings.maximumKillChainExtensionSeconds,
