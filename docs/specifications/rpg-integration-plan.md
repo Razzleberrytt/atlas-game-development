@@ -1,7 +1,7 @@
 # Living Kingdoms — Run-Based RPG Integration Plan
 
 **Document ID:** RPG-PLAN-001  
-**Status:** Active — `RPG-0101`–`RPG-0107`, `RPG-0109`, and `RPG-0110` complete for every available owner; `RPG-0108` implementation complete pending Studio validation; `RPG-0111` next<br>
+**Status:** Active — `RPG-0101`–`RPG-0107` and `RPG-0109`–`RPG-0111` complete (`RPG-0110` for every available owner); `RPG-0108` implementation complete pending Studio validation; `RPG-0112` blocked on P10<br>
 **Target:** Post-HROI gameplay expansion  
 **Primary objective:** Turn each operation into a distinct, replayable character-build journey while preserving Living Kingdoms' brutal cooperative survival identity.
 
@@ -644,11 +644,17 @@ Delivered through the owners that already observe the confirmed events, with no 
 
 **Exit:** Rewards are frequent enough to matter without overwhelming scarcity. *(Implementation complete; the frequency judgement itself belongs to the Studio evidence in `RPG-0113`.)*
 
-### RPG-0111 — Add complete RPG HUD and build panel
+### RPG-0111 — Add complete RPG HUD and build panel — **Complete**
 
 Add the relic bar, charge/cooldown state, elite affix presentation, reward-choice interface, replacement interface, build summary panel, and activation feedback.
 
-**Exit:** Players can explain their current build without developer tools.
+Delivered as `RunBuildHUDController` over a new bounded `RunBuildNetwork`: one server→client state channel, one read function, and exactly two client→server intents (choose an offered relic, or replace one occupied slot with it). The server publishes only the store's safe copied snapshot of the caller's own build, derives the operative from the calling player rather than the payload, rate-limits both intents with the shared configured interval, and routes them through the same validated `RunBuildStateStore` entry points the server-only source uses — so nothing a client sends can create a reward, reroll an offer, choose for another operative, or exceed a slot. Rejections return a bounded reason the HUD explains rather than dropping silently.
+
+The relic bar is always visible: each slot names its relic and shows charge or counter state, an empty slot says so, and when every slot is full the flow names the discard target. All state is carried by text and slot position, never colour or audio alone. Fixture: `RunBuildHUDIntegration.test`.
+
+**Deferred:** elite affix presentation already ships through the existing enemy presentation and telegraph controllers, and the end-of-operation build summary belongs to `RPG-0112` against P10's result owner.
+
+**Exit:** Players can explain their current build without developer tools. ✔ *(Readability under live pressure is confirmed by the `RPG-0113` Studio matrix.)*
 
 ### RPG-0112 — Add operation-result build summary
 
@@ -675,13 +681,13 @@ Current status:
 | `RPG-0108` | Implementation complete; Studio validation outstanding | All six first-batch relics now change authoritative outcomes through their existing owners: conditional damage in `DamageResolver`, wounded reload in `ReloadResolver`, Blood Battery healing through the revisioned P3 healing boundary, and the Grave Momentum kill-chain window in `HordeExperienceService`. The catalog marks exactly these six Implemented. The "three viable build patterns" gate still needs representative Studio evidence. |
 | `RPG-0109` | Complete | Four slices through existing owners: the weapon-pattern pair in `DamageResolver`, Salvager's Mark in `EnemyLootService`, Suppression Engine across `AutomaticFireResolver` and `DamageResolver`, and the cooperative pair inside the P3 life core (expiring temporary armor and a one-charge incapacitation reprieve). All twelve declared relics are now Implemented. |
 | `RPG-0110` | Complete for every available owner | Elite kills, a squad-kill milestone, and confirmed special interrupts open bounded choices through the owners that already observe them, with deterministic per-operative request IDs. Objective, container, and boss sources stay Planned until P8/P9. |
-| `RPG-0111` | Not started | Add the relic bar, reward-choice and replacement interfaces, and build summary so players can read the build the reward sources now hand them. |
+| `RPG-0111` | Complete | `RunBuildHUDController` over the bounded `RunBuildNetwork`: safe snapshot rendering, the always-visible relic bar with charge and counter state, and the two identity-free intents. The end-of-operation summary stays with `RPG-0112`. |
 | `RPG-0112` | Blocked by P10 result owner | Attach the operation-bound build summary to the authoritative match result rather than creating an RPG-specific result authority. |
 | `RPG-0113` | Not started | Run the complete solo/2/4-player security, balance, readability, cleanup, and representative-horde validation matrix after `RPG-0112`. |
 
 The separate manual product gates remain honest: P6 scarcity needs its 1/2/4-operative evidence matrix and tuning sign-off, while HROI still needs representative Studio playtests and visual/mix review. RPG implementation may continue inside existing owners, but it does not satisfy those evidence gates or unblock P7 class-effect runtime.
 
-The highest-ROI playable checkpoint is **RPG-0101 through RPG-0108**. At that point the game has expanded Field Upgrades, elites, three relic slots, reward choices, and six meaningful relics without waiting for persistence or the complete content roster.
+The highest-ROI playable checkpoint was **RPG-0101 through RPG-0108**, and the track has now run through `RPG-0111`: expanded Field Upgrades, elites, three relic slots, twelve implemented relics, live reward sources, and a readable relic HUD, without waiting for persistence or the complete content roster. What remains is `RPG-0112` (blocked on P10's result owner), `RPG-0113`'s validation matrix, and the Studio evidence those gates require.
 
 ## 17. Performance budgets
 

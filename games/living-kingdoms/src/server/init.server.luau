@@ -2,6 +2,37 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local function ensureRunBuildNetwork()
+	local existingNetwork = ReplicatedStorage:FindFirstChild("RunBuildNetwork")
+	local network: Folder
+	if existingNetwork == nil then
+		network = Instance.new("Folder")
+		network.Name = "RunBuildNetwork"
+		network.Parent = ReplicatedStorage
+	else
+		assert(existingNetwork:IsA("Folder"), "RunBuildNetwork must be a Folder")
+		network = existingNetwork
+	end
+	for _, remoteName in { "State", "SubmitRelicChoice", "SubmitRelicReplacement" } do
+		local existingRemote = network:FindFirstChild(remoteName)
+		if existingRemote == nil then
+			local remote = Instance.new("RemoteEvent")
+			remote.Name = remoteName
+			remote.Parent = network
+		else
+			assert(existingRemote:IsA("RemoteEvent"), "RunBuildNetwork." .. remoteName .. " must be a RemoteEvent")
+		end
+	end
+	local existingReadState = network:FindFirstChild("ReadState")
+	if existingReadState == nil then
+		local readState = Instance.new("RemoteFunction")
+		readState.Name = "ReadState"
+		readState.Parent = network
+	else
+		assert(existingReadState:IsA("RemoteFunction"), "RunBuildNetwork.ReadState must be a RemoteFunction")
+	end
+end
+
 local function ensureFlashlightNetwork()
 	local existingNetwork = ReplicatedStorage:FindFirstChild("FlashlightNetwork")
 	local network: Folder
@@ -132,6 +163,7 @@ local function ensureWeaponLoadoutNetwork()
 end
 
 local function ensureProgressionNetwork()
+	ensureRunBuildNetwork()
 	local existingNetwork = ReplicatedStorage:FindFirstChild("ProgressionNetwork")
 	local network: Folder
 	if existingNetwork == nil then

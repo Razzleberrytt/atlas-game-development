@@ -1,13 +1,16 @@
 --!strict
 
 -- RPG-0102 server-only lifecycle adapter for the pure RunBuildStateStore,
--- extended by RPG-0107 with the relic reward / slot / replacement entry points.
+-- extended by RPG-0107 with the relic reward / slot / replacement entry points,
+-- by RPG-0110 with the live production reward fan-out, and by RPG-0111 with the
+-- narrow client network surface.
 --
--- Reward events are a server-only validation source until RPG-0110 connects the
--- production elite, special, objective, horde, and boss reward owners. No client
--- remote is added here; the polished HUD and its network surface remain owned by
--- RPG-0111. The choice/replacement entry points validate the identity-free
--- contract intent shapes so a later remote can route through them unchanged.
+-- Clients receive only safe copied snapshots of their own build and may request
+-- exactly two things: choosing an offered relic, or replacing one occupied slot
+-- with an offered relic. Both requests are identity-free -- the server derives
+-- the operative from the calling player -- and both pass the same store
+-- validation as the server-only entry points. Nothing a client sends can create
+-- a reward, reroll an offer, choose for another operative, or exceed a slot.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -23,8 +26,20 @@ local store = RunBuildStateStore.new()
 local started = false
 local playerAddedConnection: RBXScriptConnection? = nil
 local playerRemovingConnection: RBXScriptConnection? = nil
+local choiceConnection: RBXScriptConnection? = nil
+local replacementConnection: RBXScriptConnection? = nil
+local lastRequestTimestamps: { [Player]: number } = {}
+
+local runBuildNetwork = ReplicatedStorage:WaitForChild("RunBuildNetwork")
+local stateRemote = runBuildNetwork:WaitForChild("State") :: RemoteEvent
+local readStateRemote = runBuildNetwork:WaitForChild("ReadState") :: RemoteFunction
+local submitChoiceRemote = runBuildNetwork:WaitForChild("SubmitRelicChoice") :: RemoteEvent
+local submitReplacementRemote = runBuildNetwork:WaitForChild("SubmitRelicReplacement") :: RemoteEvent
+
+local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
 
 local CompatibilityIds = RunRpgContracts.RelicCompatibilityIds
+local Rejections = RunRpgContracts.RunRpgRejectionReasonIds
 local WeaponIds = CombatContracts.WeaponIds
 
 -- Maps a firearm to the relic compatibility category its loadout unlocks. Any
@@ -57,6 +72,47 @@ local function loadoutCompatibilityIds(player: Player): { [string]: boolean }
 	return tags
 end
 
+-- Publishing is explicit: every mutating entry point republishes, so no polling
+-- loop or extra connection is required to keep a client's view current.
+local function publishTo(player: Player)
+	local snapshot = store:readSafeSnapshot(operativeId(player))
+	if snapshot ~= nil then
+		stateRemote:FireClient(player, snapshot)
+	end
+end
+
+local function publishAll()
+	for _, player in Players:GetPlayers() do
+		publishTo(player)
+	end
+end
+
+-- One shared client-request cooldown, mirroring the upgrade-choice surface.
+local REQUEST_COOLDOWN_SECONDS = RunRpgConfig.Limits.minimumChoiceRequestIntervalSeconds
+
+local function acceptsRequest(player: Player): boolean
+	local now = os.clock()
+	local last = lastRequestTimestamps[player]
+	if last ~= nil and now - last < REQUEST_COOLDOWN_SECONDS then
+		return false
+	end
+	lastRequestTimestamps[player] = now
+	return true
+end
+
+local function rejectionFor(player: Player, requestId: unknown, reasonId: string)
+	stateRemote:FireClient(
+		player,
+		table.freeze({
+			operationId = RunRpgContracts.RunBuildNetworkOperationIds.Rejected,
+			operationGeneration = store:readOperationGeneration(),
+			revision = 0,
+			rejectionReasonId = reasonId,
+			requestId = if type(requestId) == "string" then requestId else nil,
+		})
+	)
+end
+
 function RunBuildService.start()
 	if started then
 		return
@@ -66,10 +122,56 @@ function RunBuildService.start()
 	for _, player in Players:GetPlayers() do
 		register(player)
 	end
-	playerAddedConnection = Players.PlayerAdded:Connect(register)
+	playerAddedConnection = Players.PlayerAdded:Connect(function(player)
+		register(player)
+		publishTo(player)
+	end)
 	playerRemovingConnection = Players.PlayerRemoving:Connect(function(player)
 		store:disconnectOperative(operativeId(player))
+		lastRequestTimestamps[player] = nil
 	end)
+	choiceConnection = submitChoiceRemote.OnServerEvent:Connect(function(player, intent, ...)
+		if select("#", ...) ~= 0 then
+			return
+		end
+		if not acceptsRequest(player) then
+			rejectionFor(player, if type(intent) == "table" then intent.requestId else nil, Rejections.InvalidIntent)
+			return
+		end
+		local accepted, reason = RunBuildService.submitRelicChoice(player, intent :: any)
+		if accepted then
+			publishTo(player)
+		else
+			rejectionFor(
+				player,
+				if type(intent) == "table" then intent.requestId else nil,
+				reason or Rejections.InvalidIntent
+			)
+		end
+	end)
+	replacementConnection = submitReplacementRemote.OnServerEvent:Connect(function(player, intent, ...)
+		if select("#", ...) ~= 0 then
+			return
+		end
+		if not acceptsRequest(player) then
+			rejectionFor(player, if type(intent) == "table" then intent.requestId else nil, Rejections.InvalidIntent)
+			return
+		end
+		local accepted, reason = RunBuildService.submitRelicReplacement(player, intent :: any)
+		if accepted then
+			publishTo(player)
+		else
+			rejectionFor(
+				player,
+				if type(intent) == "table" then intent.requestId else nil,
+				reason or Rejections.InvalidIntent
+			)
+		end
+	end)
+	readStateRemote.OnServerInvoke = function(player: Player)
+		return store:readSafeSnapshot(operativeId(player))
+	end
+	publishAll()
 end
 
 function RunBuildService.resetOperation()
@@ -80,6 +182,7 @@ function RunBuildService.resetOperation()
 	for _, player in Players:GetPlayers() do
 		register(player)
 	end
+	publishAll()
 end
 
 function RunBuildService.stop()
@@ -95,6 +198,16 @@ function RunBuildService.stop()
 		playerRemovingConnection:Disconnect()
 		playerRemovingConnection = nil
 	end
+	if choiceConnection ~= nil then
+		choiceConnection:Disconnect()
+		choiceConnection = nil
+	end
+	if replacementConnection ~= nil then
+		replacementConnection:Disconnect()
+		replacementConnection = nil
+	end
+	readStateRemote.OnServerInvoke = nil :: any
+	table.clear(lastRequestTimestamps)
 	store:stopOperation()
 end
 
@@ -143,7 +256,11 @@ function RunBuildService.commitSquadUpgradeStacks(
 	requestId: string,
 	upgradeStacks: RunBuildStateStore.UpgradeStacks
 ): (boolean, string?)
-	return store:commitUpgradeStacks(operationGeneration, requestId, upgradeStacks)
+	local accepted, reason = store:commitUpgradeStacks(operationGeneration, requestId, upgradeStacks)
+	if accepted then
+		publishAll()
+	end
+	return accepted, reason
 end
 
 -- Server-only reward source. Offers a bounded two-relic choice to one operative
@@ -153,13 +270,17 @@ function RunBuildService.offerRelicReward(
 	requestId: string,
 	sourceId: string
 ): (boolean, string?, number?)
-	return store:enqueueRelicReward(
+	local accepted, reason, rewardSequence = store:enqueueRelicReward(
 		store:readOperationGeneration(),
 		requestId,
 		operativeId(player),
 		sourceId,
 		loadoutCompatibilityIds(player)
 	)
+	if accepted then
+		publishTo(player)
+	end
+	return accepted, reason, rewardSequence
 end
 
 --[[
