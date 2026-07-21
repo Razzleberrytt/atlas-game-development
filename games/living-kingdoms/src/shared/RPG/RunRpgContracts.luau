@@ -108,6 +108,7 @@ export type RunRpgRejectionReasonId =
 	| "UnknownRelic"
 	| "UnknownReward"
 	| "RewardNotPending"
+	| "RewardQueueFull"
 	| "RelicNotOffered"
 	| "RelicAlreadyEquipped"
 	| "InvalidReplacementSlot"
@@ -319,6 +320,7 @@ RunRpgContracts.RunRpgRejectionReasonIds = table.freeze({
 	UnknownRelic = "UnknownRelic",
 	UnknownReward = "UnknownReward",
 	RewardNotPending = "RewardNotPending",
+	RewardQueueFull = "RewardQueueFull",
 	RelicNotOffered = "RelicNotOffered",
 	RelicAlreadyEquipped = "RelicAlreadyEquipped",
 	InvalidReplacementSlot = "InvalidReplacementSlot",
