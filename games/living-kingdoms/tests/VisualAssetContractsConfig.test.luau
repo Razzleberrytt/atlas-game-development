@@ -67,7 +67,10 @@ for _, assetKey in
 	}
 do
 	local entry = config.ByKey[assetKey]
-	assertThat(entry.statusId == contracts.StatusIds.PrimitivePlaceholder, "new weapon models must remain honest fallbacks")
+	assertThat(
+		entry.statusId == contracts.StatusIds.PrimitivePlaceholder,
+		"new weapon models must remain honest fallbacks"
+	)
 	assertThat(entry.expectedRootName == "WeaponPresentation", "new weapon model root contract drifted")
 	assertThat(#entry.requiredAttachmentNames == 5, "new weapon models require the shared five-locator contract")
 end

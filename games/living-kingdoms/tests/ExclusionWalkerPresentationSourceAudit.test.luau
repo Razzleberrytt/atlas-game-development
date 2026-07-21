@@ -56,13 +56,13 @@ for _, required in
 		'presentation:SetAttribute("VisualStatus", "ProceduralFallback")',
 		'presentation:SetAttribute("GameplayFootprintId", "enemy.exclusion_walker")',
 		'attachment.Name = "AttackOrigin"',
-		'root.Transparency = 0.88',
-		'root.Material = Enum.Material.Neon',
-		'folder.ChildAdded:Connect',
-		'part.CanCollide = false',
-		'part.CanTouch = false',
-		'part.CanQuery = false',
-		'part.Massless = true',
+		"root.Transparency = 0.88",
+		"root.Material = Enum.Material.Neon",
+		"folder.ChildAdded:Connect",
+		"part.CanCollide = false",
+		"part.CanTouch = false",
+		"part.CanQuery = false",
+		"part.Massless = true",
 	}
 do
 	assertThat(string.find(presenter, required, 1, true) ~= nil, "walker presenter missing: " .. required)

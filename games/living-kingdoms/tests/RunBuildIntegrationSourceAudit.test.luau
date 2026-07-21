@@ -34,6 +34,9 @@ assert(
 
 local buildStart = string.find(bootstrap, "RunBuildService.start()", 1, true)
 local progressionStart = string.find(bootstrap, "RunProgressionService.start()", 1, true)
-assert(buildStart ~= nil and progressionStart ~= nil and buildStart < progressionStart, "run-build owner must start first")
+assert(
+	buildStart ~= nil and progressionStart ~= nil and buildStart < progressionStart,
+	"run-build owner must start first"
+)
 
 print("RunBuildIntegrationSourceAudit: one bounded run-build owner is integrated before progression")

@@ -81,10 +81,7 @@ assertThat(
 	contains(controller, "MaximumAudibleDistanceStuds"),
 	"hostile audio must fall silent beyond the bounded distance"
 )
-assertThat(
-	contains(controller, "EnemyConfig.Walker.ArchetypeId"),
-	"hostile audio must gate on the walker archetype"
-)
+assertThat(contains(controller, "EnemyConfig.Walker.ArchetypeId"), "hostile audio must gate on the walker archetype")
 assertThat(
 	contains(controller, "trackedCount >= EnemyAudioConfig.MaximumTrackedEnemyModels"),
 	"hostile audio tracking must stay bounded"

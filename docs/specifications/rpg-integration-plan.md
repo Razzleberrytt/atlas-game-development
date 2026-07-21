@@ -608,11 +608,15 @@ Implementation path:
 
 **Exit:** Relics cannot duplicate, reroll through reconnects, exceed slots, or survive operation teardown. ✔
 
-### RPG-0108 — Add first six relics
+### RPG-0108 — Add first six relics — **In progress (part 1 of 2)**
 
 Recommended first batch: Blood Battery, Grave Momentum, Choir Breaker, Last Light, Emergency Chamber, and Execution Protocol.
 
-**Exit:** At least three clearly different viable build patterns emerge.
+**Part 1 — relic modifier foundation (delivered).** The pure `RelicModifierResolver` derives an operative's bounded relic modifiers from the equipped relic list, delegating every clamp to the shared `RunModifierResolver` so no relic effect can exceed a canonical `ModifierCeilings` bound. `RelicRuntimeConfig` holds the first batch's per-relic tuning (Blood Battery kill-counted healing, Grave Momentum kill-chain extension, Choir Breaker special-enemy damage, Last Light low-reserve damage, Emergency Chamber wounded-reload reduction, Execution Protocol execute-threshold damage), each asserted within the shared ceilings and — for Blood Battery — bound to the catalog counter. Conditional relics return both their multiplier and the condition threshold (mirroring the existing `RunUpgradeResolver` combat-modifier shape); Blood Battery's kill counter advances through a pure helper. Fixtures `RelicRuntimeConfig.test` and `RelicModifierResolver.test` lock the tuning, ceilings, exclusion of later-batch relics, fail-closed handling, and counter arithmetic. The relics remain gameplay-inert — the catalog still marks them Planned and nothing consumes the resolver yet.
+
+**Part 2 — combat-core runtime integration (not started).** Thread the resolver outputs through the authoritative combat, reload, and life passes: per-operative relic modifiers must reach `DamageResolver`/`ReloadResolver` (today squad-global via `ProgressionNetwork` attributes), and Blood Battery healing must commit through the existing operative-healing boundary. This is a broad, high-regression-risk change to the combat core and flips the six catalog entries to Implemented. Its acceptance gate requires representative Studio evidence.
+
+**Exit:** At least three clearly different viable build patterns emerge. *(Requires part 2 and Studio validation; part 1 alone does not satisfy it.)*
 
 ### RPG-0109 — Add weapon and cooperation relics
 
@@ -654,7 +658,7 @@ Current status:
 |---|---|---|
 | `RPG-0101`–`RPG-0106` | Complete | Merged in PRs #142 and #144–#148: contracts/config, centralized operation state, twelve upgrades, shared modifier resolution, and five elite affixes. |
 | `RPG-0107` | Complete | Bounded reward/slot/replacement framework delivered through the existing run-build owner: pure `RelicRewardResolver`, `RunBuildStateStore` enqueue/choose/replace, and the server-only `RunBuildService` reward source and intent entry points. |
-| `RPG-0108` | Next | Activate the first six relic mechanics now that the framework exit gate passes; this completes the high-ROI playable checkpoint. |
+| `RPG-0108` | In progress (part 1 complete) | Part 1 delivered the pure `RelicModifierResolver` + `RelicRuntimeConfig` foundation (ceiling-bound, fixture-locked, gameplay-inert). Part 2 threads the modifiers through the combat/reload/life core and needs Studio validation to complete the high-ROI checkpoint. |
 | `RPG-0109`–`RPG-0111` | Not started | Add weapon/cooperation relics, production reward sources, and readable UI in order; defer any source whose authoritative P8/P9 owner does not yet exist. |
 | `RPG-0112` | Blocked by P10 result owner | Attach the operation-bound build summary to the authoritative match result rather than creating an RPG-specific result authority. |
 | `RPG-0113` | Not started | Run the complete solo/2/4-player security, balance, readability, cleanup, and representative-horde validation matrix after `RPG-0112`. |

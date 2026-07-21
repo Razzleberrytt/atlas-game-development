@@ -71,7 +71,10 @@ assertThat(clamped.stateAfter.reserveRounds == 48, "reserve must not overflow")
 
 local full = resolver.collect(state(48), supply("cache.full", 12))
 assertThat(not full.didCollect, "full reserve must reject")
-assertThat(full.rejectionReasonId == contracts.CollectionRejectionReasonIds.NoCapacity, "full reserve reason must be stable")
+assertThat(
+	full.rejectionReasonId == contracts.CollectionRejectionReasonIds.NoCapacity,
+	"full reserve reason must be stable"
+)
 
 local duplicate = resolver.collect(state(24, { ["cache.used"] = true }), supply("cache.used", 12))
 assertThat(not duplicate.didCollect, "duplicate cache must reject")
@@ -84,7 +87,10 @@ local wrongWeapon = supply("cache.wrong", 12)
 wrongWeapon.weaponId = "weapon.other"
 local invalidSupply = resolver.collect(state(24), wrongWeapon)
 assertThat(not invalidSupply.didCollect, "wrong-weapon supply must reject")
-assertThat(invalidSupply.rejectionReasonId == contracts.CollectionRejectionReasonIds.InvalidSupply, "invalid supply reason")
+assertThat(
+	invalidSupply.rejectionReasonId == contracts.CollectionRejectionReasonIds.InvalidSupply,
+	"invalid supply reason"
+)
 
 local invalidSource = resolver.collect(state(24), supply("loot.fake", 8, "ClientClaim"))
 assertThat(not invalidSource.didCollect, "unknown ammunition sources must fail closed")

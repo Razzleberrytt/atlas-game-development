@@ -32,7 +32,10 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Lo
 	injectGlobals = true,
 })()
 
-assertThat(config.DropRollPercentByKind[contracts.LootKindIds.AmmunitionBundle] == 0, "recovery service duplicated ammo")
+assertThat(
+	config.DropRollPercentByKind[contracts.LootKindIds.AmmunitionBundle] == 0,
+	"recovery service duplicated ammo"
+)
 assertThat(config.DropRollPercentByKind[contracts.LootKindIds.FieldDressing] == 5, "field dressing chance drifted")
 assertThat(config.DropRollPercentByKind[contracts.LootKindIds.FieldIntel] == 2, "field intel chance drifted")
 assertThat(config.NoDropPercent == 93, "recovery no-drop chance drifted")
@@ -110,6 +113,11 @@ assertThat(noDrop ~= nil, "bounded sample must preserve no-drop")
 assertThat(ammunition == nil, "recovery resolver emitted duplicate ammunition")
 assertThat(dressing.expiresAtServerTimestamp == 28, "recovery lifetime drifted")
 assertThat(intel.expiresAtServerTimestamp == 28, "intel lifetime drifted")
-assertThat(table.isfrozen(dressing) and table.isfrozen(intel) and table.isfrozen(noDrop), "resolutions must be immutable")
+assertThat(
+	table.isfrozen(dressing) and table.isfrozen(intel) and table.isfrozen(noDrop),
+	"resolutions must be immutable"
+)
 
-print("RecoveryLootResolver: five-percent healing, two-percent Field Intel, zero ammo duplication, cap, and expiry passed")
+print(
+	"RecoveryLootResolver: five-percent healing, two-percent Field Intel, zero ammo duplication, cap, and expiry passed"
+)
