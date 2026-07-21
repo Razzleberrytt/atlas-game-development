@@ -40,6 +40,7 @@ local DamageResolver = require(script.Parent.DamageResolver)
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 local FirearmHitResolver = require(script.Parent.FirearmHitResolver)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
+local RelicModifierService = require(script.Parent.RelicModifierService)
 local ReloadResolver = require(script.Parent.ReloadResolver)
 local RunMagazineCapacityResolver = require(script.Parent.RunMagazineCapacityResolver)
 local WeaponTargetSelector = require(script.Parent.WeaponTargetSelector)
@@ -473,8 +474,10 @@ local function buildPatternTargetFacts(playerState: PlayerCombatState): { Weapon
 end
 
 local function runDamageContext(
+	player: Player,
 	playerState: PlayerCombatState,
-	fact: EnemyDirectorService.EnemyCombatFact
+	fact: EnemyDirectorService.EnemyCombatFact,
+	targetMaximumHealth: number?
 ): DamageResolver.RunDamageContext?
 	local ammunition = playerState.weaponState.ammunition
 	local definition = resolveWeaponDefinition(ammunition.weaponId)
@@ -492,6 +495,8 @@ local function runDamageContext(
 		reserveRounds = ammunition.reserveRounds,
 		maximumReserveRounds = definition.MaximumReserveRounds,
 		isSpecialEnemy = isSpecialEnemy,
+		targetMaximumHealth = targetMaximumHealth,
+		relicModifiers = RelicModifierService.read(player),
 	}
 end
 
@@ -540,7 +545,7 @@ local function commitPatternImpacts(
 			healthRead.healthState,
 			nowTimestamp,
 			impact.damageMultiplier,
-			runDamageContext(playerState, sightedEntry.fact)
+			runDamageContext(player, playerState, sightedEntry.fact, healthRead.maximumHealth)
 		)
 		local didCommit, committedDamage = EnemyDirectorService.commitHealthState(
 			impact.targetEntityId,
@@ -600,7 +605,7 @@ local function resolveAcceptedShot(
 		healthRead.healthState,
 		nowTimestamp,
 		nil,
-		runDamageContext(playerState, fact)
+		runDamageContext(player, playerState, fact, healthRead.maximumHealth)
 	)
 	local didCommitPrimary, committedDamage = EnemyDirectorService.commitHealthState(
 		targetEntityId,
@@ -732,6 +737,27 @@ local function completeReload(player: Player, expectedCompletionTimestamp: numbe
 	end
 end
 
+--[[
+	Emergency Chamber only shortens reloads accepted while the operative is
+	critically wounded. The wounded fact comes from the authoritative P3 life
+	snapshot, never from the requesting client.
+]]
+local function relicReloadContext(player: Player): ReloadResolver.RelicReloadContext?
+	local modifiers = RelicModifierService.read(player)
+	if modifiers.woundedHealthFraction <= 0 or modifiers.woundedReloadDurationMultiplier >= 1 then
+		return nil
+	end
+	local lifeRead = OperativeLifeService.read(player)
+	local healthState = if lifeRead == nil then nil else lifeRead.snapshot.healthState
+	if healthState == nil or healthState.maximumHealth <= 0 then
+		return nil
+	end
+	return {
+		woundedReloadDurationMultiplier = modifiers.woundedReloadDurationMultiplier,
+		isCriticallyWounded = healthState.currentHealth <= healthState.maximumHealth * modifiers.woundedHealthFraction,
+	}
+end
+
 local function onReloadIntent(player: Player, weaponId: unknown, ...: unknown)
 	if select("#", ...) ~= 0 or type(weaponId) ~= "string" then
 		return
@@ -749,7 +775,12 @@ local function onReloadIntent(player: Player, weaponId: unknown, ...: unknown)
 		return
 	end
 	playerState.lastRequestServerTimestamp = nowTimestamp
-	local resolution = ReloadResolver.begin(playerState.operativeState, playerState.weaponState, nowTimestamp)
+	local resolution = ReloadResolver.begin(
+		playerState.operativeState,
+		playerState.weaponState,
+		nowTimestamp,
+		relicReloadContext(player)
+	)
 	playerState.operativeState = resolution.operativeStateAfter
 	playerState.weaponState = resolution.weaponStateAfter
 	if not resolution.didBegin then
@@ -763,11 +794,13 @@ local function onReloadIntent(player: Player, weaponId: unknown, ...: unknown)
 		reloadState.completionServerTimestamp
 	)
 	local generation = playerState.generation
-	local definition = resolveWeaponDefinition(playerState.weaponState.weaponId)
-	if definition == nil then
+	if resolveWeaponDefinition(playerState.weaponState.weaponId) == nil then
 		return
 	end
-	task.delay(definition.ReloadDurationSeconds, function()
+	-- Wake at the authoritative deadline rather than the unmodified configured
+	-- duration, so Combat Loader and Emergency Chamber actually shorten the wait
+	-- instead of only shortening the deadline the completion pass checks.
+	task.delay(math.max(0, reloadState.completionServerTimestamp - nowTimestamp), function()
 		completeReload(player, reloadState.completionServerTimestamp, generation)
 	end)
 end
@@ -823,6 +856,7 @@ local function removePlayer(player: Player)
 	end
 	playerStates[player] = nil
 	raycastStates[player] = nil
+	RelicModifierService.forget(player)
 	setPlayerAttribute(player, "LK_EquippedWeaponId", nil)
 end
 
@@ -882,6 +916,7 @@ function OperativeCombatRuntimeService.stop()
 	table.clear(characterAddedConnections)
 	table.clear(playerStates)
 	table.clear(raycastStates)
+	RelicModifierService.clear()
 	accumulatedSeconds = 0
 end
 

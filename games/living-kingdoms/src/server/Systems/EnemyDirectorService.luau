@@ -79,6 +79,7 @@ export type EnemyCombatFact = {
 export type EnemyHealthRead = {
 	revision: number,
 	isAlive: boolean,
+	maximumHealth: number,
 	healthState: {
 		entityId: string,
 		currentHealth: number,
@@ -617,6 +618,9 @@ function EnemyDirectorService.readHealthState(entityId: string): EnemyHealthRead
 	return {
 		revision = entry.healthRevision,
 		isAlive = entry.isAlive,
+		-- Elite affixes scale maximum health, so Execution Protocol's threshold
+		-- must read the enemy's own authoritative maximum, not the walker default.
+		maximumHealth = entry.maximumHealth,
 		healthState = {
 			entityId = entry.healthState.entityId,
 			currentHealth = entry.healthState.currentHealth,

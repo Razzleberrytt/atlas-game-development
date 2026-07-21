@@ -4,8 +4,9 @@
 	Applies at most one configured damage event for a resolved ShotId. The caller
 	owns and commits targetHealthStateAfter, including its processed-ShotId set.
 	No hidden deduplication state, Humanoid mutation, death behavior, or
-	presentation is created here. Server-owned run modifiers may raise damage
-	within a strict multiple of the configured firearm value.
+	presentation is created here. Server-owned run modifiers — squad Field Upgrades
+	read from ProgressionNetwork and the caller-supplied per-operative relic bundle
+	— may raise damage within a strict multiple of the configured firearm value.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -28,10 +29,24 @@ type FirearmHitResolution = CombatContracts.FirearmHitResolution
 type ProcessedShotIds = CombatContracts.ProcessedShotIds
 type TargetHealthState = CombatContracts.TargetHealthState
 
+-- RPG-0108 per-operative relic damage modifiers. Unlike the squad-global
+-- ProgressionNetwork attributes these are supplied by the caller, because relics
+-- are equipped per operative. The caller derives them from the pure
+-- RelicModifierResolver; this module still bounds every value it receives.
+export type RelicDamageModifiers = {
+	specialEnemyDamageMultiplier: number,
+	lowReserveDamageMultiplier: number,
+	lowReserveFraction: number,
+	executionDamageMultiplier: number,
+	executionHealthFraction: number,
+}
+
 export type RunDamageContext = {
 	reserveRounds: number,
 	maximumReserveRounds: number,
 	isSpecialEnemy: boolean,
+	targetMaximumHealth: number?,
+	relicModifiers: RelicDamageModifiers?,
 }
 
 type DamageResolver = {
@@ -97,6 +112,60 @@ end
 -- depth alongside the configured*3 total-damage ceiling below.
 local RUN_PATTERN_DAMAGE_CEILING = 2
 
+-- Hard safety ceilings for the caller-supplied relic bundle, matching the shared
+-- RPG-0101 ModifierCeilings. A malformed bundle fails the shot closed rather than
+-- silently dropping the relic, so a wiring defect is loud instead of invisible.
+local RELIC_DAMAGE_MULTIPLIER_CEILING = 2
+local RELIC_COMBINED_MULTIPLIER_CEILING = 3
+
+local function isBoundedMultiplier(value: unknown): boolean
+	return type(value) == "number" and value == value and value >= 1 and value <= RELIC_DAMAGE_MULTIPLIER_CEILING
+end
+
+local function isBoundedFraction(value: unknown): boolean
+	return type(value) == "number" and value == value and value >= 0 and value < 1
+end
+
+--[[
+	Derives the combined per-operative relic damage multiplier for one shot:
+	Choir Breaker against special enemies, Last Light at or below its reserve
+	fraction, and Execution Protocol at or below its target health fraction.
+	Returns `nil` when the supplied bundle is malformed.
+]]
+local function resolveRelicMultiplier(currentHealth: number, runContext: RunDamageContext): number?
+	local relic = runContext.relicModifiers
+	if relic == nil then
+		return 1
+	end
+	if
+		type(relic) ~= "table"
+		or not isBoundedMultiplier(relic.specialEnemyDamageMultiplier)
+		or not isBoundedMultiplier(relic.lowReserveDamageMultiplier)
+		or not isBoundedMultiplier(relic.executionDamageMultiplier)
+		or not isBoundedFraction(relic.lowReserveFraction)
+		or not isBoundedFraction(relic.executionHealthFraction)
+	then
+		return nil
+	end
+	local multiplier = 1
+	if runContext.isSpecialEnemy then
+		multiplier *= relic.specialEnemyDamageMultiplier
+	end
+	if runContext.reserveRounds <= math.floor(runContext.maximumReserveRounds * relic.lowReserveFraction) then
+		multiplier *= relic.lowReserveDamageMultiplier
+	end
+	local maximumHealth = runContext.targetMaximumHealth
+	if
+		type(maximumHealth) == "number"
+		and maximumHealth == maximumHealth
+		and maximumHealth > 0
+		and currentHealth <= math.floor(maximumHealth * relic.executionHealthFraction)
+	then
+		multiplier *= relic.executionDamageMultiplier
+	end
+	return math.min(multiplier, RELIC_COMBINED_MULTIPLIER_CEILING)
+end
+
 local function resolveDamageAmount(
 	weaponId: string,
 	override: number?,
@@ -111,6 +180,7 @@ local function resolveDamageAmount(
 	local configured = weapon.DamagePerHit
 	local requested = override
 	if requested == nil then
+		local relicMultiplier = 1
 		local damageMultiplier = readProgressionNumber("RunDamageMultiplier", 1)
 		local cullMultiplier = 1
 		local specialEnemyMultiplier = 1
@@ -150,6 +220,11 @@ local function resolveDamageAmount(
 			if runContext.reserveRounds <= math.floor(runContext.maximumReserveRounds * reserveFraction) then
 				lastMagazineMultiplier = readProgressionNumber("RunLastMagazineDamageMultiplier", 1)
 			end
+			local resolvedRelicMultiplier = resolveRelicMultiplier(currentHealth, runContext)
+			if resolvedRelicMultiplier == nil then
+				return nil
+			end
+			relicMultiplier = resolvedRelicMultiplier
 		end
 		-- Each trusted run multiplier must stay within its bounded 1..3 range;
 		-- anomalous values fail closed. Legitimate stacked damage and cull
@@ -170,7 +245,13 @@ local function resolveDamageAmount(
 		requested = math.min(
 			configured * 3,
 			math.floor(
-				configured * damageMultiplier * cullMultiplier * specialEnemyMultiplier * lastMagazineMultiplier + 0.5
+				configured
+						* damageMultiplier
+						* cullMultiplier
+						* specialEnemyMultiplier
+						* lastMagazineMultiplier
+						* relicMultiplier
+					+ 0.5
 			)
 		)
 	end

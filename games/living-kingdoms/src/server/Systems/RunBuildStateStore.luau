@@ -26,6 +26,14 @@ local RelicRewardResolver = require(ReplicatedStorage.Shared.RPG.RelicRewardReso
 export type UpgradeStacks = { [string]: number }
 export type CompatibilityIdSet = { [string]: boolean }
 
+-- Revisioned server-only relic read for the authoritative effect owners. The
+-- revision lets a caller cache derived modifiers until the build actually
+-- changes; it is never sent to a client.
+export type EquippedRelicRead = {
+	revision: number,
+	relicIds: { string },
+}
+
 type OperativeState = {
 	connected: boolean,
 	revision: number,
@@ -46,6 +54,7 @@ export type Store = {
 	readOperationGeneration: (self: Store) -> number,
 	readUpgradeStacks: (self: Store) -> UpgradeStacks,
 	readSafeSnapshot: (self: Store, operativeId: string) -> any?,
+	readEquippedRelicIds: (self: Store, operativeId: string) -> EquippedRelicRead?,
 	commitUpgradeStacks: (
 		self: Store,
 		operationGeneration: number,
@@ -348,6 +357,26 @@ function RunBuildStateStore.new(): Store
 			upgradeStacks = table.freeze(copyUpgradeStacks(state.upgradeStacks)),
 			relicSlots = copyRelicSlots(state.relicSlots),
 			pendingRewards = copyPendingRewards(state.pendingRewards),
+		})
+	end
+
+	function store:readEquippedRelicIds(operativeId: string): EquippedRelicRead?
+		if not started then
+			return nil
+		end
+		local state = operativeStates[operativeId]
+		if state == nil then
+			return nil
+		end
+		local relicIds = {}
+		for _, slot in state.relicSlots do
+			if slot.slotStateId == SlotStates.Equipped and type(slot.relicId) == "string" then
+				table.insert(relicIds, slot.relicId)
+			end
+		end
+		return table.freeze({
+			revision = state.revision,
+			relicIds = table.freeze(relicIds),
 		})
 	end
 

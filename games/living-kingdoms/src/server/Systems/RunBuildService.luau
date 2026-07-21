@@ -110,6 +110,12 @@ function RunBuildService.readSafeSnapshot(player: Player): any?
 	return store:readSafeSnapshot(operativeId(player))
 end
 
+-- Server-only relic read for the authoritative RPG-0108 effect owners. No client
+-- ever receives this; the replicated build view remains readSafeSnapshot.
+function RunBuildService.readEquippedRelicIds(player: Player): RunBuildStateStore.EquippedRelicRead?
+	return store:readEquippedRelicIds(operativeId(player))
+end
+
 function RunBuildService.commitSquadUpgradeStacks(
 	operationGeneration: number,
 	requestId: string,

@@ -14,8 +14,10 @@
 	per-shot/per-operative condition and applies the multiplier. Blood Battery's
 	kill-counted healing is exposed through a separate pure helper.
 
-	This module is not yet consumed by the combat runtime; the RPG-0108 runtime
-	integration will thread these outputs through the authoritative passes.
+	The RPG-0108 part 2 runtime threads these outputs through the authoritative
+	passes: RelicModifierService caches one bundle per operative, DamageResolver
+	consumes the conditional damage multipliers, and ReloadResolver consumes the
+	wounded reload reduction.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -32,6 +34,7 @@ export type RelicModifiers = {
 	lowReserveDamageMultiplier: number,
 	lowReserveFraction: number,
 	woundedReloadDurationMultiplier: number,
+	woundedHealthFraction: number,
 	executionDamageMultiplier: number,
 	executionHealthFraction: number,
 	bloodBatteryKillThreshold: number,
@@ -52,6 +55,7 @@ local function neutralModifiers(): RelicModifiers
 		lowReserveDamageMultiplier = 1,
 		lowReserveFraction = 0,
 		woundedReloadDurationMultiplier = 1,
+		woundedHealthFraction = 0,
 		executionDamageMultiplier = 1,
 		executionHealthFraction = 0,
 		bloodBatteryKillThreshold = 0,
@@ -107,9 +111,11 @@ function RelicModifierResolver.deriveModifiers(equippedRelicIds: { string }): Re
 		modifiers.lowReserveFraction = tuning.reserveFraction
 	end
 	if equipped[RelicIds.EmergencyChamber] then
+		local tuning = RelicRuntimeConfig.EmergencyChamber
 		modifiers.woundedReloadDurationMultiplier = RunModifierResolver.resolve({
-			reloadDurationReduction = RelicRuntimeConfig.EmergencyChamber.reloadDurationReduction,
+			reloadDurationReduction = tuning.reloadDurationReduction,
 		}).reloadDurationMultiplier
+		modifiers.woundedHealthFraction = tuning.woundedHealthFraction
 	end
 	if equipped[RelicIds.ExecutionProtocol] then
 		local tuning = RelicRuntimeConfig.ExecutionProtocol
