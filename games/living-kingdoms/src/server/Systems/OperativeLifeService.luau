@@ -19,6 +19,7 @@ local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local OperativeLifeConfig = require(ReplicatedStorage.Shared.Config.OperativeLifeConfig)
 local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.OperativeLifeContracts)
 local OperativeHealingResolver = require(script.Parent.OperativeHealingResolver)
+local RelicModifierService = require(script.Parent.RelicModifierService)
 local OperativeHealthResolver = require(script.Parent.OperativeHealthResolver)
 
 type AuthoritativeOperativeDamage = OperativeLifeContracts.AuthoritativeOperativeDamage
@@ -88,6 +89,8 @@ type OperativeLifeService = {
 		expectedRevision: number,
 		authoritativeHealing: AuthoritativeHealing
 	) -> CommitResult,
+	grantTemporaryArmor: (operativeEntityId: string, armorAmount: number, expiresAtServerTimestamp: number) -> boolean,
+	readTemporaryArmor: (operativeEntityId: string, serverTimestamp: number) -> number,
 	commitAcceptedTransition: (player: Player, expectedRevision: number, resolverResult: unknown) -> CommitResult,
 	isAlive: (player: Player) -> boolean,
 	isCharacterMovementAllowed: (player: Player, character: Model) -> boolean,
@@ -103,6 +106,14 @@ local OperativeLifeService: OperativeLifeService = {} :: OperativeLifeService
 local entries: { [Player]: OperativeEntry } = {}
 local playerByOperativeEntityId: { [string]: Player } = {}
 local characterAddedConnections: { [Player]: RBXScriptConnection } = {}
+-- RPG-0109 Guardian Signal armor pools. Armor is an operation-bound temporary
+-- combat resource, never part of the replicated life snapshot, and it is released
+-- with the operative's registration.
+type TemporaryArmor = {
+	remaining: number,
+	expiresAtServerTimestamp: number,
+}
+local temporaryArmorByPlayer: { [Player]: TemporaryArmor } = {}
 local listeners: { [number]: LifeStateListener } = {}
 local rosterListeners: { [number]: RosterListener } = {}
 local nextListenerId = 0
@@ -377,6 +388,7 @@ function OperativeLifeService.registerPlayer(player: Player): AuthoritativeRead?
 		soloOperationEligible = false,
 	}
 	entries[player] = entry
+	temporaryArmorByPlayer[player] = nil
 	playerByOperativeEntityId[operativeEntityId] = player
 	notifyRosterListeners("Registered", operativeEntityId)
 	return { revision = entry.revision, snapshot = copySnapshot(entry.snapshot) }
@@ -389,6 +401,7 @@ function OperativeLifeService.unregisterPlayer(player: Player): boolean
 	end
 	unbindCharacter(entry)
 	entries[player] = nil
+	temporaryArmorByPlayer[player] = nil
 	playerByOperativeEntityId[entry.operativeEntityId] = nil
 	notifyRosterListeners("Unregistered", entry.operativeEntityId)
 	return true
@@ -448,6 +461,81 @@ function OperativeLifeService.configureSoloOperationEligibility(operativeEntityI
 	return true
 end
 
+--[[
+	Grants an expiring pool of temporary armor. Guardian Signal is the only source
+	today; the pool replaces rather than stacks, so repeated revives refresh the
+	protection instead of accumulating it.
+]]
+function OperativeLifeService.grantTemporaryArmor(
+	operativeEntityId: string,
+	armorAmount: number,
+	expiresAtServerTimestamp: number
+): boolean
+	local player = if type(operativeEntityId) == "string" then playerByOperativeEntityId[operativeEntityId] else nil
+	if
+		player == nil
+		or entries[player] == nil
+		or not isFiniteNonnegative(armorAmount)
+		or armorAmount < 1
+		or armorAmount % 1 ~= 0
+		or not isFiniteNonnegative(expiresAtServerTimestamp)
+	then
+		return false
+	end
+	temporaryArmorByPlayer[player] = {
+		remaining = armorAmount,
+		expiresAtServerTimestamp = expiresAtServerTimestamp,
+	}
+	return true
+end
+
+-- Reads the operative's unexpired armor, discarding an expired pool as it goes.
+function OperativeLifeService.readTemporaryArmor(operativeEntityId: string, serverTimestamp: number): number
+	local player = if type(operativeEntityId) == "string" then playerByOperativeEntityId[operativeEntityId] else nil
+	local armor = if player == nil then nil else temporaryArmorByPlayer[player]
+	if armor == nil or not isFiniteNonnegative(serverTimestamp) then
+		return 0
+	end
+	if serverTimestamp >= armor.expiresAtServerTimestamp then
+		temporaryArmorByPlayer[player :: Player] = nil
+		return 0
+	end
+	return armor.remaining
+end
+
+--[[
+	Applies Guardian Signal armor to one incoming damage event. Armor absorbs at
+	most all but one point, so every authoritative damage event still commits and
+	stays replay-protected through the existing processed-event set.
+]]
+local function absorbWithTemporaryArmor(player: Player, damageAmount: number, serverTimestamp: number): number
+	local armor = temporaryArmorByPlayer[player]
+	if armor == nil then
+		return damageAmount
+	end
+	if not isFiniteNonnegative(serverTimestamp) or serverTimestamp >= armor.expiresAtServerTimestamp then
+		temporaryArmorByPlayer[player] = nil
+		return damageAmount
+	end
+	local absorbed = math.min(armor.remaining, math.max(0, math.floor(damageAmount) - 1))
+	if absorbed <= 0 then
+		return damageAmount
+	end
+	armor.remaining -= absorbed
+	if armor.remaining <= 0 then
+		temporaryArmorByPlayer[player] = nil
+	end
+	return damageAmount - absorbed
+end
+
+-- Returns a copy of the authoritative damage carrying a reduced amount. Identity,
+-- source, target, and timestamp are preserved so replay protection is unchanged.
+local function withDamageAmount(authoritativeDamage: any, damageAmount: number): any
+	local reduced = table.clone(authoritativeDamage)
+	reduced.damageAmount = damageAmount
+	return reduced
+end
+
 function OperativeLifeService.applyAuthoritativeDamage(
 	operativeEntityId: string,
 	expectedRevision: number,
@@ -479,6 +567,18 @@ function OperativeLifeService.applyAuthoritativeDamage(
 	local snapshot = copySnapshot(entry.snapshot)
 	local damage = authoritativeDamage :: any
 	local serverTimestamp = if type(damage) == "table" then damage.serverTimestamp else nil
+	if
+		type(damage) == "table"
+		and isFiniteNonnegative(damage.damageAmount)
+		and damage.damageAmount > 0
+		and entry.snapshot.lifeStateId == lifeStateIds.Alive
+	then
+		local absorbedAmount = absorbWithTemporaryArmor(player, damage.damageAmount, serverTimestamp :: any)
+		if absorbedAmount ~= damage.damageAmount then
+			damage = withDamageAmount(damage, absorbedAmount)
+			authoritativeDamage = damage
+		end
+	end
 	local resolverResult = OperativeHealthResolver.resolveDamage(snapshot, authoritativeDamage, serverTimestamp :: any)
 	if type(resolverResult) ~= "table" or resolverResult.didTransition ~= true then
 		local reason = if type(resolverResult) == "table"
@@ -489,6 +589,40 @@ function OperativeLifeService.applyAuthoritativeDamage(
 	end
 	local result = resolverResult :: any
 	local snapshotAfter = result.snapshotAfter
+	-- Second Wind (RPG-0109): a once-per-operation reprieve. When the resolved
+	-- transition would incapacitate a living operative and the relic still holds
+	-- its charge, the damage is reduced to leave the operative alive but fragile
+	-- and re-resolved through the same pure boundary. The charge is spent first,
+	-- so a failed re-resolve cannot retry the reprieve.
+	if
+		type(snapshotAfter) == "table"
+		and entry.snapshot.lifeStateId == lifeStateIds.Alive
+		and snapshotAfter.lifeStateId == lifeStateIds.Incapacitated
+		and type(damage) == "table"
+		and isFiniteNonnegative(damage.damageAmount)
+	then
+		local survivalHealth = RelicModifierService.read(player).secondWindSurvivalHealth
+		local healthBefore = entry.snapshot.healthState.currentHealth
+		if survivalHealth > 0 and healthBefore > 1 and RelicModifierService.consumeSecondWindCharge(player) then
+			local reducedAmount = math.max(1, math.floor(healthBefore - survivalHealth))
+			local reprieve = OperativeHealthResolver.resolveDamage(
+				copySnapshot(entry.snapshot),
+				withDamageAmount(damage, reducedAmount),
+				serverTimestamp :: any
+			)
+			if
+				type(reprieve) == "table"
+				and reprieve.didTransition == true
+				and type(reprieve.snapshotAfter) == "table"
+				and reprieve.snapshotAfter.lifeStateId == lifeStateIds.Alive
+			then
+				resolverResult = reprieve
+				result = reprieve :: any
+				snapshotAfter = result.snapshotAfter
+				damage = withDamageAmount(damage, reducedAmount)
+			end
+		end
+	end
 	if
 		type(damage) ~= "table"
 		or type(damage.damageEventId) ~= "string"
@@ -856,6 +990,7 @@ function OperativeLifeService.stop()
 	end
 	table.clear(listeners)
 	table.clear(rosterListeners)
+	table.clear(temporaryArmorByPlayer)
 end
 
 return OperativeLifeService

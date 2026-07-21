@@ -457,7 +457,7 @@ local RelicCatalog = table.freeze({
 		slotCost = 1,
 		counterThreshold = 0,
 		maximumCharges = 0,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		relicId = RelicIds.SecondWind,
@@ -469,7 +469,7 @@ local RelicCatalog = table.freeze({
 		slotCost = 1,
 		counterThreshold = 0,
 		maximumCharges = 1,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 })
 
@@ -776,8 +776,8 @@ for _, definition in RelicCatalog do
 end
 assert(#RelicCatalog == countVocabulary(RelicIds), "every relic ID requires exactly one catalog entry")
 assert(
-	implementedRelicCount == 10,
-	"the implemented relic set is the RPG-0108 first batch plus the delivered RPG-0109 slices"
+	implementedRelicCount == #RelicCatalog,
+	"every declared relic must carry a runtime effect now that RPG-0108 and RPG-0109 are implemented"
 )
 
 local seenRewardSourceIds = {}

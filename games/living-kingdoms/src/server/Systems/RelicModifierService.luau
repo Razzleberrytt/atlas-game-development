@@ -99,6 +99,14 @@ function RelicModifierService.resetSustainedShots(player: Player)
 	RunBuildService.setRelicCounter(player, RunRpgContracts.RelicIds.SuppressionEngine, 0)
 end
 
+--[[
+	Spends Second Wind's single operation charge. Returns false when the relic is
+	not equipped or already spent, so the reprieve cannot repeat.
+]]
+function RelicModifierService.consumeSecondWindCharge(player: Player): boolean
+	return RunBuildService.consumeRelicCharge(player, RunRpgContracts.RelicIds.SecondWind)
+end
+
 function RelicModifierService.forget(player: Player)
 	cache[player] = nil
 end

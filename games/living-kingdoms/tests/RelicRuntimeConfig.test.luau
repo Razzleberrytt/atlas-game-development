@@ -61,7 +61,7 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Re
 
 local Ceilings = rpgConfig.ModifierCeilings
 
-assertThat(config.Version == "RPG-0109-weapon-batch-tuning", "relic tuning version drifted")
+assertThat(config.Version == "RPG-0109-weapon-and-cooperation-batch-tuning", "relic tuning version drifted")
 assertThat(#config.FirstBatchRelicIds == 6, "the first relic batch must contain six relics")
 
 -- Every runtime tuning value must sit within the shared ceilings.
@@ -90,6 +90,19 @@ assertThat(
 assertThat(
 	config.EmergencyChamber.woundedHealthFraction > 0 and config.EmergencyChamber.woundedHealthFraction <= 0.5,
 	"Emergency Chamber must only reward genuinely wounded operatives"
+)
+assertThat(
+	config.GuardianSignal.temporaryArmorFractionOfMaximumHealth > 0
+		and config.GuardianSignal.temporaryArmorFractionOfMaximumHealth <= Ceilings.maximumTemporaryArmorFractionOfMaximumHealth
+		and config.GuardianSignal.armorDurationSeconds >= 4
+		and config.GuardianSignal.armorDurationSeconds <= 20,
+	"Guardian Signal armor must respect the temporary armor ceiling and a short timer"
+)
+assertThat(
+	config.SecondWind.survivalHealth > 0
+		and config.SecondWind.survivalHealth % 1 == 0
+		and config.SecondWind.survivalHealth <= 30,
+	"Second Wind must leave a whole, deliberately fragile amount of health"
 )
 assertThat(
 	config.SuppressionEngine.shotThreshold > 0
@@ -129,7 +142,7 @@ for relicId in config.RuntimeByRelicId do
 	assertThat(contracts.isKnownRelicId(relicId), "relic tuning references an unknown relic")
 	runtimeCount += 1
 end
-assertThat(runtimeCount == 10, "runtime tuning must cover exactly the implemented relics")
+assertThat(runtimeCount == 12, "runtime tuning must cover exactly the implemented relics")
 
 -- Exactly the relics with runtime tuning carry effects, so exactly those relics
 -- may be marked Implemented in the canonical relic catalog.
@@ -160,7 +173,7 @@ for _, definition in rpgConfig.RelicCatalog do
 	end
 end
 assertThat(
-	implementedRelicCount == 10,
+	implementedRelicCount == 12,
 	"the implemented relics must be the RPG-0108 first batch plus the delivered RPG-0109 slices"
 )
 
