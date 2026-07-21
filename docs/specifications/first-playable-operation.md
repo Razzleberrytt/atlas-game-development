@@ -4,7 +4,7 @@ Living Kingdoms' first complete vertical slice: one authored operation from inse
 
 ## Operation overview
 
-**Operation Blackwater Relay** takes place in the P5-0102 Appalachian exclusion-zone graybox. A squad of one to four operatives inserts at the Ranger Station, crosses the forest to the Forest Service Lookout, restores the emergency communications relay, and exfiltrates through the authored Forest Extraction Clearing while pressure mounts. A full-squad run is shaped for roughly 10–15 minutes: a 20-second regroup, several minutes of darkness navigation each way, one simple interaction, and a 90-second holdout.
+**Operation Blackwater Relay** takes place in the P5-0102 Appalachian exclusion-zone graybox. A squad of one to four operatives inserts at the Ranger Station, crosses the forest to the Forest Service Lookout, restores the emergency communications relay, and exfiltrates through the authored Forest Extraction Clearing while pressure mounts. A full-squad run is shaped for roughly 10–15 minutes: an 8-second regroup, several minutes of darkness navigation each way, one simple interaction, and a 120-second holdout.
 
 ## Mission phases
 
@@ -13,9 +13,9 @@ The authoritative phase vocabulary lives in `src/shared/Mission/MissionContracts
 | Phase | Entry condition | What happens |
 | --- | --- | --- |
 | `Insertion` | Server start | Squad spawns at the Ranger Station staging area (existing P5-0101 spawn and lighting). No combat. Radio: "Insertion complete." |
-| `Infiltration` | `InsertionHoldSeconds` (20 s) elapse | The operation roster freezes (`SquadFailureService.beginOperation`), the objective becomes `Active`, and its interaction prompt enables. Radio directs the squad to Lookout 7. Navigation is environmental: the existing logging road, switchback trail, creek, and landmark lighting — no new walls or rails. |
+| `Infiltration` | `InsertionHoldSeconds` (8 s) elapse | The operation roster freezes (`SquadFailureService.beginOperation`), the objective becomes `Active`, and its interaction prompt enables. Radio directs the squad to Lookout 7. Navigation is environmental: the existing logging road, switchback trail, creek, and landmark lighting — no new walls or rails. |
 | `Exfiltration` | Objective completed | Extraction unlocks: an orange beacon pillar with an `EXTRACTION` marker appears on the clearing, the objective text updates, and escalation begins. |
-| `Holdout` | An admitted, alive operative is inside the extraction zone (34-stud radius, checked every 0.5 s) | The bounded `ArrivalSeconds` (90 s) countdown starts and replicates as a server deadline timestamp. Radio: "Hold your position." The final escalation wave spawns. |
+| `Holdout` | An admitted, alive operative is inside the extraction zone (34-stud radius, checked every 0.25 s) | The bounded `ArrivalSeconds` (120 s) countdown starts and replicates as a server deadline timestamp. Radio: "Hold your position." The final escalation wave spawns. |
 | `Resolved` | Countdown expiry, or squad failure at any time | Success if at least one admitted, alive operative is inside the clearing when extraction arrives; otherwise failure. Terminal — no later event can change the outcome. |
 
 ## Objective system
@@ -42,9 +42,9 @@ Objective completion unlocks extraction at the authored clearing (`ExtractionCle
 
 Pressure mounts in three authored waves — no bosses or special abilities:
 
-1. **Objective completed** — two hostiles on the descent between the lookout and the campground.
-2. **`SecondWaveDelaySeconds` (45 s) after completion** — two hostiles along the creek crossing and eastern approach, with a "pressure rising" transmission.
-3. **Holdout begins** — three hostiles converging on the clearing from outside the fair-spawn floor.
+1. **Objective completed** — 10-hostile relay-collapse ring centered beyond the console's fair-spawn floor.
+2. **`SecondWaveDelaySeconds` (20 s) after completion** — 14-hostile creek swarm, with a "pressure rising" transmission.
+3. **Holdout begins** — 22-hostile extraction nightmare converging on the clearing from outside the fair-spawn floor.
 
 Waves spawn exactly once each and escalation level is monotonic, even if a fast squad reaches holdout before wave 2's timer. Since P5-0106, waves spawn production Exclusion Walkers through `EnemyDirectorService.spawnAuthoredWave` — fairness-validated, pursuing, and killable everywhere, not only in Studio. Infiltration additionally begins the director's roaming pressure and mission resolution stands all pressure down; see `docs/specifications/enemy-pressure-runtime.md`.
 

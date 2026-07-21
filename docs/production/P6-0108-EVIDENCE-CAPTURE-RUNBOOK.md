@@ -2,16 +2,18 @@
 
 > **Status:** P6 was signed off *qualitatively* for the current prototype in
 > PR #165 (owner-reported multiplayer pass; no tuning applied, no numbers
-> invented). The **numeric** competent-route matrix below was **not** captured
-> at sign-off — the measured 1/2/4-operative scarcity replay is deferred to
-> **P12**. This runbook is the procedure for that P12 measured replay; the
-> references to the "P6 gate" below describe the original P6-0108 framing.
+> invented). The `P6-1P-01`/`P6-2P-01`/`P6-4P-01` rows preserve that qualitative
+> disposition and contain no reconstructed measurements. The measured
+> 1/2/4-operative scarcity replay is deferred to **P12**. This runbook is the
+> procedure for that replay and appends distinct `P12-*` rows so the P6 audit
+> trail remains intact.
 
 ## What this is
 
-A concrete, repeatable script for capturing the three controlled runs that
-populate the **P6-0108 required evidence table** — `P6-1P-01`, `P6-2P-01`, and
-`P6-4P-01` — in one Studio sitting. It exists because the automated
+A concrete, repeatable script for capturing three controlled runs —
+`P12-1P-01`, `P12-2P-01`, and `P12-4P-01` — in one Studio sitting and appending
+them to the scarcity specification's evidence table. It exists because the
+automated
 `P6-AUTO-*` probes recorded on 2026-07-21 admit clients into the session but
 leave them stationary: they never travel to caches, issue reload intent, or
 apply pressure, so they are marked *invalid for balance comparison*. This
@@ -41,8 +43,8 @@ note why — an honest invalid row is more useful than a fabricated valid one.
 
 ## Fixtures referenced
 
-- **Route / phases** (`Insertion` 20 s → `Infiltration` → `Exfiltration` →
-  `Holdout` 90 s → `Resolved`): `MissionConfig.luau`,
+- **Route / phases** (`Insertion` 8 s → `Infiltration` → `Exfiltration` →
+  `Holdout` 120 s → `Resolved`): `MissionConfig.luau`,
   [`../specifications/first-playable-operation.md`](../specifications/first-playable-operation.md).
 - **Three authored caches** (12 rounds each), in `AmmunitionCacheConfig.luau`:
   1. `ammo-cache.campground-medical-tent` (Campground landmark)
@@ -75,7 +77,7 @@ required client count. Never carry a session or telemetry across runs.
    local probe = game:GetService("ServerStorage"):WaitForChild("LivingKingdomsAmmunitionValidation")
    probe.ResetSampling:Invoke()
    ```
-3. Record run ID (`P6-1P-01` / `P6-2P-01` / `P6-4P-01`), date, operative count,
+3. Record run ID (`P12-1P-01` / `P12-2P-01` / `P12-4P-01`), date, operative count,
    commit, intended route, and any known limitation.
 4. Capture the **operation-start baseline** snapshot:
    ```luau
@@ -91,11 +93,11 @@ was capacity-clamped, whether depletion showed only for that operative).
 
 | Phase | Do this | Capture |
 | --- | --- | --- |
-| `Insertion` (20 s) | Regroup at Ranger Station; no combat. | — (baseline already taken) |
+| `Insertion` (8 s) | Regroup at Ranger Station; no combat. | — (baseline already taken) |
 | `Infiltration` | Cross the logging road / switchback / creek toward Lookout 7, fighting roaming pressure and visiting caches in the locked order. Reload through ordinary play. | ★ after your first cache collection |
 | Objective | Restore the relay at the Lookout Tower console. | ★ **first objective completion** |
-| `Exfiltration` | Descend toward the Extraction Clearing (wave 1: two hostiles between lookout and campground). | ★ **mid-operation escalation / major relocation** |
-| `Holdout` (90 s) | Stand inside the 34-stud extraction zone; survive the final converging wave. | ★ **holdout start** |
+| `Exfiltration` | Descend toward the Extraction Clearing under the 10-walker relay-collapse wave. | ★ **mid-operation escalation / major relocation** |
+| `Holdout` (120 s) | Stand inside the 34-stud extraction zone; survive the final converging wave. | ★ **holdout start** |
 | `Resolved` | Countdown expiry or squad failure. | ★ **terminal outcome** |
 
 ### C. Reconcile and classify
@@ -113,8 +115,9 @@ was capacity-clamped, whether depletion showed only for that operative).
 
 ## After all three runs
 
-- With `P6-1P-01`, `P6-2P-01`, and `P6-4P-01` recorded and reconciled, the
-  P6-0108 gate has its first comparable matrix. If the runs disagree or a count
+- With `P12-1P-01`, `P12-2P-01`, and `P12-4P-01` recorded and reconciled, the
+  deferred scarcity replay has its first comparable matrix. If the runs disagree
+  or a count
   is under-sampled, capture repeat runs (`-02`, `-03`) before drawing any
   conclusion — one run per count is a sample, not evidence.
 - Only with that measured evidence in hand should any scarcity **tuning** be
