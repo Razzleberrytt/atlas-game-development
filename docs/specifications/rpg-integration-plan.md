@@ -1,7 +1,7 @@
 # Living Kingdoms — Run-Based RPG Integration Plan
 
 **Document ID:** RPG-PLAN-001  
-**Status:** Proposed  
+**Status:** Active — `RPG-0101`–`RPG-0106` complete; `RPG-0107` next<br>
 **Target:** Post-HROI gameplay expansion  
 **Primary objective:** Turn each operation into a distinct, replayable character-build journey while preserving Living Kingdoms' brutal cooperative survival identity.
 
@@ -568,11 +568,13 @@ Delivered as the twelve-upgrade v5 pool. Four new functional cards add special-r
 
 **Exit:** Level-up offers create distinct but bounded early builds without invalid choices. ✔
 
-### RPG-0104 — Add modifier resolver framework
+### RPG-0104 — Add modifier resolver framework — **Complete**
 
 Centralize bounded calculation for damage, cadence, reload duration, ammunition conservation and capacity, healing, armor, movement, loot, and XP bonuses. Migrate existing run-upgrade calculations into the shared pipeline.
 
-**Exit:** Existing behavior remains compatible and every modifier ceiling is fixture-locked.
+Delivered through the pure shared `RunModifierResolver`. It supplies immutable neutral defaults, rejects malformed contributions, clamps every configured modifier category, and receives all twelve live Field Upgrade contributions through `RunUpgradeResolver` without changing existing tuning or authority.
+
+**Exit:** Existing behavior remains compatible and every modifier ceiling is fixture-locked. ✔
 
 ### RPG-0105 — Add elite identity and one affix — **Complete**
 
@@ -593,6 +595,14 @@ Delivered through the existing pure assignment and enemy lifecycle owners. Role-
 ### RPG-0107 — Add relic reward and slot framework
 
 Implement relic definitions, three equipped slots, two-choice rewards, pending reward storage, replacement flow, safe snapshots, and operation reset. Start with passive relics that consume existing server facts.
+
+Implementation path:
+
+1. Keep `RunBuildStateStore` and `RunBuildService` as the only operation-scoped owners; extend them with bounded enqueue, choose, replace, replay-rejection, reconnect, reset, and teardown transitions instead of creating parallel relic state.
+2. Add a pure deterministic reward resolver that derives two distinct compatible choices from server-owned operation generation, reward sequence, operative/loadout facts, and the implemented relic catalog. Reopening UI or reconnecting must return the stored offer, never reroll it.
+3. Admit at most three unresolved rewards, equip into the first empty slot, and require an explicit validated slot replacement when all three slots are occupied. Reject duplicates, stale generations, completed sequences, unoffered relics, other-operative requests, and discarded-effect retention.
+4. Expose only safe copied snapshots and a narrow choice/replacement request carrying identity-free sequence, relic, and slot IDs. Use a server-only validation source until `RPG-0110` connects production elite, special, objective, horde, and boss reward events.
+5. Fixture-lock deterministic offers, compatibility filtering, queue and processed-history ceilings, full-slot replacement, reconnect continuity, stale/replayed requests, copied-state isolation, and complete operation teardown. Relic effect mechanics remain owned by `RPG-0108`/`RPG-0109`; the polished HUD remains owned by `RPG-0111`.
 
 **Exit:** Relics cannot duplicate, reroll through reconnects, exceed slots, or survive operation teardown.
 
@@ -635,6 +645,19 @@ Validate solo and 2/4-player squads, every firearm, duplicate specialists, low-a
 ## 16. Execution order and high-ROI checkpoint
 
 `RPG-0101` → `RPG-0102` → `RPG-0103` → `RPG-0104` → `RPG-0105` → `RPG-0106` → `RPG-0107` → `RPG-0108` → `RPG-0109` → `RPG-0110` → `RPG-0111` → `RPG-0112` → `RPG-0113`
+
+Current status:
+
+| Tasks | Status | Evidence / next action |
+|---|---|---|
+| `RPG-0101`–`RPG-0106` | Complete | Merged in PRs #142 and #144–#148: contracts/config, centralized operation state, twelve upgrades, shared modifier resolution, and five elite affixes. |
+| `RPG-0107` | Next | Implement the bounded reward/slot/replacement framework through the existing run-build owner using the five-step path above. |
+| `RPG-0108` | Not started | Activate the first six relic mechanics only after the framework exit gate passes; this completes the high-ROI playable checkpoint. |
+| `RPG-0109`–`RPG-0111` | Not started | Add weapon/cooperation relics, production reward sources, and readable UI in order; defer any source whose authoritative P8/P9 owner does not yet exist. |
+| `RPG-0112` | Blocked by P10 result owner | Attach the operation-bound build summary to the authoritative match result rather than creating an RPG-specific result authority. |
+| `RPG-0113` | Not started | Run the complete solo/2/4-player security, balance, readability, cleanup, and representative-horde validation matrix after `RPG-0112`. |
+
+The separate manual product gates remain honest: P6 scarcity needs its 1/2/4-operative evidence matrix and tuning sign-off, while HROI still needs representative Studio playtests and visual/mix review. RPG implementation may continue inside existing owners, but it does not satisfy those evidence gates or unblock P7 class-effect runtime.
 
 The highest-ROI playable checkpoint is **RPG-0101 through RPG-0108**. At that point the game has expanded Field Upgrades, elites, three relic slots, reward choices, and six meaningful relics without waiting for persistence or the complete content roster.
 

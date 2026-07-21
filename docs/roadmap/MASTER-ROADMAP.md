@@ -34,6 +34,15 @@ Snapshot as of 2026-07-20. Task-level detail and acceptance gates for unfinished
 | HROI — Horde pressure and run-reward vertical slice | In progress | Bounded slices merged through PR #128 (issue #98): horde pressure and pacing tuning, confirmed hit/kill impact feedback, floating damage text, shooter hit markers, critical-condition urgency, shared run-only Field XP with squad upgrade choices, scarce enemy ammunition/recovery/Field Intel loot, five-weapon loadout roster with cleave/pierce patterns, six readable horde roles, environment mood, and client-local firearm/hostile audio. The RPG track now owns the expanded twelve-pick run-upgrade pool. Representative Studio playtest validation remains the outstanding HROI gate. |
 | RPG — Run-based roguelite builds | In progress | `RPG-0101`–`RPG-0106` are complete: contracts/config, operation-scoped run-build state, the twelve-upgrade pool, shared bounded modifier resolution, and the full five-affix elite roster. Deterministic server assignment preserves the protected opening, role compatibility, one-affix rule, and three-elite cap. Frenzied, Armored, Regenerator, Volatile, and Commander each have bounded mechanics, safe identity, readable counterplay, one-shot bonus Field XP, and cleanup coverage. `RPG-0107` adds the relic reward and slot framework next. Some implemented upgrades ship interim mechanics (see plan §7.4). |
 
+### Immediate execution focus
+
+- **Done:** merged PRs #142 and #144–#148 establish `RPG-0101`–`RPG-0106`; repository contracts, configuration, run-build state, twelve upgrades, modifier ceilings, and all five elite affixes agree on that boundary.
+- **Next:** `RPG-0107` extends the existing `RunBuildStateStore`/`RunBuildService` with deterministic two-choice rewards, the already-declared three slots, bounded pending queues, validated replacement, safe snapshots, replay/reconnect protection, and operation teardown. It must not create parallel build state or production reward owners that belong to later tasks.
+- **Then:** `RPG-0108` activates the first six relics and completes the high-ROI checkpoint; `RPG-0109`–`RPG-0111` add the remaining relic families, production reward sources, and UI as their authoritative gameplay owners become available; `RPG-0112` waits for P10's result owner; `RPG-0113` performs final multiplayer/security/performance validation.
+- **Parallel manual gates:** P6 scarcity sign-off and the HROI representative Studio playtest/visual-mix evidence remain outstanding. RPG progress does not mark either gate complete or unblock P7 class-effect runtime.
+
+The active RPG task definitions, implementation path, dependencies, and exit gates live in [`../specifications/rpg-integration-plan.md`](../specifications/rpg-integration-plan.md).
+
 ## Preserved foundation history
 
 ### Former M0 — Repository and Roblox foundation
