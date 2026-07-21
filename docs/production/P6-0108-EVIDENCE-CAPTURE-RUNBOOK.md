@@ -1,5 +1,12 @@
 # P6-0108 — Single-Sitting Evidence Capture Runbook
 
+> **Status:** P6 was signed off *qualitatively* for the current prototype in
+> PR #165 (owner-reported multiplayer pass; no tuning applied, no numbers
+> invented). The **numeric** competent-route matrix below was **not** captured
+> at sign-off — the measured 1/2/4-operative scarcity replay is deferred to
+> **P12**. This runbook is the procedure for that P12 measured replay; the
+> references to the "P6 gate" below describe the original P6-0108 framing.
+
 ## What this is
 
 A concrete, repeatable script for capturing the three controlled runs that
@@ -110,11 +117,12 @@ was capacity-clamped, whether depletion showed only for that operative).
   P6-0108 gate has its first comparable matrix. If the runs disagree or a count
   is under-sampled, capture repeat runs (`-02`, `-03`) before drawing any
   conclusion — one run per count is a sample, not evidence.
-- Only then does **P6-0109** open: choose the smallest configuration-backed
-  lever the evidence supports, re-run this script to revalidate, and lock final
-  values. Do not tune from a single run or from the calculated projection alone.
-- P6 sign-off is the gate that releases the staged **P7-0103** combat-specialist
-  vertical slice and the RPG-0108 "three viable build patterns" check.
+- Only with that measured evidence in hand should any scarcity **tuning** be
+  applied: choose the smallest configuration-backed lever the evidence supports,
+  re-run this script to revalidate, and lock final values. Do not tune from a
+  single run or from the calculated projection alone. (At the P6 prototype
+  sign-off in #165 no tuning was applied; this measured pass is the P12 basis
+  for any later change.)
 
 ## Do not
 
