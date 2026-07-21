@@ -132,9 +132,16 @@ Create one row for every captured run. Add per-operative detail beneath the row 
 
 | Run ID | Commit/config | Operatives | Route/objective order | Duration | Outcome | Accepted shots | Cache collections | Exact rounds granted | Final loaded | Final reserve | Minimum ammo observed | Dry transitions | Remaining opportunities | Deaths/incapacitations | Classification | Deviations/notes |
 | --- | --- | ---: | --- | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | --- | --- |
-| P6-1P-01 |  | 1 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| P6-2P-01 |  | 2 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| P6-4P-01 |  | 4 |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| P6-1P-01 | Not retained | 1 | Reported completed; route detail not retained | Not retained | Owner reported test ran fine | Not retained | Not retained | Not retained | Not retained | Not retained | Not retained | Not retained | Not retained | Not retained | Qualitative prototype pass only; not valid for balance comparison | Owner-directed sign-off; measured replay assigned to P12-0101/P12-0104. |
+| P6-2P-01 | Not retained | 2 | Reported completed; route detail not retained | Not retained | Owner reported test ran fine | Not retained | Not retained | Not retained | Not retained | Not retained | Not retained | Not retained | Not retained | Not retained | Qualitative prototype pass only; not valid for balance comparison | Owner-directed sign-off; measured replay assigned to P12-0101/P12-0104. |
+| P6-4P-01 | Not retained | 4 | Reported completed; route detail not retained | Not retained | Owner reported test ran fine | Not retained | Not retained | Not retained | Not retained | Not retained | Not retained | Not retained | Not retained | Not retained | Qualitative prototype pass only; not valid for balance comparison | Owner-directed sign-off; measured replay assigned to P12-0101/P12-0104. |
+
+These rows record the disposition of the requested 1/2/4-player sessions; they
+are not reconstructed telemetry. They cannot support a balance claim or a
+configuration change. Their only accepted use is the project owner's
+qualitative prototype progression decision recorded below and in the smoke
+test. The original measured-evidence obligation now belongs to `P12-0101` and
+`P12-0104`.
 
 ### 2026-07-21 calculated and unattended Studio evidence
 
@@ -208,9 +215,9 @@ Do not compare runs that used different enemy tuning, firearm configuration, cac
 9. Run the full automated validation gate after every committed tuning change.
 10. Record final values, evidence, known limitations, and remaining P12 balance questions.
 
-## P6 sign-off checklist
+## Measured P6 sign-off checklist
 
-P6 may be marked complete only when:
+A measured balance sign-off requires:
 
 - valid comparable one-, two-, and four-operative evidence is recorded;
 - telemetry conservation and cache identity facts match observed play;
@@ -223,8 +230,12 @@ P6 may be marked complete only when:
 - Studio findings and limitations are recorded in the smoke-test/evidence record;
 - the roadmap is updated from P6 in progress to P6 complete.
 
+The current prototype disposition is an explicit owner waiver of this measured
+gate, not evidence that the unchecked measurements exist. Release-candidate
+balance sign-off still requires the deferred P12 replay.
+
 ## P6 disposition and deferred measurement
 
-P6 is complete for the current prototype by owner direction. The requested local multiplayer tests were reported as running fine, no blocker was reported, and no configuration tune was made without retained measurement. The detailed routed telemetry rows above remain blank rather than being reconstructed from memory.
+P6 is complete for the current prototype by owner direction. The requested local multiplayer tests were reported as running fine, no blocker was reported, and no configuration tune was made without retained measurement. The controlled rows above preserve that qualitative disposition while marking every unretained measurement explicitly; no values are reconstructed from memory.
 
 The remaining work is intentionally reassigned to P12: repeat measured routed 1/2/4-player runs, retain raw snapshots, and revisit scarcity only if repeated evidence supports a change. Engineer Field Resupply receives its own focused conservation and balance validation during P7 implementation.
