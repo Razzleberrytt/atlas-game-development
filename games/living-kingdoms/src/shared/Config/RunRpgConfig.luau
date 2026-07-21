@@ -61,6 +61,7 @@ local ModifierCeilings = table.freeze({
 	maximumGeneralProcChance = 0.35,
 	maximumIncomingDamageReduction = 0.3,
 	maximumLootPickupRadiusBonusStuds = 4.5,
+	maximumLootRoundsAdditiveBonus = 6,
 	maximumConditionalDamageMultiplier = 1.5,
 })
 
@@ -396,7 +397,7 @@ local RelicCatalog = table.freeze({
 		slotCost = 1,
 		counterThreshold = 0,
 		maximumCharges = 0,
-		implementationStateId = ImplementationStateIds.Planned,
+		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		relicId = RelicIds.ExecutionProtocol,
@@ -595,6 +596,12 @@ assert(
 	"incoming damage reduction must preserve enemy pressure"
 )
 assert(
+	ModifierCeilings.maximumLootRoundsAdditiveBonus >= 0
+		and ModifierCeilings.maximumLootRoundsAdditiveBonus <= 6
+		and ModifierCeilings.maximumLootRoundsAdditiveBonus % 1 == 0,
+	"salvaged ammunition bonuses must remain whole and tightly bounded"
+)
+assert(
 	ModifierCeilings.maximumLootPickupRadiusBonusStuds >= 0
 		and ModifierCeilings.maximumLootPickupRadiusBonusStuds <= 4.5,
 	"loot pickup radius growth must remain spatially bounded"
@@ -769,8 +776,8 @@ for _, definition in RelicCatalog do
 end
 assert(#RelicCatalog == countVocabulary(RelicIds), "every relic ID requires exactly one catalog entry")
 assert(
-	implementedRelicCount == 8,
-	"the implemented relic set is the RPG-0108 first batch plus the delivered RPG-0109 weapon-pattern slice"
+	implementedRelicCount == 9,
+	"the implemented relic set is the RPG-0108 first batch plus the delivered RPG-0109 slices"
 )
 
 local seenRewardSourceIds = {}

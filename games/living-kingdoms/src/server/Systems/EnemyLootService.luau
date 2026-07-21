@@ -33,6 +33,7 @@ local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.Enemy
 local AmmunitionSupplyResolver = require(script.Parent.Parent.Domain.AmmunitionSupplyResolver)
 local OperativeCombatRuntimeService = require(script.Parent.OperativeCombatRuntimeService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
+local RelicModifierService = require(script.Parent.RelicModifierService)
 
 local LifeStateAttribute = EnemyPresentationContracts.AttributeNames.LifeStateId
 local HitSequenceAttribute = EnemyPresentationContracts.AttributeNames.HitSequence
@@ -342,7 +343,10 @@ local function tryCollect(player: Player, record: DropRecord): boolean
 		supplyId = record.dropId,
 		sourceId = EnemyLootSourceId,
 		weaponId = ammunition.weaponId,
-		availableRounds = record.rounds,
+		-- Salvager's Mark (RPG-0109) adds bounded whole rounds to the drop this
+		-- operative collects. The supply resolver still caps the grant at the
+		-- weapon's authoritative maximum reserve, so salvage cannot overfill.
+		availableRounds = record.rounds + RelicModifierService.read(player).lootRoundsAdditiveBonus,
 	})
 	if not result.didCollect then
 		return false

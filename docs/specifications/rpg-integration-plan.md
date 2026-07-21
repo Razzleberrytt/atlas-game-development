@@ -620,13 +620,15 @@ Recommended first batch: Blood Battery, Grave Momentum, Choir Breaker, Last Ligh
 
 **Exit:** At least three clearly different viable build patterns emerge. *(Implementation is complete; the exit gate still requires representative Studio evidence and is not claimed.)*
 
-### RPG-0109 — Add weapon and cooperation relics — **In progress (weapon-pattern slice delivered)**
+### RPG-0109 — Add weapon and cooperation relics — **In progress (weapon-pattern and salvage slices delivered)**
 
 Add Salvager's Mark, Breach Doctrine, Longwatch Doctrine, Suppression Engine, Guardian Signal, and Second Wind. This task depends on the relevant class and result boundaries being available, so it lands in slices as each effect's authoritative owner becomes usable.
 
 **Weapon-pattern slice (delivered).** Breach Doctrine and Longwatch Doctrine reuse the RPG-0108 per-operative bundle and the existing `DamageResolver` pattern pass. Breach Doctrine raises Breach Shotgun cone-cleave secondary damage; Longwatch Doctrine raises Sniper Rifle line-pierce secondary damage and every sniper impact against a special enemy. Both are gated on the firing weapon inside the resolver, so a relic can never affect another firearm's pattern, and both share the pattern ceiling and the never-exceed-primary cap with the Pattern Amplifier upgrade — a maxed build reaches the cap sooner rather than passing it. A malformed bundle fails the impact closed. `RelicRuntimeConfig` now declares a `SecondBatchRelicIds` set, and the catalog marks exactly the eight relics that have runtime tuning as Implemented.
 
-**Remaining slices.** Salvager's Mark (ammunition loot resolution), Suppression Engine (sustained automatic fire, which needs a resettable per-operative shot counter), Guardian Signal (temporary armor on teammate revive), and Second Wind (a once-per-operation incapacitation reprieve through the P3 life boundary).
+**Salvage slice (delivered).** Salvager's Mark adds bounded whole rounds to every ammunition drop its owner collects, applied inside the existing `EnemyLootService` collection path. The grant still passes through `AmmunitionSupplyResolver`, so the weapon's authoritative maximum reserve caps it and salvage cannot overfill. The shared `RunModifierResolver` gained one new bounded category, `lootRoundsAdditiveBonus`, with a whole-round ceiling in `RunRpgConfig.ModifierCeilings`.
+
+**Remaining slices.** Suppression Engine (sustained automatic fire, which needs a resettable per-operative shot counter), Guardian Signal (temporary armor on teammate revive), and Second Wind (a once-per-operation incapacitation reprieve through the P3 life boundary).
 
 **Exit:** Weapon identity and cooperative contribution materially affect build direction. *(Not claimed: the cooperative relics are outstanding.)*
 
@@ -665,7 +667,7 @@ Current status:
 | `RPG-0101`–`RPG-0106` | Complete | Merged in PRs #142 and #144–#148: contracts/config, centralized operation state, twelve upgrades, shared modifier resolution, and five elite affixes. |
 | `RPG-0107` | Complete | Bounded reward/slot/replacement framework delivered through the existing run-build owner: pure `RelicRewardResolver`, `RunBuildStateStore` enqueue/choose/replace, and the server-only `RunBuildService` reward source and intent entry points. |
 | `RPG-0108` | Implementation complete; Studio validation outstanding | All six first-batch relics now change authoritative outcomes through their existing owners: conditional damage in `DamageResolver`, wounded reload in `ReloadResolver`, Blood Battery healing through the revisioned P3 healing boundary, and the Grave Momentum kill-chain window in `HordeExperienceService`. The catalog marks exactly these six Implemented. The "three viable build patterns" gate still needs representative Studio evidence. |
-| `RPG-0109` | In progress (weapon-pattern slice delivered) | Breach Doctrine and Longwatch Doctrine are weapon-gated inside `DamageResolver`'s pattern pass. Salvager's Mark, Suppression Engine, Guardian Signal, and Second Wind follow as their owners become usable. |
+| `RPG-0109` | In progress (weapon-pattern and salvage slices delivered) | Breach Doctrine and Longwatch Doctrine are weapon-gated inside `DamageResolver`'s pattern pass, and Salvager's Mark adds bounded rounds inside `EnemyLootService`'s collection path. Suppression Engine, Guardian Signal, and Second Wind follow as their owners become usable. |
 | `RPG-0110`–`RPG-0111` | Not started | Add production reward sources and readable UI in order; defer any source whose authoritative P8/P9 owner does not yet exist. |
 | `RPG-0112` | Blocked by P10 result owner | Attach the operation-bound build summary to the authoritative match result rather than creating an RPG-specific result authority. |
 | `RPG-0113` | Not started | Run the complete solo/2/4-player security, balance, readability, cleanup, and representative-horde validation matrix after `RPG-0112`. |

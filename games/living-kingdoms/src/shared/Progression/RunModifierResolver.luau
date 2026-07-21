@@ -27,6 +27,7 @@ export type Contributions = {
 	automaticHealingPerTrigger: number?,
 	temporaryArmorFractionOfMaximumHealth: number?,
 	lootChanceAdditiveBonus: number?,
+	lootRoundsAdditiveBonus: number?,
 	killChainExtensionSeconds: number?,
 	generalProcChance: number?,
 }
@@ -48,6 +49,7 @@ export type ResolvedModifiers = {
 	automaticHealingPerTrigger: number,
 	temporaryArmorFractionOfMaximumHealth: number,
 	lootChanceAdditiveBonus: number,
+	lootRoundsAdditiveBonus: number,
 	killChainExtensionSeconds: number,
 	generalProcChance: number,
 }
@@ -71,6 +73,7 @@ local knownContributionKeys = table.freeze({
 	automaticHealingPerTrigger = true,
 	temporaryArmorFractionOfMaximumHealth = true,
 	lootChanceAdditiveBonus = true,
+	lootRoundsAdditiveBonus = true,
 	killChainExtensionSeconds = true,
 	generalProcChance = true,
 })
@@ -93,6 +96,7 @@ local function neutralModifiers(): ResolvedModifiers
 		automaticHealingPerTrigger = 0,
 		temporaryArmorFractionOfMaximumHealth = 0,
 		lootChanceAdditiveBonus = 0,
+		lootRoundsAdditiveBonus = 0,
 		killChainExtensionSeconds = 0,
 		generalProcChance = 0,
 	})
@@ -184,6 +188,11 @@ function RunModifierResolver.resolve(contributions: Contributions): ResolvedModi
 			contributions.lootChanceAdditiveBonus or 0,
 			0,
 			Ceilings.maximumLootChanceAdditiveBonus
+		),
+		-- Salvaged ammunition is granted in whole rounds, so the bonus floors
+		-- rather than handing a fractional round to the supply resolver.
+		lootRoundsAdditiveBonus = math.floor(
+			math.clamp(contributions.lootRoundsAdditiveBonus or 0, 0, Ceilings.maximumLootRoundsAdditiveBonus)
 		),
 		killChainExtensionSeconds = math.clamp(
 			contributions.killChainExtensionSeconds or 0,
