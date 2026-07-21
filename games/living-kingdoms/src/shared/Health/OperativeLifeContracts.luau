@@ -112,6 +112,8 @@ export type ReviveBeginAuthorityFacts = {
 	serverTimestamp: number,
 	activeSessionIdForTarget: string?,
 	hasConflictingActiveSession: boolean,
+	reviveDurationSeconds: number?,
+	restoredHealth: number?,
 }
 
 export type ReviveContinuationAuthorityFacts = ReviveBeginAuthorityFacts & {

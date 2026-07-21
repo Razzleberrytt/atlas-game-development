@@ -10,12 +10,18 @@ local COMBAT_TOKEN = {}
 local LIFE_TOKEN = {}
 local RESOLVER_TOKEN = {}
 local SQUAD_TOKEN = {}
+local CLASS_TOKEN = {}
 -- Guardian Signal is not equipped in these fixtures, so the revive flow must
 -- behave exactly as it did before RPG-0109.
 local RELIC_MODIFIER_TOKEN = {}
 local relicModifierService = {
 	read = function()
 		return { temporaryArmorFractionOfMaximumHealth = 0, temporaryArmorDurationSeconds = 0 }
+	end,
+}
+local classService = {
+	readMedicReviveBenefits = function()
+		return 4, 30, false
 	end,
 }
 
@@ -339,10 +345,14 @@ local loader = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/O
 			if token == RELIC_MODIFIER_TOKEN then
 				return relicModifierService
 			end
+			if token == CLASS_TOKEN then
+				return classService
+			end
 			error("unexpected dependency")
 		end,
 		script = {
 			Parent = {
+				ClassService = CLASS_TOKEN,
 				OperativeCombatRuntimeService = COMBAT_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 				OperativeReviveResolver = RESOLVER_TOKEN,

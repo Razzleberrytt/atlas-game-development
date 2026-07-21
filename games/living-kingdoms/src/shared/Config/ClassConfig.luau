@@ -112,7 +112,7 @@ local ClassDefinitions = table.freeze({
 })
 
 local Config = {
-	Version = "P7-0103-v1-brace",
+	Version = "P7-0104-v1-medic",
 	ActionRequests = table.freeze({
 		minimumRequestIntervalSeconds = 0.15,
 		maximumProcessedRequestIdsPerOperative = 64,

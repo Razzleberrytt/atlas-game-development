@@ -47,9 +47,6 @@ for _, forbidden in
 		"applyCombatRestrictions",
 		"AmmunitionCacheService",
 		"OperativeCombatRuntimeService",
-		"FieldTreatment",
-		"FieldResupply",
-		"ReviveAssistance",
 	}
 do
 	assertThat(not string.find(service, forbidden, 1, true), "selection owner must not implement " .. forbidden)

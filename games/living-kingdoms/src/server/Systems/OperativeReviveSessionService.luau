@@ -13,6 +13,7 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.OperativeLifeContracts)
+local ClassService = require(script.Parent.ClassService)
 local OperativeCombatRuntimeService = require(script.Parent.OperativeCombatRuntimeService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local RelicModifierService = require(script.Parent.RelicModifierService)
@@ -27,6 +28,9 @@ type Session = {
 	targetCharacter: Model,
 	reviverStartPosition: Vector3,
 	reviverProcessedDamageEventIds: { [string]: boolean },
+	reviveDurationSeconds: number,
+	restoredHealth: number,
+	isMedicAssisted: boolean,
 }
 
 type IntentResult = { accepted: boolean, rejectionReason: string? }
@@ -47,6 +51,7 @@ local ATTRIBUTE_NAMES = {
 	"LK_P3_ReviveProgress",
 	"LK_P3_ReviveTarget",
 	"LK_P3_ReviveReviver",
+	"LK_P7_MedicReviveAssisted",
 }
 
 local sessionsByTarget: { [string]: Session } = {}
@@ -155,6 +160,7 @@ local function disclose(session: Session, progress: number)
 		player:SetAttribute("LK_P3_ReviveProgress", math.clamp(progress, 0, 1))
 		player:SetAttribute("LK_P3_ReviveTarget", targetId)
 		player:SetAttribute("LK_P3_ReviveReviver", reviverId)
+		player:SetAttribute("LK_P7_MedicReviveAssisted", session.isMedicAssisted)
 	end
 end
 
@@ -235,6 +241,8 @@ local function evaluateSession(session: Session, serverTimestamp: number)
 			distanceStuds = distanceStuds,
 			hasLineOfSight = hasLineOfSight,
 			serverTimestamp = serverTimestamp,
+			reviveDurationSeconds = session.reviveDurationSeconds,
+			restoredHealth = session.restoredHealth,
 			activeSessionIdForTarget = session.sessionState.sessionId,
 			hasConflictingActiveSession = false,
 			reviverRemainsConnectedAndParticipating = connected,
@@ -309,6 +317,7 @@ local function begin(player: Player, targetOperativeEntityId: string): IntentRes
 		return result(false, "MissingCharacter")
 	end
 	local distanceStuds, hasLineOfSight = distanceAndLineOfSight(player, targetPlayer)
+	local reviveDurationSeconds, restoredHealth, isMedicAssisted = ClassService.readMedicReviveBenefits(player)
 	nextSessionId += 1
 	local sessionId = string.format("revive.server:%d", nextSessionId)
 	local resolved = OperativeReviveResolver.beginRevive(reviverRead.snapshot, targetRead.snapshot, {
@@ -318,6 +327,8 @@ local function begin(player: Player, targetOperativeEntityId: string): IntentRes
 		distanceStuds = distanceStuds,
 		hasLineOfSight = hasLineOfSight,
 		serverTimestamp = Workspace:GetServerTimeNow(),
+		reviveDurationSeconds = reviveDurationSeconds,
+		restoredHealth = restoredHealth,
 		activeSessionIdForTarget = nil,
 		hasConflictingActiveSession = false,
 	})
@@ -332,6 +343,9 @@ local function begin(player: Player, targetOperativeEntityId: string): IntentRes
 		targetCharacter = targetCharacter,
 		reviverStartPosition = reviverPosition,
 		reviverProcessedDamageEventIds = table.clone(reviverRead.snapshot.processedDamageEventIds),
+		reviveDurationSeconds = reviveDurationSeconds,
+		restoredHealth = restoredHealth,
+		isMedicAssisted = isMedicAssisted,
 	}
 	sessionsByTarget[targetOperativeEntityId] = session
 	sessionsByReviver[player] = session

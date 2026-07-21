@@ -1,8 +1,8 @@
 --!strict
 
 --[[
-	Compact P7-0103 Brace input and owner feedback. The client sends only an
-	action ID and phase, then renders the server's authoritative state/timing.
+	Compact specialist-action input and owner feedback. Candidate treatment
+	targets are hints only; the server derives and validates every target fact.
 ]]
 
 local ContextActionService = game:GetService("ContextActionService")
@@ -26,7 +26,7 @@ local actionIntentRemote = classNetwork:WaitForChild("ActionIntent") :: RemoteEv
 local stateRemote = classNetwork:WaitForChild("State") :: RemoteEvent
 local readStateFunction = classNetwork:WaitForChild("ReadState") :: RemoteFunction
 
-local ACTION_NAME = "LivingKingdomsBrace"
+local ACTION_NAME = "LivingKingdomsClassAction"
 local Controller = {}
 
 local started = false
@@ -49,6 +49,12 @@ local interruptionLabels = {
 	OperationResolved = "OPERATION COMPLETE",
 	ActionCancelled = "STANCE CANCELLED",
 	ActionCompleted = "STANCE COMPLETE",
+	DamageInterrupted = "TREATMENT INTERRUPTED — HIT",
+	OutOfRange = "TREATMENT INTERRUPTED — RANGE",
+	NoLineOfSight = "TREATMENT INTERRUPTED — BLOCKED",
+	TargetNotAlive = "TREATMENT INTERRUPTED — TARGET",
+	TargetNotInjured = "TREATMENT ENDED — TARGET STABLE",
+	EffectCommitRejected = "TREATMENT COULD NOT COMMIT",
 }
 
 local function currentActionState(): ClassContracts.AuthoritativeClassActionState?
@@ -56,13 +62,65 @@ local function currentActionState(): ClassContracts.AuthoritativeClassActionStat
 	return if snapshot == nil then nil else snapshot.ownerActionState
 end
 
-local function sendIntent(phaseId: ClassContracts.ClassActionPhaseId)
+local function rootPosition(player: Player): Vector3?
+	local character = player.Character
+	local root = if character == nil then nil else character:FindFirstChild("HumanoidRootPart")
+	return if root ~= nil and root:IsA("BasePart") then root.Position else nil
+end
+
+local function nearestInjuredOperativeId(): string?
+	local origin = rootPosition(localPlayer)
+	if origin == nil then
+		return nil
+	end
+	local nearestId, nearestDistance = nil, math.huge
+	for _, player in Players:GetPlayers() do
+		local currentHealth = player:GetAttribute("LK_P3_CurrentHealth")
+		local maximumHealth = player:GetAttribute("LK_P3_MaximumHealth")
+		local operativeEntityId = player:GetAttribute("LK_P3_OperativeEntityId")
+		local position = rootPosition(player)
+		if
+			player ~= localPlayer
+			and player:GetAttribute("LK_P3_LifeState") == "Alive"
+			and type(currentHealth) == "number"
+			and type(maximumHealth) == "number"
+			and currentHealth < maximumHealth
+			and type(operativeEntityId) == "string"
+			and position ~= nil
+		then
+			local distance = (position - origin).Magnitude
+			if distance < nearestDistance then
+				nearestDistance = distance
+				nearestId = operativeEntityId
+			end
+		end
+	end
+	return nearestId
+end
+
+local function sendIntent(actionId: ClassContracts.ClassActionId, phaseId: ClassContracts.ClassActionPhaseId)
 	requestSequence += 1
-	actionIntentRemote:FireServer({
-		requestId = string.format("brace:%d:%d", localPlayer.UserId, requestSequence),
-		actionId = ActionIds.Brace,
-		phaseId = phaseId,
-	})
+	if actionId == ActionIds.FieldTreatment and phaseId == PhaseIds.Begin then
+		local targetId = nearestInjuredOperativeId()
+		if targetId == nil then
+			if statusLabel ~= nil then
+				statusLabel.Text = "NO INJURED TEAMMATE NEARBY"
+			end
+			return
+		end
+		actionIntentRemote:FireServer({
+			requestId = string.format("treatment:%d:%d", localPlayer.UserId, requestSequence),
+			actionId = ActionIds.FieldTreatment,
+			phaseId = phaseId,
+			candidateTargetOperativeEntityId = targetId,
+		})
+	else
+		actionIntentRemote:FireServer({
+			requestId = string.format("class-action:%d:%d", localPlayer.UserId, requestSequence),
+			actionId = actionId,
+			phaseId = phaseId,
+		})
+	end
 end
 
 local function onBraceInput(_actionName: string, inputState: Enum.UserInputState): Enum.ContextActionResult
@@ -70,13 +128,15 @@ local function onBraceInput(_actionName: string, inputState: Enum.UserInputState
 		return Enum.ContextActionResult.Sink
 	end
 	local state = currentActionState()
-	if state == nil or state.actionStateId == ActionStateIds.Cooldown then
+	local assignment = if latestSnapshot == nil then nil else latestSnapshot.ownerAssignment
+	if state == nil or assignment == nil or state.actionStateId == ActionStateIds.Cooldown then
 		return Enum.ContextActionResult.Sink
 	end
+	local actionId = if assignment.classId == ClassIds.Medic then ActionIds.FieldTreatment else ActionIds.Brace
 	if state.actionStateId == ActionStateIds.Active then
-		sendIntent(PhaseIds.Cancel)
+		sendIntent(actionId, PhaseIds.Cancel)
 	else
-		sendIntent(PhaseIds.Begin)
+		sendIntent(actionId, PhaseIds.Begin)
 	end
 	return Enum.ContextActionResult.Sink
 end
@@ -88,14 +148,14 @@ local function setBinding(shouldBind: boolean)
 	isBound = shouldBind
 	if shouldBind then
 		ContextActionService:BindAction(ACTION_NAME, onBraceInput, true, Enum.KeyCode.Q, Enum.KeyCode.ButtonX)
-		ContextActionService:SetTitle(ACTION_NAME, "BRACE")
+		ContextActionService:SetTitle(ACTION_NAME, "ACTION")
 		ContextActionService:SetPosition(ACTION_NAME, UDim2.new(1, -118, 1, -190))
 	else
 		ContextActionService:UnbindAction(ACTION_NAME)
 	end
 end
 
-local function setHighlight(isActive: boolean)
+local function setHighlight(isActive: boolean, targetOperativeEntityId: string?)
 	if not isActive then
 		if characterHighlight ~= nil then
 			characterHighlight:Destroy()
@@ -103,13 +163,22 @@ local function setHighlight(isActive: boolean)
 		end
 		return
 	end
-	local character = localPlayer.Character
+	local highlightedPlayer = localPlayer
+	if targetOperativeEntityId ~= nil then
+		for _, player in Players:GetPlayers() do
+			if player:GetAttribute("LK_P3_OperativeEntityId") == targetOperativeEntityId then
+				highlightedPlayer = player
+				break
+			end
+		end
+	end
+	local character = highlightedPlayer.Character
 	if character == nil then
 		return
 	end
 	if characterHighlight == nil then
 		local highlight = Instance.new("Highlight")
-		highlight.Name = "BraceOwnerCue"
+		highlight.Name = "ClassActionCue"
 		highlight.DepthMode = Enum.HighlightDepthMode.Occluded
 		highlight.FillColor = Color3.fromRGB(240, 172, 67)
 		highlight.FillTransparency = 0.82
@@ -152,33 +221,53 @@ local function updatePresentation()
 	local assignment = snapshot.ownerAssignment
 	local state = snapshot.ownerActionState
 	local shouldShow = assignment ~= nil
-		and assignment.classId == ClassIds.CombatSpecialist
+		and (assignment.classId == ClassIds.CombatSpecialist or assignment.classId == ClassIds.Medic)
 		and snapshot.selectionStateId == SelectionStateIds.Locked
 	frame.Visible = shouldShow
 	setBinding(shouldShow)
 	if not shouldShow or state == nil then
-		setHighlight(false)
+		setHighlight(false, nil)
 		return
+	end
+	local isMedic = assignment.classId == ClassIds.Medic
+	ContextActionService:SetTitle(ACTION_NAME, if isMedic then "TREAT" else "BRACE")
+	local medicalCharges = 0
+	for _, resource in snapshot.ownerResources do
+		if resource.resourceId == ClassContracts.ClassResourceIds.MedicalCharge then
+			medicalCharges = resource.currentAmount
+		end
 	end
 
 	local serverTimestamp = Workspace:GetServerTimeNow()
 	if state.actionStateId == ActionStateIds.Active then
-		label.Text = "BRACE ACTIVE  •  HOLD POSITION  •  Q TO CANCEL"
+		label.Text = if isMedic
+			then string.format("TREATING TEAMMATE  •  %d CHARGES  •  Q TO CANCEL", medicalCharges)
+			else "BRACE ACTIVE  •  HOLD POSITION  •  Q TO CANCEL"
 		local completion = state.completionServerTimestamp or serverTimestamp
 		local remaining = math.max(0, completion - serverTimestamp)
-		tweenProgress(remaining / ClassConfig.Actions.Brace.durationSeconds, remaining)
-		setHighlight(true)
+		local duration = if isMedic
+			then ClassConfig.Actions.FieldTreatment.channelDurationSeconds
+			else ClassConfig.Actions.Brace.durationSeconds
+		tweenProgress(remaining / duration, remaining)
+		setHighlight(true, if isMedic then state.targetOperativeEntityId else nil)
 	elseif state.actionStateId == ActionStateIds.Cooldown then
 		local suffix = interruptionLabels[state.statusReasonId or ""]
-		label.Text = if suffix == nil then "BRACE RECHARGING" else suffix .. "  •  RECHARGING"
+		label.Text = if suffix == nil
+			then (if isMedic then "MEDICAL KIT RESETTING" else "BRACE RECHARGING")
+			else suffix .. "  •  RECHARGING"
 		local completion = state.cooldownEndServerTimestamp or serverTimestamp
 		local remaining = math.max(0, completion - serverTimestamp)
-		tweenProgress(remaining / ClassConfig.Actions.Brace.cooldownSeconds, remaining)
-		setHighlight(false)
+		local cooldown = if isMedic
+			then ClassConfig.Actions.FieldTreatment.cooldownSeconds
+			else ClassConfig.Actions.Brace.cooldownSeconds
+		tweenProgress(remaining / cooldown, remaining)
+		setHighlight(false, nil)
 	else
-		label.Text = "BRACE READY  •  Q / GAMEPAD X"
+		label.Text = if isMedic
+			then string.format("FIELD TREATMENT READY  •  %d CHARGES  •  Q / GAMEPAD X", medicalCharges)
+			else "BRACE READY  •  Q / GAMEPAD X"
 		tweenProgress(1, 0)
-		setHighlight(false)
+		setHighlight(false, nil)
 	end
 end
 
@@ -196,8 +285,8 @@ local function onPayload(payload: unknown)
 	if ClassContracts.validateSafeClassSelectionRejection(payload) then
 		local rejection = payload :: ClassContracts.SafeClassSelectionRejection
 		local label = statusLabel
-		if label ~= nil and string.find(rejection.requestId or "", "brace:", 1, true) == 1 then
-			label.Text = "BRACE UNAVAILABLE  •  " .. rejection.rejectionReasonId
+		if label ~= nil and rejection.requestId ~= nil then
+			label.Text = "CLASS ACTION UNAVAILABLE  •  " .. rejection.rejectionReasonId
 		end
 	end
 end
@@ -282,7 +371,7 @@ function Controller.stop()
 	end
 	started = false
 	setBinding(false)
-	setHighlight(false)
+	setHighlight(false, nil)
 	if progressTween ~= nil then
 		progressTween:Cancel()
 		progressTween = nil
