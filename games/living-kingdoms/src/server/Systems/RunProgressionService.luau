@@ -24,10 +24,15 @@ local RunProgressionResolver = require(ReplicatedStorage.Shared.Progression.RunP
 local RunUpgradeResolver = require(ReplicatedStorage.Shared.Progression.RunUpgradeResolver)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 local RunBuildService = require(script.Parent.RunBuildService)
+local RelicRewardSourceConfig = require(ReplicatedStorage.Shared.Config.RelicRewardSourceConfig)
+local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
+
+local RewardSourceIds = RunRpgContracts.RewardSourceIds
 
 local LifeStateAttribute = EnemyPresentationContracts.AttributeNames.LifeStateId
 local HitSequenceAttribute = EnemyPresentationContracts.AttributeNames.HitSequence
 local EliteBonusFieldXpAttribute = EnemyPresentationContracts.AttributeNames.EliteBonusFieldXp
+local EliteAffixIdAttribute = EnemyPresentationContracts.AttributeNames.EliteAffixId
 local DeadLifeStateId = EnemyPresentationContracts.LifeStateIds.Dead
 
 local ENEMY_FOLDER_NAME = "EnemyEntities"
@@ -74,6 +79,7 @@ local level = 1
 local xp = 0
 local totalXp = 0
 local squadKills = 0
+local eliteKillsSinceReward = 0
 local lastGainAmount = 0
 local lastGainSequence = 0
 local levelsGainedLastAward = 0
@@ -234,6 +240,32 @@ local function applyFieldXpAward(amount: number, countAsKill: boolean): boolean
 	return true
 end
 
+--[[
+	RPG-0110: confirmed enemy deaths are the live relic-reward source this owner
+	already observes. An elite death opens a choice immediately; ordinary deaths
+	accumulate toward a squad-kill milestone so a run with unlucky elite spawns
+	still reaches relics. Reward IDs derive from the enemy's own server identity
+	and the milestone index, so the existing replay history rejects duplicates.
+]]
+local function offerRelicRewardsForDeath(model: Model)
+	local eliteAffixId = model:GetAttribute(EliteAffixIdAttribute)
+	if type(eliteAffixId) == "string" and eliteAffixId ~= "" then
+		eliteKillsSinceReward += 1
+		if eliteKillsSinceReward >= RelicRewardSourceConfig.EliteKillsPerReward then
+			eliteKillsSinceReward = 0
+			local entityId = model:GetAttribute("CombatEntityId")
+			local eventId = if type(entityId) == "string" and entityId ~= ""
+				then "elite:" .. entityId
+				else "elite:" .. tostring(squadKills)
+			RunBuildService.offerRelicRewardToParticipants(eventId, RewardSourceIds.EliteKill)
+		end
+	end
+	if squadKills > 0 and squadKills % RelicRewardSourceConfig.HordeKillsPerReward == 0 then
+		local milestoneIndex = squadKills // RelicRewardSourceConfig.HordeKillsPerReward
+		RunBuildService.offerRelicRewardToParticipants("horde:" .. tostring(milestoneIndex), RewardSourceIds.HordeClear)
+	end
+end
+
 local function awardConfirmedEnemyDeath(model: Model)
 	local upgradeStacks = readUpgradeStacks()
 	local xpGainMultiplier = RunUpgradeResolver.deriveCombatModifiers(upgradeStacks).xpGainMultiplier
@@ -243,7 +275,9 @@ local function awardConfirmedEnemyDeath(model: Model)
 	end
 	local base = RunProgressionConfig.FieldXpPerConfirmedEnemyDeath + math.floor(eliteBonus)
 	local boosted = math.max(base, math.floor(base * xpGainMultiplier + 0.5))
-	applyFieldXpAward(boosted, true)
+	if applyFieldXpAward(boosted, true) then
+		offerRelicRewardsForDeath(model)
+	end
 end
 
 local function isTrackedEnemy(model: Model): boolean
@@ -391,6 +425,7 @@ function RunProgressionService.start()
 	xp = 0
 	totalXp = 0
 	squadKills = 0
+	eliteKillsSinceReward = 0
 	lastGainAmount = 0
 	lastGainSequence = 0
 	levelsGainedLastAward = 0

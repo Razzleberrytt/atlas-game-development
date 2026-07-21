@@ -45,16 +45,31 @@ for _, sourceId in contracts.RewardSourceIds do
 	knownSourceIds[sourceId] = true
 end
 
+-- RPG-0110 connects the three sources whose authoritative owners exist today.
+-- Authored objectives, authored containers, and boss milestones wait for P8/P9.
+local liveSourceIds = {
+	[contracts.RewardSourceIds.EliteKill] = true,
+	[contracts.RewardSourceIds.SpecialInterrupt] = true,
+	[contracts.RewardSourceIds.HordeClear] = true,
+}
 local seenSourceIds = {}
+local implementedSourceCount = 0
 for _, definition in config.RewardSourceCatalog do
 	assertThat(knownSourceIds[definition.sourceId], "reward catalog contains an unknown source ID")
 	assertThat(not seenSourceIds[definition.sourceId], "reward source IDs must be unique")
-	assertThat(
-		definition.implementationStateId == contracts.ImplementationStateIds.Planned,
-		"RPG-0101 reward sources must remain declarations only"
-	)
+	if definition.implementationStateId == contracts.ImplementationStateIds.Implemented then
+		implementedSourceCount += 1
+		assertThat(liveSourceIds[definition.sourceId] == true, "only sources with a live owner may be implemented")
+	else
+		assertThat(
+			definition.implementationStateId == contracts.ImplementationStateIds.Planned,
+			"invalid reward source implementation state"
+		)
+		assertThat(liveSourceIds[definition.sourceId] == nil, "every live reward source must be implemented")
+	end
 	seenSourceIds[definition.sourceId] = true
 end
+assertThat(implementedSourceCount == 3, "exactly the three live reward sources may be implemented")
 
 for _, sourceId in contracts.RewardSourceIds do
 	assertThat(seenSourceIds[sourceId], "every stable reward source requires one catalog definition")

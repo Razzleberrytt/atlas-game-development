@@ -18,6 +18,9 @@ local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.Enemy
 local HordeExperienceConfig = require(ReplicatedStorage.Shared.Config.HordeExperienceConfig)
 local HordeSpecialTelegraphConfig = require(ReplicatedStorage.Shared.Config.HordeSpecialTelegraphConfig)
 local ScreamerInterruptRewardConfig = require(ReplicatedStorage.Shared.Config.ScreamerInterruptRewardConfig)
+local RelicRewardSourceConfig = require(ReplicatedStorage.Shared.Config.RelicRewardSourceConfig)
+local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
+local RunBuildService = require(script.Parent.RunBuildService)
 local RunProgressionService = require(script.Parent.RunProgressionService)
 
 local LifeStateAttribute = EnemyPresentationContracts.AttributeNames.LifeStateId
@@ -34,6 +37,7 @@ local Service = {}
 
 local started = false
 local initialScanComplete = false
+local interruptsSinceReward = 0
 local accumulatedSeconds = 0
 local heartbeatConnection: RBXScriptConnection? = nil
 local rewardedSequences: { [Model]: number } = {}
@@ -102,6 +106,17 @@ local function scanConfirmedInterrupts()
 		local rewardId = string.format("%s:%s:%d", REWARD_ID_PREFIX, entityId, sequence)
 		if #rewardId <= ScreamerInterruptRewardConfig.MaximumRewardIdCharacters then
 			RunProgressionService.awardFieldIntel(rewardId, ScreamerInterruptRewardConfig.BonusFieldXp)
+			-- RPG-0110: confirmed interrupts also pay a relic choice, but on an
+			-- interval rather than per interrupt, because interrupts are far more
+			-- common than elite deaths.
+			interruptsSinceReward += 1
+			if interruptsSinceReward >= RelicRewardSourceConfig.SpecialInterruptsPerReward then
+				interruptsSinceReward = 0
+				RunBuildService.offerRelicRewardToParticipants(
+					rewardId,
+					RunRpgContracts.RewardSourceIds.SpecialInterrupt
+				)
+			end
 		end
 	end
 
@@ -123,6 +138,7 @@ function Service.start()
 	end
 	started = true
 	initialScanComplete = false
+	interruptsSinceReward = 0
 	accumulatedSeconds = 0
 	table.clear(rewardedSequences)
 	scanConfirmedInterrupts()
@@ -146,6 +162,7 @@ function Service.stop()
 		heartbeatConnection = nil
 	end
 	initialScanComplete = false
+	interruptsSinceReward = 0
 	accumulatedSeconds = 0
 	table.clear(rewardedSequences)
 end
