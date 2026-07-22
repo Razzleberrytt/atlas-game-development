@@ -203,9 +203,19 @@ begin without further design decisions.
   arrival window and the documented cleanup stop order (enemies first, mission
   director last, every owner exactly once). Pure declarations and fixtures
   (`tests/MatchResultContracts.test.luau`); no runtime.
-- **`P10-0102` – `P10-0107`** remain not started; they add the terminal-result
-  resolver, the extraction sequence, the result presentation, cleanup/replay, the
-  disconnect handling, and the full-loop validation.
+- **Terminal-result resolver (`P10-0102`) — complete.**
+  `src/server/Systems/TerminalResultResolver.luau` is the one pure, deterministic
+  decision: given the server-owned facts (`resolvedCauseId`, `squadWiped`,
+  `isAbandoned`, `extractionArrived`, timestamp), it returns the single terminal
+  result to commit or a reason the operation is not terminal. Fixed precedence
+  (`SquadWipe` > `Abandoned` > `Extracted`) resolves simultaneous conditions to
+  exactly one result, and a non-nil `resolvedCauseId` yields `AlreadyResolved`, so
+  re-evaluation after a commit never produces a second result. `MatchResultContracts`
+  gained the `TerminalDecisionRejectionReasonId`/`TerminalDecision` vocabulary.
+  Fixtures in `tests/TerminalResultResolver.test.luau`.
+- **`P10-0103` – `P10-0107`** remain not started; they add the extraction
+  sequence, the result presentation, cleanup/replay, the disconnect handling, and
+  the full-loop validation.
 
 ## Deliberate exclusions
 

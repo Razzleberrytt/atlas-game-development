@@ -84,8 +84,12 @@ for _, owner in
 do
 	assert(contracts.CleanupOwnerIds[owner] == owner, "missing cleanup owner: " .. owner)
 end
+for _, reason in { "InvalidFacts", "InvalidTimestamp", "AlreadyResolved", "NotTerminal" } do
+	assert(contracts.TerminalDecisionRejectionReasonIds[reason] == reason, "missing terminal rejection: " .. reason)
+end
 assert(table.isfrozen(contracts) and table.isfrozen(contracts.MissionResultCauseIds))
 assert(table.isfrozen(contracts.CleanupOwnerIds) and table.isfrozen(contracts.OutcomeByCauseId))
+assert(table.isfrozen(contracts.TerminalDecisionRejectionReasonIds))
 
 -- The fixed cause → outcome pairing: Extracted wins, the rest fail.
 assert(contracts.OutcomeByCauseId.Extracted == missionContracts.MissionOutcomeIds.Success)

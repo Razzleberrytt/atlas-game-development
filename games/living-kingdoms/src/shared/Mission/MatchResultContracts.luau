@@ -33,6 +33,18 @@ export type ExtractionReadinessStateId = "Locked" | "Inbound" | "Arrived"
 -- The operation lifecycle for replay. Replay is only offered after Resolved.
 export type OperationReplayStateId = "InProgress" | "Resolved" | "Replayable"
 
+-- Why the pure terminal-result resolver declined to commit a new result.
+export type TerminalDecisionRejectionReasonId = "InvalidFacts" | "InvalidTimestamp" | "AlreadyResolved" | "NotTerminal"
+
+-- One first-commit-wins terminal decision. `shouldCommit` is true only when the
+-- operation resolves this pass; otherwise a rejection reason explains why not.
+export type TerminalDecision = {
+	shouldCommit: boolean,
+	causeId: MissionResultCauseId?,
+	outcomeId: MissionOutcomeId?,
+	rejectionReasonId: TerminalDecisionRejectionReasonId?,
+}
+
 -- Every runtime owner that participates in the documented terminal stop order.
 export type CleanupOwnerId =
 	"EnemyDirector"
@@ -97,6 +109,13 @@ MatchResultContracts.OperationReplayStateIds = table.freeze({
 	InProgress = "InProgress" :: OperationReplayStateId,
 	Resolved = "Resolved" :: OperationReplayStateId,
 	Replayable = "Replayable" :: OperationReplayStateId,
+})
+
+MatchResultContracts.TerminalDecisionRejectionReasonIds = table.freeze({
+	InvalidFacts = "InvalidFacts" :: TerminalDecisionRejectionReasonId,
+	InvalidTimestamp = "InvalidTimestamp" :: TerminalDecisionRejectionReasonId,
+	AlreadyResolved = "AlreadyResolved" :: TerminalDecisionRejectionReasonId,
+	NotTerminal = "NotTerminal" :: TerminalDecisionRejectionReasonId,
 })
 
 MatchResultContracts.CleanupOwnerIds = table.freeze({
