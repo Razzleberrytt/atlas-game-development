@@ -40,6 +40,7 @@ Read these files in order:
 For Windows installation and Roblox Studio synchronization, follow the [Windows local setup guide](docs/production/LOCAL-SETUP.md).
 For Luau formatting and static analysis, follow the [Luau tooling guide](docs/production/LUAU-TOOLING.md).
 For the reusable Studio launch check and first successful result, see the [smoke-test record](docs/production/SMOKE-TEST.md).
+For the current build's deploy path and an honest account of what is and is not validated before a public launch, see the [deployable-build record](docs/production/DEPLOYABLE-BUILD.md).
 
 ## Project status
 
