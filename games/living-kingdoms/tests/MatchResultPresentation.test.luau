@@ -131,11 +131,15 @@ for _, forbidden in { ".xp", ".rank", ".unlock", ".rewards", "awarded" } do
 end
 assertThat(
 	not contains(controller, "TextButton") and not contains(controller, "Activated"),
-	"the debrief must offer no action control until replay exists (P10-0105)"
+	"the debrief must offer no control: the server drives replay"
 )
 assertThat(
-	contains(controller, "no rewards are recorded yet"),
+	contains(controller, "No rewards are recorded yet."),
 	"the debrief must say plainly that nothing has been awarded"
+)
+assertThat(
+	contains(controller, "MatchResultConfig.ReplayDebriefSeconds"),
+	"the announced restart must come from the same configured window the server uses"
 )
 
 assertThat(contains(bootstrapClient, "MatchResultController.start()"), "the debrief must be bootstrapped")

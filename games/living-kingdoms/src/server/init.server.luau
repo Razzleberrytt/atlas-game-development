@@ -229,6 +229,7 @@ local PersonalFlashlightService = require(script.Systems.PersonalFlashlightServi
 local SquadPingService = require(script.Systems.SquadPingService)
 local WorldFoundationService = require(script.Systems.WorldFoundationService)
 local MatchResultService = require(script.Systems.MatchResultService)
+local OperationLifecycleService = require(script.Systems.OperationLifecycleService)
 local MissionDirectorService = require(script.Systems.MissionDirectorService)
 local WeaponLoadoutService = require(script.Systems.WeaponLoadoutService)
 
@@ -261,5 +262,8 @@ MissionDirectorService.start()
 ClassService.start()
 ClassValidationProbeService.start()
 WeaponLoadoutService.start()
+-- Last: the cleanup/replay owner subscribes to the already-running mission's
+-- terminal boundary and drives the documented stop/start order from there.
+OperationLifecycleService.start()
 
 print("[Living Kingdoms] Server bootstrap started")

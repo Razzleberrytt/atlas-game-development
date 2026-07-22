@@ -281,7 +281,34 @@ begin without further design decisions.
   exist until `P10-0105`, so the screen states plainly that nothing has been
   awarded rather than offering a dead button. Fixture:
   `tests/MatchResultPresentation.test.luau`.
-- **`P10-0105` – `P10-0107`** remain not started.
+- **Deterministic cleanup and replay (`P10-0105`) — complete.**
+  `src/server/Systems/OperationLifecycleService.luau` is the one owner of the
+  terminal stop/start sequence. It holds no gameplay state: it executes
+  `MatchResultConfig.CleanupStopOrder` and the new `ReplayStartOrder` against each
+  system's existing lifecycle, so the order lives in shared configuration rather
+  than a hand-written sequence, and both orders are asserted to cover every
+  declared cleanup owner exactly once. The start order is deliberately not the
+  reverse of the stop order — the life and roster owners must be running before the
+  mission restarts. The objective runtime releases at its documented place through
+  `MissionDirectorService.resetObjectiveRuntime()` while the director tears the
+  rest of itself down last.
+
+  Replay is server-driven and needs no developer intervention: the lifecycle owner
+  subscribes to the mission's single terminal commit through the new
+  `subscribeResolved`, holds the operation at `Resolved` for
+  `MatchResultConfig.ReplayDebriefSeconds` so the squad can read the debrief, then
+  moves to `Replayable` and restarts. It owns exactly one timer and one
+  subscription, both released on teardown, and exposes no remote — a client cannot
+  request or delay a replay. `replayNow()` is a server-only immediate path for
+  validation.
+
+  **A replayed operation is a fresh run, not a resume.** The mission director now
+  mints a per-run `operationId` (`operation.blackwater-relay:run-N`) on every
+  start, and that identity is what the mission snapshot publishes and the result
+  ledger records — so two runs on one server are two distinct results. The debrief
+  screen's next action became real and now names the same configured window.
+  Fixture: `tests/OperationLifecycleReplay.test.luau`.
+- **`P10-0106` – `P10-0107`** remain not started.
 
 ## Deliberate exclusions
 
