@@ -265,8 +265,23 @@ begin without further design decisions.
   exceeds four so no fixed-squad assumption is baked in. The snapshot carries
   exactly the P10-0101 fields, so no XP, rank, unlock, or reward can ride along.
   Fixture: `tests/MatchResultContribution.test.luau`.
-- **`P10-0104` part 2** (the result screen and its disclosure network) and
-  **`P10-0105` – `P10-0107`** remain not started.
+- **Result screen (`P10-0104`, part 2) — complete.**
+  The existing `MissionNetwork` gained one server→client `Result` channel beside
+  `State`; no request surface was added, because the mission owner accepts nothing
+  (the P8 audit enforces this). At resolution the mission director discloses the
+  frozen snapshot once, and a client that arrives afterwards is **pushed** the same
+  snapshot on join rather than asking for it.
+  `src/client/Controllers/MatchResultController.luau` renders only that payload and
+  only after the shared validator accepts it, exactly once per operation: the
+  outcome and cause in plain language per authored cause ("EXTRACTION COMPLETE",
+  "SQUAD LOST", "OPERATION ABANDONED"), the key events (duration, phase reached,
+  objectives completed, waves survived, boss outcome), and every operative's
+  contribution row with the local operative marked and survival state in words.
+  It shows **no XP, rank, or unlock** and **no replay control** — replay does not
+  exist until `P10-0105`, so the screen states plainly that nothing has been
+  awarded rather than offering a dead button. Fixture:
+  `tests/MatchResultPresentation.test.luau`.
+- **`P10-0105` – `P10-0107`** remain not started.
 
 ## Deliberate exclusions
 

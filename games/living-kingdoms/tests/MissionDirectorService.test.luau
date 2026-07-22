@@ -198,8 +198,20 @@ local stateRemote = {
 		table.insert(directMessages, { player = player, payload = payload })
 	end,
 }
+local resultBroadcasts = {}
+local resultRemote = {
+	FireAllClients = function(_, snapshot)
+		table.insert(resultBroadcasts, snapshot)
+	end,
+	FireClient = function(_, player, snapshot)
+		table.insert(resultBroadcasts, snapshot)
+	end,
+}
 local missionNetwork = {
 	WaitForChild = function(_, name)
+		if name == "Result" then
+			return resultRemote
+		end
 		assert(name == "State")
 		return stateRemote
 	end,
@@ -217,7 +229,17 @@ local MATCH_RESULT_TOKEN = {}
 -- The P10-0104 contribution ledger is inert authority: these fixtures only need
 -- to prove the owner records through it, never that recording changes gameplay.
 local matchResultCalls = {}
-local matchResultService = setmetatable({}, {
+local committedResultFacts = nil
+local matchResultService = setmetatable({
+	commitResult = function(facts)
+		table.insert(matchResultCalls, { name = "commitResult", arguments = { facts } })
+		committedResultFacts = facts
+		return true
+	end,
+	readSafeResultSnapshot = function()
+		return committedResultFacts
+	end,
+}, {
 	__index = function(_self, key)
 		return function(...)
 			table.insert(matchResultCalls, { name = key, arguments = { ... } })
@@ -492,6 +514,9 @@ local function reset()
 	table.clear(scheduled)
 	table.clear(createdInstances)
 	bossDefeated = false
+	table.clear(matchResultCalls)
+	table.clear(resultBroadcasts)
+	committedResultFacts = nil
 	failureState.statusId = "Viable"
 	isAbandoned = false
 	pressureBeginCalls = 0
@@ -693,6 +718,24 @@ assert(latestBroadcast().radio.lineId == "MissionSuccess")
 assert(contracts.validateSafeMissionSnapshot(latestBroadcast()))
 assert(not service.evaluateTimersAt(now + 100).didChange, "resolution is terminal")
 assert(service.evaluateExtractionPresenceAt(now + 100).rejectionReasonId == "InvalidPhase")
+
+-- P10-0104: the terminal boundary freezes and discloses exactly one debrief.
+assert(#resultBroadcasts == 1, "resolution must disclose the result exactly once")
+assert(committedResultFacts ~= nil, "the result must be committed to the ledger")
+assert(committedResultFacts.causeId == "Extracted" and committedResultFacts.outcomeId == "Success")
+assert(committedResultFacts.phaseReachedId == "Holdout", "the reported phase is the one the squad reached")
+assert(committedResultFacts.bossDefeated == true, "the debrief carries the boss outcome")
+assert(committedResultFacts.objectivesCompleted == 3, "the debrief counts every completed objective")
+assert(committedResultFacts.wavesSurvived == 3, "the debrief carries the authored waves reached")
+assert(committedResultFacts.durationSeconds > 0, "the debrief carries a positive duration")
+-- Objective contribution is credited to the operatives the server sampled.
+local objectiveCredits = 0
+for _, call in matchResultCalls do
+	if call.name == "recordObjectiveContribution" then
+		objectiveCredits += 1
+	end
+end
+assert(objectiveCredits >= 3, "each completed objective credits its workers")
 
 -- ===========================================================================
 -- Scenario B: nobody is inside the clearing when extraction lands.

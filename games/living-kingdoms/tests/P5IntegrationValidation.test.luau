@@ -597,8 +597,20 @@ local stateRemote = {
 	end,
 	FireClient = function() end,
 }
+local resultBroadcasts = {}
+local resultRemote = {
+	FireAllClients = function(_, snapshot)
+		table.insert(resultBroadcasts, snapshot)
+	end,
+	FireClient = function(_, player, snapshot)
+		table.insert(resultBroadcasts, snapshot)
+	end,
+}
 local missionNetwork = {
 	WaitForChild = function(_, name)
+		if name == "Result" then
+			return resultRemote
+		end
 		assert(name == "State")
 		return stateRemote
 	end,

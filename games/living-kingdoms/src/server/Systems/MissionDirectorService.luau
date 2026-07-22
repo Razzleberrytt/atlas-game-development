@@ -94,6 +94,7 @@ Service.RejectionReasonIds = RejectionReasonIds
 
 local missionNetwork = ReplicatedStorage:WaitForChild("MissionNetwork")
 local stateRemote = missionNetwork:WaitForChild("State") :: RemoteEvent
+local resultRemote = missionNetwork:WaitForChild("Result") :: RemoteEvent
 
 -- Index the authored objectives once for O(1) lookups.
 local objectiveDefinitionById: { [string]: any } = {}
@@ -562,8 +563,9 @@ local function resolveMission(
 			completedObjectiveCount += 1
 		end
 	end
+	local didCommitResult = false
 	pcall(function()
-		MatchResultService.commitResult({
+		didCommitResult = MatchResultService.commitResult({
 			operationId = MissionConfig.OperationId,
 			outcomeId = finalOutcomeId,
 			causeId = finalCauseId,
@@ -574,6 +576,15 @@ local function resolveMission(
 			wavesSurvived = escalationLevel,
 		})
 	end)
+	-- One terminal debrief disclosure, from the validated frozen snapshot only.
+	if didCommitResult then
+		local resultSnapshot = MatchResultService.readSafeResultSnapshot()
+		if resultSnapshot ~= nil then
+			pcall(function()
+				resultRemote:FireAllClients(resultSnapshot)
+			end)
+		end
+	end
 	insertionDeadlineServerTimestamp = nil
 	holdoutDeadlineServerTimestamp = nil
 	pcall(function()
@@ -989,6 +1000,14 @@ function Service.start()
 		pcall(function()
 			stateRemote:FireClient(player, safeSnapshot())
 		end)
+		-- A client that arrives after resolution still receives the one frozen
+		-- debrief. This owner accepts no client request, so disclosure is pushed.
+		local frozenResult = MatchResultService.readSafeResultSnapshot()
+		if frozenResult ~= nil then
+			pcall(function()
+				resultRemote:FireClient(player, frozenResult)
+			end)
+		end
 	end)
 	if #Players:GetPlayers() > 0 then
 		armInsertionCountdown(startTimestamp)
