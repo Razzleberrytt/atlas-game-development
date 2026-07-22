@@ -86,6 +86,7 @@ MissionContracts.RadioLineIds = table.freeze({
 	FloodlightsRestored = "FloodlightsRestored",
 	PressureRising = "PressureRising",
 	HoldPosition = "HoldPosition",
+	ExtractionInbound = "ExtractionInbound",
 	MissionSuccess = "MissionSuccess",
 	MissionFailure = "MissionFailure",
 })

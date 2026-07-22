@@ -645,13 +645,8 @@ medicCompletionFacts.sessionId = "revive.medic"
 medicCompletionFacts.activeSessionIdForTarget = "revive.medic"
 medicCompletionFacts.reviveDurationSeconds = 3
 medicCompletionFacts.restoredHealth = 40
-local medicCompletion = resolver.continueRevive(
-	reviver,
-	target,
-	medicBegin.sessionStateAfter,
-	medicCompletionFacts,
-	combatState()
-)
+local medicCompletion =
+	resolver.continueRevive(reviver, target, medicBegin.sessionStateAfter, medicCompletionFacts, combatState())
 assert(medicCompletion.didTransition, "medic deadline must complete")
 assert(medicCompletion.targetSnapshotAfter.healthState.currentHealth == 40, "medic restore must be bounded")
 local forgedMedicFacts = deepCopy(medicCompletionFacts)

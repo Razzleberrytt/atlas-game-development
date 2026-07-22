@@ -185,6 +185,59 @@ local bossConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Confi
 	injectGlobals = true,
 })()
 
+-- P10-0103 wires the mission's terminal boundary to the real match-result
+-- vocabulary, extraction window, and pure terminal resolver.
+local P10_CONTRACTS_TOKEN = {}
+local P10_CONFIG_TOKEN = {}
+local P10_TERMINAL_TOKEN = {}
+local P10_MISSION_TOKEN = {}
+local P10_LIFE_TOKEN = {}
+local p10Contracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Mission/MatchResultContracts.luau"), {
+	debugName = "MatchResultContracts",
+	environment = {
+		script = {
+			Parent = {
+				MissionContracts = P10_MISSION_TOKEN,
+				Parent = { Health = { OperativeLifeContracts = P10_LIFE_TOKEN } },
+			},
+		},
+		require = function(token)
+			if token == P10_MISSION_TOKEN then
+				return missionContracts
+			end
+			return loadSimple(
+				"games/living-kingdoms/src/shared/Health/OperativeLifeContracts.luau",
+				"OperativeLifeContracts"
+			)
+		end,
+	},
+	injectGlobals = true,
+})()
+local p10Config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/MatchResultConfig.luau"), {
+	debugName = "MatchResultConfig",
+	environment = {
+		script = { Parent = { Parent = { Mission = { MatchResultContracts = P10_CONTRACTS_TOKEN } } } },
+		require = function()
+			return p10Contracts
+		end,
+	},
+	injectGlobals = true,
+})()
+local p10Terminal = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/TerminalResultResolver.luau"), {
+	debugName = "TerminalResultResolver",
+	environment = {
+		game = {
+			GetService = function()
+				return { Shared = { Mission = { MatchResultContracts = P10_CONTRACTS_TOKEN } } }
+			end,
+		},
+		require = function()
+			return p10Contracts
+		end,
+	},
+	injectGlobals = true,
+})()
+
 local sharedReplicatedStorage = {
 	Shared = {
 		Combat = {
@@ -200,10 +253,12 @@ local sharedReplicatedStorage = {
 			WorldFoundationConfig = WORLD_TOKEN,
 			MissionConfig = MISSION_CONFIG_TOKEN,
 			ObjectiveChainConfig = OBJECTIVE_CONFIG_TOKEN,
+			MatchResultConfig = P10_CONFIG_TOKEN,
 		},
 		Mission = {
 			MissionContracts = MISSION_CONTRACTS_TOKEN,
 			ObjectiveChainResolver = OBJECTIVE_RESOLVER_TOKEN,
+			MatchResultContracts = P10_CONTRACTS_TOKEN,
 		},
 		RPG = { RunRpgContracts = RPG_CONTRACTS_TOKEN },
 		Visual = { EnemyPresentationContracts = PRESENTATION_TOKEN },
@@ -413,7 +468,15 @@ local classService = {
 		return assignments
 	end,
 }
+local failureState = { statusId = "Viable" }
+local isAbandoned = false
 local failureService = {
+	read = function()
+		return { revision = 1, state = { statusId = failureState.statusId } }
+	end,
+	readParticipationFacts = function()
+		return { isAuthoritativelyAbandoned = isAbandoned }
+	end,
 	beginOperation = function()
 		table.clear(admitted)
 		for _, entry in roster do
@@ -561,10 +624,17 @@ local mission = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				EnemyDirectorService = ENEMY_DIRECTOR_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 				SquadFailureService = FAILURE_TOKEN,
+				TerminalResultResolver = P10_TERMINAL_TOKEN,
 			},
 		},
 		require = function(token)
-			if token == MISSION_CONFIG_TOKEN then
+			if token == P10_CONTRACTS_TOKEN then
+				return p10Contracts
+			elseif token == P10_CONFIG_TOKEN then
+				return p10Config
+			elseif token == P10_TERMINAL_TOKEN then
+				return p10Terminal
+			elseif token == MISSION_CONFIG_TOKEN then
 				return missionConfig
 			elseif token == MISSION_CONTRACTS_TOKEN then
 				return missionContracts
@@ -725,10 +795,19 @@ assert(enemyDirector.readPressureState().escalationLevel == 3)
 local summary = enemyDirector.evaluateAt(now + 0.2)
 assert(summary.attackCommittedCount == 0, "no enemy starts inside attack range")
 
--- Success resolution stands every enemy down.
-now = mission.read().holdoutDeadlineServerTimestamp
-assert(mission.evaluateTimersAt(now).didChange)
-assert(mission.read().outcomeId == "Success")
+-- P10-0103: the holdout is won by defeating The Progenitor, so a living boss
+-- keeps the operation unresolved no matter how long the squad holds. The boss's
+-- own exposure-window mechanics belong to the P9 fixtures; this fixture proves
+-- the P5 concern -- that terminal resolution stands every enemy down -- through
+-- the squad-wipe cause, which reaches the same single terminal boundary.
+now += 600
+assert(not mission.evaluateTimersAt(now).didChange, "a living boss cannot be waited out")
+assert(mission.read().phaseId == "Holdout" and mission.read().extractionReadinessStateId == "Locked")
+
+failureState.statusId = "Failed"
+failureSignal:Fire({ statusId = "Failed" }, 1)
+assert(mission.read().phaseId == "Resolved" and mission.read().outcomeId == "Failure")
+assert(mission.read().causeId == "SquadWipe", "a committed wipe resolves with its own cause")
 local stood = enemyDirector.readPressureState()
 assert(stood.isStoodDown and not stood.isPressureActive, "resolution must stand pressure down")
 -- Even an adjacent operative draws no attacks after stand-down.
@@ -746,6 +825,9 @@ table.clear(roster)
 table.clear(playersById)
 table.clear(admitted)
 table.clear(damageCalls)
+-- A fresh operation starts from viable squad facts.
+failureState.statusId = "Viable"
+isAbandoned = false
 now = 1000
 enemyDirector.start()
 mission.start()
@@ -754,6 +836,7 @@ playersSignal:Fire(restartPlayer)
 now = 1000 + missionConfig.InsertionHoldSeconds
 mission.evaluateTimersAt(now)
 assert(enemyDirector.readPressureState().isPressureActive)
+failureState.statusId = "Failed"
 failureSignal:Fire({ statusId = "Failed" })
 assert(mission.read().outcomeId == "Failure")
 assert(enemyDirector.readPressureState().isStoodDown, "squad wipe must stand pressure down")

@@ -28,6 +28,60 @@ local objectiveConfig =
 local objectiveResolver =
 	loadSimple("games/living-kingdoms/src/shared/Mission/ObjectiveChainResolver.luau", "ObjectiveChainResolver")
 
+-- The P10 terminal vocabulary, extraction window, and pure terminal resolver are
+-- the production modules: the extraction sequence must be proven against the real
+-- decision, not a stand-in.
+local M_MISSION_TOKEN = {}
+local M_LIFE_TOKEN = {}
+local matchResultContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Mission/MatchResultContracts.luau"), {
+		debugName = "MatchResultContracts",
+		environment = {
+			script = {
+				Parent = {
+					MissionContracts = M_MISSION_TOKEN,
+					Parent = { Health = { OperativeLifeContracts = M_LIFE_TOKEN } },
+				},
+			},
+			require = function(token)
+				if token == M_MISSION_TOKEN then
+					return contracts
+				end
+				return loadSimple(
+					"games/living-kingdoms/src/shared/Health/OperativeLifeContracts.luau",
+					"OperativeLifeContracts"
+				)
+			end,
+		},
+		injectGlobals = true,
+	})()
+local MATCH_CONTRACTS_TOKEN = {}
+local matchResultConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/MatchResultConfig.luau"), {
+	debugName = "MatchResultConfig",
+	environment = {
+		script = { Parent = { Parent = { Mission = { MatchResultContracts = MATCH_CONTRACTS_TOKEN } } } },
+		require = function()
+			return matchResultContracts
+		end,
+	},
+	injectGlobals = true,
+})()
+local terminalResolver =
+	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/TerminalResultResolver.luau"), {
+		debugName = "TerminalResultResolver",
+		environment = {
+			game = {
+				GetService = function()
+					return { Shared = { Mission = { MatchResultContracts = MATCH_CONTRACTS_TOKEN } } }
+				end,
+			},
+			require = function()
+				return matchResultContracts
+			end,
+		},
+		injectGlobals = true,
+	})()
+
 local relayCenter = objectiveConfig.Objectives[1].center
 local boosterCenter = objectiveConfig.Objectives[2].center
 local floodCenter = objectiveConfig.Objectives[3].center
@@ -103,6 +157,8 @@ local spawnedWaveIndexes = {}
 local spawnedBosses = {}
 local pressureBeginCalls = 0
 local pressureEndCalls = 0
+-- P10-0103: the extraction sequence begins only on the boss's authoritative defeat.
+local bossDefeated = false
 local beginOperationCalls = 0
 
 local workspaceMock = {
@@ -157,10 +213,20 @@ local CLASS_TOKEN = {}
 local ENEMY_TOKEN = {}
 local LIFE_TOKEN = {}
 local FAILURE_TOKEN = {}
+local MATCH_CONFIG_TOKEN = {}
+local TERMINAL_TOKEN = {}
 local replicatedStorage = {
 	Shared = {
-		Config = { MissionConfig = CONFIG_TOKEN, ObjectiveChainConfig = OBJECTIVE_CONFIG_TOKEN },
-		Mission = { MissionContracts = CONTRACTS_TOKEN, ObjectiveChainResolver = OBJECTIVE_RESOLVER_TOKEN },
+		Config = {
+			MissionConfig = CONFIG_TOKEN,
+			ObjectiveChainConfig = OBJECTIVE_CONFIG_TOKEN,
+			MatchResultConfig = MATCH_CONFIG_TOKEN,
+		},
+		Mission = {
+			MissionContracts = CONTRACTS_TOKEN,
+			ObjectiveChainResolver = OBJECTIVE_RESOLVER_TOKEN,
+			MatchResultContracts = MATCH_CONTRACTS_TOKEN,
+		},
 	},
 	WaitForChild = function(_, name)
 		assert(name == "MissionNetwork")
@@ -208,7 +274,15 @@ local classService = {
 		return assignments
 	end,
 }
+local failureState = { statusId = "Viable" }
+local isAbandoned = false
 local failureService = {
+	read = function()
+		return { revision = 1, state = { statusId = failureState.statusId } }
+	end,
+	readParticipationFacts = function()
+		return { isAuthoritativelyAbandoned = isAbandoned }
+	end,
 	beginOperation = function()
 		beginOperationCalls += 1
 		table.clear(admitted)
@@ -245,8 +319,8 @@ local enemyDirector = {
 	readBossState = function()
 		return {
 			exists = #spawnedBosses > 0,
-			isAlive = true,
-			isDefeated = false,
+			isAlive = not bossDefeated,
+			isDefeated = bossDefeated,
 			phaseId = "Carapace",
 			isVulnerable = false,
 		}
@@ -282,6 +356,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				EnemyDirectorService = ENEMY_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 				SquadFailureService = FAILURE_TOKEN,
+				TerminalResultResolver = TERMINAL_TOKEN,
 			},
 		},
 		require = function(token)
@@ -301,6 +376,12 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return lifeService
 			elseif token == FAILURE_TOKEN then
 				return failureService
+			elseif token == MATCH_CONTRACTS_TOKEN then
+				return matchResultContracts
+			elseif token == MATCH_CONFIG_TOKEN then
+				return matchResultConfig
+			elseif token == TERMINAL_TOKEN then
+				return terminalResolver
 			end
 			error("unexpected MissionDirectorService dependency")
 		end,
@@ -392,8 +473,12 @@ local function reset()
 	table.clear(directMessages)
 	table.clear(spawnedHostiles)
 	table.clear(spawnedWaveIndexes)
+	table.clear(spawnedBosses)
 	table.clear(scheduled)
 	table.clear(createdInstances)
+	bossDefeated = false
+	failureState.statusId = "Viable"
+	isAbandoned = false
 	pressureBeginCalls = 0
 	pressureEndCalls = 0
 	beginOperationCalls = 0
@@ -541,7 +626,10 @@ now += 2
 heartbeatSignal:Fire(config.ExtractionPresenceIntervalSeconds + 0.1)
 local holdoutRead = service.read()
 assert(holdoutRead.phaseId == "Holdout", "presence heartbeat begins the holdout")
-assert(holdoutRead.holdoutDeadlineServerTimestamp == now + config.Extraction.ArrivalSeconds)
+-- P10-0103: the holdout is won by defeating the boss, not by a bare timer, so no
+-- arrival countdown is disclosed while the boss lives.
+assert(holdoutRead.holdoutDeadlineServerTimestamp == nil, "no countdown runs during the boss fight")
+assert(holdoutRead.extractionReadinessStateId == "Locked", "extraction stays locked while the boss lives")
 assert(holdoutRead.escalationLevel == 3)
 assert(#spawnedHostiles == #config.Escalation.Waves[1] + #config.Escalation.Waves[2] + #config.Escalation.Waves[3])
 -- The authored Progenitor boss spawns at the extraction clearing when the holdout
@@ -558,13 +646,32 @@ assert(
 	"objectives do not progress during holdout"
 )
 
+-- A living boss never resolves the operation, however long the squad holds.
+now += 600
+assert(not service.evaluateTimersAt(now).didChange, "a living boss cannot be waited out")
+assert(service.read().phaseId == "Holdout")
+
+-- Boss defeated: extraction becomes inbound for the configured arrival window.
+bossDefeated = true
+now += 1
+assert(service.evaluateTimersAt(now).didChange, "the boss's defeat opens the extraction window")
+local inbound = service.read()
+assert(inbound.extractionReadinessStateId == "Inbound")
+assert(inbound.holdoutDeadlineServerTimestamp == now + matchResultConfig.ExtractionArrivalWindowSeconds)
+assert(inbound.phaseId == "Holdout", "the extraction window is not a new phase")
+assert(inbound.outcomeId == nil, "the boss's defeat alone does not resolve the operation")
+assert(latestBroadcast().radio.lineId == "ExtractionInbound")
+assert(contracts.validateSafeMissionSnapshot(latestBroadcast()))
+
 -- Success: a survivor is still inside the clearing when extraction arrives.
-local holdoutDeadline = holdoutRead.holdoutDeadlineServerTimestamp
-assert(not service.evaluateTimersAt(holdoutDeadline - 0.01).didChange)
+local holdoutDeadline = inbound.holdoutDeadlineServerTimestamp
+assert(not service.evaluateTimersAt(holdoutDeadline - 0.01).didChange, "extraction cannot arrive early")
 now = holdoutDeadline
 assert(service.evaluateTimersAt(now).didChange)
 local resolved = service.read()
 assert(resolved.phaseId == "Resolved" and resolved.outcomeId == "Success")
+assert(resolved.causeId == "Extracted", "a completed extraction carries the Extracted cause")
+assert(resolved.extractionReadinessStateId == "Arrived")
 assert(pressureEndCalls == 1, "resolution stands enemy pressure down exactly once")
 assert(latestBroadcast().outcomeId == "Success")
 assert(latestBroadcast().radio.lineId == "MissionSuccess")
@@ -573,7 +680,7 @@ assert(not service.evaluateTimersAt(now + 100).didChange, "resolution is termina
 assert(service.evaluateExtractionPresenceAt(now + 100).rejectionReasonId == "InvalidPhase")
 
 -- ===========================================================================
--- Scenario B: extraction arrives with nobody left inside the clearing.
+-- Scenario B: nobody is inside the clearing when extraction lands.
 -- ===========================================================================
 reset()
 local solo = makePlayer(10, farPosition)
@@ -589,12 +696,24 @@ assert(service.read().phaseId == "Exfiltration", "solo squad can charge the boos
 solo.root.Position = vec(config.Extraction.Position, 3)
 now += 5
 assert(service.evaluateExtractionPresenceAt(now).didChange)
+bossDefeated = true
+now += 1
+assert(service.evaluateTimersAt(now).didChange, "the boss's defeat opens the window")
 local soloDeadline = service.read().holdoutDeadlineServerTimestamp
+-- Stepping out of the clearing is not a terminal failure: the only failures are a
+-- committed squad wipe and authoritative abandonment, so extraction simply has
+-- not arrived yet.
 solo.root.Position = farPosition
-now = soloDeadline
+now = soloDeadline + 30
+assert(not service.evaluateTimersAt(now).didChange, "an empty clearing cannot extract")
+local waiting = service.read()
+assert(waiting.phaseId == "Holdout" and waiting.outcomeId == nil, "a missed extraction is not a failure")
+assert(waiting.extractionReadinessStateId == "Inbound", "extraction stays inbound until someone is present")
+-- Walking back in extracts, however late.
+solo.root.Position = vec(config.Extraction.Position, 3)
+now += 5
 assert(service.evaluateTimersAt(now).didChange)
-assert(service.read().outcomeId == "Failure", "leaving the clearing before arrival fails the mission")
-assert(latestBroadcast().radio.lineId == "MissionFailure")
+assert(service.read().outcomeId == "Success" and service.read().causeId == "Extracted")
 
 -- ===========================================================================
 -- Scenario C: squad wipe fails the mission from any phase.
@@ -605,8 +724,10 @@ admit(victim, "operative:victim")
 now = config.InsertionHoldSeconds
 service.evaluateTimersAt(now)
 assert(service.read().phaseId == "Infiltration")
+failureState.statusId = "Failed"
 failureSignal:Fire({ statusId = "Failed" }, 3)
 assert(service.read().phaseId == "Resolved" and service.read().outcomeId == "Failure")
+assert(service.read().causeId == "SquadWipe", "a committed wipe carries the SquadWipe cause")
 assert(latestBroadcast().outcomeId == "Failure")
 failureSignal:Fire({ statusId = "Viable" }, 4)
 assert(service.read().outcomeId == "Failure", "later viability cannot undo resolution")
@@ -618,8 +739,11 @@ reset()
 local leaver = makePlayer(30, farPosition)
 admit(leaver, "operative:leaver")
 disconnectOperative("operative:leaver")
+failureState.statusId = "Failed"
+isAbandoned = true
 failureSignal:Fire({ statusId = "Failed" }, 1)
 assert(service.read().phaseId == "Resolved" and service.read().outcomeId == "Failure")
+assert(service.read().causeId == "Abandoned", "an authoritative abandonment resolves as Abandoned, not as a squad wipe")
 
 -- ===========================================================================
 -- Scenario E: stop() cleans up and the service refuses further authority.
@@ -688,10 +812,14 @@ local function runFullChain(operativeCount: number)
 	moveSquad(vec(config.Extraction.Position, 3))
 	now += 5
 	assert(service.evaluateExtractionPresenceAt(now).didChange, "holdout for " .. operativeCount)
+	bossDefeated = true
+	now += 1
+	assert(service.evaluateTimersAt(now).didChange, "boss defeat for " .. operativeCount)
 	local deadline = service.read().holdoutDeadlineServerTimestamp
 	now = deadline
 	assert(service.evaluateTimersAt(now).didChange)
 	assert(service.read().outcomeId == "Success", "the squad extracts for " .. operativeCount .. " operatives")
+	assert(service.read().causeId == "Extracted", "extraction cause for " .. operativeCount)
 	assert(service.read().floodlightsRestored == false, "the optional objective was skippable")
 end
 

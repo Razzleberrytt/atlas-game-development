@@ -24,6 +24,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
+local MatchResultConfig = require(ReplicatedStorage.Shared.Config.MatchResultConfig)
+local MatchResultContracts = require(ReplicatedStorage.Shared.Mission.MatchResultContracts)
 local MissionConfig = require(ReplicatedStorage.Shared.Config.MissionConfig)
 local MissionContracts = require(ReplicatedStorage.Shared.Mission.MissionContracts)
 local ObjectiveChainConfig = require(ReplicatedStorage.Shared.Config.ObjectiveChainConfig)
@@ -32,7 +34,10 @@ local ClassService = require(script.Parent.ClassService)
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local SquadFailureService = require(script.Parent.SquadFailureService)
+local TerminalResultResolver = require(script.Parent.TerminalResultResolver)
 
+type ExtractionReadinessStateId = MatchResultContracts.ExtractionReadinessStateId
+type MissionResultCauseId = MatchResultContracts.MissionResultCauseId
 type MissionPhaseId = MissionContracts.MissionPhaseId
 type MissionOutcomeId = MissionContracts.MissionOutcomeId
 type ObjectiveStateId = MissionContracts.ObjectiveStateId
@@ -57,6 +62,8 @@ export type AuthoritativeMissionRead = {
 	extractionUnlocked: boolean,
 	escalationLevel: number,
 	outcomeId: MissionOutcomeId?,
+	causeId: MissionResultCauseId?,
+	extractionReadinessStateId: ExtractionReadinessStateId,
 	insertionDeadlineServerTimestamp: number?,
 	holdoutDeadlineServerTimestamp: number?,
 	activeObjectiveId: string?,
@@ -107,6 +114,12 @@ local phaseId: MissionPhaseId = PhaseIds.Insertion
 local extractionUnlocked = false
 local escalationLevel = 0
 local outcomeId: MissionOutcomeId? = nil
+local resultCauseId: MissionResultCauseId? = nil
+-- P10-0103: the extraction sequence is Locked during the boss fight, Inbound for
+-- the configured arrival window after the boss is authoritatively defeated, and
+-- Arrived once an admitted, Alive operative is inside the clearing at the
+-- deadline. Only Arrived feeds the terminal resolver's extraction fact.
+local extractionReadinessStateId: ExtractionReadinessStateId = MatchResultContracts.ExtractionReadinessStateIds.Locked
 local insertionDeadlineServerTimestamp: number? = nil
 local holdoutDeadlineServerTimestamp: number? = nil
 local requiredObjectiveCompletedAtServerTimestamp: number? = nil
@@ -508,12 +521,22 @@ local function applyObjectiveCompletion(objectiveId: string, serverTimestamp: nu
 	end
 end
 
-local function resolveMission(finalOutcomeId: MissionOutcomeId, serverTimestamp: number)
+--[[
+	The single terminal commit. Every cause reaches it through
+	`evaluateTerminalAt`, which asks the pure P10-0102 resolver for exactly one
+	decision; this function only applies that decision once.
+]]
+local function resolveMission(
+	finalOutcomeId: MissionOutcomeId,
+	finalCauseId: MissionResultCauseId,
+	serverTimestamp: number
+)
 	if phaseId == PhaseIds.Resolved then
 		return
 	end
 	phaseId = PhaseIds.Resolved
 	outcomeId = finalOutcomeId
+	resultCauseId = finalCauseId
 	insertionDeadlineServerTimestamp = nil
 	holdoutDeadlineServerTimestamp = nil
 	pcall(function()
@@ -547,19 +570,108 @@ end
 
 local function beginHoldout(serverTimestamp: number)
 	phaseId = PhaseIds.Holdout
-	holdoutDeadlineServerTimestamp = serverTimestamp + MissionConfig.Extraction.ArrivalSeconds
+	-- P10-0103: the holdout is no longer won by a bare timer. Extraction stays
+	-- Locked until The Progenitor is authoritatively defeated, so there is no
+	-- countdown to disclose during the boss fight.
+	holdoutDeadlineServerTimestamp = nil
+	extractionReadinessStateId = MatchResultContracts.ExtractionReadinessStateIds.Locked
 	setRadio(RadioLineIds.HoldPosition, serverTimestamp)
 	spawnWave(3)
 	-- The authored climax: one Progenitor boss anchors the extraction clearing.
-	-- Its defeat outcome is observable through the director; converging that into
-	-- the terminal result is P10 work. Collapse-phase readability depends on the
-	-- P8 optional floodlight repair.
+	-- Collapse-phase readability depends on the P8 optional floodlight repair.
 	pcall(function()
 		EnemyDirectorService.spawnBoss(MissionConfig.Extraction.Position, floodlightsRestored)
 	end)
 	revision += 1
 	scheduleTimers()
 	publish()
+end
+
+local function isBossDefeated(): boolean
+	local didRead, bossState = pcall(function()
+		return EnemyDirectorService.readBossState()
+	end)
+	return didRead and type(bossState) == "table" and bossState.isDefeated == true
+end
+
+--[[
+	Advances the extraction sequence from server-read facts only. Locked → Inbound
+	on the boss's authoritative defeat, opening the configured arrival window;
+	Inbound → Arrived once that window has elapsed and at least one admitted, Alive
+	operative stands in the clearing.
+
+	Late entry, early departure, incapacitation, death, and disconnect during the
+	window all resolve through that same presence rule: nobody inside at the
+	deadline simply means extraction has not arrived yet. It is deliberately not a
+	failure — the only terminal failures are a committed squad wipe and
+	authoritative abandonment — so a squad that steps out can still walk back in
+	and extract.
+]]
+local function advanceExtractionReadiness(serverTimestamp: number): boolean
+	if phaseId ~= PhaseIds.Holdout then
+		return false
+	end
+	local ReadinessIds = MatchResultContracts.ExtractionReadinessStateIds
+	if extractionReadinessStateId == ReadinessIds.Locked then
+		if not isBossDefeated() then
+			return false
+		end
+		extractionReadinessStateId = ReadinessIds.Inbound
+		holdoutDeadlineServerTimestamp = serverTimestamp + MatchResultConfig.ExtractionArrivalWindowSeconds
+		setRadio(RadioLineIds.ExtractionInbound, serverTimestamp)
+		revision += 1
+		scheduleTimers()
+		publish()
+		return true
+	end
+	if extractionReadinessStateId ~= ReadinessIds.Inbound then
+		return false
+	end
+	local deadline = holdoutDeadlineServerTimestamp
+	if deadline == nil or serverTimestamp < deadline then
+		return false
+	end
+	if countAdmittedAliveInsideExtraction() < 1 then
+		return false
+	end
+	extractionReadinessStateId = ReadinessIds.Arrived
+	return true
+end
+
+--[[
+	Asks the pure terminal resolver for the single result to commit, from
+	server-owned facts only. Abandonment is reported separately from a wipe so the
+	resolver's fixed precedence labels each cause correctly.
+]]
+local function evaluateTerminalAt(serverTimestamp: number): boolean
+	if phaseId == PhaseIds.Resolved then
+		return false
+	end
+	local didReadFailure, failureRead = pcall(function()
+		return SquadFailureService.read()
+	end)
+	local didReadParticipation, participation = pcall(function()
+		return SquadFailureService.readParticipationFacts()
+	end)
+	local isAbandoned = didReadParticipation
+		and type(participation) == "table"
+		and participation.isAuthoritativelyAbandoned == true
+	local hasFailed = didReadFailure
+		and type(failureRead) == "table"
+		and type(failureRead.state) == "table"
+		and failureRead.state.statusId == "Failed"
+	local decision = TerminalResultResolver.resolve({
+		resolvedCauseId = resultCauseId,
+		squadWiped = hasFailed and not isAbandoned,
+		isAbandoned = isAbandoned,
+		extractionArrived = extractionReadinessStateId == MatchResultContracts.ExtractionReadinessStateIds.Arrived,
+		serverTimestamp = serverTimestamp,
+	})
+	if not decision.shouldCommit or decision.causeId == nil or decision.outcomeId == nil then
+		return false
+	end
+	resolveMission(decision.outcomeId :: MissionOutcomeId, decision.causeId :: MissionResultCauseId, serverTimestamp)
+	return true
 end
 
 evaluateTimersAt = function(serverTimestamp: number): OperationResult
@@ -575,11 +687,10 @@ evaluateTimersAt = function(serverTimestamp: number): OperationResult
 		beginInfiltration(serverTimestamp)
 		didChange = true
 	end
-	local holdoutDeadline = holdoutDeadlineServerTimestamp
-	if phaseId == PhaseIds.Holdout and holdoutDeadline ~= nil and serverTimestamp >= holdoutDeadline then
-		holdoutDeadlineServerTimestamp = nil
-		local survivorsInsideClearing = countAdmittedAliveInsideExtraction()
-		resolveMission(if survivorsInsideClearing >= 1 then OutcomeIds.Success else OutcomeIds.Failure, serverTimestamp)
+	if advanceExtractionReadiness(serverTimestamp) then
+		didChange = true
+	end
+	if evaluateTerminalAt(serverTimestamp) then
 		didChange = true
 	end
 	if not didChange then
@@ -701,6 +812,8 @@ function Service.read(): AuthoritativeMissionRead
 		extractionUnlocked = extractionUnlocked,
 		escalationLevel = escalationLevel,
 		outcomeId = outcomeId,
+		causeId = resultCauseId,
+		extractionReadinessStateId = extractionReadinessStateId,
 		insertionDeadlineServerTimestamp = insertionDeadlineServerTimestamp,
 		holdoutDeadlineServerTimestamp = holdoutDeadlineServerTimestamp,
 		activeObjectiveId = activeObjectiveId,
@@ -818,6 +931,8 @@ function Service.start()
 	extractionUnlocked = false
 	escalationLevel = 0
 	outcomeId = nil
+	resultCauseId = nil
+	extractionReadinessStateId = MatchResultContracts.ExtractionReadinessStateIds.Locked
 	-- Studio can boot an empty server several seconds before its first client is
 	-- connected. Do not spend the insertion window or freeze a zero-player roster
 	-- before an actual player exists.
@@ -831,8 +946,11 @@ function Service.start()
 	buildMissionObjects()
 	setRadio(RadioLineIds.InsertionComplete, startTimestamp)
 	failureConnection = SquadFailureService.subscribe(function(state)
+		-- Squad failure no longer commits an outcome directly: it is one fact the
+		-- single terminal resolver weighs, so a wipe and an abandonment reach the
+		-- result with their own cause.
 		if started and state.statusId == "Failed" then
-			resolveMission(OutcomeIds.Failure, now())
+			evaluateTerminalAt(now())
 		end
 	end)
 	playerAddedConnection = Players.PlayerAdded:Connect(function(player)
@@ -855,6 +973,13 @@ function Service.start()
 		end
 		if phaseId == PhaseIds.Exfiltration then
 			Service.evaluateExtractionPresenceAt(now())
+		end
+		if phaseId == PhaseIds.Holdout then
+			-- The extraction sequence is presence- and boss-driven, so it advances
+			-- on the same bounded heartbeat rather than a per-enemy hook.
+			local serverTimestamp = now()
+			advanceExtractionReadiness(serverTimestamp)
+			evaluateTerminalAt(serverTimestamp)
 		end
 	end)
 	if insertionDeadlineServerTimestamp ~= nil then
@@ -892,6 +1017,8 @@ function Service.stop()
 	extractionUnlocked = false
 	escalationLevel = 0
 	outcomeId = nil
+	resultCauseId = nil
+	extractionReadinessStateId = MatchResultContracts.ExtractionReadinessStateIds.Locked
 	insertionDeadlineServerTimestamp = nil
 	holdoutDeadlineServerTimestamp = nil
 	requiredObjectiveCompletedAtServerTimestamp = nil

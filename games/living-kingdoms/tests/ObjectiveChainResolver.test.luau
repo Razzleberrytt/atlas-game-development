@@ -38,7 +38,10 @@ end
 local requiredForExtraction = 0
 local seenObjectiveIds = {}
 for _, definition in config.Objectives do
-	assert(contracts.validateObjectiveDefinition(definition), "objective definition must validate: " .. definition.objectiveId)
+	assert(
+		contracts.validateObjectiveDefinition(definition),
+		"objective definition must validate: " .. definition.objectiveId
+	)
 	assert(seenObjectiveIds[definition.objectiveId] == nil, "objective ids are unique")
 	seenObjectiveIds[definition.objectiveId] = true
 	-- Every objective sits on its named existing landmark.
@@ -201,9 +204,12 @@ end
 local manualState = table.clone(exfilState)
 manualState[ObjectiveIds.RestoreFloodlights] = { progress = 0, completed = false }
 for _ = 1, 3 do
-	applyResult(manualState, sample(manualState, "Exfiltration", 1, {
-		[ObjectiveIds.RestoreFloodlights] = { worker },
-	}))
+	applyResult(
+		manualState,
+		sample(manualState, "Exfiltration", 1, {
+			[ObjectiveIds.RestoreFloodlights] = { worker },
+		})
+	)
 end
 assert(math.abs(manualState[ObjectiveIds.RestoreFloodlights].progress - 1.2) < 1e-6, "manual repair is 0.4/s")
 assert(manualState[ObjectiveIds.RestoreFloodlights].completed == false)
@@ -211,9 +217,12 @@ assert(manualState[ObjectiveIds.RestoreFloodlights].completed == false)
 local engineerState = table.clone(exfilState)
 engineerState[ObjectiveIds.RestoreFloodlights] = { progress = 0, completed = false }
 for _ = 1, 3 do
-	applyResult(engineerState, sample(engineerState, "Exfiltration", 1, {
-		[ObjectiveIds.RestoreFloodlights] = { engineer },
-	}))
+	applyResult(
+		engineerState,
+		sample(engineerState, "Exfiltration", 1, {
+			[ObjectiveIds.RestoreFloodlights] = { engineer },
+		})
+	)
 end
 assert(math.abs(engineerState[ObjectiveIds.RestoreFloodlights].progress - 3) < 1e-6, "engineer repair is 1.0/s")
 assert(

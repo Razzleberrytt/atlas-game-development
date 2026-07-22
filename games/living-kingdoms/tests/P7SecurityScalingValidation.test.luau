@@ -117,7 +117,10 @@ local objectiveChain = luau.load(
 	{ debugName = "ObjectiveChainConfig", injectGlobals = true }
 )()
 for _, definition in objectiveChain.Objectives do
-	assertThat(definition.baseRatePerSecond > 0, "every objective must be completable without a class: " .. definition.objectiveId)
+	assertThat(
+		definition.baseRatePerSecond > 0,
+		"every objective must be completable without a class: " .. definition.objectiveId
+	)
 	if not definition.isOptional then
 		assertThat(
 			definition.assistedRateMultiplier == 1,
