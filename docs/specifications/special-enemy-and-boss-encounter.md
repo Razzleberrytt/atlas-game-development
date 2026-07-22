@@ -329,6 +329,34 @@ and performance budgets are fixed and mapped to the existing owners and the
 single terminal boundary — as above — so `P9-0101` can begin without further
 design decisions.
 
+## Implementation status (P9-0101 – P9-0106)
+
+- **Contracts, configuration, and pure decisions (`P9-0101`) — complete.**
+  `src/shared/Combat/SpecialEnemyContracts.luau` fixes the `enemy.blight_spitter`
+  archetype ID, the behavior-state (`Roaming`/`Approaching`/`Charging`/`Recovering`/`StandDown`/`Dead`)
+  and ability-action (`None`/`Begin`/`Continue`/`Cancel`/`Commit`) vocabulary,
+  the `InvalidFacts`/`InvalidTimestamp` rejection reasons, and the fact, decision,
+  and lingering-zone shapes (reusing the P3-compatible `AuthoritativeEnemyAttack`).
+  `src/shared/Config/SpecialEnemyConfig.luau` is the balance home — health,
+  ranged engagement, the Corrosive Bloom windup/radius/damage/cooldown, the
+  cluster radius, the lingering pool, the active-zone cap, and the authored
+  rarity — with invariants asserted against `EnemyConfig`.
+  `src/server/Systems/SpecialEnemyBehaviorResolver.luau` is the pure,
+  deterministic resolver: it targets the densest operative cluster (lexical
+  tie-break), runs the `Begin → Continue → Commit` charge lifecycle, emits one
+  authoritative damage event per Alive operative inside the impact radius at
+  commit plus the lingering-zone descriptor, stays inert while dead or
+  stood-down, and derives each pool tick through `resolveLingeringDamage`.
+  Fixtures `tests/SpecialEnemyContracts.test.luau` and
+  `tests/SpecialEnemyBehaviorResolver.test.luau` cover the vocabulary/config
+  invariants and the full decision surface (validation, targeting, tie-breaks,
+  the charge lifecycle, the commit burst, the lingering ticks, inertness, and
+  determinism/immutability). No runtime, remote, movement, or telegraph exists
+  yet.
+- **`P9-0102` – `P9-0106`** remain not started; they integrate the Spitter into
+  `EnemyDirectorService`, then add the boss contracts, runtime, telegraphs, and
+  validation.
+
 ## Deliberate exclusions
 
 No second enemy runtime, no per-enemy scheduler, no new client remote, no new
