@@ -550,6 +550,13 @@ local function beginHoldout(serverTimestamp: number)
 	holdoutDeadlineServerTimestamp = serverTimestamp + MissionConfig.Extraction.ArrivalSeconds
 	setRadio(RadioLineIds.HoldPosition, serverTimestamp)
 	spawnWave(3)
+	-- The authored climax: one Progenitor boss anchors the extraction clearing.
+	-- Its defeat outcome is observable through the director; converging that into
+	-- the terminal result is P10 work. Collapse-phase readability depends on the
+	-- P8 optional floodlight repair.
+	pcall(function()
+		EnemyDirectorService.spawnBoss(MissionConfig.Extraction.Position, floodlightsRestored)
+	end)
 	revision += 1
 	scheduleTimers()
 	publish()

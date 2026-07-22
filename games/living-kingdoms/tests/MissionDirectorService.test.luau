@@ -100,6 +100,7 @@ local broadcasts = {}
 local directMessages = {}
 local spawnedHostiles = {}
 local spawnedWaveIndexes = {}
+local spawnedBosses = {}
 local pressureBeginCalls = 0
 local pressureEndCalls = 0
 local beginOperationCalls = 0
@@ -236,6 +237,19 @@ local enemyDirector = {
 	end,
 	endOperationPressure = function()
 		pressureEndCalls += 1
+	end,
+	spawnBoss = function(position, floodlightsRestored)
+		table.insert(spawnedBosses, { position = position, floodlightsRestored = floodlightsRestored })
+		return true
+	end,
+	readBossState = function()
+		return {
+			exists = #spawnedBosses > 0,
+			isAlive = true,
+			isDefeated = false,
+			phaseId = "Carapace",
+			isVulnerable = false,
+		}
 	end,
 }
 
@@ -444,14 +458,20 @@ assert(directMessages[#directMessages].payload.phaseId == "Infiltration")
 alpha.root.Position = farPosition
 bravo.root.Position = farPosition
 sampleObjective(4)
-assert(service.read().objectiveProgressById[objectiveConfig.Objectives[1].objectiveId] == 0, "out-of-range yields no progress")
+assert(
+	service.read().objectiveProgressById[objectiveConfig.Objectives[1].objectiveId] == 0,
+	"out-of-range yields no progress"
+)
 assert(service.read().objectiveCompletedById[objectiveConfig.Objectives[2].objectiveId] == false)
 
 -- Move the squad onto the relay console; it is a held channel (~4s).
 alpha.root.Position = vec(relayCenter)
 bravo.root.Position = vec(relayCenter)
 sampleObjective(3)
-assert(service.read().objectiveCompletedById[objectiveConfig.Objectives[1].objectiveId] == false, "relay needs its full channel")
+assert(
+	service.read().objectiveCompletedById[objectiveConfig.Objectives[1].objectiveId] == false,
+	"relay needs its full channel"
+)
 -- A downed teammate does not count toward the channel.
 lifeByPlayer[bravo].snapshot.lifeStateId = "Incapacitated"
 sampleObjective(1)
@@ -461,7 +481,10 @@ local afterRelay = service.read()
 assert(afterRelay.objectiveCompletedById[objectiveConfig.Objectives[1].objectiveId] == true, "relay restored")
 assert(afterRelay.phaseId == "Infiltration", "restoring the relay does not unlock extraction")
 assert(afterRelay.extractionUnlocked == false)
-assert(afterRelay.activeObjectiveId == objectiveConfig.Objectives[2].objectiveId, "the booster is now the active objective")
+assert(
+	afterRelay.activeObjectiveId == objectiveConfig.Objectives[2].objectiveId,
+	"the booster is now the active objective"
+)
 assert(afterRelay.escalationLevel == 1, "relay completion fires the relay-collapse wave")
 assert(#spawnedHostiles == #config.Escalation.Waves[1])
 assert(spawnedWaveIndexes[1] == 1)
@@ -521,9 +544,19 @@ assert(holdoutRead.phaseId == "Holdout", "presence heartbeat begins the holdout"
 assert(holdoutRead.holdoutDeadlineServerTimestamp == now + config.Extraction.ArrivalSeconds)
 assert(holdoutRead.escalationLevel == 3)
 assert(#spawnedHostiles == #config.Escalation.Waves[1] + #config.Escalation.Waves[2] + #config.Escalation.Waves[3])
+-- The authored Progenitor boss spawns at the extraction clearing when the holdout
+-- begins, carrying the P8 floodlight-repair fact.
+assert(#spawnedBosses == 1, "the boss anchors the holdout")
+assert(
+	spawnedBosses[1].position == config.Extraction.Position and spawnedBosses[1].floodlightsRestored == true,
+	"the boss spawns at the arena with the floodlight fact"
+)
 assert(latestBroadcast().radio.lineId == "HoldPosition")
 assert(service.evaluateExtractionPresenceAt(now).rejectionReasonId == "InvalidPhase")
-assert(service.evaluateObjectivePresenceAt(now).rejectionReasonId == "InvalidPhase", "objectives do not progress during holdout")
+assert(
+	service.evaluateObjectivePresenceAt(now).rejectionReasonId == "InvalidPhase",
+	"objectives do not progress during holdout"
+)
 
 -- Success: a survivor is still inside the clearing when extraction arrives.
 local holdoutDeadline = holdoutRead.holdoutDeadlineServerTimestamp
@@ -607,7 +640,10 @@ table.clear(connectedPlayers)
 service.start()
 assert(service.read().revision == 1 and service.read().phaseId == "Insertion")
 assert(service.read().insertionDeadlineServerTimestamp == nil, "empty servers must not consume insertion")
-assert(service.read().objectiveCompletedById[objectiveConfig.Objectives[1].objectiveId] == false, "chain resets on restart")
+assert(
+	service.read().objectiveCompletedById[objectiveConfig.Objectives[1].objectiveId] == false,
+	"chain resets on restart"
+)
 playersSignal:Fire(makePlayer(501, farPosition))
 assert(service.read().insertionDeadlineServerTimestamp == 500 + config.InsertionHoldSeconds)
 service.stop()
@@ -637,7 +673,10 @@ local function runFullChain(operativeCount: number)
 
 	moveSquad(vec(relayCenter))
 	sampleObjective(5)
-	assert(service.read().objectiveCompletedById[objectiveConfig.Objectives[1].objectiveId] == true, "relay for " .. operativeCount)
+	assert(
+		service.read().objectiveCompletedById[objectiveConfig.Objectives[1].objectiveId] == true,
+		"relay for " .. operativeCount
+	)
 
 	moveSquad(vec(boosterCenter))
 	sampleObjective(26)
@@ -689,4 +728,6 @@ for _, prohibited in { "FireServer", "InvokeServer" } do
 	)
 end
 
-print("MissionDirectorService: phases, authored objective chain, relocation, extraction, holdout, wipe, disconnect, 1/2/4 validation, and cleanup passed")
+print(
+	"MissionDirectorService: phases, authored objective chain, relocation, extraction, holdout, wipe, disconnect, 1/2/4 validation, and cleanup passed"
+)

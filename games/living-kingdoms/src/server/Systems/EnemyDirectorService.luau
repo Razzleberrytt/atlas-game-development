@@ -22,13 +22,16 @@ local Workspace = game:GetService("Workspace")
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
 local SpecialEnemyConfig = require(ReplicatedStorage.Shared.Config.SpecialEnemyConfig)
+local BossConfig = require(ReplicatedStorage.Shared.Config.BossConfig)
 local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)
 local SpecialEnemyContracts = require(ReplicatedStorage.Shared.Combat.SpecialEnemyContracts)
+local BossContracts = require(ReplicatedStorage.Shared.Combat.BossContracts)
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 local WorldFoundationConfig = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)
 local EnemyBehaviorResolver = require(script.Parent.EnemyBehaviorResolver)
 local SpecialEnemyBehaviorResolver = require(script.Parent.SpecialEnemyBehaviorResolver)
+local BossPhaseResolver = require(script.Parent.BossPhaseResolver)
 local EliteAffixResolver = require(script.Parent.EliteAffixResolver)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 
@@ -41,6 +44,9 @@ type LingeringBloomZone = SpecialEnemyContracts.LingeringBloomZone
 local SpecialBehaviorStateIds = SpecialEnemyContracts.SpecialEnemyBehaviorStateIds
 local SpecialAbilityActionIds = SpecialEnemyContracts.SpecialAbilityActionIds
 local BLIGHT_SPITTER_ARCHETYPE_ID = SpecialEnemyContracts.SpecialEnemyArchetypeIds.BlightSpitter
+local BossPhaseIds = BossContracts.BossPhaseIds
+local BossActionIds = BossContracts.BossActionIds
+local PROGENITOR_ARCHETYPE_ID = BossContracts.BossArchetypeIds.Progenitor
 
 local BehaviorStateIds = EnemyContracts.EnemyBehaviorStateIds
 local AttackWindupActionIds = EnemyContracts.EnemyAttackWindupActionIds
@@ -101,6 +107,14 @@ export type EvaluationSummary = {
 	cleanedCount: number,
 }
 
+export type BossStateRead = {
+	exists: boolean,
+	isAlive: boolean,
+	isDefeated: boolean,
+	phaseId: string?,
+	isVulnerable: boolean,
+}
+
 export type PressureRead = {
 	isPressureActive: boolean,
 	isStoodDown: boolean,
@@ -154,6 +168,15 @@ type EnemyEntry = {
 	bloomChargeTargetPosition: EnemyWorldPosition?,
 	bloomChargeStartedServerTimestamp: number?,
 	lastBloomCommitServerTimestamp: number?,
+	-- The Progenitor boss phase machine; populated only for the boss archetype.
+	bossPhaseId: string?,
+	bossIsVulnerable: boolean,
+	bossFloodlightsRestored: boolean,
+	bossBroodSummonedForPhase: boolean,
+	bossVisibilityOverrideRadiusStuds: number?,
+	bossSlamTargetPosition: EnemyWorldPosition?,
+	bossSlamWindupStartedServerTimestamp: number?,
+	bossLastSlamCommitServerTimestamp: number?,
 }
 
 -- One server-owned lingering Corrosive Bloom pool. Persists after the Spitter
@@ -199,6 +222,9 @@ local activeEliteCount = 0
 -- Alive Blight Spitters and their live area-denial pools. Bounded by config.
 local activeSpitterCount = 0
 local activeBloomZones: { BloomZone } = {}
+-- At most one Progenitor boss exists per operation.
+local activeBossEntityId: string? = nil
+local bossDefeated = false
 
 local EliteAffixIds = RunRpgContracts.EliteAffixIds
 
@@ -294,6 +320,16 @@ end
 local function clearBloomTelegraph(entry: EnemyEntry)
 	entry.model:SetAttribute(PresentationAttributeNames.SpitterBloomChargeStartedServerTimestamp, 0)
 	entry.model:SetAttribute(PresentationAttributeNames.SpitterBloomCommitServerTimestamp, 0)
+end
+
+local function clearBossSlamWindup(entry: EnemyEntry)
+	entry.bossSlamTargetPosition = nil
+	entry.bossSlamWindupStartedServerTimestamp = nil
+end
+
+local function clearBossSlamTelegraph(entry: EnemyEntry)
+	entry.model:SetAttribute(PresentationAttributeNames.BossSlamStartedServerTimestamp, 0)
+	entry.model:SetAttribute(PresentationAttributeNames.BossSlamCommitServerTimestamp, 0)
 end
 
 local function beginAttackWindup(entry: EnemyEntry, targetOperativeEntityId: string, serverTimestamp: number)
@@ -420,9 +456,18 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 	assert(folder ~= nil, "enemy spawns require the started director folder")
 	local model, root, humanoid, label = createEnemyBody(request)
 	local isSpitter = request.archetypeId == BLIGHT_SPITTER_ARCHETYPE_ID
+	local isBoss = request.archetypeId == PROGENITOR_ARCHETYPE_ID
 	local assignment
 	local maximumHealth
-	if isSpitter then
+	if isBoss then
+		-- The boss is a single authored, stationary instance; it bypasses the elite
+		-- layer and carries its own health. A larger footprint reads as a climax.
+		assignment = NO_AFFIX_ASSIGNMENT
+		maximumHealth = BossConfig.Progenitor.MaximumHealth
+		humanoid.WalkSpeed = 0
+		root.Size = Vector3.new(10, 14, 10)
+		root.Position = Vector3.new(request.position.x, request.position.y + 7, request.position.z)
+	elseif isSpitter then
 		-- Special enemies bypass the RPG elite affix layer and carry their own
 		-- authoritative health and roam speed.
 		assignment = NO_AFFIX_ASSIGNMENT
@@ -488,6 +533,14 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 		bloomChargeTargetPosition = nil,
 		bloomChargeStartedServerTimestamp = nil,
 		lastBloomCommitServerTimestamp = nil,
+		bossPhaseId = if isBoss then BossPhaseIds.Carapace else nil,
+		bossIsVulnerable = false,
+		bossFloodlightsRestored = false,
+		bossBroodSummonedForPhase = false,
+		bossVisibilityOverrideRadiusStuds = nil,
+		bossSlamTargetPosition = nil,
+		bossSlamWindupStartedServerTimestamp = nil,
+		bossLastSlamCommitServerTimestamp = nil,
 	}
 	model:SetAttribute(PresentationAttributeNames.EliteAffixId, assignment.affixId)
 	model:SetAttribute(
@@ -541,6 +594,10 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 	if isSpitter then
 		activeSpitterCount += 1
 	end
+	if isBoss then
+		activeBossEntityId = request.entityId
+		bossDefeated = false
+	end
 	entries[request.entityId] = entry
 	activeEnemyCount += 1
 	setHealthPresentation(entry)
@@ -552,6 +609,16 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 		model:SetAttribute(PresentationAttributeNames.SpitterBloomCenterX, 0)
 		model:SetAttribute(PresentationAttributeNames.SpitterBloomCenterZ, 0)
 		model:SetAttribute(PresentationAttributeNames.SpitterBloomRadiusStuds, 0)
+	end
+	if isBoss then
+		model:SetAttribute(PresentationAttributeNames.BossPhaseId, BossPhaseIds.Carapace)
+		model:SetAttribute(PresentationAttributeNames.BossIsVulnerable, false)
+		model:SetAttribute(PresentationAttributeNames.BossSlamSequence, 0)
+		model:SetAttribute(PresentationAttributeNames.BossSlamStartedServerTimestamp, 0)
+		model:SetAttribute(PresentationAttributeNames.BossSlamCommitServerTimestamp, 0)
+		model:SetAttribute(PresentationAttributeNames.BossSlamCenterX, 0)
+		model:SetAttribute(PresentationAttributeNames.BossSlamCenterZ, 0)
+		model:SetAttribute(PresentationAttributeNames.BossSlamRadiusStuds, BossConfig.Slam.RadiusStuds)
 	end
 	model.Parent = folder
 	-- Keep physical simulation server-owned so replicated movement cannot be
@@ -664,6 +731,13 @@ function EnemyDirectorService.endOperationPressure()
 				clearBloomCharge(entry)
 				clearBloomTelegraph(entry)
 			end
+			if entry.archetypeId == PROGENITOR_ARCHETYPE_ID then
+				entry.bossIsVulnerable = false
+				entry.bossVisibilityOverrideRadiusStuds = nil
+				clearBossSlamWindup(entry)
+				clearBossSlamTelegraph(entry)
+				entry.model:SetAttribute(PresentationAttributeNames.BossIsVulnerable, false)
+			end
 			setPresentationBehaviorState(entry, BehaviorStateIds.StandDown)
 			entry.targetOperativeEntityId = nil
 			entry.humanoid.WalkSpeed = 0
@@ -760,6 +834,16 @@ local function applyDeath(entry: EnemyEntry, serverTimestamp: number)
 	if entry.archetypeId == BLIGHT_SPITTER_ARCHETYPE_ID then
 		activeSpitterCount = math.max(0, activeSpitterCount - 1)
 	end
+	if entry.archetypeId == PROGENITOR_ARCHETYPE_ID then
+		bossDefeated = true
+		activeBossEntityId = nil
+		entry.bossIsVulnerable = false
+		entry.bossPhaseId = BossPhaseIds.Defeated
+		clearBossSlamWindup(entry)
+		clearBossSlamTelegraph(entry)
+		entry.model:SetAttribute(PresentationAttributeNames.BossPhaseId, BossPhaseIds.Defeated)
+		entry.model:SetAttribute(PresentationAttributeNames.BossIsVulnerable, false)
+	end
 	setHealthPresentation(entry)
 end
 
@@ -794,6 +878,11 @@ function EnemyDirectorService.commitHealthState(
 		or type(serverTimestamp) ~= "number"
 		or serverTimestamp ~= serverTimestamp
 	then
+		return false, nil
+	end
+	-- The boss is armored except during a telegraphed post-Slam exposure window;
+	-- operative fire outside it is authoritatively rejected without state change.
+	if entry.archetypeId == PROGENITOR_ARCHETYPE_ID and not entry.bossIsVulnerable then
 		return false, nil
 	end
 	for shotId in entry.healthState.processedShotIds do
@@ -839,6 +928,68 @@ end
 
 function EnemyDirectorService.readActiveEnemyCount(): number
 	return activeEnemyCount
+end
+
+--[[
+	Spawn the single authored Progenitor boss at the arena. Placement is authored
+	(the extraction clearing), so it bypasses the fair-spawn ring. At most one boss
+	exists per operation. `floodlightsRestored` is the P8 objective fact that
+	governs Collapse-phase readability.
+]]
+function EnemyDirectorService.spawnBoss(position: EnemyWorldPosition, floodlightsRestored: boolean): boolean
+	if not started or activeBossEntityId ~= nil or type(position) ~= "table" then
+		return false
+	end
+	local request: EnemySpawnRequest = {
+		entityId = "boss.progenitor:" .. tostring(nextSequence()),
+		archetypeId = PROGENITOR_ARCHETYPE_ID,
+		spawnSourceId = SpawnSourceIds.AuthoredWave,
+		displayName = BossConfig.Progenitor.DisplayName,
+		position = { x = position.x, y = position.y, z = position.z },
+	}
+	commitSpawn(request, now())
+	local entry = entries[request.entityId]
+	if entry ~= nil then
+		entry.bossFloodlightsRestored = floodlightsRestored == true
+	end
+	return true
+end
+
+function EnemyDirectorService.readBossState(): BossStateRead
+	local bossId = activeBossEntityId
+	local entry = if bossId ~= nil then entries[bossId] else nil
+	if entry == nil then
+		return table.freeze({
+			exists = false,
+			isAlive = false,
+			isDefeated = bossDefeated,
+			phaseId = nil,
+			isVulnerable = false,
+		}) :: BossStateRead
+	end
+	return table.freeze({
+		exists = true,
+		isAlive = entry.isAlive,
+		isDefeated = bossDefeated,
+		phaseId = entry.bossPhaseId,
+		isVulnerable = entry.bossIsVulnerable,
+	}) :: BossStateRead
+end
+
+-- The operative gameplay-visibility radius, shrunk while a living boss projects
+-- its spore shroud (Brood) or its Collapse darkness. The combat runtime reads this
+-- so the boss's shroud limits targeting, not just presentation.
+function EnemyDirectorService.readGameplayVisibilityRadiusStuds(): number
+	local normal = EnemyConfig.Combat.GameplayVisibilityRadiusStuds
+	local bossId = activeBossEntityId
+	local entry = if bossId ~= nil then entries[bossId] else nil
+	if entry ~= nil and entry.isAlive then
+		local override = entry.bossVisibilityOverrideRadiusStuds
+		if override ~= nil then
+			return math.min(normal, override)
+		end
+	end
+	return normal
 end
 
 function EnemyDirectorService.readPressureState(): PressureRead
@@ -1120,7 +1271,115 @@ local function applySpitterBehavior(
 	return 0
 end
 
+-- Summon one bounded Brood add surge around the boss. Adds are ordinary walkers
+-- placed on the fair-spawn ring and validated like any roaming spawn; they count
+-- against the population budget.
+local function summonBroodSurge(
+	entry: EnemyEntry,
+	count: number,
+	operativeFacts: { EnemyOperativeFact },
+	serverTimestamp: number
+)
+	local anchor = { x = entry.root.Position.X, y = entry.root.Position.Y, z = entry.root.Position.Z }
+	for _ = 1, count do
+		local request: EnemySpawnRequest = {
+			entityId = "enemy.brood:" .. tostring(nextSequence()) .. ":" .. tostring(serverTimestamp),
+			archetypeId = EnemyConfig.Walker.ArchetypeId,
+			spawnSourceId = SpawnSourceIds.AuthoredWave,
+			displayName = EnemyConfig.Walker.DisplayName,
+			position = proposeRoamingPosition(anchor),
+			isHordePulse = true,
+			hordeRoleId = "horde.role.infected",
+		}
+		if EnemyBehaviorResolver.resolveSpawn(request, spawnFacts(operativeFacts)).isLegal then
+			commitSpawn(request, serverTimestamp)
+		end
+	end
+end
+
+--[[
+	One Progenitor boss behavior pass. The pure BossPhaseResolver derives the
+	monotonic phase, the post-Slam exposure window, the Slam lifecycle and its AoE,
+	the one-shot Brood surge, and the shroud/darkness visibility override. This
+	owner commits the Slam damage through the P3 boundary, spawns the Brood adds,
+	stores the vulnerability and visibility state for the fire and combat owners,
+	and discloses the Slam telegraph. Returns the committed Slam damage count.
+]]
+local function applyBossBehavior(
+	entry: EnemyEntry,
+	operativeFacts: { EnemyOperativeFact },
+	serverTimestamp: number
+): number
+	if isStoodDown then
+		return 0
+	end
+	local decision = BossPhaseResolver.resolveBossPhase({
+		entityId = entry.entityId,
+		phaseId = entry.bossPhaseId :: string,
+		position = { x = entry.root.Position.X, y = entry.root.Position.Y, z = entry.root.Position.Z },
+		currentHealth = entry.healthState.currentHealth,
+		maximumHealth = entry.maximumHealth,
+		lastSlamCommitServerTimestamp = entry.bossLastSlamCommitServerTimestamp,
+		slamWindupStartedServerTimestamp = entry.bossSlamWindupStartedServerTimestamp,
+		slamTargetPosition = entry.bossSlamTargetPosition,
+		broodSummonedForPhase = entry.bossBroodSummonedForPhase,
+		floodlightsRestored = entry.bossFloodlightsRestored,
+	}, operativeFacts, serverTimestamp)
+	if decision.rejectionReasonId ~= nil then
+		return 0
+	end
+
+	if entry.bossPhaseId ~= decision.phaseIdAfter then
+		entry.bossPhaseId = decision.phaseIdAfter
+		entry.model:SetAttribute(PresentationAttributeNames.BossPhaseId, decision.phaseIdAfter)
+	end
+	if entry.bossIsVulnerable ~= decision.isVulnerable then
+		entry.bossIsVulnerable = decision.isVulnerable
+		entry.model:SetAttribute(PresentationAttributeNames.BossIsVulnerable, decision.isVulnerable)
+	end
+	entry.bossVisibilityOverrideRadiusStuds = decision.visibilityOverrideRadiusStuds
+
+	if decision.shouldSummonBrood then
+		entry.bossBroodSummonedForPhase = true
+		summonBroodSurge(entry, decision.broodSurgeCount, operativeFacts, serverTimestamp)
+	end
+
+	local action = decision.slamActionId
+	if action == BossActionIds.Begin then
+		local target = decision.slamTargetPosition
+		if target ~= nil then
+			entry.bossSlamWindupStartedServerTimestamp = serverTimestamp
+			entry.bossSlamTargetPosition = { x = target.x, y = target.y, z = target.z }
+			entry.attackAttemptSequence += 1
+			local phaseTuning = BossConfig.Phases[entry.bossPhaseId :: string]
+			entry.model:SetAttribute(PresentationAttributeNames.BossSlamSequence, entry.attackAttemptSequence)
+			entry.model:SetAttribute(PresentationAttributeNames.BossSlamStartedServerTimestamp, serverTimestamp)
+			entry.model:SetAttribute(
+				PresentationAttributeNames.BossSlamCommitServerTimestamp,
+				serverTimestamp + phaseTuning.SlamWindupSeconds
+			)
+			entry.model:SetAttribute(PresentationAttributeNames.BossSlamCenterX, target.x)
+			entry.model:SetAttribute(PresentationAttributeNames.BossSlamCenterZ, target.z)
+			entry.model:SetAttribute(PresentationAttributeNames.BossSlamRadiusStuds, BossConfig.Slam.RadiusStuds)
+		end
+		return 0
+	elseif action == BossActionIds.Commit then
+		local committed = commitBloomImpacts(decision.slamImpacts, serverTimestamp)
+		clearBossSlamWindup(entry)
+		entry.bossLastSlamCommitServerTimestamp = serverTimestamp
+		clearBossSlamTelegraph(entry)
+		return committed
+	elseif action == BossActionIds.Cancel then
+		clearBossSlamWindup(entry)
+		clearBossSlamTelegraph(entry)
+	end
+	return 0
+end
+
 local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperativeFact }, serverTimestamp: number): number
+	if entry.archetypeId == PROGENITOR_ARCHETYPE_ID then
+		return applyBossBehavior(entry, operativeFacts, serverTimestamp)
+	end
 	if entry.archetypeId == BLIGHT_SPITTER_ARCHETYPE_ID then
 		return applySpitterBehavior(entry, operativeFacts, serverTimestamp)
 	end
@@ -1409,6 +1668,8 @@ function EnemyDirectorService.stop()
 	activeEliteCount = 0
 	activeSpitterCount = 0
 	table.clear(activeBloomZones)
+	activeBossEntityId = nil
+	bossDefeated = false
 	operationPressureStartedServerTimestamp = nil
 	table.clear(pendingSpawns)
 	activeEnemyCount = 0

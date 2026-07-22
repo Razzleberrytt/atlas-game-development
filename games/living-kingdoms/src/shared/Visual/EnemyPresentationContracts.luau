@@ -36,6 +36,16 @@ local AttributeNames = table.freeze({
 	SpitterBloomCenterX = "EnemySpitterBloomCenterX",
 	SpitterBloomCenterZ = "EnemySpitterBloomCenterZ",
 	SpitterBloomRadiusStuds = "EnemySpitterBloomRadiusStuds",
+	-- The Progenitor boss phase machine and Slam telegraph (P9). Authoritative
+	-- disclosure only; clients never drive a phase or legalise a hit.
+	BossPhaseId = "EnemyBossPhaseId",
+	BossIsVulnerable = "EnemyBossIsVulnerable",
+	BossSlamSequence = "EnemyBossSlamSequence",
+	BossSlamStartedServerTimestamp = "EnemyBossSlamStartedServerTimestamp",
+	BossSlamCommitServerTimestamp = "EnemyBossSlamCommitServerTimestamp",
+	BossSlamCenterX = "EnemyBossSlamCenterX",
+	BossSlamCenterZ = "EnemyBossSlamCenterZ",
+	BossSlamRadiusStuds = "EnemyBossSlamRadiusStuds",
 })
 
 local LifeStateIds = table.freeze({

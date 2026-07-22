@@ -392,8 +392,31 @@ design decisions.
   `tests/BossContracts.test.luau` and `tests/BossPhaseResolver.test.luau` cover the
   vocabulary/config invariants and the full decision surface. No runtime, arena,
   telegraph, or summon integration exists yet.
-- **`P9-0104` – `P9-0106`** remain not started; they add the boss runtime and
-  arena integration, the readable telegraphs, and the encounter validation.
+- **Boss runtime and arena integration (`P9-0104`) — complete.**
+  `EnemyDirectorService` owns the single Progenitor as a first-class archetype
+  through its existing boundaries. `spawnBoss` places one authored instance at the
+  arena (larger footprint, own health, no elite affix, at most one per operation).
+  On the shared evaluation pass, `applyBossBehavior` runs the pure `BossPhaseResolver`
+  to advance the monotonic phase, open the post-Slam exposure window, commit the
+  Slam AoE through the P3 boundary, summon the one-shot bounded Brood surge
+  (fair-spawn-validated walkers around the boss, counted against the population
+  budget), and set the shroud/Collapse-darkness visibility override. Boss health
+  commits are **rejected unless the boss is currently in an exposure window** — the
+  `commitHealthState` vulnerability gate — so operative fire only lands during
+  telegraphed windows. `readGameplayVisibilityRadiusStuds` exposes the shroud so
+  `OperativeCombatRuntimeService` shrinks targeting visibility (a gameplay effect,
+  not just presentation). `MissionDirectorService.beginHoldout` spawns the boss at
+  the extraction clearing with the P8 floodlight-repair fact, and `readBossState`
+  exposes the defeat outcome. Death frees the slot, stand-down freezes the boss,
+  and teardown clears all boss state. Bounds are unchanged: one heartbeat, one
+  evaluation pass, zero per-enemy connections/timers/raycasts/remotes and no
+  randomness. The Slam telegraph is disclosed via replicated model attributes for
+  `P9-0105` to render. **Deferred to `P10-0102`:** converging the boss-defeat
+  outcome into the single terminal-result boundary (the P10 roadmap owns "boss
+  outcome"); today the holdout still resolves on its existing timer while the boss
+  encounter runs and can be defeated.
+- **`P9-0105` – `P9-0106`** remain not started; they add the readable telegraphs
+  and the encounter validation.
 
 ## Deliberate exclusions
 
