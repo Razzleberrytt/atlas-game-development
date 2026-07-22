@@ -107,7 +107,24 @@ assertThat(
 	string.find(bootstrap, '"SelectionIntent", "ActionIntent", "State"', 1, true) ~= nil,
 	"network must stay narrow"
 )
-assertThat(not string.find(mission, "ClassService", 1, true), "mandatory operation path must have no class gate")
+-- P8-0106 permits the mission to read class for opportunities (the engineer's
+-- objective-equipment repair), but no mandatory objective may be class-gated.
+-- Encode that as a config invariant rather than forbidding any class reference:
+-- required objectives grant class no advantage (assistedRateMultiplier == 1) and
+-- every objective is completable without a class (baseRatePerSecond > 0).
+local objectiveChain = luau.load(
+	fs.readFile("games/living-kingdoms/src/shared/Config/ObjectiveChainConfig.luau"),
+	{ debugName = "ObjectiveChainConfig", injectGlobals = true }
+)()
+for _, definition in objectiveChain.Objectives do
+	assertThat(definition.baseRatePerSecond > 0, "every objective must be completable without a class: " .. definition.objectiveId)
+	if not definition.isOptional then
+		assertThat(
+			definition.assistedRateMultiplier == 1,
+			"a mandatory objective must not be class-gated: " .. definition.objectiveId
+		)
+	end
+end
 for _, hiddenVocabulary in { "EnemyDirector", "MissionObject", "SupplyCache", "objectiveState", "hostileId" } do
 	assertThat(
 		not string.find(presentation, hiddenVocabulary, 1, true),

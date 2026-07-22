@@ -58,8 +58,15 @@ local MissionConfig = {
 		Waves = table.freeze({
 			-- The relay ring is centered far enough from the console that every
 			-- authored contact clears the 64-stud fair-spawn radius immediately.
+			-- Wave 1 fires when the relay is restored (Lookout).
 			createRingWave("relay-collapse", "Relay Horde", -100, 50, 10, 78),
-			createRingWave("creek-swarm", "Creek Swarm", 65, 28, 14, 82),
+			-- Wave 2 is re-homed to the Military Roadblock and fires when the signal
+			-- booster finishes charging (P8-0105), converging on the defended hold so
+			-- the position is never indefinitely optimal.
+			-- Radius keeps every contact past the 64-stud fair-spawn floor from the
+			-- squad holding the roadblock booster (min ring distance 70).
+			createRingWave("roadblock-swarm", "Roadblock Swarm", 180, -178, 14, 80),
+			-- Wave 3 fires when the extraction holdout begins (Clearing).
 			createRingWave("extraction-nightmare", "Extraction Nightmare", 218, 58, 22, 94),
 		}),
 	}),
@@ -74,6 +81,9 @@ local MissionConfig = {
 		InsertionComplete = "Insertion complete. Regroup now. Movement is converging on your position.",
 		ProceedToObjective = "Reach Lookout 7 and restore the emergency relay. Do not stop moving.",
 		ObjectiveComplete = "Relay restored. Every hostile in Blackwater just heard it. Extraction inbound.",
+		RelayRestored = "Relay's live but the signal's too weak. Reach the roadblock booster and charge it.",
+		BoosterCharged = "Booster charged. Command has your extraction. Run for the clearing.",
+		FloodlightsRestored = "Floodlights online. The clearing is lit — you'll see them coming.",
 		PressureRising = "Command: threat density is spiking. The forest is filling up.",
 		HoldPosition = "Extraction is two minutes out. Hold the clearing or die there.",
 		MissionSuccess = "Extraction complete. The horde is still following the signal.",

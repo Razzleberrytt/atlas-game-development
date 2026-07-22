@@ -1,16 +1,22 @@
 --!strict
 
 --[[
-	P5-0103 minimal mission orchestration for the first playable operation. This
-	service owns the authoritative phase machine, the single authored objective,
-	extraction unlock, the holdout countdown, and the final outcome. Every
-	transition is derived from server timestamps and server-read facts; clients
-	receive only the safe MissionContracts snapshot and can request nothing but
-	one objective interaction that is fully revalidated here.
+	Mission orchestration for Operation Blackwater Relay.
 
-	Deliberately small so later operations can reuse the same phase vocabulary,
-	timer evaluation, and disclosure shape. It composes — never rewrites — the
-	existing life, squad-failure, and combat-fixture systems.
+	P5-0103 established the authoritative phase machine, extraction unlock, holdout
+	countdown, and terminal outcome. P8-0103..0107 grow the single relay
+	interaction into the authored objective chain specified in
+	docs/specifications/authored-objective-chain.md: restore the relay at the
+	Lookout, charge the signal booster at the Military Roadblock, and optionally
+	restore the extraction floodlights. The chain runs inside the existing
+	Infiltration/Exfiltration phases and the single terminal boundary — there is
+	no new phase and no parallel state machine.
+
+	This service is the one stateful objective-runtime owner. Objective progress is
+	server-sampled from operative presence at each authored location and advanced
+	only by the pure ObjectiveChainResolver, so clients declare nothing: there is
+	no client-authored objective request to replay or spam. Every completion,
+	escalation, and extraction unlock is committed here from server-read facts.
 ]]
 
 local Players = game:GetService("Players")
@@ -20,6 +26,9 @@ local Workspace = game:GetService("Workspace")
 
 local MissionConfig = require(ReplicatedStorage.Shared.Config.MissionConfig)
 local MissionContracts = require(ReplicatedStorage.Shared.Mission.MissionContracts)
+local ObjectiveChainConfig = require(ReplicatedStorage.Shared.Config.ObjectiveChainConfig)
+local ObjectiveChainResolver = require(ReplicatedStorage.Shared.Mission.ObjectiveChainResolver)
+local ClassService = require(script.Parent.ClassService)
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local SquadFailureService = require(script.Parent.SquadFailureService)
@@ -28,7 +37,9 @@ type MissionPhaseId = MissionContracts.MissionPhaseId
 type MissionOutcomeId = MissionContracts.MissionOutcomeId
 type ObjectiveStateId = MissionContracts.ObjectiveStateId
 type SafeMissionSnapshot = MissionContracts.SafeMissionSnapshot
+type SafeObjectiveSnapshot = MissionContracts.SafeObjectiveSnapshot
 type SafeRadioTransmission = MissionContracts.SafeRadioTransmission
+type WorkerFact = ObjectiveChainResolver.WorkerFact
 
 type ListenerConnection = { Disconnect: (self: ListenerConnection) -> () }
 
@@ -47,19 +58,27 @@ export type AuthoritativeMissionRead = {
 	escalationLevel: number,
 	outcomeId: MissionOutcomeId?,
 	insertionDeadlineServerTimestamp: number?,
-	secondWaveDeadlineServerTimestamp: number?,
 	holdoutDeadlineServerTimestamp: number?,
-	objectiveCompletedAtServerTimestamp: number?,
-	objectiveCompletedByOperativeEntityId: string?,
+	activeObjectiveId: string?,
+	floodlightsRestored: boolean,
+	requiredChainComplete: boolean,
+	objectiveProgressById: { [string]: number },
+	objectiveCompletedById: { [string]: boolean },
+	requiredObjectiveCompletedAtServerTimestamp: number?,
+	requiredObjectiveCompletedByOperativeEntityId: string?,
 }
 
 local PhaseIds = MissionContracts.MissionPhaseIds
 local OutcomeIds = MissionContracts.MissionOutcomeIds
 local ObjectiveStateIds = MissionContracts.ObjectiveStateIds
+local ChainStateIds = MissionContracts.ObjectiveChainStateIds
 local RejectionReasonIds = MissionContracts.RejectionReasonIds
 local RadioLineIds = MissionContracts.RadioLineIds
 
 local MISSION_FOLDER_NAME = "MissionObjects"
+-- Publish a live progress snapshot when the active objective advances at least
+-- this much, so progress bars move without flooding the network every sample.
+local PROGRESS_PUBLISH_STEP = 0.02
 
 local Service = {}
 
@@ -68,20 +87,40 @@ Service.RejectionReasonIds = RejectionReasonIds
 local missionNetwork = ReplicatedStorage:WaitForChild("MissionNetwork")
 local stateRemote = missionNetwork:WaitForChild("State") :: RemoteEvent
 
+-- Index the authored objectives once for O(1) lookups.
+local objectiveDefinitionById: { [string]: any } = {}
+local requiredObjectiveId: string? = nil
+local floodlightsObjectiveId: string? = nil
+for _, definition in ObjectiveChainConfig.Objectives do
+	objectiveDefinitionById[definition.objectiveId] = definition
+	if definition.isRequiredForExtraction then
+		requiredObjectiveId = definition.objectiveId
+	end
+	if definition.interactionKindId == "EquipmentRepair" then
+		floodlightsObjectiveId = definition.objectiveId
+	end
+end
+
 local started = false
 local revision = 0
 local phaseId: MissionPhaseId = PhaseIds.Insertion
-local objectiveStateId: ObjectiveStateId = ObjectiveStateIds.Inactive
 local extractionUnlocked = false
 local escalationLevel = 0
 local outcomeId: MissionOutcomeId? = nil
 local insertionDeadlineServerTimestamp: number? = nil
-local secondWaveDeadlineServerTimestamp: number? = nil
 local holdoutDeadlineServerTimestamp: number? = nil
-local objectiveCompletedAtServerTimestamp: number? = nil
-local objectiveCompletedByOperativeEntityId: string? = nil
+local requiredObjectiveCompletedAtServerTimestamp: number? = nil
+local requiredObjectiveCompletedByOperativeEntityId: string? = nil
 local lastRadio: SafeRadioTransmission? = nil
 local spawnedWaves: { [number]: boolean } = {}
+
+local objectiveProgress: { [string]: number } = {}
+local objectiveCompleted: { [string]: boolean } = {}
+local objectiveDecaying: { [string]: boolean } = {}
+local activeObjectiveId: string? = nil
+local floodlightsRestored = false
+local lastObjectiveSampleServerTimestamp: number? = nil
+local lastPublishedProgressRatio = -1
 
 local timerGeneration = 0
 local timerThread: thread? = nil
@@ -89,11 +128,9 @@ local presenceAccumulatedSeconds = 0
 local heartbeatConnection: RBXScriptConnection? = nil
 local playerAddedConnection: RBXScriptConnection? = nil
 local failureConnection: ListenerConnection? = nil
-local promptConnection: RBXScriptConnection? = nil
 
 local missionFolder: Folder? = nil
-local objectivePrompt: ProximityPrompt? = nil
-local objectiveStatusLamp: BasePart? = nil
+local objectiveLampByObjectiveId: { [string]: BasePart } = {}
 local extractionBeacon: Model? = nil
 
 local function now(): number
@@ -113,23 +150,122 @@ local function result(didChange: boolean, rejectionReasonId: string?): Operation
 	})
 end
 
+local function resetObjectiveState()
+	table.clear(objectiveProgress)
+	table.clear(objectiveCompleted)
+	table.clear(objectiveDecaying)
+	for _, definition in ObjectiveChainConfig.Objectives do
+		objectiveProgress[definition.objectiveId] = 0
+		objectiveCompleted[definition.objectiveId] = false
+		objectiveDecaying[definition.objectiveId] = false
+	end
+	activeObjectiveId = nil
+	floodlightsRestored = false
+	lastObjectiveSampleServerTimestamp = nil
+	lastPublishedProgressRatio = -1
+end
+
+local function prerequisiteSatisfied(definition: any): boolean
+	local prerequisiteId = definition.prerequisiteObjectiveId
+	if prerequisiteId == nil then
+		return true
+	end
+	return objectiveCompleted[prerequisiteId] == true
+end
+
+local function isRequiredChainComplete(): boolean
+	if requiredObjectiveId == nil then
+		return true
+	end
+	return objectiveCompleted[requiredObjectiveId] == true
+end
+
+-- The current objective the squad should be working: the first authored
+-- objective that is unlocked (prerequisite met) and not yet completed.
+local function computeActiveObjectiveId(): string?
+	for _, definition in ObjectiveChainConfig.Objectives do
+		if not objectiveCompleted[definition.objectiveId] and prerequisiteSatisfied(definition) then
+			return definition.objectiveId
+		end
+	end
+	return nil
+end
+
+local function objectiveChainStateId(definition: any): string
+	if objectiveCompleted[definition.objectiveId] then
+		return ChainStateIds.Completed
+	elseif not prerequisiteSatisfied(definition) then
+		return ChainStateIds.Locked
+	end
+	return ChainStateIds.Active
+end
+
+local function summaryObjectiveStateId(): ObjectiveStateId
+	if phaseId == PhaseIds.Insertion then
+		return ObjectiveStateIds.Inactive
+	elseif isRequiredChainComplete() then
+		return ObjectiveStateIds.Completed
+	end
+	return ObjectiveStateIds.Active
+end
+
+local function buildObjectiveSnapshots(): { SafeObjectiveSnapshot }
+	local snapshots: { SafeObjectiveSnapshot } = {}
+	for _, definition in ObjectiveChainConfig.Objectives do
+		local progress = objectiveProgress[definition.objectiveId] or 0
+		local ratio = math.clamp(progress / definition.completionUnits, 0, 1)
+		table.insert(snapshots, {
+			objectiveId = definition.objectiveId,
+			displayText = definition.displayText,
+			stateId = objectiveChainStateId(definition),
+			progressRatio = ratio,
+			decaying = objectiveDecaying[definition.objectiveId] == true,
+			isOptional = definition.isOptional,
+			destinationDisplayName = definition.destinationDisplayName,
+		})
+	end
+	return snapshots
+end
+
+local function headlineObjectiveText(): string
+	local currentId = activeObjectiveId
+	if currentId ~= nil then
+		local definition = objectiveDefinitionById[currentId]
+		if definition ~= nil then
+			return definition.displayText
+		end
+	end
+	return MissionConfig.ObjectiveTextByPhase[phaseId]
+end
+
 local function safeSnapshot(): SafeMissionSnapshot
 	return table.freeze({
 		operationId = MissionConfig.OperationId,
 		revision = revision,
 		phaseId = phaseId,
-		objectiveStateId = objectiveStateId,
-		objectiveText = MissionConfig.ObjectiveTextByPhase[phaseId],
+		objectiveStateId = summaryObjectiveStateId(),
+		objectiveText = headlineObjectiveText(),
 		extractionUnlocked = extractionUnlocked,
 		escalationLevel = escalationLevel,
 		holdoutDeadlineServerTimestamp = holdoutDeadlineServerTimestamp,
 		outcomeId = outcomeId,
 		radio = lastRadio,
+		objectives = buildObjectiveSnapshots(),
+		activeObjectiveId = activeObjectiveId,
+		floodlightsRestored = floodlightsRestored,
 	}) :: SafeMissionSnapshot
 end
 
 local function publish()
 	local snapshot = safeSnapshot()
+	-- Track the active objective's published progress so live updates throttle.
+	local currentId = activeObjectiveId
+	if currentId ~= nil then
+		lastPublishedProgressRatio =
+			math.clamp((objectiveProgress[currentId] or 0) / objectiveDefinitionById[currentId].completionUnits, 0, 1)
+	else
+		lastPublishedProgressRatio = -1
+	end
 	pcall(function()
 		stateRemote:FireAllClients(snapshot)
 	end)
@@ -153,9 +289,8 @@ local function spawnWave(waveIndex: number)
 	end
 	spawnedWaves[waveIndex] = true
 	escalationLevel = math.max(escalationLevel, waveIndex)
-	-- The production enemy director validates fairness, defers unfair
-	-- placements, raises its escalation level, and opens the authored-wave
-	-- recovery window.
+	-- The production enemy director validates fairness, defers unfair placements,
+	-- raises its escalation level, and opens the authored-wave recovery window.
 	pcall(function()
 		EnemyDirectorService.spawnAuthoredWave(waveIndex, wave)
 	end)
@@ -183,6 +318,53 @@ local function countAdmittedAliveInsideExtraction(): number
 	return count
 end
 
+-- Gather, per authored objective, the validated operatives standing on it:
+-- admitted, alive, with a readable position within the interaction radius. Each
+-- worker carries its server-owned class so the engineer repair path is honored.
+local function gatherWorkersByObjective(): { [string]: { WorkerFact } }
+	local classById: { [string]: string } = {}
+	local ok, roster = pcall(ClassService.readRoster)
+	if ok and type(roster) == "table" then
+		for _, assignment in roster :: { any } do
+			if type(assignment.operativeEntityId) == "string" and type(assignment.classId) == "string" then
+				classById[assignment.operativeEntityId] = assignment.classId
+			end
+		end
+	end
+
+	local workersByObjectiveId: { [string]: { WorkerFact } } = {}
+	for _, definition in ObjectiveChainConfig.Objectives do
+		workersByObjectiveId[definition.objectiveId] = {}
+	end
+
+	for _, read in OperativeLifeService.readAll() do
+		local operativeEntityId = read.operativeEntityId
+		if SquadFailureService.isOperativeAdmitted(operativeEntityId) and read.snapshot.lifeStateId == "Alive" then
+			local player = OperativeLifeService.playerForOperativeEntityId(operativeEntityId)
+			local character = if player == nil then nil else player.Character
+			local root = if character == nil then nil else character:FindFirstChild("HumanoidRootPart")
+			if root ~= nil and root:IsA("BasePart") then
+				local position = (root :: BasePart).Position
+				local classId = classById[operativeEntityId]
+				for _, definition in ObjectiveChainConfig.Objectives do
+					local center = definition.center
+					local dx = position.X - center.x
+					local dy = position.Y - center.y
+					local dz = position.Z - center.z
+					local radius = definition.interactionRadiusStuds
+					if dx * dx + dy * dy + dz * dz <= radius * radius then
+						table.insert(
+							workersByObjectiveId[definition.objectiveId],
+							{ operativeEntityId = operativeEntityId, classId = classId }
+						)
+					end
+				end
+			end
+		end
+	end
+	return workersByObjectiveId
+end
+
 local function cancelTimer()
 	timerGeneration += 1
 	if timerThread ~= nil then
@@ -205,7 +387,6 @@ local function scheduleTimers()
 		end
 	end
 	consider(insertionDeadlineServerTimestamp)
-	consider(secondWaveDeadlineServerTimestamp)
 	consider(holdoutDeadlineServerTimestamp)
 	if earliest == nil then
 		return
@@ -228,19 +409,11 @@ local function armInsertionCountdown(serverTimestamp: number)
 	publish()
 end
 
-local function markObjectiveConsoleCompleted()
-	local prompt = objectivePrompt
-	if prompt ~= nil then
-		pcall(function()
-			prompt.Enabled = false
-		end)
-		prompt:Destroy()
-		objectivePrompt = nil
-	end
-	local lamp = objectiveStatusLamp
+local function markObjectiveLampRestored(objectiveId: string)
+	local lamp = objectiveLampByObjectiveId[objectiveId]
 	if lamp ~= nil then
 		lamp.Color = Color3.fromRGB(74, 189, 96)
-		lamp:SetAttribute("RelayRestored", true)
+		lamp:SetAttribute("ObjectiveRestored", true)
 	end
 end
 
@@ -296,20 +469,43 @@ local function createExtractionBeacon()
 	extractionBeacon = beacon
 end
 
-local function completeObjectiveCommit(operativeEntityId: string, serverTimestamp: number)
-	objectiveStateId = ObjectiveStateIds.Completed
-	objectiveCompletedAtServerTimestamp = serverTimestamp
-	objectiveCompletedByOperativeEntityId = operativeEntityId
+local function unlockExtraction(serverTimestamp: number)
 	phaseId = PhaseIds.Exfiltration
 	extractionUnlocked = true
-	secondWaveDeadlineServerTimestamp = serverTimestamp + MissionConfig.Escalation.SecondWaveDelaySeconds
-	setRadio(RadioLineIds.ObjectiveComplete, serverTimestamp)
-	spawnWave(1)
-	markObjectiveConsoleCompleted()
+	-- Restart objective sampling so the optional floodlights repair measures its
+	-- own elapsed time rather than inheriting the Infiltration sample clock.
+	lastObjectiveSampleServerTimestamp = serverTimestamp
 	createExtractionBeacon()
-	revision += 1
-	scheduleTimers()
-	publish()
+end
+
+-- Commit one authored objective's completion and its authored side effects.
+local function applyObjectiveCompletion(objectiveId: string, serverTimestamp: number, workers: { WorkerFact })
+	if objectiveCompleted[objectiveId] then
+		return
+	end
+	local definition = objectiveDefinitionById[objectiveId]
+	if definition == nil then
+		return
+	end
+	objectiveCompleted[objectiveId] = true
+	objectiveProgress[objectiveId] = definition.completionUnits
+	objectiveDecaying[objectiveId] = false
+	markObjectiveLampRestored(objectiveId)
+
+	if definition.radioLineIdOnComplete ~= nil and RadioLineIds[definition.radioLineIdOnComplete] ~= nil then
+		setRadio(definition.radioLineIdOnComplete, serverTimestamp)
+	end
+	if definition.waveIndexOnComplete ~= nil then
+		spawnWave(definition.waveIndexOnComplete)
+	end
+	if floodlightsObjectiveId ~= nil and objectiveId == floodlightsObjectiveId then
+		floodlightsRestored = true
+	end
+	if definition.isRequiredForExtraction then
+		requiredObjectiveCompletedAtServerTimestamp = serverTimestamp
+		requiredObjectiveCompletedByOperativeEntityId = if workers[1] ~= nil then workers[1].operativeEntityId else nil
+		unlockExtraction(serverTimestamp)
+	end
 end
 
 local function resolveMission(finalOutcomeId: MissionOutcomeId, serverTimestamp: number)
@@ -319,7 +515,6 @@ local function resolveMission(finalOutcomeId: MissionOutcomeId, serverTimestamp:
 	phaseId = PhaseIds.Resolved
 	outcomeId = finalOutcomeId
 	insertionDeadlineServerTimestamp = nil
-	secondWaveDeadlineServerTimestamp = nil
 	holdoutDeadlineServerTimestamp = nil
 	pcall(function()
 		EnemyDirectorService.endOperationPressure()
@@ -335,14 +530,11 @@ end
 
 local function beginInfiltration(serverTimestamp: number)
 	phaseId = PhaseIds.Infiltration
-	objectiveStateId = ObjectiveStateIds.Active
 	insertionDeadlineServerTimestamp = nil
-	local prompt = objectivePrompt
-	if prompt ~= nil then
-		prompt.Enabled = true
-	end
-	-- Freeze the operation roster: squad viability and admission now cover
-	-- exactly the operatives who started this operation.
+	activeObjectiveId = computeActiveObjectiveId()
+	lastObjectiveSampleServerTimestamp = serverTimestamp
+	-- Freeze the operation roster: squad viability and admission now cover exactly
+	-- the operatives who started this operation.
 	SquadFailureService.beginOperation()
 	pcall(function()
 		EnemyDirectorService.beginOperationPressure()
@@ -376,20 +568,6 @@ evaluateTimersAt = function(serverTimestamp: number): OperationResult
 		beginInfiltration(serverTimestamp)
 		didChange = true
 	end
-	local secondWaveDeadline = secondWaveDeadlineServerTimestamp
-	if
-		(phaseId == PhaseIds.Exfiltration or phaseId == PhaseIds.Holdout)
-		and secondWaveDeadline ~= nil
-		and serverTimestamp >= secondWaveDeadline
-	then
-		secondWaveDeadlineServerTimestamp = nil
-		spawnWave(2)
-		setRadio(RadioLineIds.PressureRising, serverTimestamp)
-		revision += 1
-		scheduleTimers()
-		publish()
-		didChange = true
-	end
 	local holdoutDeadline = holdoutDeadlineServerTimestamp
 	if phaseId == PhaseIds.Holdout and holdoutDeadline ~= nil and serverTimestamp >= holdoutDeadline then
 		holdoutDeadlineServerTimestamp = nil
@@ -405,6 +583,90 @@ end
 
 function Service.evaluateTimersAt(serverTimestamp: number): OperationResult
 	return evaluateTimersAt(serverTimestamp)
+end
+
+-- One server-owned objective-progress sample. Presence-driven: it reads which
+-- validated operatives stand on each authored objective and advances the chain
+-- through the pure resolver. Clients never call this and never declare progress.
+function Service.evaluateObjectivePresenceAt(serverTimestamp: number): OperationResult
+	if not started then
+		return result(false, RejectionReasonIds.ServiceStopped)
+	end
+	if not isFiniteTimestamp(serverTimestamp) then
+		return result(false, RejectionReasonIds.InvalidTimestamp)
+	end
+	if ObjectiveChainConfig.ActiveChainPhaseIds[phaseId] ~= true then
+		return result(false, RejectionReasonIds.InvalidPhase)
+	end
+
+	local lastSample = lastObjectiveSampleServerTimestamp
+	local deltaSeconds = if lastSample == nil then 0 else serverTimestamp - lastSample
+	if deltaSeconds < 0 then
+		deltaSeconds = 0
+	end
+	lastObjectiveSampleServerTimestamp = serverTimestamp
+
+	local workersByObjectiveId = gatherWorkersByObjective()
+	local stateByObjectiveId: { [string]: ObjectiveChainResolver.ObjectiveProgressState } = {}
+	for _, definition in ObjectiveChainConfig.Objectives do
+		stateByObjectiveId[definition.objectiveId] = {
+			progress = objectiveProgress[definition.objectiveId] or 0,
+			completed = objectiveCompleted[definition.objectiveId] == true,
+		}
+	end
+
+	local sample = ObjectiveChainResolver.resolveSample({
+		config = ObjectiveChainConfig,
+		phaseId = phaseId,
+		activePhaseIds = ObjectiveChainConfig.ActiveChainPhaseIds,
+		revision = revision,
+		expectedRevision = revision,
+		deltaSeconds = deltaSeconds,
+		stateByObjectiveId = stateByObjectiveId,
+		workersByObjectiveId = workersByObjectiveId,
+		assistingClassId = ObjectiveChainConfig.AssistingClassId,
+	})
+	if sample.rejectionReasonId ~= nil then
+		return result(false, sample.rejectionReasonId)
+	end
+
+	for _, update in sample.updates do
+		if not objectiveCompleted[update.objectiveId] then
+			objectiveProgress[update.objectiveId] = update.progress
+			objectiveDecaying[update.objectiveId] = update.decaying
+		end
+	end
+
+	local committedChange = false
+	for _, completedObjectiveId in sample.completedObjectiveIds do
+		applyObjectiveCompletion(
+			completedObjectiveId,
+			serverTimestamp,
+			workersByObjectiveId[completedObjectiveId] or {}
+		)
+		committedChange = true
+	end
+
+	if committedChange then
+		activeObjectiveId = computeActiveObjectiveId()
+		revision += 1
+		scheduleTimers()
+		publish()
+		return result(true, nil)
+	end
+
+	-- No completion: publish a throttled live-progress update so the objective UI
+	-- stays responsive without a revision flood.
+	local currentId = activeObjectiveId
+	if currentId ~= nil then
+		local ratio =
+			math.clamp((objectiveProgress[currentId] or 0) / objectiveDefinitionById[currentId].completionUnits, 0, 1)
+		if math.abs(ratio - lastPublishedProgressRatio) >= PROGRESS_PUBLISH_STEP then
+			revision += 1
+			publish()
+		end
+	end
+	return result(false, nil)
 end
 
 function Service.evaluateExtractionPresenceAt(serverTimestamp: number): OperationResult
@@ -424,54 +686,23 @@ function Service.evaluateExtractionPresenceAt(serverTimestamp: number): Operatio
 	return result(true, nil)
 end
 
-function Service.requestObjectiveInteraction(player: Player): OperationResult
-	if not started then
-		return result(false, RejectionReasonIds.ServiceStopped)
-	end
-	if objectiveStateId == ObjectiveStateIds.Completed then
-		return result(false, RejectionReasonIds.AlreadyCompleted)
-	end
-	if phaseId ~= PhaseIds.Infiltration then
-		return result(false, RejectionReasonIds.InvalidPhase)
-	end
-	local read = if player == nil then nil else OperativeLifeService.read(player)
-	if read == nil then
-		return result(false, RejectionReasonIds.UnknownOperative)
-	end
-	if read.snapshot.lifeStateId ~= "Alive" then
-		return result(false, RejectionReasonIds.InvalidLifeState)
-	end
-	local character = player.Character
-	local root = if character == nil then nil else character:FindFirstChild("HumanoidRootPart")
-	if root == nil or not root:IsA("BasePart") then
-		return result(false, RejectionReasonIds.MissingPosition)
-	end
-	local position = (root :: BasePart).Position
-	local console = MissionConfig.Objective.ConsolePosition
-	local dx = position.X - console.x
-	local dy = position.Y - console.y
-	local dz = position.Z - console.z
-	local radius = MissionConfig.Objective.InteractionRadiusStuds
-	if dx * dx + dy * dy + dz * dz > radius * radius then
-		return result(false, RejectionReasonIds.OutOfRange)
-	end
-	completeObjectiveCommit(read.snapshot.operativeEntityId, now())
-	return result(true, nil)
-end
-
 function Service.read(): AuthoritativeMissionRead
 	return table.freeze({
 		revision = revision,
 		phaseId = phaseId,
-		objectiveStateId = objectiveStateId,
+		objectiveStateId = summaryObjectiveStateId(),
 		extractionUnlocked = extractionUnlocked,
 		escalationLevel = escalationLevel,
 		outcomeId = outcomeId,
 		insertionDeadlineServerTimestamp = insertionDeadlineServerTimestamp,
-		secondWaveDeadlineServerTimestamp = secondWaveDeadlineServerTimestamp,
 		holdoutDeadlineServerTimestamp = holdoutDeadlineServerTimestamp,
-		objectiveCompletedAtServerTimestamp = objectiveCompletedAtServerTimestamp,
-		objectiveCompletedByOperativeEntityId = objectiveCompletedByOperativeEntityId,
+		activeObjectiveId = activeObjectiveId,
+		floodlightsRestored = floodlightsRestored,
+		requiredChainComplete = isRequiredChainComplete(),
+		objectiveProgressById = table.clone(objectiveProgress),
+		objectiveCompletedById = table.clone(objectiveCompleted),
+		requiredObjectiveCompletedAtServerTimestamp = requiredObjectiveCompletedAtServerTimestamp,
+		requiredObjectiveCompletedByOperativeEntityId = requiredObjectiveCompletedByOperativeEntityId,
 	}) :: AuthoritativeMissionRead
 end
 
@@ -479,18 +710,21 @@ function Service.readSafeSnapshot(): SafeMissionSnapshot
 	return safeSnapshot()
 end
 
-local function buildObjectiveConsole(parent: Folder)
-	local console = MissionConfig.Objective.ConsolePosition
+-- One authored graybox marker per objective: a body, a status lamp (registered
+-- so completion can turn it green), and a floating label. Presence, not a prompt,
+-- is the authority, so nothing here accepts client input.
+local function buildObjectiveMarker(parent: Folder, definition: any, modelName: string, bodyColor: Color3)
+	local center = definition.center
 	local model = Instance.new("Model")
-	model.Name = "RelayConsole"
+	model.Name = modelName
 	model:SetAttribute("MissionObject", true)
-	model:SetAttribute("ObjectiveId", MissionConfig.Objective.ObjectiveId)
+	model:SetAttribute("ObjectiveId", definition.objectiveId)
 
 	local body = Instance.new("Part")
-	body.Name = "ConsoleBody"
+	body.Name = "MarkerBody"
 	body.Size = Vector3.new(4, 5, 3)
-	body.CFrame = CFrame.new(console.x, console.y, console.z)
-	body.Color = Color3.fromRGB(88, 96, 92)
+	body.CFrame = CFrame.new(center.x, center.y, center.z)
+	body.Color = bodyColor
 	body.Material = Enum.Material.Metal
 	body.Anchored = true
 	body.CanCollide = true
@@ -500,7 +734,7 @@ local function buildObjectiveConsole(parent: Folder)
 	local lamp = Instance.new("Part")
 	lamp.Name = "StatusLamp"
 	lamp.Size = Vector3.new(1.4, 1.4, 1.4)
-	lamp.CFrame = CFrame.new(console.x, console.y + 3.4, console.z)
+	lamp.CFrame = CFrame.new(center.x, center.y + 3.4, center.z)
 	lamp.Color = Color3.fromRGB(184, 41, 29)
 	lamp.Material = Enum.Material.Neon
 	lamp.Anchored = true
@@ -515,27 +749,26 @@ local function buildObjectiveConsole(parent: Folder)
 	light.Shadows = false
 	light.Parent = lamp
 
-	local prompt = Instance.new("ProximityPrompt")
-	prompt.Name = "RestoreRelayPrompt"
-	prompt.ActionText = MissionConfig.Objective.PromptActionText
-	prompt.ObjectText = MissionConfig.Objective.PromptObjectText
-	prompt.HoldDuration = MissionConfig.Objective.PromptHoldDurationSeconds
-	prompt.MaxActivationDistance = MissionConfig.Objective.InteractionRadiusStuds
-	prompt.RequiresLineOfSight = false
-	prompt.Enabled = false
-	prompt.Parent = body
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "ObjectiveMarker"
+	billboard.AlwaysOnTop = true
+	billboard.Size = UDim2.fromOffset(240, 36)
+	billboard.StudsOffset = Vector3.new(0, 6, 0)
+	billboard.MaxDistance = 400
+	billboard.Parent = lamp
+
+	local label = Instance.new("TextLabel")
+	label.Name = "Marker"
+	label.BackgroundTransparency = 1
+	label.Size = UDim2.fromScale(1, 1)
+	label.Font = Enum.Font.GothamBold
+	label.TextScaled = true
+	label.TextColor3 = Color3.fromRGB(255, 214, 170)
+	label.Text = definition.displayText
+	label.Parent = billboard
 
 	model.Parent = parent
-	objectivePrompt = prompt
-	objectiveStatusLamp = lamp
-
-	-- The prompt is presentation-side input only; acceptance always runs the
-	-- full authoritative validation in requestObjectiveInteraction.
-	pcall(function()
-		promptConnection = prompt.Triggered:Connect(function(triggeringPlayer: Player)
-			Service.requestObjectiveInteraction(triggeringPlayer)
-		end)
-	end)
+	objectiveLampByObjectiveId[definition.objectiveId] = lamp
 end
 
 local function buildMissionObjects()
@@ -547,7 +780,24 @@ local function buildMissionObjects()
 	folder.Name = MISSION_FOLDER_NAME
 	folder.Parent = Workspace
 	missionFolder = folder
-	buildObjectiveConsole(folder)
+	table.clear(objectiveLampByObjectiveId)
+
+	-- Objective 1 keeps the RelayConsole identity; the others get distinct bodies.
+	local markerNames: { [string]: string } = {
+		["objective.restore-lookout-relay"] = "RelayConsole",
+		["objective.charge-roadblock-booster"] = "SignalBooster",
+		["objective.restore-extraction-floodlights"] = "FloodlightArray",
+	}
+	local markerColors: { [string]: Color3 } = {
+		["objective.restore-lookout-relay"] = Color3.fromRGB(88, 96, 92),
+		["objective.charge-roadblock-booster"] = Color3.fromRGB(96, 88, 72),
+		["objective.restore-extraction-floodlights"] = Color3.fromRGB(72, 84, 96),
+	}
+	for _, definition in ObjectiveChainConfig.Objectives do
+		local modelName = markerNames[definition.objectiveId] or ("Objective_" .. definition.objectiveId)
+		local color = markerColors[definition.objectiveId] or Color3.fromRGB(88, 96, 92)
+		buildObjectiveMarker(folder, definition, modelName, color)
+	end
 end
 
 function Service.start()
@@ -558,7 +808,6 @@ function Service.start()
 	local startTimestamp = now()
 	revision = 1
 	phaseId = PhaseIds.Insertion
-	objectiveStateId = ObjectiveStateIds.Inactive
 	extractionUnlocked = false
 	escalationLevel = 0
 	outcomeId = nil
@@ -566,11 +815,11 @@ function Service.start()
 	-- connected. Do not spend the insertion window or freeze a zero-player roster
 	-- before an actual player exists.
 	insertionDeadlineServerTimestamp = nil
-	secondWaveDeadlineServerTimestamp = nil
 	holdoutDeadlineServerTimestamp = nil
-	objectiveCompletedAtServerTimestamp = nil
-	objectiveCompletedByOperativeEntityId = nil
+	requiredObjectiveCompletedAtServerTimestamp = nil
+	requiredObjectiveCompletedByOperativeEntityId = nil
 	table.clear(spawnedWaves)
+	resetObjectiveState()
 	presenceAccumulatedSeconds = 0
 	buildMissionObjects()
 	setRadio(RadioLineIds.InsertionComplete, startTimestamp)
@@ -594,6 +843,9 @@ function Service.start()
 			return
 		end
 		presenceAccumulatedSeconds = 0
+		if ObjectiveChainConfig.ActiveChainPhaseIds[phaseId] == true then
+			Service.evaluateObjectivePresenceAt(now())
+		end
 		if phaseId == PhaseIds.Exfiltration then
 			Service.evaluateExtractionPresenceAt(now())
 		end
@@ -611,20 +863,18 @@ function Service.stop()
 	end
 	started = false
 	cancelTimer()
-	for _, connection in { heartbeatConnection, playerAddedConnection, promptConnection } do
+	for _, connection in { heartbeatConnection, playerAddedConnection } do
 		if connection ~= nil then
 			connection:Disconnect()
 		end
 	end
 	heartbeatConnection = nil
 	playerAddedConnection = nil
-	promptConnection = nil
 	if failureConnection ~= nil then
 		failureConnection:Disconnect()
 		failureConnection = nil
 	end
-	objectivePrompt = nil
-	objectiveStatusLamp = nil
+	table.clear(objectiveLampByObjectiveId)
 	extractionBeacon = nil
 	if missionFolder ~= nil then
 		missionFolder:Destroy()
@@ -632,17 +882,16 @@ function Service.stop()
 	end
 	revision = 0
 	phaseId = PhaseIds.Insertion
-	objectiveStateId = ObjectiveStateIds.Inactive
 	extractionUnlocked = false
 	escalationLevel = 0
 	outcomeId = nil
 	insertionDeadlineServerTimestamp = nil
-	secondWaveDeadlineServerTimestamp = nil
 	holdoutDeadlineServerTimestamp = nil
-	objectiveCompletedAtServerTimestamp = nil
-	objectiveCompletedByOperativeEntityId = nil
+	requiredObjectiveCompletedAtServerTimestamp = nil
+	requiredObjectiveCompletedByOperativeEntityId = nil
 	lastRadio = nil
 	table.clear(spawnedWaves)
+	resetObjectiveState()
 	presenceAccumulatedSeconds = 0
 end
 
