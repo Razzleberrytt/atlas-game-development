@@ -235,16 +235,29 @@ local function onPresentationMessage(message: unknown)
 	end
 end
 
+--[[
+	The one client reload path, cooldown-guarded. Both the keyboard (R) and the
+	mobile reload button call it, so there is a single request surface and one
+	cooldown. Returns whether the intent was sent.
+]]
+function WeaponController.requestReload(): boolean
+	if not state.started or state.destroyed then
+		return false
+	end
+	local timestamp = os.clock()
+	if timestamp - state.lastReloadRequestLocalTimestamp < REQUEST_COOLDOWN_SECONDS then
+		return false
+	end
+	state.lastReloadRequestLocalTimestamp = timestamp
+	reloadIntentRemote:FireServer(state.currentWeaponId)
+	return true
+end
+
 local function onInputBegan(input: InputObject, gameProcessedEvent: boolean)
 	if gameProcessedEvent or input.KeyCode ~= Enum.KeyCode.R or UserInputService:GetFocusedTextBox() ~= nil then
 		return
 	end
-	local timestamp = os.clock()
-	if timestamp - state.lastReloadRequestLocalTimestamp < REQUEST_COOLDOWN_SECONDS then
-		return
-	end
-	state.lastReloadRequestLocalTimestamp = timestamp
-	reloadIntentRemote:FireServer(state.currentWeaponId)
+	WeaponController.requestReload()
 end
 
 function WeaponController.init()

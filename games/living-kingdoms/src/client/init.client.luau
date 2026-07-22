@@ -2,6 +2,7 @@
 
 local CameraController = require(script.Controllers.CameraController)
 local SurvivorController = require(script.Controllers.SurvivorController)
+local MobileControlsController = require(script.Controllers.MobileControlsController)
 local WeaponController = require(script.Controllers.WeaponController)
 local WeaponPresentationController = require(script.Controllers.WeaponPresentationController)
 local WeaponAudioController = require(script.Controllers.WeaponAudioController)
@@ -45,6 +46,9 @@ SurvivorController.start()
 
 WeaponController.init()
 WeaponController.start()
+-- Touch controls compose onto the movement and reload paths above; they activate
+-- only on a touch device without a keyboard, so desktop input is unaffected.
+MobileControlsController.start()
 WeaponPresentationController.start()
 WeaponAudioController.start()
 ConfirmedHitMarkerController.start()
