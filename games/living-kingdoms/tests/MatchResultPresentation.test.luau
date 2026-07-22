@@ -118,6 +118,25 @@ assertThat(
 	"survival state must read as words rather than a raw life-state identifier"
 )
 
+-- RPG-0112: the completed run build reads on the same screen, in the words the
+-- HUD used rather than raw identifiers.
+assertThat(
+	contains(controller, "contribution.equippedRelicIds") and contains(controller, "formatRelics"),
+	"the debrief must show the relics each operative finished holding"
+)
+assertThat(
+	contains(controller, "result.upgradeStacks") and contains(controller, "SQUAD FIELD UPGRADES"),
+	"the debrief must show the squad Field Upgrades the run finished with"
+)
+assertThat(
+	contains(controller, "RELIC_NAME_BY_ID") and contains(controller, "UPGRADE_NAME_BY_ID"),
+	"the build must read as display names, not identifiers"
+)
+assertThat(
+	contains(controller, '"no relics"') and contains(controller, "None taken this operation."),
+	"an empty build must read as an explicit absence rather than a blank line"
+)
+
 -- No promise the server cannot honour. Rather than grepping prose -- the module
 -- explains in comments that it shows none of these -- assert the two things that
 -- would actually make a promise: reading an award field that does not exist, and

@@ -60,6 +60,13 @@ export type CleanupOwnerId =
 -- One operative's server-recorded contribution, disclosed for P11 to weight into
 -- XP. Every field is a bounded, server-authored count or a life state — never a
 -- client-reported value and never a reward.
+-- RPG-0112: one squad Field Upgrade and its stack count, as an array so the
+-- summary is deterministic to read and to render.
+export type SafeUpgradeStackSnapshot = {
+	upgradeId: string,
+	stacks: number,
+}
+
 export type SafeContributionSnapshot = {
 	operativeEntityId: string,
 	kills: number,
@@ -69,6 +76,8 @@ export type SafeContributionSnapshot = {
 	classActionsCommitted: number,
 	bossExposureHits: number,
 	survivalStateId: OperativeLifeStateId,
+	-- RPG-0112: the relics this operative finished the run holding.
+	equippedRelicIds: { string },
 }
 
 export type SafeMatchResultSnapshot = {
@@ -81,6 +90,8 @@ export type SafeMatchResultSnapshot = {
 	bossDefeated: boolean,
 	wavesSurvived: number,
 	contributions: { SafeContributionSnapshot },
+	-- RPG-0112: the squad Field Upgrades the run finished with.
+	upgradeStacks: { SafeUpgradeStackSnapshot },
 }
 
 local MatchResultContracts = {}
@@ -170,6 +181,20 @@ function MatchResultContracts.validateSafeContributionSnapshot(value: unknown): 
 	then
 		return false
 	end
+	-- The relic list is authored server state: strings only, and bounded by the
+	-- three equipped slots an operative can ever hold.
+	if type(contribution.equippedRelicIds) ~= "table" then
+		return false
+	end
+	local relicIds = contribution.equippedRelicIds :: { unknown }
+	if #relicIds > 3 then
+		return false
+	end
+	for _, relicId in relicIds do
+		if not isNonEmptyString(relicId) then
+			return false
+		end
+	end
 	return true
 end
 
@@ -213,6 +238,23 @@ function MatchResultContracts.validateSafeMatchResultSnapshot(value: unknown): b
 	end
 	for _, contribution in snapshot.contributions :: { unknown } do
 		if not MatchResultContracts.validateSafeContributionSnapshot(contribution) then
+			return false
+		end
+	end
+	if type(snapshot.upgradeStacks) ~= "table" then
+		return false
+	end
+	local seenUpgradeIds: { [string]: boolean } = {}
+	for _, entry in snapshot.upgradeStacks :: { unknown } do
+		if type(entry) ~= "table" then
+			return false
+		end
+		local upgrade = entry :: { [string]: unknown }
+		if not isNonEmptyString(upgrade.upgradeId) or seenUpgradeIds[upgrade.upgradeId :: string] then
+			return false
+		end
+		seenUpgradeIds[upgrade.upgradeId :: string] = true
+		if not isNonNegativeFiniteNumber(upgrade.stacks) or (upgrade.stacks :: number) <= 0 then
 			return false
 		end
 	end

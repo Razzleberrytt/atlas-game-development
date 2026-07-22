@@ -216,6 +216,7 @@ local expectedResultFields = {
 	bossDefeated = true,
 	wavesSurvived = true,
 	contributions = true,
+	upgradeStacks = true,
 }
 local expectedContributionFields = {
 	operativeEntityId = true,
@@ -226,6 +227,7 @@ local expectedContributionFields = {
 	classActionsCommitted = true,
 	bossExposureHits = true,
 	survivalStateId = true,
+	equippedRelicIds = true,
 }
 for key in frozen :: { [string]: unknown } do
 	assertThat(expectedResultFields[key] == true, "the result snapshot carries an undeclared field: " .. key)

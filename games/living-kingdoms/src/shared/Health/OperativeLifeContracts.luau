@@ -215,4 +215,13 @@ OperativeLifeContracts.SquadFailureRejectionReasonIds = table.freeze({
 	StaleEvaluation = "StaleEvaluation",
 })
 
+--[[
+	The canonical operative entity identity for a connected player. The life owner,
+	the combat runtime, and the RPG run-build owner all address the same operative
+	through this, so a fact recorded by one is readable by the others.
+]]
+function OperativeLifeContracts.deriveOperativeEntityId(userId: number): string
+	return "operative.player:" .. tostring(userId)
+end
+
 return table.freeze(OperativeLifeContracts)

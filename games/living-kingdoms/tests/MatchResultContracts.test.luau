@@ -107,6 +107,7 @@ local function contribution(overrides: { [string]: any }?)
 		classActionsCommitted = 5,
 		bossExposureHits = 7,
 		survivalStateId = "Alive",
+		equippedRelicIds = { "relic.blood-battery" },
 	}
 	for key, value in overrides or {} do
 		snapshot[key] = value
@@ -124,6 +125,15 @@ assert(
 	not contracts.validateSafeContributionSnapshot(contribution({ survivalStateId = "Ghost" })),
 	"survival state must reuse the P3 life vocabulary"
 )
+-- RPG-0112: the finished run build rides on the same contribution row, bounded by
+-- the three equipped relic slots.
+assert(contracts.validateSafeContributionSnapshot(contribution({ equippedRelicIds = {} })))
+assert(not contracts.validateSafeContributionSnapshot(contribution({ equippedRelicIds = "relic" })))
+assert(not contracts.validateSafeContributionSnapshot(contribution({ equippedRelicIds = { "" } })))
+assert(
+	not contracts.validateSafeContributionSnapshot(contribution({ equippedRelicIds = { "a", "b", "c", "d" } })),
+	"a contribution cannot report more relics than the operative has slots"
+)
 
 -- Match-result snapshot validation.
 local function result(overrides: { [string]: any }?)
@@ -137,6 +147,7 @@ local function result(overrides: { [string]: any }?)
 		bossDefeated = true,
 		wavesSurvived = 3,
 		contributions = { contribution() },
+		upgradeStacks = { { upgradeId = "upgrade.overpressure_rounds", stacks = 2 } },
 	}
 	for key, value in overrides or {} do
 		snapshot[key] = value
@@ -153,6 +164,17 @@ assert(contracts.validateSafeMatchResultSnapshot(result({
 assert(not contracts.validateSafeMatchResultSnapshot(nil))
 assert(not contracts.validateSafeMatchResultSnapshot(result({ operationId = "" })))
 assert(not contracts.validateSafeMatchResultSnapshot(result({ causeId = "Vanished" })), "unknown cause rejected")
+-- RPG-0112: the squad build summary must be a well-formed, duplicate-free list.
+assert(contracts.validateSafeMatchResultSnapshot(result({ upgradeStacks = {} })))
+assert(not contracts.validateSafeMatchResultSnapshot(result({ upgradeStacks = "none" })))
+assert(not contracts.validateSafeMatchResultSnapshot(result({ upgradeStacks = { { upgradeId = "", stacks = 1 } } })))
+assert(
+	not contracts.validateSafeMatchResultSnapshot(result({ upgradeStacks = { { upgradeId = "a", stacks = 0 } } })),
+	"a listed upgrade must have been taken at least once"
+)
+assert(not contracts.validateSafeMatchResultSnapshot(result({
+	upgradeStacks = { { upgradeId = "a", stacks = 1 }, { upgradeId = "a", stacks = 2 } },
+})), "an upgrade may appear only once in the summary")
 assert(
 	not contracts.validateSafeMatchResultSnapshot(result({ outcomeId = "Failure", causeId = "Extracted" })),
 	"the outcome must match the fixed cause pairing"

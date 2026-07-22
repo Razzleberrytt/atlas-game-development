@@ -5,6 +5,10 @@
 	`SafeMatchResultSnapshot`: the outcome and its cause in plain language, the key
 	operation events, and the per-operative contribution facts.
 
+	RPG-0112 adds the completed run build to the same screen: the relics each
+	operative finished holding and the squad Field Upgrade stacks, named as the HUD
+	named them. No XP is implied by either.
+
 	The controller establishes nothing. It sends no request of any kind, derives no
 	outcome, and refuses a payload that fails the shared validator. A client that
 	arrives after resolution is pushed the same frozen snapshot on join.
@@ -20,6 +24,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local MatchResultConfig = require(ReplicatedStorage.Shared.Config.MatchResultConfig)
 local MatchResultContracts = require(ReplicatedStorage.Shared.Mission.MatchResultContracts)
+local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
+local RunProgressionConfig = require(ReplicatedStorage.Shared.Config.RunProgressionConfig)
 
 type SafeMatchResultSnapshot = MatchResultContracts.SafeMatchResultSnapshot
 
@@ -34,6 +40,7 @@ local headlineLabel: TextLabel? = nil
 local causeLabel: TextLabel? = nil
 local eventsLabel: TextLabel? = nil
 local contributionLabel: TextLabel? = nil
+local buildLabel: TextLabel? = nil
 local nextActionLabel: TextLabel? = nil
 local hasDisplayedResult = false
 
@@ -60,6 +67,18 @@ local SURVIVAL_TEXT_BY_STATE_ID: { [string]: string } = {
 	Incapacitated = "down",
 	Dead = "lost",
 }
+
+-- RPG-0112 display names, so the debrief explains the build in the same words the
+-- HUD used rather than raw identifiers.
+local RELIC_NAME_BY_ID: { [string]: string } = {}
+for _, definition in RunRpgConfig.RelicCatalog do
+	RELIC_NAME_BY_ID[definition.relicId] = definition.displayName
+end
+
+local UPGRADE_NAME_BY_ID: { [string]: string } = {}
+for _, definition in RunProgressionConfig.UpgradeDefinitions do
+	UPGRADE_NAME_BY_ID[definition.Id] = definition.Name
+end
 
 local function addCorner(parent: Instance, radius: number)
 	local corner = Instance.new("UICorner")
@@ -112,7 +131,7 @@ local function createGui()
 	frame.Name = "Debrief"
 	frame.AnchorPoint = Vector2.new(0.5, 0.5)
 	frame.Position = UDim2.fromScale(0.5, 0.5)
-	frame.Size = UDim2.fromOffset(700, 470)
+	frame.Size = UDim2.fromOffset(700, 502)
 	frame.BackgroundColor3 = Color3.fromRGB(13, 16, 17)
 	frame.BackgroundTransparency = 0.02
 	frame.BorderSizePixel = 0
@@ -138,11 +157,17 @@ local function createGui()
 
 	local contributions = makeLabel(frame, "Contributions", 15)
 	contributions.Position = UDim2.fromOffset(28, 222)
-	contributions.Size = UDim2.new(1, -56, 0, 186)
+	contributions.Size = UDim2.new(1, -56, 0, 156)
 	contributionLabel = contributions
 
+	local build = makeLabel(frame, "Build", 15)
+	build.Position = UDim2.fromOffset(28, 384)
+	build.Size = UDim2.new(1, -56, 0, 56)
+	build.TextColor3 = Color3.fromRGB(198, 204, 195)
+	buildLabel = build
+
 	local nextAction = makeLabel(frame, "NextAction", 15)
-	nextAction.Position = UDim2.fromOffset(28, 416)
+	nextAction.Position = UDim2.fromOffset(28, 448)
 	nextAction.Size = UDim2.new(1, -56, 0, 34)
 	nextAction.TextColor3 = Color3.fromRGB(255, 207, 90)
 	nextActionLabel = nextAction
@@ -151,6 +176,18 @@ end
 local function formatDuration(durationSeconds: number): string
 	local wholeSeconds = math.max(0, math.floor(durationSeconds))
 	return string.format("%d:%02d", wholeSeconds // 60, wholeSeconds % 60)
+end
+
+-- RPG-0112: the relics the operative finished the run holding.
+local function formatRelics(equippedRelicIds: { string }): string
+	if #equippedRelicIds == 0 then
+		return "no relics"
+	end
+	local names = {}
+	for _, relicId in equippedRelicIds do
+		table.insert(names, RELIC_NAME_BY_ID[relicId] or relicId)
+	end
+	return table.concat(names, ", ")
 end
 
 local function formatContribution(contribution: any, isLocalOperative: boolean): string
@@ -166,7 +203,7 @@ local function formatContribution(contribution: any, isLocalOperative: boolean):
 		contribution.objectivesContributed,
 		contribution.classActionsCommitted,
 		contribution.bossExposureHits
-	)
+	) .. "\n    RELICS: " .. formatRelics(contribution.equippedRelicIds)
 end
 
 local function applyResult(snapshot: unknown)
@@ -207,6 +244,24 @@ local function applyResult(snapshot: unknown)
 		table.insert(lines, "No contribution was recorded this operation.")
 	end
 	contributions.Text = table.concat(lines, "\n")
+
+	-- RPG-0112: the squad build the run finished with, in the same words the HUD
+	-- used. Field Upgrades are squad-wide, so they read once beneath the rows.
+	local build = buildLabel
+	if build ~= nil then
+		if #result.upgradeStacks == 0 then
+			build.Text = "SQUAD FIELD UPGRADES\nNone taken this operation."
+		else
+			local upgradeLines = {}
+			for _, upgrade in result.upgradeStacks do
+				table.insert(
+					upgradeLines,
+					string.format("%s x%d", UPGRADE_NAME_BY_ID[upgrade.upgradeId] or upgrade.upgradeId, upgrade.stacks)
+				)
+			end
+			build.Text = "SQUAD FIELD UPGRADES\n" .. table.concat(upgradeLines, "  •  ")
+		end
+	end
 
 	-- The next action is real: P10-0105 restarts the operation deterministically
 	-- after this window. The screen still promises no reward, because none is
@@ -249,6 +304,7 @@ function MatchResultController.stop()
 	causeLabel = nil
 	eventsLabel = nil
 	contributionLabel = nil
+	buildLabel = nil
 	nextActionLabel = nil
 end
 

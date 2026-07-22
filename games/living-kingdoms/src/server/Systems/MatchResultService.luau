@@ -15,8 +15,11 @@
 	At the single terminal boundary the mission director calls `commitResult` with
 	the squad-level operation facts it owns; this module freezes them together with
 	the per-operative record and the P3 survival state into one validated
-	`SafeMatchResultSnapshot`. The snapshot represents no XP, rank, or unlock — P11
-	owns those and reads these facts.
+	`SafeMatchResultSnapshot`. RPG-0112 adds the completed run build to the same
+	snapshot — the relics each operative finished holding and the squad Field
+	Upgrade stacks — pushed by the run-build owner rather than read out of RPG
+	state here. The snapshot represents no XP, rank, or unlock — P11 owns those and
+	reads these facts.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -40,6 +43,7 @@ export type OperationResultFacts = {
 }
 
 type ContributionRecord = {
+	equippedRelicIds: { string },
 	kills: number,
 	damageDealt: number,
 	revivesPerformed: number,
@@ -62,6 +66,7 @@ local started = false
 local recordsByOperativeEntityId: { [string]: ContributionRecord } = {}
 local trackedOperativeOrder: { string } = {}
 local resultSnapshot: SafeMatchResultSnapshot? = nil
+local squadUpgradeStacks: { MatchResultContracts.SafeUpgradeStackSnapshot } = table.freeze({})
 
 local function isRecordableId(operativeEntityId: unknown): boolean
 	return type(operativeEntityId) == "string" and operativeEntityId ~= "" and #operativeEntityId <= 240
@@ -89,6 +94,7 @@ local function recordFor(operativeEntityId: string): ContributionRecord?
 		return nil
 	end
 	local created: ContributionRecord = {
+		equippedRelicIds = {},
 		kills = 0,
 		damageDealt = 0,
 		revivesPerformed = 0,
@@ -137,6 +143,62 @@ function MatchResultService.recordClassActionCommitted(operativeEntityId: string
 	add(operativeEntityId, "classActionsCommitted", 1)
 end
 
+--[[
+	RPG-0112: the run build the operative finished with. The run-build owner pushes
+	it whenever an equipped relic changes, so a disconnect cannot lose it and the
+	ledger never has to reach into RPG state. The list replaces rather than
+	accumulates — it is a snapshot of the slots, not a history.
+]]
+function MatchResultService.recordEquippedRelics(operativeEntityId: string, relicIds: { string })
+	if type(relicIds) ~= "table" then
+		return
+	end
+	local record = recordFor(operativeEntityId)
+	if record == nil then
+		return
+	end
+	local copied = {}
+	for _, relicId in relicIds do
+		if type(relicId) == "string" and relicId ~= "" then
+			table.insert(copied, relicId)
+		end
+	end
+	record.equippedRelicIds = copied
+end
+
+--[[
+	RPG-0112: the squad Field Upgrades the run finished with, pushed by the same
+	owner when a selection commits. Squad-level, so it is stored once rather than
+	per operative.
+]]
+function MatchResultService.recordSquadUpgradeStacks(upgradeStacks: { [string]: number })
+	if not started or resultSnapshot ~= nil or type(upgradeStacks) ~= "table" then
+		return
+	end
+	local entries = {}
+	for upgradeId, stacks in upgradeStacks do
+		if
+			type(upgradeId) == "string"
+			and upgradeId ~= ""
+			and type(stacks) == "number"
+			and stacks == stacks
+			and stacks > 0
+			and stacks % 1 == 0
+		then
+			table.insert(entries, { upgradeId = upgradeId, stacks = stacks })
+		end
+	end
+	-- Stable order so the summary reads identically for every operative.
+	table.sort(entries, function(left, right)
+		return left.upgradeId < right.upgradeId
+	end)
+	local frozen = {}
+	for _, entry in entries do
+		table.insert(frozen, table.freeze(entry))
+	end
+	squadUpgradeStacks = table.freeze(frozen)
+end
+
 -- The operative's life state at resolution, read from the P3 owner. An operative
 -- who has already left the roster is reported Dead: they did not walk out.
 local function survivalStateIdFor(operativeEntityId: string): string
@@ -167,6 +229,7 @@ local function buildContributions(): { SafeContributionSnapshot }
 				classActionsCommitted = record.classActionsCommitted,
 				bossExposureHits = record.bossExposureHits,
 				survivalStateId = survivalStateIdFor(operativeEntityId),
+				equippedRelicIds = table.freeze(table.clone(record.equippedRelicIds)),
 			}) :: SafeContributionSnapshot
 		)
 	end
@@ -192,6 +255,7 @@ function MatchResultService.commitResult(facts: OperationResultFacts): boolean
 		bossDefeated = facts.bossDefeated,
 		wavesSurvived = facts.wavesSurvived,
 		contributions = buildContributions(),
+		upgradeStacks = squadUpgradeStacks,
 	}) :: SafeMatchResultSnapshot
 	if not MatchResultContracts.validateSafeMatchResultSnapshot(candidate) then
 		return false
@@ -218,6 +282,7 @@ function MatchResultService.start()
 	started = true
 	table.clear(recordsByOperativeEntityId)
 	table.clear(trackedOperativeOrder)
+	squadUpgradeStacks = table.freeze({})
 	resultSnapshot = nil
 end
 
@@ -228,6 +293,7 @@ function MatchResultService.stop()
 	started = false
 	table.clear(recordsByOperativeEntityId)
 	table.clear(trackedOperativeOrder)
+	squadUpgradeStacks = table.freeze({})
 	resultSnapshot = nil
 end
 
