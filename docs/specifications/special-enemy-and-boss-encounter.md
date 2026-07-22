@@ -353,9 +353,27 @@ design decisions.
   the charge lifecycle, the commit burst, the lingering ticks, inertness, and
   determinism/immutability). No runtime, remote, movement, or telegraph exists
   yet.
-- **`P9-0102` – `P9-0106`** remain not started; they integrate the Spitter into
-  `EnemyDirectorService`, then add the boss contracts, runtime, telegraphs, and
-  validation.
+- **Director integration (`P9-0102`) — complete.** `EnemyDirectorService` owns the
+  Blight Spitter as a first-class archetype through its existing boundaries.
+  `commitSpawn` is archetype-aware: a Spitter carries its own health and roam
+  speed and bypasses the RPG elite layer entirely. On the shared evaluation pass,
+  `applySpitterBehavior` runs the pure resolver, applies movement intent, discloses
+  the charge telegraph via replicated model attributes, and — at commit — commits
+  the burst against every Alive operative in radius and registers the lingering
+  pool; `tickBloomZones` then ticks live pools (bounded by the active-zone cap,
+  oldest-first eviction) and prunes expired ones. Every operative damage event
+  commits through the existing P3 boundary with the same squad Iron Hide mitigation
+  the walker melee uses. The Spitter is introduced on the roaming pass once
+  escalation reaches the configured level and is bounded by `MaximumConcurrent`;
+  death frees its slot, and stand-down/teardown clear its charge, telegraph, and
+  all lingering pools. The shared archetype registry (`EnemyContracts.EnemyArchetypeIds`)
+  now lists the Spitter so the existing fair-spawn resolver validates it; every
+  walker-only system (loot, XP, walker presentation/audio, horde telegraphs) filters
+  by the walker archetype and cleanly ignores the Spitter. Bounds are unchanged:
+  one heartbeat, one evaluation pass, zero per-enemy connections/timers/raycasts/remotes
+  and no randomness. The readable client telegraph presentation is `P9-0105`.
+- **`P9-0103` – `P9-0106`** remain not started; they add the boss contracts,
+  runtime, telegraphs, and encounter validation.
 
 ## Deliberate exclusions
 

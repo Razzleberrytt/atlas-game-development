@@ -28,6 +28,14 @@ local AttributeNames = table.freeze({
 	EliteVolatileDetonationSequence = "EnemyEliteVolatileDetonationSequence",
 	EliteCommanderAuraActive = "EnemyEliteCommanderAuraActive",
 	EffectiveMovementSpeedMultiplier = "EnemyEffectiveMovementSpeedMultiplier",
+	-- Blight Spitter Corrosive Bloom telegraph (P9). Authoritative charge landing
+	-- position, radius, and commit time; disclosure only, no ability request.
+	SpitterBloomChargeSequence = "EnemySpitterBloomChargeSequence",
+	SpitterBloomChargeStartedServerTimestamp = "EnemySpitterBloomChargeStartedServerTimestamp",
+	SpitterBloomCommitServerTimestamp = "EnemySpitterBloomCommitServerTimestamp",
+	SpitterBloomCenterX = "EnemySpitterBloomCenterX",
+	SpitterBloomCenterZ = "EnemySpitterBloomCenterZ",
+	SpitterBloomRadiusStuds = "EnemySpitterBloomRadiusStuds",
 })
 
 local LifeStateIds = table.freeze({

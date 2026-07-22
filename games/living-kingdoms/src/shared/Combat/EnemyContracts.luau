@@ -10,7 +10,7 @@
 
 local EnemyContracts = {}
 
-export type EnemyArchetypeId = "enemy.exclusion_walker"
+export type EnemyArchetypeId = "enemy.exclusion_walker" | "enemy.blight_spitter"
 
 export type EnemyBehaviorStateId = "Roaming" | "Pursuing" | "WindingUp" | "Attacking" | "StandDown" | "Dead"
 
@@ -97,8 +97,13 @@ export type EnemyBehaviorDecision = {
 	rejectionReasonId: EnemyBehaviorRejectionReasonId?,
 }
 
+-- The single registry of every enemy archetype ID. The fair-spawn resolver
+-- validates against it, so a new director archetype (P9 special enemy, boss)
+-- must be listed here. Ability vocabulary for a special archetype lives in its
+-- own contracts module (e.g. SpecialEnemyContracts).
 EnemyContracts.EnemyArchetypeIds = table.freeze({
 	ExclusionWalker = "enemy.exclusion_walker" :: EnemyArchetypeId,
+	BlightSpitter = "enemy.blight_spitter" :: EnemyArchetypeId,
 })
 
 EnemyContracts.EnemyBehaviorStateIds = table.freeze({

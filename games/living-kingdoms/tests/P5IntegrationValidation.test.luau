@@ -34,6 +34,18 @@ local presentationContracts =
 local worldConfig =
 	loadSimple("games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "WorldFoundationConfig")
 
+local specialContracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Combat/SpecialEnemyContracts.luau"), {
+	debugName = "SpecialEnemyContracts",
+	environment = {
+		script = { Parent = { EnemyContracts = ENEMY_CONTRACTS_TOKEN } },
+		require = function(token: unknown)
+			assert(token == ENEMY_CONTRACTS_TOKEN, "unexpected SpecialEnemyContracts dependency")
+			return enemyContracts
+		end,
+	},
+	injectGlobals = true,
+})()
+
 local ENEMY_CONTRACTS_TOKEN = {}
 local RPG_CONTRACTS_TOKEN = {}
 local WORLD_TOKEN = {}
@@ -46,6 +58,9 @@ local OBJECTIVE_CONFIG_TOKEN = {}
 local OBJECTIVE_RESOLVER_TOKEN = {}
 local CLASS_TOKEN = {}
 local RESOLVER_TOKEN = {}
+local SPECIAL_CONTRACTS_TOKEN = {}
+local SPECIAL_CONFIG_TOKEN = {}
+local SPECIAL_RESOLVER_TOKEN = {}
 local ELITE_RESOLVER_TOKEN = {}
 local LIFE_TOKEN = {}
 local FAILURE_TOKEN = {}
@@ -111,11 +126,37 @@ local enemyConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Conf
 	injectGlobals = true,
 })()
 
+local specialConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/SpecialEnemyConfig.luau"), {
+	debugName = "SpecialEnemyConfig",
+	environment = {
+		script = {
+			Parent = {
+				EnemyConfig = ENEMY_CONFIG_TOKEN,
+				Parent = { Combat = { SpecialEnemyContracts = SPECIAL_CONTRACTS_TOKEN } },
+			},
+		},
+		require = function(token: unknown)
+			if token == ENEMY_CONFIG_TOKEN then
+				return enemyConfig
+			end
+			if token == SPECIAL_CONTRACTS_TOKEN then
+				return specialContracts
+			end
+			error("unexpected SpecialEnemyConfig dependency")
+		end,
+	},
+	injectGlobals = true,
+})()
+
 local sharedReplicatedStorage = {
 	Shared = {
-		Combat = { EnemyContracts = ENEMY_CONTRACTS_TOKEN },
+		Combat = {
+			EnemyContracts = ENEMY_CONTRACTS_TOKEN,
+			SpecialEnemyContracts = SPECIAL_CONTRACTS_TOKEN,
+		},
 		Config = {
 			EnemyConfig = ENEMY_CONFIG_TOKEN,
+			SpecialEnemyConfig = SPECIAL_CONFIG_TOKEN,
 			RunRpgConfig = RPG_CONFIG_TOKEN,
 			WorldFoundationConfig = WORLD_TOKEN,
 			MissionConfig = MISSION_CONFIG_TOKEN,
@@ -151,6 +192,29 @@ local resolver = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems
 	},
 	injectGlobals = true,
 })()
+
+local specialResolver =
+	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/SpecialEnemyBehaviorResolver.luau"), {
+		debugName = "SpecialEnemyBehaviorResolver",
+		environment = {
+			game = {
+				GetService = function(_self: unknown, serviceName: string)
+					assert(serviceName == "ReplicatedStorage", "unexpected service request")
+					return sharedReplicatedStorage
+				end,
+			},
+			require = function(token: unknown)
+				if token == SPECIAL_CONFIG_TOKEN then
+					return specialConfig
+				end
+				if token == SPECIAL_CONTRACTS_TOKEN then
+					return specialContracts
+				end
+				error("unexpected SpecialEnemyBehaviorResolver dependency")
+			end,
+		},
+		injectGlobals = true,
+	})()
 
 local function signal()
 	local listeners = {}
@@ -320,6 +384,7 @@ local enemyDirector = luau.load(fs.readFile("games/living-kingdoms/src/server/Sy
 		script = {
 			Parent = {
 				EnemyBehaviorResolver = RESOLVER_TOKEN,
+				SpecialEnemyBehaviorResolver = SPECIAL_RESOLVER_TOKEN,
 				EliteAffixResolver = ELITE_RESOLVER_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 			},
@@ -327,10 +392,14 @@ local enemyDirector = luau.load(fs.readFile("games/living-kingdoms/src/server/Sy
 		require = function(token)
 			if token == ENEMY_CONFIG_TOKEN then
 				return enemyConfig
+			elseif token == SPECIAL_CONFIG_TOKEN then
+				return specialConfig
 			elseif token == RPG_CONFIG_TOKEN then
 				return rpgConfig
 			elseif token == ENEMY_CONTRACTS_TOKEN then
 				return enemyContracts
+			elseif token == SPECIAL_CONTRACTS_TOKEN then
+				return specialContracts
 			elseif token == RPG_CONTRACTS_TOKEN then
 				return rpgContracts
 			elseif token == PRESENTATION_TOKEN then
@@ -339,6 +408,8 @@ local enemyDirector = luau.load(fs.readFile("games/living-kingdoms/src/server/Sy
 				return worldConfig
 			elseif token == RESOLVER_TOKEN then
 				return resolver
+			elseif token == SPECIAL_RESOLVER_TOKEN then
+				return specialResolver
 			elseif token == ELITE_RESOLVER_TOKEN then
 				return eliteResolver
 			elseif token == LIFE_TOKEN then

@@ -36,6 +36,9 @@ local PRESENTATION_TOKEN = {}
 local RESOLVER_TOKEN = {}
 local ELITE_RESOLVER_TOKEN = {}
 local LIFE_TOKEN = {}
+local SPECIAL_CONTRACTS_TOKEN = {}
+local SPECIAL_CONFIG_TOKEN = {}
+local SPECIAL_RESOLVER_TOKEN = {}
 
 local rpgContracts = loadSimple("games/living-kingdoms/src/shared/RPG/RunRpgContracts.luau", "RunRpgContracts")
 local rpgConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RunRpgConfig.luau"), {
@@ -72,6 +75,40 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/En
 	injectGlobals = true,
 })()
 
+local specialContracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Combat/SpecialEnemyContracts.luau"), {
+	debugName = "SpecialEnemyContracts",
+	environment = {
+		script = { Parent = { EnemyContracts = CONTRACTS_TOKEN } },
+		require = function(token: unknown)
+			assert(token == CONTRACTS_TOKEN, "unexpected SpecialEnemyContracts dependency")
+			return contracts
+		end,
+	},
+	injectGlobals = true,
+})()
+
+local specialConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/SpecialEnemyConfig.luau"), {
+	debugName = "SpecialEnemyConfig",
+	environment = {
+		script = {
+			Parent = {
+				EnemyConfig = CONFIG_TOKEN,
+				Parent = { Combat = { SpecialEnemyContracts = SPECIAL_CONTRACTS_TOKEN } },
+			},
+		},
+		require = function(token: unknown)
+			if token == CONFIG_TOKEN then
+				return config
+			end
+			if token == SPECIAL_CONTRACTS_TOKEN then
+				return specialContracts
+			end
+			error("unexpected SpecialEnemyConfig dependency")
+		end,
+	},
+	injectGlobals = true,
+})()
+
 local progressionAttributes = { RunIncomingDamageMultiplier = 1 }
 local progressionNetwork = {
 	GetAttribute = function(_self: unknown, attributeName: string)
@@ -80,9 +117,13 @@ local progressionNetwork = {
 }
 local sharedReplicatedStorage = {
 	Shared = {
-		Combat = { EnemyContracts = CONTRACTS_TOKEN },
+		Combat = {
+			EnemyContracts = CONTRACTS_TOKEN,
+			SpecialEnemyContracts = SPECIAL_CONTRACTS_TOKEN,
+		},
 		Config = {
 			EnemyConfig = CONFIG_TOKEN,
+			SpecialEnemyConfig = SPECIAL_CONFIG_TOKEN,
 			RunRpgConfig = RPG_CONFIG_TOKEN,
 			WorldFoundationConfig = WORLD_TOKEN,
 		},
@@ -115,6 +156,29 @@ local resolver = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems
 	},
 	injectGlobals = true,
 })()
+
+local specialResolver =
+	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/SpecialEnemyBehaviorResolver.luau"), {
+		debugName = "SpecialEnemyBehaviorResolver",
+		environment = {
+			game = {
+				GetService = function(_self: unknown, serviceName: string)
+					assert(serviceName == "ReplicatedStorage", "unexpected service request")
+					return sharedReplicatedStorage
+				end,
+			},
+			require = function(token: unknown)
+				if token == SPECIAL_CONFIG_TOKEN then
+					return specialConfig
+				end
+				if token == SPECIAL_CONTRACTS_TOKEN then
+					return specialContracts
+				end
+				error("unexpected SpecialEnemyBehaviorResolver dependency")
+			end,
+		},
+		injectGlobals = true,
+	})()
 
 local eliteResolver = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/EliteAffixResolver.luau"), {
 	debugName = "EliteAffixResolver",
@@ -317,6 +381,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 		script = {
 			Parent = {
 				EnemyBehaviorResolver = RESOLVER_TOKEN,
+				SpecialEnemyBehaviorResolver = SPECIAL_RESOLVER_TOKEN,
 				EliteAffixResolver = ELITE_RESOLVER_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 			},
@@ -324,10 +389,14 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 		require = function(token)
 			if token == CONFIG_TOKEN then
 				return config
+			elseif token == SPECIAL_CONFIG_TOKEN then
+				return specialConfig
 			elseif token == RPG_CONFIG_TOKEN then
 				return rpgConfig
 			elseif token == CONTRACTS_TOKEN then
 				return contracts
+			elseif token == SPECIAL_CONTRACTS_TOKEN then
+				return specialContracts
 			elseif token == RPG_CONTRACTS_TOKEN then
 				return rpgContracts
 			elseif token == PRESENTATION_TOKEN then
@@ -336,6 +405,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return worldConfig
 			elseif token == RESOLVER_TOKEN then
 				return resolver
+			elseif token == SPECIAL_RESOLVER_TOKEN then
+				return specialResolver
 			elseif token == ELITE_RESOLVER_TOKEN then
 				return eliteResolver
 			elseif token == LIFE_TOKEN then
@@ -870,7 +941,23 @@ local resumeAt = service.readPressureState().nextRoamingSpawnServerTimestamp
 assert(resumeAt == now + level2.IntervalSeconds, "escalation must tighten the roaming interval")
 now = math.max(resumeAt, recoveryEnd)
 local resumed = service.evaluateAt(now)
-assert(resumed.spawnedCount == level2.SpawnCount, "roaming resumes after the recovery window")
+-- Escalation has reached the Blight Spitter introduction level, so this roam
+-- also introduces exactly one bounded special enemy alongside the walker burst.
+assert(
+	resumed.spawnedCount == level2.SpawnCount + 1,
+	"roaming resumes after recovery and introduces one Blight Spitter"
+)
+local spitterCount = 0
+for _, instance in createdInstances do
+	if
+		instance.ClassName == "Model"
+		and not instance._destroyed
+		and instance:GetAttribute("EnemyArchetypeId") == specialConfig.BlightSpitter.ArchetypeId
+	then
+		spitterCount += 1
+	end
+end
+assert(spitterCount == 1, "escalation past the introduction level maintains exactly one Blight Spitter")
 
 -- Escalation level never regresses.
 service.spawnAuthoredWave(1, { { id = "enemy.wave1-late", name = "Wave Walker", x = 250, y = 3, z = -250 } })
@@ -900,6 +987,156 @@ assert(wokeModel ~= nil and wokeModel:GetAttribute(presentationAttributes.Behavi
 now += walker.AttackWindupSeconds
 assert(service.evaluateAt(now).attackCommittedCount == 1, "woken enemies commit only after windup")
 assert(standTarget.snapshot.lifeStateId == "Alive")
+
+-- P9-0102 Blight Spitter integration: archetype spawn, the Corrosive Bloom charge
+-- lifecycle, the commit burst against clustered operatives, the lingering pool,
+-- and stand-down cleanup — all through the existing director boundaries.
+local spitterCfg = specialConfig.BlightSpitter
+local bloomCfg = specialConfig.Bloom
+local presentation = presentationContracts.AttributeNames
+
+local function countLivingSpitters(): number
+	local total = 0
+	for _, instance in createdInstances do
+		if
+			instance.ClassName == "Model"
+			and not instance._destroyed
+			and instance:GetAttribute("EnemyArchetypeId") == spitterCfg.ArchetypeId
+		then
+			total += 1
+		end
+	end
+	return total
+end
+
+-- Spawn a Spitter with no operatives present (fair), then cluster operatives near
+-- it. The Spitter carries its own health and archetype, never an elite affix.
+reset()
+assert(service.spawnEnemy({
+	entityId = "enemy.spitter.test",
+	archetypeId = spitterCfg.ArchetypeId,
+	spawnSourceId = "AuthoredWave",
+	displayName = spitterCfg.DisplayName,
+	position = { x = 0, y = 3, z = 0 },
+}).didSpawn)
+local spitterModel = findModelByEntityId("enemy.spitter.test")
+assert(spitterModel ~= nil and spitterModel:GetAttribute("EnemyArchetypeId") == spitterCfg.ArchetypeId)
+assert(spitterModel:GetAttribute(presentation.EliteAffixId) == nil, "special enemies are never elite-decorated")
+local spitterHealth = service.readHealthState("enemy.spitter.test")
+assert(spitterHealth ~= nil and spitterHealth.healthState.currentHealth == spitterCfg.MaximumHealth)
+
+-- A dense cluster of three plus one operative outside the impact radius and one
+-- incapacitated operative inside it (which must be excluded from targeting/damage).
+addOperative("op:spit-a", 10, 0)
+addOperative("op:spit-b", 14, 0)
+addOperative("op:spit-c", 18, 0)
+addOperative("op:spit-edge", 10, 20)
+addOperative("op:spit-down", 12, 0, "Incapacitated")
+
+-- Begin: the densest cluster anchors the charge and the telegraph is disclosed.
+now = 1
+assert(service.evaluateAt(now).attackCommittedCount == 0 and #damageCalls == 0)
+assert(spitterModel:GetAttribute(presentation.BehaviorStateId) == "Charging")
+assert(spitterModel:GetAttribute(presentation.SpitterBloomChargeSequence) == 1)
+assert(spitterModel:GetAttribute(presentation.SpitterBloomChargeStartedServerTimestamp) == 1)
+assert(spitterModel:GetAttribute(presentation.SpitterBloomCommitServerTimestamp) == 1 + bloomCfg.ChargeWindupSeconds)
+assert(spitterModel:GetAttribute(presentation.SpitterBloomCenterX) == 10, "the bloom locks onto the densest cluster")
+assert(spitterModel:GetAttribute(presentation.SpitterBloomRadiusStuds) == bloomCfg.ImpactRadiusStuds)
+
+-- Continue before the windup elapses: no damage yet.
+assert(service.evaluateAt(1 + bloomCfg.ChargeWindupSeconds - 0.01).attackCommittedCount == 0 and #damageCalls == 0)
+
+-- Commit: every Alive operative inside the impact radius takes one authoritative
+-- event; the out-of-radius and incapacitated operatives are excluded.
+local burst = service.evaluateAt(1 + bloomCfg.ChargeWindupSeconds)
+assert(burst.attackCommittedCount == 3, "the bloom hits the three clustered Alive operatives only")
+assert(#damageCalls == 3)
+local hitIds = {}
+for _, call in damageCalls do
+	hitIds[call.operativeEntityId] = call.damage
+end
+assert(hitIds["op:spit-a"] ~= nil and hitIds["op:spit-b"] ~= nil and hitIds["op:spit-c"] ~= nil)
+assert(hitIds["op:spit-edge"] == nil, "operatives outside the impact radius are not hit")
+assert(hitIds["op:spit-down"] == nil, "incapacitated operatives are not hit")
+assert(hitIds["op:spit-a"].damageAmount == bloomCfg.ImpactDamage)
+assert(hitIds["op:spit-a"].damageEventId == "spitterbloom:enemy.spitter.test:op:spit-a:1")
+assert(spitterModel:GetAttribute(presentation.BehaviorStateId) == "Recovering", "the Spitter reloads after committing")
+assert(spitterModel:GetAttribute(presentation.SpitterBloomChargeStartedServerTimestamp) == 0, "the telegraph clears")
+
+-- The lingering pool denies the ground: it ticks a smaller amount on its interval,
+-- then expires. Ticks persist independent of the Spitter's own reload.
+local committedAt = 1 + bloomCfg.ChargeWindupSeconds
+table.clear(damageCalls)
+local firstTick = service.evaluateAt(committedAt + bloomCfg.Lingering.TickIntervalSeconds)
+assert(firstTick.attackCommittedCount == 3, "the pool ticks the operatives still standing in it")
+assert(#damageCalls == 3 and damageCalls[1].damage.damageAmount == bloomCfg.Lingering.TickDamage)
+assert(string.find(damageCalls[1].damage.damageEventId, "spitterlinger:", 1, true) == 1)
+table.clear(damageCalls)
+assert(
+	service.evaluateAt(committedAt + bloomCfg.Lingering.LifetimeSeconds).attackCommittedCount == 0,
+	"the pool expires after its lifetime"
+)
+assert(#damageCalls == 0)
+
+-- Killing the Spitter frees its concurrent slot.
+local aliveSpitterHealth = service.readHealthState("enemy.spitter.test")
+assert(aliveSpitterHealth ~= nil)
+assert(service.commitHealthState("enemy.spitter.test", aliveSpitterHealth.revision, {
+	entityId = "enemy.spitter.test",
+	currentHealth = 0,
+	processedShotIds = { ["shot:spitter"] = true },
+}, committedAt + bloomCfg.Lingering.LifetimeSeconds + 1))
+assert(not service.readHealthState("enemy.spitter.test").isAlive)
+
+-- Stand-down clears an in-flight charge and every lingering pool so a resolved
+-- squad is neither charged at nor denied ground.
+reset()
+assert(service.spawnEnemy({
+	entityId = "enemy.spitter.stand",
+	archetypeId = spitterCfg.ArchetypeId,
+	spawnSourceId = "AuthoredWave",
+	displayName = spitterCfg.DisplayName,
+	position = { x = 0, y = 3, z = 0 },
+}).didSpawn)
+addOperative("op:stand-a", 10, 0)
+addOperative("op:stand-b", 14, 0)
+local standSpitterModel = findModelByEntityId("enemy.spitter.stand")
+now = 1
+service.evaluateAt(now)
+service.evaluateAt(1 + bloomCfg.ChargeWindupSeconds) -- commit, registering a pool
+service.endOperationPressure()
+assert(standSpitterModel:GetAttribute(presentation.BehaviorStateId) == "StandDown")
+assert(standSpitterModel:GetAttribute(presentation.SpitterBloomChargeStartedServerTimestamp) == 0)
+table.clear(damageCalls)
+assert(
+	service.evaluateAt(1 + bloomCfg.ChargeWindupSeconds + bloomCfg.Lingering.TickIntervalSeconds).attackCommittedCount
+		== 0,
+	"stand-down drops every lingering pool"
+)
+assert(#damageCalls == 0)
+
+-- The concurrent-Spitter cap: with the maximum already alive, an eligible roam
+-- introduces no further Spitter.
+reset()
+addOperative("op:cap", 0, 0)
+for index = 1, specialConfig.Spawn.MaximumConcurrent do
+	assert(service.spawnEnemy({
+		entityId = "enemy.spitter.cap:" .. index,
+		archetypeId = spitterCfg.ArchetypeId,
+		spawnSourceId = "AuthoredWave",
+		displayName = spitterCfg.DisplayName,
+		position = { x = 200 - index * 40, y = 3, z = 200 },
+	}).didSpawn)
+end
+service.beginOperationPressure()
+service.spawnAuthoredWave(1, { { id = "enemy.cap-wave", name = "Wave Walker", x = 250, y = 3, z = -250 } })
+now = config.Pressure.RoamingByEscalationLevel[0].IntervalSeconds
+assert(now > config.Pressure.RecoveryWindowSeconds, "the roam must land past the wave recovery window")
+service.evaluateAt(now)
+assert(
+	countLivingSpitters() == specialConfig.Spawn.MaximumConcurrent,
+	"an eligible roam never exceeds the concurrent Spitter cap"
+)
 
 -- Performance bounds: one heartbeat connection, no timers, no raycasts, no
 -- remotes, bounded caps for 1/2/4 operatives.
