@@ -10,7 +10,7 @@
 
 local EnemyContracts = {}
 
-export type EnemyArchetypeId = "enemy.exclusion_walker" | "enemy.blight_spitter"
+export type EnemyArchetypeId = "enemy.exclusion_walker" | "enemy.blight_spitter" | "boss.progenitor"
 
 export type EnemyBehaviorStateId = "Roaming" | "Pursuing" | "WindingUp" | "Attacking" | "StandDown" | "Dead"
 
@@ -104,6 +104,7 @@ export type EnemyBehaviorDecision = {
 EnemyContracts.EnemyArchetypeIds = table.freeze({
 	ExclusionWalker = "enemy.exclusion_walker" :: EnemyArchetypeId,
 	BlightSpitter = "enemy.blight_spitter" :: EnemyArchetypeId,
+	Progenitor = "boss.progenitor" :: EnemyArchetypeId,
 })
 
 EnemyContracts.EnemyBehaviorStateIds = table.freeze({
