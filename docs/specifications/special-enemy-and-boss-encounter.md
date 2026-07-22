@@ -415,8 +415,26 @@ design decisions.
   outcome into the single terminal-result boundary (the P10 roadmap owns "boss
   outcome"); today the holdout still resolves on its existing timer while the boss
   encounter runs and can be defeated.
-- **`P9-0105` – `P9-0106`** remain not started; they add the readable telegraphs
-  and the encounter validation.
+- **Readable telegraphs and accessible presentation (`P9-0105`) — complete.**
+  `src/shared/Config/SpecialEncounterTelegraphConfig.luau` maps the Corrosive
+  Bloom and the Progenitor Slam to the authoritative disclosure attributes and
+  fixes the boss phase/armored-vs-exposed status vocabulary. The client-only
+  `src/client/Controllers/SpecialEncounterTelegraphController.luau` — one
+  `RenderStepped`, one `ChildAdded`/`ChildRemoved` pair on `EnemyEntities`, a fixed
+  disc pool, and one boss status label — renders every dangerous action with
+  redundant cues (a world-space ground disc at the server-disclosed landing
+  centre, a numeric countdown, text, shape, and animation; never color alone),
+  plus the bloom's lingering toxic-ground footprint and an always-visible boss
+  `CARAPACE/BROOD/COLLAPSE` + `EXPOSED/ARMORED` indicator so players learn when
+  their fire lands. Telegraphs appear only after the server commits (no early
+  disclosure); the controller reads no health, sends no remote, predicts no
+  consequence, and follows only the replicated root (no client-legalized hit).
+  Fixtures: `tests/SpecialEncounterTelegraphConfig.test.luau` and the
+  `tests/SpecialEncounterTelegraphSourceAudit.test.luau` bounded-and-cosmetic
+  audit. The Studio mix/readability review (audio, contrast, overlapping
+  telegraphs on bright/dark terrain) remains a manual gate.
+- **`P9-0106`** remains not started; it adds the encounter security, performance,
+  and class-composition validation that closes P9.
 
 ## Deliberate exclusions
 
