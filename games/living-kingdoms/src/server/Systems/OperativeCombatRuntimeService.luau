@@ -122,6 +122,15 @@ local lifeStateConnection: { Disconnect: (self: any) -> () }? = nil
 local characterAddedConnections: { [Player]: RBXScriptConnection } = {}
 local playerStates: { [Player]: PlayerCombatState } = {}
 local raycastStates: { [Player]: PlayerRaycastState } = {}
+-- P10-0106 session retention. Ammunition is a scarce operation resource (P6), so
+-- a reconnect must not hand back a fresh magazine and reserve. The disconnecting
+-- operative's weapon and ammunition are retained against their entity ID for the
+-- rest of this operation and consumed on the first restore.
+type RetainedCombatState = {
+	weaponId: string,
+	ammunition: CombatContracts.AmmunitionState,
+}
+local retainedCombatByOperativeEntityId: { [string]: RetainedCombatState } = {}
 local engineerProcessedSupplyIds: { [Player]: { [string]: boolean } } = {}
 local engineerGrantedRoundsBySupplyId: { [Player]: { [string]: number } } = {}
 
@@ -191,14 +200,28 @@ local function deriveOperativeEntityId(player: Player): string
 end
 
 local function createPlayerState(player: Player): PlayerCombatState
-	local weaponId = FirearmConfig.BasicFirearm.WeaponId
+	local operativeEntityId = deriveOperativeEntityId(player)
+	local retained = retainedCombatByOperativeEntityId[operativeEntityId]
+	retainedCombatByOperativeEntityId[operativeEntityId] = nil
+	local weaponId = if retained ~= nil then retained.weaponId else FirearmConfig.BasicFirearm.WeaponId
+	local weaponState = createWeaponState(weaponId)
+	if retained ~= nil then
+		-- Resume the exact rounds they left with; readiness and cadence restart
+		-- clean so a reconnect grants no timing advantage.
+		weaponState.ammunition = {
+			weaponId = retained.ammunition.weaponId,
+			loadedRounds = retained.ammunition.loadedRounds,
+			reserveRounds = retained.ammunition.reserveRounds,
+			magazineCapacity = retained.ammunition.magazineCapacity,
+		}
+	end
 	return {
 		operativeState = {
-			entityId = deriveOperativeEntityId(player),
+			entityId = operativeEntityId,
 			combatStateId = CombatContracts.OperativeCombatStateIds.Ready,
 			equippedWeaponId = weaponId,
 		},
-		weaponState = createWeaponState(weaponId),
+		weaponState = weaponState,
 		selectedTargetEntityId = nil,
 		lastRequestServerTimestamp = -math.huge,
 		generation = 1,
@@ -1071,6 +1094,21 @@ local function removePlayer(player: Player)
 		connection:Disconnect()
 		characterAddedConnections[player] = nil
 	end
+	-- P10-0106: retain the exact rounds this operative left with, so a reconnect
+	-- resumes them instead of being reissued a full loadout.
+	local removedState = playerStates[player]
+	if removedState ~= nil then
+		local ammunition = removedState.weaponState.ammunition
+		retainedCombatByOperativeEntityId[removedState.operativeState.entityId] = {
+			weaponId = removedState.weaponState.weaponId,
+			ammunition = {
+				weaponId = ammunition.weaponId,
+				loadedRounds = ammunition.loadedRounds,
+				reserveRounds = ammunition.reserveRounds,
+				magazineCapacity = ammunition.magazineCapacity,
+			},
+		}
+	end
 	playerStates[player] = nil
 	raycastStates[player] = nil
 	engineerProcessedSupplyIds[player] = nil
@@ -1145,6 +1183,8 @@ function OperativeCombatRuntimeService.stop()
 	table.clear(raycastStates)
 	table.clear(engineerProcessedSupplyIds)
 	table.clear(engineerGrantedRoundsBySupplyId)
+	-- Retention is operation-scoped: a replay issues fresh loadouts.
+	table.clear(retainedCombatByOperativeEntityId)
 	RelicModifierService.clear()
 	accumulatedSeconds = 0
 end

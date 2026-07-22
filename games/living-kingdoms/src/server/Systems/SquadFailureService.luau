@@ -66,6 +66,10 @@ local operationStartedSolo = false
 local hasEverHadMultipleParticipants = false
 local lateJoiningProhibited = false
 local isAuthoritativelyAbandoned = false
+-- P10-0106: every operative admitted at insertion, for the whole operation. A
+-- reconnecting operative resumes admission from this set; an identity that was
+-- never admitted still cannot join mid-operation.
+local everAdmittedOperativeIds: { [string]: boolean } = {}
 local admittedOperativeIds: { [string]: boolean } = {}
 local prestartOperativeIds: { [string]: boolean } = {}
 local listeners: { [number]: StatusListener } = {}
@@ -184,6 +188,7 @@ local function beginOperationAt(serverTimestamp: number): EvaluationResult
 	table.clear(admittedOperativeIds)
 	for operativeEntityId in prestartOperativeIds do
 		admittedOperativeIds[operativeEntityId] = true
+		everAdmittedOperativeIds[operativeEntityId] = true
 	end
 	local participantCount = countIds(admittedOperativeIds)
 	operationStartedSolo = participantCount == 1
@@ -212,9 +217,13 @@ function Service.start()
 		if eventName == "Registered" then
 			if not operationStarted then
 				prestartOperativeIds[operativeEntityId] = true
+			elseif everAdmittedOperativeIds[operativeEntityId] then
+				-- A reconnecting operative resumes the admission they already held.
+				-- Re-admitting an existing identity duplicates nothing: life,
+				-- class, ammunition, and contribution are all keyed by the same ID.
+				admittedOperativeIds[operativeEntityId] = true
 			end
-			-- Registrations after start are deliberately ignored. Reconnect and
-			-- replacement participation are outside this operation lifetime.
+			-- An identity that was never admitted still cannot join mid-operation.
 			evaluateAt(now())
 			return
 		end
@@ -320,6 +329,7 @@ function Service.stop()
 	hasEverHadMultipleParticipants = false
 	lateJoiningProhibited = false
 	isAuthoritativelyAbandoned = false
+	table.clear(everAdmittedOperativeIds)
 end
 
 return Service

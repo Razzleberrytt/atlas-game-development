@@ -89,6 +89,7 @@ type OperativeLifeService = {
 		expectedRevision: number,
 		authoritativeHealing: AuthoritativeHealing
 	) -> CommitResult,
+	hasRetainedSession: (operativeEntityId: string) -> boolean,
 	grantTemporaryArmor: (operativeEntityId: string, armorAmount: number, expiresAtServerTimestamp: number) -> boolean,
 	readTemporaryArmor: (operativeEntityId: string, serverTimestamp: number) -> number,
 	commitAcceptedTransition: (player: Player, expectedRevision: number, resolverResult: unknown) -> CommitResult,
@@ -114,6 +115,11 @@ type TemporaryArmor = {
 	expiresAtServerTimestamp: number,
 }
 local temporaryArmorByPlayer: { [Player]: TemporaryArmor } = {}
+-- P10-0106 session retention. A disconnect keeps the operative's authoritative
+-- life snapshot against their entity ID for the rest of this operation, so a
+-- reconnect resumes exactly where they left off. Without this, reconnecting would
+-- hand back full health and undo an incapacitation or death.
+local retainedSnapshotByOperativeEntityId: { [string]: OperativeLifeStateSnapshot } = {}
 local listeners: { [number]: LifeStateListener } = {}
 local rosterListeners: { [number]: RosterListener } = {}
 local nextListenerId = 0
@@ -379,9 +385,14 @@ function OperativeLifeService.registerPlayer(player: Player): AuthoritativeRead?
 	if playerByOperativeEntityId[operativeEntityId] ~= nil then
 		return nil
 	end
+	-- Resume a retained snapshot rather than issuing a fresh one. The record is
+	-- consumed on restore, so a reconnect can never be replayed for a second
+	-- restoration.
+	local retained = retainedSnapshotByOperativeEntityId[operativeEntityId]
+	retainedSnapshotByOperativeEntityId[operativeEntityId] = nil
 	local entry: OperativeEntry = {
 		operativeEntityId = operativeEntityId,
-		snapshot = initialSnapshot(operativeEntityId),
+		snapshot = if retained ~= nil then copySnapshot(retained) else initialSnapshot(operativeEntityId),
 		revision = 0,
 		lastTransitionServerTimestamp = nil,
 		characterBinding = nil,
@@ -400,6 +411,9 @@ function OperativeLifeService.unregisterPlayer(player: Player): boolean
 		return false
 	end
 	unbindCharacter(entry)
+	-- Retain the authoritative snapshot for a same-session reconnect. Temporary
+	-- armor is a transient combat resource and deliberately does not survive.
+	retainedSnapshotByOperativeEntityId[entry.operativeEntityId] = copySnapshot(entry.snapshot)
 	entries[player] = nil
 	temporaryArmorByPlayer[player] = nil
 	playerByOperativeEntityId[entry.operativeEntityId] = nil
@@ -775,6 +789,12 @@ function OperativeLifeService.applyAuthoritativeHealing(
 	return commitAcceptedTransitionInternal(player, expectedRevision, resolution, true)
 end
 
+-- True while a disconnected operative's snapshot is still resumable this
+-- operation. Used by the roster owner to distinguish a reconnect from a new join.
+function OperativeLifeService.hasRetainedSession(operativeEntityId: string): boolean
+	return type(operativeEntityId) == "string" and retainedSnapshotByOperativeEntityId[operativeEntityId] ~= nil
+end
+
 function OperativeLifeService.isAlive(player: Player): boolean
 	local entry = entries[player]
 	return entry ~= nil and entry.snapshot.lifeStateId == lifeStateIds.Alive
@@ -991,6 +1011,8 @@ function OperativeLifeService.stop()
 	table.clear(listeners)
 	table.clear(rosterListeners)
 	table.clear(temporaryArmorByPlayer)
+	-- Retention is operation-scoped: a replay issues fresh operatives.
+	table.clear(retainedSnapshotByOperativeEntityId)
 end
 
 return OperativeLifeService
