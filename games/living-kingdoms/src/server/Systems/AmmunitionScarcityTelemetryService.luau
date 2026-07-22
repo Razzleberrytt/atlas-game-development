@@ -4,7 +4,7 @@
 	P6-0107 read-only scarcity telemetry. Sampling is explicit and Studio-driven;
 	this module creates no scheduler, instances, remotes, or gameplay mutation.
 	Accepted shots are derived from conserved ammunition truth:
-	starting rounds + committed cache grants - current rounds.
+	starting rounds + committed cache and Engineer grants - current rounds.
 ]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -21,6 +21,8 @@ export type OperativeSnapshot = {
 	acceptedShotCount: number,
 	cacheCollectionCount: number,
 	cacheRoundsGranted: number,
+	engineerResupplyCount: number,
+	engineerRoundsGranted: number,
 	dryAmmunitionTransitionCount: number,
 	currentLoadedRounds: number,
 	currentReserveRounds: number,
@@ -37,6 +39,8 @@ export type Snapshot = {
 	acceptedShotCount: number,
 	cacheCollectionCount: number,
 	cacheRoundsGranted: number,
+	engineerResupplyCount: number,
+	engineerRoundsGranted: number,
 	dryOperativeCount: number,
 	dryAmmunitionTransitionCount: number,
 	currentLoadedRounds: number,
@@ -55,6 +59,8 @@ type TrackedOperative = {
 	acceptedShotCount: number,
 	cacheCollectionCount: number,
 	cacheRoundsGranted: number,
+	engineerResupplyCount: number,
+	engineerRoundsGranted: number,
 	dryAmmunitionTransitionCount: number,
 	currentLoadedRounds: number,
 	currentReserveRounds: number,
@@ -109,7 +115,9 @@ local function createTrackedOperative(
 	loadedRounds: number,
 	reserveRounds: number,
 	consumedCacheIds: { [string]: boolean },
-	cacheRoundsGranted: number
+	cacheRoundsGranted: number,
+	engineerResupplyCount: number,
+	engineerRoundsGranted: number
 ): TrackedOperative
 	local totalRounds = loadedRounds + reserveRounds
 	local initialTotalRounds = FirearmConfig.BasicFirearm.PrototypeInitialLoadedRounds
@@ -118,9 +126,11 @@ local function createTrackedOperative(
 		userId = player.UserId,
 		operativeEntityId = "operative.player:" .. tostring(player.UserId),
 		isActive = true,
-		acceptedShotCount = math.max(0, initialTotalRounds + cacheRoundsGranted - totalRounds),
+		acceptedShotCount = math.max(0, initialTotalRounds + cacheRoundsGranted + engineerRoundsGranted - totalRounds),
 		cacheCollectionCount = countSet(consumedCacheIds),
 		cacheRoundsGranted = cacheRoundsGranted,
+		engineerResupplyCount = engineerResupplyCount,
+		engineerRoundsGranted = engineerRoundsGranted,
 		dryAmmunitionTransitionCount = 0,
 		currentLoadedRounds = loadedRounds,
 		currentReserveRounds = reserveRounds,
@@ -168,7 +178,11 @@ function Service.sample(serverTimestamp: number): Snapshot
 		local totalRounds = loadedRounds + reserveRounds
 		local collection = AmmunitionCacheService.readCollectionState(player)
 		local cacheRoundsGranted = sumGrantedRounds(collection.grantedRoundsByCacheId)
-		local derivedAcceptedShots = math.max(0, initialTotalRounds + cacheRoundsGranted - totalRounds)
+		local engineer = OperativeCombatRuntimeService.readEngineerResupplyState(player)
+		local engineerRoundsGranted = sumGrantedRounds(engineer.grantedRoundsBySupplyId)
+		local engineerResupplyCount = countSet(engineer.processedSupplyIds)
+		local derivedAcceptedShots =
+			math.max(0, initialTotalRounds + cacheRoundsGranted + engineerRoundsGranted - totalRounds)
 		local tracked = trackedByUserId[player.UserId]
 		if tracked == nil then
 			tracked = createTrackedOperative(
@@ -176,7 +190,9 @@ function Service.sample(serverTimestamp: number): Snapshot
 				loadedRounds,
 				reserveRounds,
 				collection.processedCacheIds,
-				cacheRoundsGranted
+				cacheRoundsGranted,
+				engineerResupplyCount,
+				engineerRoundsGranted
 			)
 			trackedByUserId[player.UserId] = tracked
 		else
@@ -188,6 +204,8 @@ function Service.sample(serverTimestamp: number): Snapshot
 			tracked.acceptedShotCount = math.max(tracked.acceptedShotCount, derivedAcceptedShots)
 			tracked.cacheCollectionCount = countSet(collection.processedCacheIds)
 			tracked.cacheRoundsGranted = cacheRoundsGranted
+			tracked.engineerResupplyCount = engineerResupplyCount
+			tracked.engineerRoundsGranted = engineerRoundsGranted
 			tracked.currentLoadedRounds = loadedRounds
 			tracked.currentReserveRounds = reserveRounds
 			tracked.minimumTotalRoundsObserved = math.min(tracked.minimumTotalRoundsObserved, totalRounds)
@@ -207,6 +225,8 @@ function Service.read(): Snapshot
 	local acceptedShotCount = 0
 	local cacheCollectionCount = 0
 	local cacheRoundsGranted = 0
+	local engineerResupplyCount = 0
+	local engineerRoundsGranted = 0
 	local dryOperativeCount = 0
 	local dryAmmunitionTransitionCount = 0
 	local currentLoadedRounds = 0
@@ -224,6 +244,8 @@ function Service.read(): Snapshot
 				acceptedShotCount = tracked.acceptedShotCount,
 				cacheCollectionCount = tracked.cacheCollectionCount,
 				cacheRoundsGranted = tracked.cacheRoundsGranted,
+				engineerResupplyCount = tracked.engineerResupplyCount,
+				engineerRoundsGranted = tracked.engineerRoundsGranted,
 				dryAmmunitionTransitionCount = tracked.dryAmmunitionTransitionCount,
 				currentLoadedRounds = tracked.currentLoadedRounds,
 				currentReserveRounds = tracked.currentReserveRounds,
@@ -234,6 +256,8 @@ function Service.read(): Snapshot
 		acceptedShotCount += tracked.acceptedShotCount
 		cacheCollectionCount += tracked.cacheCollectionCount
 		cacheRoundsGranted += tracked.cacheRoundsGranted
+		engineerResupplyCount += tracked.engineerResupplyCount
+		engineerRoundsGranted += tracked.engineerRoundsGranted
 		dryAmmunitionTransitionCount += tracked.dryAmmunitionTransitionCount
 		minimumTotalRoundsObserved = if minimumTotalRoundsObserved == nil
 			then tracked.minimumTotalRoundsObserved
@@ -263,6 +287,8 @@ function Service.read(): Snapshot
 		acceptedShotCount = acceptedShotCount,
 		cacheCollectionCount = cacheCollectionCount,
 		cacheRoundsGranted = cacheRoundsGranted,
+		engineerResupplyCount = engineerResupplyCount,
+		engineerRoundsGranted = engineerRoundsGranted,
 		dryOperativeCount = dryOperativeCount,
 		dryAmmunitionTransitionCount = dryAmmunitionTransitionCount,
 		currentLoadedRounds = currentLoadedRounds,

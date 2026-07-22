@@ -17,6 +17,7 @@ local MissionContracts = require(ReplicatedStorage.Shared.Mission.MissionContrac
 local BraceResolver = require(script.Parent.BraceResolver)
 local ClassSelectionResolver = require(script.Parent.ClassSelectionResolver)
 local FieldTreatmentResolver = require(script.Parent.FieldTreatmentResolver)
+local FieldResupplyResolver = require(script.Parent.FieldResupplyResolver)
 local MissionDirectorService = require(script.Parent.MissionDirectorService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 
@@ -47,7 +48,7 @@ type Entry = {
 	assignment: AuthoritativeClassAssignment,
 	actionState: AuthoritativeClassActionState,
 	actionOriginPosition: Vector3?,
-	treatmentActorProcessedDamageEventIds: { [string]: boolean }?,
+	actionActorProcessedDamageEventIds: { [string]: boolean }?,
 	resources: { [string]: ClassContracts.AuthoritativeClassResourceState },
 	processedRequestIds: { [string]: boolean },
 	processedRequestOrder: { string },
@@ -80,6 +81,8 @@ local lockThread: thread? = nil
 local remoteConnection: RBXScriptConnection? = nil
 local actionRemoteConnection: RBXScriptConnection? = nil
 local rosterConnection: ListenerConnection? = nil
+local engineerResupplyInspector: ((Player) -> (boolean, boolean))? = nil
+local engineerResupplyCommitter: ((Player, string, number) -> (boolean, number))? = nil
 
 for _, classId in ClassConfig.Selection.startingClassIds do
 	availableClassIds[classId] = true
@@ -151,13 +154,18 @@ local function distanceAndLineOfSight(actor: Player, target: Player): (number, b
 end
 
 local function resourcesForClass(classId: string): { [string]: ClassContracts.AuthoritativeClassResourceState }
-	if classId ~= ClassIds.Medic then
+	local resourceConfig
+	if classId == ClassIds.Medic then
+		resourceConfig = ClassConfig.Resources.MedicalCharge
+	elseif classId == ClassIds.Engineer then
+		resourceConfig = ClassConfig.Resources.ResupplyCharge
+	else
 		return {}
 	end
-	local maximum = ClassConfig.Resources.MedicalCharge.maximumAmount
+	local maximum = resourceConfig.maximumAmount
 	return {
-		[ResourceIds.MedicalCharge] = table.freeze({
-			resourceId = ResourceIds.MedicalCharge,
+		[resourceConfig.resourceId] = table.freeze({
+			resourceId = resourceConfig.resourceId,
 			currentAmount = maximum,
 			maximumAmount = maximum,
 		}),
@@ -333,7 +341,7 @@ local function registerPlayer(player: Player, allowLockedRegistration: boolean):
 		assignment = assignment,
 		actionState = idleActionState(),
 		actionOriginPosition = nil,
-		treatmentActorProcessedDamageEventIds = nil,
+		actionActorProcessedDamageEventIds = nil,
 		resources = resourcesForClass(ClassConfig.Selection.defaultClassId),
 		processedRequestIds = {},
 		processedRequestOrder = {},
@@ -450,7 +458,7 @@ function Service.requestSelection(player: Player, payload: unknown): OperationRe
 end
 
 local function actorTookDamage(entry: Entry, snapshot: OperativeLifeContracts.OperativeLifeStateSnapshot): boolean
-	local baseline = entry.treatmentActorProcessedDamageEventIds
+	local baseline = entry.actionActorProcessedDamageEventIds
 	if baseline == nil then
 		return false
 	end
@@ -464,7 +472,7 @@ end
 
 local function clearActionContinuity(entry: Entry)
 	entry.actionOriginPosition = nil
-	entry.treatmentActorProcessedDamageEventIds = nil
+	entry.actionActorProcessedDamageEventIds = nil
 end
 
 local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBegin: boolean): boolean
@@ -524,6 +532,58 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 				})
 			else
 				resolution = FieldTreatmentResolver.resolveEffectRejected(state, serverTimestamp)
+			end
+		end
+	elseif state.actionId == ActionIds.FieldResupply then
+		local actorRead = OperativeLifeService.read(entry.player)
+		local targetId = state.targetOperativeEntityId
+		local targetEntry = if targetId == nil then nil else entriesByOperativeId[targetId]
+		local targetPlayer = if targetEntry == nil then nil else targetEntry.player
+		local targetRead = if targetPlayer == nil then nil else OperativeLifeService.read(targetPlayer)
+		local distanceStuds, hasLineOfSight = 0, false
+		if targetPlayer == entry.player then
+			hasLineOfSight = true
+		elseif targetPlayer ~= nil then
+			distanceStuds, hasLineOfSight = distanceAndLineOfSight(entry.player, targetPlayer)
+		end
+		local compatible, hasCapacity = false, false
+		if targetPlayer ~= nil and engineerResupplyInspector ~= nil then
+			compatible, hasCapacity = engineerResupplyInspector(targetPlayer)
+		end
+		local supply = entry.resources[ResourceIds.ResupplyCharge]
+		resolution = FieldResupplyResolver.resolveContinuity(state, {
+			isParticipant = actorRead ~= nil,
+			isOperationActive = operationIsActive(MissionDirectorService.read().phaseId),
+			assignedClassId = entry.assignment.classId,
+			isActorAlive = actorRead ~= nil and actorRead.snapshot.lifeStateId == LifeStateIds.Alive,
+			resourceAmount = if supply == nil then 0 else supply.currentAmount,
+			isTargetKnown = targetEntry ~= nil and targetRead ~= nil,
+			isTargetAlive = targetRead ~= nil and targetRead.snapshot.lifeStateId == LifeStateIds.Alive,
+			isWeaponCompatible = compatible,
+			hasCapacity = hasCapacity,
+			distanceStuds = distanceStuds,
+			hasLineOfSight = hasLineOfSight,
+			movementDistanceStuds = movementDistanceStuds,
+			didActorTakeDamage = actorRead ~= nil and actorTookDamage(entry, actorRead.snapshot),
+			serverTimestamp = serverTimestamp,
+		})
+		if resolution.shouldCommitResupply then
+			local didCommit, grantedRounds = false, 0
+			if targetPlayer ~= nil and supply ~= nil and engineerResupplyCommitter ~= nil then
+				didCommit, grantedRounds = engineerResupplyCommitter(
+					targetPlayer,
+					string.format("class-resupply:%s:%d", entry.operativeEntityId, state.revision),
+					ClassConfig.Actions.FieldResupply.roundsPerCharge
+				)
+			end
+			if didCommit and grantedRounds > 0 and supply ~= nil then
+				entry.resources[ResourceIds.ResupplyCharge] = table.freeze({
+					resourceId = supply.resourceId,
+					currentAmount = supply.currentAmount - ClassConfig.Actions.FieldResupply.resourceCost,
+					maximumAmount = supply.maximumAmount,
+				})
+			else
+				resolution = FieldResupplyResolver.resolveEffectRejected(state, serverTimestamp)
 			end
 		end
 	else
@@ -618,7 +678,46 @@ function Service.requestAction(player: Player, payload: unknown): OperationResul
 			if resolution.didActivate then
 				local actorRead = OperativeLifeService.read(player)
 				entry.actionOriginPosition = startPosition
-				entry.treatmentActorProcessedDamageEventIds = if actorRead == nil
+				entry.actionActorProcessedDamageEventIds = if actorRead == nil
+					then {}
+					else table.clone(actorRead.snapshot.processedDamageEventIds)
+			end
+		elseif intent.actionId == ActionIds.FieldResupply then
+			local targetId = intent.candidateTargetOperativeEntityId
+			local targetEntry = if targetId == nil then nil else entriesByOperativeId[targetId]
+			local targetPlayer = if targetEntry == nil then nil else targetEntry.player
+			local targetRead = if targetPlayer == nil then nil else OperativeLifeService.read(targetPlayer)
+			local distanceStuds, hasLineOfSight = 0, false
+			if targetPlayer == player then
+				hasLineOfSight = true
+			elseif targetPlayer ~= nil then
+				distanceStuds, hasLineOfSight = distanceAndLineOfSight(player, targetPlayer)
+			end
+			local compatible, hasCapacity = false, false
+			if targetPlayer ~= nil and engineerResupplyInspector ~= nil then
+				compatible, hasCapacity = engineerResupplyInspector(targetPlayer)
+			end
+			local supply = entry.resources[ResourceIds.ResupplyCharge]
+			resolution = FieldResupplyResolver.resolveStart(entry.actionState, payload, {
+				isParticipant = OperativeLifeService.read(player) ~= nil,
+				isOperationActive = operationIsActive(MissionDirectorService.read().phaseId),
+				assignedClassId = entry.assignment.classId,
+				isActorAlive = OperativeLifeService.isCombatAllowed(player),
+				resourceAmount = if supply == nil then 0 else supply.currentAmount,
+				isTargetKnown = targetEntry ~= nil and targetRead ~= nil,
+				isTargetAlive = targetRead ~= nil and targetRead.snapshot.lifeStateId == LifeStateIds.Alive,
+				isWeaponCompatible = compatible,
+				hasCapacity = hasCapacity,
+				distanceStuds = distanceStuds,
+				hasLineOfSight = hasLineOfSight,
+				movementDistanceStuds = 0,
+				didActorTakeDamage = false,
+				serverTimestamp = serverTimestamp,
+			})
+			if resolution.didActivate then
+				local actorRead = OperativeLifeService.read(player)
+				entry.actionOriginPosition = startPosition
+				entry.actionActorProcessedDamageEventIds = if actorRead == nil
 					then {}
 					else table.clone(actorRead.snapshot.processedDamageEventIds)
 			end
@@ -639,7 +738,9 @@ function Service.requestAction(player: Player, payload: unknown): OperationResul
 	else
 		resolution = if entry.actionState.actionId == ActionIds.FieldTreatment
 			then FieldTreatmentResolver.resolveCancel(entry.actionState, payload, serverTimestamp)
-			else BraceResolver.resolveCancel(entry.actionState, payload, serverTimestamp)
+			else if entry.actionState.actionId == ActionIds.FieldResupply
+				then FieldResupplyResolver.resolveCancel(entry.actionState, payload, serverTimestamp)
+				else BraceResolver.resolveCancel(entry.actionState, payload, serverTimestamp)
 	end
 	if not resolution.didChange then
 		if didAdvance then
@@ -704,6 +805,17 @@ function Service.readMedicReviveBenefits(player: Player): (number, number, boole
 			true
 	end
 	return OperativeLifeConfig.ReviveDurationSeconds, OperativeLifeConfig.ReviveHealth, false
+end
+
+function Service.configureEngineerResupplyBoundary(
+	inspector: ((Player) -> (boolean, boolean))?,
+	committer: ((Player, string, number) -> (boolean, number))?
+)
+	assert(inspector == nil or type(inspector) == "function", "engineer inspector must be a function or nil")
+	assert(committer == nil or type(committer) == "function", "engineer committer must be a function or nil")
+	assert((inspector == nil) == (committer == nil), "engineer boundary must configure both functions together")
+	engineerResupplyInspector = inspector
+	engineerResupplyCommitter = committer
 end
 
 function Service.read(player: Player): AuthoritativeClassAssignment?

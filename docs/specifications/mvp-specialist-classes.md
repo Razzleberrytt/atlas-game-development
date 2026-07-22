@@ -2,7 +2,7 @@
 
 ## Status
 
-**P7-0104 complete in source.** The shared contracts, selection owner, Combat Specialist Brace, and Medic vertical slices are implemented and fixture-validated. `P7-0105` (engineer) is the next gameplay task; live Medic feel/readability validation remains listed in the Studio smoke test.
+**P7-0105 complete in source.** The shared contracts, selection owner, and all three class vertical slices are implemented and fixture-validated. `P7-0106` (cross-class presentation) is the next gameplay task; live Medic/Engineer feel and conservation validation remain listed in the Studio smoke test.
 
 ## Purpose
 
@@ -360,7 +360,9 @@ Complete. Field Treatment uses three finite server-owned charges, a three-second
 
 ### P7-0105 — Engineer
 
-Deliver finite Field Resupply through the P6 ammunition authority and telemetry boundary. Define, but do not implement, the future objective-repair integration interface.
+Complete. Field Resupply uses two finite server-owned charges and a 2.5-second nearby Alive-target channel with movement, damage, range, visibility, weapon-compatibility, reserve-cap, mission, and life-state continuity. A completed channel requests one configured 12-round supply; the production combat owner applies only the compatible capped amount through `AmmunitionSupplyResolver`, deduplicates its server-created supply ID, publishes the committed ammunition state, and reports Engineer counts/rounds as a distinct scarcity-telemetry source. A charge is spent only after a positive ammunition commit.
+
+Future P8 objective-equipment integration is intentionally limited to the existing read-only class-assignment boundary: the objective owner may read `ClassService.read(player)` to determine whether the operative is an Engineer. P8 must define any real repair intent, equipment eligibility, progress, cost, and commit contract when authored equipment exists; P7 reserves no repair action ID, remote, resource, objective state, or runtime.
 
 ### P7-0106 — Cross-class presentation
 

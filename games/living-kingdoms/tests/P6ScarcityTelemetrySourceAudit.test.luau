@@ -31,11 +31,12 @@ check(
 )
 
 check(
-	string.find(telemetry, "starting rounds + committed cache grants - current rounds", 1, true) ~= nil,
+	string.find(telemetry, "starting rounds + committed cache and Engineer grants - current rounds", 1, true) ~= nil,
 	"derivation contract missing"
 )
 check(
-	string.find(telemetry, "initialTotalRounds + cacheRoundsGranted - totalRounds", 1, true) ~= nil,
+	string.find(telemetry, "initialTotalRounds + cacheRoundsGranted + engineerRoundsGranted - totalRounds", 1, true)
+		~= nil,
 	"shot derivation missing"
 )
 check(string.find(telemetry, "function Service.sample", 1, true) ~= nil, "explicit sampling missing")

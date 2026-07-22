@@ -3,8 +3,8 @@
 --[[
 	P7 shared specialist-class declarations. These IDs, action-intent shapes,
 	and copied presentation records are safe on either side of the boundary.
-	P7-0103 activates only Brace; healing, ammunition grants, objective effects,
-	and client-authored authority remain absent.
+	Brace, Field Treatment, revive assistance, and Field Resupply are active
+	through P7-0105. Objective effects and client-authored authority remain absent.
 ]]
 
 local ClassContracts = {}
@@ -48,6 +48,8 @@ export type ClassActionRejectionReasonId =
 	| "TargetNotAlive"
 	| "TargetNotIncapacitated"
 	| "TargetNotInjured"
+	| "IncompatibleWeapon"
+	| "NoCapacity"
 	| "OutOfRange"
 	| "NoLineOfSight"
 	| "MovementInterrupted"
@@ -196,6 +198,8 @@ ClassContracts.ClassActionRejectionReasonIds = table.freeze({
 	TargetNotAlive = "TargetNotAlive",
 	TargetNotIncapacitated = "TargetNotIncapacitated",
 	TargetNotInjured = "TargetNotInjured",
+	IncompatibleWeapon = "IncompatibleWeapon",
+	NoCapacity = "NoCapacity",
 	OutOfRange = "OutOfRange",
 	NoLineOfSight = "NoLineOfSight",
 	MovementInterrupted = "MovementInterrupted",

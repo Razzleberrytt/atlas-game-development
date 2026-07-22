@@ -23,6 +23,7 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
+local AmmunitionScarcityContracts = require(ReplicatedStorage.Shared.Combat.AmmunitionScarcityContracts)
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local HordeExperienceConfig = require(ReplicatedStorage.Shared.Config.HordeExperienceConfig)
@@ -36,6 +37,7 @@ local function resolveWeaponDefinition(weaponId: unknown)
 	return if basic ~= nil and weaponId == basic.WeaponId then basic else nil
 end
 local AutomaticFireResolver = require(script.Parent.AutomaticFireResolver)
+local AmmunitionSupplyResolver = require(script.Parent.Parent.Domain.AmmunitionSupplyResolver)
 local ClassService = require(script.Parent.ClassService)
 local DamageResolver = require(script.Parent.DamageResolver)
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
@@ -96,6 +98,7 @@ type OperativeCombatRuntimeService = {
 	) -> boolean,
 	publishAmmunitionState: (player: Player, grantedRounds: number?) -> boolean,
 	evaluateAt: (serverTimestamp: number) -> (),
+	readEngineerResupplyState: (player: Player) -> any,
 }
 
 local SERVER_REQUEST_COOLDOWN_SECONDS = 0.25
@@ -118,6 +121,8 @@ local lifeStateConnection: { Disconnect: (self: any) -> () }? = nil
 local characterAddedConnections: { [Player]: RBXScriptConnection } = {}
 local playerStates: { [Player]: PlayerCombatState } = {}
 local raycastStates: { [Player]: PlayerRaycastState } = {}
+local engineerProcessedSupplyIds: { [Player]: { [string]: boolean } } = {}
+local engineerGrantedRoundsBySupplyId: { [Player]: { [string]: number } } = {}
 
 local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
 local reloadIntentRemote = combatNetwork:WaitForChild("ReloadIntent") :: RemoteEvent
@@ -283,6 +288,87 @@ function OperativeCombatRuntimeService.commitReviveCombatState(
 	playerState.selectedTargetEntityId = nil
 	OperativeCombatRuntimeService.publishAmmunitionState(player, grantedRounds)
 	return true
+end
+
+local function inspectEngineerResupply(player: Player): (boolean, boolean)
+	local playerState = playerStates[player]
+	if playerState == nil then
+		return false, false
+	end
+	local ammunition = playerState.weaponState.ammunition
+	local definition = resolveWeaponDefinition(ammunition.weaponId)
+	if definition == nil then
+		return false, false
+	end
+	return true, ammunition.reserveRounds < definition.MaximumReserveRounds
+end
+
+local function commitEngineerResupply(player: Player, supplyId: string, availableRounds: number): (boolean, number)
+	if
+		not started
+		or type(supplyId) ~= "string"
+		or supplyId == ""
+		or type(availableRounds) ~= "number"
+		or availableRounds ~= availableRounds
+		or availableRounds <= 0
+		or availableRounds % 1 ~= 0
+		or not OperativeLifeService.isCombatAllowed(player)
+	then
+		return false, 0
+	end
+	local read = OperativeCombatRuntimeService.readReviveCombatState(player)
+	if read == nil then
+		return false, 0
+	end
+	local combatState = read.combatState
+	local ammunition = combatState.weaponState.ammunition
+	local definition = resolveWeaponDefinition(ammunition.weaponId)
+	if definition == nil then
+		return false, 0
+	end
+	local processed = engineerProcessedSupplyIds[player] or {}
+	local resolution = AmmunitionSupplyResolver.collect({
+		weaponId = ammunition.weaponId,
+		loadedRounds = ammunition.loadedRounds,
+		reserveRounds = ammunition.reserveRounds,
+		magazineCapacity = ammunition.magazineCapacity,
+		maximumReserveRounds = definition.MaximumReserveRounds,
+		processedSupplyIds = processed,
+	}, {
+		supplyId = supplyId,
+		sourceId = AmmunitionScarcityContracts.SupplySourceIds.EngineerResupply,
+		weaponId = ammunition.weaponId,
+		availableRounds = availableRounds,
+	})
+	if not resolution.didCollect then
+		return false, 0
+	end
+	combatState.weaponState.ammunition.reserveRounds = resolution.stateAfter.reserveRounds
+	if
+		not OperativeCombatRuntimeService.commitReviveCombatState(
+			player,
+			read.generation,
+			combatState,
+			resolution.grantedRounds
+		)
+	then
+		return false, 0
+	end
+	engineerProcessedSupplyIds[player] = table.clone(resolution.stateAfter.processedSupplyIds)
+	local granted = engineerGrantedRoundsBySupplyId[player]
+	if granted == nil then
+		granted = {}
+		engineerGrantedRoundsBySupplyId[player] = granted
+	end
+	granted[supplyId] = resolution.grantedRounds
+	return true, resolution.grantedRounds
+end
+
+function OperativeCombatRuntimeService.readEngineerResupplyState(player: Player): any
+	return table.freeze({
+		processedSupplyIds = table.freeze(table.clone(engineerProcessedSupplyIds[player] or {})),
+		grantedRoundsBySupplyId = table.freeze(table.clone(engineerGrantedRoundsBySupplyId[player] or {})),
+	})
 end
 
 local function getOperativePosition(player: Player): Vector3?
@@ -956,6 +1042,8 @@ local function removePlayer(player: Player)
 	end
 	playerStates[player] = nil
 	raycastStates[player] = nil
+	engineerProcessedSupplyIds[player] = nil
+	engineerGrantedRoundsBySupplyId[player] = nil
 	RelicModifierService.forget(player)
 	setPlayerAttribute(player, "LK_EquippedWeaponId", nil)
 end
@@ -965,6 +1053,10 @@ function OperativeCombatRuntimeService.start()
 		return
 	end
 	started = true
+	local configureBoundary = (ClassService :: any).configureEngineerResupplyBoundary
+	if type(configureBoundary) == "function" then
+		configureBoundary(inspectEngineerResupply, commitEngineerResupply)
+	end
 	for _, player in Players:GetPlayers() do
 		addPlayer(player)
 	end
@@ -990,6 +1082,10 @@ function OperativeCombatRuntimeService.stop()
 		return
 	end
 	started = false
+	local configureBoundary = (ClassService :: any).configureEngineerResupplyBoundary
+	if type(configureBoundary) == "function" then
+		configureBoundary(nil, nil)
+	end
 	local playersToRemove = {}
 	for player, playerState in playerStates do
 		discloseTarget(player, playerState, nil, Workspace:GetServerTimeNow())
@@ -1016,6 +1112,8 @@ function OperativeCombatRuntimeService.stop()
 	table.clear(characterAddedConnections)
 	table.clear(playerStates)
 	table.clear(raycastStates)
+	table.clear(engineerProcessedSupplyIds)
+	table.clear(engineerGrantedRoundsBySupplyId)
 	RelicModifierService.clear()
 	accumulatedSeconds = 0
 end

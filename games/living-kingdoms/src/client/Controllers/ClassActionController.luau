@@ -55,6 +55,8 @@ local interruptionLabels = {
 	TargetNotAlive = "TREATMENT INTERRUPTED — TARGET",
 	TargetNotInjured = "TREATMENT ENDED — TARGET STABLE",
 	EffectCommitRejected = "TREATMENT COULD NOT COMMIT",
+	IncompatibleWeapon = "RESUPPLY UNAVAILABLE — WEAPON",
+	NoCapacity = "RESUPPLY UNAVAILABLE — RESERVE FULL",
 }
 
 local function currentActionState(): ClassContracts.AuthoritativeClassActionState?
@@ -98,19 +100,52 @@ local function nearestInjuredOperativeId(): string?
 	return nearestId
 end
 
+local function nearestAliveTeammateOrSelfId(): string?
+	local origin = rootPosition(localPlayer)
+	if origin == nil then
+		return nil
+	end
+	local nearestId, nearestDistance = nil, math.huge
+	for _, player in Players:GetPlayers() do
+		local operativeEntityId = player:GetAttribute("LK_P3_OperativeEntityId")
+		local position = rootPosition(player)
+		if
+			player ~= localPlayer
+			and player:GetAttribute("LK_P3_LifeState") == "Alive"
+			and type(operativeEntityId) == "string"
+			and position ~= nil
+		then
+			local distance = (position - origin).Magnitude
+			if distance < nearestDistance then
+				nearestDistance = distance
+				nearestId = operativeEntityId
+			end
+		end
+	end
+	if nearestId ~= nil and nearestDistance <= ClassConfig.Actions.FieldResupply.maximumRangeStuds then
+		return nearestId
+	end
+	local selfId = localPlayer:GetAttribute("LK_P3_OperativeEntityId")
+	return if type(selfId) == "string" then selfId else nil
+end
+
 local function sendIntent(actionId: ClassContracts.ClassActionId, phaseId: ClassContracts.ClassActionPhaseId)
 	requestSequence += 1
-	if actionId == ActionIds.FieldTreatment and phaseId == PhaseIds.Begin then
-		local targetId = nearestInjuredOperativeId()
+	if (actionId == ActionIds.FieldTreatment or actionId == ActionIds.FieldResupply) and phaseId == PhaseIds.Begin then
+		local targetId = if actionId == ActionIds.FieldTreatment
+			then nearestInjuredOperativeId()
+			else nearestAliveTeammateOrSelfId()
 		if targetId == nil then
 			if statusLabel ~= nil then
-				statusLabel.Text = "NO INJURED TEAMMATE NEARBY"
+				statusLabel.Text = if actionId == ActionIds.FieldTreatment
+					then "NO INJURED TEAMMATE NEARBY"
+					else "NO VALID RESUPPLY TARGET"
 			end
 			return
 		end
 		actionIntentRemote:FireServer({
-			requestId = string.format("treatment:%d:%d", localPlayer.UserId, requestSequence),
-			actionId = ActionIds.FieldTreatment,
+			requestId = string.format("targeted-action:%d:%d", localPlayer.UserId, requestSequence),
+			actionId = actionId,
 			phaseId = phaseId,
 			candidateTargetOperativeEntityId = targetId,
 		})
@@ -132,7 +167,9 @@ local function onBraceInput(_actionName: string, inputState: Enum.UserInputState
 	if state == nil or assignment == nil or state.actionStateId == ActionStateIds.Cooldown then
 		return Enum.ContextActionResult.Sink
 	end
-	local actionId = if assignment.classId == ClassIds.Medic then ActionIds.FieldTreatment else ActionIds.Brace
+	local actionId = if assignment.classId == ClassIds.Medic
+		then ActionIds.FieldTreatment
+		else if assignment.classId == ClassIds.Engineer then ActionIds.FieldResupply else ActionIds.Brace
 	if state.actionStateId == ActionStateIds.Active then
 		sendIntent(actionId, PhaseIds.Cancel)
 	else
@@ -221,7 +258,7 @@ local function updatePresentation()
 	local assignment = snapshot.ownerAssignment
 	local state = snapshot.ownerActionState
 	local shouldShow = assignment ~= nil
-		and (assignment.classId == ClassIds.CombatSpecialist or assignment.classId == ClassIds.Medic)
+		and (assignment.classId == ClassIds.CombatSpecialist or assignment.classId == ClassIds.Medic or assignment.classId == ClassIds.Engineer)
 		and snapshot.selectionStateId == SelectionStateIds.Locked
 	frame.Visible = shouldShow
 	setBinding(shouldShow)
@@ -230,11 +267,15 @@ local function updatePresentation()
 		return
 	end
 	local isMedic = assignment.classId == ClassIds.Medic
-	ContextActionService:SetTitle(ACTION_NAME, if isMedic then "TREAT" else "BRACE")
+	local isEngineer = assignment.classId == ClassIds.Engineer
+	ContextActionService:SetTitle(ACTION_NAME, if isMedic then "TREAT" else if isEngineer then "RESUPPLY" else "BRACE")
 	local medicalCharges = 0
+	local resupplyCharges = 0
 	for _, resource in snapshot.ownerResources do
 		if resource.resourceId == ClassContracts.ClassResourceIds.MedicalCharge then
 			medicalCharges = resource.currentAmount
+		elseif resource.resourceId == ClassContracts.ClassResourceIds.ResupplyCharge then
+			resupplyCharges = resource.currentAmount
 		end
 	end
 
@@ -242,30 +283,40 @@ local function updatePresentation()
 	if state.actionStateId == ActionStateIds.Active then
 		label.Text = if isMedic
 			then string.format("TREATING TEAMMATE  •  %d CHARGES  •  Q TO CANCEL", medicalCharges)
-			else "BRACE ACTIVE  •  HOLD POSITION  •  Q TO CANCEL"
+			else if isEngineer
+				then string.format("RESUPPLYING OPERATIVE  •  %d CHARGES  •  Q TO CANCEL", resupplyCharges)
+				else "BRACE ACTIVE  •  HOLD POSITION  •  Q TO CANCEL"
 		local completion = state.completionServerTimestamp or serverTimestamp
 		local remaining = math.max(0, completion - serverTimestamp)
 		local duration = if isMedic
 			then ClassConfig.Actions.FieldTreatment.channelDurationSeconds
-			else ClassConfig.Actions.Brace.durationSeconds
+			else if isEngineer
+				then ClassConfig.Actions.FieldResupply.channelDurationSeconds
+				else ClassConfig.Actions.Brace.durationSeconds
 		tweenProgress(remaining / duration, remaining)
-		setHighlight(true, if isMedic then state.targetOperativeEntityId else nil)
+		setHighlight(true, if isMedic or isEngineer then state.targetOperativeEntityId else nil)
 	elseif state.actionStateId == ActionStateIds.Cooldown then
 		local suffix = interruptionLabels[state.statusReasonId or ""]
 		label.Text = if suffix == nil
-			then (if isMedic then "MEDICAL KIT RESETTING" else "BRACE RECHARGING")
+			then (if isMedic
+				then "MEDICAL KIT RESETTING"
+				else if isEngineer then "RESUPPLY KIT RESETTING" else "BRACE RECHARGING")
 			else suffix .. "  •  RECHARGING"
 		local completion = state.cooldownEndServerTimestamp or serverTimestamp
 		local remaining = math.max(0, completion - serverTimestamp)
 		local cooldown = if isMedic
 			then ClassConfig.Actions.FieldTreatment.cooldownSeconds
-			else ClassConfig.Actions.Brace.cooldownSeconds
+			else if isEngineer
+				then ClassConfig.Actions.FieldResupply.cooldownSeconds
+				else ClassConfig.Actions.Brace.cooldownSeconds
 		tweenProgress(remaining / cooldown, remaining)
 		setHighlight(false, nil)
 	else
 		label.Text = if isMedic
 			then string.format("FIELD TREATMENT READY  •  %d CHARGES  •  Q / GAMEPAD X", medicalCharges)
-			else "BRACE READY  •  Q / GAMEPAD X"
+			else if isEngineer
+				then string.format("FIELD RESUPPLY READY  •  %d CHARGES  •  Q / GAMEPAD X", resupplyCharges)
+				else "BRACE READY  •  Q / GAMEPAD X"
 		tweenProgress(1, 0)
 		setHighlight(false, nil)
 	end

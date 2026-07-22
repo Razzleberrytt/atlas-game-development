@@ -25,11 +25,16 @@ local enemyContracts = loadSimple("games/living-kingdoms/src/shared/Combat/Enemy
 local worldConfig =
 	loadSimple("games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "WorldFoundationConfig")
 local combatContracts = loadSimple("games/living-kingdoms/src/shared/Combat/CombatContracts.luau", "CombatContracts")
+local scarcityContracts = loadSimple(
+	"games/living-kingdoms/src/shared/Combat/AmmunitionScarcityContracts.luau",
+	"AmmunitionScarcityContracts"
+)
 
 local ENEMY_CONTRACTS_TOKEN = {}
 local WORLD_TOKEN = {}
 local ENEMY_CONFIG_TOKEN = {}
 local COMBAT_CONTRACTS_TOKEN = {}
+local SCARCITY_CONTRACTS_TOKEN = {}
 local FIREARM_CONFIG_TOKEN = {}
 local HORDE_CONFIG_TOKEN = {}
 local VALIDATOR_TOKEN = {}
@@ -115,7 +120,11 @@ end
 
 sharedReplicatedStorage = {
 	Shared = {
-		Combat = { CombatContracts = COMBAT_CONTRACTS_TOKEN, EnemyContracts = ENEMY_CONTRACTS_TOKEN },
+		Combat = {
+			CombatContracts = COMBAT_CONTRACTS_TOKEN,
+			AmmunitionScarcityContracts = SCARCITY_CONTRACTS_TOKEN,
+			EnemyContracts = ENEMY_CONTRACTS_TOKEN,
+		},
 		Config = {
 			FirearmConfig = FIREARM_CONFIG_TOKEN,
 			HordeExperienceConfig = HORDE_CONFIG_TOKEN,
@@ -124,6 +133,18 @@ sharedReplicatedStorage = {
 		},
 	},
 }
+
+local supplyResolver = loadProduction(
+	"games/living-kingdoms/src/server/Domain/AmmunitionSupplyResolver.luau",
+	"AmmunitionSupplyResolver",
+	nil,
+	function(token)
+		if token == SCARCITY_CONTRACTS_TOKEN then
+			return scarcityContracts
+		end
+		error("unexpected supply resolver dependency")
+	end
+)
 
 local validator =
 	loadProduction("games/living-kingdoms/src/server/Systems/TargetCandidateValidator.luau", "TargetCandidateValidator")
@@ -417,6 +438,9 @@ local RELOAD_TOKEN = {}
 local SELECTOR_TOKEN = {}
 local PATTERN_TOKEN = {}
 local MAGAZINE_TOKEN = {}
+local SUPPLY_TOKEN = {}
+local configuredEngineerInspector = nil
+local configuredEngineerCommitter = nil
 
 local scheduled = {}
 local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau"), {
@@ -436,6 +460,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 		},
 		script = {
 			Parent = {
+				Parent = { Domain = { AmmunitionSupplyResolver = SUPPLY_TOKEN } },
 				AutomaticFireResolver = FIRE_TOKEN,
 				ClassService = CLASS_SERVICE_TOKEN,
 				DamageResolver = DAMAGE_TOKEN,
@@ -452,6 +477,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 		require = function(token)
 			if token == COMBAT_CONTRACTS_TOKEN then
 				return combatContracts
+			elseif token == SCARCITY_CONTRACTS_TOKEN then
+				return scarcityContracts
 			elseif token == ENEMY_CONFIG_TOKEN then
 				return enemyConfig
 			elseif token == FIREARM_CONFIG_TOKEN then
@@ -462,6 +489,10 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return fireResolver
 			elseif token == CLASS_SERVICE_TOKEN then
 				return table.freeze({
+					configureEngineerResupplyBoundary = function(inspector, committer)
+						configuredEngineerInspector = inspector
+						configuredEngineerCommitter = committer
+					end,
 					evaluateActionsAt = function() end,
 					interruptBraceForReload = function() end,
 					readBraceCadenceMultiplier = function()
@@ -490,6 +521,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				})
 			elseif token == MAGAZINE_TOKEN then
 				return magazineResolver
+			elseif token == SUPPLY_TOKEN then
+				return supplyResolver
 			end
 			error("unexpected OperativeCombatRuntimeService dependency")
 		end,
@@ -717,8 +750,33 @@ assert(
 assert(service.commitReviveCombatState(operativeA, read.generation, read.combatState))
 assert(service.readReviveCombatState({ UserId = 999 }) == nil, "unknown players expose no combat state")
 
+-- Engineer resupply uses the combat owner, source deduplication, and reserve cap.
+assert(type(configuredEngineerInspector) == "function" and type(configuredEngineerCommitter) == "function")
+local compatible, hasCapacity = configuredEngineerInspector(operativeA)
+assert(compatible and hasCapacity, "known firearm with reserve capacity must be eligible")
+local reserveBeforeSupply = service.readReviveCombatState(operativeA).combatState.weaponState.ammunition.reserveRounds
+local didSupply, grantedRounds = configuredEngineerCommitter(operativeA, "class-resupply:test:1", 12)
+assert(didSupply and grantedRounds == 12, "engineer supply must commit the configured rounds")
+local afterSupply = service.readReviveCombatState(operativeA)
+assert(
+	afterSupply.combatState.weaponState.ammunition.reserveRounds == reserveBeforeSupply + 12,
+	"engineer grant must reach reserve"
+)
+assert(
+	not configuredEngineerCommitter(operativeA, "class-resupply:test:1", 12),
+	"duplicate engineer supply ID must fail"
+)
+afterSupply.combatState.weaponState.ammunition.reserveRounds = firearmConfig.BasicFirearm.MaximumReserveRounds - 1
+assert(service.commitReviveCombatState(operativeA, afterSupply.generation, afterSupply.combatState))
+local didPartial, partialRounds = configuredEngineerCommitter(operativeA, "class-resupply:test:2", 12)
+assert(didPartial and partialRounds == 1, "engineer supply must clamp to remaining reserve capacity")
+local engineerState = service.readEngineerResupplyState(operativeA)
+assert(engineerState.grantedRoundsBySupplyId["class-resupply:test:1"] == 12, "first grant telemetry")
+assert(engineerState.grantedRoundsBySupplyId["class-resupply:test:2"] == 1, "partial grant telemetry")
+
 -- Teardown: stop clears every connection and state.
 service.stop()
+assert(configuredEngineerInspector == nil and configuredEngineerCommitter == nil, "boundary must clear on stop")
 assert(heartbeatSignal:count() == 0 and reloadIntentSignal:count() == 0)
 assert(playerAddedSignal:count() == 0 and playerRemovingSignal:count() == 0)
 assert(lifeSignal:count() == 0)

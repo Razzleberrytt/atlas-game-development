@@ -124,7 +124,7 @@ Canonical specification: `docs/specifications/mvp-specialist-classes.md`.
   - Implement finite field treatment for an alive injured teammate and the approved bounded revive benefit.
   - The medic cannot self-revive, revive Dead operatives, fabricate health, ignore range/line of sight, erase repeated mistakes, or bypass the existing P3 commit/revision boundary.
   - Healing resources are personal, finite, server-owned, preserved or reset only according to the operation lifecycle, and visibly disclosed to the owner.
-- [ ] **P7-0105 — Add the engineer vertical slice.**
+- [x] **P7-0105 — Add the engineer vertical slice.**
   - Implement finite nearby field resupply using a configured operation-issued resource budget.
   - Grants commit through the existing ammunition authority boundary, obey weapon compatibility and reserve caps, and never create unlimited or recyclable ammunition.
   - Objective-equipment repair remains P8 integration; P7 may define the interface but may not scaffold an unused objective runtime.
@@ -141,7 +141,7 @@ Canonical specification: `docs/specifications/mvp-specialist-classes.md`.
 
 `P7-PLAN-001` → `P7-0101` → `P7-0102` → (`P7-0103` + `P7-0104` + `P7-0105`, one PR at a time) → `P7-0106` → `P7-0107`.
 
-`P7-0101` through `P7-0104` are complete. Brace established shared action-state disclosure, and Medic now proves finite resources plus revisioned health/revive integration; `P7-0105` is next. The class vertical slices share contracts and assignment but do not depend on one another's runtime implementation.
+`P7-0101` through `P7-0105` are complete. Brace established shared action-state disclosure, Medic proved finite health/revive integration, and Engineer now proves capped ammunition-owner/telemetry integration; `P7-0106` is next.
 
 ### P7 exit criteria
 
@@ -149,7 +149,7 @@ Players choose and retain a server-owned starting class for the run. Each class 
 
 ### Current P7 status
 
-Planning, shared contracts, server-owned selection/assignment, combat specialist Brace, and Medic treatment/revive assistance are complete (`P7-PLAN-001` through `P7-0104`). P7 is **in progress and unblocked**; `P7-0105` (engineer) is next.
+Planning, shared contracts, server-owned selection/assignment, and all three class vertical slices are complete (`P7-PLAN-001` through `P7-0105`). P7 is **in progress and unblocked**; `P7-0106` (cross-class presentation) is next.
 
 ---
 
@@ -377,6 +377,6 @@ The complete MVP operation is difficult, readable, learnable, secure, bounded, r
 
 ## Immediate next actions
 
-1. Begin **P7-0105** (engineer vertical slice); the shared class owner now includes finite medical resources and revisioned P3 health integration.
+1. Begin **P7-0106** (cross-class presentation); all three server-owned class actions now exist through their authoritative effect owners.
 2. Preserve P6's qualitative-sign-off limitation for measured replay during P12 balance validation.
 4. In parallel where evidence-independent: finish the **VIS-0102** firearm presentation integration per `VISUAL-PRODUCTION-TRACK.md`, and run the outstanding P5 pressure-loop Studio playthrough recorded in the smoke test.
