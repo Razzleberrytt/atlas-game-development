@@ -15,6 +15,7 @@ Specifications define the behavior inside a roadmap task. The active specificati
 
 - [`../specifications/ammunition-scarcity-and-supply.md`](../specifications/ammunition-scarcity-and-supply.md) for the completed prototype scarcity boundary and deferred P12 measurement limitation;
 - [`../specifications/mvp-specialist-classes.md`](../specifications/mvp-specialist-classes.md) for the P7 class contracts, selection boundary, and next action runtime;
+- [`../specifications/authored-objective-chain.md`](../specifications/authored-objective-chain.md) for the P8 authored objective chain — the two required objectives, the optional engineer repair, their landmarks, order, class opportunities, escalation, and relocation pressure that `P8-0101`–`P8-0108` implement;
 - [`../specifications/rpg-integration-plan.md`](../specifications/rpg-integration-plan.md) for the active operation-bound RPG layer, including completed Field Upgrade and elite work, the next relic/reward framework, modifier ownership, phased tasks, and the boundary reserving permanent progression for the later authoritative result/persistence sequence;
 - [`../specifications/visual-asset-production.md`](../specifications/visual-asset-production.md) for visual direction, placeholder replacement, model/rig/skin authority boundaries, asset sourcing, performance budgets, and review gates.
 

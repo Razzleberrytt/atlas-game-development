@@ -149,7 +149,7 @@ Players choose and retain a server-owned starting class for the run. Each class 
 
 ### Current P7 status
 
-P7 is **complete** (`P7-PLAN-001` through `P7-0107`). The next unblocked gameplay task is `P8-PLAN-001`.
+P7 is **complete** (`P7-PLAN-001` through `P7-0107`). `P8-PLAN-001` is complete (see [`../specifications/authored-objective-chain.md`](../specifications/authored-objective-chain.md)); the next unblocked gameplay task is `P8-0101`.
 
 ---
 
@@ -161,9 +161,10 @@ Expand Operation Blackwater Relay from its current single relay interaction into
 
 ### Tasks
 
-- [ ] **P8-PLAN-001 — Specify the authored objective chain.**
+- [x] **P8-PLAN-001 — Specify the authored objective chain.**
   - Choose the exact two-or-three objectives, authored locations, order/branching policy, interaction requirements, class opportunities, failure conditions, escalation effects, defensive-position value, and relocation pressure.
   - Map every objective to existing landmarks and server-owned mission phases.
+  - **Complete** — [`../specifications/authored-objective-chain.md`](../specifications/authored-objective-chain.md) fixes two required objectives (relay restore at `LookoutTower`, decaying signal-booster hold at `MilitaryRoadblock`) and one optional engineer floodlight repair at `ExtractionClearing`, all inside the existing `Infiltration` phase and the single terminal boundary, with the three existing escalation waves re-homed to the chain.
 - [ ] **P8-0101 — Define objective contracts and authored configuration.**
   - Stable objective, step, interaction, progress, failure, and completion IDs.
   - Versioned authored definitions include locations, prerequisites, permitted interactions, timing, pressure triggers, and safe disclosure.
@@ -377,6 +378,6 @@ The complete MVP operation is difficult, readable, learnable, secure, bounded, r
 
 ## Immediate next actions
 
-1. Begin **P8-PLAN-001** (authored objective-chain specification); P7 classes are complete.
+1. Begin **P8-0101** (objective contracts and authored configuration); the authored objective chain is specified in `../specifications/authored-objective-chain.md`.
 2. Preserve P6's qualitative-sign-off limitation for measured replay during P12 balance validation.
 4. In parallel where evidence-independent: finish the **VIS-0102** firearm presentation integration per `VISUAL-PRODUCTION-TRACK.md`, and run the outstanding P5 pressure-loop Studio playthrough recorded in the smoke test.
