@@ -126,7 +126,14 @@ local insertionDeadlineServerTimestamp: number? = nil
 local holdoutDeadlineServerTimestamp: number? = nil
 local requiredObjectiveCompletedAtServerTimestamp: number? = nil
 local requiredObjectiveCompletedByOperativeEntityId: string? = nil
+-- P10-0105: every run is a distinct operation. The authored operation keeps its
+-- configured identity; each start mints a fresh per-run suffix so a replayed
+-- operation is a different result, never a resumed one.
+local operationRunIndex = 0
+local operationId = MissionConfig.OperationId
 local operationStartedAtServerTimestamp = 0
+local terminalListeners: { [number]: (causeId: MissionResultCauseId) -> () } = {}
+local nextTerminalListenerId = 0
 local lastRadio: SafeRadioTransmission? = nil
 local spawnedWaves: { [number]: boolean } = {}
 
@@ -256,7 +263,7 @@ end
 
 local function safeSnapshot(): SafeMissionSnapshot
 	return table.freeze({
-		operationId = MissionConfig.OperationId,
+		operationId = operationId,
 		revision = revision,
 		phaseId = phaseId,
 		objectiveStateId = summaryObjectiveStateId(),
@@ -566,7 +573,7 @@ local function resolveMission(
 	local didCommitResult = false
 	pcall(function()
 		didCommitResult = MatchResultService.commitResult({
-			operationId = MissionConfig.OperationId,
+			operationId = operationId,
 			outcomeId = finalOutcomeId,
 			causeId = finalCauseId,
 			durationSeconds = math.max(0, serverTimestamp - operationStartedAtServerTimestamp),
@@ -597,6 +604,11 @@ local function resolveMission(
 	revision += 1
 	cancelTimer()
 	publish()
+	-- Notify after the commit and the disclosure, so a listener observes a fully
+	-- resolved operation. A failing listener cannot break the terminal boundary.
+	for _, listener in terminalListeners do
+		pcall(listener, finalCauseId)
+	end
 end
 
 local function beginInfiltration(serverTimestamp: number)
@@ -867,6 +879,31 @@ function Service.read(): AuthoritativeMissionRead
 	}) :: AuthoritativeMissionRead
 end
 
+--[[
+	Registers one listener for the single terminal commit. Used by the P10-0105
+	cleanup/replay owner so this service keeps no dependency on it.
+]]
+function Service.subscribeResolved(listener: (causeId: MissionResultCauseId) -> ()): ListenerConnection
+	nextTerminalListenerId += 1
+	local listenerId = nextTerminalListenerId
+	terminalListeners[listenerId] = listener
+	return {
+		Disconnect = function()
+			terminalListeners[listenerId] = nil
+		end,
+	} :: ListenerConnection
+end
+
+-- P10-0105: releases only the objective runtime's state, at its documented place
+-- in the cleanup order. The director tears the rest of itself down last.
+function Service.resetObjectiveRuntime()
+	resetObjectiveState()
+end
+
+function Service.readOperationId(): string
+	return operationId
+end
+
 function Service.readSafeSnapshot(): SafeMissionSnapshot
 	return safeSnapshot()
 end
@@ -941,6 +978,7 @@ local function buildMissionObjects()
 	folder.Name = MISSION_FOLDER_NAME
 	folder.Parent = Workspace
 	missionFolder = folder
+	table.clear(terminalListeners)
 	table.clear(objectiveLampByObjectiveId)
 
 	-- Objective 1 keeps the RelayConsole identity; the others get distinct bodies.
@@ -967,6 +1005,8 @@ function Service.start()
 	end
 	started = true
 	local startTimestamp = now()
+	operationRunIndex += 1
+	operationId = string.format("%s:run-%d", MissionConfig.OperationId, operationRunIndex)
 	operationStartedAtServerTimestamp = startTimestamp
 	revision = 1
 	phaseId = PhaseIds.Insertion
@@ -1056,6 +1096,7 @@ function Service.stop()
 		failureConnection:Disconnect()
 		failureConnection = nil
 	end
+	table.clear(terminalListeners)
 	table.clear(objectiveLampByObjectiveId)
 	extractionBeacon = nil
 	if missionFolder ~= nil then

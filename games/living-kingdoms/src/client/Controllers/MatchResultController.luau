@@ -9,14 +9,16 @@
 	outcome, and refuses a payload that fails the shared validator. A client that
 	arrives after resolution is pushed the same frozen snapshot on join.
 
-	It deliberately shows **no XP, rank, or unlock** — P11 owns those — and no
-	replay control, because replay does not exist until P10-0105. Promising either
-	would be a lie the server cannot honour.
+	It deliberately shows **no XP, rank, or unlock** — P11 owns those. It offers no
+	control either: the P10-0105 lifecycle owner restarts the operation from the
+	server after the configured debrief window, so the screen states what will
+	happen rather than presenting a button.
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local MatchResultConfig = require(ReplicatedStorage.Shared.Config.MatchResultConfig)
 local MatchResultContracts = require(ReplicatedStorage.Shared.Mission.MatchResultContracts)
 
 type SafeMatchResultSnapshot = MatchResultContracts.SafeMatchResultSnapshot
@@ -206,9 +208,13 @@ local function applyResult(snapshot: unknown)
 	end
 	contributions.Text = table.concat(lines, "\n")
 
-	-- Honest next action: replay is not implemented until P10-0105, so this
-	-- promises nothing the server cannot honour.
-	nextAction.Text = "The operation is over. The server is standing down — no rewards are recorded yet."
+	-- The next action is real: P10-0105 restarts the operation deterministically
+	-- after this window. The screen still promises no reward, because none is
+	-- recorded until P11.
+	nextAction.Text = string.format(
+		"A fresh operation begins in %d seconds. No rewards are recorded yet.",
+		math.floor(MatchResultConfig.ReplayDebriefSeconds)
+	)
 	gui.Enabled = true
 end
 
