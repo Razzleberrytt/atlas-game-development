@@ -149,7 +149,7 @@ Players choose and retain a server-owned starting class for the run. Each class 
 
 ### Current P7 status
 
-P7 is **complete** (`P7-PLAN-001` through `P7-0107`). P8 is implemented through `P8-0107` (see [`../specifications/authored-objective-chain.md`](../specifications/authored-objective-chain.md)); `P8-0108` automated coverage is complete and only its live Studio playtest remains. `P9-PLAN-001` is **complete** (see [`../specifications/special-enemy-and-boss-encounter.md`](../specifications/special-enemy-and-boss-encounter.md)); the next unblocked gameplay task is `P9-0101`.
+P7 is **complete** (`P7-PLAN-001` through `P7-0107`). P8 is implemented through `P8-0107` (see [`../specifications/authored-objective-chain.md`](../specifications/authored-objective-chain.md)); `P8-0108` automated coverage is complete and only its live Studio playtest remains. `P9-PLAN-001` and `P9-0101` are **complete** (see [`../specifications/special-enemy-and-boss-encounter.md`](../specifications/special-enemy-and-boss-encounter.md) and the Blight Spitter contracts/config/resolver); the next unblocked gameplay task is `P9-0102`.
 
 ---
 
@@ -212,9 +212,10 @@ Add one special enemy that disrupts a reliable tactic and one readable authored 
 - [x] **P9-PLAN-001 — Specify the special enemy and boss encounter.**
   - Lock the reliable tactic being disrupted, counterplay, telegraphs, boss phases, arena/location, objective connection, class contributions, failure readability, accessibility, spawn policy, and performance budgets.
   - **Complete** — [`../specifications/special-enemy-and-boss-encounter.md`](../specifications/special-enemy-and-boss-encounter.md) fixes the disrupted **turtle-and-autofire** tactic, the **Blight Spitter** special enemy (a telegraphed, interruptible Corrosive Bloom area-denial ability on the densest cluster that forces the squad to spread and relocate), and **The Progenitor** three-phase extraction-holdout boss (Carapace vulnerability windows → Brood summons under scarcity → Collapse enrage whose readability pays off the P8 floodlight repair). Both reuse the existing `EnemyDirectorService` owner and the single terminal boundary; the plan maps every decision to `P9-0101`–`P9-0106` and keeps the HROI horde-role and RPG elite-affix systems untouched.
-- [ ] **P9-0101 — Define special-enemy contracts, configuration, and pure decisions.**
+- [x] **P9-0101 — Define special-enemy contracts, configuration, and pure decisions.**
   - Stable archetype/action/state/rejection IDs and all tuning values.
   - Pure resolver covers target choice, legal ability use, cooldowns, interruption, death inertness, and deterministic tie-breaks.
+  - **Complete** — `src/shared/Combat/SpecialEnemyContracts.luau` fixes the Blight Spitter archetype ID, behavior-state and ability-action vocabulary, rejection reasons, and the fact/decision/lingering-zone shapes (reusing the P3-compatible `AuthoritativeEnemyAttack`). `src/shared/Config/SpecialEnemyConfig.luau` holds the bounded balance values (health, ranged engagement, Corrosive Bloom windup/radius/damage/cooldown, cluster radius, the lingering pool, active-zone cap, and authored rarity) with cross-config invariants against `EnemyConfig`. `src/server/Systems/SpecialEnemyBehaviorResolver.luau` is the pure, deterministic resolver: densest-cluster targeting with lexical tie-breaks, the `Begin → Continue → Commit` charge lifecycle, the commit burst against every Alive operative in radius, death/stand-down inertness, and a companion `resolveLingeringDamage` for the pool ticks. Fixtures `tests/SpecialEnemyContracts.test.luau` and `tests/SpecialEnemyBehaviorResolver.test.luau` cover vocabulary/invariants and the full decision surface. No runtime integration yet (that is `P9-0102`).
 - [ ] **P9-0102 — Integrate the special enemy into the production director.**
   - Reuse the existing enemy identity, health, spawning, damage, cleanup, stand-down, and bounded evaluation owner.
   - No per-enemy scheduler or client authority; special actions use bounded server-owned work.
@@ -379,6 +380,6 @@ The complete MVP operation is difficult, readable, learnable, secure, bounded, r
 
 ## Immediate next actions
 
-1. Schedule the **P8-0108** live Studio playtest of the full objective chain (forced relocation and temporary defense). P8 is implemented and fixture-validated through `P8-0107`. **P9-PLAN-001** is complete (see [`../specifications/special-enemy-and-boss-encounter.md`](../specifications/special-enemy-and-boss-encounter.md)); begin **P9-0101** (Blight Spitter contracts, configuration, and the pure ability resolver).
+1. Schedule the **P8-0108** live Studio playtest of the full objective chain (forced relocation and temporary defense). P8 is implemented and fixture-validated through `P8-0107`. **P9-PLAN-001** and **P9-0101** are complete (see [`../specifications/special-enemy-and-boss-encounter.md`](../specifications/special-enemy-and-boss-encounter.md) and the Blight Spitter contracts/config/resolver); begin **P9-0102** (integrate the Blight Spitter into `EnemyDirectorService`).
 2. Preserve P6's qualitative-sign-off limitation for measured replay during P12 balance validation.
 4. In parallel where evidence-independent: finish the **VIS-0102** firearm presentation integration per `VISUAL-PRODUCTION-TRACK.md`, and run the outstanding P5 pressure-loop Studio playthrough recorded in the smoke test.
