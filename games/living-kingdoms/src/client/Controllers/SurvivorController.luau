@@ -59,6 +59,7 @@ type LifecycleState = {
 	textBoxFocusedConnection: RBXScriptConnection?,
 	renderSteppedConnection: RBXScriptConnection?,
 	pressedMovementKeys: { [Enum.KeyCode]: boolean },
+	analogMovement: Vector2,
 }
 
 local SurvivorController: SurvivorController = {} :: SurvivorController
@@ -82,6 +83,9 @@ local state: LifecycleState = {
 	textBoxFocusedConnection = nil,
 	renderSteppedConnection = nil,
 	pressedMovementKeys = {},
+	-- One external analog channel (the mobile thumbstick), summed with keyboard
+	-- input. Zero on desktop, so the keyboard path is unchanged.
+	analogMovement = Vector2.zero,
 }
 
 local function stopHumanoidMovement()
@@ -93,6 +97,7 @@ end
 
 local function clearMovementInput()
 	table.clear(state.pressedMovementKeys)
+	state.analogMovement = Vector2.zero
 	stopHumanoidMovement()
 end
 
@@ -231,7 +236,7 @@ local function onInputEnded(input: InputObject)
 end
 
 local function getInputDirection(): Vector2
-	local inputDirection = Vector2.zero
+	local inputDirection = state.analogMovement
 	for keyCode, direction in INPUT_BINDINGS do
 		if state.pressedMovementKeys[keyCode] then
 			inputDirection += direction
@@ -406,6 +411,21 @@ function SurvivorController.destroy()
 	state.playerControls = nil
 	state.initialized = false
 	state.destroyed = true
+end
+
+--[[
+	Sets the external analog movement vector (mobile thumbstick). Components are
+	clamped to a unit disc so a touch source can never exceed keyboard input, and
+	the Y axis is forward-positive to match the WASD bindings (W = (0, 1)). Passing
+	a zero vector releases the analog contribution. Server movement authority is
+	unchanged: this only feeds the same client intent the keyboard already does.
+]]
+function SurvivorController.setAnalogMovement(vector: Vector2)
+	if typeof(vector) ~= "Vector2" or vector ~= vector then
+		state.analogMovement = Vector2.zero
+		return
+	end
+	state.analogMovement = if vector.Magnitude > 1 then vector.Unit else vector
 end
 
 return SurvivorController

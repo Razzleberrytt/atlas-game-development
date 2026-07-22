@@ -1,0 +1,123 @@
+--!strict
+
+-- Mobile touch controls. The thumbstick and reload button feed the exact client
+-- intents desktop input already feeds — an analog movement vector and a reload
+-- request — through the single owners of those paths, establish no authority, and
+-- activate only on a touch device.
+
+local fs = require("@lune/fs")
+
+local function assertThat(condition: unknown, message: string)
+	if not condition then
+		error(message, 2)
+	end
+end
+
+local function contains(source: string, token: string): boolean
+	return string.find(source, token, 1, true) ~= nil
+end
+
+local function count(source: string, token: string): number
+	local total = 0
+	local index = 1
+	while true do
+		local found = string.find(source, token, index, true)
+		if found == nil then
+			break
+		end
+		total += 1
+		index = found + 1
+	end
+	return total
+end
+
+local mobile = fs.readFile("games/living-kingdoms/src/client/Controllers/MobileControlsController.luau")
+local survivor = fs.readFile("games/living-kingdoms/src/client/Controllers/SurvivorController.luau")
+local weapon = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponController.luau")
+local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
+
+-- The controls activate only on a touch device without a keyboard, so desktop
+-- input is never altered.
+assertThat(
+	contains(mobile, "UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled"),
+	"mobile controls must activate only on a touch device without a keyboard"
+)
+assertThat(contains(mobile, "if started or not isTouchDevice() then"), "start must no-op on a non-touch device")
+
+-- Movement feeds SurvivorController's single analog channel, never a parallel
+-- movement path.
+assertThat(
+	contains(mobile, "SurvivorController.setAnalogMovement("),
+	"the thumbstick must feed the survivor analog channel"
+)
+assertThat(
+	contains(survivor, "function SurvivorController.setAnalogMovement(vector: Vector2)"),
+	"the survivor controller must own the one analog movement channel"
+)
+assertThat(
+	contains(survivor, "local inputDirection = state.analogMovement"),
+	"analog input must be summed into the same direction the keyboard produces"
+)
+assertThat(
+	contains(survivor, "if vector.Magnitude > 1 then vector.Unit else vector"),
+	"the analog vector must be clamped so touch can never exceed keyboard input"
+)
+assertThat(
+	contains(survivor, "state.analogMovement = Vector2.zero") and contains(survivor, "clearMovementInput"),
+	"clearing movement must also release the analog channel"
+)
+
+-- The stick releases to zero on touch end, so a lifted finger stops the operative.
+assertThat(
+	contains(mobile, "SurvivorController.setAnalogMovement(Vector2.zero)") and contains(mobile, "releaseStick"),
+	"releasing the stick must zero the movement intent"
+)
+assertThat(
+	contains(mobile, "-deltaY / STICK_RADIUS"),
+	"screen-down must map to backward so the stick matches the WASD forward convention"
+)
+
+-- Reload routes through WeaponController's one reload path, so there is a single
+-- cooldown-guarded request surface shared with the keyboard.
+assertThat(contains(mobile, "WeaponController.requestReload()"), "the reload button must call the shared reload path")
+assertThat(
+	contains(weapon, "function WeaponController.requestReload(): boolean"),
+	"the weapon controller must expose one reload path"
+)
+assertThat(
+	count(weapon, "reloadIntentRemote:FireServer") == 1,
+	"reload must fire from exactly one place, shared by keyboard and touch"
+)
+assertThat(
+	contains(weapon, "WeaponController.requestReload()") and contains(weapon, "input.KeyCode ~= Enum.KeyCode.R"),
+	"the keyboard handler must route through the same shared reload path"
+)
+
+-- No new authority: the touch controls send no remote of their own and hold no
+-- gameplay fact. Movement and reload are the only intents, both via their owners.
+for _, forbidden in { "FireServer", "OnServerEvent", "applyAuthoritativeDamage", "Humanoid:Move", "damage", "Health" } do
+	assertThat(not contains(mobile, forbidden), "mobile controls must add no authority: " .. forbidden)
+end
+
+-- One disclosure of each input surface, and teardown releases every connection
+-- and the GUI.
+assertThat(
+	contains(mobile, "for _, connection in connections do") and contains(mobile, "screenGui:Destroy()"),
+	"teardown must release every connection and the GUI"
+)
+
+-- Themed like every other surface, and bootstrapped after the paths it composes.
+assertThat(contains(mobile, "InterfaceTheme"), "mobile controls must draw from the shared theme")
+assertThat(not contains(mobile, "Color3.fromRGB"), "mobile controls must take colours from the theme")
+local survivorStart = string.find(bootstrap, "SurvivorController.start()", 1, true)
+local weaponStart = string.find(bootstrap, "WeaponController.start()", 1, true)
+local mobileStart = string.find(bootstrap, "MobileControlsController.start()", 1, true)
+assertThat(mobileStart ~= nil, "mobile controls must be bootstrapped")
+assertThat(
+	(survivorStart :: number) < (mobileStart :: number) and (weaponStart :: number) < (mobileStart :: number),
+	"mobile controls must start after the movement and reload owners they compose onto"
+)
+
+print(
+	"MobileControlsIntegration: touch-gated thumbstick and reload feed the single movement and reload paths, no new authority"
+)
