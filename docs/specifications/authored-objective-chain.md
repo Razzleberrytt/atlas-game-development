@@ -219,6 +219,53 @@ value, and relocation pressure are fixed and mapped to existing landmarks and
 mission phases — as above — so `P8-0101` can begin without further authoring
 decisions.
 
+## Implementation status (P8-0101 – P8-0108)
+
+The plan above is implemented through `P8-0107`; `P8-0108`'s automated coverage is
+complete and only its live Studio playtest remains.
+
+- **Contracts and configuration (`P8-0101`).** `src/shared/Mission/ObjectiveContracts.luau`
+  owns the objective/interaction/state/rejection vocabulary and validates both
+  authored definitions and safe objective snapshots.
+  `src/shared/Config/ObjectiveChainConfig.luau` is the versioned three-objective
+  chain (locations on the existing landmarks, prerequisites, interaction kinds,
+  timings, active phases, wave triggers, and disclosure text).
+- **Generic runtime (`P8-0102`).** `src/shared/Mission/ObjectiveChainResolver.luau`
+  is one pure, deterministic owner: given the authored chain, current progress,
+  phase, revision, a bounded delta, and the validated workers present on each
+  objective, it advances progress, reports completions in chain order, and says
+  whether the required chain is complete. It rejects an out-of-phase, stale-revision,
+  or invalid-delta sample before committing anything.
+- **Runtime owner and integration (`P8-0103`/`P8-0104`).**
+  `src/server/Systems/MissionDirectorService.luau` is the single stateful owner. It
+  samples operative presence at each authored location on the existing mission
+  heartbeat, applies the resolver, commits completions and their authored side
+  effects (waves, radio, extraction unlock), and publishes the chain in the safe
+  snapshot. The relay, booster, and floodlights all run inside the existing
+  `Infiltration`/`Exfiltration` phases — no parallel state machine, no new phase.
+- **Presence model.** Every objective is server-sampled from presence, so clients
+  declare nothing: there is no client objective remote to replay or spam. The relay
+  is a held channel (no decay), the booster is a decaying charge, and the floodlights
+  are an engineer-assisted repair with a slower manual bypass.
+- **Relocation and temporary defense (`P8-0105`).** The booster is the bounded hold:
+  it decays when abandoned and, on completion, the roadblock swarm (escalation wave
+  two, re-homed to `MilitaryRoadblock`) converges so the position is never
+  indefinitely optimal.
+- **Class opportunities (`P8-0106`).** Required objectives ignore class entirely; only
+  the optional floodlights benefit from an engineer, and the manual bypass keeps them
+  completable without one — an opportunity, never a gate.
+- **Presentation (`P8-0107`).** The safe snapshot carries the objective chain (current
+  objective, progress, decaying state, optional flag, next destination) and
+  `MissionController` surfaces it within the P4 disclosure limits.
+- **Validation (`P8-0108`).** `tests/ObjectiveChainResolver.test.luau`,
+  `tests/P8ObjectiveChainSecurityValidation.test.luau`, and the rewritten
+  `tests/MissionDirectorService.test.luau` and `tests/P5IntegrationValidation.test.luau`
+  cover the contracts, the resolver, the full chain, the security matrix
+  (phase/class/distance/revision/prerequisite/disconnect/wipe/teardown, and the
+  structural absence of a client objective remote), and a scripted 1/2/4-operative
+  full-chain success run. The live Studio playtest of the full chain, forced
+  relocation, and temporary defense remains a manual gate.
+
 ## Deliberate exclusions
 
 No new mission phase, no parallel objective state machine, no per-objective

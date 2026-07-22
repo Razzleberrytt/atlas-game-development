@@ -16,6 +16,19 @@ export type SafeRadioTransmission = {
 	serverTimestamp: number,
 }
 
+-- P8-0107 per-objective disclosure. The server owns every value; clients render
+-- the current objective, its progress, and its next destination and never
+-- report any of it back. Kept structurally in sync with ObjectiveContracts.
+export type SafeObjectiveSnapshot = {
+	objectiveId: string,
+	displayText: string,
+	stateId: string,
+	progressRatio: number,
+	decaying: boolean,
+	isOptional: boolean,
+	destinationDisplayName: string,
+}
+
 export type SafeMissionSnapshot = {
 	operationId: string,
 	revision: number,
@@ -27,6 +40,9 @@ export type SafeMissionSnapshot = {
 	holdoutDeadlineServerTimestamp: number?,
 	outcomeId: MissionOutcomeId?,
 	radio: SafeRadioTransmission?,
+	objectives: { SafeObjectiveSnapshot },
+	activeObjectiveId: string?,
+	floodlightsRestored: boolean,
 }
 
 local MissionContracts = {}
@@ -65,10 +81,19 @@ MissionContracts.RadioLineIds = table.freeze({
 	InsertionComplete = "InsertionComplete",
 	ProceedToObjective = "ProceedToObjective",
 	ObjectiveComplete = "ObjectiveComplete",
+	RelayRestored = "RelayRestored",
+	BoosterCharged = "BoosterCharged",
+	FloodlightsRestored = "FloodlightsRestored",
 	PressureRising = "PressureRising",
 	HoldPosition = "HoldPosition",
 	MissionSuccess = "MissionSuccess",
 	MissionFailure = "MissionFailure",
+})
+
+MissionContracts.ObjectiveChainStateIds = table.freeze({
+	Locked = "Locked",
+	Active = "Active",
+	Completed = "Completed",
 })
 
 local function isFiniteNumber(value: unknown): boolean
@@ -81,6 +106,42 @@ end
 
 local function isNonEmptyString(value: unknown): boolean
 	return type(value) == "string" and value ~= ""
+end
+
+function MissionContracts.validateSafeObjectiveSnapshot(value: unknown): boolean
+	if type(value) ~= "table" then
+		return false
+	end
+	local objective = value :: { [string]: unknown }
+	if not isNonEmptyString(objective.objectiveId) then
+		return false
+	end
+	if not isNonEmptyString(objective.displayText) then
+		return false
+	end
+	if not isNonEmptyString(objective.destinationDisplayName) then
+		return false
+	end
+	if
+		not isNonEmptyString(objective.stateId)
+		or MissionContracts.ObjectiveChainStateIds[objective.stateId :: string] == nil
+	then
+		return false
+	end
+	local progressRatio = objective.progressRatio
+	if type(progressRatio) ~= "number" or progressRatio ~= progressRatio then
+		return false
+	end
+	if (progressRatio :: number) < 0 or (progressRatio :: number) > 1 then
+		return false
+	end
+	if type(objective.decaying) ~= "boolean" then
+		return false
+	end
+	if type(objective.isOptional) ~= "boolean" then
+		return false
+	end
+	return true
 end
 
 function MissionContracts.validateSafeRadioTransmission(value: unknown): boolean
@@ -147,6 +208,20 @@ function MissionContracts.validateSafeMissionSnapshot(value: unknown): boolean
 	end
 	if snapshot.radio ~= nil and not MissionContracts.validateSafeRadioTransmission(snapshot.radio) then
 		return false
+	end
+	if type(snapshot.floodlightsRestored) ~= "boolean" then
+		return false
+	end
+	if snapshot.activeObjectiveId ~= nil and not isNonEmptyString(snapshot.activeObjectiveId) then
+		return false
+	end
+	if type(snapshot.objectives) ~= "table" then
+		return false
+	end
+	for _, objective in snapshot.objectives :: { unknown } do
+		if not MissionContracts.validateSafeObjectiveSnapshot(objective) then
+			return false
+		end
 	end
 	return true
 end

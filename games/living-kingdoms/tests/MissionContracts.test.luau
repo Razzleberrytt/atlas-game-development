@@ -101,6 +101,19 @@ local function snapshot(overrides: { [string]: any }): { [string]: any }
 		holdoutDeadlineServerTimestamp = nil,
 		outcomeId = nil,
 		radio = { lineId = "ProceedToObjective", text = "Proceed.", serverTimestamp = 12.5 },
+		floodlightsRestored = false,
+		activeObjectiveId = "objective.restore-lookout-relay",
+		objectives = {
+			{
+				objectiveId = "objective.restore-lookout-relay",
+				displayText = "Restore the emergency relay",
+				stateId = "Active",
+				progressRatio = 0.25,
+				decaying = false,
+				isOptional = false,
+				destinationDisplayName = "Forest Service Lookout",
+			},
+		},
 	}
 	for key, override in overrides do
 		value[key] = override
@@ -110,6 +123,21 @@ end
 
 assert(contracts.validateSafeMissionSnapshot(snapshot({})))
 assert(contracts.validateSafeMissionSnapshot(snapshot({ radio = nil })))
+-- P8-0107 objective disclosure: the objectives array and floodlights flag.
+assert(not contracts.validateSafeMissionSnapshot(snapshot({ objectives = "nope" })))
+assert(not contracts.validateSafeMissionSnapshot(snapshot({ floodlightsRestored = "yes" })))
+assert(
+	not contracts.validateSafeMissionSnapshot(snapshot({
+		objectives = { { objectiveId = "x", displayText = "y", stateId = "Nope", progressRatio = 0.5, decaying = false, isOptional = false, destinationDisplayName = "z" } },
+	})),
+	"objective entries validate their state id"
+)
+assert(
+	not contracts.validateSafeMissionSnapshot(snapshot({
+		objectives = { { objectiveId = "x", displayText = "y", stateId = "Active", progressRatio = 2, decaying = false, isOptional = false, destinationDisplayName = "z" } },
+	})),
+	"objective progress ratio must be within 0..1"
+)
 assert(
 	contracts.validateSafeMissionSnapshot(
 		snapshot({ phaseId = "Resolved", outcomeId = "Success", objectiveStateId = "Completed" })

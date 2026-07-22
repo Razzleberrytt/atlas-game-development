@@ -24,6 +24,10 @@ end
 local missionContracts =
 	loadSimple("games/living-kingdoms/src/shared/Mission/MissionContracts.luau", "MissionContracts")
 local missionConfig = loadSimple("games/living-kingdoms/src/shared/Config/MissionConfig.luau", "MissionConfig")
+local objectiveConfig =
+	loadSimple("games/living-kingdoms/src/shared/Config/ObjectiveChainConfig.luau", "ObjectiveChainConfig")
+local objectiveResolver =
+	loadSimple("games/living-kingdoms/src/shared/Mission/ObjectiveChainResolver.luau", "ObjectiveChainResolver")
 local enemyContracts = loadSimple("games/living-kingdoms/src/shared/Combat/EnemyContracts.luau", "EnemyContracts")
 local presentationContracts =
 	loadSimple("games/living-kingdoms/src/shared/Visual/EnemyPresentationContracts.luau", "EnemyPresentationContracts")
@@ -38,6 +42,9 @@ local RPG_CONFIG_TOKEN = {}
 local PRESENTATION_TOKEN = {}
 local MISSION_CONFIG_TOKEN = {}
 local MISSION_CONTRACTS_TOKEN = {}
+local OBJECTIVE_CONFIG_TOKEN = {}
+local OBJECTIVE_RESOLVER_TOKEN = {}
+local CLASS_TOKEN = {}
 local RESOLVER_TOKEN = {}
 local ELITE_RESOLVER_TOKEN = {}
 local LIFE_TOKEN = {}
@@ -112,8 +119,12 @@ local sharedReplicatedStorage = {
 			RunRpgConfig = RPG_CONFIG_TOKEN,
 			WorldFoundationConfig = WORLD_TOKEN,
 			MissionConfig = MISSION_CONFIG_TOKEN,
+			ObjectiveChainConfig = OBJECTIVE_CONFIG_TOKEN,
 		},
-		Mission = { MissionContracts = MISSION_CONTRACTS_TOKEN },
+		Mission = {
+			MissionContracts = MISSION_CONTRACTS_TOKEN,
+			ObjectiveChainResolver = OBJECTIVE_RESOLVER_TOKEN,
+		},
 		RPG = { RunRpgContracts = RPG_CONTRACTS_TOKEN },
 		Visual = { EnemyPresentationContracts = PRESENTATION_TOKEN },
 	},
@@ -265,6 +276,18 @@ local lifeService = {
 		return { didCommit = true }
 	end,
 }
+local classService = {
+	readRoster = function()
+		local assignments = {}
+		for _, entry in roster do
+			table.insert(
+				assignments,
+				{ operativeEntityId = entry.operativeEntityId, classId = "class.combat-specialist" }
+			)
+		end
+		return assignments
+	end,
+}
 local failureService = {
 	beginOperation = function()
 		table.clear(admitted)
@@ -395,6 +418,7 @@ local mission = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 		},
 		script = {
 			Parent = {
+				ClassService = CLASS_TOKEN,
 				EnemyDirectorService = ENEMY_DIRECTOR_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 				SquadFailureService = FAILURE_TOKEN,
@@ -405,6 +429,12 @@ local mission = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return missionConfig
 			elseif token == MISSION_CONTRACTS_TOKEN then
 				return missionContracts
+			elseif token == OBJECTIVE_CONFIG_TOKEN then
+				return objectiveConfig
+			elseif token == OBJECTIVE_RESOLVER_TOKEN then
+				return objectiveResolver
+			elseif token == CLASS_TOKEN then
+				return classService
 			elseif token == ENEMY_DIRECTOR_TOKEN then
 				return enemyDirector
 			elseif token == LIFE_TOKEN then
@@ -493,14 +523,21 @@ assert(mission.evaluateTimersAt(now).didChange)
 local pressure = enemyDirector.readPressureState()
 assert(pressure.isPressureActive and pressure.escalationLevel == 0, "infiltration must begin level-0 roaming pressure")
 
--- Objective completion spawns wave 1 as real production enemies.
-alphaRoot.Position = roblox.Vector3.new(
-	missionConfig.Objective.ConsolePosition.x - 2,
-	missionConfig.Objective.ConsolePosition.y,
-	missionConfig.Objective.ConsolePosition.z - 2
-)
-assert(mission.requestObjectiveInteraction(alpha).didChange)
-assert(enemyDirector.readActiveEnemyCount() == #missionConfig.Escalation.Waves[1], "wave 1 must spawn immediately")
+local relayCenter = objectiveConfig.Objectives[1].center
+local boosterCenter = objectiveConfig.Objectives[2].center
+local relayId = objectiveConfig.Objectives[1].objectiveId
+local boosterId = objectiveConfig.Objectives[2].objectiveId
+
+-- Objective 1 (relay): a presence-driven held channel at the Lookout. Restoring
+-- it spawns wave 1 as real production enemies and directs the squad to relocate.
+alphaRoot.Position = roblox.Vector3.new(relayCenter.x, relayCenter.y, relayCenter.z)
+for _ = 1, objectiveConfig.Objectives[1].completionUnits do
+	now += 1
+	mission.evaluateObjectivePresenceAt(now)
+end
+assert(mission.read().objectiveCompletedById[relayId] == true, "relay restored by presence")
+assert(mission.read().phaseId == "Infiltration", "restoring the relay does not unlock extraction")
+assert(enemyDirector.readActiveEnemyCount() == #missionConfig.Escalation.Waves[1], "wave 1 must spawn on relay restore")
 assert(enemyDirector.readPressureState().escalationLevel == 1)
 assert(
 	enemyDirector.readPressureState().recoveryWindowEndServerTimestamp
@@ -508,9 +545,16 @@ assert(
 	"authored waves must open the recovery window"
 )
 
--- Wave 2 on its deadline.
-now += missionConfig.Escalation.SecondWaveDelaySeconds
-assert(mission.evaluateTimersAt(now).didChange)
+-- Objective 2 (booster): relocate to the Military Roadblock and charge the
+-- signal booster. Completing it fires wave 2 (re-homed to the roadblock) and
+-- unlocks extraction.
+alphaRoot.Position = roblox.Vector3.new(boosterCenter.x, boosterCenter.y, boosterCenter.z)
+for _ = 1, 26 do
+	now += 1
+	mission.evaluateObjectivePresenceAt(now)
+end
+assert(mission.read().objectiveCompletedById[boosterId] == true, "booster charged by presence")
+assert(mission.read().phaseId == "Exfiltration", "charging the booster unlocks extraction")
 assert(enemyDirector.readActiveEnemyCount() == #missionConfig.Escalation.Waves[1] + #missionConfig.Escalation.Waves[2])
 assert(enemyDirector.readPressureState().escalationLevel == 2)
 

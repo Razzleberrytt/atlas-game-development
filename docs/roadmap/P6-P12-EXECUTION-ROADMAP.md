@@ -149,7 +149,7 @@ Players choose and retain a server-owned starting class for the run. Each class 
 
 ### Current P7 status
 
-P7 is **complete** (`P7-PLAN-001` through `P7-0107`). `P8-PLAN-001` is complete (see [`../specifications/authored-objective-chain.md`](../specifications/authored-objective-chain.md)); the next unblocked gameplay task is `P8-0101`.
+P7 is **complete** (`P7-PLAN-001` through `P7-0107`). P8 is implemented through `P8-0107` (see [`../specifications/authored-objective-chain.md`](../specifications/authored-objective-chain.md)); `P8-0108` automated coverage is complete and only its live Studio playtest remains. The next unblocked gameplay task is `P9-PLAN-001`.
 
 ---
 
@@ -165,31 +165,31 @@ Expand Operation Blackwater Relay from its current single relay interaction into
   - Choose the exact two-or-three objectives, authored locations, order/branching policy, interaction requirements, class opportunities, failure conditions, escalation effects, defensive-position value, and relocation pressure.
   - Map every objective to existing landmarks and server-owned mission phases.
   - **Complete** — [`../specifications/authored-objective-chain.md`](../specifications/authored-objective-chain.md) fixes two required objectives (relay restore at `LookoutTower`, decaying signal-booster hold at `MilitaryRoadblock`) and one optional engineer floodlight repair at `ExtractionClearing`, all inside the existing `Infiltration` phase and the single terminal boundary, with the three existing escalation waves re-homed to the chain.
-- [ ] **P8-0101 — Define objective contracts and authored configuration.**
-  - Stable objective, step, interaction, progress, failure, and completion IDs.
-  - Versioned authored definitions include locations, prerequisites, permitted interactions, timing, pressure triggers, and safe disclosure.
-  - Pure validation fixtures cover dependency and configuration invariants.
-- [ ] **P8-0102 — Implement the generic server-owned objective runtime.**
-  - One owner validates operation phase, objective revision, operative identity/state/class, range, line of sight, hold/channel continuity, prerequisites, and replay before committing progress.
-  - No client declares progress, completion, failure, timestamp, location, class effect, or escalation.
-- [ ] **P8-0103 — Replace the placeholder relay interaction with objective one.**
-  - Deliver the first complete authored objective through the generic runtime.
-  - Route mission escalation and safe client snapshots through existing mission authority without creating a parallel state machine.
-- [ ] **P8-0104 — Add objective two and the optional third objective.**
-  - Each objective teaches or tests a different cooperation/resource behavior.
-  - Completion order and dependencies are deterministic; failed or skipped prerequisites cannot advance the operation.
-- [ ] **P8-0105 — Add relocation pressure and temporary defensive-position value.**
-  - Objective timing, enemy pressure, approach directions, and resource placement make at least one hold position useful temporarily but not indefinitely optimal.
+- [x] **P8-0101 — Define objective contracts and authored configuration.**
+  - `ObjectiveContracts.luau` fixes the objective/interaction/state/rejection vocabulary and validates definitions and safe objective snapshots.
+  - `ObjectiveChainConfig.luau` is the versioned three-objective chain: locations on existing landmarks, prerequisites, interaction kinds, timings, active phases, wave triggers, and disclosure text.
+  - `ObjectiveChainResolver.test.luau` covers dependency and configuration invariants purely.
+- [x] **P8-0102 — Implement the generic server-owned objective runtime.**
+  - `ObjectiveChainResolver.luau` is one pure owner validating phase, revision, prerequisite, bounded delta, and presence before committing any progress; `MissionDirectorService` samples operative presence and applies it.
+  - No client declares progress, completion, failure, timestamp, location, class effect, or escalation — progression is presence-driven with no client objective remote.
+- [x] **P8-0103 — Replace the placeholder relay interaction with objective one.**
+  - The relay is a presence-driven held channel delivered through the generic runtime.
+  - Escalation and safe client snapshots route through the existing mission authority — no parallel state machine.
+- [x] **P8-0104 — Add objective two and the optional third objective.**
+  - The decaying booster charge (required) and the optional engineer floodlight repair each teach a distinct behavior.
+  - Completion order and dependencies are deterministic; a locked prerequisite cannot advance the operation.
+- [x] **P8-0105 — Add relocation pressure and temporary defensive-position value.**
+  - The booster is a decaying accumulated-presence hold that forces a cross-map relocation from the Lookout to the Roadblock and is bounded by the roadblock swarm on completion.
   - No permanent base building, barricade economy, crafting, or open-ended defense mode.
-- [ ] **P8-0106 — Integrate class opportunities without class gates.**
-  - Combat specialist, medic, and engineer each receive meaningful moments, including the engineer's approved objective-equipment repair path.
-  - Missing a class changes available options or efficiency but never makes a required objective impossible.
-- [ ] **P8-0107 — Add objective and route presentation.**
-  - Squad UI communicates current objective, location guidance allowed by P4, progress, interruption, completion, failure, and next destination.
-  - Presentation does not disclose hidden threats or distant supply truth.
-- [ ] **P8-0108 — Complete objective-chain security and 1/2/4-player validation.**
-  - Validate replay, remote spam, wrong phase, wrong class, impossible distance, stale revision, disconnect mid-channel, squad wipe, and teardown.
-  - Studio runs prove the full objective chain, forced relocation, temporary defense, readable recovery windows, and bounded runtime work.
+- [x] **P8-0106 — Integrate class opportunities without class gates.**
+  - The engineer restores the floodlights fast through the approved objective-equipment repair; any operative can complete the slower manual bypass.
+  - Missing a class changes efficiency but never makes a required objective impossible (required objectives ignore class entirely).
+- [x] **P8-0107 — Add objective and route presentation.**
+  - The safe snapshot carries the objective chain (current objective, progress, decaying state, optional flag, next destination); `MissionController` surfaces it.
+  - Presentation discloses no hidden threats or distant supply truth (P4 limits).
+- [~] **P8-0108 — Complete objective-chain security and 1/2/4-player validation.**
+  - Automated coverage complete: `P8ObjectiveChainSecurityValidation.test.luau` (no-remote authority, wrong phase, stale revision, invalid delta, prerequisite skip, class-gate, distance, bounds, optional-gate) plus `MissionDirectorService.test.luau` (disconnect mid-channel, squad wipe, teardown, and a scripted 1/2/4-operative full-chain success run). Replay/remote spam is structurally impossible (no client objective remote).
+  - **Pending:** the live Studio run proving the full chain, forced relocation, temporary defense, readable recovery windows, and bounded runtime work — a manual gate, like the P6 qualitative sign-off.
 
 ### P8 execution order
 
@@ -378,6 +378,6 @@ The complete MVP operation is difficult, readable, learnable, secure, bounded, r
 
 ## Immediate next actions
 
-1. Begin **P8-0101** (objective contracts and authored configuration); the authored objective chain is specified in `../specifications/authored-objective-chain.md`.
+1. Schedule the **P8-0108** live Studio playtest of the full objective chain (forced relocation and temporary defense), then begin **P9-PLAN-001** (special enemy and boss encounter). P8 is implemented and fixture-validated through `P8-0107`.
 2. Preserve P6's qualitative-sign-off limitation for measured replay during P12 balance validation.
 4. In parallel where evidence-independent: finish the **VIS-0102** firearm presentation integration per `VISUAL-PRODUCTION-TRACK.md`, and run the outstanding P5 pressure-loop Studio playthrough recorded in the smoke test.

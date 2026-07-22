@@ -25,7 +25,7 @@ Snapshot as of 2026-07-21. Task-level detail and acceptance gates for unfinished
 | P5 — Enemy pressure | Complete | Production enemy lifecycle, fair spawns, pursuit, attacks, waves, roaming, production automatic combat. Live Studio pressure-loop playthrough remains the outstanding manual check (smoke test). |
 | P6 — Ammunition scarcity | Complete for prototype | `P6-0101`–`P6-0109` complete. The owner accepted the requested local 1/2/4-player tests with no reported blocker; no unmeasured tuning was applied, and retained raw telemetry remains a P12 validation limitation. |
 | P7 — MVP classes | Complete | `P7-PLAN-001` through `P7-0107` complete; all three class vertical slices, cross-class presentation, adversarial validation, and bounded Studio telemetry are implemented. |
-| P8 — Authored objectives | Not started | Fully planned; begins after P7. |
+| P8 — Authored objectives | In progress | `P8-PLAN-001`–`P8-0107` complete: the authored objective chain (relay → booster → optional floodlights) runs through a generic server-owned runtime with presence-driven progress, relocation pressure, class opportunities, and route presentation. `P8-0108` automated coverage is complete; the live Studio playtest remains a manual gate. |
 | P9 — Special enemy and boss | Not started | Fully planned; begins after P8. |
 | P10 — Match loop and replay | Not started | Fully planned; begins after P9. |
 | P11 — Persistence and unlock | Not started | Fully planned; begins after P10. |
@@ -295,14 +295,14 @@ Players choose and retain a server-owned starting class for the run. Each class 
 Expand Operation Blackwater Relay from its single relay interaction into a complete two-or-three-objective route that forces relocation, creates temporary defensive value, and communicates objective truth clearly.
 
 - [x] **P8-PLAN-001 — Specify the authored objective chain.** Exact objectives, locations, order/branching, interactions, class opportunities, failure conditions, escalation effects, defensive value, and relocation pressure mapped to existing landmarks and mission phases. Specified in [`../specifications/authored-objective-chain.md`](../specifications/authored-objective-chain.md): two required objectives (restore relay at the Forest Service Lookout, charge the signal booster at the Military Roadblock) plus one optional engineer floodlight repair at the Extraction Clearing, all inside the existing `Infiltration` phase and single terminal boundary.
-- [ ] **P8-0101 — Define objective contracts and authored configuration.** Stable objective/step/interaction/progress/failure/completion vocabulary with versioned authored definitions and pure validation fixtures.
-- [ ] **P8-0102 — Implement the generic server-owned objective runtime.** One owner validates phase, revision, identity, state, class, range, line of sight, continuity, prerequisites, and replay before committing progress; clients declare nothing.
-- [ ] **P8-0103 — Replace the placeholder relay interaction with objective one.** First authored objective delivered through the generic runtime and existing mission authority without a parallel state machine.
-- [ ] **P8-0104 — Add objective two and the optional third objective.** Each objective teaches or tests a different cooperation/resource behavior with deterministic order and prerequisites.
-- [ ] **P8-0105 — Add relocation pressure and temporary defensive-position value.** Timing, pressure, approaches, and resources make at least one hold position temporarily useful but never indefinitely optimal; no base building or barricade economy.
-- [ ] **P8-0106 — Integrate class opportunities without class gates.** Meaningful moments for every starting class, including the engineer's approved objective-equipment repair; no required objective becomes impossible without a class.
-- [ ] **P8-0107 — Add objective and route presentation.** Squad UI for current objective, P4-permitted guidance, progress, interruption, completion, failure, and next destination without disclosing hidden threats or distant supply.
-- [ ] **P8-0108 — Complete objective-chain security and 1/2/4-player validation.** Replay/spam/phase/class/distance/revision/disconnect/wipe/teardown coverage plus Studio proof of the full chain, forced relocation, temporary defense, and bounded runtime work.
+- [x] **P8-0101 — Define objective contracts and authored configuration.** `ObjectiveContracts.luau` (vocabulary, definition and safe-snapshot validation) and `ObjectiveChainConfig.luau` (versioned three-objective chain) with pure fixtures (`ObjectiveChainResolver.test.luau`) covering dependency and configuration invariants.
+- [x] **P8-0102 — Implement the generic server-owned objective runtime.** `ObjectiveChainResolver.luau` is one pure owner that validates phase, revision, prerequisite, delta bounds, and presence before committing progress; `MissionDirectorService` samples presence and applies it. Clients declare nothing.
+- [x] **P8-0103 — Replace the placeholder relay interaction with objective one.** The relay is a presence-driven held channel delivered through the generic runtime and the existing mission authority — no parallel state machine.
+- [x] **P8-0104 — Add objective two and the optional third objective.** The decaying booster charge and the optional engineer floodlight repair each teach a distinct behavior with deterministic order and hard prerequisites.
+- [x] **P8-0105 — Add relocation pressure and temporary defensive-position value.** The booster is a decaying hold that forces a cross-map relocation and is bounded by the roadblock swarm on completion; no base building or barricade economy.
+- [x] **P8-0106 — Integrate class opportunities without class gates.** Combat specialist/medic/engineer all contribute; the engineer restores the floodlights fast via the approved objective-equipment repair, with a slower manual bypass so no required objective needs a class.
+- [x] **P8-0107 — Add objective and route presentation.** The safe snapshot carries the objective chain (current objective, progress, decaying state, next destination); `MissionController` exposes it within the P4 disclosure limits.
+- [~] **P8-0108 — Complete objective-chain security and 1/2/4-player validation.** Automated coverage complete (`P8ObjectiveChainSecurityValidation.test.luau` plus the director fixture: phase/class/distance/revision/prerequisite/disconnect/wipe/teardown, and a scripted 1/2/4-operative full-chain run). Replay/spam is structurally impossible (no client objective remote). The live Studio playtest of the full chain, forced relocation, and temporary defense remains a manual gate, like the P6 qualitative sign-off.
 
 ### P8 execution order
 
@@ -312,7 +312,7 @@ Expand Operation Blackwater Relay from its single relay interaction into a compl
 
 The squad completes a readable two-or-three-objective authored route that uses existing landmarks, forces movement, rewards temporary defense and class cooperation, and remains fully server-authoritative from interaction through escalation and failure.
 
-**P8 status:** Not started; begins after P7 completes.
+**P8 status:** In progress. `P8-PLAN-001` through `P8-0107` are complete — the authored objective chain, its generic server-owned runtime, relocation pressure, class opportunities, and route presentation are implemented and fixture-validated. `P8-0108` automated security and 1/2/4-operative coverage is complete; the live Studio playtest of the full chain remains a manual gate.
 
 ## P9 — Special enemy and boss encounter
 

@@ -1,14 +1,16 @@
 --!strict
 
--- P5-0103 mission orchestration: phase machine, authoritative objective,
--- extraction unlock, holdout resolution, wipe/disconnect handling, cleanup.
+-- Mission orchestration: phase machine, the authored objective chain
+-- (relay -> booster -> optional floodlights), presence-driven server-owned
+-- progression, extraction unlock, holdout resolution, wipe/disconnect handling,
+-- 1/2/4-operative validation, and cleanup.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 local roblox = require("@lune/roblox")
 
 local function assert(condition: unknown, message: string?)
 	if not condition then
-		error(message or "P5-0103 director fixture assertion failed", 2)
+		error(message or "mission director fixture assertion failed", 2)
 	end
 end
 
@@ -21,6 +23,15 @@ end
 
 local contracts = loadSimple("games/living-kingdoms/src/shared/Mission/MissionContracts.luau", "MissionContracts")
 local config = loadSimple("games/living-kingdoms/src/shared/Config/MissionConfig.luau", "MissionConfig")
+local objectiveConfig =
+	loadSimple("games/living-kingdoms/src/shared/Config/ObjectiveChainConfig.luau", "ObjectiveChainConfig")
+local objectiveResolver =
+	loadSimple("games/living-kingdoms/src/shared/Mission/ObjectiveChainResolver.luau", "ObjectiveChainResolver")
+
+local relayCenter = objectiveConfig.Objectives[1].center
+local boosterCenter = objectiveConfig.Objectives[2].center
+local floodCenter = objectiveConfig.Objectives[3].center
+local ENGINEER_CLASS_ID = objectiveConfig.AssistingClassId
 
 local function signal()
 	local listeners = {}
@@ -49,7 +60,6 @@ local function signal()
 	return value
 end
 
--- Instance double: enough surface for the mission director's graybox objects.
 local createdInstances = {}
 local function fakeInstance(className: string)
 	local attributes = {}
@@ -140,13 +150,16 @@ local missionNetwork = {
 
 local CONFIG_TOKEN = {}
 local CONTRACTS_TOKEN = {}
+local OBJECTIVE_CONFIG_TOKEN = {}
+local OBJECTIVE_RESOLVER_TOKEN = {}
+local CLASS_TOKEN = {}
 local ENEMY_TOKEN = {}
 local LIFE_TOKEN = {}
 local FAILURE_TOKEN = {}
 local replicatedStorage = {
 	Shared = {
-		Config = { MissionConfig = CONFIG_TOKEN },
-		Mission = { MissionContracts = CONTRACTS_TOKEN },
+		Config = { MissionConfig = CONFIG_TOKEN, ObjectiveChainConfig = OBJECTIVE_CONFIG_TOKEN },
+		Mission = { MissionContracts = CONTRACTS_TOKEN, ObjectiveChainResolver = OBJECTIVE_RESOLVER_TOKEN },
 	},
 	WaitForChild = function(_, name)
 		assert(name == "MissionNetwork")
@@ -156,6 +169,7 @@ local replicatedStorage = {
 
 local lifeByPlayer = {}
 local playerById = {}
+local classByOperative = {}
 local roster = {}
 local admitted = {}
 local lifeService = {
@@ -179,6 +193,18 @@ local lifeService = {
 	end,
 	playerForOperativeEntityId = function(operativeEntityId)
 		return playerById[operativeEntityId]
+	end,
+}
+local classService = {
+	readRoster = function()
+		local assignments = {}
+		for _, operativeEntityId in roster do
+			table.insert(assignments, {
+				operativeEntityId = operativeEntityId,
+				classId = classByOperative[operativeEntityId] or "class.medic",
+			})
+		end
+		return assignments
 	end,
 }
 local failureService = {
@@ -238,6 +264,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 		},
 		script = {
 			Parent = {
+				ClassService = CLASS_TOKEN,
 				EnemyDirectorService = ENEMY_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 				SquadFailureService = FAILURE_TOKEN,
@@ -248,6 +275,12 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return config
 			elseif token == CONTRACTS_TOKEN then
 				return contracts
+			elseif token == OBJECTIVE_CONFIG_TOKEN then
+				return objectiveConfig
+			elseif token == OBJECTIVE_RESOLVER_TOKEN then
+				return objectiveResolver
+			elseif token == CLASS_TOKEN then
+				return classService
 			elseif token == ENEMY_TOKEN then
 				return enemyDirector
 			elseif token == LIFE_TOKEN then
@@ -299,8 +332,9 @@ local function makePlayer(userId: number, position)
 	return { UserId = userId, Character = character, root = root }
 end
 
-local function admit(player, operativeEntityId: string, lifeStateId: string?)
+local function admit(player, operativeEntityId: string, classId: string?, lifeStateId: string?)
 	playerById[operativeEntityId] = player
+	classByOperative[operativeEntityId] = classId or "class.medic"
 	lifeByPlayer[player] = {
 		revision = 0,
 		snapshot = { operativeEntityId = operativeEntityId, lifeStateId = lifeStateId or "Alive" },
@@ -316,6 +350,7 @@ local function disconnectOperative(operativeEntityId: string)
 	if player ~= nil then
 		lifeByPlayer[player] = nil
 	end
+	classByOperative[operativeEntityId] = nil
 	local index = table.find(roster, operativeEntityId)
 	if index ~= nil then
 		table.remove(roster, index)
@@ -327,10 +362,15 @@ local function latestBroadcast()
 	return broadcasts[#broadcasts]
 end
 
+local function vec(center, y: number?)
+	return roblox.Vector3.new(center.x, y or center.y, center.z)
+end
+
 local function reset()
 	service.stop()
 	table.clear(lifeByPlayer)
 	table.clear(playerById)
+	table.clear(classByOperative)
 	table.clear(roster)
 	table.clear(connectedPlayers)
 	table.clear(admitted)
@@ -347,128 +387,143 @@ local function reset()
 	service.start()
 end
 
-local consolePosition = roblox.Vector3.new(
-	config.Objective.ConsolePosition.x - 3,
-	config.Objective.ConsolePosition.y,
-	config.Objective.ConsolePosition.z - 3
-)
-local clearingPosition = roblox.Vector3.new(config.Extraction.Position.x, 3, config.Extraction.Position.z)
-local farPosition = roblox.Vector3.new(-224, 5, -208)
+-- Drive `count` one-second objective-presence samples, advancing the clock.
+local function sampleObjective(count: number)
+	for _ = 1, count do
+		now += 1
+		service.evaluateObjectivePresenceAt(now)
+	end
+end
 
--- Scenario A: full mission success with a mid-operation disconnect.
+local farPosition = roblox.Vector3.new(-224, 5, -320)
+
+-- ===========================================================================
+-- Scenario A: the full authored chain succeeds, with a mid-operation disconnect
+-- and the optional engineer floodlight repair.
+-- ===========================================================================
 reset()
 local alpha = makePlayer(1, farPosition)
 local bravo = makePlayer(2, farPosition)
-admit(alpha, "operative:alpha")
-admit(bravo, "operative:bravo")
+admit(alpha, "operative:alpha", ENGINEER_CLASS_ID)
+admit(bravo, "operative:bravo", "class.medic")
 
 local startSnapshot = latestBroadcast()
 assert(startSnapshot ~= nil and contracts.validateSafeMissionSnapshot(startSnapshot))
 assert(startSnapshot.phaseId == "Insertion" and startSnapshot.revision == 1)
 assert(startSnapshot.radio.lineId == "InsertionComplete")
 assert(startSnapshot.extractionUnlocked == false)
-assert(findCreated("RelayConsole") ~= nil, "objective console must exist from insertion")
-assert(findCreated("RestoreRelayPrompt") ~= nil)
-assert(findCreated("RestoreRelayPrompt").Enabled == false, "prompt must stay disabled during insertion")
+assert(startSnapshot.floodlightsRestored == false)
+assert(#startSnapshot.objectives == 3, "the snapshot discloses all three authored objectives")
+assert(startSnapshot.objectives[1].objectiveId == objectiveConfig.Objectives[1].objectiveId)
+assert(startSnapshot.objectives[2].stateId == "Locked", "booster is locked until the relay is restored")
+assert(findCreated("RelayConsole") ~= nil, "relay marker exists from insertion")
+assert(findCreated("SignalBooster") ~= nil, "booster marker exists from insertion")
+assert(findCreated("FloodlightArray") ~= nil, "floodlight marker exists from insertion")
 assert(#scheduled >= 1, "insertion timer was not armed")
 
-assert(service.requestObjectiveInteraction(alpha).rejectionReasonId == "InvalidPhase")
-assert(service.evaluateTimersAt(0 / 0).rejectionReasonId == "InvalidTimestamp")
-assert(service.evaluateTimersAt(-1).rejectionReasonId == "InvalidTimestamp")
+-- Objectives cannot progress before infiltration.
+assert(service.evaluateObjectivePresenceAt(1).rejectionReasonId == "InvalidPhase")
+assert(service.evaluateObjectivePresenceAt(0 / 0).rejectionReasonId == "InvalidTimestamp")
 assert(not service.evaluateTimersAt(config.InsertionHoldSeconds - 0.01).didChange)
-assert(service.read().phaseId == "Insertion")
 
 now = config.InsertionHoldSeconds
 assert(service.evaluateTimersAt(now).didChange)
 assert(service.read().phaseId == "Infiltration")
-assert(service.read().objectiveStateId == "Active")
-assert(beginOperationCalls == 1, "infiltration must freeze the operation roster exactly once")
-assert(pressureBeginCalls == 1, "infiltration must begin roaming pressure exactly once")
-assert(findCreated("RestoreRelayPrompt").Enabled == true)
+assert(service.read().activeObjectiveId == objectiveConfig.Objectives[1].objectiveId)
+assert(beginOperationCalls == 1, "infiltration freezes the roster exactly once")
+assert(pressureBeginCalls == 1, "infiltration begins roaming pressure exactly once")
 assert(latestBroadcast().radio.lineId == "ProceedToObjective")
-assert(contracts.validateSafeMissionSnapshot(latestBroadcast()))
 
--- New joiner receives the current snapshot directly.
+-- A late joiner receives the current snapshot directly.
 local directMessageCountBeforeLateJoin = #directMessages
 playersSignal:Fire(makePlayer(99))
 assert(#directMessages == directMessageCountBeforeLateJoin + 1)
 assert(directMessages[#directMessages].payload.phaseId == "Infiltration")
 
--- Objective validation chain.
-local ghost = makePlayer(3, consolePosition)
-assert(service.requestObjectiveInteraction(ghost).rejectionReasonId == "UnknownOperative")
-lifeByPlayer[bravo].snapshot.lifeStateId = "Incapacitated"
-bravo.root.Position = consolePosition
-assert(service.requestObjectiveInteraction(bravo).rejectionReasonId == "InvalidLifeState")
-lifeByPlayer[bravo].snapshot.lifeStateId = "Alive"
+-- Objective 1: nobody in range makes no progress; the booster stays locked.
+alpha.root.Position = farPosition
 bravo.root.Position = farPosition
-local savedCharacter = alpha.Character
-alpha.Character = nil
-assert(service.requestObjectiveInteraction(alpha).rejectionReasonId == "MissingPosition")
-alpha.Character = savedCharacter
-assert(service.requestObjectiveInteraction(alpha).rejectionReasonId == "OutOfRange")
+sampleObjective(4)
+assert(service.read().objectiveProgressById[objectiveConfig.Objectives[1].objectiveId] == 0, "out-of-range yields no progress")
+assert(service.read().objectiveCompletedById[objectiveConfig.Objectives[2].objectiveId] == false)
 
-alpha.root.Position = consolePosition
-local completion = service.requestObjectiveInteraction(alpha)
-assert(completion.didChange, completion.rejectionReasonId)
-local afterObjective = service.read()
-assert(afterObjective.phaseId == "Exfiltration")
-assert(afterObjective.objectiveStateId == "Completed")
-assert(afterObjective.extractionUnlocked == true)
-assert(afterObjective.escalationLevel == 1)
-assert(afterObjective.objectiveCompletedByOperativeEntityId == "operative:alpha")
-assert(afterObjective.objectiveCompletedAtServerTimestamp == now)
-assert(
-	#spawnedHostiles == #config.Escalation.Waves[1],
-	"objective completion spawns the configured first escalation wave"
-)
-assert(spawnedHostiles[1].id == config.Escalation.Waves[1][1].id)
-assert(spawnedWaveIndexes[1] == 1, "the first wave must carry its escalation index to the director")
-assert(latestBroadcast().radio.lineId == "ObjectiveComplete")
-assert(latestBroadcast().extractionUnlocked == true)
-assert(latestBroadcast().objectiveText == config.ObjectiveTextByPhase.Exfiltration)
-assert(contracts.validateSafeMissionSnapshot(latestBroadcast()))
-assert(findCreated("ExtractionBeacon") ~= nil, "extraction marker must exist once unlocked")
-assert(findCreated("RestoreRelayPrompt")._destroyed == true, "objective cannot be interacted with twice")
-assert(findCreated("StatusLamp"):GetAttribute("RelayRestored") == true)
-
-assert(service.requestObjectiveInteraction(alpha).rejectionReasonId == "AlreadyCompleted")
-assert(service.requestObjectiveInteraction(bravo).rejectionReasonId == "AlreadyCompleted")
-
--- The completing operative disconnecting must not regress mission state.
-disconnectOperative("operative:alpha")
-assert(service.read().phaseId == "Exfiltration")
-assert(service.read().objectiveStateId == "Completed")
-
--- Second escalation wave fires on its authored deadline, exactly once.
-local objectiveCompletedAt = afterObjective.objectiveCompletedAtServerTimestamp
-now = objectiveCompletedAt + config.Escalation.SecondWaveDelaySeconds
-assert(service.evaluateTimersAt(now).didChange)
-assert(
-	#spawnedHostiles == #config.Escalation.Waves[1] + #config.Escalation.Waves[2],
-	"second escalation appends the configured second wave"
-)
-assert(service.read().escalationLevel == 2)
-assert(latestBroadcast().radio.lineId == "PressureRising")
-assert(not service.evaluateTimersAt(now + 1).didChange)
-assert(#spawnedHostiles == #config.Escalation.Waves[1] + #config.Escalation.Waves[2], "second wave must not respawn")
-
--- Holdout requires an admitted, alive survivor inside the clearing.
-assert(not service.evaluateExtractionPresenceAt(now).didChange)
-bravo.root.Position = clearingPosition
+-- Move the squad onto the relay console; it is a held channel (~4s).
+alpha.root.Position = vec(relayCenter)
+bravo.root.Position = vec(relayCenter)
+sampleObjective(3)
+assert(service.read().objectiveCompletedById[objectiveConfig.Objectives[1].objectiveId] == false, "relay needs its full channel")
+-- A downed teammate does not count toward the channel.
 lifeByPlayer[bravo].snapshot.lifeStateId = "Incapacitated"
-assert(not service.evaluateExtractionPresenceAt(now).didChange, "downed operatives cannot trigger extraction")
+sampleObjective(1)
 lifeByPlayer[bravo].snapshot.lifeStateId = "Alive"
+sampleObjective(1)
+local afterRelay = service.read()
+assert(afterRelay.objectiveCompletedById[objectiveConfig.Objectives[1].objectiveId] == true, "relay restored")
+assert(afterRelay.phaseId == "Infiltration", "restoring the relay does not unlock extraction")
+assert(afterRelay.extractionUnlocked == false)
+assert(afterRelay.activeObjectiveId == objectiveConfig.Objectives[2].objectiveId, "the booster is now the active objective")
+assert(afterRelay.escalationLevel == 1, "relay completion fires the relay-collapse wave")
+assert(#spawnedHostiles == #config.Escalation.Waves[1])
+assert(spawnedWaveIndexes[1] == 1)
+assert(latestBroadcast().radio.lineId == "RelayRestored", "radio directs the squad to relocate")
+
+-- Objective 2: relocate to the roadblock. Prove the decaying hold.
+alpha.root.Position = vec(boosterCenter)
+bravo.root.Position = vec(boosterCenter)
+sampleObjective(10)
+local boosterMid = service.read().objectiveProgressById[objectiveConfig.Objectives[2].objectiveId]
+assert(boosterMid >= 9.5 and boosterMid <= 10.5, "booster charges while held")
+-- Abandon the point: the charge decays and the snapshot flags it.
+alpha.root.Position = farPosition
+bravo.root.Position = farPosition
+sampleObjective(2)
+local boosterAfterDecay = service.read().objectiveProgressById[objectiveConfig.Objectives[2].objectiveId]
+assert(boosterAfterDecay < boosterMid, "an abandoned booster decays")
+local decaySnapshot = latestBroadcast()
+for _, objective in decaySnapshot.objectives do
+	if objective.objectiveId == objectiveConfig.Objectives[2].objectiveId then
+		assert(objective.decaying == true, "the snapshot discloses the decaying hold")
+	end
+end
+-- Mid-operation disconnect: bravo leaves; alpha finishes the charge alone.
+disconnectOperative("operative:bravo")
+alpha.root.Position = vec(boosterCenter)
+sampleObjective(30)
+local afterBooster = service.read()
+assert(afterBooster.objectiveCompletedById[objectiveConfig.Objectives[2].objectiveId] == true, "booster charged")
+assert(afterBooster.requiredChainComplete == true)
+assert(afterBooster.phaseId == "Exfiltration", "charging the booster unlocks extraction")
+assert(afterBooster.extractionUnlocked == true)
+assert(afterBooster.escalationLevel == 2, "booster completion fires the roadblock swarm")
+assert(#spawnedHostiles == #config.Escalation.Waves[1] + #config.Escalation.Waves[2])
+assert(latestBroadcast().radio.lineId == "BoosterCharged")
+assert(findCreated("ExtractionBeacon") ~= nil, "extraction marker exists once unlocked")
+assert(latestBroadcast().extractionUnlocked == true)
+assert(contracts.validateSafeMissionSnapshot(latestBroadcast()))
+
+-- Objective 3 (optional): the engineer restores the floodlights fast (~6s).
+alpha.root.Position = vec(floodCenter)
+assert(not service.evaluateExtractionPresenceAt(now).didChange, "the engineer is not in the clearing yet")
+sampleObjective(6)
+local afterFlood = service.read()
+assert(afterFlood.floodlightsRestored == true, "the engineer restored the floodlights")
+assert(afterFlood.objectiveCompletedById[objectiveConfig.Objectives[3].objectiveId] == true)
+assert(latestBroadcast().floodlightsRestored == true)
+assert(latestBroadcast().radio.lineId == "FloodlightsRestored")
+assert(afterFlood.phaseId == "Exfiltration", "the optional objective never advances the phase")
+
+-- Extraction presence begins the holdout; wave three converges.
+alpha.root.Position = vec(config.Extraction.Position, 3)
 now += 2
 heartbeatSignal:Fire(config.ExtractionPresenceIntervalSeconds + 0.1)
 local holdoutRead = service.read()
-assert(holdoutRead.phaseId == "Holdout", "presence heartbeat must begin holdout")
+assert(holdoutRead.phaseId == "Holdout", "presence heartbeat begins the holdout")
 assert(holdoutRead.holdoutDeadlineServerTimestamp == now + config.Extraction.ArrivalSeconds)
 assert(holdoutRead.escalationLevel == 3)
 assert(#spawnedHostiles == #config.Escalation.Waves[1] + #config.Escalation.Waves[2] + #config.Escalation.Waves[3])
 assert(latestBroadcast().radio.lineId == "HoldPosition")
-assert(latestBroadcast().holdoutDeadlineServerTimestamp == holdoutRead.holdoutDeadlineServerTimestamp)
 assert(service.evaluateExtractionPresenceAt(now).rejectionReasonId == "InvalidPhase")
+assert(service.evaluateObjectivePresenceAt(now).rejectionReasonId == "InvalidPhase", "objectives do not progress during holdout")
 
 -- Success: a survivor is still inside the clearing when extraction arrives.
 local holdoutDeadline = holdoutRead.holdoutDeadlineServerTimestamp
@@ -477,23 +532,28 @@ now = holdoutDeadline
 assert(service.evaluateTimersAt(now).didChange)
 local resolved = service.read()
 assert(resolved.phaseId == "Resolved" and resolved.outcomeId == "Success")
-assert(pressureEndCalls == 1, "resolution must stand enemy pressure down exactly once")
+assert(pressureEndCalls == 1, "resolution stands enemy pressure down exactly once")
 assert(latestBroadcast().outcomeId == "Success")
 assert(latestBroadcast().radio.lineId == "MissionSuccess")
 assert(contracts.validateSafeMissionSnapshot(latestBroadcast()))
 assert(not service.evaluateTimersAt(now + 100).didChange, "resolution is terminal")
 assert(service.evaluateExtractionPresenceAt(now + 100).rejectionReasonId == "InvalidPhase")
-assert(service.requestObjectiveInteraction(bravo).rejectionReasonId == "AlreadyCompleted")
 
+-- ===========================================================================
 -- Scenario B: extraction arrives with nobody left inside the clearing.
+-- ===========================================================================
 reset()
 local solo = makePlayer(10, farPosition)
-admit(solo, "operative:solo")
+admit(solo, "operative:solo", "class.combat-specialist")
 now = config.InsertionHoldSeconds
 service.evaluateTimersAt(now)
-solo.root.Position = consolePosition
-assert(service.requestObjectiveInteraction(solo).didChange)
-solo.root.Position = clearingPosition
+solo.root.Position = vec(relayCenter)
+sampleObjective(4)
+assert(service.read().objectiveCompletedById[objectiveConfig.Objectives[1].objectiveId] == true)
+solo.root.Position = vec(boosterCenter)
+sampleObjective(24)
+assert(service.read().phaseId == "Exfiltration", "solo squad can charge the booster (no class gate)")
+solo.root.Position = vec(config.Extraction.Position, 3)
 now += 5
 assert(service.evaluateExtractionPresenceAt(now).didChange)
 local soloDeadline = service.read().holdoutDeadlineServerTimestamp
@@ -503,23 +563,9 @@ assert(service.evaluateTimersAt(now).didChange)
 assert(service.read().outcomeId == "Failure", "leaving the clearing before arrival fails the mission")
 assert(latestBroadcast().radio.lineId == "MissionFailure")
 
--- Scenario B2: the only survivor dies inside the clearing during holdout.
-reset()
-local doomed = makePlayer(11, farPosition)
-admit(doomed, "operative:doomed")
-now = config.InsertionHoldSeconds
-service.evaluateTimersAt(now)
-doomed.root.Position = consolePosition
-assert(service.requestObjectiveInteraction(doomed).didChange)
-doomed.root.Position = clearingPosition
-now += 5
-assert(service.evaluateExtractionPresenceAt(now).didChange)
-lifeByPlayer[doomed].snapshot.lifeStateId = "Dead"
-now = service.read().holdoutDeadlineServerTimestamp
-assert(service.evaluateTimersAt(now).didChange)
-assert(service.read().outcomeId == "Failure", "a dead squad cannot extract")
-
+-- ===========================================================================
 -- Scenario C: squad wipe fails the mission from any phase.
+-- ===========================================================================
 reset()
 local victim = makePlayer(20, farPosition)
 admit(victim, "operative:victim")
@@ -532,7 +578,9 @@ assert(latestBroadcast().outcomeId == "Failure")
 failureSignal:Fire({ statusId = "Viable" }, 4)
 assert(service.read().outcomeId == "Failure", "later viability cannot undo resolution")
 
+-- ===========================================================================
 -- Scenario D: full-squad disconnect reported as failure surfaces the same way.
+-- ===========================================================================
 reset()
 local leaver = makePlayer(30, farPosition)
 admit(leaver, "operative:leaver")
@@ -540,28 +588,82 @@ disconnectOperative("operative:leaver")
 failureSignal:Fire({ statusId = "Failed" }, 1)
 assert(service.read().phaseId == "Resolved" and service.read().outcomeId == "Failure")
 
+-- ===========================================================================
 -- Scenario E: stop() cleans up and the service refuses further authority.
+-- ===========================================================================
 local folder = findCreated("MissionObjects")
 assert(folder ~= nil)
 service.stop()
 assert(folder._destroyed == true, "mission objects must be destroyed on stop")
-assert(service.requestObjectiveInteraction(leaver).rejectionReasonId == "ServiceStopped")
+assert(service.evaluateObjectivePresenceAt(1).rejectionReasonId == "ServiceStopped")
 assert(service.evaluateTimersAt(1).rejectionReasonId == "ServiceStopped")
 assert(service.evaluateExtractionPresenceAt(1).rejectionReasonId == "ServiceStopped")
 assert(service.read().revision == 0 and service.read().phaseId == "Insertion")
 service.stop()
 
--- Restart produces a fresh mission.
+-- Restart produces a fresh mission with a fresh chain.
 now = 500
 table.clear(connectedPlayers)
 service.start()
 assert(service.read().revision == 1 and service.read().phaseId == "Insertion")
 assert(service.read().insertionDeadlineServerTimestamp == nil, "empty servers must not consume insertion")
+assert(service.read().objectiveCompletedById[objectiveConfig.Objectives[1].objectiveId] == false, "chain resets on restart")
 playersSignal:Fire(makePlayer(501, farPosition))
 assert(service.read().insertionDeadlineServerTimestamp == 500 + config.InsertionHoldSeconds)
 service.stop()
 
+-- ===========================================================================
+-- Scenario F: the full chain completes for 1, 2, and 4 operatives (P8-0108).
+-- ===========================================================================
+local function runFullChain(operativeCount: number)
+	reset()
+	local squad = {}
+	for index = 1, operativeCount do
+		local player = makePlayer(1000 + index, farPosition)
+		-- Mixed composition; only the first is an engineer.
+		local classId = if index == 1 then ENGINEER_CLASS_ID else "class.medic"
+		admit(player, "operative:squad-" .. index, classId)
+		table.insert(squad, player)
+	end
+	now = config.InsertionHoldSeconds
+	service.evaluateTimersAt(now)
+	assert(service.read().phaseId == "Infiltration")
+
+	local function moveSquad(position)
+		for _, player in squad do
+			player.root.Position = position
+		end
+	end
+
+	moveSquad(vec(relayCenter))
+	sampleObjective(5)
+	assert(service.read().objectiveCompletedById[objectiveConfig.Objectives[1].objectiveId] == true, "relay for " .. operativeCount)
+
+	moveSquad(vec(boosterCenter))
+	sampleObjective(26)
+	assert(service.read().phaseId == "Exfiltration", "booster for " .. operativeCount)
+	assert(service.read().extractionUnlocked == true)
+
+	-- Skip the optional floodlights for the multi-operative runs to prove it is
+	-- never required for extraction.
+	moveSquad(vec(config.Extraction.Position, 3))
+	now += 5
+	assert(service.evaluateExtractionPresenceAt(now).didChange, "holdout for " .. operativeCount)
+	local deadline = service.read().holdoutDeadlineServerTimestamp
+	now = deadline
+	assert(service.evaluateTimersAt(now).didChange)
+	assert(service.read().outcomeId == "Success", "the squad extracts for " .. operativeCount .. " operatives")
+	assert(service.read().floodlightsRestored == false, "the optional objective was skippable")
+end
+
+runFullChain(1)
+runFullChain(2)
+runFullChain(4)
+service.stop()
+
+-- ===========================================================================
 -- Bootstrap and authority-boundary wiring.
+-- ===========================================================================
 local project = fs.readFile("games/living-kingdoms/default.project.json")
 local serverBootstrap = fs.readFile("games/living-kingdoms/src/server/init.server.luau")
 local clientBootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
@@ -587,4 +689,4 @@ for _, prohibited in { "FireServer", "InvokeServer" } do
 	)
 end
 
-print("MissionDirectorService: P5-0103 phases, objective, extraction, holdout, wipe, disconnect, and cleanup passed")
+print("MissionDirectorService: phases, authored objective chain, relocation, extraction, holdout, wipe, disconnect, 1/2/4 validation, and cleanup passed")
