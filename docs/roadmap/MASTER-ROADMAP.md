@@ -26,7 +26,7 @@ Snapshot as of 2026-07-21. Task-level detail and acceptance gates for unfinished
 | P6 — Ammunition scarcity | Complete for prototype | `P6-0101`–`P6-0109` complete. The owner accepted the requested local 1/2/4-player tests with no reported blocker; no unmeasured tuning was applied, and retained raw telemetry remains a P12 validation limitation. |
 | P7 — MVP classes | Complete | `P7-PLAN-001` through `P7-0107` complete; all three class vertical slices, cross-class presentation, adversarial validation, and bounded Studio telemetry are implemented. |
 | P8 — Authored objectives | In progress | `P8-PLAN-001`–`P8-0107` complete: the authored objective chain (relay → booster → optional floodlights) runs through a generic server-owned runtime with presence-driven progress, relocation pressure, class opportunities, and route presentation. `P8-0108` automated coverage is complete; the live Studio playtest remains a manual gate. |
-| P9 — Special enemy and boss | Not started | Fully planned; begins after P8. |
+| P9 — Special enemy and boss | Planning complete | `P9-PLAN-001` complete: the Blight Spitter special enemy and The Progenitor boss are specified against the existing enemy director; `P9-0101` implementation begins after P8. |
 | P10 — Match loop and replay | Not started | Fully planned; begins after P9. |
 | P11 — Persistence and unlock | Not started | Fully planned; begins after P10. |
 | P12 — Release candidate | Not started | Fully planned; closes the MVP. |
@@ -318,7 +318,7 @@ The squad completes a readable two-or-three-objective authored route that uses e
 
 Add one special enemy that disrupts a reliable tactic and one readable boss climax that demands coordination and tests lessons taught earlier in the operation.
 
-- [ ] **P9-PLAN-001 — Specify the special enemy and boss encounter.** The disrupted tactic, counterplay, telegraphs, phases, arena, objective connection, class contributions, failure readability, accessibility, spawn policy, and performance budgets.
+- [x] **P9-PLAN-001 — Specify the special enemy and boss encounter.** The disrupted tactic, counterplay, telegraphs, phases, arena, objective connection, class contributions, failure readability, accessibility, spawn policy, and performance budgets. Specified in [`../specifications/special-enemy-and-boss-encounter.md`](../specifications/special-enemy-and-boss-encounter.md): the **Blight Spitter** (a telegraphed, interruptible Corrosive Bloom area-denial ability that disrupts turtle-and-autofire clustering) and **The Progenitor** three-phase extraction-holdout boss (Carapace → Brood → Collapse), both reusing the existing `EnemyDirectorService` owner and single terminal boundary.
 - [ ] **P9-0101 — Define special-enemy contracts, configuration, and pure decisions.** Stable archetype/action/state/rejection vocabulary, tuning values, and a pure resolver for targeting, legal ability use, cooldowns, interruption, death inertness, and tie-breaks.
 - [ ] **P9-0102 — Integrate the special enemy into the production director.** Reuse the existing enemy identity/health/spawn/damage/cleanup/stand-down owner and bounded evaluation; no per-enemy scheduler or client authority.
 - [ ] **P9-0103 — Define boss contracts, configuration, and phase resolver.** Stable phase/transition/vulnerability/attack/summon/objective/outcome vocabulary with pure deterministic phase transitions from server-owned facts.
@@ -334,7 +334,7 @@ Add one special enemy that disrupts a reliable tactic and one readable boss clim
 
 The special enemy clearly disrupts one dominant tactic with learnable counterplay. The boss provides a readable coordinated climax, accepts contributions from all starting classes, respects prior resource decisions, and runs within bounded server performance.
 
-**P9 status:** Not started; begins after P8 completes.
+**P9 status:** Planning complete. `P9-PLAN-001` is done — the special enemy (Blight Spitter) and boss (The Progenitor) encounter is fully specified in [`../specifications/special-enemy-and-boss-encounter.md`](../specifications/special-enemy-and-boss-encounter.md), reusing the existing `EnemyDirectorService` owner and the single terminal boundary. `P9-0101` implementation begins after P8 exits.
 
 ## P10 — Match completion, failure, and extraction
 
