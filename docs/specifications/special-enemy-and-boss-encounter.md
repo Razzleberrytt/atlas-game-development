@@ -433,8 +433,29 @@ design decisions.
   `tests/SpecialEncounterTelegraphSourceAudit.test.luau` bounded-and-cosmetic
   audit. The Studio mix/readability review (audio, contrast, overlapping
   telegraphs on bright/dark terrain) remains a manual gate.
-- **`P9-0106`** remains not started; it adds the encounter security, performance,
-  and class-composition validation that closes P9.
+- **Encounter security, performance, and class-composition validation
+  (`P9-0106`) — complete (automated).** Runtime adversarial coverage lives in the
+  per-resolver and director fixtures: `SpecialEnemyBehaviorResolver.test` and
+  `BossPhaseResolver.test` reject forged/stale phase/health/charge/slam facts
+  deterministically, and `EnemyDirectorService.test` proves the Slam AoE and Brood
+  surge commit through the P3 boundary, the boss's vulnerability gate rejects fire
+  outside exposure windows, stale health revisions are rejected, and
+  defeat/stand-down/teardown clean up the boss, Spitters, and lingering pools.
+  `tests/P9EncounterSecurityValidation.test.luau` consolidates the milestone
+  guarantees: boss/Spitter decisions come only from the pure resolvers and damage
+  only through the P3/revisioned-health boundaries; the encounter adds no remote
+  surface, no per-boss scheduler, no raycasts, and no randomness, and rides the
+  single existing heartbeat; the spore shroud is server-owned; the boss is
+  server-placed at the authored arena; the client telegraph is purely cosmetic;
+  and the composed worst case (boss + Spitters + a Brood surge) fits the population
+  budget for 1/2/4 operatives. The qualitative Studio session — attributable
+  counterplay, no unexplained resource wall, 1/2/4 horde+special+boss frame/server
+  profiling, and telegraph mix/readability on bright/dark terrain — remains a
+  manual gate, like the other milestone sign-offs.
+
+**P9 is complete** (`P9-PLAN-001` through `P9-0106`). The special enemy and boss
+are live, server-authoritative, bounded, readable, and validated; the
+boss-defeat → terminal-result convergence is deferred to `P10-0102`.
 
 ## Deliberate exclusions
 

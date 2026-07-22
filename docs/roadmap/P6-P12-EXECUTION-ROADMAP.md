@@ -149,7 +149,7 @@ Players choose and retain a server-owned starting class for the run. Each class 
 
 ### Current P7 status
 
-P7 is **complete** (`P7-PLAN-001` through `P7-0107`). P8 is implemented through `P8-0107` (see [`../specifications/authored-objective-chain.md`](../specifications/authored-objective-chain.md)); `P8-0108` automated coverage is complete and only its live Studio playtest remains. `P9-PLAN-001` through `P9-0105` are **complete** (see [`../specifications/special-enemy-and-boss-encounter.md`](../specifications/special-enemy-and-boss-encounter.md); the Blight Spitter and The Progenitor boss are live `EnemyDirectorService` archetypes with readable client telegraphs); the next unblocked gameplay task is `P9-0106` (encounter security, performance, and class-composition validation), which closes P9.
+P7 is **complete** (`P7-PLAN-001` through `P7-0107`). P8 is implemented through `P8-0107` (see [`../specifications/authored-objective-chain.md`](../specifications/authored-objective-chain.md)); `P8-0108` automated coverage is complete and only its live Studio playtest remains. `P9` is **complete** (`P9-PLAN-001` through `P9-0106`; see [`../specifications/special-enemy-and-boss-encounter.md`](../specifications/special-enemy-and-boss-encounter.md)); the next unblocked milestone is `P10`, beginning with `P10-PLAN-001`.
 
 ---
 
@@ -232,10 +232,11 @@ Add one special enemy that disrupts a reliable tactic and one readable authored 
   - Every dangerous boss/special action has enough position, timing, shape, text, animation, or audio redundancy to support learning.
   - Presentation cannot reveal an undisclosed enemy early or legalize a client-predicted hit.
   - **Complete** — `src/shared/Config/SpecialEncounterTelegraphConfig.luau` maps the Blight Spitter Corrosive Bloom and the Progenitor Slam to the authoritative disclosure attributes and defines the boss phase/armored-vs-exposed status vocabulary. The client-only `src/client/Controllers/SpecialEncounterTelegraphController.luau` (one `RenderStepped`, one `ChildAdded`/`ChildRemoved` pair on `EnemyEntities`, a fixed disc pool, one boss status label) renders each dangerous action with redundant cues — world-space ground disc at the **server-disclosed** landing centre, a numeric countdown, text, shape, and animation (never color alone) — plus the bloom's lingering toxic-ground footprint and an always-visible boss `CARAPACE/BROOD/COLLAPSE` + `EXPOSED/ARMORED` indicator so players learn when their fire lands. Telegraphs appear only after the server commits to the action (no early disclosure), and the controller reads no health, sends no remote, predicts no consequence, and follows only the replicated root (no client-legalized hits). Fixtures: `tests/SpecialEncounterTelegraphConfig.test.luau` and the `tests/SpecialEncounterTelegraphSourceAudit.test.luau` bounded-and-cosmetic audit. The Studio mix/readability review (audio, contrast, overlapping telegraphs) remains a manual gate, like other presentation slices.
-- [ ] **P9-0106 — Complete encounter security, performance, and class-composition validation.**
+- [x] **P9-0106 — Complete encounter security, performance, and class-composition validation.**
   - Test forged phase/health/target/action facts, stale transitions, disconnects, wipe, stand-down, replay, and cleanup.
   - Profile representative horde plus special plus boss load for 1/2/4 operatives.
   - Studio runs verify counterplay is attributable and no unexplained ammo/recovery requirement invalidates prior choices.
+  - **Complete (automated).** Runtime adversarial coverage lives in the per-resolver and director fixtures: `SpecialEnemyBehaviorResolver.test`/`BossPhaseResolver.test` reject forged/stale phase/health/charge/slam facts deterministically, and `EnemyDirectorService.test` proves the Slam AoE and Brood surge commit through the P3 boundary, the boss's vulnerability gate rejects fire outside exposure windows, stale health revisions are rejected, and defeat/stand-down/teardown clean up the boss, Spitters, and lingering pools. `tests/P9EncounterSecurityValidation.test.luau` consolidates the milestone guarantees: boss/Spitter decisions come only from the pure resolvers and damage only through the P3/revisioned-health boundaries; the encounter adds **no remote surface**, no per-boss scheduler, no raycasts, and no randomness, and rides the single existing heartbeat; the spore shroud is server-owned (combat reads it, the client cannot expand its own visibility); the boss is server-placed at the authored arena; the client telegraph is purely cosmetic; and the composed worst case (boss + Spitters + a Brood surge) fits the population budget for 1/2/4 operatives. The qualitative Studio session (attributable counterplay, no unexplained resource wall, 1/2/4 horde+special+boss frame/server profiling, telegraph mix/readability) remains a manual gate, like the other milestone sign-offs.
 
 ### P9 execution order
 
@@ -244,6 +245,10 @@ Add one special enemy that disrupts a reliable tactic and one readable authored 
 ### P9 exit criteria
 
 The special enemy clearly disrupts one dominant tactic with learnable counterplay. The boss provides a readable coordinated climax, accepts contributions from all starting classes, respects prior resource decisions, and runs within bounded server performance.
+
+### Current P9 status
+
+P9 is **complete** (`P9-PLAN-001` through `P9-0106`). The Blight Spitter and The Progenitor boss are live `EnemyDirectorService` archetypes with readable client telegraphs, the encounter is server-authoritative and bounded, and validation is automated. The boss-defeat → terminal-result convergence is intentionally deferred to `P10-0102` (which owns "boss outcome"), and the qualitative 1/2/4 Studio session remains a manual gate. The next unblocked milestone is **P10**, beginning with `P10-PLAN-001`.
 
 ---
 
@@ -384,6 +389,6 @@ The complete MVP operation is difficult, readable, learnable, secure, bounded, r
 
 ## Immediate next actions
 
-1. Schedule the **P8-0108** live Studio playtest of the full objective chain (forced relocation and temporary defense). P8 is implemented and fixture-validated through `P8-0107`. **P9-PLAN-001** through **P9-0105** are complete (see [`../specifications/special-enemy-and-boss-encounter.md`](../specifications/special-enemy-and-boss-encounter.md); the Blight Spitter and The Progenitor boss are live `EnemyDirectorService` archetypes with readable client telegraphs); begin **P9-0106** (encounter security, performance, and class-composition validation), the final P9 task.
+1. Schedule the **P8-0108** live Studio playtest of the full objective chain (forced relocation and temporary defense). P8 is implemented and fixture-validated through `P8-0107`. **P9 is complete** (`P9-PLAN-001` through `P9-0106`; see [`../specifications/special-enemy-and-boss-encounter.md`](../specifications/special-enemy-and-boss-encounter.md)) with the boss-defeat terminal wiring deferred to `P10-0102` and a qualitative Studio gate outstanding; begin **P10-PLAN-001** (terminal operation flow and result semantics).
 2. Preserve P6's qualitative-sign-off limitation for measured replay during P12 balance validation.
 4. In parallel where evidence-independent: finish the **VIS-0102** firearm presentation integration per `VISUAL-PRODUCTION-TRACK.md`, and run the outstanding P5 pressure-loop Studio playthrough recorded in the smoke test.
