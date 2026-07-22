@@ -467,7 +467,7 @@ local function buildSightedCandidates(
 	local sighted: { SightedCandidate } = {}
 	for _, fact in enemyFacts do
 		local distance = horizontalDistance(fact.worldPosition, operativePosition)
-		if distance <= EnemyConfig.Combat.GameplayVisibilityRadiusStuds then
+		if distance <= EnemyDirectorService.readGameplayVisibilityRadiusStuds() then
 			table.insert(sighted, { fact = fact, distanceStuds = distance, hasLineOfSight = false })
 		end
 	end
@@ -553,7 +553,7 @@ local function buildPatternTargetFacts(playerState: PlayerCombatState): { Weapon
 			worldPosition = sightedEntry.fact.worldPosition,
 			isAlive = sightedEntry.fact.isAlive,
 			isTargetable = true,
-			isVisible = sightedEntry.distanceStuds <= EnemyConfig.Combat.GameplayVisibilityRadiusStuds,
+			isVisible = sightedEntry.distanceStuds <= EnemyDirectorService.readGameplayVisibilityRadiusStuds(),
 			hasLineOfSight = sightedEntry.hasLineOfSight,
 		})
 	end
@@ -738,7 +738,7 @@ local function resolveAcceptedShot(
 		isAlive = healthRead.isAlive,
 		isTargetable = true,
 		relationshipId = CombatContracts.TeamRelationshipIds.Hostile,
-		isVisible = sightedEntry.distanceStuds <= EnemyConfig.Combat.GameplayVisibilityRadiusStuds,
+		isVisible = sightedEntry.distanceStuds <= EnemyDirectorService.readGameplayVisibilityRadiusStuds(),
 	}
 	local hitResolution = FirearmHitResolver.resolve(fireResult, {
 		operativeEntityId = playerState.operativeState.entityId,

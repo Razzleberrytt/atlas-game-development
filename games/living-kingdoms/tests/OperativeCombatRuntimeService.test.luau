@@ -200,7 +200,11 @@ end
 local enemies = {}
 local commitCalls = {}
 local enemyFactReadCount = 0
+local gameplayVisibilityRadiusStuds = enemyConfig.Combat.GameplayVisibilityRadiusStuds
 local enemyDirector = {
+	readGameplayVisibilityRadiusStuds = function()
+		return gameplayVisibilityRadiusStuds
+	end,
 	readEnemyCombatFacts = function()
 		enemyFactReadCount += 1
 		local facts = {}

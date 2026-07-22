@@ -46,6 +46,18 @@ local specialContracts = luau.load(fs.readFile("games/living-kingdoms/src/shared
 	injectGlobals = true,
 })()
 
+local bossContracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Combat/BossContracts.luau"), {
+	debugName = "BossContracts",
+	environment = {
+		script = { Parent = { EnemyContracts = ENEMY_CONTRACTS_TOKEN } },
+		require = function(token: unknown)
+			assert(token == ENEMY_CONTRACTS_TOKEN, "unexpected BossContracts dependency")
+			return enemyContracts
+		end,
+	},
+	injectGlobals = true,
+})()
+
 local ENEMY_CONTRACTS_TOKEN = {}
 local RPG_CONTRACTS_TOKEN = {}
 local WORLD_TOKEN = {}
@@ -61,6 +73,9 @@ local RESOLVER_TOKEN = {}
 local SPECIAL_CONTRACTS_TOKEN = {}
 local SPECIAL_CONFIG_TOKEN = {}
 local SPECIAL_RESOLVER_TOKEN = {}
+local BOSS_CONTRACTS_TOKEN = {}
+local BOSS_CONFIG_TOKEN = {}
+local BOSS_RESOLVER_TOKEN = {}
 local ELITE_RESOLVER_TOKEN = {}
 local LIFE_TOKEN = {}
 local FAILURE_TOKEN = {}
@@ -148,15 +163,39 @@ local specialConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Co
 	injectGlobals = true,
 })()
 
+local bossConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/BossConfig.luau"), {
+	debugName = "BossConfig",
+	environment = {
+		script = {
+			Parent = {
+				EnemyConfig = ENEMY_CONFIG_TOKEN,
+				Parent = { Combat = { BossContracts = BOSS_CONTRACTS_TOKEN } },
+			},
+		},
+		require = function(token: unknown)
+			if token == ENEMY_CONFIG_TOKEN then
+				return enemyConfig
+			end
+			if token == BOSS_CONTRACTS_TOKEN then
+				return bossContracts
+			end
+			error("unexpected BossConfig dependency")
+		end,
+	},
+	injectGlobals = true,
+})()
+
 local sharedReplicatedStorage = {
 	Shared = {
 		Combat = {
 			EnemyContracts = ENEMY_CONTRACTS_TOKEN,
 			SpecialEnemyContracts = SPECIAL_CONTRACTS_TOKEN,
+			BossContracts = BOSS_CONTRACTS_TOKEN,
 		},
 		Config = {
 			EnemyConfig = ENEMY_CONFIG_TOKEN,
 			SpecialEnemyConfig = SPECIAL_CONFIG_TOKEN,
+			BossConfig = BOSS_CONFIG_TOKEN,
 			RunRpgConfig = RPG_CONFIG_TOKEN,
 			WorldFoundationConfig = WORLD_TOKEN,
 			MissionConfig = MISSION_CONFIG_TOKEN,
@@ -215,6 +254,28 @@ local specialResolver =
 		},
 		injectGlobals = true,
 	})()
+
+local bossResolver = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/BossPhaseResolver.luau"), {
+	debugName = "BossPhaseResolver",
+	environment = {
+		game = {
+			GetService = function(_self: unknown, serviceName: string)
+				assert(serviceName == "ReplicatedStorage", "unexpected service request")
+				return sharedReplicatedStorage
+			end,
+		},
+		require = function(token: unknown)
+			if token == BOSS_CONFIG_TOKEN then
+				return bossConfig
+			end
+			if token == BOSS_CONTRACTS_TOKEN then
+				return bossContracts
+			end
+			error("unexpected BossPhaseResolver dependency")
+		end,
+	},
+	injectGlobals = true,
+})()
 
 local function signal()
 	local listeners = {}
@@ -385,6 +446,7 @@ local enemyDirector = luau.load(fs.readFile("games/living-kingdoms/src/server/Sy
 			Parent = {
 				EnemyBehaviorResolver = RESOLVER_TOKEN,
 				SpecialEnemyBehaviorResolver = SPECIAL_RESOLVER_TOKEN,
+				BossPhaseResolver = BOSS_RESOLVER_TOKEN,
 				EliteAffixResolver = ELITE_RESOLVER_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 			},
@@ -394,12 +456,16 @@ local enemyDirector = luau.load(fs.readFile("games/living-kingdoms/src/server/Sy
 				return enemyConfig
 			elseif token == SPECIAL_CONFIG_TOKEN then
 				return specialConfig
+			elseif token == BOSS_CONFIG_TOKEN then
+				return bossConfig
 			elseif token == RPG_CONFIG_TOKEN then
 				return rpgConfig
 			elseif token == ENEMY_CONTRACTS_TOKEN then
 				return enemyContracts
 			elseif token == SPECIAL_CONTRACTS_TOKEN then
 				return specialContracts
+			elseif token == BOSS_CONTRACTS_TOKEN then
+				return bossContracts
 			elseif token == RPG_CONTRACTS_TOKEN then
 				return rpgContracts
 			elseif token == PRESENTATION_TOKEN then
@@ -410,6 +476,8 @@ local enemyDirector = luau.load(fs.readFile("games/living-kingdoms/src/server/Sy
 				return resolver
 			elseif token == SPECIAL_RESOLVER_TOKEN then
 				return specialResolver
+			elseif token == BOSS_RESOLVER_TOKEN then
+				return bossResolver
 			elseif token == ELITE_RESOLVER_TOKEN then
 				return eliteResolver
 			elseif token == LIFE_TOKEN then
@@ -636,12 +704,18 @@ bravoRoot.Position = roblox.Vector3.new(-224, 2, -200)
 now += 5
 assert(mission.evaluateExtractionPresenceAt(now).didChange)
 assert(mission.read().phaseId == "Holdout")
+-- Wave three plus the one authored Progenitor boss that anchors the holdout.
 local expectedTotal = #missionConfig.Escalation.Waves[1]
 	+ #missionConfig.Escalation.Waves[2]
 	+ #missionConfig.Escalation.Waves[3]
+	+ 1
 assert(
 	enemyDirector.readActiveEnemyCount() == expectedTotal,
-	"the holdout wave must spawn immediately from its fair authored positions"
+	"the holdout wave and the boss must spawn immediately from their fair authored positions"
+)
+assert(
+	enemyDirector.readBossState().exists and enemyDirector.readBossState().phaseId == "Carapace",
+	"the boss anchors the holdout"
 )
 assert(enemyDirector.readPressureState().pendingSpawnCount == 0, "no holdout spawn may defer against a centered squad")
 assert(enemyDirector.readPressureState().escalationLevel == 3)

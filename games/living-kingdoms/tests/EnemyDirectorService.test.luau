@@ -39,6 +39,9 @@ local LIFE_TOKEN = {}
 local SPECIAL_CONTRACTS_TOKEN = {}
 local SPECIAL_CONFIG_TOKEN = {}
 local SPECIAL_RESOLVER_TOKEN = {}
+local BOSS_CONTRACTS_TOKEN = {}
+local BOSS_CONFIG_TOKEN = {}
+local BOSS_RESOLVER_TOKEN = {}
 
 local rpgContracts = loadSimple("games/living-kingdoms/src/shared/RPG/RunRpgContracts.luau", "RunRpgContracts")
 local rpgConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RunRpgConfig.luau"), {
@@ -109,6 +112,40 @@ local specialConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Co
 	injectGlobals = true,
 })()
 
+local bossContracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Combat/BossContracts.luau"), {
+	debugName = "BossContracts",
+	environment = {
+		script = { Parent = { EnemyContracts = CONTRACTS_TOKEN } },
+		require = function(token: unknown)
+			assert(token == CONTRACTS_TOKEN, "unexpected BossContracts dependency")
+			return contracts
+		end,
+	},
+	injectGlobals = true,
+})()
+
+local bossConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/BossConfig.luau"), {
+	debugName = "BossConfig",
+	environment = {
+		script = {
+			Parent = {
+				EnemyConfig = CONFIG_TOKEN,
+				Parent = { Combat = { BossContracts = BOSS_CONTRACTS_TOKEN } },
+			},
+		},
+		require = function(token: unknown)
+			if token == CONFIG_TOKEN then
+				return config
+			end
+			if token == BOSS_CONTRACTS_TOKEN then
+				return bossContracts
+			end
+			error("unexpected BossConfig dependency")
+		end,
+	},
+	injectGlobals = true,
+})()
+
 local progressionAttributes = { RunIncomingDamageMultiplier = 1 }
 local progressionNetwork = {
 	GetAttribute = function(_self: unknown, attributeName: string)
@@ -120,10 +157,12 @@ local sharedReplicatedStorage = {
 		Combat = {
 			EnemyContracts = CONTRACTS_TOKEN,
 			SpecialEnemyContracts = SPECIAL_CONTRACTS_TOKEN,
+			BossContracts = BOSS_CONTRACTS_TOKEN,
 		},
 		Config = {
 			EnemyConfig = CONFIG_TOKEN,
 			SpecialEnemyConfig = SPECIAL_CONFIG_TOKEN,
+			BossConfig = BOSS_CONFIG_TOKEN,
 			RunRpgConfig = RPG_CONFIG_TOKEN,
 			WorldFoundationConfig = WORLD_TOKEN,
 		},
@@ -179,6 +218,28 @@ local specialResolver =
 		},
 		injectGlobals = true,
 	})()
+
+local bossResolver = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/BossPhaseResolver.luau"), {
+	debugName = "BossPhaseResolver",
+	environment = {
+		game = {
+			GetService = function(_self: unknown, serviceName: string)
+				assert(serviceName == "ReplicatedStorage", "unexpected service request")
+				return sharedReplicatedStorage
+			end,
+		},
+		require = function(token: unknown)
+			if token == BOSS_CONFIG_TOKEN then
+				return bossConfig
+			end
+			if token == BOSS_CONTRACTS_TOKEN then
+				return bossContracts
+			end
+			error("unexpected BossPhaseResolver dependency")
+		end,
+	},
+	injectGlobals = true,
+})()
 
 local eliteResolver = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/EliteAffixResolver.luau"), {
 	debugName = "EliteAffixResolver",
@@ -382,6 +443,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 			Parent = {
 				EnemyBehaviorResolver = RESOLVER_TOKEN,
 				SpecialEnemyBehaviorResolver = SPECIAL_RESOLVER_TOKEN,
+				BossPhaseResolver = BOSS_RESOLVER_TOKEN,
 				EliteAffixResolver = ELITE_RESOLVER_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 			},
@@ -391,12 +453,16 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return config
 			elseif token == SPECIAL_CONFIG_TOKEN then
 				return specialConfig
+			elseif token == BOSS_CONFIG_TOKEN then
+				return bossConfig
 			elseif token == RPG_CONFIG_TOKEN then
 				return rpgConfig
 			elseif token == CONTRACTS_TOKEN then
 				return contracts
 			elseif token == SPECIAL_CONTRACTS_TOKEN then
 				return specialContracts
+			elseif token == BOSS_CONTRACTS_TOKEN then
+				return bossContracts
 			elseif token == RPG_CONTRACTS_TOKEN then
 				return rpgContracts
 			elseif token == PRESENTATION_TOKEN then
@@ -407,6 +473,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return resolver
 			elseif token == SPECIAL_RESOLVER_TOKEN then
 				return specialResolver
+			elseif token == BOSS_RESOLVER_TOKEN then
+				return bossResolver
 			elseif token == ELITE_RESOLVER_TOKEN then
 				return eliteResolver
 			elseif token == LIFE_TOKEN then
@@ -1137,6 +1205,150 @@ assert(
 	countLivingSpitters() == specialConfig.Spawn.MaximumConcurrent,
 	"an eligible roam never exceeds the concurrent Spitter cap"
 )
+
+-- P9-0104 Progenitor boss: authored spawn, armored vulnerability windows, the
+-- Slam AoE, phase transitions, the Brood surge, the shroud visibility override,
+-- and defeat — all through the existing director boundaries.
+local carapace = bossConfig.Phases.Carapace
+local broodHealth = bossConfig.Progenitor.MaximumHealth * 0.5
+local collapseHealth = bossConfig.Progenitor.MaximumHealth * 0.2
+
+local function findBoss()
+	for index = #createdInstances, 1, -1 do
+		local instance = createdInstances[index]
+		if
+			instance.ClassName == "Model"
+			and not instance._destroyed
+			and instance:GetAttribute("EnemyArchetypeId") == bossConfig.Progenitor.ArchetypeId
+		then
+			return instance
+		end
+	end
+	return nil
+end
+
+reset()
+local _bn, bossNearRoot = addOperative("op:boss-near", 10, 0)
+local _bf, bossFarRoot = addOperative("op:boss-far", 40, 0)
+addOperative("op:boss-down", 5, 0, "Incapacitated")
+-- A stopped or duplicate boss spawn is refused.
+assert(service.spawnBoss({ x = 0, y = 1, z = 0 }, false), "the boss spawns at the arena")
+assert(not service.spawnBoss({ x = 0, y = 1, z = 0 }, false), "only one boss exists per operation")
+local bossModel = findBoss()
+assert(bossModel ~= nil)
+local bossId = bossModel:GetAttribute("CombatEntityId")
+local firstBossState = service.readBossState()
+assert(firstBossState.exists and firstBossState.isAlive and not firstBossState.isDefeated)
+assert(firstBossState.phaseId == "Carapace" and not firstBossState.isVulnerable)
+local bossHealthRead = service.readHealthState(bossId)
+assert(bossHealthRead ~= nil and bossHealthRead.healthState.currentHealth == bossConfig.Progenitor.MaximumHealth)
+
+-- Armored: operative fire is rejected outside an exposure window.
+assert(not service.commitHealthState(bossId, bossHealthRead.revision, {
+	entityId = bossId,
+	currentHealth = bossHealthRead.healthState.currentHealth - 50,
+	processedShotIds = { ["shot:boss-armored"] = true },
+}, 1), "the armored boss cannot be damaged")
+
+-- Slam lifecycle: Begin discloses the telegraph, Commit hits the AoE.
+now = 1
+service.evaluateAt(now)
+assert(bossModel:GetAttribute(presentation.BossSlamSequence) == 1)
+assert(bossModel:GetAttribute(presentation.BossSlamStartedServerTimestamp) == 1)
+assert(bossModel:GetAttribute(presentation.BossSlamCommitServerTimestamp) == 1 + carapace.SlamWindupSeconds)
+assert(not service.readBossState().isVulnerable, "the boss is not yet vulnerable during windup")
+assert(service.evaluateAt(1 + carapace.SlamWindupSeconds - 0.01).attackCommittedCount == 0)
+local slam = service.evaluateAt(1 + carapace.SlamWindupSeconds)
+assert(slam.attackCommittedCount == 1, "the Slam hits only the Alive operative inside the radius")
+assert(#damageCalls == 1 and damageCalls[1].operativeEntityId == "op:boss-near")
+assert(damageCalls[1].damage.damageAmount == bossConfig.Slam.Damage)
+
+-- The exposure window opens on the next pass; now operative fire lands.
+service.evaluateAt(1 + carapace.SlamWindupSeconds + 0.1)
+assert(service.readBossState().isVulnerable, "the exposure window opens after the Slam")
+local vulnerableHealth = service.readHealthState(bossId)
+assert(
+	service.commitHealthState(bossId, vulnerableHealth.revision, {
+		entityId = bossId,
+		currentHealth = broodHealth,
+		processedShotIds = { ["shot:boss-brood"] = true },
+	}, 1 + carapace.SlamWindupSeconds + 0.15),
+	"the vulnerable boss takes damage"
+)
+
+-- Crossing the Brood threshold transitions the phase, summons a bounded add
+-- surge, and raises the spore shroud. Move operatives clear so adds spawn fairly.
+bossNearRoot.Position = roblox.Vector3.new(300, 2, 300)
+bossFarRoot.Position = roblox.Vector3.new(300, 2, 300)
+local beforeAdds = service.readActiveEnemyCount()
+service.evaluateAt(1 + carapace.SlamWindupSeconds + 0.2)
+assert(service.readBossState().phaseId == "Brood", "the boss enters Brood")
+assert(service.readActiveEnemyCount() == beforeAdds + bossConfig.Brood.SurgeCount, "the Brood surge spawns adds")
+assert(
+	service.readGameplayVisibilityRadiusStuds() == bossConfig.Visibility.ShroudRadiusStuds,
+	"the spore shroud shrinks operative gameplay visibility"
+)
+
+-- Collapse with un-repaired floodlights leaves the arena dark.
+local broodBossHealth = service.readHealthState(bossId)
+assert(service.commitHealthState(bossId, broodBossHealth.revision, {
+	entityId = bossId,
+	currentHealth = collapseHealth,
+	processedShotIds = { ["shot:boss-brood"] = true, ["shot:boss-collapse"] = true },
+}, 1 + carapace.SlamWindupSeconds + 0.25))
+service.evaluateAt(1 + carapace.SlamWindupSeconds + 0.3)
+assert(service.readBossState().phaseId == "Collapse")
+assert(
+	service.readGameplayVisibilityRadiusStuds() == bossConfig.Visibility.CollapseDarkRadiusStuds,
+	"un-repaired floodlights leave Collapse dark"
+)
+
+-- Defeat: a killing blow while vulnerable resolves the boss and frees the slot.
+local collapseBossHealth = service.readHealthState(bossId)
+assert(service.commitHealthState(bossId, collapseBossHealth.revision, {
+	entityId = bossId,
+	currentHealth = 0,
+	processedShotIds = { ["shot:boss-brood"] = true, ["shot:boss-collapse"] = true, ["shot:boss-kill"] = true },
+}, 1 + carapace.SlamWindupSeconds + 0.35))
+local defeatedState = service.readBossState()
+assert(defeatedState.isDefeated and not defeatedState.exists, "boss defeat is observable and frees the slot")
+assert(
+	service.readGameplayVisibilityRadiusStuds() == config.Combat.GameplayVisibilityRadiusStuds,
+	"shroud lifts on death"
+)
+assert(service.spawnBoss({ x = 0, y = 1, z = 0 }, true), "a fresh operation can spawn a new boss")
+
+-- Repaired floodlights light the Collapse arena.
+reset()
+addOperative("op:lit", 300, 300)
+assert(service.spawnBoss({ x = 0, y = 1, z = 0 }, true))
+local litBossId = findBoss():GetAttribute("CombatEntityId")
+now = 1
+service.evaluateAt(now)
+service.evaluateAt(1 + carapace.SlamWindupSeconds)
+service.evaluateAt(1 + carapace.SlamWindupSeconds + 0.1)
+local litHealth = service.readHealthState(litBossId)
+service.commitHealthState(litBossId, litHealth.revision, {
+	entityId = litBossId,
+	currentHealth = collapseHealth,
+	processedShotIds = { ["shot:lit"] = true },
+}, 1 + carapace.SlamWindupSeconds + 0.15)
+service.evaluateAt(1 + carapace.SlamWindupSeconds + 0.2)
+assert(service.readBossState().phaseId == "Collapse")
+assert(
+	service.readGameplayVisibilityRadiusStuds() == config.Combat.GameplayVisibilityRadiusStuds,
+	"repaired floodlights keep Collapse readable"
+)
+
+-- Stand-down freezes the boss: not vulnerable and no Slam.
+reset()
+addOperative("op:stand-boss", 10, 0)
+assert(service.spawnBoss({ x = 0, y = 1, z = 0 }, false))
+service.endOperationPressure()
+assert(not service.readBossState().isVulnerable)
+table.clear(damageCalls)
+assert(service.evaluateAt(5).attackCommittedCount == 0, "a stood-down boss never Slams")
+assert(#damageCalls == 0)
 
 -- Performance bounds: one heartbeat connection, no timers, no raycasts, no
 -- remotes, bounded caps for 1/2/4 operatives.
