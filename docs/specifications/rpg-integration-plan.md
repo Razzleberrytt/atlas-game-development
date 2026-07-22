@@ -1,7 +1,7 @@
 # Living Kingdoms — Run-Based RPG Integration Plan
 
 **Document ID:** RPG-PLAN-001  
-**Status:** Active — `RPG-0101`–`RPG-0107` and `RPG-0109`–`RPG-0111` complete (`RPG-0110` for every available owner); `RPG-0108` implementation complete pending Studio validation; `RPG-0112` blocked on P10<br>
+**Status:** Active — `RPG-0101`–`RPG-0107` and `RPG-0109`–`RPG-0112` complete (`RPG-0110` for every available owner); `RPG-0108` implementation complete pending Studio validation; only `RPG-0113`'s Studio matrix remains<br>
 **Target:** Post-HROI gameplay expansion  
 **Primary objective:** Turn each operation into a distinct, replayable character-build journey while preserving Living Kingdoms' brutal cooperative survival identity.
 
@@ -656,11 +656,17 @@ The relic bar is always visible: each slot names its relic and shows charge or c
 
 **Exit:** Players can explain their current build without developer tools. ✔ *(Readability under live pressure is confirmed by the `RPG-0113` Studio matrix.)*
 
-### RPG-0112 — Add operation-result build summary
+### RPG-0112 — Add operation-result build summary — **Complete**
 
 Connect final build and contribution facts to the authoritative match result. No persistent XP is awarded in this task.
 
-**Exit:** Success and failure screens explain the completed run build.
+Delivered through P10's result owner rather than an RPG-specific result authority. `MatchResultContracts` grew two authored fields: each `SafeContributionSnapshot` carries the `equippedRelicIds` that operative finished the run holding (validated as strings and bounded by the three equipped slots), and the `SafeMatchResultSnapshot` carries a `upgradeStacks` array of the squad Field Upgrades the run finished with (validated as a duplicate-free list of positive whole stacks).
+
+The facts are **pushed** by `RunBuildService` at the moment a build changes — on an accepted relic choice or replacement, and on a committed squad upgrade — exactly like every other contribution fact the P10 ledger holds. Pushing at commit time means a disconnect cannot lose the build, and the ledger never reaches into RPG state to assemble a result. `OperativeLifeContracts.deriveOperativeEntityId` became the one shared derivation so the RPG owner addresses the same operative identity the life and combat owners already use.
+
+`MatchResultController` renders the build on the existing debrief: each operative's row names their relics and the squad's Field Upgrades read once beneath, both in the display names the HUD used rather than raw identifiers, with an explicit "no relics" / "None taken this operation." rather than a blank line. No XP, rank, or unlock is implied — P11 still owns those and now reads both the contribution and the build.
+
+**Exit:** Success and failure screens explain the completed run build. ✔
 
 ### RPG-0113 — Balance, security, and multiplayer validation
 
@@ -682,7 +688,7 @@ Current status:
 | `RPG-0109` | Complete | Four slices through existing owners: the weapon-pattern pair in `DamageResolver`, Salvager's Mark in `EnemyLootService`, Suppression Engine across `AutomaticFireResolver` and `DamageResolver`, and the cooperative pair inside the P3 life core (expiring temporary armor and a one-charge incapacitation reprieve). All twelve declared relics are now Implemented. |
 | `RPG-0110` | Complete for every available owner | Elite kills, a squad-kill milestone, and confirmed special interrupts open bounded choices through the owners that already observe them, with deterministic per-operative request IDs. Objective, container, and boss sources stay Planned until P8/P9. |
 | `RPG-0111` | Complete | `RunBuildHUDController` over the bounded `RunBuildNetwork`: safe snapshot rendering, the always-visible relic bar with charge and counter state, and the two identity-free intents. The end-of-operation summary stays with `RPG-0112`. |
-| `RPG-0112` | Blocked by P10 result owner | Attach the operation-bound build summary to the authoritative match result rather than creating an RPG-specific result authority. |
+| `RPG-0112` | Complete | The finished relics and squad Field Upgrades ride on P10's own result snapshot, pushed by `RunBuildService` when a build changes, and read on the existing debrief screen. No RPG-specific result authority was created. |
 | `RPG-0113` | Not started | Run the complete solo/2/4-player security, balance, readability, cleanup, and representative-horde validation matrix after `RPG-0112`. |
 
 The separate manual product gates remain honest: P6 scarcity needs its 1/2/4-operative evidence matrix and tuning sign-off, while HROI still needs representative Studio playtests and visual/mix review. RPG implementation may continue inside existing owners, but it does not satisfy those evidence gates or unblock P7 class-effect runtime.

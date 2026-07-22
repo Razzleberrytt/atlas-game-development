@@ -194,6 +194,8 @@ for _, causeId in CauseIds do
 	lifeStateByOperativeEntityId["operative:alpha"] = "Alive"
 	ledger.recordKills("operative:alpha", 4)
 	ledger.recordDamageDealt("operative:alpha", 200)
+	ledger.recordEquippedRelics("operative:alpha", { "relic.blood-battery", "relic.last-light" })
+	ledger.recordSquadUpgradeStacks({ ["upgrade.overpressure_rounds"] = 2 })
 	assertThat(ledger.commitResult(factsFor(causeId, "operation.test:run-1")), "each cause must assemble a result")
 	local snapshot = ledger.readSafeResultSnapshot()
 	assertThat(
@@ -201,7 +203,15 @@ for _, causeId in CauseIds do
 		"every cause must produce a valid result snapshot: " .. causeId
 	)
 	assertThat(snapshot.causeId == causeId, "the frozen result carries its cause")
+	assertThat(#snapshot.contributions[1].equippedRelicIds == 2, "the finished relics are carried")
+	assertThat(#snapshot.upgradeStacks == 1, "the finished squad upgrades are carried")
 	assertThat(#snapshot.contributions == 1, "the frozen result carries the contribution record")
+	-- RPG-0112: the completed run build is part of the same authoritative result.
+	assertThat(
+		type(snapshot.contributions[1].equippedRelicIds) == "table",
+		"every contribution carries the operative's finished relic build"
+	)
+	assertThat(type(snapshot.upgradeStacks) == "table", "the result carries the squad Field Upgrade summary")
 	-- A racing second commit, from any cause, cannot replace the first.
 	for _, otherCauseId in CauseIds do
 		assertThat(

@@ -37,6 +37,8 @@ local submitChoiceRemote = runBuildNetwork:WaitForChild("SubmitRelicChoice") :: 
 local submitReplacementRemote = runBuildNetwork:WaitForChild("SubmitRelicReplacement") :: RemoteEvent
 
 local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
+local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.OperativeLifeContracts)
+local MatchResultService = require(script.Parent.MatchResultService)
 
 local CompatibilityIds = RunRpgContracts.RelicCompatibilityIds
 local Rejections = RunRpgContracts.RunRpgRejectionReasonIds
@@ -53,6 +55,22 @@ local weaponCompatibilityById: { [string]: string } = {
 
 local function operativeId(player: Player): string
 	return tostring(player.UserId)
+end
+
+--[[
+	RPG-0112: push the operative's finished build to the P10 contribution ledger
+	whenever an equipped relic changes. Pushing at commit time means a disconnect
+	cannot lose the build, and the ledger never reaches into RPG state.
+]]
+local function recordBuildForResult(player: Player)
+	local read = store:readEquippedRelicIds(operativeId(player))
+	if read == nil then
+		return
+	end
+	MatchResultService.recordEquippedRelics(
+		OperativeLifeContracts.deriveOperativeEntityId(player.UserId),
+		read.relicIds
+	)
 end
 
 local function register(player: Player)
@@ -258,6 +276,7 @@ function RunBuildService.commitSquadUpgradeStacks(
 ): (boolean, string?)
 	local accepted, reason = store:commitUpgradeStacks(operationGeneration, requestId, upgradeStacks)
 	if accepted then
+		MatchResultService.recordSquadUpgradeStacks(store:readUpgradeStacks())
 		publishAll()
 	end
 	return accepted, reason
@@ -312,13 +331,17 @@ function RunBuildService.submitRelicChoice(
 	if not RunRpgContracts.validateRelicChoiceIntent(intent) then
 		return false, RunRpgContracts.RunRpgRejectionReasonIds.InvalidIntent
 	end
-	return store:chooseRelic(
+	local accepted, reason = store:chooseRelic(
 		intent.operationGeneration,
 		intent.requestId,
 		operativeId(player),
 		intent.rewardSequence,
 		intent.relicId
 	)
+	if accepted then
+		recordBuildForResult(player)
+	end
+	return accepted, reason
 end
 
 function RunBuildService.submitRelicReplacement(
@@ -328,7 +351,7 @@ function RunBuildService.submitRelicReplacement(
 	if not RunRpgContracts.validateRelicReplacementIntent(intent) then
 		return false, RunRpgContracts.RunRpgRejectionReasonIds.InvalidIntent
 	end
-	return store:replaceRelic(
+	local accepted, reason = store:replaceRelic(
 		intent.operationGeneration,
 		intent.requestId,
 		operativeId(player),
@@ -336,6 +359,10 @@ function RunBuildService.submitRelicReplacement(
 		intent.relicId,
 		intent.replaceSlotIndex
 	)
+	if accepted then
+		recordBuildForResult(player)
+	end
+	return accepted, reason
 end
 
 return table.freeze(RunBuildService)

@@ -86,6 +86,11 @@ local RPG_CONTRACTS = {}
 local FIREARM_TOKEN = {}
 local COMBAT_TOKEN = {}
 local RPG_CONFIG_TOKEN = {}
+local LIFE_CONTRACTS_TOKEN = {}
+local MATCH_RESULT_TOKEN = {}
+-- RPG-0112: the run-build owner pushes the finished build to the P10 ledger. The
+-- fixture only needs to see that it does, not what the ledger then does with it.
+local recordedBuilds = {}
 local offers = {}
 local storeStub = {
 	new = function()
@@ -138,6 +143,7 @@ local runBuildService = luau.load(fs.readFile("games/living-kingdoms/src/server/
 						RPG = { RunRpgContracts = RPG_CONTRACTS },
 						Config = { FirearmConfig = FIREARM_TOKEN, RunRpgConfig = RPG_CONFIG_TOKEN },
 						Combat = { CombatContracts = COMBAT_TOKEN },
+						Health = { OperativeLifeContracts = LIFE_CONTRACTS_TOKEN },
 					},
 					WaitForChild = function(_self, name: string)
 						assertThat(name == "RunBuildNetwork", "the run-build owner may only claim its own network")
@@ -146,9 +152,22 @@ local runBuildService = luau.load(fs.readFile("games/living-kingdoms/src/server/
 				}
 			end,
 		},
-		script = { Parent = { RunBuildStateStore = STORE_TOKEN } },
+		script = { Parent = { RunBuildStateStore = STORE_TOKEN, MatchResultService = MATCH_RESULT_TOKEN } },
 		require = function(token: unknown)
-			if token == STORE_TOKEN then
+			if token == LIFE_CONTRACTS_TOKEN then
+				return {
+					deriveOperativeEntityId = function(userId)
+						return "operative.player:" .. tostring(userId)
+					end,
+				}
+			elseif token == MATCH_RESULT_TOKEN then
+				return {
+					recordEquippedRelics = function(operativeEntityId, relicIds)
+						table.insert(recordedBuilds, { operativeEntityId = operativeEntityId, relicIds = relicIds })
+					end,
+					recordSquadUpgradeStacks = function() end,
+				}
+			elseif token == STORE_TOKEN then
 				return storeStub
 			elseif token == RPG_CONTRACTS then
 				return rpgContracts
