@@ -2,7 +2,7 @@
 
 --[[
 	Configuration-backed values for the three implemented MVP specialist class
-	vertical slices through P7-0105.
+	vertical slices and their cross-class presentation through P7-0106.
 
 	Engineer resupply values remain provisional while the deferred P6 Studio
 	evidence matrix is unavailable. They must be revisited before P7 gameplay
@@ -111,7 +111,7 @@ local ClassDefinitions = table.freeze({
 })
 
 local Config = {
-	Version = "P7-0105-v1-engineer",
+	Version = "P7-0107-v1-validation",
 	ActionRequests = table.freeze({
 		minimumRequestIntervalSeconds = 0.15,
 		maximumProcessedRequestIdsPerOperative = 64,

@@ -128,11 +128,11 @@ Canonical specification: `docs/specifications/mvp-specialist-classes.md`.
   - Implement finite nearby field resupply using a configured operation-issued resource budget.
   - Grants commit through the existing ammunition authority boundary, obey weapon compatibility and reserve caps, and never create unlimited or recyclable ammunition.
   - Objective-equipment repair remains P8 integration; P7 may define the interface but may not scaffold an unused objective runtime.
-- [ ] **P7-0106 — Integrate cross-class interactions and squad presentation.**
+- [x] **P7-0106 — Integrate cross-class interactions and squad presentation.**
   - Add readable class identity, personal resource/cooldown state, teammate action cues, and concise failure reasons.
   - Prove the intended loop: combat specialist creates safe action windows, medic preserves operative viability, and engineer extends ammunition resilience.
   - UI supports text/shape distinctions and does not depend on color or audio alone.
-- [ ] **P7-0107 — Complete class security, scaling, and multiplayer validation.**
+- [x] **P7-0107 — Complete class security, scaling, and multiplayer validation.**
   - Fixtures and adversarial tests cover forged class selection, locked swaps, action replay, stale timestamps/revisions, acting for another operative, invalid targets, resource duplication, cooldown bypass, disconnects, and teardown.
   - Studio sessions cover solo, duplicate-class squads, and balanced 2/3/4-operative squads.
   - Record contribution frequency, idle time during channels, resource use, absence-of-role viability, and whether the balanced squad has materially better options without becoming mandatory.
@@ -141,7 +141,7 @@ Canonical specification: `docs/specifications/mvp-specialist-classes.md`.
 
 `P7-PLAN-001` → `P7-0101` → `P7-0102` → (`P7-0103` + `P7-0104` + `P7-0105`, one PR at a time) → `P7-0106` → `P7-0107`.
 
-`P7-0101` through `P7-0105` are complete. Brace established shared action-state disclosure, Medic proved finite health/revive integration, and Engineer now proves capped ammunition-owner/telemetry integration; `P7-0106` is next.
+`P7-0101` through `P7-0107` are complete. Brace established shared action-state disclosure, Medic proved finite health/revive integration, Engineer proved capped ammunition-owner/telemetry integration, the composed safe snapshot drives accessible owner and teammate presentation, and the final slice added adversarial/scaling fixtures plus a bounded Studio-only validation ledger.
 
 ### P7 exit criteria
 
@@ -149,7 +149,7 @@ Players choose and retain a server-owned starting class for the run. Each class 
 
 ### Current P7 status
 
-Planning, shared contracts, server-owned selection/assignment, and all three class vertical slices are complete (`P7-PLAN-001` through `P7-0105`). P7 is **in progress and unblocked**; `P7-0106` (cross-class presentation) is next.
+P7 is **complete** (`P7-PLAN-001` through `P7-0107`). The next unblocked gameplay task is `P8-PLAN-001`.
 
 ---
 
@@ -377,6 +377,6 @@ The complete MVP operation is difficult, readable, learnable, secure, bounded, r
 
 ## Immediate next actions
 
-1. Begin **P7-0106** (cross-class presentation); all three server-owned class actions now exist through their authoritative effect owners.
+1. Begin **P8-PLAN-001** (authored objective-chain specification); P7 classes are complete.
 2. Preserve P6's qualitative-sign-off limitation for measured replay during P12 balance validation.
 4. In parallel where evidence-independent: finish the **VIS-0102** firearm presentation integration per `VISUAL-PRODUCTION-TRACK.md`, and run the outstanding P5 pressure-loop Studio playthrough recorded in the smoke test.

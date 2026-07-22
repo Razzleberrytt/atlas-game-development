@@ -12,6 +12,7 @@ local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local ClassContracts = require(ReplicatedStorage.Shared.Classes.ClassContracts)
+local ClassPresentationResolver = require(ReplicatedStorage.Shared.Classes.ClassPresentationResolver)
 local ClassConfig = require(ReplicatedStorage.Shared.Config.ClassConfig)
 
 local ActionIds = ClassContracts.ClassActionIds
@@ -37,27 +38,16 @@ local latestSnapshot: ClassContracts.SafeClassSelectionSnapshot? = nil
 local stateConnection: RBXScriptConnection? = nil
 local screenGui: ScreenGui? = nil
 local panel: Frame? = nil
+local identityLabel: TextLabel? = nil
+local resourceLabel: TextLabel? = nil
 local statusLabel: TextLabel? = nil
 local progressFill: Frame? = nil
 local progressTween: Tween? = nil
 local characterHighlight: Highlight? = nil
-
-local interruptionLabels = {
-	MovementInterrupted = "STANCE BROKEN — MOVED",
-	ReloadInterrupted = "STANCE BROKEN — RELOADED",
-	ActorNotAlive = "STANCE ENDED",
-	OperationResolved = "OPERATION COMPLETE",
-	ActionCancelled = "STANCE CANCELLED",
-	ActionCompleted = "STANCE COMPLETE",
-	DamageInterrupted = "TREATMENT INTERRUPTED — HIT",
-	OutOfRange = "TREATMENT INTERRUPTED — RANGE",
-	NoLineOfSight = "TREATMENT INTERRUPTED — BLOCKED",
-	TargetNotAlive = "TREATMENT INTERRUPTED — TARGET",
-	TargetNotInjured = "TREATMENT ENDED — TARGET STABLE",
-	EffectCommitRejected = "TREATMENT COULD NOT COMMIT",
-	IncompatibleWeapon = "RESUPPLY UNAVAILABLE — WEAPON",
-	NoCapacity = "RESUPPLY UNAVAILABLE — RESERVE FULL",
-}
+local temporaryFeedback: string? = nil
+local temporaryFeedbackEndsAt = 0
+local lastClockRefresh = 0
+local lifecycleGeneration = 0
 
 local function currentActionState(): ClassContracts.AuthoritativeClassActionState?
 	local snapshot = latestSnapshot
@@ -268,24 +258,18 @@ local function updatePresentation()
 	end
 	local isMedic = assignment.classId == ClassIds.Medic
 	local isEngineer = assignment.classId == ClassIds.Engineer
-	ContextActionService:SetTitle(ACTION_NAME, if isMedic then "TREAT" else if isEngineer then "RESUPPLY" else "BRACE")
-	local medicalCharges = 0
-	local resupplyCharges = 0
-	for _, resource in snapshot.ownerResources do
-		if resource.resourceId == ClassContracts.ClassResourceIds.MedicalCharge then
-			medicalCharges = resource.currentAmount
-		elseif resource.resourceId == ClassContracts.ClassResourceIds.ResupplyCharge then
-			resupplyCharges = resource.currentAmount
-		end
+	local identity = ClassPresentationResolver.identity(assignment.classId)
+	if identityLabel ~= nil and identity ~= nil then
+		identityLabel.Text = identity.shapeToken .. "  " .. identity.displayName .. "  •  " .. identity.roleSummary
 	end
+	if resourceLabel ~= nil then
+		resourceLabel.Text = ClassPresentationResolver.resourceLabel(assignment.classId, snapshot.ownerResources)
+	end
+	ContextActionService:SetTitle(ACTION_NAME, if isMedic then "TREAT" else if isEngineer then "RESUPPLY" else "BRACE")
 
 	local serverTimestamp = Workspace:GetServerTimeNow()
 	if state.actionStateId == ActionStateIds.Active then
-		label.Text = if isMedic
-			then string.format("TREATING TEAMMATE  •  %d CHARGES  •  Q TO CANCEL", medicalCharges)
-			else if isEngineer
-				then string.format("RESUPPLYING OPERATIVE  •  %d CHARGES  •  Q TO CANCEL", resupplyCharges)
-				else "BRACE ACTIVE  •  HOLD POSITION  •  Q TO CANCEL"
+		label.Text = ClassPresentationResolver.ownerStatus(assignment.classId, state, serverTimestamp)
 		local completion = state.completionServerTimestamp or serverTimestamp
 		local remaining = math.max(0, completion - serverTimestamp)
 		local duration = if isMedic
@@ -296,12 +280,7 @@ local function updatePresentation()
 		tweenProgress(remaining / duration, remaining)
 		setHighlight(true, if isMedic or isEngineer then state.targetOperativeEntityId else nil)
 	elseif state.actionStateId == ActionStateIds.Cooldown then
-		local suffix = interruptionLabels[state.statusReasonId or ""]
-		label.Text = if suffix == nil
-			then (if isMedic
-				then "MEDICAL KIT RESETTING"
-				else if isEngineer then "RESUPPLY KIT RESETTING" else "BRACE RECHARGING")
-			else suffix .. "  •  RECHARGING"
+		label.Text = ClassPresentationResolver.ownerStatus(assignment.classId, state, serverTimestamp)
 		local completion = state.cooldownEndServerTimestamp or serverTimestamp
 		local remaining = math.max(0, completion - serverTimestamp)
 		local cooldown = if isMedic
@@ -312,11 +291,7 @@ local function updatePresentation()
 		tweenProgress(remaining / cooldown, remaining)
 		setHighlight(false, nil)
 	else
-		label.Text = if isMedic
-			then string.format("FIELD TREATMENT READY  •  %d CHARGES  •  Q / GAMEPAD X", medicalCharges)
-			else if isEngineer
-				then string.format("FIELD RESUPPLY READY  •  %d CHARGES  •  Q / GAMEPAD X", resupplyCharges)
-				else "BRACE READY  •  Q / GAMEPAD X"
+		label.Text = ClassPresentationResolver.ownerStatus(assignment.classId, state, serverTimestamp)
 		tweenProgress(1, 0)
 		setHighlight(false, nil)
 	end
@@ -337,8 +312,37 @@ local function onPayload(payload: unknown)
 		local rejection = payload :: ClassContracts.SafeClassSelectionRejection
 		local label = statusLabel
 		if label ~= nil and rejection.requestId ~= nil then
-			label.Text = "CLASS ACTION UNAVAILABLE  •  " .. rejection.rejectionReasonId
+			temporaryFeedback = ClassPresentationResolver.rejectionLabel(rejection.rejectionReasonId)
+			temporaryFeedbackEndsAt = os.clock() + 2.5
+			label.Text = temporaryFeedback or "ACTION UNAVAILABLE"
 		end
+	end
+end
+
+local function refreshClock()
+	if os.clock() - lastClockRefresh < 0.1 then
+		return
+	end
+	lastClockRefresh = os.clock()
+	if temporaryFeedback ~= nil and os.clock() < temporaryFeedbackEndsAt then
+		if statusLabel ~= nil then
+			statusLabel.Text = temporaryFeedback
+		end
+		return
+	end
+	temporaryFeedback = nil
+	local snapshot = latestSnapshot
+	if
+		snapshot ~= nil
+		and snapshot.ownerAssignment ~= nil
+		and snapshot.ownerActionState ~= nil
+		and statusLabel ~= nil
+	then
+		statusLabel.Text = ClassPresentationResolver.ownerStatus(
+			snapshot.ownerAssignment.classId,
+			snapshot.ownerActionState,
+			Workspace:GetServerTimeNow()
+		)
 	end
 end
 
@@ -352,7 +356,7 @@ local function createPresentation()
 	frame.Name = "BracePanel"
 	frame.AnchorPoint = Vector2.new(0.5, 1)
 	frame.Position = UDim2.new(0.5, 0, 1, -18)
-	frame.Size = UDim2.fromOffset(338, 42)
+	frame.Size = UDim2.fromOffset(430, 72)
 	frame.BackgroundColor3 = Color3.fromRGB(18, 22, 26)
 	frame.BackgroundTransparency = 0.08
 	frame.BorderSizePixel = 0
@@ -369,10 +373,36 @@ local function createPresentation()
 	stroke.Thickness = 1
 	stroke.Parent = frame
 
+	local ownerIdentity = Instance.new("TextLabel")
+	ownerIdentity.Name = "ClassIdentity"
+	ownerIdentity.Position = UDim2.fromOffset(13, 4)
+	ownerIdentity.Size = UDim2.new(1, -26, 0, 18)
+	ownerIdentity.BackgroundTransparency = 1
+	ownerIdentity.Font = Enum.Font.GothamBold
+	ownerIdentity.Text = "[SHIELD]  COMBAT SPECIALIST"
+	ownerIdentity.TextColor3 = Color3.fromRGB(247, 222, 174)
+	ownerIdentity.TextSize = 11
+	ownerIdentity.TextXAlignment = Enum.TextXAlignment.Left
+	ownerIdentity.Parent = frame
+	identityLabel = ownerIdentity
+
+	local resources = Instance.new("TextLabel")
+	resources.Name = "Resources"
+	resources.Position = UDim2.fromOffset(13, 22)
+	resources.Size = UDim2.new(1, -26, 0, 16)
+	resources.BackgroundTransparency = 1
+	resources.Font = Enum.Font.GothamMedium
+	resources.Text = "BRACE • COOLDOWN LIMITED"
+	resources.TextColor3 = Color3.fromRGB(205, 210, 207)
+	resources.TextSize = 10
+	resources.TextXAlignment = Enum.TextXAlignment.Left
+	resources.Parent = frame
+	resourceLabel = resources
+
 	local label = Instance.new("TextLabel")
 	label.Name = "Status"
-	label.Position = UDim2.fromOffset(13, 4)
-	label.Size = UDim2.new(1, -26, 0, 27)
+	label.Position = UDim2.fromOffset(13, 38)
+	label.Size = UDim2.new(1, -26, 0, 24)
 	label.BackgroundTransparency = 1
 	label.Font = Enum.Font.GothamBold
 	label.Text = "BRACE READY  •  Q / GAMEPAD X"
@@ -406,8 +436,16 @@ function Controller.start()
 		return
 	end
 	started = true
+	lifecycleGeneration += 1
+	local generation = lifecycleGeneration
 	createPresentation()
 	stateConnection = stateRemote.OnClientEvent:Connect(onPayload)
+	task.spawn(function()
+		while started and generation == lifecycleGeneration do
+			refreshClock()
+			task.wait(0.1)
+		end
+	end)
 	local succeeded, snapshot = pcall(function()
 		return readStateFunction:InvokeServer()
 	end)
@@ -421,6 +459,7 @@ function Controller.stop()
 		return
 	end
 	started = false
+	lifecycleGeneration += 1
 	setBinding(false)
 	setHighlight(false, nil)
 	if progressTween ~= nil then
@@ -436,11 +475,16 @@ function Controller.stop()
 		screenGui = nil
 	end
 	panel = nil
+	identityLabel = nil
+	resourceLabel = nil
 	statusLabel = nil
 	progressFill = nil
 	latestSnapshot = nil
 	latestRosterRevision = -1
 	requestSequence = 0
+	temporaryFeedback = nil
+	temporaryFeedbackEndsAt = 0
+	lastClockRefresh = 0
 end
 
 return Controller
