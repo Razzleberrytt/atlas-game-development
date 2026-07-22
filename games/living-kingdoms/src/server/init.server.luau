@@ -90,13 +90,17 @@ local function ensureMissionNetwork()
 		assert(existingNetwork:IsA("Folder"), "MissionNetwork must be a Folder")
 		network = existingNetwork
 	end
-	local existingRemote = network:FindFirstChild("State")
-	if existingRemote == nil then
-		local remote = Instance.new("RemoteEvent")
-		remote.Name = "State"
-		remote.Parent = network
-	else
-		assert(existingRemote:IsA("RemoteEvent"), "State must be a RemoteEvent")
+	-- State is the live mission snapshot; Result is the one terminal debrief. Both
+	-- are server-to-client disclosure only -- the mission owner accepts nothing.
+	for _, remoteName in { "State", "Result" } do
+		local existingRemote = network:FindFirstChild(remoteName)
+		if existingRemote == nil then
+			local remote = Instance.new("RemoteEvent")
+			remote.Name = remoteName
+			remote.Parent = network
+		else
+			assert(existingRemote:IsA("RemoteEvent"), remoteName .. " must be a RemoteEvent")
+		end
 	end
 end
 

@@ -25,6 +25,7 @@ local SquadPingController = require(script.Controllers.SquadPingController)
 local EnvironmentAmbienceController = require(script.Controllers.EnvironmentAmbienceController)
 local RouteGuidePresentationController = require(script.Controllers.RouteGuidePresentationController)
 local LandmarkAccentPresentationController = require(script.Controllers.LandmarkAccentPresentationController)
+local MatchResultController = require(script.Controllers.MatchResultController)
 local MissionController = require(script.Controllers.MissionController)
 local MissionObjectPresentationController = require(script.Controllers.MissionObjectPresentationController)
 local HordeHUDController = require(script.Controllers.HordeHUDController)
@@ -62,6 +63,9 @@ EnvironmentAmbienceController.start()
 RouteGuidePresentationController.start()
 LandmarkAccentPresentationController.start()
 MissionController.start()
+-- The terminal debrief renders only the server's validated result snapshot and
+-- makes no request; it stays hidden until the operation resolves.
+MatchResultController.start()
 MissionObjectPresentationController.start()
 -- HordeHUDController is the single combat HUD. It renders Field XP, levels, and
 -- upgrade offers sourced from ProgressionNetwork; the standalone
