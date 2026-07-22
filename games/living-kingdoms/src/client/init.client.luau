@@ -30,6 +30,7 @@ local MissionObjectPresentationController = require(script.Controllers.MissionOb
 local HordeHUDController = require(script.Controllers.HordeHUDController)
 local HordeEffectsController = require(script.Controllers.HordeEffectsController)
 local HordeSpecialTelegraphController = require(script.Controllers.HordeSpecialTelegraphController)
+local SpecialEncounterTelegraphController = require(script.Controllers.SpecialEncounterTelegraphController)
 local MassacreCrescendoController = require(script.Controllers.MassacreCrescendoController)
 local RunBuildHUDController = require(script.Controllers.RunBuildHUDController)
 local CriticalConditionController = require(script.Controllers.CriticalConditionController)
@@ -69,6 +70,7 @@ MissionObjectPresentationController.start()
 HordeHUDController.start()
 HordeEffectsController.start()
 HordeSpecialTelegraphController.start()
+SpecialEncounterTelegraphController.start()
 MassacreCrescendoController.start()
 -- RPG-0111 relic bar and reward interface. It is the only client surface that
 -- may request a relic choice or replacement, and it renders only the server's
