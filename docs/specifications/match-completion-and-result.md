@@ -189,6 +189,24 @@ leave/disconnect/rejoin policy, and disclosure are fixed and mapped to the
 existing owners and the single terminal boundary — as above — so `P10-0101` can
 begin without further design decisions.
 
+## Implementation status (P10-0101 – P10-0107)
+
+- **Contracts and configuration (`P10-0101`) — complete.**
+  `src/shared/Mission/MatchResultContracts.luau` fixes the `MissionResultCauseId`
+  (`Extracted`/`SquadWipe`/`Abandoned`) vocabulary and its fixed cause→outcome
+  pairing, the `ExtractionReadinessStateId` (`Locked`/`Inbound`/`Arrived`),
+  `OperationReplayStateId`, and `CleanupOwnerId` vocabularies, and the
+  `SafeMatchResultSnapshot` and per-operative `SafeContributionSnapshot` shapes
+  with validators — reusing the existing `MissionContracts` outcome/phase
+  vocabulary and the P3 `OperativeLifeContracts` life state, and representing no
+  XP or reward. `src/shared/Config/MatchResultConfig.luau` holds the extraction
+  arrival window and the documented cleanup stop order (enemies first, mission
+  director last, every owner exactly once). Pure declarations and fixtures
+  (`tests/MatchResultContracts.test.luau`); no runtime.
+- **`P10-0102` – `P10-0107`** remain not started; they add the terminal-result
+  resolver, the extraction sequence, the result presentation, cleanup/replay, the
+  disconnect handling, and the full-loop validation.
+
 ## Deliberate exclusions
 
 No persistent XP, rank, or unlock (that is P11); no new terminal-failure cause
