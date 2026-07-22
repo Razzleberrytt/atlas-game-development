@@ -175,6 +175,7 @@ local function removeSession(session: Session)
 end
 
 local function cancelSession(session: Session)
+	ClassService.recordMedicReviveEnded(session.reviverPlayer, Workspace:GetServerTimeNow(), false)
 	removeSession(session)
 end
 
@@ -272,6 +273,7 @@ local function evaluateSession(session: Session, serverTimestamp: number)
 				OperativeLifeService.commitAcceptedTransition(session.targetPlayer, targetRead.revision, continued)
 			if committed.didCommit then
 				grantGuardianSignalArmor(session, serverTimestamp)
+				ClassService.recordMedicReviveEnded(session.reviverPlayer, serverTimestamp, true)
 			end
 			if not committed.didCommit then
 				OperativeCombatRuntimeService.commitReviveCombatState(
@@ -279,6 +281,7 @@ local function evaluateSession(session: Session, serverTimestamp: number)
 					combatRead.generation,
 					oldCombatState
 				)
+				ClassService.recordMedicReviveEnded(session.reviverPlayer, serverTimestamp, false)
 			end
 			removeSession(session)
 			return
@@ -318,6 +321,7 @@ local function begin(player: Player, targetOperativeEntityId: string): IntentRes
 	end
 	local distanceStuds, hasLineOfSight = distanceAndLineOfSight(player, targetPlayer)
 	local reviveDurationSeconds, restoredHealth, isMedicAssisted = ClassService.readMedicReviveBenefits(player)
+	local serverTimestamp = Workspace:GetServerTimeNow()
 	nextSessionId += 1
 	local sessionId = string.format("revive.server:%d", nextSessionId)
 	local resolved = OperativeReviveResolver.beginRevive(reviverRead.snapshot, targetRead.snapshot, {
@@ -326,7 +330,7 @@ local function begin(player: Player, targetOperativeEntityId: string): IntentRes
 		targetOperativeEntityId = targetOperativeEntityId,
 		distanceStuds = distanceStuds,
 		hasLineOfSight = hasLineOfSight,
-		serverTimestamp = Workspace:GetServerTimeNow(),
+		serverTimestamp = serverTimestamp,
 		reviveDurationSeconds = reviveDurationSeconds,
 		restoredHealth = restoredHealth,
 		activeSessionIdForTarget = nil,
@@ -349,6 +353,7 @@ local function begin(player: Player, targetOperativeEntityId: string): IntentRes
 	}
 	sessionsByTarget[targetOperativeEntityId] = session
 	sessionsByReviver[player] = session
+	ClassService.recordMedicReviveStarted(player, serverTimestamp)
 	disclose(session, 0)
 	return result(true, nil)
 end

@@ -4,7 +4,7 @@
 	P7 shared specialist-class declarations. These IDs, action-intent shapes,
 	and copied presentation records are safe on either side of the boundary.
 	Brace, Field Treatment, revive assistance, and Field Resupply are active
-	through P7-0105. Objective effects and client-authored authority remain absent.
+	through P7-0106. Objective effects and client-authored authority remain absent.
 ]]
 
 local ClassContracts = {}

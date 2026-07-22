@@ -23,6 +23,8 @@ local classService = {
 	readMedicReviveBenefits = function()
 		return 4, 30, false
 	end,
+	recordMedicReviveStarted = function() end,
+	recordMedicReviveEnded = function() end,
 }
 
 local contracts = {

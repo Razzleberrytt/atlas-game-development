@@ -16,6 +16,7 @@ local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.Operative
 local MissionContracts = require(ReplicatedStorage.Shared.Mission.MissionContracts)
 local BraceResolver = require(script.Parent.BraceResolver)
 local ClassSelectionResolver = require(script.Parent.ClassSelectionResolver)
+local ClassValidationTelemetryService = require(script.Parent.ClassValidationTelemetryService)
 local FieldTreatmentResolver = require(script.Parent.FieldTreatmentResolver)
 local FieldResupplyResolver = require(script.Parent.FieldResupplyResolver)
 local MissionDirectorService = require(script.Parent.MissionDirectorService)
@@ -190,6 +191,45 @@ local function sortedResources(entry: Entry): { ClassContracts.AuthoritativeClas
 	return table.freeze(resources)
 end
 
+local function totalResources(resources: { [string]: ClassContracts.AuthoritativeClassResourceState }): number
+	local total = 0
+	for _, resource in resources do
+		total += resource.currentAmount
+	end
+	return total
+end
+
+local function recordActionTransition(
+	entry: Entry,
+	before: AuthoritativeClassActionState,
+	after: AuthoritativeClassActionState,
+	serverTimestamp: number
+)
+	if before.actionStateId ~= ActionStateIds.Active and after.actionStateId == ActionStateIds.Active then
+		if after.actionId ~= nil then
+			ClassValidationTelemetryService.recordActionStarted(
+				entry.operativeEntityId,
+				after.actionId,
+				serverTimestamp
+			)
+		end
+	elseif before.actionStateId == ActionStateIds.Active and after.actionStateId ~= ActionStateIds.Active then
+		if before.actionId ~= nil then
+			ClassValidationTelemetryService.recordActionEnded(
+				entry.operativeEntityId,
+				before.actionId,
+				serverTimestamp,
+				after.statusReasonId == RejectionReasonIds.ActionCompleted,
+				after.actionStateId == ActionStateIds.Cooldown
+			)
+		end
+	elseif before.actionStateId == ActionStateIds.Cooldown and after.actionStateId == ActionStateIds.Idle then
+		if before.actionId ~= nil then
+			ClassValidationTelemetryService.recordActionAvailable(entry.operativeEntityId, before.actionId)
+		end
+	end
+end
+
 local function operationIsActive(phaseId: string): boolean
 	local phases = MissionContracts.MissionPhaseIds
 	return phaseId == phases.Infiltration or phaseId == phases.Holdout or phaseId == phases.Exfiltration
@@ -352,6 +392,7 @@ local function registerPlayer(player: Player, allowLockedRegistration: boolean):
 	}
 	entriesByOperativeId[operativeEntityId] = entry
 	entryByPlayer[player] = entry
+	ClassValidationTelemetryService.assign(operativeEntityId, assignment.classId, totalResources(entry.resources))
 	rosterRevision += 1
 	return true
 end
@@ -363,6 +404,16 @@ local function removeOperative(operativeEntityId: string): boolean
 	end
 	entriesByOperativeId[operativeEntityId] = nil
 	entryByPlayer[entry.player] = nil
+	if entry.actionState.actionStateId == ActionStateIds.Active and entry.actionState.actionId ~= nil then
+		ClassValidationTelemetryService.recordActionEnded(
+			operativeEntityId,
+			entry.actionState.actionId,
+			now(),
+			false,
+			false
+		)
+	end
+	ClassValidationTelemetryService.setConnected(operativeEntityId, false)
 	rosterRevision += 1
 	return true
 end
@@ -448,6 +499,11 @@ function Service.requestSelection(player: Player, payload: unknown): OperationRe
 	entry.assignment = copyAssignment(resolution.assignmentAfter)
 	if resolution.assignmentAfter.classId ~= previousClassId then
 		entry.resources = resourcesForClass(resolution.assignmentAfter.classId)
+		ClassValidationTelemetryService.assign(
+			entry.operativeEntityId,
+			resolution.assignmentAfter.classId,
+			totalResources(entry.resources)
+		)
 	end
 	if resolution.requestId ~= nil then
 		recordProcessedRequest(entry, resolution.requestId)
@@ -525,11 +581,21 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 					serverTimestamp = serverTimestamp,
 				})
 			if committed ~= nil and committed.didCommit and medical ~= nil then
+				local healthBefore = if targetSnapshot == nil then 0 else targetSnapshot.healthState.currentHealth
+				local healthAfter = if committed.snapshot == nil
+					then healthBefore
+					else committed.snapshot.healthState.currentHealth
 				entry.resources[ResourceIds.MedicalCharge] = table.freeze({
 					resourceId = medical.resourceId,
 					currentAmount = medical.currentAmount - ClassConfig.Actions.FieldTreatment.resourceCost,
 					maximumAmount = medical.maximumAmount,
 				})
+				ClassValidationTelemetryService.recordResourceCommit(
+					entry.operativeEntityId,
+					ClassConfig.Actions.FieldTreatment.resourceCost,
+					math.max(0, healthAfter - healthBefore),
+					0
+				)
 			else
 				resolution = FieldTreatmentResolver.resolveEffectRejected(state, serverTimestamp)
 			end
@@ -582,6 +648,12 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 					currentAmount = supply.currentAmount - ClassConfig.Actions.FieldResupply.resourceCost,
 					maximumAmount = supply.maximumAmount,
 				})
+				ClassValidationTelemetryService.recordResourceCommit(
+					entry.operativeEntityId,
+					ClassConfig.Actions.FieldResupply.resourceCost,
+					0,
+					grantedRounds
+				)
 			else
 				resolution = FieldResupplyResolver.resolveEffectRejected(state, serverTimestamp)
 			end
@@ -598,7 +670,9 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 	if not resolution.didChange then
 		return false
 	end
+	local previousActionState = entry.actionState
 	entry.actionState = copyActionState(resolution.actionStateAfter)
+	recordActionTransition(entry, previousActionState, entry.actionState, serverTimestamp)
 	if entry.actionState.actionStateId ~= ActionStateIds.Active then
 		clearActionContinuity(entry)
 	end
@@ -749,7 +823,9 @@ function Service.requestAction(player: Player, payload: unknown): OperationResul
 		end
 		return reject(player, resolution.rejectionReasonId or RejectionReasonIds.InvalidIntent, resolution.requestId)
 	end
+	local previousActionState = entry.actionState
 	entry.actionState = copyActionState(resolution.actionStateAfter)
+	recordActionTransition(entry, previousActionState, entry.actionState, serverTimestamp)
 	if not resolution.didActivate then
 		clearActionContinuity(entry)
 	end
@@ -807,6 +883,54 @@ function Service.readMedicReviveBenefits(player: Player): (number, number, boole
 	return OperativeLifeConfig.ReviveDurationSeconds, OperativeLifeConfig.ReviveHealth, false
 end
 
+function Service.recordMedicReviveStarted(player: Player, serverTimestamp: number)
+	local entry = entryByPlayer[player]
+	if entry ~= nil and entry.assignment.classId == ClassIds.Medic then
+		ClassValidationTelemetryService.recordActionStarted(
+			entry.operativeEntityId,
+			ActionIds.ReviveAssistance,
+			serverTimestamp
+		)
+	end
+end
+
+function Service.recordMedicReviveEnded(player: Player, serverTimestamp: number, didComplete: boolean)
+	local entry = entryByPlayer[player]
+	if entry ~= nil and entry.assignment.classId == ClassIds.Medic then
+		ClassValidationTelemetryService.recordActionEnded(
+			entry.operativeEntityId,
+			ActionIds.ReviveAssistance,
+			serverTimestamp,
+			didComplete,
+			false
+		)
+		if didComplete then
+			ClassValidationTelemetryService.recordResourceCommit(
+				entry.operativeEntityId,
+				0,
+				ClassConfig.Actions.ReviveAssistance.restoredHealth,
+				0
+			)
+			ClassValidationTelemetryService.recordActionAvailable(entry.operativeEntityId, ActionIds.ReviveAssistance)
+		end
+	end
+end
+
+function Service.readValidationTelemetry(): ClassValidationTelemetryService.Snapshot
+	return ClassValidationTelemetryService.read()
+end
+
+function Service.resetValidationTelemetry()
+	ClassValidationTelemetryService.reset()
+	for _, entry in entriesByOperativeId do
+		ClassValidationTelemetryService.assign(
+			entry.operativeEntityId,
+			entry.assignment.classId,
+			totalResources(entry.resources)
+		)
+	end
+end
+
 function Service.configureEngineerResupplyBoundary(
 	inspector: ((Player) -> (boolean, boolean))?,
 	committer: ((Player, string, number) -> (boolean, number))?
@@ -843,6 +967,7 @@ function Service.start()
 		return
 	end
 	started = true
+	ClassValidationTelemetryService.reset()
 	serviceGeneration += 1
 	rosterRevision = 0
 	local mission = MissionDirectorService.read()
@@ -906,6 +1031,7 @@ function Service.stop()
 	readStateFunction.OnServerInvoke = nil
 	table.clear(entriesByOperativeId)
 	table.clear(entryByPlayer)
+	ClassValidationTelemetryService.reset()
 	selectionStateId = SelectionStateIds.Locked
 	rosterRevision = 0
 end

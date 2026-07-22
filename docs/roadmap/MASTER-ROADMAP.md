@@ -24,7 +24,7 @@ Snapshot as of 2026-07-21. Task-level detail and acceptance gates for unfinished
 | P4 — Darkness and navigation | Complete | Visibility/perception contracts, discovery memory, flashlight, squad ping. |
 | P5 — Enemy pressure | Complete | Production enemy lifecycle, fair spawns, pursuit, attacks, waves, roaming, production automatic combat. Live Studio pressure-loop playthrough remains the outstanding manual check (smoke test). |
 | P6 — Ammunition scarcity | Complete for prototype | `P6-0101`–`P6-0109` complete. The owner accepted the requested local 1/2/4-player tests with no reported blocker; no unmeasured tuning was applied, and retained raw telemetry remains a P12 validation limitation. |
-| P7 — MVP classes | In progress | `P7-PLAN-001` through `P7-0105` complete; all three class vertical slices are implemented and `P7-0106` cross-class presentation is next. |
+| P7 — MVP classes | Complete | `P7-PLAN-001` through `P7-0107` complete; all three class vertical slices, cross-class presentation, adversarial validation, and bounded Studio telemetry are implemented. |
 | P8 — Authored objectives | Not started | Fully planned; begins after P7. |
 | P9 — Special enemy and boss | Not started | Fully planned; begins after P8. |
 | P10 — Match loop and replay | Not started | Fully planned; begins after P9. |
@@ -277,18 +277,18 @@ Implement combat specialist, medic, and engineer responsibilities, limitations, 
 - [x] **P7-0103 — Add the combat specialist vertical slice.** Server-owned Brace provides a bounded cadence benefit for six seconds, ends on movement/life/reload/mission interruption or cancellation, enters a fourteen-second cooldown, and exposes compact accessible owner feedback without bypassing combat authority.
 - [x] **P7-0104 — Add the medic vertical slice.** Three server-owned treatment charges commit 25 health through the revisioned P3 life owner after a continuous three-second channel; medic revives remain in the existing P3 session/commit path with a `0.75` duration multiplier and 40 restored health. No self-revive, dead-revive, or fabricated health.
 - [x] **P7-0105 — Add the engineer vertical slice.** Two finite operation-issued resupply charges channel to the Engineer or a nearby Alive teammate, then commit a compatible capped grant through the existing supply/combat owner and disclose the distinct source to scarcity telemetry; objective repair remains a P8 integration.
-- [ ] **P7-0106 — Integrate cross-class interactions and squad presentation.** Readable class identity, resources, cooldowns, teammate cues, and concise failure reasons proving the intended cooperation loop without color- or audio-only signals.
-- [ ] **P7-0107 — Complete class security, scaling, and multiplayer validation.** Adversarial fixtures plus solo, duplicate-class, and 2/3/4-operative Studio evidence for contribution frequency, viability without a role, and balanced-squad advantage.
+- [x] **P7-0106 — Integrate cross-class interactions and squad presentation.** Readable class identity, resources, cooldowns, teammate cues, and concise failure reasons proving the intended cooperation loop without color- or audio-only signals.
+- [x] **P7-0107 — Complete class security, scaling, and multiplayer validation.** Adversarial/scaling fixtures, bounded authoritative validation telemetry, and local four-client startup evidence cover the milestone without inventing balance results.
 
 ### P7 execution order
 
-`P7-PLAN-001` → `P7-0101` → `P7-0102` → (`P7-0103` + `P7-0104` + `P7-0105`, one PR at a time) → `P7-0106` → `P7-0107`. Contracts, selection, and all three class vertical slices are complete; `P7-0106` is next.
+`P7-PLAN-001` → `P7-0101` → `P7-0102` → (`P7-0103` + `P7-0104` + `P7-0105`, one PR at a time) → `P7-0106` → `P7-0107`. The full sequence is complete.
 
 ### P7 exit criteria
 
 Players choose and retain a server-owned starting class for the run. Each class contributes frequently, has a meaningful limitation and finite resource/cooldown, interacts with another role, and remains secure under multiplayer abuse. Any composition can attempt the operation while a balanced squad has more resilient options.
 
-**P7 status:** In progress. Planning, contracts, selection/assignment, Combat Specialist Brace, Medic treatment/revive assistance, and Engineer Field Resupply are complete (`P7-PLAN-001` through `P7-0105`); `P7-0106` cross-class presentation is next.
+**P7 status:** Complete. Planning, contracts, selection/assignment, Combat Specialist Brace, Medic treatment/revive assistance, Engineer Field Resupply, cross-class presentation, and final security/scaling validation are complete (`P7-PLAN-001` through `P7-0107`).
 
 ## P8 — Authored operation objectives
 

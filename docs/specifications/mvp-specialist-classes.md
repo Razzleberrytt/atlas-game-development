@@ -2,7 +2,7 @@
 
 ## Status
 
-**P7-0105 complete in source.** The shared contracts, selection owner, and all three class vertical slices are implemented and fixture-validated. `P7-0106` (cross-class presentation) is the next gameplay task; live Medic/Engineer feel and conservation validation remain listed in the Studio smoke test.
+**P7 complete.** Shared contracts, selection ownership, all three class vertical slices, cross-class presentation, adversarial/scaling fixtures, and bounded Studio-only validation telemetry are implemented through `P7-0107`. `P8-PLAN-001` is the next gameplay task.
 
 ## Purpose
 
@@ -366,7 +366,7 @@ Future P8 objective-equipment integration is intentionally limited to the existi
 
 ### P7-0106 — Cross-class presentation
 
-Deliver squad class identity, teammate action cues, owner resources/cooldowns, accessible feedback, and integration cleanup.
+Complete. The existing safe class snapshot now drives bounded teammate world labels with written shape tokens, class names, role summaries, and active-action copy. The owner panel discloses class identity, finite current/maximum resources, numeric active/cooldown time, accessible action state, and concise mapped failure reasons. All cues use text and shape/weight changes in addition to color, create no new remote or authority path, reveal no hidden hostile/objective/supply facts, and clean up character labels and client connections deterministically.
 
 ### P7-0107 — Validation and tuning
 
