@@ -96,7 +96,7 @@ local contractsMutationSucceeded = pcall(function()
 end)
 assertThat(not contractsMutationSucceeded, "class ID vocabulary must be frozen")
 
-assertThat(config.Version == "P7-0104-v1-medic", "class config version must identify medic integration")
+assertThat(config.Version == "P7-0105-v1-engineer", "class config version must identify engineer integration")
 assertThat(config.ActionRequests.minimumRequestIntervalSeconds == 0.15, "action rate limit must be configured")
 assertThat(config.ActionRequests.maximumProcessedRequestIdsPerOperative == 64, "action replay history must be bounded")
 assertThat(config.Selection.allowDuplicateStartingClasses, "duplicate starting classes must remain allowed")

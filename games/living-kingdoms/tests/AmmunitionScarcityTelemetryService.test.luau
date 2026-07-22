@@ -12,6 +12,7 @@ end
 local players = {}
 local ammunitionByUserId = {}
 local collectionByUserId = {}
+local engineerByUserId = {}
 
 local CACHE_CONFIG_TOKEN = {}
 local FIREARM_CONFIG_TOKEN = {}
@@ -50,6 +51,10 @@ local cacheService = {
 }
 
 local combatService = {
+	readEngineerResupplyState = function(player)
+		local state = engineerByUserId[player.UserId]
+		return state or { processedSupplyIds = {}, grantedRoundsBySupplyId = {} }
+	end,
 	readReviveCombatState = function(player)
 		local ammunition = ammunitionByUserId[player.UserId]
 		if ammunition == nil then
@@ -179,5 +184,18 @@ check(not mutationSucceeded, "snapshot must be frozen")
 service.resetSampling()
 local reset = service.read()
 check(reset.sampleCount == 0 and reset.observedOperativeCount == 0, "reset must clear validation history")
+
+players = { playerOne }
+collectionByUserId[101] = nil
+engineerByUserId[101] = {
+	processedSupplyIds = { ["class-resupply:engineer:1"] = true },
+	grantedRoundsBySupplyId = { ["class-resupply:engineer:1"] = 12 },
+}
+ammunitionByUserId[101] = { loadedRounds = 12, reserveRounds = 24 }
+local engineerSample = service.sample(70)
+check(engineerSample.acceptedShotCount == 12, "engineer grants must participate in conservation")
+check(engineerSample.engineerResupplyCount == 1, "engineer source count must remain distinct")
+check(engineerSample.engineerRoundsGranted == 12, "engineer grant total must remain distinct")
+check(engineerSample.operatives[1].engineerRoundsGranted == 12, "operative engineer total")
 
 print("AmmunitionScarcityTelemetryService: derivation, sampling, dry transitions, and immutable reads passed")

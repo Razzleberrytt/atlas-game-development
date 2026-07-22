@@ -1,9 +1,8 @@
 --!strict
 
 --[[
-	Configuration-backed values for the three MVP specialist classes. P7-0103
-	activates only the Combat Specialist Brace values; medic and engineer values
-	remain declarations for their ordered vertical slices.
+	Configuration-backed values for the three implemented MVP specialist class
+	vertical slices through P7-0105.
 
 	Engineer resupply values remain provisional while the deferred P6 Studio
 	evidence matrix is unavailable. They must be revisited before P7 gameplay
@@ -112,7 +111,7 @@ local ClassDefinitions = table.freeze({
 })
 
 local Config = {
-	Version = "P7-0104-v1-medic",
+	Version = "P7-0105-v1-engineer",
 	ActionRequests = table.freeze({
 		minimumRequestIntervalSeconds = 0.15,
 		maximumProcessedRequestIdsPerOperative = 64,

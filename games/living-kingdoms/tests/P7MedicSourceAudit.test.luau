@@ -38,7 +38,7 @@ assertThat(
 	"P3 resolver must remain the revive health transition owner"
 )
 
-local treatmentPayloadStart = string.find(controller, 'requestId = string.format("treatment:', 1, true)
+local treatmentPayloadStart = string.find(controller, 'requestId = string.format("targeted-action:', 1, true)
 assertThat(treatmentPayloadStart ~= nil, "treatment payload must exist")
 local treatmentPayloadEnd = string.find(controller, "\n\t\t})", treatmentPayloadStart :: number, true)
 assertThat(treatmentPayloadEnd ~= nil, "treatment payload must remain a bounded literal")
