@@ -27,7 +27,7 @@ Snapshot as of 2026-07-22. Task-level detail and acceptance gates for unfinished
 | P7 — MVP classes | Complete | `P7-PLAN-001` through `P7-0107` complete; all three class vertical slices, cross-class presentation, adversarial validation, and bounded Studio telemetry are implemented. |
 | P8 — Authored objectives | In progress | `P8-PLAN-001`–`P8-0107` complete: the authored objective chain (relay → booster → optional floodlights) runs through a generic server-owned runtime with presence-driven progress, relocation pressure, class opportunities, and route presentation. `P8-0108` automated coverage is complete; the live Studio playtest remains a manual gate. |
 | P9 — Special enemy and boss | Complete | `P9-PLAN-001` through `P9-0106` complete. The Blight Spitter special enemy and The Progenitor boss are live `EnemyDirectorService` archetypes with readable client telegraphs, server-authoritative and bounded, with automated security/performance/composition validation. Boss-defeat → terminal result is deferred to `P10-0102`; a qualitative Studio session remains a manual gate. |
-| P10 — Match loop and replay | Not started | Fully planned; begins after P9. |
+| P10 — Match loop and replay | In progress | `P10-PLAN-001` complete: the terminal operation flow, result/contribution vocabulary, boss-defeat extraction, cleanup/replay, and disconnect policy are specified. `P10-0101` implementation begins next. |
 | P11 — Persistence and unlock | Not started | Fully planned; begins after P10. |
 | P12 — Release candidate | Not started | Fully planned; closes the MVP. |
 | VIS — Visual production track | In progress | `VIS-PLAN-001` and `VIS-0101` complete; `VIS-0102`/`VIS-0103`/`VIS-0104` in progress with the five-weapon presentation models, six-role horde readability, and the client-local AUD-0102/AUD-0103 audio sets; later entries gated by their gameplay milestones. |
@@ -340,7 +340,7 @@ The special enemy clearly disrupts one dominant tactic with learnable counterpla
 
 Turn the existing mission terminal state into a complete player-facing match loop: final extraction or holdout, authoritative success/failure, understandable results, deterministic cleanup, and a safe replay path.
 
-- [ ] **P10-PLAN-001 — Specify terminal operation flow and result semantics.** Success/failure causes, extraction rules, result and contribution facts (for P11), cleanup ownership, replay behavior, leave/disconnect/rejoin policy, and disclosure.
+- [x] **P10-PLAN-001 — Specify terminal operation flow and result semantics.** Success/failure causes, extraction rules, result and contribution facts (for P11), cleanup ownership, replay behavior, leave/disconnect/rejoin policy, and disclosure. Specified in [`../specifications/match-completion-and-result.md`](../specifications/match-completion-and-result.md): the `Extracted`/`SquadWipe`/`Abandoned` causes converge on one first-commit-wins resolver, boss defeat drives the extraction sequence (wiring the P9-0104 deferral), result/contribution facts are recorded server-side for P11, and replay mints a fresh per-run `operationId` with zero stale state.
 - [ ] **P10-0101 — Define match-result and extraction contracts/configuration.** Stable result/cause/extraction/readiness/cleanup/replay vocabulary and safe result snapshots containing only server-authored operation facts.
 - [ ] **P10-0102 — Implement one authoritative terminal-result resolver.** Every terminal cause converges on one first-commit-wins boundary; duplicates and races cannot produce multiple results.
 - [ ] **P10-0103 — Integrate the final extraction or holdout sequence.** Server-read, revision-safe presence, timing, prerequisites, and pressure with explicit late-entry/departure/incapacitation/disconnect behavior.
@@ -357,7 +357,7 @@ Turn the existing mission terminal state into a complete player-facing match loo
 
 A complete operation ends once in an understandable success or failure, cleans up every runtime owner, and can begin a fresh replay without stale state. The loop works for one to four operatives and safely handles leave/disconnect edge cases.
 
-**P10 status:** Not started; begins after P9 completes.
+**P10 status:** In progress. `P10-PLAN-001` is complete — the terminal operation flow and result semantics are specified in [`../specifications/match-completion-and-result.md`](../specifications/match-completion-and-result.md), reusing the single first-commit-wins terminal boundary and existing owners. Boss defeat becomes the authored success path (finally wiring the P9-0104 deferral into `P10-0102`), and replay mints a fresh per-run operation identity. `P10-0101` implementation begins next.
 
 ## P11 — Persistent XP, ranks, and class unlock
 
