@@ -332,8 +332,24 @@ begin without further design decisions.
   when every admitted operative has disconnected the operation resolves
   `Failure`/`Abandoned` through the single terminal resolver. Fixture:
   `tests/OperationSessionRetention.test.luau`.
-- **`P10-0107`** remains not started; it adds the full-loop automated coverage and
-  the 1/2/4-operative Studio runs.
+- **Full-loop validation (`P10-0107`) — automated half complete; Studio matrix
+  outstanding.** `tests/P10MatchLoopValidation.test.luau` proves the composed
+  surface rather than repeating the per-system fixtures: the complete
+  `squadWiped` × `isAbandoned` × `extractionArrived` fact matrix resolves to
+  exactly one cause with the documented precedence and every declared cause is
+  reachable; the same racing facts after a commit always report `AlreadyResolved`;
+  every cause assembles a valid frozen result that no second commit from any cause
+  can replace, and a replayed run carries its own operation identity; every
+  declared cleanup owner maps to a real module with a real teardown, the stop and
+  start orders cover the same owners, and each owner that retains operation-scoped
+  records really releases them; and no P10 owner — mission director, ledger,
+  terminal resolver, or lifecycle owner — accepts a client request, with the
+  debrief sending nothing.
+
+  **Still outstanding (manual gate):** the 1/2/4-operative Studio sessions across
+  success, squad failure, abandonment, disconnect during extraction, and replay,
+  completed without developer intervention. No automated coverage substitutes for
+  that evidence, and P10 is not signed off until it is recorded.
 
 ## Deliberate exclusions
 
