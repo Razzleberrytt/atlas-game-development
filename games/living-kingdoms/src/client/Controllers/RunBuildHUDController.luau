@@ -19,6 +19,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
+local InterfaceTheme = require(script.Parent.Parent.UI.InterfaceTheme)
 
 local RunBuildHUDController = {}
 
@@ -68,35 +69,31 @@ local function isFiniteNumber(value: unknown): boolean
 	return type(value) == "number" and value == value and value ~= math.huge and value ~= -math.huge
 end
 
+-- Thin adapters onto the shared theme, so the relic bar matches every other
+-- surface. Signatures are unchanged, so the rest of the controller is untouched.
 local function addCorner(parent: Instance, radius: number)
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, radius)
-	corner.Parent = parent
+	InterfaceTheme.corner(parent, radius)
 end
 
 local function addStroke(parent: Instance, color: Color3, transparency: number, thickness: number)
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = color
-	stroke.Transparency = transparency
-	stroke.Thickness = thickness
-	stroke.Parent = parent
+	InterfaceTheme.stroke(parent, color, transparency, thickness)
 end
 
 local function makeButton(parent: Instance, name: string): TextButton
 	local button = Instance.new("TextButton")
 	button.Name = name
 	button.AutoButtonColor = true
-	button.BackgroundColor3 = Color3.fromRGB(18, 21, 23)
+	button.BackgroundColor3 = InterfaceTheme.Palette.PanelRaised
 	button.BackgroundTransparency = 0.08
 	button.BorderSizePixel = 0
-	button.Font = Enum.Font.GothamMedium
-	button.TextColor3 = Color3.fromRGB(232, 236, 230)
+	button.Font = InterfaceTheme.Font.Body
+	button.TextColor3 = InterfaceTheme.Palette.TextPrimary
 	button.TextScaled = false
-	button.TextSize = 15
+	button.TextSize = InterfaceTheme.TextSize.Body
 	button.TextWrapped = true
 	button.Text = ""
 	button.Parent = parent
-	addCorner(button, 10)
+	InterfaceTheme.corner(button, InterfaceTheme.Radius.Control)
 	return button
 end
 
@@ -138,7 +135,7 @@ local function createGui()
 		slot.LayoutOrder = slotIndex
 		slot.Size = UDim2.fromOffset(140, 42)
 		slot.Text = string.format("SLOT %d\nEMPTY", slotIndex)
-		addStroke(slot, Color3.fromRGB(120, 128, 118), 0.4, 1)
+		addStroke(slot, InterfaceTheme.Palette.Line, 0.4, 1)
 		slotButtons[slotIndex] = slot
 	end
 
@@ -149,8 +146,8 @@ local function createGui()
 	status.Size = UDim2.fromOffset(440, 20)
 	status.BackgroundTransparency = 1
 	status.Font = Enum.Font.GothamBold
-	status.TextColor3 = Color3.fromRGB(255, 207, 90)
-	status.TextStrokeColor3 = Color3.fromRGB(10, 12, 13)
+	status.TextColor3 = InterfaceTheme.Palette.Accent
+	status.TextStrokeColor3 = InterfaceTheme.Palette.Ink
 	status.TextStrokeTransparency = 0.5
 	status.TextSize = 13
 	status.Text = ""
@@ -163,13 +160,13 @@ local function createGui()
 	panel.AnchorPoint = Vector2.new(1, 0.5)
 	panel.Position = UDim2.new(1, -18, 0.5, -36)
 	panel.Size = UDim2.fromOffset(430, 300)
-	panel.BackgroundColor3 = Color3.fromRGB(13, 16, 17)
+	panel.BackgroundColor3 = InterfaceTheme.Palette.Panel
 	panel.BackgroundTransparency = 0.04
 	panel.BorderSizePixel = 0
 	panel.Visible = false
 	panel.Parent = gui
 	addCorner(panel, 14)
-	addStroke(panel, Color3.fromRGB(185, 133, 45), 0.08, 2)
+	addStroke(panel, InterfaceTheme.Palette.AccentDim, 0.08, 2)
 	choicePanel = panel
 
 	local title = Instance.new("TextLabel")
@@ -178,7 +175,7 @@ local function createGui()
 	title.Size = UDim2.new(1, -44, 0, 28)
 	title.BackgroundTransparency = 1
 	title.Font = Enum.Font.GothamBold
-	title.TextColor3 = Color3.fromRGB(255, 207, 90)
+	title.TextColor3 = InterfaceTheme.Palette.Accent
 	title.TextSize = 20
 	title.TextXAlignment = Enum.TextXAlignment.Left
 	title.Text = "RELIC RECOVERED — CHOOSE ONE"
@@ -191,7 +188,7 @@ local function createGui()
 	subtitle.Size = UDim2.new(1, -44, 0, 22)
 	subtitle.BackgroundTransparency = 1
 	subtitle.Font = Enum.Font.GothamMedium
-	subtitle.TextColor3 = Color3.fromRGB(198, 204, 195)
+	subtitle.TextColor3 = InterfaceTheme.Palette.TextMuted
 	subtitle.TextSize = 15
 	subtitle.TextXAlignment = Enum.TextXAlignment.Left
 	subtitle.Text = "The relic equips into your first empty slot."
@@ -217,7 +214,7 @@ local function createGui()
 		local button = makeButton(choiceRow, "Choice" .. tostring(choiceIndex))
 		button.LayoutOrder = choiceIndex
 		button.Size = UDim2.new(1, 0, 0, 96)
-		addStroke(button, Color3.fromRGB(185, 133, 45), 0.35, 1)
+		addStroke(button, InterfaceTheme.Palette.AccentDim, 0.35, 1)
 		choiceButtons[choiceIndex] = button
 	end
 end

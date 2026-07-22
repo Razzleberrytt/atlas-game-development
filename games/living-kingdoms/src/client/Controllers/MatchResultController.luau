@@ -26,6 +26,7 @@ local MatchResultConfig = require(ReplicatedStorage.Shared.Config.MatchResultCon
 local MatchResultContracts = require(ReplicatedStorage.Shared.Mission.MatchResultContracts)
 local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
 local RunProgressionConfig = require(ReplicatedStorage.Shared.Config.RunProgressionConfig)
+local InterfaceTheme = require(script.Parent.Parent.UI.InterfaceTheme)
 
 type SafeMatchResultSnapshot = MatchResultContracts.SafeMatchResultSnapshot
 
@@ -80,26 +81,19 @@ for _, definition in RunProgressionConfig.UpgradeDefinitions do
 	UPGRADE_NAME_BY_ID[definition.Id] = definition.Name
 end
 
-local function addCorner(parent: Instance, radius: number)
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, radius)
-	corner.Parent = parent
-end
-
-local function makeLabel(parent: Instance, name: string, textSize: number): TextLabel
-	local label = Instance.new("TextLabel")
+-- One stacked section on the debrief. Heights are fixed; the padded list layout
+-- owns the vertical rhythm, so no section hand-computes a pixel offset.
+local function section(
+	parent: Instance,
+	name: string,
+	order: number,
+	height: number,
+	options: InterfaceTheme.LabelOptions
+): TextLabel
+	local label = InterfaceTheme.label(parent, options)
 	label.Name = name
-	label.BackgroundTransparency = 1
-	label.Font = Enum.Font.GothamMedium
-	label.TextColor3 = Color3.fromRGB(228, 233, 226)
-	label.TextStrokeColor3 = Color3.fromRGB(10, 12, 13)
-	label.TextStrokeTransparency = 0.6
-	label.TextSize = textSize
-	label.TextXAlignment = Enum.TextXAlignment.Left
-	label.TextYAlignment = Enum.TextYAlignment.Top
-	label.TextWrapped = true
-	label.Text = ""
-	label.Parent = parent
+	label.LayoutOrder = order
+	label.Size = UDim2.new(1, 0, 0, height)
 	return label
 end
 
@@ -119,58 +113,37 @@ local function createGui()
 	gui.Parent = playerGui
 	screenGui = gui
 
-	local backdrop = Instance.new("Frame")
-	backdrop.Name = "Backdrop"
-	backdrop.Size = UDim2.fromScale(1, 1)
-	backdrop.BackgroundColor3 = Color3.fromRGB(4, 5, 6)
-	backdrop.BackgroundTransparency = 0.25
-	backdrop.BorderSizePixel = 0
-	backdrop.Parent = gui
+	InterfaceTheme.backdrop(gui)
 
-	local frame = Instance.new("Frame")
-	frame.Name = "Debrief"
+	local frame = InterfaceTheme.panel(gui, "Debrief")
 	frame.AnchorPoint = Vector2.new(0.5, 0.5)
 	frame.Position = UDim2.fromScale(0.5, 0.5)
-	frame.Size = UDim2.fromOffset(700, 502)
-	frame.BackgroundColor3 = Color3.fromRGB(13, 16, 17)
-	frame.BackgroundTransparency = 0.02
-	frame.BorderSizePixel = 0
-	frame.Parent = gui
-	addCorner(frame, 14)
+	frame.Size = UDim2.fromOffset(700, 512)
+	InterfaceTheme.padding(frame, InterfaceTheme.Spacing.XLarge)
 
-	local headline = makeLabel(frame, "Headline", 30)
-	headline.Font = Enum.Font.GothamBold
-	headline.Position = UDim2.fromOffset(28, 24)
-	headline.Size = UDim2.new(1, -56, 0, 36)
-	headlineLabel = headline
+	local layout = Instance.new("UIListLayout")
+	layout.FillDirection = Enum.FillDirection.Vertical
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, InterfaceTheme.Spacing.Medium)
+	layout.Parent = frame
 
-	local cause = makeLabel(frame, "Cause", 16)
-	cause.Position = UDim2.fromOffset(28, 66)
-	cause.Size = UDim2.new(1, -56, 0, 44)
-	cause.TextColor3 = Color3.fromRGB(198, 204, 195)
-	causeLabel = cause
-
-	local events = makeLabel(frame, "Events", 16)
-	events.Position = UDim2.fromOffset(28, 118)
-	events.Size = UDim2.new(1, -56, 0, 96)
-	eventsLabel = events
-
-	local contributions = makeLabel(frame, "Contributions", 15)
-	contributions.Position = UDim2.fromOffset(28, 222)
-	contributions.Size = UDim2.new(1, -56, 0, 156)
-	contributionLabel = contributions
-
-	local build = makeLabel(frame, "Build", 15)
-	build.Position = UDim2.fromOffset(28, 384)
-	build.Size = UDim2.new(1, -56, 0, 56)
-	build.TextColor3 = Color3.fromRGB(198, 204, 195)
-	buildLabel = build
-
-	local nextAction = makeLabel(frame, "NextAction", 15)
-	nextAction.Position = UDim2.fromOffset(28, 448)
-	nextAction.Size = UDim2.new(1, -56, 0, 34)
-	nextAction.TextColor3 = Color3.fromRGB(255, 207, 90)
-	nextActionLabel = nextAction
+	headlineLabel = section(frame, "Headline", 1, 38, {
+		role = "Display",
+		size = InterfaceTheme.TextSize.Display,
+		color = InterfaceTheme.Palette.Accent,
+	})
+	causeLabel = section(frame, "Cause", 2, 40, {
+		role = "Body",
+		size = InterfaceTheme.TextSize.Subtitle,
+		color = InterfaceTheme.Palette.TextMuted,
+	})
+	eventsLabel = section(frame, "Events", 3, 92, { role = "Body", size = InterfaceTheme.TextSize.Subtitle })
+	contributionLabel = section(frame, "Contributions", 4, 150, { role = "Body" })
+	buildLabel = section(frame, "Build", 5, 52, { role = "Body", color = InterfaceTheme.Palette.TextMuted })
+	nextActionLabel = section(frame, "NextAction", 6, 34, {
+		role = "Heading",
+		color = InterfaceTheme.Palette.Accent,
+	})
 end
 
 local function formatDuration(durationSeconds: number): string
@@ -223,6 +196,11 @@ local function applyResult(snapshot: unknown)
 	hasDisplayedResult = true
 
 	headline.Text = HEADLINE_BY_CAUSE_ID[result.causeId] or string.upper(result.outcomeId)
+	-- Colour reinforces the outcome the headline already states in words, so the
+	-- result reads instantly without relying on colour alone.
+	headline.TextColor3 = if result.causeId == "Extracted"
+		then InterfaceTheme.Palette.Accent
+		else InterfaceTheme.Palette.Danger
 	cause.Text = EXPLANATION_BY_CAUSE_ID[result.causeId] or ""
 
 	events.Text = string.format(
