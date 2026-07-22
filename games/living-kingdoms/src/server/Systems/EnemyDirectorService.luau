@@ -21,11 +21,14 @@ local Workspace = game:GetService("Workspace")
 
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
+local SpecialEnemyConfig = require(ReplicatedStorage.Shared.Config.SpecialEnemyConfig)
 local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)
+local SpecialEnemyContracts = require(ReplicatedStorage.Shared.Combat.SpecialEnemyContracts)
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 local WorldFoundationConfig = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)
 local EnemyBehaviorResolver = require(script.Parent.EnemyBehaviorResolver)
+local SpecialEnemyBehaviorResolver = require(script.Parent.SpecialEnemyBehaviorResolver)
 local EliteAffixResolver = require(script.Parent.EliteAffixResolver)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 
@@ -33,6 +36,11 @@ type AuthoritativeEnemyAttack = EnemyContracts.AuthoritativeEnemyAttack
 type EnemyOperativeFact = EnemyContracts.EnemyOperativeFact
 type EnemySpawnRequest = EnemyContracts.EnemySpawnRequest
 type EnemyWorldPosition = EnemyContracts.EnemyWorldPosition
+type LingeringBloomZone = SpecialEnemyContracts.LingeringBloomZone
+
+local SpecialBehaviorStateIds = SpecialEnemyContracts.SpecialEnemyBehaviorStateIds
+local SpecialAbilityActionIds = SpecialEnemyContracts.SpecialAbilityActionIds
+local BLIGHT_SPITTER_ARCHETYPE_ID = SpecialEnemyContracts.SpecialEnemyArchetypeIds.BlightSpitter
 
 local BehaviorStateIds = EnemyContracts.EnemyBehaviorStateIds
 local AttackWindupActionIds = EnemyContracts.EnemyAttackWindupActionIds
@@ -105,6 +113,7 @@ export type PressureRead = {
 
 type EnemyEntry = {
 	entityId: string,
+	archetypeId: string,
 	spawnSourceId: string,
 	model: Model,
 	root: BasePart,
@@ -141,6 +150,24 @@ type EnemyEntry = {
 	commanderAuraActive: boolean,
 	effectiveMovementSpeedMultiplier: number,
 	effectiveAttackCadenceMultiplier: number,
+	-- Blight Spitter Corrosive Bloom charge facts; nil for every other archetype.
+	bloomChargeTargetPosition: EnemyWorldPosition?,
+	bloomChargeStartedServerTimestamp: number?,
+	lastBloomCommitServerTimestamp: number?,
+}
+
+-- One server-owned lingering Corrosive Bloom pool. Persists after the Spitter
+-- that cast it dies; ticked on the shared evaluation pass and pruned on expiry.
+type BloomZone = {
+	zoneId: string,
+	sourceEntityId: string,
+	centerPosition: EnemyWorldPosition,
+	radiusStuds: number,
+	tickDamage: number,
+	tickIntervalSeconds: number,
+	lifetimeSeconds: number,
+	committedServerTimestamp: number,
+	lastTickServerTimestamp: number?,
 }
 
 type PendingSpawn = {
@@ -169,8 +196,21 @@ local recoveryWindowEndServerTimestamp: number? = nil
 local sequenceCounter = 0
 local operationPressureStartedServerTimestamp: number? = nil
 local activeEliteCount = 0
+-- Alive Blight Spitters and their live area-denial pools. Bounded by config.
+local activeSpitterCount = 0
+local activeBloomZones: { BloomZone } = {}
 
 local EliteAffixIds = RunRpgContracts.EliteAffixIds
+
+-- Special enemies are never elite-decorated (the RPG affix layer stays separate),
+-- so their spawn takes this fixed no-affix assignment instead of the resolver.
+local NO_AFFIX_ASSIGNMENT = table.freeze({
+	affixId = nil :: string?,
+	maximumHealthMultiplier = 1,
+	movementSpeedMultiplier = 1,
+	attackCadenceMultiplier = 1,
+	bonusFieldXp = 0,
+})
 
 local ELITE_DISPLAY_NAMES = table.freeze({
 	[EliteAffixIds.Armored] = "ARMORED",
@@ -244,6 +284,16 @@ local function clearAttackWindup(entry: EnemyEntry)
 	entry.attackWindupTargetOperativeEntityId = nil
 	entry.attackWindupStartedServerTimestamp = nil
 	entry.attackWindupPresentationSequence = nil
+end
+
+local function clearBloomCharge(entry: EnemyEntry)
+	entry.bloomChargeTargetPosition = nil
+	entry.bloomChargeStartedServerTimestamp = nil
+end
+
+local function clearBloomTelegraph(entry: EnemyEntry)
+	entry.model:SetAttribute(PresentationAttributeNames.SpitterBloomChargeStartedServerTimestamp, 0)
+	entry.model:SetAttribute(PresentationAttributeNames.SpitterBloomCommitServerTimestamp, 0)
 end
 
 local function beginAttackWindup(entry: EnemyEntry, targetOperativeEntityId: string, serverTimestamp: number)
@@ -369,22 +419,34 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 	local folder = enemyFolder
 	assert(folder ~= nil, "enemy spawns require the started director folder")
 	local model, root, humanoid, label = createEnemyBody(request)
-	local pressureStartedAt = operationPressureStartedServerTimestamp
-	local assignment = EliteAffixResolver.resolveAssignment({
-		entityId = request.entityId,
-		spawnSourceId = request.spawnSourceId,
-		operationElapsedSeconds = if pressureStartedAt == nil
-			then 0
-			else math.max(0, serverTimestamp - pressureStartedAt),
-		activeEliteCount = activeEliteCount,
-		isBoss = false,
-		isHordePulse = request.isHordePulse == true,
-		hordeRoleId = request.hordeRoleId or "horde.role.infected",
-	})
-	local maximumHealth =
-		math.max(1, math.floor(EnemyConfig.Walker.MaximumHealth * assignment.maximumHealthMultiplier + 0.5))
+	local isSpitter = request.archetypeId == BLIGHT_SPITTER_ARCHETYPE_ID
+	local assignment
+	local maximumHealth
+	if isSpitter then
+		-- Special enemies bypass the RPG elite affix layer and carry their own
+		-- authoritative health and roam speed.
+		assignment = NO_AFFIX_ASSIGNMENT
+		maximumHealth = SpecialEnemyConfig.BlightSpitter.MaximumHealth
+		humanoid.WalkSpeed = SpecialEnemyConfig.BlightSpitter.RoamSpeedStudsPerSecond
+	else
+		local pressureStartedAt = operationPressureStartedServerTimestamp
+		assignment = EliteAffixResolver.resolveAssignment({
+			entityId = request.entityId,
+			spawnSourceId = request.spawnSourceId,
+			operationElapsedSeconds = if pressureStartedAt == nil
+				then 0
+				else math.max(0, serverTimestamp - pressureStartedAt),
+			activeEliteCount = activeEliteCount,
+			isBoss = false,
+			isHordePulse = request.isHordePulse == true,
+			hordeRoleId = request.hordeRoleId or "horde.role.infected",
+		})
+		maximumHealth =
+			math.max(1, math.floor(EnemyConfig.Walker.MaximumHealth * assignment.maximumHealthMultiplier + 0.5))
+	end
 	local entry: EnemyEntry = {
 		entityId = request.entityId,
+		archetypeId = request.archetypeId,
 		spawnSourceId = request.spawnSourceId,
 		model = model,
 		root = root,
@@ -423,6 +485,9 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 		commanderAuraActive = false,
 		effectiveMovementSpeedMultiplier = assignment.movementSpeedMultiplier,
 		effectiveAttackCadenceMultiplier = assignment.attackCadenceMultiplier,
+		bloomChargeTargetPosition = nil,
+		bloomChargeStartedServerTimestamp = nil,
+		lastBloomCommitServerTimestamp = nil,
 	}
 	model:SetAttribute(PresentationAttributeNames.EliteAffixId, assignment.affixId)
 	model:SetAttribute(
@@ -473,10 +538,21 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 			weld.Parent = aura
 		end
 	end
+	if isSpitter then
+		activeSpitterCount += 1
+	end
 	entries[request.entityId] = entry
 	activeEnemyCount += 1
 	setHealthPresentation(entry)
 	initializePresentationAttributes(entry)
+	if isSpitter then
+		model:SetAttribute(PresentationAttributeNames.SpitterBloomChargeSequence, 0)
+		model:SetAttribute(PresentationAttributeNames.SpitterBloomChargeStartedServerTimestamp, 0)
+		model:SetAttribute(PresentationAttributeNames.SpitterBloomCommitServerTimestamp, 0)
+		model:SetAttribute(PresentationAttributeNames.SpitterBloomCenterX, 0)
+		model:SetAttribute(PresentationAttributeNames.SpitterBloomCenterZ, 0)
+		model:SetAttribute(PresentationAttributeNames.SpitterBloomRadiusStuds, 0)
+	end
 	model.Parent = folder
 	-- Keep physical simulation server-owned so replicated movement cannot be
 	-- steered by a client.
@@ -579,9 +655,15 @@ function EnemyDirectorService.endOperationPressure()
 	nextRoamingSpawnServerTimestamp = nil
 	recoveryWindowEndServerTimestamp = nil
 	table.clear(pendingSpawns)
+	-- A resolved squad is not chased, and its held ground is no longer denied.
+	table.clear(activeBloomZones)
 	for _, entry in entries do
 		if entry.isAlive then
 			clearAttackWindup(entry)
+			if entry.archetypeId == BLIGHT_SPITTER_ARCHETYPE_ID then
+				clearBloomCharge(entry)
+				clearBloomTelegraph(entry)
+			end
 			setPresentationBehaviorState(entry, BehaviorStateIds.StandDown)
 			entry.targetOperativeEntityId = nil
 			entry.humanoid.WalkSpeed = 0
@@ -643,6 +725,7 @@ end
 local function applyDeath(entry: EnemyEntry, serverTimestamp: number)
 	entry.isAlive = false
 	clearAttackWindup(entry)
+	clearBloomCharge(entry)
 	setPresentationBehaviorState(entry, BehaviorStateIds.Dead)
 	entry.model:SetAttribute(PresentationAttributeNames.LifeStateId, PresentationLifeStateIds.Dead)
 	entry.targetOperativeEntityId = nil
@@ -673,6 +756,9 @@ local function applyDeath(entry: EnemyEntry, serverTimestamp: number)
 	activeEnemyCount = math.max(0, activeEnemyCount - 1)
 	if entry.eliteAffixId ~= nil then
 		activeEliteCount = math.max(0, activeEliteCount - 1)
+	end
+	if entry.archetypeId == BLIGHT_SPITTER_ARCHETYPE_ID then
+		activeSpitterCount = math.max(0, activeSpitterCount - 1)
 	end
 	setHealthPresentation(entry)
 end
@@ -846,10 +932,198 @@ local function attemptRoamingSpawns(operativeFacts: { EnemyOperativeFact }, serv
 			spawned += 1
 		end
 	end
+	-- Introduce the Blight Spitter once escalation reaches the authored level,
+	-- maintaining a low concurrent count within the existing population budget.
+	-- Spawns ride the same fair-spawn validation and roaming cadence as walkers;
+	-- no separate scheduler.
+	if
+		escalationLevel >= SpecialEnemyConfig.Spawn.IntroductionEscalationLevel
+		and activeSpitterCount < SpecialEnemyConfig.Spawn.MaximumConcurrent
+	then
+		local anchor = anchors[(nextSequence() % #anchors) + 1]
+		local spitterRequest: EnemySpawnRequest = {
+			entityId = "enemy.spitter:" .. tostring(nextSequence()) .. ":" .. tostring(serverTimestamp),
+			archetypeId = SpecialEnemyConfig.BlightSpitter.ArchetypeId,
+			spawnSourceId = SpawnSourceIds.RoamingPressure,
+			displayName = SpecialEnemyConfig.BlightSpitter.DisplayName,
+			position = proposeRoamingPosition(anchor),
+		}
+		local spitterResolution = EnemyBehaviorResolver.resolveSpawn(spitterRequest, spawnFacts(operativeFacts))
+		if spitterResolution.isLegal then
+			commitSpawn(spitterRequest, serverTimestamp)
+			spawned += 1
+		end
+	end
 	return spawned
 end
 
+-- Commit one bounded set of authoritative area-denial damage events (a bloom
+-- burst or one lingering tick) through the existing P3 boundary, applying the
+-- same squad Iron Hide mitigation the walker melee source uses. Returns the
+-- number of committed events.
+local function commitBloomImpacts(impacts: { AuthoritativeEnemyAttack }, serverTimestamp: number): number
+	local committed = 0
+	local mitigation = readIncomingDamageMultiplier()
+	for _, impact in impacts do
+		local targetRead = OperativeLifeService.readByOperativeEntityId(impact.targetEntityId)
+		if targetRead == nil or targetRead.snapshot.lifeStateId ~= "Alive" then
+			continue
+		end
+		local reducedDamage = math.max(1, math.floor(impact.damageAmount * mitigation + 0.5))
+		local commit = OperativeLifeService.applyAuthoritativeDamage(impact.targetEntityId, targetRead.revision, {
+			damageEventId = impact.damageEventId,
+			sourceEntityId = impact.sourceEntityId,
+			targetEntityId = impact.targetEntityId,
+			damageAmount = reducedDamage,
+			serverTimestamp = serverTimestamp,
+		})
+		if commit.didCommit then
+			committed += 1
+		end
+	end
+	return committed
+end
+
+-- Register a committed bloom's lingering pool, bounded by the configured active
+-- cap with oldest-first eviction so the worst-case tick work stays flat.
+local function registerBloomZone(zone: LingeringBloomZone)
+	if #activeBloomZones >= SpecialEnemyConfig.Bloom.MaximumActiveZones then
+		table.remove(activeBloomZones, 1)
+	end
+	table.insert(activeBloomZones, {
+		zoneId = zone.zoneId,
+		sourceEntityId = zone.sourceEntityId,
+		centerPosition = zone.centerPosition,
+		radiusStuds = zone.radiusStuds,
+		tickDamage = zone.tickDamage,
+		tickIntervalSeconds = zone.tickIntervalSeconds,
+		lifetimeSeconds = zone.lifetimeSeconds,
+		committedServerTimestamp = zone.committedServerTimestamp,
+		lastTickServerTimestamp = zone.lastTickServerTimestamp,
+	})
+end
+
+-- Tick every live lingering pool on the shared evaluation pass and prune expired
+-- pools. Pools persist after the Spitter that cast them dies.
+local function tickBloomZones(operativeFacts: { EnemyOperativeFact }, serverTimestamp: number): number
+	local committed = 0
+	local index = 1
+	while index <= #activeBloomZones do
+		local zone = activeBloomZones[index]
+		local resolution = SpecialEnemyBehaviorResolver.resolveLingeringDamage(zone, operativeFacts, serverTimestamp)
+		if not resolution.isActive then
+			table.remove(activeBloomZones, index)
+			continue
+		end
+		if resolution.ticked then
+			zone.lastTickServerTimestamp = resolution.tickServerTimestamp
+			committed += commitBloomImpacts(resolution.impacts, serverTimestamp)
+		end
+		index += 1
+	end
+	return committed
+end
+
+--[[
+	One Blight Spitter behavior pass. The pure resolver picks the densest cluster,
+	runs the Corrosive Bloom charge lifecycle, and — at commit — returns the burst
+	against every Alive operative in radius plus the lingering-pool descriptor.
+	This owner applies movement intent, discloses the charge telegraph, commits the
+	authoritative damage, and registers the pool. Returns the committed burst count.
+]]
+local function applySpitterBehavior(
+	entry: EnemyEntry,
+	operativeFacts: { EnemyOperativeFact },
+	serverTimestamp: number
+): number
+	local decision = SpecialEnemyBehaviorResolver.resolveBehavior({
+		entityId = entry.entityId,
+		behaviorStateId = entry.behaviorStateId,
+		position = { x = entry.root.Position.X, y = entry.root.Position.Y, z = entry.root.Position.Z },
+		anchorOperativeEntityId = entry.targetOperativeEntityId,
+		lastBloomCommitServerTimestamp = entry.lastBloomCommitServerTimestamp,
+		bloomChargeTargetPosition = entry.bloomChargeTargetPosition,
+		bloomChargeStartedServerTimestamp = entry.bloomChargeStartedServerTimestamp,
+	}, operativeFacts, serverTimestamp)
+	if decision.rejectionReasonId ~= nil then
+		return 0
+	end
+	setPresentationBehaviorState(entry, decision.behaviorStateIdAfter)
+	entry.targetOperativeEntityId = decision.anchorOperativeEntityId
+
+	local action = decision.bloomActionId
+	if action == SpecialAbilityActionIds.Begin then
+		local target = decision.bloomTargetPosition
+		if target == nil then
+			return 0
+		end
+		entry.bloomChargeStartedServerTimestamp = serverTimestamp
+		entry.bloomChargeTargetPosition = { x = target.x, y = target.y, z = target.z }
+		entry.humanoid.WalkSpeed = 0
+		entry.attackAttemptSequence += 1
+		entry.model:SetAttribute(PresentationAttributeNames.SpitterBloomChargeSequence, entry.attackAttemptSequence)
+		entry.model:SetAttribute(PresentationAttributeNames.SpitterBloomChargeStartedServerTimestamp, serverTimestamp)
+		entry.model:SetAttribute(
+			PresentationAttributeNames.SpitterBloomCommitServerTimestamp,
+			serverTimestamp + SpecialEnemyConfig.Bloom.ChargeWindupSeconds
+		)
+		entry.model:SetAttribute(PresentationAttributeNames.SpitterBloomCenterX, target.x)
+		entry.model:SetAttribute(PresentationAttributeNames.SpitterBloomCenterZ, target.z)
+		entry.model:SetAttribute(
+			PresentationAttributeNames.SpitterBloomRadiusStuds,
+			SpecialEnemyConfig.Bloom.ImpactRadiusStuds
+		)
+		return 0
+	elseif action == SpecialAbilityActionIds.Continue then
+		entry.humanoid.WalkSpeed = 0
+		return 0
+	elseif action == SpecialAbilityActionIds.Commit then
+		entry.humanoid.WalkSpeed = 0
+		local committed = commitBloomImpacts(decision.bloomImpacts, serverTimestamp)
+		if decision.lingeringZone ~= nil then
+			registerBloomZone(decision.lingeringZone)
+		end
+		clearBloomCharge(entry)
+		entry.lastBloomCommitServerTimestamp = serverTimestamp
+		clearBloomTelegraph(entry)
+		return committed
+	elseif action == SpecialAbilityActionIds.Cancel then
+		clearBloomCharge(entry)
+		clearBloomTelegraph(entry)
+	end
+
+	local state = decision.behaviorStateIdAfter
+	if state == SpecialBehaviorStateIds.Approaching then
+		entry.humanoid.WalkSpeed = SpecialEnemyConfig.BlightSpitter.PursuitSpeedStudsPerSecond
+		local anchorId = decision.anchorOperativeEntityId
+		for _, fact in operativeFacts do
+			if fact.operativeEntityId == anchorId then
+				entry.humanoid:MoveTo(Vector3.new(fact.position.x, fact.position.y, fact.position.z))
+				break
+			end
+		end
+	elseif state == SpecialBehaviorStateIds.Roaming then
+		entry.humanoid.WalkSpeed = SpecialEnemyConfig.BlightSpitter.RoamSpeedStudsPerSecond
+		if serverTimestamp >= entry.nextRoamRetargetServerTimestamp then
+			entry.nextRoamRetargetServerTimestamp = serverTimestamp + EnemyConfig.Walker.RoamRetargetIntervalSeconds
+			local angle = nextSequence() * 2.399963
+			local anchor = entry.roamAnchor
+			local radius = EnemyConfig.Walker.RoamWanderRadiusStuds
+			entry.humanoid:MoveTo(
+				Vector3.new(anchor.x + math.cos(angle) * radius, anchor.y, anchor.z + math.sin(angle) * radius)
+			)
+		end
+	elseif state == SpecialBehaviorStateIds.Recovering then
+		-- In bloom range but reloading: hold position as a stationary priority target.
+		entry.humanoid.WalkSpeed = 0
+	end
+	return 0
+end
+
 local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperativeFact }, serverTimestamp: number): number
+	if entry.archetypeId == BLIGHT_SPITTER_ARCHETYPE_ID then
+		return applySpitterBehavior(entry, operativeFacts, serverTimestamp)
+	end
 	local decision = EnemyBehaviorResolver.resolveBehavior({
 		entityId = entry.entityId,
 		behaviorStateId = entry.behaviorStateId,
@@ -1075,6 +1349,7 @@ function EnemyDirectorService.evaluateAt(serverTimestamp: number): EvaluationSum
 	summary.spawnedCount += retryPendingSpawns(operativeFacts, serverTimestamp)
 	summary.spawnedCount += attemptRoamingSpawns(operativeFacts, serverTimestamp)
 	refreshCommanderAuras()
+	summary.attackCommittedCount += tickBloomZones(operativeFacts, serverTimestamp)
 	local toClean: { string } = {}
 	for entityId, entry in entries do
 		local cleanupAt = entry.cleanupAtServerTimestamp
@@ -1132,6 +1407,8 @@ function EnemyDirectorService.stop()
 	end
 	table.clear(entries)
 	activeEliteCount = 0
+	activeSpitterCount = 0
+	table.clear(activeBloomZones)
 	operationPressureStartedServerTimestamp = nil
 	table.clear(pendingSpawns)
 	activeEnemyCount = 0

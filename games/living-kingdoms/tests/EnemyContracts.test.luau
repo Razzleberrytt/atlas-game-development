@@ -50,6 +50,10 @@ local config = configLoader()
 
 -- Stable vocabulary: renames break saved IDs and cross-system contracts.
 assert(contracts.EnemyArchetypeIds.ExclusionWalker == "enemy.exclusion_walker")
+assert(
+	contracts.EnemyArchetypeIds.BlightSpitter == "enemy.blight_spitter",
+	"the special-enemy archetype joins the registry"
+)
 assert(contracts.EnemyBehaviorStateIds.Roaming == "Roaming")
 assert(contracts.EnemyBehaviorStateIds.Pursuing == "Pursuing")
 assert(contracts.EnemyBehaviorStateIds.Attacking == "Attacking")

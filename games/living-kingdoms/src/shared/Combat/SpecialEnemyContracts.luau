@@ -84,8 +84,10 @@ export type LingeringDamageResolution = {
 	rejectionReasonId: SpecialEnemyBehaviorRejectionReasonId?,
 }
 
+-- Sourced from the shared registry so there is one archetype-ID source of truth
+-- (EnemyContracts), which the fair-spawn resolver validates against.
 SpecialEnemyContracts.SpecialEnemyArchetypeIds = table.freeze({
-	BlightSpitter = "enemy.blight_spitter" :: SpecialEnemyArchetypeId,
+	BlightSpitter = EnemyContracts.EnemyArchetypeIds.BlightSpitter :: SpecialEnemyArchetypeId,
 })
 
 SpecialEnemyContracts.SpecialEnemyBehaviorStateIds = table.freeze({
