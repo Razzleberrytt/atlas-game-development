@@ -213,9 +213,41 @@ begin without further design decisions.
   re-evaluation after a commit never produces a second result. `MatchResultContracts`
   gained the `TerminalDecisionRejectionReasonId`/`TerminalDecision` vocabulary.
   Fixtures in `tests/TerminalResultResolver.test.luau`.
-- **`P10-0103` – `P10-0107`** remain not started; they add the extraction
-  sequence, the result presentation, cleanup/replay, the disconnect handling, and
-  the full-loop validation.
+- **Final extraction sequence (`P10-0103`) — complete.**
+  `MissionDirectorService` keeps the single terminal boundary and now drives it
+  from the pure resolver. The holdout is no longer won by a bare timer: it begins
+  with extraction `Locked` and no disclosed countdown, and a living Progenitor can
+  never be waited out. On the boss's authoritative defeat
+  (`EnemyDirectorService.readBossState().isDefeated` — the client declares
+  nothing) extraction becomes `Inbound` for
+  `MatchResultConfig.ExtractionArrivalWindowSeconds`, announced by the new
+  `ExtractionInbound` radio line, and the existing `holdoutDeadlineServerTimestamp`
+  disclosure now carries exactly that countdown. At the deadline, one admitted,
+  Alive operative inside the clearing
+  (`countAdmittedAliveInsideExtraction`) moves it to `Arrived`, which is the only
+  fact that feeds the resolver's `extractionArrived`.
+
+  Squad failure no longer commits an outcome directly: it is one fact
+  `evaluateTerminalAt` weighs, and abandonment is read separately from
+  `SquadFailureService.readParticipationFacts()`, so a wipe resolves as
+  `SquadWipe` and an all-disconnect as `Abandoned`. The already-committed cause is
+  fed back as `resolvedCauseId`, so re-evaluation after a commit is inert.
+
+  **Late entry, early departure, incapacitation, death, and disconnect** during the
+  window all resolve through that one presence rule. A missed extraction is
+  deliberately **not** a failure — the vocabulary has no cause for it — so an empty
+  clearing simply leaves the operation unresolved and a squad that stepped out can
+  walk back in and extract. Pressure is not thinned in this pass: no new director
+  API was invented, so the squad still holds under the existing wave-3 roaming
+  pressure with the boss gone; P12 tunes that against evidence.
+
+  `Service.read()` gained `causeId` and `extractionReadinessStateId` for
+  `P10-0104`/`P10-0105`; both reset with the operation. Fixtures:
+  `tests/ExtractionSequenceIntegration.test.luau`, plus the extended
+  `MissionDirectorService` and `P5IntegrationValidation` scenarios.
+- **`P10-0104` – `P10-0107`** remain not started; they add the result
+  presentation, cleanup/replay, the disconnect handling, and the full-loop
+  validation.
 
 ## Deliberate exclusions
 

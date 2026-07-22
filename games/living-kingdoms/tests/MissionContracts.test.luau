@@ -126,18 +126,32 @@ assert(contracts.validateSafeMissionSnapshot(snapshot({ radio = nil })))
 -- P8-0107 objective disclosure: the objectives array and floodlights flag.
 assert(not contracts.validateSafeMissionSnapshot(snapshot({ objectives = "nope" })))
 assert(not contracts.validateSafeMissionSnapshot(snapshot({ floodlightsRestored = "yes" })))
-assert(
-	not contracts.validateSafeMissionSnapshot(snapshot({
-		objectives = { { objectiveId = "x", displayText = "y", stateId = "Nope", progressRatio = 0.5, decaying = false, isOptional = false, destinationDisplayName = "z" } },
-	})),
-	"objective entries validate their state id"
-)
-assert(
-	not contracts.validateSafeMissionSnapshot(snapshot({
-		objectives = { { objectiveId = "x", displayText = "y", stateId = "Active", progressRatio = 2, decaying = false, isOptional = false, destinationDisplayName = "z" } },
-	})),
-	"objective progress ratio must be within 0..1"
-)
+assert(not contracts.validateSafeMissionSnapshot(snapshot({
+	objectives = {
+		{
+			objectiveId = "x",
+			displayText = "y",
+			stateId = "Nope",
+			progressRatio = 0.5,
+			decaying = false,
+			isOptional = false,
+			destinationDisplayName = "z",
+		},
+	},
+})), "objective entries validate their state id")
+assert(not contracts.validateSafeMissionSnapshot(snapshot({
+	objectives = {
+		{
+			objectiveId = "x",
+			displayText = "y",
+			stateId = "Active",
+			progressRatio = 2,
+			decaying = false,
+			isOptional = false,
+			destinationDisplayName = "z",
+		},
+	},
+})), "objective progress ratio must be within 0..1")
 assert(
 	contracts.validateSafeMissionSnapshot(
 		snapshot({ phaseId = "Resolved", outcomeId = "Success", objectiveStateId = "Completed" })

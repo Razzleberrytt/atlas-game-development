@@ -138,4 +138,6 @@ local floodComplete = sample(unlockState, "Exfiltration", 1, { [floodId] = { eng
 assert(floodComplete.unlockedExtraction == false, "the optional objective never unlocks extraction")
 assert(floodComplete.requiredChainComplete == false, "the required chain is still open without the booster")
 
-print("P8ObjectiveChainSecurityValidation: no-remote authority, phase, revision, delta, prerequisite, class, distance, bounds, and optional-gate coverage passed")
+print(
+	"P8ObjectiveChainSecurityValidation: no-remote authority, phase, revision, delta, prerequisite, class, distance, bounds, and optional-gate coverage passed"
+)
