@@ -308,7 +308,32 @@ begin without further design decisions.
   ledger records — so two runs on one server are two distinct results. The debrief
   screen's next action became real and now names the same configured window.
   Fixture: `tests/OperationLifecycleReplay.test.luau`.
-- **`P10-0106` – `P10-0107`** remain not started.
+- **Leave, disconnect, rejoin, and shutdown (`P10-0106`) — complete.**
+  Retention lives in the owner that holds each fact, keyed by the server-owned
+  operative entity ID, so there is no session hub to keep in sync and no ordering
+  hazard around `PlayerRemoving`.
+
+  An audit of the existing paths found three real gaps, all now closed:
+  `OperativeLifeService` discarded its entry on disconnect, so reconnecting handed
+  back a fresh full-health operative and undid an incapacitation or death; the
+  combat runtime reissued a full loadout, refilling scarce P6 ammunition; and
+  `SquadFailureService` dropped admission permanently, contradicting the resume
+  policy above. The life owner now retains the authoritative snapshot and resumes
+  it, the combat runtime retains the exact weapon and rounds, and the roster owner
+  re-admits an identity it already admitted. Each retained record is **consumed on
+  restore**, so a reconnect cannot be replayed for a second restoration, and all of
+  them are released when the operation stops — a replay issues fresh operatives.
+
+  Class selection, spent class resources, and the contribution ledger already
+  survived correctly: both are keyed by operative entity ID and neither listens to
+  `PlayerRemoving`. Temporary armor deliberately does **not** survive; it is a
+  transient combat resource. Late joining stays prohibited: only an identity that
+  was admitted at insertion can resume, and abandonment remains authoritative —
+  when every admitted operative has disconnected the operation resolves
+  `Failure`/`Abandoned` through the single terminal resolver. Fixture:
+  `tests/OperationSessionRetention.test.luau`.
+- **`P10-0107`** remains not started; it adds the full-loop automated coverage and
+  the 1/2/4-operative Studio runs.
 
 ## Deliberate exclusions
 
