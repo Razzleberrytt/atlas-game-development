@@ -54,6 +54,7 @@ assert(
 	contracts.EnemyArchetypeIds.BlightSpitter == "enemy.blight_spitter",
 	"the special-enemy archetype joins the registry"
 )
+assert(contracts.EnemyArchetypeIds.Progenitor == "boss.progenitor", "the boss archetype joins the registry")
 assert(contracts.EnemyBehaviorStateIds.Roaming == "Roaming")
 assert(contracts.EnemyBehaviorStateIds.Pursuing == "Pursuing")
 assert(contracts.EnemyBehaviorStateIds.Attacking == "Attacking")

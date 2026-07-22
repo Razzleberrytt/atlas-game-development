@@ -372,8 +372,28 @@ design decisions.
   by the walker archetype and cleanly ignores the Spitter. Bounds are unchanged:
   one heartbeat, one evaluation pass, zero per-enemy connections/timers/raycasts/remotes
   and no randomness. The readable client telegraph presentation is `P9-0105`.
-- **`P9-0103` – `P9-0106`** remain not started; they add the boss contracts,
-  runtime, telegraphs, and encounter validation.
+- **Boss contracts, configuration, and phase resolver (`P9-0103`) — complete.**
+  `src/shared/Combat/BossContracts.luau` fixes The Progenitor's `boss.progenitor`
+  archetype (sourced from the shared `EnemyContracts` registry), the monotonic
+  `Carapace → Brood → Collapse → Defeated` phases and their fixed order, the Slam
+  action lifecycle (`None`/`Begin`/`Continue`/`Cancel`/`Commit`), the
+  `Pending`/`Defeated` outcome, rejection reasons, and the fact/decision shapes.
+  `src/shared/Config/BossConfig.luau` is the balance home — boss health, the
+  strictly-ordered Brood/Collapse health thresholds, per-phase Slam
+  windup/cooldown/exposure values that tighten monotonically (enrage), the Slam
+  radius/damage, the Brood surge count (within the population budget), and the
+  spore-shroud / Collapse-darkness visibility reductions — with invariants asserted
+  against `EnemyConfig`. `src/server/Systems/BossPhaseResolver.luau` is the pure,
+  deterministic resolver: monotonic health-driven phase transitions with fixed
+  precedence (never regressing), the post-Slam exposure window that alone makes the
+  boss vulnerable, the Slam AoE against every Alive operative in radius at commit,
+  the one-shot Brood surge signal, the shroud/darkness visibility override (the P8
+  floodlight repair pays off in Collapse), and terminal defeat. Fixtures
+  `tests/BossContracts.test.luau` and `tests/BossPhaseResolver.test.luau` cover the
+  vocabulary/config invariants and the full decision surface. No runtime, arena,
+  telegraph, or summon integration exists yet.
+- **`P9-0104` – `P9-0106`** remain not started; they add the boss runtime and
+  arena integration, the readable telegraphs, and the encounter validation.
 
 ## Deliberate exclusions
 
