@@ -17,6 +17,7 @@ local MissionContracts = require(ReplicatedStorage.Shared.Mission.MissionContrac
 local BraceResolver = require(script.Parent.BraceResolver)
 local ClassSelectionResolver = require(script.Parent.ClassSelectionResolver)
 local ClassValidationTelemetryService = require(script.Parent.ClassValidationTelemetryService)
+local MatchResultService = require(script.Parent.MatchResultService)
 local FieldTreatmentResolver = require(script.Parent.FieldTreatmentResolver)
 local FieldResupplyResolver = require(script.Parent.FieldResupplyResolver)
 local MissionDirectorService = require(script.Parent.MissionDirectorService)
@@ -212,6 +213,9 @@ local function recordActionTransition(
 				after.actionId,
 				serverTimestamp
 			)
+			-- P10-0104 contribution: an action becoming Active is the committed
+			-- class action; the server already spent its resource to get here.
+			MatchResultService.recordClassActionCommitted(entry.operativeEntityId)
 		end
 	elseif before.actionStateId == ActionStateIds.Active and after.actionStateId ~= ActionStateIds.Active then
 		if before.actionId ~= nil then

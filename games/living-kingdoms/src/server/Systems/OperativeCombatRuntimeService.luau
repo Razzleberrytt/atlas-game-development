@@ -42,6 +42,7 @@ local ClassService = require(script.Parent.ClassService)
 local DamageResolver = require(script.Parent.DamageResolver)
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 local FirearmHitResolver = require(script.Parent.FirearmHitResolver)
+local MatchResultService = require(script.Parent.MatchResultService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local RelicModifierService = require(script.Parent.RelicModifierService)
 local ReloadResolver = require(script.Parent.ReloadResolver)
@@ -643,6 +644,23 @@ local function applyBloodBattery(player: Player, killCount: number, shotId: stri
 	})
 end
 
+--[[
+	Records one committed impact into the P10-0104 contribution ledger. Damage and
+	boss-exposure credit follow the shot that the authoritative health boundary
+	accepted, never a requested or predicted amount.
+]]
+local function recordCombatContribution(operativeEntityId: string, targetEntityId: string, damageAmount: number)
+	MatchResultService.recordDamageDealt(operativeEntityId, damageAmount)
+	local didRead, isBoss = pcall(function()
+		return EnemyDirectorService.isBossEntity(targetEntityId)
+	end)
+	if didRead and isBoss == true then
+		-- The boss only accepts damage inside its telegraphed exposure window, so a
+		-- committed boss hit is by definition an exposure hit.
+		MatchResultService.recordBossExposureHit(operativeEntityId)
+	end
+end
+
 local function commitPatternImpacts(
 	player: Player,
 	playerState: PlayerCombatState,
@@ -703,6 +721,13 @@ local function commitPatternImpacts(
 			if damageResolution.becameDead then
 				killCount += 1
 			end
+			-- P10-0104 contribution: only committed damage counts, and only the
+			-- operative whose shot committed it.
+			recordCombatContribution(
+				playerState.operativeState.entityId,
+				impact.targetEntityId,
+				committedDamage or damageEvent.damageAmount
+			)
 			table.insert(disclosedImpacts, {
 				targetEntityId = impact.targetEntityId,
 				impactWorldPosition = sightedEntry.fact.worldPosition,
@@ -780,6 +805,12 @@ local function resolveAcceptedShot(
 		)
 		secondaryImpacts = impacts
 		killCount += secondaryKills
+	end
+	if didApplyPrimaryDamage and damageAmount ~= nil then
+		recordCombatContribution(playerState.operativeState.entityId, targetEntityId, damageAmount)
+	end
+	if killCount > 0 then
+		MatchResultService.recordKills(playerState.operativeState.entityId, killCount)
 	end
 	applyBloodBattery(player, killCount, shotId, nowTimestamp)
 	presentationRemote:FireAllClients({

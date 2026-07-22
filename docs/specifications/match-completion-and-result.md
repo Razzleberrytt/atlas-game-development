@@ -245,9 +245,28 @@ begin without further design decisions.
   `P10-0104`/`P10-0105`; both reset with the operation. Fixtures:
   `tests/ExtractionSequenceIntegration.test.luau`, plus the extended
   `MissionDirectorService` and `P5IntegrationValidation` scenarios.
-- **`P10-0104` – `P10-0107`** remain not started; they add the result
-  presentation, cleanup/replay, the disconnect handling, and the full-loop
-  validation.
+- **Contribution ledger and result assembly (`P10-0104`, part 1) — complete.**
+  `src/server/Systems/MatchResultService.luau` is the bounded per-operative
+  contribution record named in the cleanup stop order. It is inert authority: no
+  remote, no connection, no timer, and no ability to damage, heal, kill, complete
+  an objective, spend a resource, or resolve an operation — it only counts what an
+  authoritative owner has already committed. The owners that already observe those
+  events record into it: the combat runtime (committed damage, kills, and
+  boss-exposure hits, the last gated on the new
+  `EnemyDirectorService.isBossEntity`), the revive session owner (the operative who
+  performed a committed revive), `ClassService` (an action becoming Active), and
+  `MissionDirectorService` (every operative it sampled working a completed
+  objective). At the single terminal boundary the mission director hands over the
+  squad facts it owns — including the phase actually reached, captured before the
+  terminal transition — and the ledger freezes one validated
+  `SafeMatchResultSnapshot` with the P3 survival state read per operative. First
+  commit wins; an invalid snapshot is refused rather than published; the tracked
+  population and every counter are bounded, and the operative ceiling deliberately
+  exceeds four so no fixed-squad assumption is baked in. The snapshot carries
+  exactly the P10-0101 fields, so no XP, rank, unlock, or reward can ride along.
+  Fixture: `tests/MatchResultContribution.test.luau`.
+- **`P10-0104` part 2** (the result screen and its disclosure network) and
+  **`P10-0105` – `P10-0107`** remain not started.
 
 ## Deliberate exclusions
 
