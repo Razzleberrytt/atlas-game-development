@@ -15,6 +15,7 @@ local Workspace = game:GetService("Workspace")
 local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.OperativeLifeContracts)
 local ClassService = require(script.Parent.ClassService)
 local OperativeCombatRuntimeService = require(script.Parent.OperativeCombatRuntimeService)
+local MatchResultService = require(script.Parent.MatchResultService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local RelicModifierService = require(script.Parent.RelicModifierService)
 local OperativeReviveResolver = require(script.Parent.OperativeReviveResolver)
@@ -272,6 +273,9 @@ local function evaluateSession(session: Session, serverTimestamp: number)
 			local committed =
 				OperativeLifeService.commitAcceptedTransition(session.targetPlayer, targetRead.revision, continued)
 			if committed.didCommit then
+				-- P10-0104 contribution: only a committed revive counts, and only
+				-- for the operative who performed it.
+				MatchResultService.recordRevivePerformed(session.sessionState.reviverOperativeEntityId)
 				grantGuardianSignalArmor(session, serverTimestamp)
 				ClassService.recordMedicReviveEnded(session.reviverPlayer, serverTimestamp, true)
 			end

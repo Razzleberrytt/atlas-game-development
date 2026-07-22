@@ -224,10 +224,15 @@ local SquadFailureService = require(script.Systems.SquadFailureService)
 local PersonalFlashlightService = require(script.Systems.PersonalFlashlightService)
 local SquadPingService = require(script.Systems.SquadPingService)
 local WorldFoundationService = require(script.Systems.WorldFoundationService)
+local MatchResultService = require(script.Systems.MatchResultService)
 local MissionDirectorService = require(script.Systems.MissionDirectorService)
 local WeaponLoadoutService = require(script.Systems.WeaponLoadoutService)
 
 WorldFoundationService.start()
+-- The contribution ledger records only already-committed facts, so it starts
+-- before every owner that could commit one and before the mission can reach its
+-- terminal boundary.
+MatchResultService.start()
 OperativeLifeService.start()
 SquadFailureService.start()
 PersonalFlashlightService.start()

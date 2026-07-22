@@ -13,6 +13,18 @@ local SQUAD_TOKEN = {}
 local CLASS_TOKEN = {}
 -- Guardian Signal is not equipped in these fixtures, so the revive flow must
 -- behave exactly as it did before RPG-0109.
+local MATCH_RESULT_TOKEN = {}
+-- The P10-0104 contribution ledger is inert authority: these fixtures only need
+-- to prove the owner records through it, never that recording changes gameplay.
+local matchResultCalls = {}
+local matchResultService = setmetatable({}, {
+	__index = function(_self, key)
+		return function(...)
+			table.insert(matchResultCalls, { name = key, arguments = { ... } })
+			return true
+		end
+	end,
+})
 local RELIC_MODIFIER_TOKEN = {}
 local relicModifierService = {
 	read = function()
@@ -344,7 +356,9 @@ local loader = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/O
 			if token == SQUAD_TOKEN then
 				return squadService
 			end
-			if token == RELIC_MODIFIER_TOKEN then
+			if token == MATCH_RESULT_TOKEN then
+				return matchResultService
+			elseif token == RELIC_MODIFIER_TOKEN then
 				return relicModifierService
 			end
 			if token == CLASS_TOKEN then
@@ -358,6 +372,7 @@ local loader = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/O
 				OperativeCombatRuntimeService = COMBAT_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 				OperativeReviveResolver = RESOLVER_TOKEN,
+				MatchResultService = MATCH_RESULT_TOKEN,
 				RelicModifierService = RELIC_MODIFIER_TOKEN,
 				SquadFailureService = SQUAD_TOKEN,
 			},

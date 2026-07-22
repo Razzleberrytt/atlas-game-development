@@ -213,6 +213,18 @@ local CLASS_TOKEN = {}
 local ENEMY_TOKEN = {}
 local LIFE_TOKEN = {}
 local FAILURE_TOKEN = {}
+local MATCH_RESULT_TOKEN = {}
+-- The P10-0104 contribution ledger is inert authority: these fixtures only need
+-- to prove the owner records through it, never that recording changes gameplay.
+local matchResultCalls = {}
+local matchResultService = setmetatable({}, {
+	__index = function(_self, key)
+		return function(...)
+			table.insert(matchResultCalls, { name = key, arguments = { ... } })
+			return true
+		end
+	end,
+})
 local MATCH_CONFIG_TOKEN = {}
 local TERMINAL_TOKEN = {}
 local replicatedStorage = {
@@ -354,6 +366,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 			Parent = {
 				ClassService = CLASS_TOKEN,
 				EnemyDirectorService = ENEMY_TOKEN,
+				MatchResultService = MATCH_RESULT_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 				SquadFailureService = FAILURE_TOKEN,
 				TerminalResultResolver = TERMINAL_TOKEN,
@@ -376,6 +389,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return lifeService
 			elseif token == FAILURE_TOKEN then
 				return failureService
+			elseif token == MATCH_RESULT_TOKEN then
+				return matchResultService
 			elseif token == MATCH_CONTRACTS_TOKEN then
 				return matchResultContracts
 			elseif token == MATCH_CONFIG_TOKEN then

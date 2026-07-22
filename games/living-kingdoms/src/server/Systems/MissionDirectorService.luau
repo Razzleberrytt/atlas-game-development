@@ -32,6 +32,7 @@ local ObjectiveChainConfig = require(ReplicatedStorage.Shared.Config.ObjectiveCh
 local ObjectiveChainResolver = require(ReplicatedStorage.Shared.Mission.ObjectiveChainResolver)
 local ClassService = require(script.Parent.ClassService)
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
+local MatchResultService = require(script.Parent.MatchResultService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local SquadFailureService = require(script.Parent.SquadFailureService)
 local TerminalResultResolver = require(script.Parent.TerminalResultResolver)
@@ -124,6 +125,7 @@ local insertionDeadlineServerTimestamp: number? = nil
 local holdoutDeadlineServerTimestamp: number? = nil
 local requiredObjectiveCompletedAtServerTimestamp: number? = nil
 local requiredObjectiveCompletedByOperativeEntityId: string? = nil
+local operationStartedAtServerTimestamp = 0
 local lastRadio: SafeRadioTransmission? = nil
 local spawnedWaves: { [number]: boolean } = {}
 
@@ -511,6 +513,11 @@ local function applyObjectiveCompletion(objectiveId: string, serverTimestamp: nu
 	if definition.waveIndexOnComplete ~= nil then
 		spawnWave(definition.waveIndexOnComplete)
 	end
+	-- P10-0104 contribution: every operative the server sampled working this
+	-- objective at completion is credited exactly once.
+	for _, worker in workers do
+		MatchResultService.recordObjectiveContribution(worker.operativeEntityId)
+	end
 	if floodlightsObjectiveId ~= nil and objectiveId == floodlightsObjectiveId then
 		floodlightsRestored = true
 	end
@@ -519,6 +526,13 @@ local function applyObjectiveCompletion(objectiveId: string, serverTimestamp: nu
 		requiredObjectiveCompletedByOperativeEntityId = if workers[1] ~= nil then workers[1].operativeEntityId else nil
 		unlockExtraction(serverTimestamp)
 	end
+end
+
+local function isBossDefeated(): boolean
+	local didRead, bossState = pcall(function()
+		return EnemyDirectorService.readBossState()
+	end)
+	return didRead and type(bossState) == "table" and bossState.isDefeated == true
 end
 
 --[[
@@ -534,9 +548,32 @@ local function resolveMission(
 	if phaseId == PhaseIds.Resolved then
 		return
 	end
+	-- The phase the squad actually reached, captured before the terminal
+	-- transition overwrites it.
+	local phaseReachedId = phaseId
 	phaseId = PhaseIds.Resolved
 	outcomeId = finalOutcomeId
 	resultCauseId = finalCauseId
+	-- P10-0104: freeze the one authored result snapshot at the single terminal
+	-- boundary, from squad facts this owner already holds.
+	local completedObjectiveCount = 0
+	for _, isCompleted in objectiveCompleted do
+		if isCompleted then
+			completedObjectiveCount += 1
+		end
+	end
+	pcall(function()
+		MatchResultService.commitResult({
+			operationId = MissionConfig.OperationId,
+			outcomeId = finalOutcomeId,
+			causeId = finalCauseId,
+			durationSeconds = math.max(0, serverTimestamp - operationStartedAtServerTimestamp),
+			phaseReachedId = phaseReachedId,
+			objectivesCompleted = completedObjectiveCount,
+			bossDefeated = isBossDefeated(),
+			wavesSurvived = escalationLevel,
+		})
+	end)
 	insertionDeadlineServerTimestamp = nil
 	holdoutDeadlineServerTimestamp = nil
 	pcall(function()
@@ -585,13 +622,6 @@ local function beginHoldout(serverTimestamp: number)
 	revision += 1
 	scheduleTimers()
 	publish()
-end
-
-local function isBossDefeated(): boolean
-	local didRead, bossState = pcall(function()
-		return EnemyDirectorService.readBossState()
-	end)
-	return didRead and type(bossState) == "table" and bossState.isDefeated == true
 end
 
 --[[
@@ -926,6 +956,7 @@ function Service.start()
 	end
 	started = true
 	local startTimestamp = now()
+	operationStartedAtServerTimestamp = startTimestamp
 	revision = 1
 	phaseId = PhaseIds.Insertion
 	extractionUnlocked = false

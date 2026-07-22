@@ -955,6 +955,12 @@ function EnemyDirectorService.spawnBoss(position: EnemyWorldPosition, floodlight
 	return true
 end
 
+-- True only for the one live boss entity. The combat owner uses it to attribute
+-- P10 boss-exposure contribution without reading director internals.
+function EnemyDirectorService.isBossEntity(entityId: string): boolean
+	return type(entityId) == "string" and entityId ~= "" and activeBossEntityId == entityId
+end
+
 function EnemyDirectorService.readBossState(): BossStateRead
 	local bossId = activeBossEntityId
 	local entry = if bossId ~= nil then entries[bossId] else nil

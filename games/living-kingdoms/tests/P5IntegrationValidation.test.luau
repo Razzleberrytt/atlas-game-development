@@ -187,6 +187,18 @@ local bossConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Confi
 
 -- P10-0103 wires the mission's terminal boundary to the real match-result
 -- vocabulary, extraction window, and pure terminal resolver.
+local MATCH_RESULT_TOKEN = {}
+-- The P10-0104 contribution ledger is inert authority: these fixtures only need
+-- to prove the owner records through it, never that recording changes gameplay.
+local matchResultCalls = {}
+local matchResultService = setmetatable({}, {
+	__index = function(_self, key)
+		return function(...)
+			table.insert(matchResultCalls, { name = key, arguments = { ... } })
+			return true
+		end
+	end,
+})
 local P10_CONTRACTS_TOKEN = {}
 local P10_CONFIG_TOKEN = {}
 local P10_TERMINAL_TOKEN = {}
@@ -622,13 +634,16 @@ local mission = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 			Parent = {
 				ClassService = CLASS_TOKEN,
 				EnemyDirectorService = ENEMY_DIRECTOR_TOKEN,
+				MatchResultService = MATCH_RESULT_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
 				SquadFailureService = FAILURE_TOKEN,
 				TerminalResultResolver = P10_TERMINAL_TOKEN,
 			},
 		},
 		require = function(token)
-			if token == P10_CONTRACTS_TOKEN then
+			if token == MATCH_RESULT_TOKEN then
+				return matchResultService
+			elseif token == P10_CONTRACTS_TOKEN then
 				return p10Contracts
 			elseif token == P10_CONFIG_TOKEN then
 				return p10Config
