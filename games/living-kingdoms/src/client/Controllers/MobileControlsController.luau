@@ -6,8 +6,9 @@
 	The operative moves via camera-relative WASD, which a phone has no keys for, so
 	this owns a left-side virtual thumbstick that produces the same analog movement
 	vector the keyboard produces and pushes it into SurvivorController's single
-	analog channel. It also owns a reload button that calls WeaponController's one
-	reload path, since reload was keyboard-only.
+	analog channel. It also owns a reload touch button -- a ContextActionService
+	button in the same auto-arranged cluster as flashlight, ping, revive, and the
+	class action -- that calls WeaponController's one reload path.
 
 	It establishes no gameplay authority: it feeds the exact client intents the
 	desktop input already feeds — movement direction and a reload request — both of
@@ -16,6 +17,7 @@
 	InterfaceTheme so it matches every other surface.
 ]]
 
+local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 
@@ -26,6 +28,7 @@ local WeaponController = require(script.Parent.WeaponController)
 local MobileControlsController = {}
 
 local GUI_NAME = "LK_MobileControls"
+local RELOAD_ACTION = "LK_Reload"
 local STICK_RADIUS = 84
 local STICK_BASE_SIZE = 190
 local STICK_KNOB_SIZE = 84
@@ -139,23 +142,6 @@ local function createGui()
 	InterfaceTheme.stroke(stickBase :: Frame, InterfaceTheme.Palette.Line, 0.4, InterfaceTheme.Stroke.Bold)
 	stickKnob = circle(gui, "StickKnob", STICK_KNOB_SIZE, InterfaceTheme.Palette.Accent, 0.3)
 
-	-- Reload button: lower-right, clear of the movement zone.
-	local reload = Instance.new("TextButton")
-	reload.Name = "ReloadButton"
-	reload.AnchorPoint = Vector2.new(1, 1)
-	reload.Position = UDim2.new(1, -28, 1, -28)
-	reload.Size = UDim2.fromOffset(150, 84)
-	reload.BackgroundColor3 = InterfaceTheme.Palette.PanelRaised
-	reload.BackgroundTransparency = 0.1
-	reload.BorderSizePixel = 0
-	reload.Font = InterfaceTheme.Font.Heading
-	reload.TextSize = InterfaceTheme.TextSize.Subtitle
-	reload.TextColor3 = InterfaceTheme.Palette.Accent
-	reload.Text = "RELOAD"
-	reload.Parent = gui
-	InterfaceTheme.corner(reload, InterfaceTheme.Radius.Control)
-	InterfaceTheme.stroke(reload, InterfaceTheme.Palette.AccentDim, 0.35, InterfaceTheme.Stroke.Bold)
-
 	table.insert(
 		connections,
 		zone.InputBegan:Connect(function(input: InputObject)
@@ -164,12 +150,17 @@ local function createGui()
 			end
 		end)
 	)
-	table.insert(
-		connections,
-		reload.Activated:Connect(function()
-			WeaponController.requestReload()
-		end)
-	)
+end
+
+-- Reload is a tap. It joins the flashlight/ping/revive/class-action cluster as an
+-- auto-arranged ContextActionService touch button instead of a hand-placed
+-- corner button, so Roblox owns the layout and nothing overlaps. It fires the one
+-- shared reload path.
+local function onReloadAction(_actionName: string, inputState: Enum.UserInputState): Enum.ContextActionResult
+	if inputState == Enum.UserInputState.Begin then
+		WeaponController.requestReload()
+	end
+	return Enum.ContextActionResult.Pass
 end
 
 function MobileControlsController.start()
@@ -178,6 +169,12 @@ function MobileControlsController.start()
 	end
 	started = true
 	createGui()
+
+	-- `true` creates the touch button; no keyboard binding, so it appears only in
+	-- the ContextActionService cluster alongside flashlight, ping, revive, and the
+	-- class action. Roblox arranges the cluster, so no coordinates are guessed.
+	ContextActionService:BindAction(RELOAD_ACTION, onReloadAction, true)
+	ContextActionService:SetTitle(RELOAD_ACTION, "Reload")
 
 	table.insert(
 		connections,
@@ -206,6 +203,7 @@ function MobileControlsController.stop()
 	end
 	started = false
 	releaseStick()
+	ContextActionService:UnbindAction(RELOAD_ACTION)
 	for _, connection in connections do
 		connection:Disconnect()
 	end

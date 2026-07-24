@@ -235,7 +235,6 @@ function Controller.start()
 		Enum.UserInputType.MouseButton3
 	)
 	ContextActionService:SetTitle(ACTION_NAME, "◇ Ping")
-	ContextActionService:SetPosition(ACTION_NAME, UDim2.new(1, -270, 1, -140))
 	createStatusPresentation()
 	table.insert(connections, stateRemote.OnClientEvent:Connect(onState))
 	table.insert(connections, localPlayer.CharacterRemoving:Connect(clearMarkers))

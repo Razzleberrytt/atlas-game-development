@@ -176,7 +176,6 @@ local function setBinding(shouldBind: boolean)
 	if shouldBind then
 		ContextActionService:BindAction(ACTION_NAME, onBraceInput, true, Enum.KeyCode.Q, Enum.KeyCode.ButtonX)
 		ContextActionService:SetTitle(ACTION_NAME, "ACTION")
-		ContextActionService:SetPosition(ACTION_NAME, UDim2.new(1, -118, 1, -190))
 	else
 		ContextActionService:UnbindAction(ACTION_NAME)
 	end
