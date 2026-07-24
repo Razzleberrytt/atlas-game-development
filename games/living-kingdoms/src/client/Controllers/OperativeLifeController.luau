@@ -4,19 +4,25 @@
 	Owns only local revive hold input. Server-authored life attributes are rendered
 	by HordeHUDController. The client sends a target operative ID plus Begin/End;
 	it never reports progress, distance, health, completion, or authority facts.
+
+	Input is a ContextActionService hold binding, so the same handler serves the
+	keyboard (E) and an auto-created touch button — a mobile squad can rescue a
+	downed teammate without a keyboard.
 ]]
 
+local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 type Controller = { start: () -> (), stop: () -> () }
 
+local ACTION_NAME = "LK_Revive"
+
 local Controller: Controller = {} :: Controller
 local localPlayer = Players.LocalPlayer
 local reviveIntentRemote =
 	ReplicatedStorage:WaitForChild("OperativeLifeNetwork"):WaitForChild("ReviveIntent") :: RemoteEvent
-local connections: { RBXScriptConnection } = {}
 local heldTargetOperativeEntityId: string? = nil
 local started = false
 
@@ -49,13 +55,8 @@ local function nearestIncapacitatedOperativeId(): string?
 	return nearestId
 end
 
-local function onInputBegan(input: InputObject, gameProcessedEvent: boolean)
-	if
-		gameProcessedEvent
-		or input.KeyCode ~= Enum.KeyCode.E
-		or UserInputService:GetFocusedTextBox() ~= nil
-		or heldTargetOperativeEntityId ~= nil
-	then
+local function beginReviveHold()
+	if UserInputService:GetFocusedTextBox() ~= nil or heldTargetOperativeEntityId ~= nil then
 		return
 	end
 	local targetOperativeEntityId = nearestIncapacitatedOperativeId()
@@ -66,15 +67,23 @@ local function onInputBegan(input: InputObject, gameProcessedEvent: boolean)
 	reviveIntentRemote:FireServer({ targetOperativeEntityId = targetOperativeEntityId, phase = "Begin" })
 end
 
-local function onInputEnded(input: InputObject)
-	if input.KeyCode ~= Enum.KeyCode.E then
-		return
-	end
+local function endReviveHold()
 	local targetOperativeEntityId = heldTargetOperativeEntityId
 	heldTargetOperativeEntityId = nil
 	if targetOperativeEntityId ~= nil then
 		reviveIntentRemote:FireServer({ targetOperativeEntityId = targetOperativeEntityId, phase = "End" })
 	end
+end
+
+-- Begin the hold on press, end it on release; the server owns the hold duration
+-- and every other revive fact. Pass so nothing else bound to the key is blocked.
+local function onReviveAction(_actionName: string, inputState: Enum.UserInputState): Enum.ContextActionResult
+	if inputState == Enum.UserInputState.Begin then
+		beginReviveHold()
+	elseif inputState == Enum.UserInputState.End or inputState == Enum.UserInputState.Cancel then
+		endReviveHold()
+	end
+	return Enum.ContextActionResult.Pass
 end
 
 function Controller.start()
@@ -82,8 +91,10 @@ function Controller.start()
 		return
 	end
 	started = true
-	table.insert(connections, UserInputService.InputBegan:Connect(onInputBegan))
-	table.insert(connections, UserInputService.InputEnded:Connect(onInputEnded))
+	-- `true` creates the mobile touch button. Held: Begin on press, End on release.
+	ContextActionService:BindAction(ACTION_NAME, onReviveAction, true, Enum.KeyCode.E)
+	ContextActionService:SetTitle(ACTION_NAME, "Revive")
+	ContextActionService:SetPosition(ACTION_NAME, UDim2.new(1, -150, 1, -240))
 end
 
 function Controller.stop()
@@ -91,15 +102,8 @@ function Controller.stop()
 		return
 	end
 	started = false
-	local targetOperativeEntityId = heldTargetOperativeEntityId
-	heldTargetOperativeEntityId = nil
-	if targetOperativeEntityId ~= nil then
-		reviveIntentRemote:FireServer({ targetOperativeEntityId = targetOperativeEntityId, phase = "End" })
-	end
-	for _, connection in connections do
-		connection:Disconnect()
-	end
-	table.clear(connections)
+	endReviveHold()
+	ContextActionService:UnbindAction(ACTION_NAME)
 end
 
 return Controller

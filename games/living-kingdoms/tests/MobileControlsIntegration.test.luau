@@ -34,6 +34,7 @@ end
 local mobile = fs.readFile("games/living-kingdoms/src/client/Controllers/MobileControlsController.luau")
 local survivor = fs.readFile("games/living-kingdoms/src/client/Controllers/SurvivorController.luau")
 local weapon = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponController.luau")
+local life = fs.readFile("games/living-kingdoms/src/client/Controllers/OperativeLifeController.luau")
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 
 -- The controls activate only on a touch device without a keyboard, so desktop
@@ -93,6 +94,30 @@ assertThat(
 	"the keyboard handler must route through the same shared reload path"
 )
 
+-- Revive is core co-op and was keyboard-only (E). It now binds through
+-- ContextActionService with a touch button, so a mobile squad can rescue a
+-- downed teammate, while keeping the exact server intent shape.
+assertThat(
+	contains(life, "ContextActionService:BindAction(ACTION_NAME, onReviveAction, true, Enum.KeyCode.E)"),
+	"revive must bind keyboard E and an auto-created touch button through one action"
+)
+assertThat(
+	contains(life, "inputState == Enum.UserInputState.Begin") and contains(life, "Enum.UserInputState.End"),
+	"the revive touch button must hold: Begin on press, End on release"
+)
+assertThat(
+	contains(life, 'phase = "Begin"') and contains(life, 'phase = "End"'),
+	"the client revive intent shape must be unchanged"
+)
+assertThat(
+	not contains(life, "UserInputService.InputBegan") and not contains(life, "input.KeyCode ~= Enum.KeyCode.E"),
+	"the keyboard-only revive path must be replaced, not duplicated"
+)
+assertThat(
+	not contains(life, "normalizedProgress") and not contains(life, "completionServerTimestamp ="),
+	"the client must still declare no revive progress or completion"
+)
+
 -- No new authority: the touch controls send no remote of their own and hold no
 -- gameplay fact. Movement and reload are the only intents, both via their owners.
 for _, forbidden in { "FireServer", "OnServerEvent", "applyAuthoritativeDamage", "Humanoid:Move", "damage", "Health" } do
@@ -119,5 +144,5 @@ assertThat(
 )
 
 print(
-	"MobileControlsIntegration: touch-gated thumbstick and reload feed the single movement and reload paths, no new authority"
+	"MobileControlsIntegration: touch thumbstick, reload, and revive feed the single owner paths with no new authority"
 )
