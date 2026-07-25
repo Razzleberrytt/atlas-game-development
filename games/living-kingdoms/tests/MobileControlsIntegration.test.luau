@@ -78,8 +78,21 @@ assertThat(
 	"screen-down must map to backward so the stick matches the WASD forward convention"
 )
 
--- Reload routes through WeaponController's one reload path, so there is a single
--- cooldown-guarded request surface shared with the keyboard.
+-- Reload is a ContextActionService touch button in the same auto-arranged cluster
+-- as the other actions -- not a hand-placed corner button -- and it routes through
+-- WeaponController's one reload path.
+assertThat(
+	contains(mobile, "ContextActionService:BindAction(RELOAD_ACTION, onReloadAction, true)"),
+	"reload must be a ContextAction touch button so Roblox arranges it with the cluster"
+)
+assertThat(
+	contains(mobile, "ContextActionService:UnbindAction(RELOAD_ACTION)"),
+	"the reload action must be unbound on teardown"
+)
+assertThat(
+	not contains(mobile, "ReloadButton") and not contains(mobile, ".Activated:Connect"),
+	"the hand-placed corner reload button must be gone"
+)
 assertThat(contains(mobile, "WeaponController.requestReload()"), "the reload button must call the shared reload path")
 assertThat(
 	contains(weapon, "function WeaponController.requestReload(): boolean"),
@@ -130,6 +143,24 @@ assertThat(
 	contains(mobile, "for _, connection in connections do") and contains(mobile, "screenGui:Destroy()"),
 	"teardown must release every connection and the GUI"
 )
+
+-- Every action touch button defers to ContextActionService's automatic layout, so
+-- no controller guesses screen coordinates and the cluster cannot overlap.
+for _, controllerName in
+	{
+		"MobileControlsController",
+		"PersonalFlashlightController",
+		"SquadPingController",
+		"OperativeLifeController",
+		"ClassActionController",
+	}
+do
+	local source = fs.readFile("games/living-kingdoms/src/client/Controllers/" .. controllerName .. ".luau")
+	assertThat(
+		not contains(source, "SetPosition"),
+		controllerName .. " must let ContextActionService arrange its touch button, not hand-place it"
+	)
+end
 
 -- Themed like every other surface, and bootstrapped after the paths it composes.
 assertThat(contains(mobile, "InterfaceTheme"), "mobile controls must draw from the shared theme")

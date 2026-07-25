@@ -167,7 +167,6 @@ function Controller.start()
 		Enum.KeyCode[PersonalFlashlightConfig.KeyboardKeyCodeName],
 		Enum.KeyCode[PersonalFlashlightConfig.GamepadKeyCodeName]
 	)
-	ContextActionService:SetPosition(ACTION_NAME, UDim2.new(1, -150, 1, -140))
 	createStatusPresentation()
 	table.insert(connections, stateRemote.OnClientEvent:Connect(onState))
 	table.insert(connections, localPlayer:GetAttributeChangedSignal("LK_P3_LifeState"):Connect(onLifeChanged))

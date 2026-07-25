@@ -94,7 +94,6 @@ function Controller.start()
 	-- `true` creates the mobile touch button. Held: Begin on press, End on release.
 	ContextActionService:BindAction(ACTION_NAME, onReviveAction, true, Enum.KeyCode.E)
 	ContextActionService:SetTitle(ACTION_NAME, "Revive")
-	ContextActionService:SetPosition(ACTION_NAME, UDim2.new(1, -150, 1, -240))
 end
 
 function Controller.stop()
