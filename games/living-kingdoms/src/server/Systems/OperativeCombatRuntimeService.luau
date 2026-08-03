@@ -157,14 +157,14 @@ local function readProgressionNumber(attributeName: string, fallback: number): n
 	return if type(value) == "number" and value == value then value else fallback
 end
 
-local function createWeaponState(weaponId: string?): WeaponReadinessState
+local function createWeaponState(weaponId: string?, initialReserveRounds: number?): WeaponReadinessState
 	local definition = resolveWeaponDefinition(weaponId) or FirearmConfig.BasicFirearm
 	weaponId = definition.WeaponId
 	local ammunition = RunMagazineCapacityResolver.resolve(
 		{
 			weaponId = weaponId,
 			loadedRounds = definition.PrototypeInitialLoadedRounds,
-			reserveRounds = definition.PrototypeInitialReserveRounds,
+			reserveRounds = initialReserveRounds or definition.PrototypeInitialReserveRounds,
 			magazineCapacity = definition.MagazineCapacity,
 		},
 		definition.MagazineCapacity,
@@ -941,8 +941,7 @@ function OperativeCombatRuntimeService.equipFoundWeapon(player: Player, weaponId
 	playerState.generation += 1
 	playerState.operativeState.combatStateId = CombatContracts.OperativeCombatStateIds.Ready
 	playerState.operativeState.equippedWeaponId = weaponId
-	playerState.weaponState = createWeaponState(weaponId)
-	playerState.weaponState.ammunition.reserveRounds = 0
+	playerState.weaponState = createWeaponState(weaponId, 0)
 	playerState.selectedTargetEntityId = nil
 	table.clear(playerState.processedShotIds)
 	table.clear(playerState.sightedByEntityId)

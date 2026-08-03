@@ -1680,9 +1680,11 @@ function EnemyDirectorService.evaluateAt(serverTimestamp: number): EvaluationSum
 	end
 	for _, entityId in toClean do
 		local entry = entries[entityId]
-		entries[entityId] = nil
-		entry.model:Destroy()
-		summary.cleanedCount += 1
+		if entry ~= nil then
+			entries[entityId] = nil
+			entry.model:Destroy()
+			summary.cleanedCount += 1
+		end
 	end
 	return summary
 end

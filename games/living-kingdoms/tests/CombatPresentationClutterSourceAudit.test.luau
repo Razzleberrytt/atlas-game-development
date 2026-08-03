@@ -44,7 +44,7 @@ assertThat(contains(weaponSelection, "panel.Visible = false"), "locked loadout p
 assertThat(contains(hordeHud, "#Players:GetPlayers() > 1"), "solo play must not reserve a squad panel")
 assertThat(contains(hordeHud, "Enum.CoreGuiType.PlayerList"), "the duplicate Roblox player list must stay hidden")
 assertThat(contains(hordeHud, "overlay.BackgroundTransparency = 1"), "upgrade choices must not dim all combat")
-assertThat(contains(hordeHud, "UDim2.fromOffset(400, 310)"), "upgrade choices must remain a compact side card")
+assertThat(contains(hordeHud, "UDim2.fromOffset(470, 350)"), "upgrade choices must remain a compact readable card")
 assertThat(contains(hordeHud, 'Instance.new("UIGradient")'), "HUD panels need a restrained depth treatment")
 assertThat(contains(hordeHud, 'accent.Name = "Accent"'), "HUD panels need a consistent hierarchy accent")
 assertThat(contains(hordeHud, "hasUpgradeChoices and not relicChoiceVisible"), "only one reward choice may show")

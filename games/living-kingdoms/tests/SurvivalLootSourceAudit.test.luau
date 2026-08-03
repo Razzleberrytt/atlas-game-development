@@ -31,8 +31,33 @@ do
 	assert(string.find(server, token, 1, true) ~= nil, "survival runtime missing " .. token)
 end
 assert(string.find(bootstrap, "SurvivalLootService.start()", 1, true) ~= nil, "survival loot must bootstrap")
+assert(
+	string.find(bootstrap, 'collectItem.Name = "CollectItem"', 1, true) ~= nil,
+	"loot requires an explicit take-item remote"
+)
+assert(string.find(server, "pendingLoot", 1, true) ~= nil, "opening a chest must stage loot before collection")
+assert(string.find(server, "collectPendingLoot", 1, true) ~= nil, "server must own explicit item collection")
+assert(
+	string.find(server, "collectItemRemote.OnServerEvent:Connect(collectPendingLoot)", 1, true) ~= nil,
+	"tappable loot requests must terminate at the server-owned collection path"
+)
+assert(
+	string.find(server, "not isNear(player, item.worldPosition", 1, true) ~= nil,
+	"the server must reject remote loot collection outside the chest radius"
+)
 assert(string.find(client, "HOME FIRE", 1, true) ~= nil, "survival HUD must disclose home-fire fuel")
 assert(string.find(client, "PACK", 1, true) ~= nil, "survival HUD must disclose inventory capacity")
+assert(string.find(client, "CHEST LOOT", 1, true) ~= nil, "opened loot requires a visible RPG loot panel")
+assert(
+	string.find(client, "card.Activated:Connect", 1, true) ~= nil,
+	"every loot card must support mouse and touch activation"
+)
+assert(
+	string.find(client, "collectItemRemote:FireServer(item.itemId)", 1, true) ~= nil,
+	"loot cards may request only item identity"
+)
+assert(string.find(client, "BACKPACK", 1, true) ~= nil, "collected resources require a visible backpack surface")
+assert(string.find(client, '"MELEE", "EMPTY SLOT"', 1, true) ~= nil, "inventory must reserve a readable melee slot")
 assert(
 	string.find(client, "SEARCH THE NEAREST SUPPLY CHEST", 1, true) ~= nil,
 	"survival HUD must guide the opening loop"

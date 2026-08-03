@@ -13,12 +13,25 @@ local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local Service = {}
 local network = ReplicatedStorage:WaitForChild("SurvivalNetwork")
 local stateRemote = network:WaitForChild("State") :: RemoteEvent
+local collectItemRemote = network:WaitForChild("CollectItem") :: RemoteEvent
 local readState = network:WaitForChild("ReadState") :: RemoteFunction
+
+type PendingLoot = {
+	itemId: string,
+	kindId: string,
+	displayName: string,
+	quantity: number,
+	rarityId: string,
+	chestId: string,
+	worldPosition: Vector3,
+	weaponId: string?,
+}
 
 type PlayerState = {
 	wood: number,
 	openedChests: number,
 	foundWeapon: boolean,
+	pendingLoot: { [string]: PendingLoot },
 	revision: number,
 }
 
@@ -29,6 +42,7 @@ local worldFolder: Folder? = nil
 local fireLight: PointLight? = nil
 local fireCore: BasePart? = nil
 local heartbeatConnection: RBXScriptConnection? = nil
+local collectItemConnection: RBXScriptConnection? = nil
 local accumulated = 0
 local reachedStableFire = false
 local reachedMaximumFire = false
@@ -72,7 +86,7 @@ local WOOD_POSITIONS = table.freeze({
 local function playerState(player: Player): PlayerState
 	local state = states[player]
 	if state == nil then
-		state = { wood = 0, openedChests = 0, foundWeapon = false, revision = 1 }
+		state = { wood = 0, openedChests = 0, foundWeapon = false, pendingLoot = {}, revision = 1 }
 		states[player] = state
 	end
 	return state
@@ -80,6 +94,23 @@ end
 
 local function snapshot(player: Player, eventText: string?): any
 	local state = playerState(player)
+	local pendingLoot = {}
+	for _, item in state.pendingLoot do
+		table.insert(
+			pendingLoot,
+			table.freeze({
+				itemId = item.itemId,
+				kindId = item.kindId,
+				displayName = item.displayName,
+				quantity = item.quantity,
+				rarityId = item.rarityId,
+				chestId = item.chestId,
+			})
+		)
+	end
+	table.sort(pendingLoot, function(left, right)
+		return left.itemId < right.itemId
+	end)
 	return table.freeze({
 		revision = state.revision,
 		inventoryCapacity = Config.InventoryCapacity,
@@ -87,13 +118,83 @@ local function snapshot(player: Player, eventText: string?): any
 		wood = state.wood,
 		openedChests = state.openedChests,
 		foundWeapon = state.foundWeapon,
+		pendingLoot = table.freeze(pendingLoot),
+		inventoryItems = table.freeze({
+			table.freeze({ itemId = "resource.wood", kindId = "wood", displayName = "Firewood", quantity = state.wood }),
+		}),
 		campfireFuel = campfireFuel,
 		campfireMaximumFuel = Config.Campfire.MaximumFuel,
 		eventText = eventText,
 	})
 end
 
-local function publish(player: Player, eventText: string?)
+local function hasPendingWeapon(state: PlayerState): boolean
+	for _, item in state.pendingLoot do
+		if item.kindId == "weapon" then
+			return true
+		end
+	end
+	return false
+end
+
+local function stageLoot(state: PlayerState, item: PendingLoot)
+	state.pendingLoot[item.itemId] = item
+end
+
+local publish: (player: Player, eventText: string?) -> ()
+local isNear: (player: Player, position: Vector3, maximumDistance: number) -> boolean
+
+local function collectPendingLoot(player: Player, itemId: unknown)
+	if type(itemId) ~= "string" or #itemId > 96 then
+		return
+	end
+	local state = playerState(player)
+	local item = state.pendingLoot[itemId]
+	if item == nil or not isNear(player, item.worldPosition, Config.ChestInteractionDistanceStuds + 2) then
+		return
+	end
+
+	local eventText: string
+	if item.kindId == "wood" then
+		local room = Config.InventoryCapacity - state.wood
+		if room <= 0 then
+			publish(player, "BACKPACK FULL — make room before taking the firewood")
+			return
+		end
+		local collected = math.min(room, item.quantity)
+		state.wood += collected
+		item.quantity -= collected
+		eventText = string.format("FIREWOOD ADDED  +%d", collected)
+		if item.quantity <= 0 then
+			state.pendingLoot[itemId] = nil
+		end
+	elseif item.kindId == "ammunition" then
+		local granted = OperativeCombatRuntimeService.grantFoundAmmunition(player, item.quantity)
+		if granted <= 0 then
+			publish(player, "AMMUNITION FULL — leave it in the chest for now")
+			return
+		end
+		item.quantity -= granted
+		eventText = string.format("PISTOL AMMO ADDED  +%d", granted)
+		if item.quantity <= 0 then
+			state.pendingLoot[itemId] = nil
+		end
+	elseif item.kindId == "weapon" and item.weaponId ~= nil then
+		if not OperativeCombatRuntimeService.equipFoundWeapon(player, item.weaponId) then
+			publish(player, "WEAPON CANNOT BE EQUIPPED RIGHT NOW")
+			return
+		end
+		state.foundWeapon = true
+		state.pendingLoot[itemId] = nil
+		eventText = item.displayName .. " EQUIPPED"
+	else
+		return
+	end
+	state.revision += 1
+	publish(player, eventText)
+end
+
+publish = function(player: Player, eventText: string?)
 	stateRemote:FireClient(player, snapshot(player, eventText))
 end
 
@@ -103,7 +204,7 @@ local function publishAll(eventText: string?)
 	end
 end
 
-local function isNear(player: Player, position: Vector3, maximumDistance: number): boolean
+isNear = function(player: Player, position: Vector3, maximumDistance: number): boolean
 	if not OperativeLifeService.isCombatAllowed(player) then
 		return false
 	end
@@ -295,38 +396,51 @@ local function createChest(parent: Instance, index: number, position: Vector3)
 		lid.CFrame = lid.CFrame * CFrame.new(0, 1.1, 1) * CFrame.Angles(math.rad(-32), 0, 0)
 		local state = playerState(player)
 		state.openedChests += 1
-		local room = Config.InventoryCapacity - state.wood
 		local woodAmount = Config.ChestWoodMinimum
 			+ (index * 5 % (Config.ChestWoodMaximum - Config.ChestWoodMinimum + 1))
-		local collectedWood = math.min(woodAmount, math.max(0, room))
-		state.wood += collectedWood
-
 		local rounds = Config.AmmoRoundsMinimum
 			+ (index * 3 % (Config.AmmoRoundsMaximum - Config.AmmoRoundsMinimum + 1))
-		local grantedRounds = OperativeCombatRuntimeService.grantFoundAmmunition(player, rounds)
 		local roll = (index * 37 + player.UserId) % 100
 		local shouldFindWeapon = not state.foundWeapon
+			and not hasPendingWeapon(state)
 			and (state.openedChests >= Config.GuaranteedWeaponByOpenedChest or roll < Config.ChestWeaponChancePercent)
-		local eventText: string
+		local chestId = "chest." .. tostring(index)
+		stageLoot(state, {
+			itemId = chestId .. ".wood",
+			kindId = "wood",
+			displayName = "Dry Firewood",
+			quantity = woodAmount,
+			rarityId = "Common",
+			chestId = chestId,
+			worldPosition = position,
+			weaponId = nil,
+		})
+		stageLoot(state, {
+			itemId = chestId .. ".ammunition",
+			kindId = "ammunition",
+			displayName = "Pistol Ammunition",
+			quantity = rounds,
+			rarityId = "Uncommon",
+			chestId = chestId,
+			worldPosition = position,
+			weaponId = nil,
+		})
 		if shouldFindWeapon then
 			local weapons = Config.DiscoverableWeaponIds
 			local weaponId = weapons[(index % #weapons) + 1]
-			if OperativeCombatRuntimeService.equipFoundWeapon(player, weaponId) then
-				state.foundWeapon = true
-				eventText = string.format(
-					"WEAPON FOUND — %s  |  +%d ammo  |  +%d wood",
-					(FirearmConfig.get(weaponId) :: any).DisplayName,
-					grantedRounds,
-					collectedWood
-				)
-			else
-				eventText = string.format("SUPPLIES — +%d ammo  |  +%d wood", grantedRounds, collectedWood)
-			end
-		else
-			eventText = string.format("SUPPLIES — +%d ammo  |  +%d wood", grantedRounds, collectedWood)
+			stageLoot(state, {
+				itemId = chestId .. ".weapon",
+				kindId = "weapon",
+				displayName = (FirearmConfig.get(weaponId) :: any).DisplayName,
+				quantity = 1,
+				rarityId = "Rare",
+				chestId = chestId,
+				worldPosition = position,
+				weaponId = weaponId,
+			})
 		end
 		state.revision += 1
-		publish(player, eventText)
+		publish(player, "CHEST OPENED — tap each item to take it")
 	end)
 end
 
@@ -387,6 +501,7 @@ function Service.start()
 	readState.OnServerInvoke = function(player)
 		return snapshot(player, nil)
 	end
+	collectItemConnection = collectItemRemote.OnServerEvent:Connect(collectPendingLoot)
 	for _, player in Players:GetPlayers() do
 		publish(player, "Find wood and keep the home fire alive.")
 	end
@@ -418,6 +533,10 @@ function Service.stop()
 	if heartbeatConnection ~= nil then
 		heartbeatConnection:Disconnect()
 		heartbeatConnection = nil
+	end
+	if collectItemConnection ~= nil then
+		collectItemConnection:Disconnect()
+		collectItemConnection = nil
 	end
 	readState.OnServerInvoke = nil
 	if worldFolder ~= nil then

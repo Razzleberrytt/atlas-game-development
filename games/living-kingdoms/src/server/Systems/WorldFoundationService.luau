@@ -733,11 +733,64 @@ local function buildRangerStation(parent: Folder)
 		COLORS.rockDark,
 		Enum.Material.Concrete
 	)
+	-- A real hollow ranger station, not a decorative solid block. The broad
+	-- front doorway and rear storm breach form a through-route for players and
+	-- creature path agents, while wall-hugging props preserve a useful interior.
 	makePart(
 		model,
-		"Cabin",
-		Vector3.new(36, 15, 23),
-		CFrame.new(-220, 9.5, -190),
+		"CabinFloor",
+		Vector3.new(36, 0.8, 23),
+		CFrame.new(-220, 2.35, -190),
+		COLORS.wood,
+		Enum.Material.WoodPlanks
+	)
+	for side = -1, 1, 2 do
+		makePart(
+			model,
+			"FrontWall",
+			Vector3.new(13, 15, 1),
+			CFrame.new(-220 + side * 11.5, 9.5, -201.2),
+			COLORS.structure,
+			Enum.Material.WoodPlanks
+		)
+		makePart(
+			model,
+			"RearWall",
+			Vector3.new(12, 15, 1),
+			CFrame.new(-220 + side * 12, 9.5, -178.8),
+			COLORS.structure,
+			Enum.Material.WoodPlanks
+		)
+	end
+	makePart(
+		model,
+		"WestWall",
+		Vector3.new(1, 15, 23),
+		CFrame.new(-237.5, 9.5, -190),
+		COLORS.structure,
+		Enum.Material.WoodPlanks
+	)
+	makePart(
+		model,
+		"EastWall",
+		Vector3.new(1, 15, 23),
+		CFrame.new(-202.5, 9.5, -190),
+		COLORS.structure,
+		Enum.Material.WoodPlanks
+	)
+	makePart(
+		model,
+		"FrontDoorHeader",
+		Vector3.new(10, 4, 1),
+		CFrame.new(-220, 15, -201.2),
+		COLORS.structure,
+		Enum.Material.WoodPlanks
+	)
+	makePart(
+		model,
+		"RearBreachHeader",
+		Vector3.new(12, 4, 1),
+		CFrame.new(-220, 15, -178.8),
 		COLORS.structure,
 		Enum.Material.WoodPlanks
 	)
@@ -749,21 +802,13 @@ local function buildRangerStation(parent: Folder)
 		COLORS.rockDark,
 		Enum.Material.Metal
 	)
-	makePart(
-		model,
-		"Door",
-		Vector3.new(7, 11, 0.8),
-		CFrame.new(-220, 7, -201.9),
-		Color3.fromRGB(50, 45, 37),
-		Enum.Material.Wood
-	)
 	makePart(model, "Porch", Vector3.new(24, 1, 9), CFrame.new(-220, 1.8, -205), COLORS.wood, Enum.Material.WoodPlanks)
-	-- A broad, unmistakable insertion ramp prevents the elevated porch/spawn
-	-- from feeling like a trap and gives first-person players a clean exit.
+	-- Eighteen clear studs let a full pack navigate beside the player instead of
+	-- wedging between decorative rails at the only entrance.
 	makePart(
 		model,
 		"InsertionRamp",
-		Vector3.new(10, 1.1, 14),
+		Vector3.new(18, 1.1, 16),
 		CFrame.new(-220, 0.8, -215) * CFrame.Angles(math.rad(-7), 0, 0),
 		COLORS.wood,
 		Enum.Material.WoodPlanks
@@ -772,8 +817,8 @@ local function buildRangerStation(parent: Folder)
 		makeSegment(
 			model,
 			"RampRail",
-			Vector3.new(-220 + side * 5.2, 1.4, -208),
-			Vector3.new(-220 + side * 5.2, 2.8, -221),
+			Vector3.new(-220 + side * 9.4, 1.4, -208),
+			Vector3.new(-220 + side * 9.4, 2.8, -222),
 			0.35,
 			0.35,
 			COLORS.structure,
@@ -781,6 +826,41 @@ local function buildRangerStation(parent: Folder)
 			false
 		)
 	end
+	makePart(
+		model,
+		"WildlifeApproachRamp",
+		Vector3.new(14, 1, 12),
+		CFrame.new(-220, 1, -173.5) * CFrame.Angles(math.rad(7), 0, 0),
+		COLORS.wood,
+		Enum.Material.WoodPlanks
+	)
+	local interiorLamp = makePart(
+		model,
+		"InteriorEmergencyLamp",
+		Vector3.new(1, 0.5, 1),
+		CFrame.new(-220, 15.8, -190),
+		Color3.fromRGB(246, 190, 102),
+		Enum.Material.Neon,
+		false
+	)
+	addPointLight(interiorLamp, Color3.fromRGB(255, 207, 135), 26, 1.5, true)
+	makePart(
+		model,
+		"RangerDesk",
+		Vector3.new(7, 2.8, 3),
+		CFrame.new(-208, 3.9, -185),
+		COLORS.wood,
+		Enum.Material.WoodPlanks
+	)
+	makePart(model, "MapTable", Vector3.new(8, 1, 4), CFrame.new(-231, 4.1, -194), COLORS.utility, Enum.Material.Metal)
+	makePart(
+		model,
+		"BunkFrame",
+		Vector3.new(3.5, 1.2, 7),
+		CFrame.new(-234, 3.2, -183),
+		COLORS.structure,
+		Enum.Material.Metal
+	)
 	addLabel(model, "BLACKWATER RANGER DISTRICT", CFrame.new(-220, 14, -202.5), Vector3.new(24, 3, 0.5))
 	local emergencyLamp = makePart(
 		model,
@@ -902,54 +982,49 @@ local function buildLookout(parent: Folder)
 	model.Name = "LookoutTower"
 	model.Parent = parent
 	markLandmark(model, "LookoutTower", "Forest Service Lookout")
-	local center = Vector3.new(-205, 15, 170)
-	for x = -1, 1, 2 do
-		for z = -1, 1, 2 do
-			makeSegment(
-				model,
-				"TowerLeg",
-				center + Vector3.new(x * 9, 0, z * 9),
-				center + Vector3.new(x * 5, 31, z * 5),
-				1.3,
-				1.3,
-				COLORS.wood,
-				Enum.Material.Wood,
-				true
-			)
-		end
-	end
-	for _, diagonal in
-		{
-			{ Vector3.new(-214, 18, 161), Vector3.new(-196, 43, 179) },
-			{ Vector3.new(-196, 18, 161), Vector3.new(-214, 43, 179) },
-			{ Vector3.new(-214, 18, 179), Vector3.new(-196, 43, 161) },
-			{ Vector3.new(-196, 18, 179), Vector3.new(-214, 43, 161) },
-		}
-	do
-		makeSegment(model, "WeatheredBrace", diagonal[1], diagonal[2], 0.7, 0.7, COLORS.wood, Enum.Material.Wood, false)
-	end
+	-- The old forty-six-stud tower created an unbeatable player perch that
+	-- ground enemies could never contest. This is now a collapsed, ground-level
+	-- lookout ruin with wide openings on every side and no climbable roof.
 	makePart(
 		model,
-		"Platform",
-		Vector3.new(24, 2, 24),
-		CFrame.new(-205, 46, 170),
+		"RuinedFloor",
+		Vector3.new(28, 1, 26),
+		CFrame.new(-205, 1, 170),
 		COLORS.wood,
 		Enum.Material.WoodPlanks
 	)
-	makePart(
+	for index, wall in
+		{
+			{ Vector3.new(-216, 4.5, 170), Vector3.new(2, 7, 24) },
+			{ Vector3.new(-194, 3.5, 174), Vector3.new(2, 5, 15) },
+			{ Vector3.new(-205, 3, 181), Vector3.new(18, 4, 2) },
+		}
+	do
+		makePart(
+			model,
+			"BrokenWall" .. tostring(index),
+			wall[2],
+			CFrame.new(wall[1]),
+			COLORS.structure,
+			Enum.Material.WoodPlanks
+		)
+	end
+	makeSegment(
 		model,
-		"Cab",
-		Vector3.new(18, 10, 18),
-		CFrame.new(-205, 52, 170),
-		COLORS.structure,
-		Enum.Material.WoodPlanks
+		"CollapsedMast",
+		Vector3.new(-212, 1.6, 161),
+		Vector3.new(-190, 2.1, 184),
+		0.8,
+		0.8,
+		COLORS.wood,
+		Enum.Material.Wood,
+		false
 	)
-	makePart(model, "Roof", Vector3.new(24, 1.5, 24), CFrame.new(-205, 58, 170), COLORS.rockDark, Enum.Material.Metal)
 	local aviationLight = makePart(
 		model,
 		"AviationWarningLight",
 		Vector3.new(1.8, 1.8, 1.8),
-		CFrame.new(-205, 60, 170),
+		CFrame.new(-190, 3, 184),
 		COLORS.emergency,
 		Enum.Material.Neon,
 		false
@@ -957,18 +1032,7 @@ local function buildLookout(parent: Folder)
 	addPointLight(aviationLight, Color3.fromRGB(255, 48, 34), 48, 2.5, false)
 	aviationLight:SetAttribute("BaseLightBrightness", 2.5)
 	CollectionService:AddTag(aviationLight, "LK_EnvironmentBlink")
-	makeSegment(
-		model,
-		"Stairs",
-		Vector3.new(-217, 15.5, 183),
-		Vector3.new(-217, 46, 174),
-		4,
-		0.8,
-		COLORS.wood,
-		Enum.Material.WoodPlanks,
-		true
-	)
-	addLabel(model, "LOOKOUT 7", CFrame.new(-205, 53, 160.6), Vector3.new(10, 2.5, 0.4))
+	addLabel(model, "LOOKOUT 7 — COLLAPSED", CFrame.new(-205, 4.5, 159.4), Vector3.new(15, 2.5, 0.4))
 end
 
 local function buildCampground(parent: Folder)

@@ -28,17 +28,17 @@ local ObjectiveChainConfig = {
 		Exfiltration = true,
 	}),
 	Objectives = table.freeze({
-		-- Objective 1 (required): a held channel at the Lookout relay console.
+		-- Objective 1 (required): a readable opening hold at the home station.
 		table.freeze({
 			objectiveId = "objective.restore-lookout-relay",
-			landmarkId = "LookoutTower",
-			displayText = "Restore the emergency relay",
-			destinationDisplayName = "Forest Service Lookout",
+			landmarkId = "RangerStation",
+			displayText = "Secure the ranger station perimeter",
+			destinationDisplayName = "Home Ranger Station",
 			interactionKindId = "HeldChannel",
 			activePhaseIds = table.freeze({ Infiltration = true }),
-			center = table.freeze({ x = -221, y = 17.5, z = 187 }),
-			interactionRadiusStuds = 14,
-			completionUnits = 4, -- seconds of continuous presence
+			center = table.freeze({ x = -220, y = 3, z = -208 }),
+			interactionRadiusStuds = 24,
+			completionUnits = 4, -- short tutorial hold with HUD percentage confirmation
 			baseRatePerSecond = 1,
 			decayRatePerSecond = 0, -- a paused channel never regresses
 			assistedRateMultiplier = 1,

@@ -7,7 +7,7 @@ local WorldFoundationConfig = {
 	Seed = 1847,
 	WorldRootName = "LivingKingdomsWorld",
 	PlayableHalfExtentStuds = 640,
-	InsertionPosition = table.freeze({ x = -224, y = 5, z = -208 }),
+	InsertionPosition = table.freeze({ x = -224, y = 3.4, z = -208 }),
 	Landmarks = table.freeze({
 		table.freeze({ id = "RangerStation", displayName = "Ranger Station", x = -220, z = -190, radius = 44 }),
 		table.freeze({ id = "LoggingRoad", displayName = "Logging Road", x = 0, z = -112, radius = 32 }),

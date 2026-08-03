@@ -19,14 +19,15 @@ local ENEMY_FOLDER_NAME = "EnemyEntities"
 local PRESENTATION_MODEL_NAME = "ExclusionWalkerPresentation"
 
 local COLORS = table.freeze({
-	bone = Color3.fromRGB(169, 155, 126),
-	armor = Color3.fromRGB(30, 34, 32),
-	armorDark = Color3.fromRGB(14, 16, 15),
-	flesh = Color3.fromRGB(76, 24, 28),
-	claw = Color3.fromRGB(151, 132, 98),
-	sensor = Color3.fromRGB(255, 28, 22),
-	fur = Color3.fromRGB(47, 51, 45),
-	furDark = Color3.fromRGB(25, 29, 27),
+	bone = Color3.fromRGB(194, 188, 153),
+	armor = Color3.fromRGB(35, 41, 36),
+	armorDark = Color3.fromRGB(12, 15, 13),
+	flesh = Color3.fromRGB(112, 29, 40),
+	claw = Color3.fromRGB(174, 163, 124),
+	radiation = Color3.fromRGB(132, 255, 62),
+	necrosis = Color3.fromRGB(55, 65, 48),
+	fur = Color3.fromRGB(64, 71, 60),
+	furDark = Color3.fromRGB(27, 32, 28),
 })
 
 local started = false
@@ -115,7 +116,7 @@ local function createPresentation(root: BasePart): Model
 	local presentation = Instance.new("Model")
 	presentation.Name = PRESENTATION_MODEL_NAME
 	presentation:SetAttribute("VisualAssetKey", VisualAssetContracts.AssetKeys.EnemyStandardHostileModel)
-	presentation:SetAttribute("VisualCandidateId", "blackwater-infected-wolf.v1")
+	presentation:SetAttribute("VisualCandidateId", "blackwater-rad-wolf.v2")
 	presentation:SetAttribute("VisualStatus", "ProceduralFallback")
 	presentation:SetAttribute("GameplayFootprintId", "enemy.exclusion_walker")
 	presentation:SetAttribute("PresentationMotorCount", 5)
@@ -180,6 +181,18 @@ local function createPresentation(root: BasePart): Model
 		nil
 	)
 	muzzle.Shape = Enum.PartType.Ball
+	local lowerJaw = makeRigidPart(
+		presentation,
+		root,
+		body,
+		"SplitLowerJaw",
+		Vector3.new(1.08, 0.32, 1.42),
+		CFrame.new(0, 0.18, -3.73) * CFrame.Angles(math.rad(-13), 0, 0),
+		COLORS.flesh,
+		Enum.Material.SmoothPlastic,
+		nil
+	)
+	lowerJaw.Shape = Enum.PartType.Ball
 	for side = -1, 1, 2 do
 		makeRigidPart(
 			presentation,
@@ -197,31 +210,46 @@ local function createPresentation(root: BasePart): Model
 			root,
 			body,
 			if side < 0 then "FangLeft" else "FangRight",
-			Vector3.new(0.13, 0.34, 0.13),
-			CFrame.new(side * 0.28, 0.20, -4.02) * CFrame.Angles(math.rad(10), 0, 0),
+			Vector3.new(0.16, 0.48, 0.16),
+			CFrame.new(side * 0.31, 0.03, -4.08) * CFrame.Angles(math.rad(18), 0, math.rad(side * 7)),
 			COLORS.claw,
 			Enum.Material.SmoothPlastic,
 			nil
 		)
+		local eye = makeRigidPart(
+			presentation,
+			root,
+			body,
+			if side < 0 then "IrradiatedEyeLeft" else "IrradiatedEyeRight",
+			if side < 0 then Vector3.new(0.31, 0.24, 0.18) else Vector3.new(0.21, 0.18, 0.16),
+			CFrame.new(side * 0.39, 1.13 + side * 0.04, -3.49),
+			COLORS.radiation,
+			Enum.Material.Neon,
+			nil
+		)
+		eye.Shape = Enum.PartType.Ball
+		if side < 0 then
+			local eyeGlow = Instance.new("PointLight")
+			eyeGlow.Name = "RadiationEyeGlow"
+			eyeGlow.Color = COLORS.radiation
+			eyeGlow.Brightness = 2.1
+			eyeGlow.Range = 7
+			eyeGlow.Shadows = false
+			eyeGlow.Parent = eye
+		end
 	end
-	local sensor = makeRigidPart(
+	local nose = makeRigidPart(
 		presentation,
 		root,
 		body,
-		"Sensor",
-		Vector3.new(0.92, 0.14, 0.22),
-		CFrame.new(0, 1.08, -3.52),
-		COLORS.sensor,
-		Enum.Material.Neon,
+		"RottenNose",
+		Vector3.new(0.62, 0.42, 0.36),
+		CFrame.new(0, 0.61, -4.2),
+		COLORS.armorDark,
+		Enum.Material.SmoothPlastic,
 		nil
 	)
-	local eyeGlow = Instance.new("PointLight")
-	eyeGlow.Name = "EyeGlow"
-	eyeGlow.Color = Color3.fromRGB(255, 34, 26)
-	eyeGlow.Brightness = 2.6
-	eyeGlow.Range = 8.5
-	eyeGlow.Shadows = false
-	eyeGlow.Parent = sensor
+	nose.Shape = Enum.PartType.Ball
 	for index = -1, 2 do
 		makeRigidPart(
 			presentation,
@@ -234,6 +262,21 @@ local function createPresentation(root: BasePart): Model
 			Enum.Material.Slate,
 			nil
 		)
+	end
+	for index = 1, 4 do
+		local side = if index % 2 == 0 then 1 else -1
+		local tumor = makeRigidPart(
+			presentation,
+			root,
+			body,
+			"RadiationTumor" .. tostring(index),
+			Vector3.new(0.38 + index * 0.07, 0.3 + index * 0.06, 0.42 + index * 0.04),
+			CFrame.new(side * (1.03 + index * 0.04), 0.45 + (index % 3) * 0.25, -0.8 + index * 0.64),
+			if index == 3 then COLORS.radiation else COLORS.necrosis,
+			if index == 3 then Enum.Material.Neon else Enum.Material.SmoothPlastic,
+			nil
+		)
+		tumor.Shape = Enum.PartType.Ball
 	end
 
 	local forearmLeft = makeMotorPart(
@@ -340,17 +383,32 @@ local function createPresentation(root: BasePart): Model
 		nil
 	)
 	tail.Shape = Enum.PartType.Ball
-	makeRigidPart(
+	for ribIndex = 1, 4 do
+		makeRigidPart(
+			presentation,
+			root,
+			body,
+			"ExposedRib" .. tostring(ribIndex),
+			Vector3.new(2.24 - ribIndex * 0.12, 0.13, 0.24),
+			CFrame.new(0, 0.68 - ribIndex * 0.11, -0.2 + ribIndex * 0.42)
+				* CFrame.Angles(math.rad(6), 0, math.rad(if ribIndex % 2 == 0 then -7 else 7)),
+			COLORS.bone,
+			Enum.Material.SmoothPlastic,
+			nil
+		)
+	end
+	local chestWound = makeRigidPart(
 		presentation,
 		root,
 		body,
-		"ExposedRib",
-		Vector3.new(2.35, 0.16, 1.5),
-		CFrame.new(0, 0.58, 0.18) * CFrame.Angles(0, 0, math.rad(8)),
+		"OpenChestWound",
+		Vector3.new(1.15, 0.18, 1.62),
+		CFrame.new(0, 0.61, 0.52) * CFrame.Angles(math.rad(4), 0, 0),
 		COLORS.flesh,
-		Enum.Material.CorrodedMetal,
+		Enum.Material.Neon,
 		nil
 	)
+	chestWound.Transparency = 0.18
 
 	presentation.PrimaryPart = body
 	return presentation
