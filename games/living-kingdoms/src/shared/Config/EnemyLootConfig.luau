@@ -17,6 +17,15 @@ local EnemyLootConfig = {
 	DropRollModulo = 100,
 	RareDropRolls = 1,
 	CommonDropRolls = 7,
+	WeaponDropRollModulo = 50,
+	WeaponDropWinningRolls = 1,
+	WeaponDropLifetimeSeconds = 35,
+	DiscoverableWeaponIds = table.freeze({
+		"weapon.light-machine-gun",
+		"weapon.breach-shotgun",
+		"weapon.sniper-rifle",
+		"weapon.submachine-gun",
+	}),
 	HoverHeightStuds = 1.35,
 	BobAmplitudeStuds = 0.22,
 	BobRadiansPerSecond = 3.2,
@@ -66,6 +75,11 @@ assert(
 	totalDropRolls * 100 <= EnemyLootConfig.DropRollModulo * 10,
 	"enemy loot must remain a harsh ten-percent-or-lower resource economy"
 )
+assert(
+	EnemyLootConfig.WeaponDropWinningRolls / EnemyLootConfig.WeaponDropRollModulo <= 0.025,
+	"enemy weapon finds must remain uncommon"
+)
+assert(#EnemyLootConfig.DiscoverableWeaponIds == 4, "every non-starting firearm requires a discovery entry")
 for _, definition in EnemyLootConfig.Definitions do
 	assert(definition.Rounds > 0 and definition.Rounds <= 24, "enemy loot ammunition grants must remain bounded")
 	assert(

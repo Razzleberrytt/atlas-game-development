@@ -29,6 +29,8 @@ local function createSignal()
 end
 
 local inputBegan = createSignal()
+local inputEnded = createSignal()
+local renderStepped = createSignal()
 local presentationEvent = createSignal()
 local focusedTextBox: unknown = nil
 local reloadRequests = {}
@@ -76,9 +78,15 @@ local reloadIntentRemote = {
 		table.insert(reloadRequests, table.pack(...))
 	end,
 }
+local fireIntentRemote = {
+	FireServer = function() end,
+}
 local presentationRemote = { OnClientEvent = presentationEvent }
 local combatNetwork = {
 	WaitForChild = function(_self: unknown, name: string)
+		if name == "FireIntent" then
+			return fireIntentRemote
+		end
 		if name == "ReloadIntent" then
 			return reloadIntentRemote
 		end
@@ -105,6 +113,10 @@ local replicatedStorage = {
 local playerAttributes = {}
 local localPlayer = {
 	UserId = 42,
+	WaitForChild = function(_self: unknown, name: string)
+		assert(name == "PlayerGui")
+		return fakeInstance("PlayerGui")
+	end,
 	SetAttribute = function(_self: unknown, name: string, value: unknown)
 		playerAttributes[name] = value
 	end,
@@ -115,11 +127,17 @@ local localPlayer = {
 local players = { LocalPlayer = localPlayer }
 local userInputService = {
 	InputBegan = inputBegan,
+	InputEnded = inputEnded,
 	GetFocusedTextBox = function()
 		return focusedTextBox
 	end,
 }
 local workspace = {
+	CurrentCamera = {
+		CFrame = {
+			LookVector = { Magnitude = 1, Unit = { X = 0, Y = 0, Z = -1 } },
+		},
+	},
 	FindFirstChild = function(_self: unknown, name: string)
 		if name == "EnemyEntities" then
 			return enemyFolder
@@ -136,6 +154,7 @@ local services = {
 	ReplicatedStorage = replicatedStorage,
 	UserInputService = userInputService,
 	Workspace = workspace,
+	RunService = { RenderStepped = renderStepped },
 }
 
 local contracts = {
@@ -178,7 +197,29 @@ local environment = {
 	Instance = { new = fakeInstance },
 	Enum = {
 		KeyCode = { R = keyCodeR },
+		UserInputType = { MouseButton1 = {} },
 		HighlightDepthMode = { Occluded = "Occluded" },
+	},
+	Vector2 = {
+		new = function(x: number, y: number)
+			return { X = x, Y = y }
+		end,
+	},
+	UDim = {
+		new = function(scale: number, offset: number)
+			return { Scale = scale, Offset = offset }
+		end,
+	},
+	UDim2 = {
+		fromOffset = function(x: number, y: number)
+			return { X = x, Y = y }
+		end,
+		fromScale = function(x: number, y: number)
+			return { X = x, Y = y }
+		end,
+		new = function(...)
+			return { ... }
+		end,
 	},
 	Color3 = {
 		fromRGB = function(r: number, g: number, b: number)

@@ -1,0 +1,20 @@
+{
+  "experience": "Living Kingdoms",
+  "generatedWith": "Built-in OpenAI image generation with deterministic Pillow export",
+  "assets": [
+    {
+      "role": "Roblox experience icon",
+      "file": "living-kingdoms-icon-512.png",
+      "dimensions": "512x512",
+      "source": "living-kingdoms-icon-source.png"
+    },
+    {
+      "role": "Roblox experience thumbnail",
+      "file": "living-kingdoms-thumbnail-1920x1080.png",
+      "dimensions": "1920x1080",
+      "source": "living-kingdoms-thumbnail-source.png",
+      "title": "LIVING KINGDOMS",
+      "subtitle": "CO-OP HORDE SURVIVAL"
+    }
+  ]
+}

@@ -107,16 +107,16 @@ local ServicePistol: FirearmDefinition = table.freeze({
 	WeaponId = WeaponIds.ServicePistol,
 	DisplayName = "Vigil Service Pistol",
 	ShortName = "SERVICE PISTOL",
-	RoleDescription = "Fast handling, efficient ammunition, dependable fallback.",
+	RoleDescription = "Scarce-ammo survival sidearm. Make every shot count.",
 	RangeStuds = 66,
-	CadenceSeconds = 0.3,
-	MagazineCapacity = 15,
-	PrototypeInitialLoadedRounds = 15,
-	PrototypeInitialReserveRounds = 45,
-	MaximumReserveRounds = 90,
-	AuthoredCacheRounds = 18,
+	CadenceSeconds = 0.34,
+	MagazineCapacity = 8,
+	PrototypeInitialLoadedRounds = 8,
+	PrototypeInitialReserveRounds = 8,
+	MaximumReserveRounds = 32,
+	AuthoredCacheRounds = 6,
 	ReloadDurationSeconds = 1.35,
-	DamagePerHit = 18,
+	DamagePerHit = 28,
 	DamageTypeId = CombatContracts.DamageTypeIds.Ballistic,
 })
 
@@ -146,10 +146,15 @@ local definitionsById = table.freeze({
 	[SubmachineGun.WeaponId] = SubmachineGun,
 })
 local selectableWeaponIds = table.freeze({
+	ServicePistol.WeaponId,
+})
+
+-- These remain server-owned definitions for exceptionally rare in-run finds.
+-- They are deliberately absent from insertion selection and are not monetized.
+local discoverableWeaponIds = table.freeze({
 	LightMachineGun.WeaponId,
 	BreachShotgun.WeaponId,
 	SniperRifle.WeaponId,
-	ServicePistol.WeaponId,
 	SubmachineGun.WeaponId,
 })
 
@@ -162,16 +167,17 @@ local function isKnownWeaponId(weaponId: unknown): boolean
 end
 
 local Config = {
-	Version = "HROI-0120-v1-server-owned-weapon-roster",
+	Version = "HROI-0120-v2-survival-pistol-opening",
 	BasicFirearm = BasicFirearm,
 	LightMachineGun = LightMachineGun,
 	BreachShotgun = BreachShotgun,
 	SniperRifle = SniperRifle,
 	ServicePistol = ServicePistol,
 	SubmachineGun = SubmachineGun,
-	DefaultSelectableWeaponId = LightMachineGun.WeaponId,
+	DefaultSelectableWeaponId = ServicePistol.WeaponId,
 	DefinitionsById = definitionsById,
 	SelectableWeaponIds = selectableWeaponIds,
+	DiscoverableWeaponIds = discoverableWeaponIds,
 	get = get,
 	isKnownWeaponId = isKnownWeaponId,
 }
@@ -193,6 +199,7 @@ for _, weaponId in selectableWeaponIds do
 		"reload must remain bounded"
 	)
 end
-assert(#selectableWeaponIds == 5, "the first weapon roster must contain exactly five selectable weapons")
+assert(#selectableWeaponIds == 1, "insertion must expose only the service pistol")
+assert(selectableWeaponIds[1] == ServicePistol.WeaponId, "the service pistol must own the opening loadout")
 
 return table.freeze(Config)

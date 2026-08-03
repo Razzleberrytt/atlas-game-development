@@ -2,6 +2,29 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local function ensureCombatNetwork()
+	local existingNetwork = ReplicatedStorage:FindFirstChild("CombatNetwork")
+	local network: Folder
+	if existingNetwork == nil then
+		network = Instance.new("Folder")
+		network.Name = "CombatNetwork"
+		network.Parent = ReplicatedStorage
+	else
+		assert(existingNetwork:IsA("Folder"), "CombatNetwork must be a Folder")
+		network = existingNetwork
+	end
+	for _, remoteName in { "CombatPresentation", "FireIntent", "ReloadIntent" } do
+		local existingRemote = network:FindFirstChild(remoteName)
+		if existingRemote == nil then
+			local remote = Instance.new("RemoteEvent")
+			remote.Name = remoteName
+			remote.Parent = network
+		else
+			assert(existingRemote:IsA("RemoteEvent"), "CombatNetwork." .. remoteName .. " must be a RemoteEvent")
+		end
+	end
+end
+
 local function ensureRunBuildNetwork()
 	local existingNetwork = ReplicatedStorage:FindFirstChild("RunBuildNetwork")
 	local network: Folder
@@ -53,6 +76,35 @@ local function ensureFlashlightNetwork()
 		else
 			assert(existingRemote:IsA("RemoteEvent"), remoteName .. " must be a RemoteEvent")
 		end
+	end
+end
+
+local function ensureSurvivalNetwork()
+	local existing = ReplicatedStorage:FindFirstChild("SurvivalNetwork")
+	local network: Folder
+	if existing == nil then
+		network = Instance.new("Folder")
+		network.Name = "SurvivalNetwork"
+		network.Parent = ReplicatedStorage
+	else
+		assert(existing:IsA("Folder"), "SurvivalNetwork must be a Folder")
+		network = existing
+	end
+	local state = network:FindFirstChild("State")
+	if state == nil then
+		state = Instance.new("RemoteEvent")
+		state.Name = "State"
+		state.Parent = network
+	else
+		assert(state:IsA("RemoteEvent"), "SurvivalNetwork.State must be a RemoteEvent")
+	end
+	local readState = network:FindFirstChild("ReadState")
+	if readState == nil then
+		readState = Instance.new("RemoteFunction")
+		readState.Name = "ReadState"
+		readState.Parent = network
+	else
+		assert(readState:IsA("RemoteFunction"), "SurvivalNetwork.ReadState must be a RemoteFunction")
 	end
 end
 
@@ -198,7 +250,9 @@ local function ensureProgressionNetwork()
 	end
 end
 
+ensureCombatNetwork()
 ensureFlashlightNetwork()
+ensureSurvivalNetwork()
 ensureSquadPingNetwork()
 ensureMissionNetwork()
 ensureClassNetwork()
@@ -232,6 +286,7 @@ local MatchResultService = require(script.Systems.MatchResultService)
 local OperationLifecycleService = require(script.Systems.OperationLifecycleService)
 local MissionDirectorService = require(script.Systems.MissionDirectorService)
 local WeaponLoadoutService = require(script.Systems.WeaponLoadoutService)
+local SurvivalLootService = require(script.Systems.SurvivalLootService)
 
 WorldFoundationService.start()
 -- The contribution ledger records only already-committed facts, so it starts
@@ -255,6 +310,7 @@ ScreamerInterruptRewardService.start()
 EnemyPresentationService.start()
 EnemyValidationProbeService.start()
 OperativeCombatRuntimeService.start()
+SurvivalLootService.start()
 AmmunitionCacheService.start()
 EnemyLootService.start()
 AmmunitionScarcityValidationProbeService.start()

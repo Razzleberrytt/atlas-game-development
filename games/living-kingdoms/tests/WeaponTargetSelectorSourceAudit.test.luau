@@ -40,7 +40,10 @@ do
 end
 
 assertThat(
-	contains(runtime, "WeaponTargetSelector.select(targetingState, candidates, playerState.selectedTargetEntityId)"),
+	contains(
+		runtime,
+		"WeaponTargetSelector.select(targetingState, aimedCandidates, playerState.selectedTargetEntityId)"
+	),
 	"production automatic combat must pass the current authoritative target into weapon-aware selection"
 )
 assertThat(

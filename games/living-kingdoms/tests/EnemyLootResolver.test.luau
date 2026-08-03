@@ -18,6 +18,10 @@ assertThat(config.DropRollModulo == 100, "loot rolls must use percentage-scale r
 assertThat(config.CommonDropRolls == 7, "common drop chance must remain seven percent")
 assertThat(config.RareDropRolls == 1, "rare drop chance must remain one percent")
 assertThat(config.CommonDropRolls + config.RareDropRolls == 8, "enemy loot must remain an eight-percent event")
+assertThat(
+	config.WeaponDropWinningRolls / config.WeaponDropRollModulo == 0.02,
+	"enemy weapon finds must be two percent"
+)
 
 local CONFIG_TOKEN = {}
 local resolver = luau.load(fs.readFile("games/living-kingdoms/src/shared/Loot/EnemyLootResolver.luau"), {
@@ -78,6 +82,16 @@ assertThat(common.lifetimeSeconds == config.Definitions.Common.LifetimeSeconds, 
 assertThat(rare.rounds == config.Definitions.Rare.Rounds, "rare ammunition grant drifted")
 assertThat(rare.lifetimeSeconds == config.Definitions.Rare.LifetimeSeconds, "rare lifetime drifted")
 assertThat(common.dropId ~= rare.dropId, "separate deaths require separate pickup identities")
+
+local weaponDrop = nil
+for sequence = 1, 5000 do
+	local result = resolver.resolveWeaponDrop("enemy.roam:weapon-fixture", sequence, 0)
+	if result.didDrop then
+		weaponDrop = result
+		break
+	end
+end
+assertThat(weaponDrop ~= nil and weaponDrop.weaponId ~= nil, "bounded sample must expose a rare weapon find")
 assertThat(
 	table.isfrozen(common) and table.isfrozen(rare) and table.isfrozen(noDrop),
 	"loot resolutions must be immutable"

@@ -14,6 +14,15 @@ export type DropResolution = {
 	roll: number?,
 }
 
+export type WeaponDropResolution = {
+	didDrop: boolean,
+	rejectionReasonId: string?,
+	dropId: string?,
+	weaponId: string?,
+	lifetimeSeconds: number,
+	roll: number?,
+}
+
 local EnemyLootResolver = {}
 
 local function rejected(reasonId: string): DropResolution
@@ -87,6 +96,55 @@ function EnemyLootResolver.resolveDrop(entityId: string, deathSequence: number, 
 		displayName = definition.DisplayName,
 		rounds = definition.Rounds,
 		lifetimeSeconds = definition.LifetimeSeconds,
+		roll = roll,
+	})
+end
+
+function EnemyLootResolver.resolveWeaponDrop(
+	entityId: string,
+	deathSequence: number,
+	activeDropCount: number
+): WeaponDropResolution
+	if type(entityId) ~= "string" or entityId == "" or deathSequence < 1 or deathSequence % 1 ~= 0 then
+		return table.freeze({
+			didDrop = false,
+			rejectionReasonId = "InvalidDeathFacts",
+			dropId = nil,
+			weaponId = nil,
+			lifetimeSeconds = 0,
+			roll = nil,
+		})
+	end
+	if activeDropCount >= EnemyLootConfig.MaximumActiveDrops then
+		return table.freeze({
+			didDrop = false,
+			rejectionReasonId = "ActiveDropCapReached",
+			dropId = nil,
+			weaponId = nil,
+			lifetimeSeconds = 0,
+			roll = nil,
+		})
+	end
+	local hash = stableHash(entityId .. ":weapon", deathSequence)
+	local roll = hash % EnemyLootConfig.WeaponDropRollModulo
+	if roll >= EnemyLootConfig.WeaponDropWinningRolls then
+		return table.freeze({
+			didDrop = false,
+			rejectionReasonId = "NoWeaponDropRolled",
+			dropId = nil,
+			weaponId = nil,
+			lifetimeSeconds = 0,
+			roll = roll,
+		})
+	end
+	local weapons = EnemyLootConfig.DiscoverableWeaponIds
+	local weaponId = weapons[(math.floor(hash / EnemyLootConfig.WeaponDropRollModulo) % #weapons) + 1]
+	return table.freeze({
+		didDrop = true,
+		rejectionReasonId = nil,
+		dropId = string.format("enemy-weapon-loot:%d:%d", deathSequence, hash),
+		weaponId = weaponId,
+		lifetimeSeconds = EnemyLootConfig.WeaponDropLifetimeSeconds,
 		roll = roll,
 	})
 end

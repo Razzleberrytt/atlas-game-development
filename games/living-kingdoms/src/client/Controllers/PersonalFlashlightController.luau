@@ -5,6 +5,8 @@
 local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 local PersonalFlashlightConfig = require(ReplicatedStorage.Shared.Config.PersonalFlashlightConfig)
 local PersonalFlashlightContracts = require(ReplicatedStorage.Shared.Lighting.PersonalFlashlightContracts)
@@ -26,6 +28,8 @@ local expectedActive = false
 local lastInputTimestamp = -math.huge
 local attachment: Attachment? = nil
 local spotLight: SpotLight? = nil
+local lightCarrier: Part? = nil
+local renderConnection: RBXScriptConnection? = nil
 local screenGui: ScreenGui? = nil
 local stateLabel: TextLabel? = nil
 
@@ -34,6 +38,10 @@ local function isAlive(): boolean
 end
 
 local function destroyLightPresentation()
+	if renderConnection ~= nil then
+		renderConnection:Disconnect()
+		renderConnection = nil
+	end
 	if attachment ~= nil then
 		attachment:Destroy()
 		attachment = nil
@@ -42,42 +50,67 @@ local function destroyLightPresentation()
 		spotLight:Destroy()
 		spotLight = nil
 	end
+	if lightCarrier ~= nil then
+		lightCarrier:Destroy()
+		lightCarrier = nil
+	end
 end
 
 local function ensureLightPresentation()
 	if attachment ~= nil then
 		return
 	end
-	local character = localPlayer.Character
-	local head = if character == nil then nil else character:FindFirstChild("Head")
-	if head == nil or not head:IsA("BasePart") then
+	local camera = Workspace.CurrentCamera
+	if camera == nil then
 		return
 	end
+	local carrier = Instance.new("Part")
+	carrier.Name = "LocalFlashlightCarrier"
+	carrier.Size = Vector3.new(0.1, 0.1, 0.1)
+	carrier.Transparency = 1
+	carrier.Anchored = true
+	carrier.CanCollide = false
+	carrier.CanTouch = false
+	carrier.CanQuery = false
+	carrier.CastShadow = false
+	carrier.CFrame = camera.CFrame
+	carrier.Parent = Workspace
 	local createdAttachment = Instance.new("Attachment")
 	createdAttachment.Name = "LocalPersonalFlashlightAttachment"
-	createdAttachment.Position = Vector3.new(0, 0, -0.35)
-	createdAttachment.Parent = head
+	createdAttachment.Position = Vector3.new(0.18, -0.14, -0.35)
+	createdAttachment.Parent = carrier
 	local createdLight = Instance.new("SpotLight")
 	createdLight.Name = "LocalPersonalFlashlightBeam"
-	createdLight.Angle = PersonalFlashlightConfig.ConeAngleDegrees
-	createdLight.Range = PersonalFlashlightConfig.RangeStuds
+	createdLight.Angle = PersonalFlashlightConfig.PresentationConeAngleDegrees
+	createdLight.Range = PersonalFlashlightConfig.PresentationRangeStuds
 	createdLight.Brightness = PersonalFlashlightConfig.PresentationBrightness
 		* (if USE_REDUCED_VISUAL_INTENSITY then PersonalFlashlightConfig.ReducedPresentationIntensityScale else 1)
 	createdLight.Color = Color3.fromRGB(244, 239, 214)
 	createdLight.Face = Enum.NormalId.Front
-	createdLight.Shadows = false
+	createdLight.Shadows = true
 	createdLight.Enabled = false
 	createdLight.Parent = createdAttachment
 	attachment = createdAttachment
 	spotLight = createdLight
+	lightCarrier = carrier
+	renderConnection = RunService.RenderStepped:Connect(function()
+		local currentCamera = Workspace.CurrentCamera
+		if currentCamera ~= nil and carrier.Parent ~= nil then
+			carrier.CFrame = currentCamera.CFrame
+		end
+	end)
 end
 
 local function updateText(active: boolean)
 	local label = stateLabel
 	if label ~= nil then
-		label.Text = if active then "Flashlight ON" else "Flashlight OFF"
+		label.Text = if active then "F  ·  LIGHT ON" else "F  ·  LIGHT OFF"
 	end
 	ContextActionService:SetTitle(ACTION_NAME, if active then "Flashlight: ON" else "Flashlight: OFF")
+	local candidate = localPlayer :: any
+	if type(candidate.SetAttribute) == "function" then
+		candidate:SetAttribute("LK_HUD_FlashlightOn", active)
+	end
 end
 
 local function present(active: boolean)
@@ -98,15 +131,18 @@ local function createStatusPresentation()
 	gui.DisplayOrder = 9
 	local label = Instance.new("TextLabel")
 	label.Name = "State"
-	label.AnchorPoint = Vector2.new(1, 1)
-	label.Position = UDim2.new(1, -18, 1, -18)
-	label.Size = UDim2.fromOffset(150, 28)
+	label.AnchorPoint = Vector2.new(1, 0)
+	label.Position = UDim2.new(1, -16, 0, 126)
+	label.Size = UDim2.fromOffset(142, 30)
 	label.BackgroundColor3 = Color3.fromRGB(20, 22, 26)
 	label.BackgroundTransparency = 0.25
 	label.BorderSizePixel = 0
 	label.Font = Enum.Font.GothamMedium
 	label.TextColor3 = Color3.fromRGB(245, 245, 245)
-	label.TextSize = 15
+	label.TextSize = 13
+	-- The unified ammo panel already carries the F-key light state. Keep this
+	-- backing label hidden so desktop players see one clear status surface.
+	label.Visible = false
 	label.Parent = gui
 	gui.Parent = localPlayer:WaitForChild("PlayerGui")
 	screenGui = gui

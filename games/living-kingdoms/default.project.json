@@ -39,6 +39,9 @@
         "CombatPresentation": {
           "$className": "RemoteEvent"
         },
+        "FireIntent": {
+          "$className": "RemoteEvent"
+        },
         "ReloadIntent": {
           "$className": "RemoteEvent"
         }
@@ -51,7 +54,36 @@
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "Server": {
-        "$path": "src/server"
+        "$path": "src/server",
+        "$properties": {
+          "Disabled": false,
+          "RunContext": "Server"
+        }
+      }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "BootstrapSafetyFloor": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": true,
+          "Color": [0.113725, 0.160784, 0.14902],
+          "Material": "Slate",
+          "Position": [-224, -3, -208],
+          "Size": [48, 6, 48]
+        }
+      },
+      "BootstrapSafetySpawn": {
+        "$className": "SpawnLocation",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": true,
+          "Neutral": true,
+          "Position": [-224, 0.5, -208],
+          "Size": [12, 1, 12],
+          "Transparency": 1
+        }
       }
     },
     "StarterPlayer": {

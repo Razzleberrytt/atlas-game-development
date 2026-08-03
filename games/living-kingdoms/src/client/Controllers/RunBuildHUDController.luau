@@ -34,6 +34,7 @@ local screenGui: ScreenGui? = nil
 local slotButtons: { TextButton } = {}
 local choiceButtons: { TextButton } = {}
 local choicePanel: Frame? = nil
+local relicBar: Frame? = nil
 local choiceTitle: TextLabel? = nil
 local choiceSubtitle: TextLabel? = nil
 local statusLabel: TextLabel? = nil
@@ -121,6 +122,7 @@ local function createGui()
 	bar.Size = UDim2.fromOffset(SLOT_COUNT * 140 + (SLOT_COUNT - 1) * 6, 42)
 	bar.BackgroundTransparency = 1
 	bar.Parent = gui
+	relicBar = bar
 
 	local layout = Instance.new("UIListLayout")
 	layout.FillDirection = Enum.FillDirection.Horizontal
@@ -238,6 +240,7 @@ end
 -- Slot labels depend on both the server snapshot and the local "which slot do I
 -- discard?" decision, so rendering them is shared between the two.
 local function renderSlots()
+	local occupied = false
 	for slotIndex = 1, SLOT_COUNT do
 		local button = slotButtons[slotIndex]
 		if button == nil then
@@ -249,6 +252,12 @@ local function renderSlots()
 			and slot.slotStateId == RunRpgContracts.RelicSlotStateIds.Equipped
 		button.Text = slotText(slot, slotIndex, isDiscardTarget)
 		button.AutoButtonColor = isDiscardTarget
+		if type(slot) == "table" and slot.slotStateId == RunRpgContracts.RelicSlotStateIds.Equipped then
+			occupied = true
+		end
+	end
+	if relicBar ~= nil then
+		relicBar.Visible = occupied or awaitingReplacement
 	end
 end
 
@@ -442,6 +451,7 @@ function RunBuildHUDController.stop()
 		screenGui = nil
 	end
 	choicePanel = nil
+	relicBar = nil
 	choiceTitle = nil
 	choiceSubtitle = nil
 	statusLabel = nil

@@ -22,7 +22,7 @@ local SpecialEnemyConfig = {
 		DisplayName = "Blight Spitter",
 		-- Tougher than a walker (45) so it reads as a priority target worth
 		-- interrupting, but not a damage sponge.
-		MaximumHealth = 70,
+		MaximumHealth = 120,
 		-- Ranged and deliberate: slower than a walker's 13-stud pursuit because it
 		-- keeps its distance and lobs rather than closing to melee.
 		PursuitSpeedStudsPerSecond = 9,
@@ -58,7 +58,7 @@ local SpecialEnemyConfig = {
 	Spawn = table.freeze({
 		-- Authored rarity, not a random crowd. The runtime introduces the Spitter
 		-- once escalation reaches the booster hold and holds a low concurrent count.
-		IntroductionEscalationLevel = 1,
+		IntroductionEscalationLevel = 3,
 		MaximumConcurrent = 2,
 	}),
 }

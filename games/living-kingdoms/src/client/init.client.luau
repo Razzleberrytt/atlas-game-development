@@ -37,6 +37,7 @@ local MassacreCrescendoController = require(script.Controllers.MassacreCrescendo
 local RunBuildHUDController = require(script.Controllers.RunBuildHUDController)
 local CriticalConditionController = require(script.Controllers.CriticalConditionController)
 local PresentationSettingsController = require(script.Controllers.PresentationSettingsController)
+local SurvivalHUDController = require(script.Controllers.SurvivalHUDController)
 
 CameraController.init()
 CameraController.start()
@@ -76,6 +77,7 @@ MissionObjectPresentationController.start()
 -- RunProgressionHUDController is intentionally left uninitialized to avoid a
 -- duplicate XP bar and a second upgrade overlay.
 HordeHUDController.start()
+SurvivalHUDController.start()
 HordeEffectsController.start()
 HordeSpecialTelegraphController.start()
 SpecialEncounterTelegraphController.start()

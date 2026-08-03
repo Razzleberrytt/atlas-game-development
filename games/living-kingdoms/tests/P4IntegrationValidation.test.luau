@@ -302,7 +302,7 @@ local p4NetworkStart = assert(string.find(project, '"FlashlightNetwork"', 1, tru
 local p4NetworkEnd = assert(string.find(project, '"Shared"', p4NetworkStart, true))
 local p4NetworkSource = string.sub(project, p4NetworkStart, p4NetworkEnd - 1)
 local _, p4RemoteCount = string.gsub(p4NetworkSource, '"%$className"%s*:%s*"RemoteEvent"', "")
-assert(p4RemoteCount == 4, "P4 remote surface changed")
+assert(p4RemoteCount == 5, "P4 remote surface changed")
 assert(not string.find(p4NetworkSource, '"RemoteFunction"', 1, true), "P4 must not add RemoteFunctions")
 
 for _, prohibited in

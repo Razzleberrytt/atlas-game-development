@@ -49,6 +49,7 @@ type DropRecord = {
 	createdAtServerTimestamp: number,
 	expiresAtServerTimestamp: number,
 	rounds: number,
+	weaponId: string?,
 	rarityId: string,
 	phaseOffset: number,
 }
@@ -92,7 +93,7 @@ local function processedSetFor(player: Player): { [string]: boolean }
 	return created
 end
 
-local function createLabel(part: BasePart, displayName: string, rounds: number, rarityId: string)
+local function createLabel(part: BasePart, displayName: string, rounds: number, rarityId: string, weaponId: string?)
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "LootLabel"
 	billboard.AlwaysOnTop = true
@@ -106,7 +107,9 @@ local function createLabel(part: BasePart, displayName: string, rounds: number, 
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.fromScale(1, 1)
 	label.Font = Enum.Font.GothamBold
-	label.Text = string.format("%s\n+%d ROUNDS", displayName, rounds)
+	label.Text = if weaponId ~= nil
+		then "RARE WEAPON CACHE\nWALK OVER TO EQUIP"
+		else string.format("%s\n+%d ROUNDS", displayName, rounds)
 	label.TextColor3 = if rarityId == "Rare" then Color3.fromRGB(125, 226, 255) else Color3.fromRGB(255, 210, 91)
 	label.TextStrokeColor3 = Color3.fromRGB(8, 10, 11)
 	label.TextStrokeTransparency = 0.2
@@ -121,6 +124,7 @@ local function createDropPart(
 	rounds: number,
 	rarityId: string,
 	position: Vector3,
+	weaponId: string?,
 	parent: Folder
 ): BasePart
 	local part = Instance.new("Part")
@@ -140,6 +144,7 @@ local function createDropPart(
 	part:SetAttribute("LootKindId", lootKindId)
 	part:SetAttribute("LootRarityId", rarityId)
 	part:SetAttribute("AvailableRounds", rounds)
+	part:SetAttribute("DiscoveredWeaponId", weaponId)
 	part.Parent = parent
 
 	local light = Instance.new("PointLight")
@@ -150,7 +155,7 @@ local function createDropPart(
 	light.Shadows = false
 	light.Parent = part
 
-	createLabel(part, displayName, rounds, rarityId)
+	createLabel(part, displayName, rounds, rarityId, weaponId)
 	return part
 end
 
@@ -171,6 +176,36 @@ local function spawnDrop(enemyModel: Model, worldPosition: Vector3, serverTimest
 	local entityId = enemyModel:GetAttribute("CombatEntityId")
 	if type(entityId) ~= "string" or entityId == "" then
 		entityId = enemyModel.Name
+	end
+	local weaponResolution = EnemyLootResolver.resolveWeaponDrop(entityId, deathSequence, activeDropCount)
+	if weaponResolution.didDrop and weaponResolution.dropId ~= nil and weaponResolution.weaponId ~= nil then
+		local folder = lootFolder
+		local definition = resolveWeaponDefinition(weaponResolution.weaponId)
+		if folder ~= nil and definition ~= nil then
+			local part = createDropPart(
+				weaponResolution.dropId,
+				"DiscoveredWeapon",
+				definition.DisplayName,
+				0,
+				"Rare",
+				worldPosition,
+				weaponResolution.weaponId,
+				folder
+			)
+			dropsById[weaponResolution.dropId] = {
+				dropId = weaponResolution.dropId,
+				part = part,
+				basePosition = worldPosition,
+				createdAtServerTimestamp = serverTimestamp,
+				expiresAtServerTimestamp = serverTimestamp + weaponResolution.lifetimeSeconds,
+				rounds = 0,
+				weaponId = weaponResolution.weaponId,
+				rarityId = "Rare",
+				phaseOffset = (deathSequence % 8) * 0.65,
+			}
+			activeDropCount += 1
+			return
+		end
 	end
 	local resolution = EnemyLootResolver.resolveDrop(entityId, deathSequence, activeDropCount)
 	if not resolution.didDrop then
@@ -193,7 +228,8 @@ local function spawnDrop(enemyModel: Model, worldPosition: Vector3, serverTimest
 		return
 	end
 
-	local part = createDropPart(dropId, lootKindId, displayName, resolution.rounds, rarityId, worldPosition, folder)
+	local part =
+		createDropPart(dropId, lootKindId, displayName, resolution.rounds, rarityId, worldPosition, nil, folder)
 	dropsById[dropId] = {
 		dropId = dropId,
 		part = part,
@@ -201,6 +237,7 @@ local function spawnDrop(enemyModel: Model, worldPosition: Vector3, serverTimest
 		createdAtServerTimestamp = serverTimestamp,
 		expiresAtServerTimestamp = serverTimestamp + resolution.lifetimeSeconds,
 		rounds = resolution.rounds,
+		weaponId = nil,
 		rarityId = rarityId,
 		phaseOffset = (deathSequence % 8) * 0.65,
 	}
@@ -324,6 +361,9 @@ local function nearestEligibleCollector(record: DropRecord): Player?
 end
 
 local function tryCollect(player: Player, record: DropRecord): boolean
+	if record.weaponId ~= nil then
+		return OperativeCombatRuntimeService.equipFoundWeapon(player, record.weaponId)
+	end
 	local read = OperativeCombatRuntimeService.readReviveCombatState(player)
 	if read == nil then
 		return false

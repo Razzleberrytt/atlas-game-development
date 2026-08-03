@@ -9,6 +9,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
@@ -61,9 +62,14 @@ type LifecycleState = {
 	presentedShotIds: { [string]: boolean },
 	selectedTargetEntityId: string?,
 	currentWeaponId: string,
+	isFiring: boolean,
+	lastAimSendLocalTimestamp: number,
 	inputBeganConnection: RBXScriptConnection?,
+	inputEndedConnection: RBXScriptConnection?,
+	renderConnection: RBXScriptConnection?,
 	presentationConnection: RBXScriptConnection?,
 	targetHighlight: Highlight?,
+	crosshairGui: ScreenGui?,
 }
 
 local WeaponController: WeaponController = {} :: WeaponController
@@ -75,12 +81,18 @@ local state: LifecycleState = {
 	presentedShotIds = {},
 	selectedTargetEntityId = nil,
 	currentWeaponId = FirearmConfig.BasicFirearm.WeaponId,
+	isFiring = false,
+	lastAimSendLocalTimestamp = -math.huge,
 	inputBeganConnection = nil,
+	inputEndedConnection = nil,
+	renderConnection = nil,
 	presentationConnection = nil,
 	targetHighlight = nil,
+	crosshairGui = nil,
 }
 
 local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
+local fireIntentRemote = combatNetwork:WaitForChild("FireIntent") :: RemoteEvent
 local reloadIntentRemote = combatNetwork:WaitForChild("ReloadIntent") :: RemoteEvent
 local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: RemoteEvent
 
@@ -88,6 +100,69 @@ local function clearHudAttributes()
 	for _, attributeName in HUD_ATTRIBUTES do
 		localPlayer:SetAttribute(attributeName, nil)
 	end
+end
+
+local function createCrosshair()
+	if state.crosshairGui ~= nil then
+		state.crosshairGui:Destroy()
+	end
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "FirstPersonCrosshair"
+	gui.IgnoreGuiInset = true
+	gui.ResetOnSpawn = false
+	gui.DisplayOrder = 40
+
+	local function line(name: string, size: UDim2, position: UDim2)
+		local frame = Instance.new("Frame")
+		frame.Name = name
+		frame.AnchorPoint = Vector2.new(0.5, 0.5)
+		frame.Size = size
+		frame.Position = position
+		frame.BackgroundColor3 = Color3.fromRGB(238, 231, 210)
+		frame.BorderSizePixel = 0
+		frame.Parent = gui
+		local stroke = Instance.new("UIStroke")
+		stroke.Color = Color3.fromRGB(15, 17, 18)
+		stroke.Thickness = 1
+		stroke.Parent = frame
+	end
+
+	line("Top", UDim2.fromOffset(2, 8), UDim2.new(0.5, 0, 0.5, -9))
+	line("Bottom", UDim2.fromOffset(2, 8), UDim2.new(0.5, 0, 0.5, 9))
+	line("Left", UDim2.fromOffset(8, 2), UDim2.new(0.5, -9, 0.5, 0))
+	line("Right", UDim2.fromOffset(8, 2), UDim2.new(0.5, 9, 0.5, 0))
+	local dot = Instance.new("Frame")
+	dot.Name = "Dot"
+	dot.AnchorPoint = Vector2.new(0.5, 0.5)
+	dot.Size = UDim2.fromOffset(3, 3)
+	dot.Position = UDim2.fromScale(0.5, 0.5)
+	dot.BackgroundColor3 = Color3.fromRGB(238, 231, 210)
+	dot.BorderSizePixel = 0
+	dot.Parent = gui
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1, 0)
+	corner.Parent = dot
+
+	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+	state.crosshairGui = gui
+end
+
+local function currentAimDirection(): Vector3?
+	local camera = Workspace.CurrentCamera
+	if camera == nil then
+		return nil
+	end
+	local direction = camera.CFrame.LookVector
+	return if direction.Magnitude > 0.99 then direction.Unit else nil
+end
+
+local function sendFireIntent(isFiring: boolean)
+	local direction = currentAimDirection()
+	if direction == nil then
+		return
+	end
+	state.lastAimSendLocalTimestamp = os.clock()
+	fireIntentRemote:FireServer(isFiring, direction)
 end
 
 local function setStatus(text: string, durationSeconds: number?)
@@ -136,9 +211,11 @@ local function presentSelectedTarget(targetEntityId: string)
 	highlight.Name = "DisclosedCombatTarget"
 	highlight.DepthMode = Enum.HighlightDepthMode.Occluded
 	highlight.FillColor = Color3.fromRGB(255, 181, 62)
-	highlight.FillTransparency = 0.82
+	-- Target selection is server-owned bookkeeping, not an aim assist overlay.
+	-- Keep this object invisible for compatibility with presentation cleanup.
+	highlight.FillTransparency = 1
 	highlight.OutlineColor = Color3.fromRGB(255, 232, 160)
-	highlight.OutlineTransparency = 0
+	highlight.OutlineTransparency = 1
 	highlight.Adornee = target
 	highlight.Parent = target
 	state.targetHighlight = highlight
@@ -254,10 +331,27 @@ function WeaponController.requestReload(): boolean
 end
 
 local function onInputBegan(input: InputObject, gameProcessedEvent: boolean)
-	if gameProcessedEvent or input.KeyCode ~= Enum.KeyCode.R or UserInputService:GetFocusedTextBox() ~= nil then
+	if gameProcessedEvent or UserInputService:GetFocusedTextBox() ~= nil then
 		return
 	end
-	WeaponController.requestReload()
+	if input.KeyCode ~= Enum.KeyCode.R then
+		if input.UserInputType == Enum.UserInputType.MouseButton1 and not state.isFiring then
+			state.isFiring = true
+			sendFireIntent(true)
+		end
+		return
+	end
+	if input.KeyCode == Enum.KeyCode.R then
+		WeaponController.requestReload()
+	end
+end
+
+local function onInputEnded(input: InputObject)
+	if input.UserInputType ~= Enum.UserInputType.MouseButton1 or not state.isFiring then
+		return
+	end
+	state.isFiring = false
+	sendFireIntent(false)
 end
 
 function WeaponController.init()
@@ -274,8 +368,17 @@ function WeaponController.start()
 	WeaponController.init()
 	state.started = true
 	state.lastReloadRequestLocalTimestamp = -math.huge
+	state.lastAimSendLocalTimestamp = -math.huge
+	state.isFiring = false
 	clearHudAttributes()
+	createCrosshair()
 	state.inputBeganConnection = UserInputService.InputBegan:Connect(onInputBegan)
+	state.inputEndedConnection = UserInputService.InputEnded:Connect(onInputEnded)
+	state.renderConnection = RunService.RenderStepped:Connect(function()
+		if state.isFiring and os.clock() - state.lastAimSendLocalTimestamp >= 0.1 then
+			sendFireIntent(true)
+		end
+	end)
 	state.presentationConnection = presentationRemote.OnClientEvent:Connect(onPresentationMessage)
 end
 
@@ -287,11 +390,27 @@ function WeaponController.stop()
 		state.inputBeganConnection:Disconnect()
 		state.inputBeganConnection = nil
 	end
+	if state.inputEndedConnection ~= nil then
+		state.inputEndedConnection:Disconnect()
+		state.inputEndedConnection = nil
+	end
+	if state.renderConnection ~= nil then
+		state.renderConnection:Disconnect()
+		state.renderConnection = nil
+	end
+	if state.isFiring then
+		sendFireIntent(false)
+		state.isFiring = false
+	end
 	if state.presentationConnection ~= nil then
 		state.presentationConnection:Disconnect()
 		state.presentationConnection = nil
 	end
 	clearTargetPresentation()
+	if state.crosshairGui ~= nil then
+		state.crosshairGui:Destroy()
+		state.crosshairGui = nil
+	end
 	clearHudAttributes()
 	table.clear(state.presentedShotIds)
 	state.started = false

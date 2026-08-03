@@ -1009,12 +1009,9 @@ local resumeAt = service.readPressureState().nextRoamingSpawnServerTimestamp
 assert(resumeAt == now + level2.IntervalSeconds, "escalation must tighten the roaming interval")
 now = math.max(resumeAt, recoveryEnd)
 local resumed = service.evaluateAt(now)
--- Escalation has reached the Blight Spitter introduction level, so this roam
--- also introduces exactly one bounded special enemy alongside the walker burst.
-assert(
-	resumed.spawnedCount == level2.SpawnCount + 1,
-	"roaming resumes after recovery and introduces one Blight Spitter"
-)
+-- The early operation remains predator-only; ranged specials enter only at
+-- maximum escalation after players understand the infected-wolf threat.
+assert(resumed.spawnedCount == level2.SpawnCount, "roaming resumes after recovery with the bounded wolf pack")
 local spitterCount = 0
 for _, instance in createdInstances do
 	if
@@ -1025,7 +1022,7 @@ for _, instance in createdInstances do
 		spitterCount += 1
 	end
 end
-assert(spitterCount == 1, "escalation past the introduction level maintains exactly one Blight Spitter")
+assert(spitterCount == 0, "early escalation must remain wolf-only")
 
 -- Escalation level never regresses.
 service.spawnAuthoredWave(1, { { id = "enemy.wave1-late", name = "Wave Walker", x = 250, y = 3, z = -250 } })

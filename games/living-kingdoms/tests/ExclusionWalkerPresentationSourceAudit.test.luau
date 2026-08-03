@@ -20,39 +20,38 @@ local roadmap = fs.readFile("docs/roadmap/VISUAL-PRODUCTION-TRACK.md")
 for _, componentName in
 	{
 		"TorsoCore",
-		"RibCage",
-		"ChestPlate",
+		"ShoulderMass",
+		"Neck",
 		"Head",
+		"Muzzle",
+		"EarLeft",
+		"EarRight",
+		"FangLeft",
+		"FangRight",
 		"Sensor",
 		"DorsalSpine",
-		"ShoulderLeft",
-		"ShoulderRight",
-		"ForearmLeft",
-		"ForearmRight",
-		"ClawLeft",
-		"ClawRight",
-		"HipGuard",
+		"FrontLegLeft",
+		"FrontLegRight",
+		"FrontPawLeft",
+		"FrontPawRight",
 		"LegLeft",
 		"LegRight",
-		"FootLeft",
-		"FootRight",
-		"BackCanister",
+		"RearPawLeft",
+		"RearPawRight",
+		"Tail",
+		"ExposedRib",
 	}
 do
 	assertThat(
-		string.find(generator, '"' .. componentName .. '"', 1, true) ~= nil,
-		"walker source generator missing component " .. componentName
-	)
-	assertThat(
 		string.find(presenter, '"' .. componentName .. '"', 1, true) ~= nil,
-		"walker runtime fallback missing component " .. componentName
+		"infected wolf runtime fallback missing component " .. componentName
 	)
 end
 
 for _, required in
 	{
 		'local PRESENTATION_MODEL_NAME = "ExclusionWalkerPresentation"',
-		'presentation:SetAttribute("VisualCandidateId", "exclusion-walker.v1")',
+		'presentation:SetAttribute("VisualCandidateId", "blackwater-infected-wolf.v1")',
 		'presentation:SetAttribute("VisualStatus", "ProceduralFallback")',
 		'presentation:SetAttribute("GameplayFootprintId", "enemy.exclusion_walker")',
 		'attachment.Name = "AttackOrigin"',

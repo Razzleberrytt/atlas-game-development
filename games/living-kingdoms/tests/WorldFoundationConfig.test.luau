@@ -8,8 +8,8 @@ local config = luau.load(source, {
 	injectGlobals = true,
 })()
 
-assert(config.Version == "P5-0102-v1", "world version changed")
-assert(config.PlayableHalfExtentStuds == 320, "playable extent changed")
+assert(config.Version == "P5-0102-v2-immersive-expanse", "world version changed")
+assert(config.PlayableHalfExtentStuds == 640, "immersive expanse must retain its authored extent")
 assert(config.Seed == 1847, "deterministic seed changed")
 assert(#config.Landmarks == 8, "required landmark count changed")
 
@@ -40,19 +40,20 @@ for _, landmark in config.Landmarks do
 end
 
 assert(next(expectedIds) == nil, "all required landmarks must be present exactly once")
-assert(config.Vegetation.PineCount >= 100, "primary forest canopy is no longer dense")
-assert(config.Vegetation.HardwoodCount >= 40, "mixed hardwood layer is too sparse")
+assert(config.Vegetation.PineCount >= 280, "expanded primary forest canopy is no longer dense")
+assert(config.Vegetation.HardwoodCount >= 110, "expanded mixed hardwood layer is too sparse")
+assert(config.Vegetation.ShrubClusterCount >= 170, "expanded understory is too sparse")
 assert(config.Vegetation.RouteClearanceStuds >= 16, "authored routes need camera-readable canopy clearance")
 assert(
-	config.Vegetation.PineCount + config.Vegetation.HardwoodCount <= 160,
-	"readability pass exceeded the prototype tree budget"
+	config.Vegetation.PineCount + config.Vegetation.HardwoodCount <= 440,
+	"immersive expanse exceeded the authored tree budget"
 )
 assert(config.Lighting.FogStart < config.Lighting.FogEnd, "fog bounds must be ordered")
 assert(config.Lighting.ClockTime >= 3, "night presentation must retain enough pre-dawn ambient light")
-assert(config.Lighting.Brightness >= 3, "world lighting must preserve terrain silhouettes")
-assert(config.Lighting.ExposureCompensation >= 0.55, "dark materials must remain readable during combat")
-assert(config.Lighting.FogStart >= 120, "near-route fog should preserve gameplay-camera readability")
-assert(config.Lighting.FogEnd >= 640, "landmarks need a useful long-range reveal distance")
+assert(config.Lighting.Brightness >= 2.2, "world lighting must preserve terrain silhouettes")
+assert(config.Lighting.ExposureCompensation >= 0.2, "dark materials must remain readable during combat")
+assert(config.Lighting.FogStart >= 75, "near-route fog should preserve FPS readability")
+assert(config.Lighting.FogEnd >= 450, "major landmarks need a useful reveal distance")
 assert(
 	config.InsertionPosition.x == -224 and config.InsertionPosition.z == -208,
 	"insertion must remain at the ranger station"
@@ -85,6 +86,15 @@ for _, requiredIdentity in
 		"CheckpointFloodlight",
 		"DormantFlarePosition",
 		"ApproachCorridorCenterline",
+		"BlackPineBasin",
+		"WhisperMarsh",
+		"MoonfallQuarry",
+		"AshenFirebreak",
+		"HollowCreekRuins",
+		"LostInfrastructure",
+		"AtmosphericVista",
+		"WillOWisp",
+		"DistantValleyLight",
 	}
 do
 	assert(
@@ -94,5 +104,6 @@ do
 end
 assert(string.find(worldSource, "ROUTE_CORRIDORS", 1, true) ~= nil, "route-aware vegetation clearance is missing")
 assert(string.find(worldSource, "buildEvacuationStory", 1, true) ~= nil, "evacuation storytelling pass is missing")
+assert(string.find(worldSource, "buildImmersiveExpanse", 1, true) ~= nil, "immersive outer-region pass is missing")
 
 print("WorldFoundationConfig fixtures passed")

@@ -59,15 +59,15 @@ local MissionConfig = {
 			-- The relay ring is centered far enough from the console that every
 			-- authored contact clears the 64-stud fair-spawn radius immediately.
 			-- Wave 1 fires when the relay is restored (Lookout).
-			createRingWave("relay-collapse", "Relay Horde", -100, 50, 10, 78),
+			createRingWave("relay-collapse", "Relay Pack", -100, 50, 2, 78),
 			-- Wave 2 is re-homed to the Military Roadblock and fires when the signal
 			-- booster finishes charging (P8-0105), converging on the defended hold so
 			-- the position is never indefinitely optimal.
 			-- Radius keeps every contact past the 64-stud fair-spawn floor from the
 			-- squad holding the roadblock booster (min ring distance 70).
-			createRingWave("roadblock-swarm", "Roadblock Swarm", 180, -178, 14, 80),
+			createRingWave("roadblock-swarm", "Roadblock Pack", 180, -178, 3, 80),
 			-- Wave 3 fires when the extraction holdout begins (Clearing).
-			createRingWave("extraction-nightmare", "Extraction Nightmare", 218, 58, 22, 94),
+			createRingWave("extraction-nightmare", "Extraction Pack", 218, 58, 4, 94),
 		}),
 	}),
 	ObjectiveTextByPhase = table.freeze({
@@ -109,7 +109,7 @@ assert(
 assert(MissionConfig.Escalation.SecondWaveDelaySeconds > 0, "the second escalation wave requires a positive delay")
 assert(#MissionConfig.Escalation.Waves == 3, "the operation requires exactly three authored escalation waves")
 for _, wave in MissionConfig.Escalation.Waves do
-	assert(#wave >= 10, "every horde wave must author substantial pressure")
+	assert(#wave >= 2 and #wave <= 4, "authored packs must remain small and dangerous")
 end
 
 return table.freeze(MissionConfig)

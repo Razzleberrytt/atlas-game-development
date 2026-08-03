@@ -58,7 +58,8 @@ assertThat(contains(massacre, 'FindFirstChild("RelicReward")'), "crescendo must 
 assertThat(contains(massacre, "UDim2.fromOffset(460, 82)"), "crescendo must remain a compact combat toast")
 assertThat(contains(runBuildHud, "UDim2.fromOffset(430, 300)"), "relic choices must remain a compact side card")
 assertThat(contains(runBuildHud, "Enum.FillDirection.Vertical"), "relic choices must stack without crossing the HUD")
-assertThat(contains(camera, "InitialHeight = 68"), "combat must start at the closer readability-tested camera height")
-assertThat(contains(camera, "PitchDegrees = -56"), "camera pitch must preserve near-to-far parallax")
+assertThat(contains(camera, "LockFirstPerson"), "combat must use the authored first-person camera policy")
+assertThat(contains(camera, "MouseBehavior.LockCenter"), "FPS mouse-look must keep the desktop cursor centered")
+assertThat(contains(camera, "FIRST_PERSON_FIELD_OF_VIEW = 78"), "FPS field of view must remain readable")
 
 print("Combat presentation clutter and death-label lifecycle audit passed")

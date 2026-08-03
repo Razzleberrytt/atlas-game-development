@@ -319,12 +319,11 @@ local combatNetworkStart = assert(string.find(projectSource, '"CombatNetwork"', 
 local combatNetworkEnd = assert(string.find(projectSource, '"Shared"', combatNetworkStart, true))
 local combatNetworkSource = string.sub(projectSource, combatNetworkStart, combatNetworkEnd - 1)
 local _, remoteDefinitionCount = string.gsub(combatNetworkSource, '"%$className"%s*:%s*"RemoteEvent"', "")
-assert(remoteDefinitionCount == 2, "combat remote surface changed")
--- The reload intent remains the only client-to-server combat listener: one in
--- the bootstrapped production runtime and one in the Studio-only manual
--- harness, which the bootstrap no longer starts.
+assert(remoteDefinitionCount == 3, "combat remote surface changed")
+-- Reload and fire intent are the only client-to-server combat listeners. The
+-- production runtime owns both; the Studio-only legacy harness owns reload.
 local _, serverListenerCount = string.gsub(serverSources, "OnServerEvent:Connect", "")
-assert(serverListenerCount == 2, "client-to-server combat listener surface changed")
+assert(serverListenerCount == 3, "client-to-server combat listener surface changed")
 for _, source in { harnessSource, productionCombatSource } do
 	assert(string.find(source, "reloadIntentRemote.OnServerEvent:Connect", 1, true), "reload intent listener missing")
 	assert(not string.find(source, "presentationRemote.OnServerEvent", 1, true), "presentation gained authority path")
@@ -339,7 +338,8 @@ assert(
 	"the development harness must no longer be bootstrapped"
 )
 local _, fireServerCount = string.gsub(clientSource, ":FireServer", "")
-assert(fireServerCount == 1, "client gained another combat request path")
+assert(fireServerCount == 2, "client combat request surface changed")
+assert(string.find(clientSource, "fireIntentRemote:FireServer(isFiring, direction)", 1, true), "fire intent missing")
 assert(
 	string.find(clientSource, "reloadIntentRemote:FireServer(state.currentWeaponId)", 1, true),
 	"reload request must contain only the server-disclosed equipped weapon ID"

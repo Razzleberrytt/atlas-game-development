@@ -25,7 +25,6 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local MatchResultContracts = require(ReplicatedStorage.Shared.Mission.MatchResultContracts)
-local OperativeLifeService = require(script.Parent.OperativeLifeService)
 
 type SafeContributionSnapshot = MatchResultContracts.SafeContributionSnapshot
 type SafeMatchResultSnapshot = MatchResultContracts.SafeMatchResultSnapshot
@@ -203,6 +202,11 @@ end
 -- who has already left the roster is reported Dead: they did not walk out.
 local function survivalStateIdFor(operativeEntityId: string): string
 	local didRead, read = pcall(function()
+		-- Resolve this owner only when the operation ends. Loading it at module
+		-- scope closes a cycle through OperativeLifeService ->
+		-- RelicModifierService -> RunBuildService -> MatchResultService and
+		-- prevents the entire server bootstrap from starting.
+		local OperativeLifeService = require(script.Parent.OperativeLifeService)
 		return OperativeLifeService.readByOperativeEntityId(operativeEntityId)
 	end)
 	if not didRead or type(read) ~= "table" or type(read.snapshot) ~= "table" then

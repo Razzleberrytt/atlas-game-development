@@ -260,8 +260,11 @@ local function decorateEnemy(record: EnemyRecord)
 		local created = Instance.new("Highlight")
 		created.Name = "HordeRoleHighlight"
 		created.DepthMode = Enum.HighlightDepthMode.Occluded
-		created.FillTransparency = 0.78
-		created.OutlineTransparency = 0.2
+		-- Keep role identity in silhouettes, materials, names, and effects. A
+		-- persistent full-model highlight exposes invisible collision parts and
+		-- makes the horde look like editor wireframes in first person.
+		created.FillTransparency = 1
+		created.OutlineTransparency = 1
 		created.Adornee = record.model
 		created.Parent = record.model
 		highlight = created

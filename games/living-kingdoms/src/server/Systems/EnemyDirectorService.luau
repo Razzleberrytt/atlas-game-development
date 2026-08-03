@@ -18,6 +18,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local PathfindingService = game:GetService("PathfindingService")
 
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
@@ -151,6 +152,8 @@ type EnemyEntry = {
 	isAlive: boolean,
 	roamAnchor: EnemyWorldPosition,
 	nextRoamRetargetServerTimestamp: number,
+	nextPursuitRepathServerTimestamp: number,
+	pursuitFlankSign: number,
 	cleanupAtServerTimestamp: number?,
 	eliteAffixId: string?,
 	movementSpeedMultiplier: number,
@@ -515,6 +518,8 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 		isAlive = true,
 		roamAnchor = { x = request.position.x, y = request.position.y, z = request.position.z },
 		nextRoamRetargetServerTimestamp = serverTimestamp,
+		nextPursuitRepathServerTimestamp = serverTimestamp,
+		pursuitFlankSign = if nextSequence() % 2 == 0 then -1 else 1,
 		cleanupAtServerTimestamp = nil,
 		eliteAffixId = assignment.affixId,
 		movementSpeedMultiplier = assignment.movementSpeedMultiplier,
@@ -1382,6 +1387,51 @@ local function applyBossBehavior(
 	return 0
 end
 
+local function moveWolfToward(entry: EnemyEntry, targetPosition: Vector3, serverTimestamp: number)
+	if serverTimestamp < entry.nextPursuitRepathServerTimestamp then
+		return
+	end
+	entry.nextPursuitRepathServerTimestamp = serverTimestamp + EnemyConfig.Navigation.PursuitRepathIntervalSeconds
+
+	local destination = targetPosition
+	local toTarget = Vector3.new(targetPosition.X - entry.root.Position.X, 0, targetPosition.Z - entry.root.Position.Z)
+	if toTarget.Magnitude > EnemyConfig.Walker.AttackRangeStuds * 1.5 then
+		local perpendicular = Vector3.new(-toTarget.Z, 0, toTarget.X).Unit
+		destination += perpendicular * EnemyConfig.Navigation.PackFlankOffsetStuds * entry.pursuitFlankSign
+	end
+
+	-- Production uses a short, periodically refreshed path so wolves flow around
+	-- trees and structures. Lightweight fixtures deliberately fall back to the
+	-- same bounded Humanoid destination without needing a pathfinding mock.
+	local pathService = PathfindingService :: any
+	if type(pathService.CreatePath) == "function" then
+		local ok, path = pcall(function()
+			local createdPath = pathService:CreatePath({
+				AgentRadius = EnemyConfig.Navigation.AgentRadiusStuds,
+				AgentHeight = EnemyConfig.Navigation.AgentHeightStuds,
+				AgentCanJump = true,
+				WaypointSpacing = EnemyConfig.Navigation.WaypointSpacingStuds,
+			})
+			createdPath:ComputeAsync(entry.root.Position, destination)
+			return createdPath
+		end)
+		if ok and path.Status == Enum.PathStatus.Success then
+			local waypoints = path:GetWaypoints()
+			local waypoint = waypoints[math.min(2, #waypoints)]
+			if waypoint ~= nil then
+				if waypoint.Action == Enum.PathWaypointAction.Jump then
+					entry.humanoid.Jump = true
+				end
+				entry.humanoid:MoveTo(waypoint.Position)
+				return
+			end
+		end
+	end
+
+	-- Exact target fallback preserves direct pursuit if a path cannot be solved.
+	entry.humanoid:MoveTo(targetPosition)
+end
+
 local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperativeFact }, serverTimestamp: number): number
 	if entry.archetypeId == PROGENITOR_ARCHETYPE_ID then
 		return applyBossBehavior(entry, operativeFacts, serverTimestamp)
@@ -1427,7 +1477,7 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 			* entry.effectiveMovementSpeedMultiplier
 		for _, fact in operativeFacts do
 			if fact.operativeEntityId == targetId then
-				entry.humanoid:MoveTo(Vector3.new(fact.position.x, fact.position.y, fact.position.z))
+				moveWolfToward(entry, Vector3.new(fact.position.x, fact.position.y, fact.position.z), serverTimestamp)
 				break
 			end
 		end

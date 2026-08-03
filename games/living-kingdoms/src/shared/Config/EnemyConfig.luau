@@ -11,44 +11,44 @@ local EnemyContracts = require(script.Parent.Parent.Combat.EnemyContracts)
 local WorldFoundationConfig = require(script.Parent.WorldFoundationConfig)
 
 local EnemyConfig = {
-	Version = "HORDE-VS-001-v3",
+	Version = "HORDE-VS-001-v5-readable-opening",
 	Walker = table.freeze({
 		ArchetypeId = EnemyContracts.EnemyArchetypeIds.ExclusionWalker,
-		DisplayName = "Hollow Infected",
-		-- Preserve PR #99's faster time-to-kill so larger populations remain
-		-- satisfying rather than becoming damage-sponge cleanup.
-		MaximumHealth = 45,
-		PursuitSpeedStudsPerSecond = 13,
-		RoamSpeedStudsPerSecond = 7.5,
+		DisplayName = "Blackwater Infected Wolf",
+		MaximumHealth = 68,
+		PursuitSpeedStudsPerSecond = 13.5,
+		RoamSpeedStudsPerSecond = 8.5,
 		DetectionRadiusStuds = 110,
 		PursuitDropRadiusStuds = 145,
-		AttackRangeStuds = 6,
-		AttackDamage = 12,
-		AttackWindupSeconds = 0.6,
-		AttackCooldownSeconds = 1.45,
+		AttackRangeStuds = 7,
+		AttackDamage = 20,
+		AttackWindupSeconds = 0.7,
+		AttackCooldownSeconds = 2.1,
 		RoamWanderRadiusStuds = 24,
 		RoamRetargetIntervalSeconds = 4,
+	}),
+	Navigation = table.freeze({
+		PursuitRepathIntervalSeconds = 0.65,
+		AgentRadiusStuds = 2.5,
+		AgentHeightStuds = 4,
+		WaypointSpacingStuds = 5,
+		PackFlankOffsetStuds = 4.5,
 	}),
 	FairSpawn = table.freeze({
 		MinimumOperativeDistanceStuds = 64,
 		DeferredRetryIntervalSeconds = 0.75,
-		MaximumDeferredSpawns = 64,
+		MaximumDeferredSpawns = 20,
 	}),
 	Population = table.freeze({
-		-- This is the explicit vertical-slice profiling budget, not a production
-		-- guarantee. Merge remains blocked on solo and two-client MicroProfiler
-		-- evidence at representative pressure. Raise only from measured evidence.
-		MaximumConcurrentPerOperative = 24,
-		AbsoluteMaximumConcurrent = 96,
+		MaximumConcurrentPerOperative = 10,
+		AbsoluteMaximumConcurrent = 40,
 	}),
 	Pressure = table.freeze({
-		-- Retains PR #99's contact-in-seconds principle while increasing the
-		-- population fill rate enough to support actual visible hordes.
 		RoamingByEscalationLevel = table.freeze({
-			[0] = table.freeze({ IntervalSeconds = 9, SpawnCount = 4 }),
-			[1] = table.freeze({ IntervalSeconds = 7, SpawnCount = 6 }),
-			[2] = table.freeze({ IntervalSeconds = 5, SpawnCount = 8 }),
-			[3] = table.freeze({ IntervalSeconds = 3.5, SpawnCount = 10 }),
+			[0] = table.freeze({ IntervalSeconds = 24, SpawnCount = 1 }),
+			[1] = table.freeze({ IntervalSeconds = 15, SpawnCount = 2 }),
+			[2] = table.freeze({ IntervalSeconds = 12, SpawnCount = 2 }),
+			[3] = table.freeze({ IntervalSeconds = 10, SpawnCount = 3 }),
 		}),
 		MaximumEscalationLevel = 3,
 		RecoveryWindowSeconds = 6,
