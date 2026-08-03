@@ -113,7 +113,11 @@ local function observePlayer(player: Player, now: number)
 	end
 
 	if not OperativeLifeService.isCharacterMovementAllowed(player, character) then
-		correctCharacter(rootPart, lastAcceptedPosition)
+		-- Life-state restrictions already set WalkSpeed to zero and clear movement.
+		-- A character-binding transition must fail open here: teleporting back to a
+		-- stale accepted position during that transition creates an endless
+		-- frame-skip-in-place loop even though Roblox's controls are working.
+		state.lastAcceptedPosition = currentPosition
 		state.lastAcceptedTimestamp = now
 		return
 	end

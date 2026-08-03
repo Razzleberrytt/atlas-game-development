@@ -247,7 +247,11 @@ local function updateCombatPresentation(serverTimestamp: number)
 	local capacity = readNumberAttribute("LK_HUD_MagazineCapacity", 0)
 	if ammoLabel ~= nil then
 		local weaponName = readStringAttribute("LK_HUD_WeaponName", "WEAPON")
-		ammoLabel.Text = string.format("%s\n%02d / %02d   ·   %03d RES", weaponName, loaded, capacity, reserve)
+		local lightText = if localPlayer:GetAttribute("LK_HUD_FlashlightOn") == true
+			then "F LIGHT ON"
+			else "F LIGHT OFF"
+		ammoLabel.Text =
+			string.format("%s\n%02d / %02d   ·   %03d RES\n%s", weaponName, loaded, capacity, reserve, lightText)
 		ammoLabel.TextColor3 = if loaded == 0 then Color3.fromRGB(255, 72, 60) else Color3.fromRGB(239, 236, 226)
 	end
 	if combatStatusLabel ~= nil then
@@ -471,7 +475,7 @@ local function createPresentation()
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 	local objectivePanel =
-		createPanel(gui, "ObjectivePanel", UDim2.new(0.5, 0, 0, 14), UDim2.fromOffset(520, 54), Vector2.new(0.5, 0))
+		createPanel(gui, "ObjectivePanel", UDim2.new(0.5, 0, 0, 12), UDim2.fromOffset(480, 50), Vector2.new(0.5, 0))
 	objectiveLabel = createLabel(
 		objectivePanel,
 		"Objective",
@@ -493,7 +497,7 @@ local function createPresentation()
 	radioLabel.TextColor3 = COLORS.muted
 
 	local threatPanel =
-		createPanel(gui, "ThreatPanel", UDim2.new(0.5, 0, 0, 74), UDim2.fromOffset(420, 42), Vector2.new(0.5, 0))
+		createPanel(gui, "ThreatPanel", UDim2.new(0.5, 0, 0, 68), UDim2.fromOffset(340, 38), Vector2.new(0.5, 0))
 	threatLabel = createLabel(
 		threatPanel,
 		"Threat",
@@ -517,7 +521,7 @@ local function createPresentation()
 	threatFill = createdThreatFill
 
 	local lifePanel =
-		createPanel(gui, "LifePanel", UDim2.new(0, 16, 1, -16), UDim2.fromOffset(274, 142), Vector2.new(0, 1))
+		createPanel(gui, "LifePanel", UDim2.new(0, 16, 1, -16), UDim2.fromOffset(250, 106), Vector2.new(0, 1))
 	lifeStateLabel = createLabel(
 		lifePanel,
 		"LifeState",
@@ -569,6 +573,7 @@ local function createPresentation()
 		Enum.TextXAlignment.Left
 	)
 	runStatsPrimaryLabel.TextColor3 = COLORS.gold
+	runStatsPrimaryLabel.Visible = false
 	runStatsSecondaryLabel = createLabel(
 		lifePanel,
 		"RunStatsSecondary",
@@ -579,9 +584,10 @@ local function createPresentation()
 		Enum.TextXAlignment.Left
 	)
 	runStatsSecondaryLabel.TextColor3 = COLORS.muted
+	runStatsSecondaryLabel.Visible = false
 
 	local ammoPanel =
-		createPanel(gui, "AmmoPanel", UDim2.new(1, -16, 1, -16), UDim2.fromOffset(224, 84), Vector2.new(1, 1))
+		createPanel(gui, "AmmoPanel", UDim2.new(1, -16, 1, -16), UDim2.fromOffset(214, 96), Vector2.new(1, 1))
 	ammoLabel = createLabel(
 		ammoPanel,
 		"Ammo",

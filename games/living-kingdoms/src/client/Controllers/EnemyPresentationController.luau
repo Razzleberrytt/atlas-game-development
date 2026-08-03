@@ -8,7 +8,8 @@
 	damage, change health, or alter death and cleanup.
 
 	The controller uses two folder-level lifecycle connections and zero per-enemy
-	connections. Motor writes occur only when a resolved pose ID changes.
+	connections. Living poses update only when their resolved ID changes; death
+	eases the existing joints into a grounded collapse on the shared render pass.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -73,6 +74,13 @@ type Record = {
 	hitSequence: number,
 	hitServerTimestamp: number?,
 	phaseOffsetSeconds: number,
+	deathStartedServerTimestamp: number?,
+	deathRollSign: number,
+	deathTorsoC0: CFrame?,
+	deathLeftArmC0: CFrame?,
+	deathRightArmC0: CFrame?,
+	deathLeftLegC0: CFrame?,
+	deathRightLegC0: CFrame?,
 	poseId: string,
 	roleId: string,
 }
@@ -197,6 +205,7 @@ local function trackModel(model: Model)
 	end
 
 	local roleId = readStringAttribute(model, "HordeRoleId") or HordeRolePresentationConfig.Default.RoleId
+	local phaseOffset = stablePhaseOffset(model)
 	records[model] = {
 		root = root,
 		humanoid = humanoid,
@@ -223,7 +232,14 @@ local function trackModel(model: Model)
 		attackServerTimestamp = if attackSequence > 0 and attackServerTimestamp > 0 then attackServerTimestamp else nil,
 		hitSequence = hitSequence,
 		hitServerTimestamp = if hitSequence > 0 and hitServerTimestamp > 0 then hitServerTimestamp else nil,
-		phaseOffsetSeconds = stablePhaseOffset(model),
+		phaseOffsetSeconds = phaseOffset,
+		deathStartedServerTimestamp = nil,
+		deathRollSign = if phaseOffset < 0.5 then -1 else 1,
+		deathTorsoC0 = nil,
+		deathLeftArmC0 = nil,
+		deathRightArmC0 = nil,
+		deathLeftLegC0 = nil,
+		deathRightLegC0 = nil,
 		poseId = "",
 		roleId = roleId,
 	}
@@ -248,32 +264,65 @@ local function untrackModel(model: Model)
 	records[model] = nil
 end
 
-local function applyPose(record: Record, pose: EnemyPresentationPoseResolver.Pose)
+local function applyPose(
+	record: Record,
+	pose: EnemyPresentationPoseResolver.Pose,
+	blendAlpha: number?,
+	useDeathStart: boolean?
+)
 	local profile = roleProfile(record.roleId)
 	local posture = profile.Posture
-	record.torsoMotor.C0 = record.torsoBaseC0
+	local torsoRollDegrees = posture.TorsoRollDegrees + pose.torsoRollDegrees
+	if pose.id == EnemyPresentationPoseResolver.PoseIds.Dead then
+		torsoRollDegrees *= record.deathRollSign
+	end
+	local torsoTarget = record.torsoBaseC0
 		* CFrame.new(0, posture.TorsoHeightStuds, 0)
-		* CFrame.Angles(
-			math.rad(posture.TorsoPitchDegrees + pose.torsoPitchDegrees),
-			0,
-			math.rad(posture.TorsoRollDegrees + pose.torsoRollDegrees)
-		)
-	record.leftArmMotor.C0 = record.leftArmBaseC0
+		* CFrame.Angles(math.rad(posture.TorsoPitchDegrees + pose.torsoPitchDegrees), 0, math.rad(torsoRollDegrees))
+	local leftArmTarget = record.leftArmBaseC0
 		* CFrame.Angles(
 			math.rad(posture.LeftArmPitchDegrees + pose.leftArmPitchDegrees),
 			0,
 			math.rad(posture.LeftArmRollDegrees + pose.leftArmRollDegrees)
 		)
-	record.rightArmMotor.C0 = record.rightArmBaseC0
+	local rightArmTarget = record.rightArmBaseC0
 		* CFrame.Angles(
 			math.rad(posture.RightArmPitchDegrees + pose.rightArmPitchDegrees),
 			0,
 			math.rad(posture.RightArmRollDegrees + pose.rightArmRollDegrees)
 		)
-	record.leftLegMotor.C0 = record.leftLegBaseC0
+	local leftLegTarget = record.leftLegBaseC0
 		* CFrame.Angles(math.rad(posture.LeftLegPitchDegrees + pose.leftLegPitchDegrees), 0, 0)
-	record.rightLegMotor.C0 = record.rightLegBaseC0
+	local rightLegTarget = record.rightLegBaseC0
 		* CFrame.Angles(math.rad(posture.RightLegPitchDegrees + pose.rightLegPitchDegrees), 0, 0)
+
+	if blendAlpha ~= nil then
+		local alpha = math.clamp(blendAlpha, 0, 1)
+		local torsoSource = if useDeathStart then record.deathTorsoC0 or record.torsoMotor.C0 else record.torsoMotor.C0
+		local leftArmSource = if useDeathStart
+			then record.deathLeftArmC0 or record.leftArmMotor.C0
+			else record.leftArmMotor.C0
+		local rightArmSource = if useDeathStart
+			then record.deathRightArmC0 or record.rightArmMotor.C0
+			else record.rightArmMotor.C0
+		local leftLegSource = if useDeathStart
+			then record.deathLeftLegC0 or record.leftLegMotor.C0
+			else record.leftLegMotor.C0
+		local rightLegSource = if useDeathStart
+			then record.deathRightLegC0 or record.rightLegMotor.C0
+			else record.rightLegMotor.C0
+		record.torsoMotor.C0 = torsoSource:Lerp(torsoTarget, alpha)
+		record.leftArmMotor.C0 = leftArmSource:Lerp(leftArmTarget, alpha)
+		record.rightArmMotor.C0 = rightArmSource:Lerp(rightArmTarget, alpha)
+		record.leftLegMotor.C0 = leftLegSource:Lerp(leftLegTarget, alpha)
+		record.rightLegMotor.C0 = rightLegSource:Lerp(rightLegTarget, alpha)
+	else
+		record.torsoMotor.C0 = torsoTarget
+		record.leftArmMotor.C0 = leftArmTarget
+		record.rightArmMotor.C0 = rightArmTarget
+		record.leftLegMotor.C0 = leftLegTarget
+		record.rightLegMotor.C0 = rightLegTarget
+	end
 
 	local color = SENSOR_COLORS[pose.sensorMode]
 	if pose.sensorMode == "Normal" or pose.sensorMode == "Alert" then
@@ -380,7 +429,24 @@ local function updateRecord(model: Model, record: Record, serverTimestamp: numbe
 		secondsSinceHit = secondsSinceHit,
 		strideIndex = strideIndex,
 	})
-	if pose.id ~= record.poseId then
+	if isDead then
+		if record.deathStartedServerTimestamp == nil then
+			record.deathStartedServerTimestamp = serverTimestamp
+			record.deathTorsoC0 = record.torsoMotor.C0
+			record.deathLeftArmC0 = record.leftArmMotor.C0
+			record.deathRightArmC0 = record.rightArmMotor.C0
+			record.deathLeftLegC0 = record.leftLegMotor.C0
+			record.deathRightLegC0 = record.rightLegMotor.C0
+		end
+		local elapsed = serverTimestamp - (record.deathStartedServerTimestamp :: number)
+		local progress = math.clamp(elapsed / 0.72, 0, 1)
+		local easedProgress = 1 - (1 - progress) ^ 3
+		applyPose(record, pose, easedProgress, true)
+	elseif isMoving or isWindingUp or secondsSinceAttack ~= nil or secondsSinceHit ~= nil then
+		-- Ease between the authored gait/attack keys on the one shared render loop.
+		-- This removes the binary frozen-pose snap without creating per-wolf tracks.
+		applyPose(record, pose, 0.24, false)
+	elseif pose.id ~= record.poseId then
 		applyPose(record, pose)
 	end
 end

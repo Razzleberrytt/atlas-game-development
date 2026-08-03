@@ -108,7 +108,9 @@ local STRIKE_RECOVERY_LEFT = pose(PoseIds.StrikeRecoveryLeft, 3, 6, -18, -42, 13
 local STRIKE_RECOVERY_RIGHT = pose(PoseIds.StrikeRecoveryRight, 3, -6, -42, -18, 16, -13, 7, -7, SensorModes.Alert)
 local HIT_REACTION = pose(PoseIds.HitReaction, 16, 9, 26, -34, -18, 20, -8, 8, SensorModes.Hit)
 local STAND_DOWN = pose(PoseIds.StandDown, 19, 0, 38, 38, 12, -12, 0, 0, SensorModes.Dim)
-local DEAD = pose(PoseIds.Dead, 72, 13, 66, 58, 24, -28, -18, 22, SensorModes.Dead)
+-- A loose sideways collapse: the torso rolls onto the ground while the legs
+-- fold beneath the body. The presentation controller eases into this pose.
+local DEAD = pose(PoseIds.Dead, 12, 82, 34, 58, 18, -22, -48, 36, SensorModes.Dead)
 
 local EnemyPresentationPoseResolver = {
 	PoseIds = PoseIds,

@@ -54,6 +54,7 @@ local stateSignal = signal()
 local lifeSignal = signal()
 local characterAdded = signal()
 local characterRemoving = signal()
+local renderStepped = signal()
 local firedRequests = {}
 local intentRemote = {
 	FireServer = function(_, requestedActive)
@@ -109,6 +110,8 @@ local localPlayer = {
 		return {}
 	end,
 }
+local workspace = { CurrentCamera = { CFrame = "CameraCFrame" } }
+local runService = { RenderStepped = renderStepped }
 
 local boundAction = nil
 local titles = {}
@@ -160,6 +163,10 @@ local controller =
 						return contextActionService
 					elseif name == "Players" then
 						return players
+					elseif name == "RunService" then
+						return runService
+					elseif name == "Workspace" then
+						return workspace
 					end
 					return replicatedStorage
 				end,
@@ -219,7 +226,7 @@ boundAction("LK0406PersonalFlashlight", enum.UserInputState.Begin)
 assert(firedRequests[1] == true, "client must send only predicted boolean intent")
 local light = latest("SpotLight")
 assert(light ~= nil and light.Enabled == true, "prediction must present immediately")
-assert(light.Shadows == false and light.Brightness == 1.25, "presentation must remain restrained")
+assert(light.Shadows == true and light.Brightness == 4.2, "flashlight must visibly illuminate the survival space")
 
 stateSignal:Fire({
 	stateId = "Inactive",
@@ -249,13 +256,10 @@ assert(stateSignal:Count() == 0 and lifeSignal:Count() == 0 and boundAction == n
 
 local source = fs.readFile("games/living-kingdoms/src/client/Controllers/PersonalFlashlightController.luau")
 assert(string.find(source, "USE_REDUCED_VISUAL_INTENSITY", 1, true))
-assert(string.find(source, "Shadows = false", 1, true))
+assert(string.find(source, "createdLight.Shadows = true", 1, true))
 assert(not string.find(source, "Raycast", 1, true))
 assert(not string.find(source, "VisibilityResolver", 1, true))
 assert(not string.find(source, "targetEntityId", 1, true))
-assert(
-	not string.find(source, "Camera", 1, true),
-	"camera direction must remain presentation-only and absent from authority"
-)
+assert(string.find(source, "currentCamera.CFrame", 1, true), "the local beam must follow the camera")
 
 print("PersonalFlashlightController: LK-0406 prediction, reconciliation, accessibility, and cleanup passed")

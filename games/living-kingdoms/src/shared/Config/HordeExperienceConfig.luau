@@ -17,18 +17,18 @@
 ]]
 
 local HordeExperienceConfig = {
-	Version = "HORDE-VS-001-v2-first-upgrade-window",
+	Version = "HORDE-VS-001-v3-predator-pressure",
 	Pressure = table.freeze({
 		-- EnemyDirector already begins baseline contact at roughly nine seconds.
 		-- Delay the additive horde injector so both pressure owners do not front-load
 		-- nine enemies into the opening seconds of a solo run.
-		WarmupSeconds = 24,
+		WarmupSeconds = 45,
 		EvaluationIntervalSeconds = 0.1,
 		StatePublishIntervalSeconds = 0.5,
-		BaseSpawnIntervalSeconds = 10,
-		MinimumSpawnIntervalSeconds = 3.25,
-		BaseSpawnCount = 3,
-		MaximumSpawnCount = 12,
+		BaseSpawnIntervalSeconds = 20,
+		MinimumSpawnIntervalSeconds = 12,
+		BaseSpawnCount = 1,
+		MaximumSpawnCount = 3,
 		SpawnRingMinimumStuds = 68,
 		SpawnRingMaximumStuds = 112,
 		ThreatPerMinute = 9,
@@ -41,7 +41,7 @@ local HordeExperienceConfig = {
 	Roles = table.freeze({
 		Basic = table.freeze({
 			Id = "horde.role.infected",
-			DisplayName = "Hollow Infected",
+			DisplayName = "Infected Wolf",
 			Weight = 48,
 			Xp = 20,
 			SpeedFloor = 12,
@@ -51,7 +51,7 @@ local HordeExperienceConfig = {
 		}),
 		Runner = table.freeze({
 			Id = "horde.role.runner",
-			DisplayName = "Razor Runner",
+			DisplayName = "Rabid Wolf",
 			Weight = 22,
 			Xp = 20,
 			SpeedFloor = 19,
@@ -61,7 +61,7 @@ local HordeExperienceConfig = {
 		}),
 		Crawler = table.freeze({
 			Id = "horde.role.crawler",
-			DisplayName = "Grave Crawler",
+			DisplayName = "Stalking Wolf",
 			Weight = 13,
 			Xp = 20,
 			SpeedFloor = 16,
@@ -77,7 +77,7 @@ local HordeExperienceConfig = {
 			SpeedFloor = 10,
 			Threat = 5,
 			SpecialIntervalSeconds = 12,
-			ReinforcementCount = 5,
+			ReinforcementCount = 1,
 			HighlightFill = table.freeze({ 95, 75, 7 }),
 			HighlightOutline = table.freeze({ 255, 224, 64 }),
 		}),
@@ -118,14 +118,14 @@ local HordeExperienceConfig = {
 }
 
 assert(
-	HordeExperienceConfig.Pressure.WarmupSeconds >= 20 and HordeExperienceConfig.Pressure.WarmupSeconds <= 30,
+	HordeExperienceConfig.Pressure.WarmupSeconds >= 30 and HordeExperienceConfig.Pressure.WarmupSeconds <= 60,
 	"the additive horde injector must preserve a bounded first-upgrade window"
 )
 assert(
 	HordeExperienceConfig.Pressure.BaseSpawnCount > 0 and HordeExperienceConfig.Pressure.BaseSpawnCount <= 4,
 	"opening horde injections must remain threatening without front-loading the solo wipe"
 )
-assert(HordeExperienceConfig.Pressure.MinimumSpawnIntervalSeconds >= 3, "minimum horde cadence must remain readable")
+assert(HordeExperienceConfig.Pressure.MinimumSpawnIntervalSeconds >= 10, "minimum horde cadence must remain readable")
 assert(
 	HordeExperienceConfig.Pressure.BaseSpawnIntervalSeconds > HordeExperienceConfig.Pressure.MinimumSpawnIntervalSeconds,
 	"threat escalation must shorten horde cadence from a slower baseline"

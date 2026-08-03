@@ -1,15 +1,9 @@
 --!strict
 
 --[[
-	VIS-0103 presentation-only owner for the Exclusion Walker procedural fallback.
-	It attaches project-original visual geometry to the existing replicated enemy
-	model without changing the authoritative HumanoidRootPart footprint, Humanoid,
-	movement, targeting, health, attacks, cleanup, or network ownership.
-
-	Five presentation-only Motor6Ds expose the torso, arms, and legs to the local
-	client pose controller. The server owner remains bounded by one
-	EnemyEntities.ChildAdded connection, no heartbeat, no per-enemy connections,
-	no timers, no remotes, and a fixed part count.
+	Presentation-only infected wolf shell for the standard hostile. It preserves
+	the existing server-owned footprint and five-motor animation contract while
+	replacing the tiny humanoid fallback with a large, readable quadruped.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -24,18 +18,15 @@ local EnemyPresentationService = {}
 local ENEMY_FOLDER_NAME = "EnemyEntities"
 local PRESENTATION_MODEL_NAME = "ExclusionWalkerPresentation"
 
--- Rotting-horror palette: necrotic maroon flesh over jaundiced exposed bone,
--- charred corroded plating, bloodstained claws, a bile-green canister, and an
--- intense blood-red ocular sensor. The client owns the live per-state sensor
--- colour; this is only the spawn appearance.
 local COLORS = table.freeze({
-	bone = Color3.fromRGB(176, 166, 138),
-	armor = Color3.fromRGB(27, 24, 25),
-	armorDark = Color3.fromRGB(13, 11, 12),
-	flesh = Color3.fromRGB(71, 20, 24),
-	claw = Color3.fromRGB(126, 96, 72),
+	bone = Color3.fromRGB(169, 155, 126),
+	armor = Color3.fromRGB(30, 34, 32),
+	armorDark = Color3.fromRGB(14, 16, 15),
+	flesh = Color3.fromRGB(76, 24, 28),
+	claw = Color3.fromRGB(151, 132, 98),
 	sensor = Color3.fromRGB(255, 28, 22),
-	canister = Color3.fromRGB(62, 76, 40),
+	fur = Color3.fromRGB(47, 51, 45),
+	furDark = Color3.fromRGB(25, 29, 27),
 })
 
 local started = false
@@ -124,62 +115,102 @@ local function createPresentation(root: BasePart): Model
 	local presentation = Instance.new("Model")
 	presentation.Name = PRESENTATION_MODEL_NAME
 	presentation:SetAttribute("VisualAssetKey", VisualAssetContracts.AssetKeys.EnemyStandardHostileModel)
-	presentation:SetAttribute("VisualCandidateId", "exclusion-walker.v1")
+	presentation:SetAttribute("VisualCandidateId", "blackwater-infected-wolf.v1")
 	presentation:SetAttribute("VisualStatus", "ProceduralFallback")
 	presentation:SetAttribute("GameplayFootprintId", "enemy.exclusion_walker")
 	presentation:SetAttribute("PresentationMotorCount", 5)
 
-	local torso = makeMotorPart(
+	local body = makeMotorPart(
 		presentation,
 		root,
 		root,
 		"TorsoCore",
 		"TorsoMotor",
-		Vector3.new(1.75, 2.20, 1.15),
-		CFrame.new(0, 0.35, 0),
-		COLORS.flesh,
+		Vector3.new(2.25, 1.65, 4.15),
+		CFrame.new(0, 0.15, 0.25),
+		COLORS.fur,
 		Enum.Material.Slate
 	)
-	makeRigidPart(
+	body.Shape = Enum.PartType.Ball
+	local chest = makeRigidPart(
 		presentation,
 		root,
-		torso,
-		"RibCage",
-		Vector3.new(2.25, 0.42, 1.30),
-		CFrame.new(0, 0.95, 0),
-		COLORS.armor,
-		Enum.Material.CorrodedMetal,
-		nil
-	)
-	makeRigidPart(
-		presentation,
-		root,
-		torso,
-		"ChestPlate",
-		Vector3.new(1.55, 0.50, 1.05),
-		CFrame.new(0, 1.42, -0.04),
-		COLORS.armorDark,
-		Enum.Material.CorrodedMetal,
-		nil
-	)
-	makeRigidPart(
-		presentation,
-		root,
-		torso,
-		"Head",
-		Vector3.new(0.95, 0.62, 0.90),
-		CFrame.new(0, 2.05, -0.10),
-		COLORS.bone,
+		body,
+		"ShoulderMass",
+		Vector3.new(2.55, 1.85, 1.75),
+		CFrame.new(0, 0.35, -1.15),
+		COLORS.furDark,
 		Enum.Material.Slate,
 		nil
 	)
+	chest.Shape = Enum.PartType.Ball
+	local neck = makeRigidPart(
+		presentation,
+		root,
+		body,
+		"Neck",
+		Vector3.new(1.45, 1.45, 1.75),
+		CFrame.new(0, 0.72, -2.0) * CFrame.Angles(math.rad(-18), 0, 0),
+		COLORS.furDark,
+		Enum.Material.Slate,
+		nil
+	)
+	neck.Shape = Enum.PartType.Ball
+	local head = makeRigidPart(
+		presentation,
+		root,
+		body,
+		"Head",
+		Vector3.new(1.55, 1.25, 1.75),
+		CFrame.new(0, 0.88, -2.72),
+		COLORS.furDark,
+		Enum.Material.Slate,
+		nil
+	)
+	head.Shape = Enum.PartType.Ball
+	local muzzle = makeRigidPart(
+		presentation,
+		root,
+		body,
+		"Muzzle",
+		Vector3.new(0.92, 0.68, 1.25),
+		CFrame.new(0, 0.58, -3.62),
+		COLORS.armorDark,
+		Enum.Material.Slate,
+		nil
+	)
+	muzzle.Shape = Enum.PartType.Ball
+	for side = -1, 1, 2 do
+		makeRigidPart(
+			presentation,
+			root,
+			body,
+			if side < 0 then "EarLeft" else "EarRight",
+			Vector3.new(0.38, 0.72, 0.32),
+			CFrame.new(side * 0.52, 1.67, -2.72) * CFrame.Angles(math.rad(-12), 0, math.rad(side * -16)),
+			COLORS.furDark,
+			Enum.Material.Slate,
+			nil
+		)
+		makeRigidPart(
+			presentation,
+			root,
+			body,
+			if side < 0 then "FangLeft" else "FangRight",
+			Vector3.new(0.13, 0.34, 0.13),
+			CFrame.new(side * 0.28, 0.20, -4.02) * CFrame.Angles(math.rad(10), 0, 0),
+			COLORS.claw,
+			Enum.Material.SmoothPlastic,
+			nil
+		)
+	end
 	local sensor = makeRigidPart(
 		presentation,
 		root,
-		torso,
+		body,
 		"Sensor",
-		Vector3.new(0.64, 0.15, 0.26),
-		CFrame.new(0, 2.10, -0.50),
+		Vector3.new(0.92, 0.14, 0.22),
+		CFrame.new(0, 1.08, -3.52),
 		COLORS.sensor,
 		Enum.Material.Neon,
 		nil
@@ -191,69 +222,51 @@ local function createPresentation(root: BasePart): Model
 	eyeGlow.Range = 8.5
 	eyeGlow.Shadows = false
 	eyeGlow.Parent = sensor
-	makeRigidPart(
-		presentation,
-		root,
-		torso,
-		"DorsalSpine",
-		Vector3.new(1.05, 0.36, 0.36),
-		CFrame.new(0, 1.95, 0.25) * CFrame.Angles(0, 0, math.rad(90)),
-		COLORS.claw,
-		Enum.Material.CorrodedMetal,
-		Enum.PartType.Cylinder
-	)
-	makeRigidPart(
-		presentation,
-		root,
-		torso,
-		"ShoulderLeft",
-		Vector3.new(0.65, 0.65, 0.80),
-		CFrame.new(-1.35, 1.02, 0),
-		COLORS.armor,
-		Enum.Material.CorrodedMetal,
-		nil
-	)
-	makeRigidPart(
-		presentation,
-		root,
-		torso,
-		"ShoulderRight",
-		Vector3.new(0.65, 0.65, 0.80),
-		CFrame.new(1.35, 1.02, 0),
-		COLORS.armor,
-		Enum.Material.CorrodedMetal,
-		nil
-	)
+	for index = -1, 2 do
+		makeRigidPart(
+			presentation,
+			root,
+			body,
+			"DorsalSpine" .. tostring(index + 2),
+			Vector3.new(0.20, 0.65, 0.42),
+			CFrame.new(0, 1.16, index * 0.78) * CFrame.Angles(math.rad(-18), 0, 0),
+			COLORS.bone,
+			Enum.Material.Slate,
+			nil
+		)
+	end
 
 	local forearmLeft = makeMotorPart(
 		presentation,
 		root,
-		torso,
-		"ForearmLeft",
+		body,
+		"FrontLegLeft",
 		"ForearmLeftMotor",
-		Vector3.new(0.46, 1.55, 0.50),
-		CFrame.new(-1.45, 0.05, 0) * CFrame.Angles(0, 0, math.rad(7)),
-		COLORS.bone,
+		Vector3.new(0.58, 1.85, 0.68),
+		CFrame.new(-0.86, -1.15, -1.25) * CFrame.Angles(math.rad(-5), 0, 0),
+		COLORS.furDark,
 		Enum.Material.Slate
 	)
 	local forearmRight = makeMotorPart(
 		presentation,
 		root,
-		torso,
-		"ForearmRight",
+		body,
+		"FrontLegRight",
 		"ForearmRightMotor",
-		Vector3.new(0.46, 1.55, 0.50),
-		CFrame.new(1.45, 0.05, 0) * CFrame.Angles(0, 0, math.rad(-7)),
-		COLORS.bone,
+		Vector3.new(0.58, 1.85, 0.68),
+		CFrame.new(0.86, -1.15, -1.25) * CFrame.Angles(math.rad(-5), 0, 0),
+		COLORS.furDark,
 		Enum.Material.Slate
 	)
+	forearmLeft.Shape = Enum.PartType.Ball
+	forearmRight.Shape = Enum.PartType.Ball
 	makeRigidPart(
 		presentation,
 		root,
 		forearmLeft,
-		"ClawLeft",
-		Vector3.new(0.24, 1.18, 0.24),
-		CFrame.new(-1.58, -1.12, -0.18) * CFrame.Angles(math.rad(16), 0, math.rad(6)),
+		"FrontPawLeft",
+		Vector3.new(0.72, 0.38, 1.05),
+		CFrame.new(-0.86, -2.05, -1.58),
 		COLORS.claw,
 		Enum.Material.Slate,
 		nil
@@ -262,34 +275,22 @@ local function createPresentation(root: BasePart): Model
 		presentation,
 		root,
 		forearmRight,
-		"ClawRight",
-		Vector3.new(0.24, 1.18, 0.24),
-		CFrame.new(1.58, -1.12, -0.18) * CFrame.Angles(math.rad(16), 0, math.rad(-6)),
+		"FrontPawRight",
+		Vector3.new(0.72, 0.38, 1.05),
+		CFrame.new(0.86, -2.05, -1.58),
 		COLORS.claw,
 		Enum.Material.Slate,
 		nil
 	)
-	makeRigidPart(
-		presentation,
-		root,
-		torso,
-		"HipGuard",
-		Vector3.new(1.35, 0.52, 0.92),
-		CFrame.new(0, -0.95, 0),
-		COLORS.armorDark,
-		Enum.Material.CorrodedMetal,
-		nil
-	)
-
 	local legLeft = makeMotorPart(
 		presentation,
 		root,
 		root,
 		"LegLeft",
 		"LegLeftMotor",
-		Vector3.new(0.55, 1.65, 0.68),
-		CFrame.new(-0.52, -2.00, 0.05) * CFrame.Angles(0, 0, math.rad(2)),
-		COLORS.bone,
+		Vector3.new(0.68, 1.75, 0.78),
+		CFrame.new(-0.82, -1.08, 1.45) * CFrame.Angles(math.rad(8), 0, 0),
+		COLORS.fur,
 		Enum.Material.Slate
 	)
 	local legRight = makeMotorPart(
@@ -298,18 +299,20 @@ local function createPresentation(root: BasePart): Model
 		root,
 		"LegRight",
 		"LegRightMotor",
-		Vector3.new(0.55, 1.65, 0.68),
-		CFrame.new(0.52, -2.00, 0.05) * CFrame.Angles(0, 0, math.rad(-2)),
-		COLORS.bone,
+		Vector3.new(0.68, 1.75, 0.78),
+		CFrame.new(0.82, -1.08, 1.45) * CFrame.Angles(math.rad(8), 0, 0),
+		COLORS.fur,
 		Enum.Material.Slate
 	)
+	legLeft.Shape = Enum.PartType.Ball
+	legRight.Shape = Enum.PartType.Ball
 	makeRigidPart(
 		presentation,
 		root,
 		legLeft,
-		"FootLeft",
-		Vector3.new(0.70, 0.34, 1.25),
-		CFrame.new(-0.52, -3.00, -0.28),
+		"RearPawLeft",
+		Vector3.new(0.78, 0.42, 1.12),
+		CFrame.new(-0.82, -1.98, 1.12),
 		COLORS.armor,
 		Enum.Material.CorrodedMetal,
 		nil
@@ -318,26 +321,38 @@ local function createPresentation(root: BasePart): Model
 		presentation,
 		root,
 		legRight,
-		"FootRight",
-		Vector3.new(0.70, 0.34, 1.25),
-		CFrame.new(0.52, -3.00, -0.28),
+		"RearPawRight",
+		Vector3.new(0.78, 0.42, 1.12),
+		CFrame.new(0.82, -1.98, 1.12),
 		COLORS.armor,
 		Enum.Material.CorrodedMetal,
 		nil
 	)
+	local tail = makeRigidPart(
+		presentation,
+		root,
+		body,
+		"Tail",
+		Vector3.new(0.48, 0.48, 2.75),
+		CFrame.new(0, 0.42, 3.05) * CFrame.Angles(math.rad(-16), 0, 0),
+		COLORS.furDark,
+		Enum.Material.Slate,
+		nil
+	)
+	tail.Shape = Enum.PartType.Ball
 	makeRigidPart(
 		presentation,
 		root,
-		torso,
-		"BackCanister",
-		Vector3.new(0.95, 0.64, 0.64),
-		CFrame.new(0, 0.28, 0.72) * CFrame.Angles(0, 0, math.rad(90)),
-		COLORS.canister,
+		body,
+		"ExposedRib",
+		Vector3.new(2.35, 0.16, 1.5),
+		CFrame.new(0, 0.58, 0.18) * CFrame.Angles(0, 0, math.rad(8)),
+		COLORS.flesh,
 		Enum.Material.CorrodedMetal,
-		Enum.PartType.Cylinder
+		nil
 	)
 
-	presentation.PrimaryPart = torso
+	presentation.PrimaryPart = body
 	return presentation
 end
 

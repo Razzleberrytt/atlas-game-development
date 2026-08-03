@@ -50,8 +50,8 @@ assertThat(not contains(project, "ChooseUpgrade"), "the only upgrade remote must
 
 for _, required in
 	{
-		"MaximumConcurrentPerOperative = 24",
-		"AbsoluteMaximumConcurrent = 96",
+		"MaximumConcurrentPerOperative = 10",
+		"AbsoluteMaximumConcurrent = 40",
 		"EvaluationIntervalSeconds = 0.1",
 		"MaximumLineOfSightRaycastsPerEvaluation = 8",
 	}
@@ -61,11 +61,11 @@ end
 
 for _, required in
 	{
-		"WarmupSeconds = 24",
-		"BaseSpawnIntervalSeconds = 10",
-		"MinimumSpawnIntervalSeconds = 3.25",
-		"BaseSpawnCount = 3",
-		"MaximumSpawnCount = 12",
+		"WarmupSeconds = 45",
+		"BaseSpawnIntervalSeconds = 20",
+		"MinimumSpawnIntervalSeconds = 12",
+		"BaseSpawnCount = 1",
+		"MaximumSpawnCount = 3",
 		'Id = "horde.role.screamer"',
 		'Id = "horde.role.bloater"',
 		'Id = "horde.role.brute"',

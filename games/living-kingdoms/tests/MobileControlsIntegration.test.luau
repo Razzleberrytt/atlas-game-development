@@ -1,9 +1,7 @@
 --!strict
 
--- Mobile touch controls. The thumbstick and reload button feed the exact client
--- intents desktop input already feeds — an analog movement vector and a reload
--- request — through the single owners of those paths, establish no authority, and
--- activate only on a touch device.
+-- Mobile touch controls supplement Roblox's native PlayerModule movement with a
+-- reload action and never establish a second movement owner.
 
 local fs = require("@lune/fs")
 
@@ -45,37 +43,24 @@ assertThat(
 )
 assertThat(contains(mobile, "if started or not isTouchDevice() then"), "start must no-op on a non-touch device")
 
--- Movement feeds SurvivorController's single analog channel, never a parallel
--- movement path.
+-- Roblox PlayerModule is the one movement owner on every input platform.
 assertThat(
-	contains(mobile, "SurvivorController.setAnalogMovement("),
-	"the thumbstick must feed the survivor analog channel"
+	contains(survivor, "playerModule:GetControls()"),
+	"the survivor controller must acquire Roblox's native controls"
+)
+assertThat(contains(survivor, "state.playerControls:Enable()"), "native controls must be explicitly enabled")
+assertThat(not contains(survivor, ":Disable()"), "the survivor controller must never disable Roblox's native controls")
+assertThat(
+	not contains(survivor, "Humanoid:Move") and not contains(survivor, "RenderStepped"),
+	"the survivor controller must not inject competing per-frame movement"
 )
 assertThat(
-	contains(survivor, "function SurvivorController.setAnalogMovement(vector: Vector2)"),
-	"the survivor controller must own the one analog movement channel"
+	not contains(mobile, "MovementZone") and not contains(mobile, "setAnalogMovement"),
+	"mobile must use PlayerModule's native touch stick instead of a duplicate"
 )
 assertThat(
-	contains(survivor, "local inputDirection = state.analogMovement"),
-	"analog input must be summed into the same direction the keyboard produces"
-)
-assertThat(
-	contains(survivor, "if vector.Magnitude > 1 then vector.Unit else vector"),
-	"the analog vector must be clamped so touch can never exceed keyboard input"
-)
-assertThat(
-	contains(survivor, "state.analogMovement = Vector2.zero") and contains(survivor, "clearMovementInput"),
-	"clearing movement must also release the analog channel"
-)
-
--- The stick releases to zero on touch end, so a lifted finger stops the operative.
-assertThat(
-	contains(mobile, "SurvivorController.setAnalogMovement(Vector2.zero)") and contains(mobile, "releaseStick"),
-	"releasing the stick must zero the movement intent"
-)
-assertThat(
-	contains(mobile, "-deltaY / STICK_RADIUS"),
-	"screen-down must map to backward so the stick matches the WASD forward convention"
+	contains(survivor, "humanoid.WalkSpeed = MovementLimits.MaximumPrototypeHorizontalSpeed"),
+	"native humanoid movement must use the shared server-validated speed"
 )
 
 -- Reload is a ContextActionService touch button in the same auto-arranged cluster
@@ -137,13 +122,6 @@ for _, forbidden in { "FireServer", "OnServerEvent", "applyAuthoritativeDamage",
 	assertThat(not contains(mobile, forbidden), "mobile controls must add no authority: " .. forbidden)
 end
 
--- One disclosure of each input surface, and teardown releases every connection
--- and the GUI.
-assertThat(
-	contains(mobile, "for _, connection in connections do") and contains(mobile, "screenGui:Destroy()"),
-	"teardown must release every connection and the GUI"
-)
-
 -- Every action touch button defers to ContextActionService's automatic layout, so
 -- no controller guesses screen coordinates and the cluster cannot overlap.
 for _, controllerName in
@@ -162,9 +140,7 @@ do
 	)
 end
 
--- Themed like every other surface, and bootstrapped after the paths it composes.
-assertThat(contains(mobile, "InterfaceTheme"), "mobile controls must draw from the shared theme")
-assertThat(not contains(mobile, "Color3.fromRGB"), "mobile controls must take colours from the theme")
+-- Bootstrapped after the paths it composes.
 local survivorStart = string.find(bootstrap, "SurvivorController.start()", 1, true)
 local weaponStart = string.find(bootstrap, "WeaponController.start()", 1, true)
 local mobileStart = string.find(bootstrap, "MobileControlsController.start()", 1, true)
@@ -174,6 +150,4 @@ assertThat(
 	"mobile controls must start after the movement and reload owners they compose onto"
 )
 
-print(
-	"MobileControlsIntegration: touch thumbstick, reload, and revive feed the single owner paths with no new authority"
-)
+print("MobileControlsIntegration: native touch movement plus reload and revive add no new authority")

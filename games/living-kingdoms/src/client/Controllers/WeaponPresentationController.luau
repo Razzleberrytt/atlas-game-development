@@ -10,6 +10,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
@@ -51,6 +52,9 @@ type State = {
 	bindings: { [Player]: PlayerBinding },
 	rigs: { [Player]: WeaponPresentationRig },
 	gripMotors: { [Player]: Motor6D },
+	baseGripCFrames: { [Player]: CFrame },
+	viewmodelAnchor: BasePart?,
+	viewmodelRenderConnection: RBXScriptConnection?,
 	activeTweens: { [string]: Tween },
 	presentedShotIds: { [string]: boolean },
 	presentedShotOrder: { string },
@@ -64,6 +68,7 @@ local WeaponPresentationController = {}
 
 local MAX_PRESENTED_SHOT_IDS = 128
 local MODEL_NAME = "WeaponPresentation"
+local VIEWMODEL_GRIP_CFRAME = CFrame.new(0.62, -0.72, -1.35) * CFrame.Angles(math.rad(-2), math.rad(90), math.rad(-4))
 
 local state: State = {
 	started = false,
@@ -74,6 +79,9 @@ local state: State = {
 	bindings = {},
 	rigs = {},
 	gripMotors = {},
+	baseGripCFrames = {},
+	viewmodelAnchor = nil,
+	viewmodelRenderConnection = nil,
 	activeTweens = {},
 	presentedShotIds = {},
 	presentedShotOrder = {},
@@ -186,6 +194,7 @@ local function destroyRig(player: Player)
 		end
 		state.gripMotors[player] = nil
 	end
+	state.baseGripCFrames[player] = nil
 	if player == Players.LocalPlayer then
 		state.shotGeneration += 1
 		state.reloadGeneration += 1
@@ -193,12 +202,51 @@ local function destroyRig(player: Player)
 		cancelTween("Bolt")
 		cancelTween("Magazine")
 		cancelTween("Grip")
+		if state.viewmodelAnchor ~= nil then
+			state.viewmodelAnchor:Destroy()
+			state.viewmodelAnchor = nil
+		end
 	end
 	local rig = state.rigs[player]
 	if rig ~= nil then
 		rig.model:Destroy()
 		state.rigs[player] = nil
 	end
+end
+
+local function attachFirstPersonRig(player: Player, configuredId: string)
+	local camera = Workspace.CurrentCamera
+	if camera == nil then
+		return
+	end
+	local rig = WeaponPresentationFactory.create(configuredId)
+	local anchor = Instance.new("Part")
+	anchor.Name = "FirstPersonWeaponAnchor"
+	anchor.Size = Vector3.new(0.1, 0.1, 0.1)
+	anchor.Transparency = 1
+	anchor.Anchored = true
+	anchor.CanCollide = false
+	anchor.CanTouch = false
+	anchor.CanQuery = false
+	anchor.CastShadow = false
+	anchor.CFrame = camera.CFrame
+	anchor.Parent = camera
+
+	rig.root.CFrame = anchor.CFrame * VIEWMODEL_GRIP_CFRAME
+	rig.model.Name = "FirstPersonWeapon"
+	rig.model.Parent = camera
+	local gripMotor = Instance.new("Motor6D")
+	gripMotor.Name = "FirstPersonWeaponGrip"
+	gripMotor.Part0 = anchor
+	gripMotor.Part1 = rig.root
+	gripMotor.C0 = VIEWMODEL_GRIP_CFRAME
+	gripMotor.C1 = CFrame.identity
+	gripMotor.Parent = anchor
+
+	state.rigs[player] = rig
+	state.gripMotors[player] = gripMotor
+	state.baseGripCFrames[player] = VIEWMODEL_GRIP_CFRAME
+	state.viewmodelAnchor = anchor
 end
 
 local function resolveRightHand(character: Model): BasePart?
@@ -226,6 +274,12 @@ local function attachRig(player: Player, character: Model)
 	if not state.started or character.Parent == nil then
 		return
 	end
+	local weaponId = player:GetAttribute("LK_EquippedWeaponId")
+	local configuredId = if isKnownWeaponId(weaponId) then weaponId else FirearmConfig.BasicFirearm.WeaponId
+	if player == Players.LocalPlayer then
+		attachFirstPersonRig(player, configuredId)
+		return
+	end
 	local hand = resolveRightHand(character)
 	if hand == nil or not state.started or character.Parent == nil then
 		return
@@ -239,8 +293,6 @@ local function attachRig(player: Player, character: Model)
 		existing:Destroy()
 	end
 
-	local weaponId = player:GetAttribute("LK_EquippedWeaponId")
-	local configuredId = if isKnownWeaponId(weaponId) then weaponId else FirearmConfig.BasicFirearm.WeaponId
 	local rig = WeaponPresentationFactory.create(configuredId)
 	rig.root.CFrame = hand.CFrame * rig.gripC0
 	rig.model.Parent = character
@@ -255,6 +307,7 @@ local function attachRig(player: Player, character: Model)
 
 	state.rigs[player] = rig
 	state.gripMotors[player] = gripMotor
+	state.baseGripCFrames[player] = rig.gripC0
 end
 
 local function unbindPlayer(player: Player)
@@ -328,10 +381,12 @@ end
 local function resetGrip(durationSeconds: number)
 	local rig = localRig()
 	local gripMotor = localGripMotor()
-	if rig == nil or gripMotor == nil then
+	local localPlayer = Players.LocalPlayer
+	local baseGrip = if localPlayer == nil then nil else state.baseGripCFrames[localPlayer]
+	if rig == nil or gripMotor == nil or baseGrip == nil then
 		return
 	end
-	playMotorTween("Grip", gripMotor, durationSeconds, rig.gripC0, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	playMotorTween("Grip", gripMotor, durationSeconds, baseGrip, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 end
 
 local function lockBoltOpen(durationSeconds: number)
@@ -374,7 +429,8 @@ local function playShot(
 		return
 	end
 	local gripMotor = state.gripMotors[shooter]
-	if gripMotor == nil then
+	local baseGrip = state.baseGripCFrames[shooter]
+	if gripMotor == nil or baseGrip == nil then
 		return
 	end
 	local profile = profileForRig(rig)
@@ -384,7 +440,7 @@ local function playShot(
 		"Grip",
 		gripMotor,
 		profile.ShotBackSeconds,
-		rig.gripC0 * gripKickOffset(profile),
+		baseGrip * gripKickOffset(profile),
 		Enum.EasingStyle.Quad,
 		Enum.EasingDirection.Out
 	)
@@ -620,6 +676,21 @@ function WeaponPresentationController.start()
 	state.playerAddedConnection = Players.PlayerAdded:Connect(bindPlayer)
 	state.playerRemovingConnection = Players.PlayerRemoving:Connect(unbindPlayer)
 	state.presentationConnection = presentationRemote.OnClientEvent:Connect(onPresentationMessage)
+	state.viewmodelRenderConnection = RunService.RenderStepped:Connect(function()
+		local anchor = state.viewmodelAnchor
+		local camera = Workspace.CurrentCamera
+		if anchor == nil or camera == nil then
+			return
+		end
+		if anchor.Parent ~= camera then
+			anchor.Parent = camera
+		end
+		local localRigValue = state.rigs[Players.LocalPlayer]
+		if localRigValue ~= nil and localRigValue.model.Parent ~= camera then
+			localRigValue.model.Parent = camera
+		end
+		anchor.CFrame = camera.CFrame
+	end)
 end
 
 function WeaponPresentationController.stop()
@@ -639,6 +710,10 @@ function WeaponPresentationController.stop()
 		state.presentationConnection:Disconnect()
 		state.presentationConnection = nil
 	end
+	if state.viewmodelRenderConnection ~= nil then
+		state.viewmodelRenderConnection:Disconnect()
+		state.viewmodelRenderConnection = nil
+	end
 	for player in state.bindings do
 		unbindPlayer(player)
 	end
@@ -648,6 +723,7 @@ function WeaponPresentationController.stop()
 	RemoteWeaponMotionPresenter.stop()
 	table.clear(state.presentedShotIds)
 	table.clear(state.presentedShotOrder)
+	table.clear(state.baseGripCFrames)
 	state.lastLoadedRounds = nil
 	state.isReloading = false
 end

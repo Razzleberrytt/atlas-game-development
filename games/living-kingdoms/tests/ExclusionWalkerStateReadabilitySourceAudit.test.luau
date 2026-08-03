@@ -52,7 +52,7 @@ end
 
 for _, required in
 	{
-		"AttackWindupSeconds = 0.6",
+		"AttackWindupSeconds = 0.7",
 		"AttackWindupActionIds.Begin",
 		"AttackWindupActionIds.Continue",
 		"AttackWindupActionIds.Cancel",

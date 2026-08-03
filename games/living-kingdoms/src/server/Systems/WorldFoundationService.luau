@@ -138,7 +138,7 @@ end
 
 local function addLabel(parent: Instance, text: string, cframe: CFrame, size: Vector3)
 	local sign =
-		makePart(parent, "GrayboxLabel", size, cframe, Color3.fromRGB(212, 204, 174), Enum.Material.Wood, false)
+		makePart(parent, "WayfindingSign", size, cframe, Color3.fromRGB(212, 204, 174), Enum.Material.Wood, false)
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = Enum.NormalId.Front
 	gui.AlwaysOnTop = false
@@ -155,7 +155,7 @@ local function addLabel(parent: Instance, text: string, cframe: CFrame, size: Ve
 end
 
 local function buildTerrain(parent: Folder)
-	local terrain = makeFolder("TerrainGraybox", parent)
+	local terrain = makeFolder("TerrainFoundation", parent)
 	makePart(
 		terrain,
 		"ForestFloor",
@@ -215,8 +215,8 @@ local function buildTerrain(parent: Folder)
 		Enum.Material.Ground
 	)
 
-	for index = 1, 9 do
-		local z = -250 + index * 55
+	for index = 1, 19 do
+		local z = -610 + index * 61
 		makePart(
 			terrain,
 			"BoundaryRockWest" .. index,
@@ -349,6 +349,377 @@ local function buildTerrain(parent: Folder)
 	end
 end
 
+local function buildRoute(parent: Instance, name: string, points: { Vector3 }, width: number, color: Color3)
+	for index = 1, #points - 1 do
+		local route = makeSegment(
+			parent,
+			name .. index,
+			points[index],
+			points[index + 1],
+			width,
+			0.55,
+			color,
+			Enum.Material.Ground,
+			true
+		)
+		route:SetAttribute("PrimaryNavigationRoute", true)
+	end
+end
+
+local function buildLantern(parent: Instance, name: string, position: Vector3, color: Color3)
+	makePart(
+		parent,
+		name .. "Post",
+		Vector3.new(0.65, 7, 0.65),
+		CFrame.new(position + Vector3.new(0, 3.5, 0)),
+		COLORS.wood,
+		Enum.Material.Wood
+	)
+	local lamp = makePart(
+		parent,
+		name .. "Lamp",
+		Vector3.new(1.35, 1.8, 1.35),
+		CFrame.new(position + Vector3.new(0, 7.1, 0)),
+		color,
+		Enum.Material.Neon,
+		false
+	)
+	addPointLight(lamp, color, 30, 1.7, name:find("Broken") ~= nil)
+end
+
+local function buildImmersiveExpanse(parent: Folder)
+	local expanse = makeFolder("ImmersiveExpanse", parent)
+	local regions = makeFolder("DistinctRegions", expanse)
+
+	-- Each outer region has a distinct silhouette, ground palette, route language,
+	-- and light color so the large forest reads as authored places rather than one
+	-- repeated procedural field.
+	makePart(
+		regions,
+		"BlackPineBasin",
+		Vector3.new(560, 11, 285),
+		CFrame.new(-250, 1.5, 485) * CFrame.Angles(0, math.rad(-5), 0),
+		Color3.fromRGB(27, 39, 33),
+		Enum.Material.Ground
+	)
+	makePart(
+		regions,
+		"FloodedMarsh",
+		Vector3.new(285, 5, 410),
+		CFrame.new(488, -1.25, 75) * CFrame.Angles(0, math.rad(3), 0),
+		Color3.fromRGB(38, 44, 36),
+		Enum.Material.Mud
+	)
+	makePart(
+		regions,
+		"BurnScar",
+		Vector3.new(710, 6, 230),
+		CFrame.new(-20, -0.25, -515) * CFrame.Angles(0, math.rad(2), 0),
+		Color3.fromRGB(40, 36, 32),
+		Enum.Material.Ground
+	)
+	makePart(
+		regions,
+		"GraniteQuarryShelf",
+		Vector3.new(300, 22, 275),
+		CFrame.new(455, 8, 462) * CFrame.Angles(0, math.rad(-7), 0),
+		Color3.fromRGB(55, 60, 60),
+		Enum.Material.Slate
+	)
+	makePart(
+		regions,
+		"WesternRuinsGround",
+		Vector3.new(245, 8, 410),
+		CFrame.new(-515, 0, 70) * CFrame.Angles(0, math.rad(5), 0),
+		Color3.fromRGB(44, 49, 40),
+		Enum.Material.Ground
+	)
+
+	local routes = makeFolder("OuterRoutes", expanse)
+	buildRoute(routes, "NorthServiceTrail", {
+		Vector3.new(-205, 0.8, 170),
+		Vector3.new(-285, 1, 285),
+		Vector3.new(-360, 1, 420),
+		Vector3.new(-250, 1, 555),
+		Vector3.new(-70, 1, 610),
+	}, 11, Color3.fromRGB(73, 64, 50))
+	buildRoute(routes, "MarshBoardwalkRoute", {
+		Vector3.new(218, 0.8, 58),
+		Vector3.new(330, 0.8, 95),
+		Vector3.new(420, 0.8, 30),
+		Vector3.new(505, 0.8, 120),
+		Vector3.new(590, 0.8, 245),
+	}, 10, Color3.fromRGB(76, 68, 49))
+	buildRoute(routes, "SouthernFireRoad", {
+		Vector3.new(-315, 0.8, -238),
+		Vector3.new(-410, 0.8, -350),
+		Vector3.new(-285, 0.8, -490),
+		Vector3.new(-70, 0.8, -545),
+		Vector3.new(180, 0.8, -510),
+		Vector3.new(355, 0.8, -405),
+	}, 18, Color3.fromRGB(66, 57, 48))
+	buildRoute(routes, "QuarryHaulRoad", {
+		Vector3.new(158, 22.8, 176),
+		Vector3.new(270, 17, 275),
+		Vector3.new(365, 17, 382),
+		Vector3.new(475, 20, 470),
+		Vector3.new(575, 20, 555),
+	}, 20, Color3.fromRGB(72, 70, 64))
+
+	local marsh = makeFolder("WhisperMarsh", expanse)
+	for index = 1, 14 do
+		local x = 372 + (index % 4) * 60 + math.sin(index * 2.1) * 22
+		local z = -65 + math.floor((index - 1) / 4) * 90 + math.cos(index * 1.7) * 24
+		local pool = makePart(
+			marsh,
+			"MoonlitPool" .. index,
+			Vector3.new(38 + index % 3 * 13, 0.35, 28 + index % 4 * 9),
+			CFrame.new(x, 1.25, z) * CFrame.Angles(0, math.rad(index * 19), 0),
+			Color3.fromRGB(37, 76, 83),
+			Enum.Material.Glass,
+			false
+		)
+		pool.Transparency = 0.2
+		pool.Reflectance = 0.12
+	end
+	for index = 1, 32 do
+		local angle = index * 2.399
+		local radius = 35 + (index % 8) * 27
+		local position = Vector3.new(485 + math.cos(angle) * radius, 1.8, 75 + math.sin(angle) * radius)
+		local reed = makePart(
+			marsh,
+			"ReedCluster" .. index,
+			Vector3.new(1.2, 4 + index % 4, 1.2),
+			CFrame.new(position),
+			Color3.fromRGB(75, 82, 48),
+			Enum.Material.Grass,
+			false
+		)
+		reed.CFrame *= CFrame.Angles(math.rad(index % 3 * 5), math.rad(index * 31), math.rad((index % 5) - 2))
+	end
+	for index = 1, 18 do
+		local position = Vector3.new(375 + (index % 6) * 42, 2.8 + (index % 3), -55 + math.floor(index / 6) * 92)
+		local mote = makePart(
+			marsh,
+			"WillOWisp" .. index,
+			Vector3.new(0.35, 0.35, 0.35),
+			CFrame.new(position),
+			if index % 3 == 0 then Color3.fromRGB(112, 212, 188) else Color3.fromRGB(137, 181, 105),
+			Enum.Material.Neon,
+			false
+		)
+		mote.Shape = Enum.PartType.Ball
+		if index % 3 == 0 then
+			addPointLight(mote, mote.Color, 13, 0.55, false)
+		end
+	end
+
+	local quarry = makeFolder("MoonfallQuarry", expanse)
+	for tier = 1, 5 do
+		makePart(
+			quarry,
+			"QuarryTerrace" .. tier,
+			Vector3.new(265 - tier * 32, 12, 220 - tier * 26),
+			CFrame.new(455, 17 + tier * 7, 465) * CFrame.Angles(0, math.rad(-7), 0),
+			if tier % 2 == 0 then COLORS.rock else COLORS.rockDark,
+			Enum.Material.Slate
+		)
+	end
+	makePart(
+		quarry,
+		"MinePortal",
+		Vector3.new(34, 20, 8),
+		CFrame.new(518, 35, 365),
+		Color3.fromRGB(34, 37, 37),
+		Enum.Material.Slate
+	)
+	makePart(
+		quarry,
+		"MineOpening",
+		Vector3.new(20, 13, 3),
+		CFrame.new(518, 33, 360.4),
+		Color3.fromRGB(5, 7, 8),
+		Enum.Material.SmoothPlastic,
+		false
+	)
+	for index = 1, 5 do
+		buildLantern(
+			quarry,
+			"QuarryLamp" .. index,
+			Vector3.new(350 + index * 43, 21 + (index % 2) * 7, 382 + index * 27),
+			Color3.fromRGB(255, 177, 83)
+		)
+	end
+	local craneMast = makePart(
+		quarry,
+		"DerelictCraneMast",
+		Vector3.new(4, 66, 4),
+		CFrame.new(402, 54, 510) * CFrame.Angles(0, 0, math.rad(-4)),
+		COLORS.utility,
+		Enum.Material.Metal
+	)
+	makeSegment(
+		quarry,
+		"DerelictCraneBoom",
+		craneMast.Position + Vector3.new(0, 28, 0),
+		craneMast.Position + Vector3.new(58, 30, -8),
+		3.2,
+		3.2,
+		COLORS.utility,
+		Enum.Material.Metal,
+		true
+	)
+	makeSegment(
+		quarry,
+		"HangingCraneCable",
+		craneMast.Position + Vector3.new(45, 29, -6),
+		craneMast.Position + Vector3.new(45, 7, -6),
+		0.3,
+		0.3,
+		Color3.fromRGB(24, 25, 24),
+		Enum.Material.Metal,
+		false
+	)
+
+	local burn = makeFolder("AshenFirebreak", expanse)
+	for index = 1, 52 do
+		local x = -350 + (index % 13) * 56 + math.sin(index) * 14
+		local z = -580 + math.floor((index - 1) / 13) * 46 + math.cos(index * 1.8) * 9
+		local height = 10 + (index % 7) * 3
+		local snag = makePart(
+			burn,
+			"CharredSnag" .. index,
+			Vector3.new(1.6 + index % 3 * 0.4, height, 1.6),
+			CFrame.new(x, height / 2 + 2, z) * CFrame.Angles(0, math.rad(index * 29), math.rad((index % 5) - 2)),
+			Color3.fromRGB(30, 27, 25),
+			Enum.Material.Wood
+		)
+		if index % 6 == 0 then
+			makeSegment(
+				burn,
+				"BrokenSnagBranch" .. index,
+				snag.Position + Vector3.new(0, height * 0.2, 0),
+				snag.Position + Vector3.new(7 - index % 3, height * 0.35, 3),
+				0.65,
+				0.65,
+				Color3.fromRGB(34, 29, 25),
+				Enum.Material.Wood,
+				false
+			)
+		end
+	end
+	for index = 1, 7 do
+		buildLantern(
+			burn,
+			if index % 3 == 0 then "BrokenFirebreakLight" .. index else "FirebreakLight" .. index,
+			Vector3.new(-360 + index * 92, 2, -470 + math.sin(index) * 22),
+			Color3.fromRGB(255, 104, 56)
+		)
+	end
+
+	local ruins = makeFolder("HollowCreekRuins", expanse)
+	for cabin = 1, 5 do
+		local cx = -580 + (cabin % 2) * 88
+		local cz = -75 + cabin * 62
+		local yaw = math.rad(-12 + cabin * 8)
+		makePart(
+			ruins,
+			"RuinedCabinFloor" .. cabin,
+			Vector3.new(34, 1.5, 26),
+			CFrame.new(cx, 2, cz) * CFrame.Angles(0, yaw, 0),
+			COLORS.wood,
+			Enum.Material.WoodPlanks
+		)
+		for wall = 1, 3 do
+			makePart(
+				ruins,
+				"CollapsedCabinWall" .. cabin .. "_" .. wall,
+				Vector3.new(if wall == 1 then 34 else 3, 10 - wall, if wall == 1 then 3 else 25),
+				CFrame.new(cx + (wall - 2) * 15, 6, cz + (wall == 1 and -11 or 0))
+					* CFrame.Angles(0, yaw, math.rad((wall - 2) * 8)),
+				Color3.fromRGB(70, 55, 40),
+				Enum.Material.WoodPlanks
+			)
+		end
+		if cabin == 2 or cabin == 5 then
+			buildLantern(ruins, "RuinsPorchLamp" .. cabin, Vector3.new(cx, 2, cz - 15), Color3.fromRGB(247, 194, 112))
+		end
+	end
+	addLabel(
+		ruins,
+		"HOLLOW CREEK  POP. 47",
+		CFrame.new(-505, 9, -4) * CFrame.Angles(0, math.rad(18), math.rad(-4)),
+		Vector3.new(22, 4, 0.5)
+	)
+
+	local infrastructure = makeFolder("LostInfrastructure", expanse)
+	for index = 1, 10 do
+		local position = Vector3.new(-500 + index * 105, 2, -360 + math.sin(index * 0.8) * 55)
+		local pole = makePart(
+			infrastructure,
+			"PowerPole" .. index,
+			Vector3.new(1.4, 24, 1.4),
+			CFrame.new(position + Vector3.new(0, 12, 0)) * CFrame.Angles(0, 0, math.rad(if index == 7 then 13 else 0)),
+			COLORS.trunk,
+			Enum.Material.Wood
+		)
+		makePart(
+			infrastructure,
+			"PowerCrossarm" .. index,
+			Vector3.new(10, 0.7, 0.7),
+			pole.CFrame * CFrame.new(0, 10, 0),
+			COLORS.trunk,
+			Enum.Material.Wood
+		)
+		if index < 10 then
+			local nextPosition = Vector3.new(-500 + (index + 1) * 105, 26, -360 + math.sin((index + 1) * 0.8) * 55)
+			makeSegment(
+				infrastructure,
+				"SaggingPowerLine" .. index,
+				position + Vector3.new(0, 22, 0),
+				nextPosition,
+				0.14,
+				0.14,
+				Color3.fromRGB(18, 20, 20),
+				Enum.Material.Metal,
+				false
+			)
+		end
+	end
+
+	local vista = makeFolder("AtmosphericVista", expanse)
+	for index = 1, 24 do
+		local angle = index / 24 * math.pi * 2
+		local radius = 575 + (index % 3) * 18
+		local height = 42 + (index % 5) * 12
+		makePart(
+			vista,
+			"DistantRidgeSpire" .. index,
+			Vector3.new(55 + index % 4 * 12, height, 80),
+			CFrame.new(math.cos(angle) * radius, height / 2 - 3, math.sin(angle) * radius)
+				* CFrame.Angles(math.rad(index % 3 * 2), -angle, math.rad((index % 3) - 1)),
+			if index % 2 == 0 then Color3.fromRGB(43, 48, 49) else Color3.fromRGB(36, 42, 43),
+			Enum.Material.Slate
+		)
+	end
+	for index = 1, 12 do
+		local position = Vector3.new(-420 + index * 72, 5 + index % 3 * 2, 588 + math.sin(index) * 18)
+		local light = makePart(
+			vista,
+			"DistantValleyLight" .. index,
+			Vector3.new(0.7, 0.7, 0.7),
+			CFrame.new(position),
+			if index % 4 == 0 then Color3.fromRGB(126, 176, 220) else Color3.fromRGB(244, 177, 97),
+			Enum.Material.Neon,
+			false
+		)
+		light.Shape = Enum.PartType.Ball
+		if index % 3 == 0 then
+			addPointLight(light, light.Color, 18, 0.45, index % 4 == 0)
+		end
+	end
+end
+
 local function buildRangerStation(parent: Folder)
 	local model = Instance.new("Model")
 	model.Name = "RangerStation"
@@ -387,6 +758,29 @@ local function buildRangerStation(parent: Folder)
 		Enum.Material.Wood
 	)
 	makePart(model, "Porch", Vector3.new(24, 1, 9), CFrame.new(-220, 1.8, -205), COLORS.wood, Enum.Material.WoodPlanks)
+	-- A broad, unmistakable insertion ramp prevents the elevated porch/spawn
+	-- from feeling like a trap and gives first-person players a clean exit.
+	makePart(
+		model,
+		"InsertionRamp",
+		Vector3.new(10, 1.1, 14),
+		CFrame.new(-220, 0.8, -215) * CFrame.Angles(math.rad(-7), 0, 0),
+		COLORS.wood,
+		Enum.Material.WoodPlanks
+	)
+	for side = -1, 1, 2 do
+		makeSegment(
+			model,
+			"RampRail",
+			Vector3.new(-220 + side * 5.2, 1.4, -208),
+			Vector3.new(-220 + side * 5.2, 2.8, -221),
+			0.35,
+			0.35,
+			COLORS.structure,
+			Enum.Material.Metal,
+			false
+		)
+	end
 	addLabel(model, "BLACKWATER RANGER DISTRICT", CFrame.new(-220, 14, -202.5), Vector3.new(24, 3, 0.5))
 	local emergencyLamp = makePart(
 		model,
@@ -1134,6 +1528,24 @@ local ROUTE_CORRIDORS = table.freeze({
 	table.freeze({ 25, 12, 128, 38 }),
 	table.freeze({ 128, 38, 218, 58 }),
 	table.freeze({ 218, -52, 218, 58 }),
+	-- Outer exploration loops: basin, marsh, burn scar, and quarry.
+	table.freeze({ -205, 170, -285, 285 }),
+	table.freeze({ -285, 285, -360, 420 }),
+	table.freeze({ -360, 420, -250, 555 }),
+	table.freeze({ -250, 555, -70, 610 }),
+	table.freeze({ 218, 58, 330, 95 }),
+	table.freeze({ 330, 95, 420, 30 }),
+	table.freeze({ 420, 30, 505, 120 }),
+	table.freeze({ 505, 120, 590, 245 }),
+	table.freeze({ -315, -238, -410, -350 }),
+	table.freeze({ -410, -350, -285, -490 }),
+	table.freeze({ -285, -490, -70, -545 }),
+	table.freeze({ -70, -545, 180, -510 }),
+	table.freeze({ 180, -510, 355, -405 }),
+	table.freeze({ 158, 176, 270, 275 }),
+	table.freeze({ 270, 275, 365, 382 }),
+	table.freeze({ 365, 382, 475, 470 }),
+	table.freeze({ 475, 470, 575, 555 }),
 })
 
 local function distanceToSegmentSquared(x: number, z: number, segment: { number }): number
@@ -1172,13 +1584,18 @@ end
 
 local function randomOpenPosition(random: Random): Vector3
 	for _ = 1, 30 do
-		local x = random:NextNumber(-300, 300)
-		local z = random:NextNumber(-300, 300)
+		local margin = 28
+		local x = random:NextNumber(-Config.PlayableHalfExtentStuds + margin, Config.PlayableHalfExtentStuds - margin)
+		local z = random:NextNumber(-Config.PlayableHalfExtentStuds + margin, Config.PlayableHalfExtentStuds - margin)
 		if not isInsideClearance(x, z) then
 			return Vector3.new(x, 0, z)
 		end
 	end
-	return Vector3.new(random:NextNumber(-300, 300), 0, random:NextNumber(-300, 300))
+	return Vector3.new(
+		random:NextNumber(-Config.PlayableHalfExtentStuds + 28, Config.PlayableHalfExtentStuds - 28),
+		0,
+		random:NextNumber(-Config.PlayableHalfExtentStuds + 28, Config.PlayableHalfExtentStuds - 28)
+	)
 end
 
 local function buildEvacuationStory(parent: Folder)
@@ -1351,6 +1768,22 @@ local function buildVegetation(parent: Folder)
 		)
 		rock.Shape = if index % 4 == 0 then Enum.PartType.Ball else Enum.PartType.Block
 	end
+	for index = 1, Config.Vegetation.ShrubClusterCount do
+		local position = randomOpenPosition(random)
+		local spread = random:NextNumber(3, 8)
+		for lobe = 1, 3 do
+			local shrub = makePart(
+				vegetation,
+				"UnderstoryShrub",
+				Vector3.new(random:NextNumber(3, 7), random:NextNumber(2.2, 5), random:NextNumber(3, 7)),
+				CFrame.new(position + Vector3.new(math.cos(lobe * 2.1) * spread, 1.3, math.sin(lobe * 2.1) * spread)),
+				if index % 7 == 0 then Color3.fromRGB(72, 67, 39) else Color3.fromRGB(37, 57, 38),
+				Enum.Material.Grass,
+				false
+			)
+			shrub.Shape = Enum.PartType.Ball
+		end
+	end
 end
 
 local function configureLighting()
@@ -1358,17 +1791,24 @@ local function configureLighting()
 	Lighting.GeographicLatitude = Config.Lighting.GeographicLatitude
 	Lighting.Brightness = Config.Lighting.Brightness
 	Lighting.ExposureCompensation = Config.Lighting.ExposureCompensation
-	Lighting.Ambient = Color3.fromRGB(112, 124, 140)
-	Lighting.OutdoorAmbient = Color3.fromRGB(132, 144, 160)
-	Lighting.EnvironmentDiffuseScale = 0.72
-	Lighting.EnvironmentSpecularScale = 0.25
+	Lighting.Ambient = Color3.fromRGB(35, 44, 56)
+	Lighting.OutdoorAmbient = Color3.fromRGB(48, 59, 71)
+	Lighting.EnvironmentDiffuseScale = 0.48
+	Lighting.EnvironmentSpecularScale = 0.4
 	Lighting.GlobalShadows = true
 	Lighting.ShadowSoftness = 0.38
-	Lighting.FogColor = Color3.fromRGB(79, 92, 102)
+	Lighting.FogColor = Color3.fromRGB(36, 48, 57)
 	Lighting.FogStart = Config.Lighting.FogStart
 	Lighting.FogEnd = Config.Lighting.FogEnd
 
-	for _, childName in { "LivingKingdomsAtmosphere", "LivingKingdomsColorGrade" } do
+	for _, childName in
+		{
+			"LivingKingdomsAtmosphere",
+			"LivingKingdomsColorGrade",
+			"LivingKingdomsBloom",
+			"LivingKingdomsSunRays",
+		}
+	do
 		local existing = Lighting:FindFirstChild(childName)
 		if existing ~= nil then
 			existing:Destroy()
@@ -1376,29 +1816,40 @@ local function configureLighting()
 	end
 	local atmosphere = Instance.new("Atmosphere")
 	atmosphere.Name = "LivingKingdomsAtmosphere"
-	atmosphere.Color = Color3.fromRGB(126, 142, 151)
-	atmosphere.Decay = Color3.fromRGB(47, 57, 65)
-	atmosphere.Density = 0.14
-	atmosphere.Offset = 0.1
-	atmosphere.Glare = 0.03
-	atmosphere.Haze = 0.65
+	atmosphere.Color = Color3.fromRGB(94, 118, 133)
+	atmosphere.Decay = Color3.fromRGB(25, 35, 44)
+	atmosphere.Density = 0.28
+	atmosphere.Offset = 0.05
+	atmosphere.Glare = 0.015
+	atmosphere.Haze = 1.55
 	atmosphere.Parent = Lighting
 	local grade = Instance.new("ColorCorrectionEffect")
 	grade.Name = "LivingKingdomsColorGrade"
-	grade.Brightness = 0.1
-	grade.Contrast = 0.03
-	grade.Saturation = -0.08
-	grade.TintColor = Color3.fromRGB(205, 216, 221)
+	grade.Brightness = -0.025
+	grade.Contrast = 0.14
+	grade.Saturation = -0.18
+	grade.TintColor = Color3.fromRGB(184, 205, 216)
 	grade.Parent = Lighting
+	local bloom = Instance.new("BloomEffect")
+	bloom.Name = "LivingKingdomsBloom"
+	bloom.Intensity = 0.42
+	bloom.Size = 30
+	bloom.Threshold = 0.92
+	bloom.Parent = Lighting
+	local sunRays = Instance.new("SunRaysEffect")
+	sunRays.Name = "LivingKingdomsSunRays"
+	sunRays.Intensity = 0.015
+	sunRays.Spread = 0.55
+	sunRays.Parent = Lighting
 	local existingClouds = Workspace.Terrain:FindFirstChild("LivingKingdomsClouds")
 	if existingClouds ~= nil then
 		existingClouds:Destroy()
 	end
 	local clouds = Instance.new("Clouds")
 	clouds.Name = "LivingKingdomsClouds"
-	clouds.Cover = 0.56
-	clouds.Density = 0.5
-	clouds.Color = Color3.fromRGB(88, 97, 104)
+	clouds.Cover = 0.72
+	clouds.Density = 0.68
+	clouds.Color = Color3.fromRGB(57, 66, 74)
 	clouds.Parent = Workspace.Terrain
 end
 
@@ -1417,6 +1868,7 @@ function WorldFoundationService.start()
 	root = worldRoot
 	configureLighting()
 	buildTerrain(worldRoot)
+	buildImmersiveExpanse(worldRoot)
 	local landmarks = makeFolder("Landmarks", worldRoot)
 	buildRangerStation(landmarks)
 	buildLoggingDetails(landmarks)

@@ -48,7 +48,7 @@ end
 
 assertThat(killsForFirstUpgrade == 4, "first upgrade must arrive after four ordinary confirmed deaths")
 assertThat(
-	pressure.WarmupSeconds >= 20 and pressure.WarmupSeconds <= 30,
+	pressure.WarmupSeconds >= 30 and pressure.WarmupSeconds <= 60,
 	"the additive horde layer must leave a bounded opening combat window"
 )
 assertThat(
@@ -59,28 +59,28 @@ assertThat(
 -- At the first additive injection, baseline EnemyDirector contact is already in
 -- progress. The horde layer should add a readable pulse rather than front-load a
 -- second full wave into the same opening seconds.
-local openingThreat = threatAt(pressure.WarmupSeconds, 8, 2)
-assertThat(spawnCountAt(openingThreat) == 3, "opening additive pressure should remain a three-enemy pulse")
-assertThat(spawnIntervalAt(openingThreat) >= 9, "opening additive waves must retain a meaningful recovery interval")
+local openingThreat = threatAt(pressure.WarmupSeconds, 2, 1)
+assertThat(spawnCountAt(openingThreat) == 1, "opening additive pressure should introduce one predator")
+assertThat(spawnIntervalAt(openingThreat) >= 18, "opening packs must retain a meaningful recovery interval")
 
 -- A representative first-upgrade checkpoint: four confirmed kills by 45 seconds
 -- with a busy but sub-cap battlefield. The upgrade should arrive before the
 -- threat model enters the RISING band at 25.
-local firstUpgradeThreat = threatAt(45, 16, killsForFirstUpgrade)
+local firstUpgradeThreat = threatAt(60, 4, killsForFirstUpgrade)
 assertThat(firstUpgradeThreat < 25, "first upgrade should precede the likely-wipe threat band")
 assertThat(spawnCountAt(firstUpgradeThreat) <= 4, "pre-upgrade additive waves must remain readable")
-assertThat(spawnIntervalAt(firstUpgradeThreat) >= 8.5, "pre-upgrade cadence must leave time to choose an upgrade")
+assertThat(spawnIntervalAt(firstUpgradeThreat) >= 18, "pre-upgrade cadence must leave time to choose an upgrade")
 
 -- The gentler opening must still build into real horde pressure. These later
 -- checkpoints prevent the retune from flattening the operation into a soft mode.
-local midRunThreat = threatAt(180, 24, 15)
-assertThat(midRunThreat >= 40, "three-minute pressure should reach the severe transition")
-assertThat(spawnCountAt(midRunThreat) >= 6, "mid-run horde pulses must escalate beyond the opening burst")
-assertThat(spawnIntervalAt(midRunThreat) <= 7.5, "mid-run cadence must accelerate")
+local midRunThreat = threatAt(180, 5, 15)
+assertThat(midRunThreat >= 30, "three-minute pressure should reach the severe transition")
+assertThat(spawnCountAt(midRunThreat) >= 3, "mid-run packs must reach the strict predator ceiling")
+assertThat(spawnIntervalAt(midRunThreat) <= 17.5, "mid-run cadence must accelerate")
 
-local lateRunThreat = threatAt(480, 24, 50)
-assertThat(lateRunThreat >= 90, "late-run pressure should approach the catastrophic ceiling")
-assertThat(spawnCountAt(lateRunThreat) >= 10, "late-run horde pulses must remain brutal")
-assertThat(spawnIntervalAt(lateRunThreat) <= 4, "late-run cadence must approach the configured minimum")
+local lateRunThreat = threatAt(480, 5, 50)
+assertThat(lateRunThreat >= 85, "late-run pressure should approach the catastrophic ceiling")
+assertThat(spawnCountAt(lateRunThreat) == 3, "late-run packs must respect the strict predator ceiling")
+assertThat(spawnIntervalAt(lateRunThreat) <= 13, "late-run cadence must approach the configured minimum")
 
-print("HordeProgressionPacing: four-kill first upgrade precedes escalating solo wipe pressure")
+print("HordeProgressionPacing: scarce-ammo opening precedes bounded predator pressure")

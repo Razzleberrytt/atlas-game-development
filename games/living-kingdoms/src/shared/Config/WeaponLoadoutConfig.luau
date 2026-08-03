@@ -4,7 +4,7 @@ local MissionContracts = require(script.Parent.Parent.Mission.MissionContracts)
 local FirearmConfig = require(script.Parent.FirearmConfig)
 
 local Config = {
-	Version = "HROI-0120-v1",
+	Version = "HROI-0120-v2-pistol-only-insertion",
 	OpenMissionPhaseId = MissionContracts.MissionPhaseIds.Insertion,
 	DefaultWeaponId = FirearmConfig.DefaultSelectableWeaponId,
 	SelectableWeaponIds = FirearmConfig.SelectableWeaponIds,
@@ -12,7 +12,7 @@ local Config = {
 	MaximumProcessedRequestIdsPerOperative = 64,
 }
 
-assert(#Config.SelectableWeaponIds == 5, "loadout selection requires the complete five-weapon roster")
+assert(#Config.SelectableWeaponIds == 1, "insertion exposes only the survival pistol")
 assert(FirearmConfig.get(Config.DefaultWeaponId) ~= nil, "default loadout weapon must exist")
 assert(
 	Config.MinimumRequestIntervalSeconds > 0 and Config.MinimumRequestIntervalSeconds <= 1,

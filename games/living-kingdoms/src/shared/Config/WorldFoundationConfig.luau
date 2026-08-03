@@ -3,10 +3,10 @@
 -- P5-0102 authored-world constants. Geometry remains replaceable graybox, but
 -- these stable routes and landmark IDs preserve the operation's visual language.
 local WorldFoundationConfig = {
-	Version = "P5-0102-v1",
+	Version = "P5-0102-v2-immersive-expanse",
 	Seed = 1847,
 	WorldRootName = "LivingKingdomsWorld",
-	PlayableHalfExtentStuds = 320,
+	PlayableHalfExtentStuds = 640,
 	InsertionPosition = table.freeze({ x = -224, y = 5, z = -208 }),
 	Landmarks = table.freeze({
 		table.freeze({ id = "RangerStation", displayName = "Ranger Station", x = -220, z = -190, radius = 44 }),
@@ -25,20 +25,21 @@ local WorldFoundationConfig = {
 		}),
 	}),
 	Vegetation = table.freeze({
-		PineCount = 104,
-		HardwoodCount = 44,
-		FallenLogCount = 15,
-		BoulderCount = 52,
+		PineCount = 290,
+		HardwoodCount = 118,
+		FallenLogCount = 38,
+		BoulderCount = 124,
+		ShrubClusterCount = 180,
 		MinimumLandmarkClearanceStuds = 14,
 		RouteClearanceStuds = 18,
 	}),
 	Lighting = table.freeze({
-		ClockTime = 4.7,
+		ClockTime = 3.85,
 		GeographicLatitude = 38,
-		Brightness = 3,
-		ExposureCompensation = 0.58,
-		FogStart = 120,
-		FogEnd = 650,
+		Brightness = 2.35,
+		ExposureCompensation = 0.24,
+		FogStart = 85,
+		FogEnd = 485,
 	}),
 }
 

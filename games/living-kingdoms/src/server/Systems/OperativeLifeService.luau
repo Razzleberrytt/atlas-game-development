@@ -103,6 +103,7 @@ type OperativeLifeService = {
 }
 
 local lifeStateIds = OperativeLifeContracts.OperativeLifeStateIds
+local ALIVE_HORIZONTAL_SPEED = 16
 local OperativeLifeService: OperativeLifeService = {} :: OperativeLifeService
 local entries: { [Player]: OperativeEntry } = {}
 local playerByOperativeEntityId: { [string]: Player } = {}
@@ -316,7 +317,10 @@ local function applyCharacterRestrictions(entry: OperativeEntry)
 		humanoid.Health = 1
 	end
 	if entry.snapshot.lifeStateId == lifeStateIds.Alive then
-		humanoid.WalkSpeed = binding.walkSpeed or humanoid.WalkSpeed
+		-- Alive is an explicit movement contract. Never restore a transient zero
+		-- captured while a character was spawning or being rebound; doing so leaves
+		-- jumping functional while making every horizontal control appear broken.
+		humanoid.WalkSpeed = math.max(binding.walkSpeed or 0, ALIVE_HORIZONTAL_SPEED)
 		humanoid.JumpPower = binding.jumpPower or humanoid.JumpPower
 		humanoid.JumpHeight = binding.jumpHeight or humanoid.JumpHeight
 		humanoid.AutoRotate = if binding.autoRotate == nil then true else binding.autoRotate

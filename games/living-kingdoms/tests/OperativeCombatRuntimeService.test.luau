@@ -394,6 +394,7 @@ local playerAddedSignal = signal()
 local playerRemovingSignal = signal()
 local heartbeatSignal = signal()
 local reloadIntentSignal = signal()
+local fireIntentSignal = signal()
 local presentationMessages = {}
 local presentationRemote = {
 	FireClient = function(_, player, payload)
@@ -404,10 +405,13 @@ local presentationRemote = {
 	end,
 }
 local reloadIntentRemote = { OnServerEvent = reloadIntentSignal }
+local fireIntentRemote = { OnServerEvent = fireIntentSignal }
 local combatNetwork = {
 	WaitForChild = function(_, name)
 		if name == "ReloadIntent" then
 			return reloadIntentRemote
+		elseif name == "FireIntent" then
+			return fireIntentRemote
 		end
 		assert(name == "CombatPresentation")
 		return presentationRemote
@@ -615,6 +619,9 @@ local function reset(players: { any })
 	end
 	now = 0
 	service.start()
+	for _, player in players do
+		fireIntentSignal:Fire(player, true, roblox.Vector3.new(1, 0, 0))
+	end
 end
 
 local visibilityRadius = enemyConfig.Combat.GameplayVisibilityRadiusStuds
@@ -630,7 +637,7 @@ now = 1
 service.evaluateAt(now)
 assert(enemyFactReadCount == 1, "one squad evaluation must read enemy facts exactly once")
 assert(raycastParamsCreated == 4, "each operative must lazily allocate one primary and one pierce parameter")
-now += firearmConfig.BasicFirearm.CadenceSeconds
+now += firearmConfig.ServicePistol.CadenceSeconds
 service.evaluateAt(now)
 assert(enemyFactReadCount == 2, "each later evaluation must take one fresh shared enemy snapshot")
 assert(raycastParamsCreated == 4, "later evaluations must reuse the per-operative raycast parameters")
@@ -649,16 +656,16 @@ assert(#commitCalls == 1 and commitCalls[1].entityId == "enemy.close")
 assert(commitCalls[1].expectedRevision == 1)
 assert(
 	commitCalls[1].healthStateAfter.currentHealth
-		== enemyConfig.Walker.MaximumHealth - firearmConfig.BasicFirearm.DamagePerHit,
+		== enemyConfig.Walker.MaximumHealth - firearmConfig.ServicePistol.DamagePerHit,
 	"one hit must apply exactly the configured firearm damage"
 )
 local firstShotId = shotMessages[1].payload.shotId
 assert(commitCalls[1].healthStateAfter.processedShotIds[firstShotId] == true, "the shot must be duplicate-protected")
 -- Cadence: immediately after firing, no second shot.
-now = 1 + firearmConfig.BasicFirearm.CadenceSeconds - 0.01
+now = 1 + firearmConfig.ServicePistol.CadenceSeconds - 0.01
 service.evaluateAt(now)
 assert(#messagesOfKind("ShotFired") == 1, "cadence must block the second shot")
-now = 1 + firearmConfig.BasicFirearm.CadenceSeconds
+now = 1 + firearmConfig.ServicePistol.CadenceSeconds
 service.evaluateAt(now)
 assert(#messagesOfKind("ShotFired") == 2)
 
@@ -720,40 +727,46 @@ assert(#messagesOfKind("ShotFired") <= 1, "restricted operatives cannot fire")
 -- with the authoritative timing; rate limiting holds.
 reset({ operativeA })
 now = 1
-reloadIntentSignal:Fire(operativeA, firearmConfig.BasicFirearm.WeaponId)
+reloadIntentSignal:Fire(operativeA, firearmConfig.ServicePistol.WeaponId)
 assert(#messagesOfKind("ReloadStarted") == 0, "a full magazine must not begin a reload")
+fireIntentSignal:Fire(operativeA, true, roblox.Vector3.new(1, 0, 0))
 -- Empty the magazine against a target.
 addEnemy("enemy.pincushion", 30, 0, { currentHealth = 100000 })
-for shot = 1, firearmConfig.BasicFirearm.MagazineCapacity do
-	now += firearmConfig.BasicFirearm.CadenceSeconds
+for shot = 1, firearmConfig.ServicePistol.MagazineCapacity do
+	now += firearmConfig.ServicePistol.CadenceSeconds
 	service.evaluateAt(now)
 end
-assert(#messagesOfKind("ShotFired") == firearmConfig.BasicFirearm.MagazineCapacity)
+assert(#messagesOfKind("ShotFired") == firearmConfig.ServicePistol.MagazineCapacity)
 now += 1
 reloadIntentSignal:Fire(operativeA, 5)
-reloadIntentSignal:Fire(operativeA, firearmConfig.BasicFirearm.WeaponId, "extra")
+reloadIntentSignal:Fire(operativeA, firearmConfig.ServicePistol.WeaponId, "extra")
 assert(#messagesOfKind("ReloadStarted") == 0, "malformed reload intents must be ignored")
-reloadIntentSignal:Fire(operativeA, firearmConfig.BasicFirearm.WeaponId)
+reloadIntentSignal:Fire(operativeA, firearmConfig.ServicePistol.WeaponId)
 local startedReload = messagesOfKind("ReloadStarted")
 assert(#startedReload == 1, "an empty magazine must accept reload intent")
 assert(startedReload[1].player == "all", "accepted reload start must be squad-visible")
 assert(startedReload[1].payload.operativeEntityId == "operative.player:1")
-assert(startedReload[1].payload.completionServerTimestamp == now + firearmConfig.BasicFirearm.ReloadDurationSeconds)
-assert(#scheduled == 1 and scheduled[1].delaySeconds == firearmConfig.BasicFirearm.ReloadDurationSeconds)
+assert(startedReload[1].payload.completionServerTimestamp == now + firearmConfig.ServicePistol.ReloadDurationSeconds)
+assert(#scheduled == 1, "one reload completion must be scheduled")
+assert(
+	math.abs(scheduled[1].delaySeconds - firearmConfig.ServicePistol.ReloadDurationSeconds) < 0.001,
+	"reload schedule must match the pistol duration"
+)
 -- Rate limit: an immediate second intent is dropped.
-reloadIntentSignal:Fire(operativeA, firearmConfig.BasicFirearm.WeaponId)
+reloadIntentSignal:Fire(operativeA, firearmConfig.ServicePistol.WeaponId)
 assert(#messagesOfKind("ReloadStarted") == 1, "the server request cooldown must hold")
 -- Completion through the scheduled callback.
-now += firearmConfig.BasicFirearm.ReloadDurationSeconds
+now += firearmConfig.ServicePistol.ReloadDurationSeconds
 scheduled[1].callback()
 local completedReload = messagesOfKind("ReloadCompleted")
 assert(#completedReload == 1, "the scheduled completion must transfer ammunition")
 assert(completedReload[1].player == "all", "authoritative reload completion must be squad-visible")
 assert(completedReload[1].payload.operativeEntityId == "operative.player:1")
-now += firearmConfig.BasicFirearm.CadenceSeconds
+fireIntentSignal:Fire(operativeA, true, roblox.Vector3.new(1, 0, 0))
+now += firearmConfig.ServicePistol.CadenceSeconds
 service.evaluateAt(now)
 assert(
-	#messagesOfKind("ShotFired") == firearmConfig.BasicFirearm.MagazineCapacity + 1,
+	#messagesOfKind("ShotFired") == firearmConfig.ServicePistol.MagazineCapacity + 1,
 	"a completed reload must restore fire"
 )
 
@@ -785,7 +798,7 @@ assert(
 	not configuredEngineerCommitter(operativeA, "class-resupply:test:1", 12),
 	"duplicate engineer supply ID must fail"
 )
-afterSupply.combatState.weaponState.ammunition.reserveRounds = firearmConfig.BasicFirearm.MaximumReserveRounds - 1
+afterSupply.combatState.weaponState.ammunition.reserveRounds = firearmConfig.ServicePistol.MaximumReserveRounds - 1
 assert(service.commitReviveCombatState(operativeA, afterSupply.generation, afterSupply.combatState))
 local didPartial, partialRounds = configuredEngineerCommitter(operativeA, "class-resupply:test:2", 12)
 assert(didPartial and partialRounds == 1, "engineer supply must clamp to remaining reserve capacity")
@@ -796,7 +809,7 @@ assert(engineerState.grantedRoundsBySupplyId["class-resupply:test:2"] == 1, "par
 -- Teardown: stop clears every connection and state.
 service.stop()
 assert(configuredEngineerInspector == nil and configuredEngineerCommitter == nil, "boundary must clear on stop")
-assert(heartbeatSignal:count() == 0 and reloadIntentSignal:count() == 0)
+assert(heartbeatSignal:count() == 0 and reloadIntentSignal:count() == 0 and fireIntentSignal:count() == 0)
 assert(playerAddedSignal:count() == 0 and playerRemovingSignal:count() == 0)
 assert(lifeSignal:count() == 0)
 assert(service.readReviveCombatState(operativeA) == nil)
@@ -828,7 +841,7 @@ assert(
 	"reload lifecycle must use one bounded squad broadcast helper"
 )
 local _, listenerCount = string.gsub(source, "OnServerEvent:Connect", "")
-assert(listenerCount == 1, "reload intent must remain the only client combat input")
+assert(listenerCount == 2, "reload and fire intent must remain the only client combat inputs")
 local reviveSource = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeReviveSessionService.luau")
 assert(
 	string.find(reviveSource, "OperativeCombatRuntimeService.readReviveCombatState", 1, true) ~= nil,

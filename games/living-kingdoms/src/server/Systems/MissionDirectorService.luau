@@ -30,7 +30,6 @@ local MissionConfig = require(ReplicatedStorage.Shared.Config.MissionConfig)
 local MissionContracts = require(ReplicatedStorage.Shared.Mission.MissionContracts)
 local ObjectiveChainConfig = require(ReplicatedStorage.Shared.Config.ObjectiveChainConfig)
 local ObjectiveChainResolver = require(ReplicatedStorage.Shared.Mission.ObjectiveChainResolver)
-local ClassService = require(script.Parent.ClassService)
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 local MatchResultService = require(script.Parent.MatchResultService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
@@ -346,6 +345,10 @@ end
 -- worker carries its server-owned class so the engineer repair path is honored.
 local function gatherWorkersByObjective(): { [string]: { WorkerFact } }
 	local classById: { [string]: string } = {}
+	-- ClassService also reads mission state while validating class actions. Load
+	-- it only during an objective evaluation so both owners can finish loading
+	-- during server bootstrap.
+	local ClassService = require(script.Parent.ClassService)
 	local ok, roster = pcall(ClassService.readRoster)
 	if ok and type(roster) == "table" then
 		for _, assignment in roster :: { any } do

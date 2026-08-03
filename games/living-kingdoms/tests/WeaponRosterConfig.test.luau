@@ -42,8 +42,11 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Fi
 	injectGlobals = true,
 })()
 
-assert(#config.SelectableWeaponIds == 5, "five selectable weapons required")
-assert(config.DefaultSelectableWeaponId == config.LightMachineGun.WeaponId, "LMG must be default")
+assert(#config.SelectableWeaponIds == 1, "only the pistol may be selected at insertion")
+assert(config.DefaultSelectableWeaponId == config.ServicePistol.WeaponId, "pistol must be default")
+assert(config.ServicePistol.MagazineCapacity == 8, "opening pistol must have a scarce eight-round magazine")
+assert(config.ServicePistol.PrototypeInitialReserveRounds == 8, "opening reserve must be limited to one reload")
+assert(#config.DiscoverableWeaponIds == 4, "four long guns must remain discoverable in-run")
 assert(config.BreachShotgun.DamagePerHit > config.LightMachineGun.DamagePerHit, "shotgun must hit harder")
 assert(config.SniperRifle.RangeStuds > config.LightMachineGun.RangeStuds, "sniper must own longest range")
 assert(
@@ -59,4 +62,4 @@ for _, weaponId in config.SelectableWeaponIds do
 	assert(definition ~= nil and table.isfrozen(definition), "definitions must exist and be frozen")
 end
 
-print("WeaponRosterConfig: five distinct bounded server-owned weapons passed")
+print("WeaponRosterConfig: pistol-only insertion and discoverable weapon roster passed")
