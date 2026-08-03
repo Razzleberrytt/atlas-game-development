@@ -33,6 +33,7 @@ local lastProgressionRevision = -1
 local lastEventSequence = -1
 local lastProgressionGainSequence = -1
 local lastSelectionSequence = -1
+local lastCorruptionSequence = -1
 local eventVisibleUntil = 0
 local upgradeButtons: { TextButton } = {}
 
@@ -389,18 +390,46 @@ local function renderUpgradeChoices(choices: { any })
 	end
 end
 
+local showEvent: (text: string, color: Color3) -> ()
+
 local function applyHordeState(payload: any)
 	if type(payload.revision) ~= "number" or payload.revision < lastRevision then
 		return
 	end
 	lastRevision = payload.revision
 	local threat = if type(payload.threat) == "number" then payload.threat else 0
+	local corruptionTier = tonumber(payload.corruptionTier) or 0
+	local corruptionIntensity = tonumber(payload.corruptionIntensity) or 0
 	if threatLabel ~= nil then
-		threatLabel.Text =
-			string.format("THREAT  //  %s  //  %03d", tostring(payload.threatLabel or "UNKNOWN"), math.floor(threat))
+		threatLabel.Text = if payload.isNight == true
+			then string.format(
+				"NIGHT %d  //  CORRUPTION TIER %d  //  %d%%",
+				tonumber(payload.dayNumber) or 1,
+				corruptionTier,
+				math.floor(corruptionIntensity * 100 + 0.5)
+			)
+			else string.format("DAY %d  //  PREPARE  //  LIGHT THE FIRE", tonumber(payload.dayNumber) or 1)
 		threatLabel.TextColor3 = if threat >= 65 then Color3.fromRGB(255, 67, 54) else Color3.fromRGB(239, 190, 92)
 	end
 	setBar(threatFill, threat / 100)
+	local corruptionSequence = tonumber(payload.corruptionSequence) or 0
+	if corruptionSequence > lastCorruptionSequence then
+		if lastCorruptionSequence >= 0 then
+			if corruptionTier > 0 then
+				showEvent(
+					string.format(
+						"NIGHT DEEPENS  //  CORRUPTION TIER %d  //  +%d%% NIGHT XP",
+						corruptionTier,
+						corruptionTier * 8
+					),
+					Color3.fromRGB(194, 91, 255)
+				)
+			else
+				showEvent("DAWN BREAKS  //  SCAVENGE, BUILD, PREPARE", Color3.fromRGB(255, 204, 102))
+			end
+		end
+		lastCorruptionSequence = corruptionSequence
+	end
 	if enemyCountLabel ~= nil then
 		enemyCountLabel.Text = string.format("HOSTILES  %03d", tonumber(payload.activeEnemies) or 0)
 	end
@@ -416,7 +445,7 @@ local function applyHordeState(payload: any)
 	end
 end
 
-local function showEvent(text: string, color: Color3)
+showEvent = function(text: string, color: Color3)
 	if eventLabel == nil or text == "" then
 		return
 	end
@@ -835,6 +864,7 @@ function Controller.stop()
 	lastSelectionSequence = -1
 	hasUpgradeChoices = false
 	lastObservedLevel = -1
+	lastCorruptionSequence = -1
 	levelCelebration = nil
 	levelCelebrationText = nil
 	runStatsPrimaryLabel = nil

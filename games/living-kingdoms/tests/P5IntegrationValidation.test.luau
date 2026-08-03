@@ -764,8 +764,8 @@ local boosterCenter = objectiveConfig.Objectives[2].center
 local relayId = objectiveConfig.Objectives[1].objectiveId
 local boosterId = objectiveConfig.Objectives[2].objectiveId
 
--- Objective 1 (relay): a presence-driven held channel at the Lookout. Restoring
--- it spawns wave 1 as real production enemies and directs the squad to relocate.
+-- Objective milestones advance the mission without injecting discrete packs;
+-- the continuous night-corruption owner supplies ambient pressure.
 alphaRoot.Position = roblox.Vector3.new(relayCenter.x, relayCenter.y, relayCenter.z)
 for _ = 1, objectiveConfig.Objectives[1].completionUnits do
 	now += 1
@@ -773,17 +773,12 @@ for _ = 1, objectiveConfig.Objectives[1].completionUnits do
 end
 assert(mission.read().objectiveCompletedById[relayId] == true, "relay restored by presence")
 assert(mission.read().phaseId == "Infiltration", "restoring the relay does not unlock extraction")
-assert(enemyDirector.readActiveEnemyCount() == #missionConfig.Escalation.Waves[1], "wave 1 must spawn on relay restore")
-assert(enemyDirector.readPressureState().escalationLevel == 1)
-assert(
-	enemyDirector.readPressureState().recoveryWindowEndServerTimestamp
-		== now + enemyConfig.Pressure.RecoveryWindowSeconds,
-	"authored waves must open the recovery window"
-)
+assert(enemyDirector.readActiveEnemyCount() == 0, "relay completion must not spawn a wave")
+assert(enemyDirector.readPressureState().escalationLevel == 0)
+assert(enemyDirector.readPressureState().recoveryWindowEndServerTimestamp == nil)
 
 -- Objective 2 (booster): relocate to the Military Roadblock and charge the
--- signal booster. Completing it fires wave 2 (re-homed to the roadblock) and
--- unlocks extraction.
+-- signal booster. Completing it unlocks extraction without a discrete pack.
 alphaRoot.Position = roblox.Vector3.new(boosterCenter.x, boosterCenter.y, boosterCenter.z)
 for _ = 1, 26 do
 	now += 1
@@ -791,31 +786,26 @@ for _ = 1, 26 do
 end
 assert(mission.read().objectiveCompletedById[boosterId] == true, "booster charged by presence")
 assert(mission.read().phaseId == "Exfiltration", "charging the booster unlocks extraction")
-assert(enemyDirector.readActiveEnemyCount() == #missionConfig.Escalation.Waves[1] + #missionConfig.Escalation.Waves[2])
-assert(enemyDirector.readPressureState().escalationLevel == 2)
+assert(enemyDirector.readActiveEnemyCount() == 0)
+assert(enemyDirector.readPressureState().escalationLevel == 0)
 
--- Holdout begins when a survivor stands in the clearing; wave 3 spawns fairly
--- outside the darkness radius and immediately.
+-- Holdout begins with only the authored boss; continuous corruption supplies adds.
 alphaRoot.Position = roblox.Vector3.new(missionConfig.Extraction.Position.x, 3, missionConfig.Extraction.Position.z)
 bravoRoot.Position = roblox.Vector3.new(-224, 2, -200)
 now += 5
 assert(mission.evaluateExtractionPresenceAt(now).didChange)
 assert(mission.read().phaseId == "Holdout")
--- Wave three plus the one authored Progenitor boss that anchors the holdout.
-local expectedTotal = #missionConfig.Escalation.Waves[1]
-	+ #missionConfig.Escalation.Waves[2]
-	+ #missionConfig.Escalation.Waves[3]
-	+ 1
+local expectedTotal = 1
 assert(
 	enemyDirector.readActiveEnemyCount() == expectedTotal,
-	"the holdout wave and the boss must spawn immediately from their fair authored positions"
+	"only the boss may spawn immediately at the holdout transition"
 )
 assert(
 	enemyDirector.readBossState().exists and enemyDirector.readBossState().phaseId == "Carapace",
 	"the boss anchors the holdout"
 )
 assert(enemyDirector.readPressureState().pendingSpawnCount == 0, "no holdout spawn may defer against a centered squad")
-assert(enemyDirector.readPressureState().escalationLevel == 3)
+assert(enemyDirector.readPressureState().escalationLevel == 0)
 
 -- Enemies evaluate against the mission squad without erroring and stay
 -- server-bounded.

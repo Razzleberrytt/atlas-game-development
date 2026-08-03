@@ -204,7 +204,7 @@ local function applyResult(snapshot: unknown)
 	cause.Text = EXPLANATION_BY_CAUSE_ID[result.causeId] or ""
 
 	events.Text = string.format(
-		"OPERATION  %s\nDuration %s  •  reached %s\nObjectives completed %d  •  waves survived %d\nThe Progenitor: %s",
+		"OPERATION  %s\nDuration %s  •  reached %s\nObjectives completed %d  •  corruption tier reached %d\nThe Progenitor: %s",
 		result.operationId,
 		formatDuration(result.durationSeconds),
 		result.phaseReachedId,

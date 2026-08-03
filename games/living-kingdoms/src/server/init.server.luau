@@ -295,8 +295,10 @@ local OperationLifecycleService = require(script.Systems.OperationLifecycleServi
 local MissionDirectorService = require(script.Systems.MissionDirectorService)
 local WeaponLoadoutService = require(script.Systems.WeaponLoadoutService)
 local SurvivalLootService = require(script.Systems.SurvivalLootService)
+local NightCorruptionService = require(script.Systems.NightCorruptionService)
 
 WorldFoundationService.start()
+NightCorruptionService.start()
 -- The contribution ledger records only already-committed facts, so it starts
 -- before every owner that could commit one and before the mission can reach its
 -- terminal boundary.
