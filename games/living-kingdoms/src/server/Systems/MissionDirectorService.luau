@@ -311,11 +311,9 @@ local function spawnWave(waveIndex: number)
 	end
 	spawnedWaves[waveIndex] = true
 	escalationLevel = math.max(escalationLevel, waveIndex)
-	-- The production enemy director validates fairness, defers unfair placements,
-	-- raises its escalation level, and opens the authored-wave recovery window.
-	pcall(function()
-		EnemyDirectorService.spawnAuthoredWave(waveIndex, wave)
-	end)
+	-- Objective milestones no longer inject discrete combat packs. Continuous
+	-- NightCorruptionService pressure owns danger; this legacy index remains only
+	-- as a compact mission-depth/result value for compatibility.
 end
 
 local function countAdmittedAliveInsideExtraction(): number

@@ -392,7 +392,11 @@ local function awardConfirmedEnemyDeath(model: Model)
 		eliteBonus = 0
 	end
 	local base = RunProgressionConfig.FieldXpPerConfirmedEnemyDeath + math.floor(eliteBonus)
-	local boosted = math.max(base, math.floor(base * xpGainMultiplier + 0.5))
+	local corruptionMultiplier = ReplicatedStorage.HordeNetwork:GetAttribute("NightCorruptionXpMultiplier")
+	if type(corruptionMultiplier) ~= "number" then
+		corruptionMultiplier = 1
+	end
+	local boosted = math.max(base, math.floor(base * xpGainMultiplier * math.clamp(corruptionMultiplier, 1, 1.5) + 0.5))
 	if applyFieldXpAward(boosted, true) then
 		offerRelicRewardsForDeath(model)
 	end

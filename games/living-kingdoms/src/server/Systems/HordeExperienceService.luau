@@ -150,10 +150,15 @@ local function threatValue(serverTimestamp: number): number
 	for _, state in playerStates do
 		totalKills = math.max(totalKills, state.kills)
 	end
+	local corruptionBonus = network:GetAttribute("NightCorruptionThreatBonus")
+	if type(corruptionBonus) ~= "number" then
+		corruptionBonus = 0
+	end
 	return math.clamp(
 		elapsedMinutes * HordeConfig.Pressure.ThreatPerMinute
 			+ EnemyDirectorService.readActiveEnemyCount() * HordeConfig.Pressure.ThreatPerLivingEnemy
-			+ totalKills * HordeConfig.Pressure.ThreatPerKill,
+			+ totalKills * HordeConfig.Pressure.ThreatPerKill
+			+ corruptionBonus,
 		0,
 		HordeConfig.Pressure.ThreatMaximum
 	)
@@ -187,6 +192,11 @@ local function publishPlayer(player: Player, serverTimestamp: number)
 			else 0,
 		threat = value,
 		threatLabel = threatLabel(value),
+		corruptionTier = network:GetAttribute("NightCorruptionTier") or 0,
+		corruptionIntensity = network:GetAttribute("NightCorruptionIntensity") or 0,
+		corruptionSequence = network:GetAttribute("NightCorruptionSequence") or 0,
+		dayNumber = network:GetAttribute("NightDayNumber") or 1,
+		isNight = network:GetAttribute("NightIsActive") == true,
 		activeEnemies = EnemyDirectorService.readActiveEnemyCount(),
 		lastEventText = state.lastEventText,
 		lastEventKind = state.lastEventKind,
@@ -482,7 +492,13 @@ local function processEnemy(record: EnemyRecord, serverTimestamp: number)
 	if type(eliteMovementMultiplier) ~= "number" or eliteMovementMultiplier ~= eliteMovementMultiplier then
 		eliteMovementMultiplier = 1
 	end
-	record.humanoid.WalkSpeed = role.SpeedFloor * math.clamp(eliteMovementMultiplier, 1, 1.35)
+	local corruptionSpeedMultiplier = network:GetAttribute("NightCorruptionEnemySpeedMultiplier")
+	if type(corruptionSpeedMultiplier) ~= "number" then
+		corruptionSpeedMultiplier = 1
+	end
+	record.humanoid.WalkSpeed = role.SpeedFloor
+		* math.clamp(eliteMovementMultiplier, 1, 1.35)
+		* math.clamp(corruptionSpeedMultiplier, 1, 1.3)
 	local hitSequence = record.model:GetAttribute(HitSequenceAttribute)
 	if type(hitSequence) == "number" and hitSequence > record.lastHitSequence then
 		record.lastHitSequence = hitSequence
@@ -529,10 +545,14 @@ local function spawnHorde(serverTimestamp: number)
 		local distance = HordeConfig.Pressure.SpawnRingMinimumStuds
 			+ fraction * (HordeConfig.Pressure.SpawnRingMaximumStuds - HordeConfig.Pressure.SpawnRingMinimumStuds)
 		local role = chooseWeightedRole(seed)
-		spawnRoleAt(role.Id, anchor + Vector3.new(math.cos(angle) * distance, 0, math.sin(angle) * distance), "wave")
+		spawnRoleAt(
+			role.Id,
+			anchor + Vector3.new(math.cos(angle) * distance, 0, math.sin(angle) * distance),
+			"night-corruption"
+		)
 	end
 	for player in playerStates do
-		setEvent(player, "HORDE INBOUND — " .. tostring(count) .. " CONTACTS", "Threat")
+		setEvent(player, "THE NIGHT DEEPENS — " .. tostring(count) .. " HUNTERS EMERGE", "Threat")
 	end
 end
 

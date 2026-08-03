@@ -610,9 +610,9 @@ assert(
 	afterRelay.activeObjectiveId == objectiveConfig.Objectives[2].objectiveId,
 	"the booster is now the active objective"
 )
-assert(afterRelay.escalationLevel == 1, "relay completion fires the relay-collapse wave")
-assert(#spawnedHostiles == #config.Escalation.Waves[1])
-assert(spawnedWaveIndexes[1] == 1)
+assert(afterRelay.escalationLevel == 1, "relay completion advances mission depth")
+assert(#spawnedHostiles == 0, "objectives must not inject discrete enemy waves")
+assert(#spawnedWaveIndexes == 0, "continuous night pressure owns spawning")
 assert(latestBroadcast().radio.lineId == "RelayRestored", "radio directs the squad to relocate")
 
 -- Objective 2: relocate to the roadblock. Prove the decaying hold.
@@ -642,8 +642,8 @@ assert(afterBooster.objectiveCompletedById[objectiveConfig.Objectives[2].objecti
 assert(afterBooster.requiredChainComplete == true)
 assert(afterBooster.phaseId == "Exfiltration", "charging the booster unlocks extraction")
 assert(afterBooster.extractionUnlocked == true)
-assert(afterBooster.escalationLevel == 2, "booster completion fires the roadblock swarm")
-assert(#spawnedHostiles == #config.Escalation.Waves[1] + #config.Escalation.Waves[2])
+assert(afterBooster.escalationLevel == 2, "booster completion advances mission depth")
+assert(#spawnedHostiles == 0, "booster completion must not inject a combat pack")
 assert(latestBroadcast().radio.lineId == "BoosterCharged")
 assert(findCreated("ExtractionBeacon") ~= nil, "extraction marker exists once unlocked")
 assert(latestBroadcast().extractionUnlocked == true)
@@ -671,7 +671,7 @@ assert(holdoutRead.phaseId == "Holdout", "presence heartbeat begins the holdout"
 assert(holdoutRead.holdoutDeadlineServerTimestamp == nil, "no countdown runs during the boss fight")
 assert(holdoutRead.extractionReadinessStateId == "Locked", "extraction stays locked while the boss lives")
 assert(holdoutRead.escalationLevel == 3)
-assert(#spawnedHostiles == #config.Escalation.Waves[1] + #config.Escalation.Waves[2] + #config.Escalation.Waves[3])
+assert(#spawnedHostiles == 0, "holdout transition must not inject a discrete wave")
 -- The authored Progenitor boss spawns at the extraction clearing when the holdout
 -- begins, carrying the P8 floodlight-repair fact.
 assert(#spawnedBosses == 1, "the boss anchors the holdout")
