@@ -28,7 +28,11 @@ for _, componentName in
 		"EarRight",
 		"FangLeft",
 		"FangRight",
-		"Sensor",
+		"IrradiatedEyeLeft",
+		"IrradiatedEyeRight",
+		"RottenNose",
+		"SplitLowerJaw",
+		"RadiationTumor",
 		"DorsalSpine",
 		"FrontLegLeft",
 		"FrontLegRight",
@@ -51,7 +55,7 @@ end
 for _, required in
 	{
 		'local PRESENTATION_MODEL_NAME = "ExclusionWalkerPresentation"',
-		'presentation:SetAttribute("VisualCandidateId", "blackwater-infected-wolf.v1")',
+		'presentation:SetAttribute("VisualCandidateId", "blackwater-rad-wolf.v2")',
 		'presentation:SetAttribute("VisualStatus", "ProceduralFallback")',
 		'presentation:SetAttribute("GameplayFootprintId", "enemy.exclusion_walker")',
 		'attachment.Name = "AttackOrigin"',
@@ -66,6 +70,13 @@ for _, required in
 do
 	assertThat(string.find(presenter, required, 1, true) ~= nil, "walker presenter missing: " .. required)
 end
+
+assertThat(
+	string.find(presenter, "COLORS.radiation", 1, true) ~= nil,
+	"wolf requires a readable radiation-horror accent"
+)
+assertThat(string.find(presenter, '"OpenChestWound"', 1, true) ~= nil, "wolf requires an exposed infected wound")
+assertThat(string.find(presenter, '"RadiationEyeGlow"', 1, true) ~= nil, "wolf eyes require a bounded horror glow")
 
 local _, childAddedCount = string.gsub(presenter, "ChildAdded:Connect", "")
 assertThat(childAddedCount == 1, "walker presentation must use exactly one folder listener")

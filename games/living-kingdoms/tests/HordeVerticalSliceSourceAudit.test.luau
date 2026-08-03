@@ -166,7 +166,7 @@ for _, required in
 		"pendingChoices",
 		"choice.statPreview",
 		"snapshot.runStats",
-		"CHOOSE A FIELD UPGRADE",
+		"CHOOSE ONE POWER",
 		"LK_P3_CurrentHealth",
 		"LK_HUD_LoadedRounds",
 		"LK_HUD_Objective",

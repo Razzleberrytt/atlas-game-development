@@ -59,8 +59,13 @@ assertThat(
 	"mobile must use PlayerModule's native touch stick instead of a duplicate"
 )
 assertThat(
-	contains(survivor, "humanoid.WalkSpeed = MovementLimits.MaximumPrototypeHorizontalSpeed"),
-	"native humanoid movement must use the shared server-validated speed"
+	contains(survivor, "MovementLimits.SprintingSpeed") and contains(survivor, "MovementLimits.WalkingSpeed"),
+	"native humanoid movement must support shared walking and sprint speeds"
+)
+assertThat(contains(survivor, "Enum.KeyCode.LeftShift"), "desktop sprint must use the conventional shift key")
+assertThat(
+	contains(mobile, "ContextActionService:BindAction(SPRINT_ACTION, onSprintAction, true)"),
+	"touch players require a dedicated sprint action"
 )
 
 -- Reload is a ContextActionService touch button in the same auto-arranged cluster

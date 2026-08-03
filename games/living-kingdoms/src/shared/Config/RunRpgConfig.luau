@@ -177,25 +177,25 @@ local UpgradeCatalog = table.freeze({
 	table.freeze({
 		upgradeId = UpgradeIds.OverpressureRounds,
 		familyId = UpgradeFamilyIds.Firepower,
-		displayName = "OVERPRESSURE ROUNDS",
+		displayName = "HEAVY ROUNDS",
 		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.HairTrigger,
 		familyId = UpgradeFamilyIds.Firepower,
-		displayName = "HAIR TRIGGER",
+		displayName = "FASTER FIRING",
 		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.EchoChamber,
 		familyId = UpgradeFamilyIds.AmmunitionReload,
-		displayName = "ECHO CHAMBER",
+		displayName = "AMMO SAVER",
 		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.CullProtocol,
 		familyId = UpgradeFamilyIds.Firepower,
-		displayName = "CULL PROTOCOL",
+		displayName = "FINISHER",
 		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
@@ -207,37 +207,37 @@ local UpgradeCatalog = table.freeze({
 	table.freeze({
 		upgradeId = UpgradeIds.SpecialistMunitions,
 		familyId = UpgradeFamilyIds.Firepower,
-		displayName = "SPECIALIST MUNITIONS",
+		displayName = "MONSTER HUNTER",
 		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.CombatLoader,
 		familyId = UpgradeFamilyIds.AmmunitionReload,
-		displayName = "COMBAT LOADER",
+		displayName = "QUICK RELOAD",
 		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.ExpandedFeed,
 		familyId = UpgradeFamilyIds.AmmunitionReload,
-		displayName = "EXPANDED FEED",
+		displayName = "BIGGER MAGAZINE",
 		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.ScavengerReach,
 		familyId = UpgradeFamilyIds.AmmunitionReload,
-		displayName = "SCAVENGER REACH",
+		displayName = "LOOT MAGNET",
 		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.LastMagazine,
 		familyId = UpgradeFamilyIds.AmmunitionReload,
-		displayName = "LAST MAGAZINE",
+		displayName = "LAST STAND",
 		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.TraumaPlating,
 		familyId = UpgradeFamilyIds.Survival,
-		displayName = "TRAUMA PLATING",
+		displayName = "THICK SKIN",
 		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 	table.freeze({
@@ -273,7 +273,7 @@ local UpgradeCatalog = table.freeze({
 	table.freeze({
 		upgradeId = UpgradeIds.FieldDiscipline,
 		familyId = UpgradeFamilyIds.CooperativeUtility,
-		displayName = "FIELD DISCIPLINE",
+		displayName = "FAST LEARNER",
 		implementationStateId = ImplementationStateIds.Implemented,
 	}),
 })

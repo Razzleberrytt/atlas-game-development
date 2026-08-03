@@ -10,6 +10,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
+local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local Controller = {}
@@ -58,6 +59,9 @@ local upgradeTitle: TextLabel? = nil
 local upgradeContainer: Frame? = nil
 local playerListWasDisabled = false
 local hasUpgradeChoices = false
+local lastObservedLevel = -1
+local levelCelebration: Frame? = nil
+local levelCelebrationText: TextLabel? = nil
 
 local COLORS = table.freeze({
 	panel = Color3.fromRGB(12, 15, 18),
@@ -183,9 +187,17 @@ local function updateMissionPresentation(serverTimestamp: number)
 	local objective = objectiveLabel
 	if objective ~= nil then
 		local text = readStringAttribute("LK_HUD_Objective", "Regroup and survive")
+		local destination = readStringAttribute("LK_HUD_ObjectiveDestination", "")
+		local progress = readNumberAttribute("LK_HUD_ObjectiveProgress", 0)
 		local extractionUnlocked = localPlayer:GetAttribute("LK_HUD_ExtractionUnlocked") == true
 		objective.Text = if extractionUnlocked
 			then "OBJECTIVE  //  " .. text .. "  //  EXTRACT"
+			elseif destination ~= "" then string.format(
+				"OBJECTIVE  //  %s  //  %s  //  %d%%",
+				text,
+				destination,
+				math.floor(progress * 100 + 0.5)
+			)
 			else "OBJECTIVE  //  " .. text
 	end
 	local radio = radioLabel
@@ -213,6 +225,26 @@ local function updateMissionPresentation(serverTimestamp: number)
 			extraction.Visible = false
 		end
 	end
+end
+
+local function showLevelCelebration(level: number)
+	local flash = levelCelebration
+	local title = levelCelebrationText
+	if flash == nil or title == nil then
+		return
+	end
+	title.Text = string.format("LEVEL %d!\nPOWER INCREASE AVAILABLE", level)
+	flash.BackgroundTransparency = 0.2
+	flash.Visible = true
+	title.TextTransparency = 0
+	TweenService:Create(flash, TweenInfo.new(1.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		BackgroundTransparency = 1,
+	}):Play()
+	task.delay(1.25, function()
+		if flash ~= nil then
+			flash.Visible = false
+		end
+	end)
 end
 
 local function updateLifePresentation()
@@ -318,7 +350,7 @@ local function renderUpgradeChoices(choices: { any })
 	end
 	hasUpgradeChoices = true
 	if upgradeTitle ~= nil then
-		upgradeTitle.Text = "FIELD LEVEL UP  //  CHOOSE A FIELD UPGRADE"
+		upgradeTitle.Text = "LEVEL UP!  //  CHOOSE ONE POWER"
 	end
 	for index, choice in choices do
 		if type(choice) ~= "table" or type(choice.id) ~= "string" then
@@ -327,7 +359,7 @@ local function renderUpgradeChoices(choices: { any })
 		local button = Instance.new("TextButton")
 		button.Name = "Choice" .. tostring(index)
 		button.LayoutOrder = index
-		button.Size = UDim2.new(1, -16, 0, 72)
+		button.Size = UDim2.new(1, -16, 0, 82)
 		button.BackgroundColor3 = Color3.fromRGB(24, 20, 23)
 		button.BorderSizePixel = 0
 		button.AutoButtonColor = true
@@ -338,7 +370,7 @@ local function renderUpgradeChoices(choices: { any })
 		button.RichText = true
 		local statPreview = if type(choice.statPreview) == "string" then choice.statPreview else "RUN POWER INCREASE"
 		button.Text = string.format(
-			'<b>%s</b>   <font color="#C7A85F">[%d/%d]</font>\n<font color="#F2C65D">%s</font>\n<font color="#C5CBC5">%s</font>',
+			'<b>%s</b>   <font color="#C7A85F">[%d/%d]</font>\n<font color="#F2C65D">%s</font>\n<font color="#C5CBC5">%s</font>\n<font color="#FFFFFF"><b>TAP / CLICK TO CHOOSE</b></font>',
 			string.upper(tostring(choice.name or choice.id)),
 			tonumber(choice.stacks) or 0,
 			tonumber(choice.maximumStacks) or 1,
@@ -416,6 +448,10 @@ local function applyProgressionState(snapshot: any)
 		xpText.Text = if xpForNext <= 0 then "MAX LEVEL" else string.format("XP  %d / %d", xp, xpForNext)
 	end
 	setBar(xpFill, if xpForNext <= 0 then 1 else xp / xpForNext)
+	if lastObservedLevel >= 0 and level > lastObservedLevel then
+		showLevelCelebration(level)
+	end
+	lastObservedLevel = level
 
 	local runStats = snapshot.runStats
 	if type(runStats) == "table" then
@@ -657,6 +693,7 @@ local function createPresentation()
 	local overlay = Instance.new("Frame")
 	overlay.Name = "UpgradeOverlay"
 	overlay.Size = UDim2.fromScale(1, 1)
+	overlay.BackgroundColor3 = Color3.fromRGB(2, 4, 5)
 	overlay.BackgroundTransparency = 1
 	overlay.BorderSizePixel = 0
 	overlay.Visible = false
@@ -666,9 +703,9 @@ local function createPresentation()
 	local modal = createPanel(
 		overlay,
 		"UpgradeModal",
-		UDim2.new(1, -18, 0.5, -36),
-		UDim2.fromOffset(400, 310),
-		Vector2.new(1, 0.5)
+		UDim2.fromScale(0.5, 0.5),
+		UDim2.fromOffset(470, 350),
+		Vector2.new(0.5, 0.5)
 	)
 	modal.BackgroundTransparency = 0.02
 	modal.ZIndex = 21
@@ -695,6 +732,32 @@ local function createPresentation()
 	layout.VerticalAlignment = Enum.VerticalAlignment.Center
 	layout.Parent = container
 	upgradeContainer = container
+
+	local celebration = Instance.new("Frame")
+	celebration.Name = "LevelCelebration"
+	celebration.Size = UDim2.fromScale(1, 1)
+	celebration.BackgroundColor3 = Color3.fromRGB(255, 190, 55)
+	celebration.BackgroundTransparency = 1
+	celebration.BorderSizePixel = 0
+	celebration.Visible = false
+	celebration.ZIndex = 40
+	celebration.Parent = gui
+	local celebrationText = createLabel(
+		celebration,
+		"CelebrationText",
+		UDim2.new(0.5, -300, 0.28, 0),
+		UDim2.fromOffset(600, 130),
+		34,
+		Enum.Font.GothamBlack,
+		Enum.TextXAlignment.Center
+	)
+	celebrationText.TextColor3 = Color3.fromRGB(255, 247, 210)
+	celebrationText.TextStrokeColor3 = Color3.fromRGB(86, 39, 10)
+	celebrationText.TextStrokeTransparency = 0.1
+	celebrationText.TextWrapped = true
+	celebrationText.ZIndex = 41
+	levelCelebration = celebration
+	levelCelebrationText = celebrationText
 
 	gui.Parent = localPlayer:WaitForChild("PlayerGui")
 	screenGui = gui
@@ -771,6 +834,9 @@ function Controller.stop()
 	lastProgressionGainSequence = -1
 	lastSelectionSequence = -1
 	hasUpgradeChoices = false
+	lastObservedLevel = -1
+	levelCelebration = nil
+	levelCelebrationText = nil
 	runStatsPrimaryLabel = nil
 	runStatsSecondaryLabel = nil
 end

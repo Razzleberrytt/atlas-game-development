@@ -9,6 +9,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
 
 local CameraController = require(script.Parent.CameraController)
 local MovementLimits = require(ReplicatedStorage.Shared.Config.MovementLimits)
@@ -24,6 +25,8 @@ type LifecycleState = {
 	localPlayer: Player?,
 	playerControls: PlayerControls?,
 	characterAddedConnection: RBXScriptConnection?,
+	inputBeganConnection: RBXScriptConnection?,
+	inputEndedConnection: RBXScriptConnection?,
 }
 
 local SurvivorController = {}
@@ -34,7 +37,25 @@ local state: LifecycleState = {
 	localPlayer = nil,
 	playerControls = nil,
 	characterAddedConnection = nil,
+	inputBeganConnection = nil,
+	inputEndedConnection = nil,
 }
+
+local sprinting = false
+
+local function applyMovementSpeed()
+	local localPlayer = state.localPlayer
+	local character = if localPlayer == nil then nil else localPlayer.Character
+	local humanoid = if character == nil then nil else character:FindFirstChildOfClass("Humanoid")
+	if humanoid ~= nil and humanoid.Health > 0 then
+		humanoid.WalkSpeed = if sprinting then MovementLimits.SprintingSpeed else MovementLimits.WalkingSpeed
+	end
+end
+
+function SurvivorController.setSprinting(enabled: boolean)
+	sprinting = enabled
+	applyMovementSpeed()
+end
 
 local function configureCharacter(character: Model)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
@@ -46,7 +67,7 @@ local function configureCharacter(character: Model)
 		return
 	end
 
-	humanoid.WalkSpeed = MovementLimits.MaximumPrototypeHorizontalSpeed
+	humanoid.WalkSpeed = if sprinting then MovementLimits.SprintingSpeed else MovementLimits.WalkingSpeed
 	humanoid.AutoRotate = true
 end
 
@@ -85,6 +106,16 @@ function SurvivorController.start()
 	CameraController.setKeyboardPanningEnabled(false)
 	CameraController.setSurvivorFollowEnabled(true)
 	state.characterAddedConnection = localPlayer.CharacterAdded:Connect(configureCharacter)
+	state.inputBeganConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+		if not gameProcessed and input.KeyCode == Enum.KeyCode.LeftShift then
+			SurvivorController.setSprinting(true)
+		end
+	end)
+	state.inputEndedConnection = UserInputService.InputEnded:Connect(function(input)
+		if input.KeyCode == Enum.KeyCode.LeftShift then
+			SurvivorController.setSprinting(false)
+		end
+	end)
 
 	local character = localPlayer.Character
 	if character ~= nil then
@@ -104,6 +135,15 @@ function SurvivorController.stop()
 		connection:Disconnect()
 		state.characterAddedConnection = nil
 	end
+	if state.inputBeganConnection ~= nil then
+		state.inputBeganConnection:Disconnect()
+		state.inputBeganConnection = nil
+	end
+	if state.inputEndedConnection ~= nil then
+		state.inputEndedConnection:Disconnect()
+		state.inputEndedConnection = nil
+	end
+	sprinting = false
 
 	-- Never strand the player with disabled controls during teardown or a hot
 	-- reload in Studio.
