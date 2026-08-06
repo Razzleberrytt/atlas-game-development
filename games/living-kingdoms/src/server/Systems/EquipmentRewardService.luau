@@ -1,13 +1,10 @@
 --!strict
 
---[[
-	VS-0107 authoritative, run-scoped equipment reward pipeline.
+-- Blueprint v1.9 authoritative, run-scoped equipment reward pipeline.
+-- The same trusted reward context reproduces the same content signature, while
+-- every newly-created item receives a globally unique server-owned instance ID.
 
-	Only trusted server owners call claimReward after confirmed elite or boss
-	completion. The service deterministically rolls one immutable item and rejects
-	duplicate source claims. Inventory persistence is deliberately a later owner.
-]]
-
+local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Contracts = require(ReplicatedStorage.Shared.Equipment.EquipmentRewardContracts)
@@ -81,9 +78,22 @@ local function eligibleDefinitions(rarityId: string, source): { any }
 	return eligible
 end
 
+local function contentSignature(definition: any, rarityId: string, power: number, sourceId: string, rollSeed: number): string
+	return table.concat({
+		"v1",
+		definition.Id,
+		definition.Version,
+		rarityId,
+		tostring(power),
+		sourceId,
+		tostring(rollSeed),
+	}, "|")
+end
+
 local function copyReward(reward: EquipmentReward): EquipmentReward
 	return table.freeze({
 		InstanceId = reward.InstanceId,
+		ContentSignature = reward.ContentSignature,
 		DefinitionId = reward.DefinitionId,
 		DefinitionVersion = reward.DefinitionVersion,
 		DisplayName = reward.DisplayName,
@@ -143,7 +153,8 @@ function EquipmentRewardService:claimReward(sourceId: RewardSourceId): RewardCla
 	local rollSeed = deriveSeed(state.Seed, sourceId, 71)
 
 	local reward: EquipmentReward = table.freeze({
-		InstanceId = string.format("%s:%s:%d", state.RunId, sourceId, rollSeed),
+		InstanceId = "item_" .. HttpService:GenerateGUID(false),
+		ContentSignature = contentSignature(definition, rarityId, power, sourceId, rollSeed),
 		DefinitionId = definition.Id,
 		DefinitionVersion = definition.Version,
 		DisplayName = definition.DisplayName,
