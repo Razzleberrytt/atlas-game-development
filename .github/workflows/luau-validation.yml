@@ -3,8 +3,11 @@ name: Luau validation
 on:
   pull_request:
     paths:
+      - "AGENTS.md"
+      - ".gitignore"
       - "games/living-kingdoms/**"
       - "docs/**"
+      - "scripts/validate_living_kingdoms_layout.py"
       - "rokit.toml"
       - "stylua.toml"
       - "selene.toml"
@@ -13,8 +16,11 @@ on:
     branches:
       - main
     paths:
+      - "AGENTS.md"
+      - ".gitignore"
       - "games/living-kingdoms/**"
       - "docs/**"
+      - "scripts/validate_living_kingdoms_layout.py"
       - "rokit.toml"
       - "stylua.toml"
       - "selene.toml"
@@ -31,6 +37,10 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Validate repository contract
+        shell: bash
+        run: python scripts/validate_living_kingdoms_layout.py
 
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2

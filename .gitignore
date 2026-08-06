@@ -1,0 +1,41 @@
+# Operating-system and editor files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Roblox/Rojo generated output
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+*.rbxl.lock
+sourcemap.json
+build/
+dist/
+out/
+
+# Tool caches and temporary files
+.rojo-cache/
+.lune/
+.cache/
+.tmp/
+tmp/
+__pycache__/
+*.py[cod]
+
+# Test and coverage artifacts
+coverage/
+*.lcov
+
+# Keep deliberately tracked Roblox model files by adding a narrow negate rule
+# beside the owning directory and documenting the reason in that directory.
