@@ -16,6 +16,7 @@ local RunService = game:GetService("RunService")
 local ExpeditionConfig = require(game:GetService("ReplicatedStorage").Shared.Config.ExpeditionConfig)
 local ExpeditionServerBootstrap = require(script.Parent.ExpeditionServerBootstrap)
 local ExpeditionRoomPlacementService = require(script.Parent.ExpeditionRoomPlacementService)
+local ExpeditionRoomBarrierStateService = require(script.Parent.ExpeditionRoomBarrierStateService)
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 
 export type StartOptions = {
@@ -70,6 +71,7 @@ local function driveStep()
 		return
 	end
 	local stepResult = bootstrap:step(nowUnix())
+	ExpeditionRoomBarrierStateService.update(bootstrap:getActiveEncounterContext())
 	if stepResult.Accepted ~= true
 		and stepResult.ReasonId ~= "EncounterInProgress"
 		and stepResult.ReasonId ~= "PhaseMinimumDuration"
@@ -141,6 +143,7 @@ function Service.startExpedition(options: StartOptions?): any
 		return result(false, placement.ReasonId, nil)
 	end
 
+	ExpeditionRoomBarrierStateService.reset()
 	activeBootstrap = bootstrap
 	driveStep()
 	return result(true, "ExpeditionStarted", activeBootstrap:getSnapshot())
@@ -154,6 +157,7 @@ function Service.stopExpedition(reasonId: string?): any
 	local snapshot = bootstrap:getSnapshot()
 	bootstrap:destroy()
 	activeBootstrap = nil
+	ExpeditionRoomBarrierStateService.reset()
 	ExpeditionRoomPlacementService.destroy()
 	return result(true, reasonId or "ExpeditionStopped", snapshot)
 end
@@ -182,6 +186,7 @@ function Service.stop()
 		activeBootstrap:destroy()
 		activeBootstrap = nil
 	end
+	ExpeditionRoomBarrierStateService.reset()
 	ExpeditionRoomPlacementService.destroy()
 end
 

@@ -32,6 +32,7 @@ export type Service = {
 	step: (self: Service, nowUnix: number) -> { Accepted: boolean, ReasonId: string },
 	getSnapshot: (self: Service) -> ExpeditionSnapshot?,
 	getRoomPlan: (self: Service) -> any,
+	getActiveEncounterContext: (self: Service) -> any?,
 	destroy: (self: Service) -> (),
 }
 
@@ -185,6 +186,12 @@ function Bootstrap:getRoomPlan(): any
 	local state: Internal = self :: any
 	if state.Destroyed then return nil end
 	return state.RoomPlan
+end
+
+function Bootstrap:getActiveEncounterContext(): any?
+	local state: Internal = self :: any
+	if state.Destroyed then return nil end
+	return state.Coordinator:getActiveContext()
 end
 
 function Bootstrap:destroy()
