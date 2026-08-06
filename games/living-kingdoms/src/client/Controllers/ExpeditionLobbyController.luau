@@ -1,0 +1,168 @@
+--!strict
+
+-- Minimal expedition lobby UI. The client can request only its own membership and
+-- ready state; the server validates every request and exclusively decides launch.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Controller = {}
+local player = Players.LocalPlayer
+local network = ReplicatedStorage:WaitForChild("ExpeditionLobbyNetwork")
+local request = network:WaitForChild("Request") :: RemoteFunction
+local stateRemote = network:WaitForChild("State") :: RemoteEvent
+local readState = network:WaitForChild("ReadState") :: RemoteFunction
+
+local started = false
+local connection: RBXScriptConnection? = nil
+local gui: ScreenGui? = nil
+local statusLabel: TextLabel? = nil
+local membersLabel: TextLabel? = nil
+local actionButton: TextButton? = nil
+local leaveButton: TextButton? = nil
+local currentSnapshot: any = nil
+local requestInFlight = false
+
+local function validSnapshot(value: any): boolean
+	return type(value) == "table"
+		and type(value.Members) == "table"
+		and type(value.MemberCount) == "number"
+		and type(value.MinimumPlayers) == "number"
+		and type(value.MaximumPlayers) == "number"
+		and type(value.AllReady) == "boolean"
+		and type(value.LaunchPending) == "boolean"
+end
+
+local function localMember(snapshot: any): any
+	for _, member in snapshot.Members do
+		if member.PlayerId == player.UserId then return member end
+	end
+	return nil
+end
+
+local function createLabel(parent: Instance, size: UDim2, position: UDim2, textSize: number): TextLabel
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Size = size
+	label.Position = position
+	label.Font = Enum.Font.Gotham
+	label.TextSize = textSize
+	label.TextColor3 = Color3.fromRGB(235, 240, 245)
+	label.TextXAlignment = Enum.TextXAlignment.Left
+	label.TextYAlignment = Enum.TextYAlignment.Top
+	label.Parent = parent
+	return label
+end
+
+local function createButton(parent: Instance, text: string, position: UDim2): TextButton
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.fromOffset(180, 42)
+	button.Position = position
+	button.BackgroundColor3 = Color3.fromRGB(44, 74, 96)
+	button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	button.Font = Enum.Font.GothamBold
+	button.TextSize = 16
+	button.Text = text
+	button.AutoButtonColor = true
+	button.Parent = parent
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = button
+	return button
+end
+
+local function createGui()
+	local screen = Instance.new("ScreenGui")
+	screen.Name = "LK_ExpeditionLobby"
+	screen.ResetOnSpawn = false
+	screen.DisplayOrder = 18
+	screen.Parent = player:WaitForChild("PlayerGui")
+	gui = screen
+
+	local panel = Instance.new("Frame")
+	panel.AnchorPoint = Vector2.new(0, 0.5)
+	panel.Position = UDim2.new(0, 24, 0.5, 0)
+	panel.Size = UDim2.fromOffset(390, 330)
+	panel.BackgroundColor3 = Color3.fromRGB(18, 25, 32)
+	panel.BackgroundTransparency = 0.08
+	panel.Parent = screen
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 12)
+	corner.Parent = panel
+
+	local title = createLabel(panel, UDim2.new(1, -32, 0, 36), UDim2.fromOffset(16, 14), 22)
+	title.Font = Enum.Font.GothamBold
+	title.Text = "EXPEDITION LOBBY"
+
+	statusLabel = createLabel(panel, UDim2.new(1, -32, 0, 48), UDim2.fromOffset(16, 58), 15)
+	membersLabel = createLabel(panel, UDim2.new(1, -32, 0, 145), UDim2.fromOffset(16, 108), 15)
+	actionButton = createButton(panel, "JOIN", UDim2.new(0, 16, 1, -58))
+	leaveButton = createButton(panel, "LEAVE", UDim2.new(1, -196, 1, -58))
+
+	actionButton.Activated:Connect(function()
+		if requestInFlight or currentSnapshot == nil then return end
+		requestInFlight = true
+		local member = localMember(currentSnapshot)
+		local ok, result = pcall(function()
+			if member == nil then return request:InvokeServer("Join") end
+			return request:InvokeServer("SetReady", { Ready = not member.Ready })
+		end)
+		requestInFlight = false
+		if ok and type(result) == "table" and validSnapshot(result.Snapshot) then
+			currentSnapshot = result.Snapshot
+		end
+	end)
+
+	leaveButton.Activated:Connect(function()
+		if requestInFlight then return end
+		requestInFlight = true
+		pcall(function() request:InvokeServer("Leave") end)
+		requestInFlight = false
+	end)
+end
+
+local function render(snapshot: any)
+	currentSnapshot = snapshot
+	if gui == nil or statusLabel == nil or membersLabel == nil or actionButton == nil or leaveButton == nil then return end
+	local member = localMember(snapshot)
+	statusLabel.Text = string.format("Party %d/%d  •  Minimum %d", snapshot.MemberCount, snapshot.MaximumPlayers, snapshot.MinimumPlayers)
+	if snapshot.LaunchPending then
+		statusLabel.Text ..= "\nLaunching expedition..."
+	elseif snapshot.AllReady then
+		statusLabel.Text ..= "\nAll operatives ready"
+	else
+		statusLabel.Text ..= "\nWaiting for ready operatives"
+	end
+
+	local lines = {}
+	for _, entry in snapshot.Members do
+		table.insert(lines, string.format("%s  —  %s", entry.DisplayName, if entry.Ready then "READY" else "NOT READY"))
+	end
+	if #lines == 0 then table.insert(lines, "No operatives have joined.") end
+	membersLabel.Text = table.concat(lines, "\n")
+
+	actionButton.Text = if member == nil then "JOIN" elseif member.Ready then "UNREADY" else "READY"
+	actionButton.Active = not snapshot.LaunchPending
+	leaveButton.Visible = member ~= nil
+	leaveButton.Active = member ~= nil and not snapshot.LaunchPending
+end
+
+function Controller.start()
+	if started then return end
+	started = true
+	createGui()
+	connection = stateRemote.OnClientEvent:Connect(function(snapshot)
+		if validSnapshot(snapshot) then render(snapshot) end
+	end)
+	local ok, snapshot = pcall(function() return readState:InvokeServer() end)
+	if ok and validSnapshot(snapshot) then render(snapshot) end
+end
+
+function Controller.stop()
+	if not started then return end
+	started = false
+	if connection then connection:Disconnect(); connection = nil end
+	if gui then gui:Destroy(); gui = nil end
+end
+
+return Controller
