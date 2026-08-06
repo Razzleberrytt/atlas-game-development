@@ -30,6 +30,7 @@ local MatchResultController = require(script.Controllers.MatchResultController)
 local MissionController = require(script.Controllers.MissionController)
 local MissionObjectPresentationController = require(script.Controllers.MissionObjectPresentationController)
 local ExpeditionHUDController = require(script.Controllers.ExpeditionHUDController)
+local ExpeditionResultController = require(script.Controllers.ExpeditionResultController)
 local HordeHUDController = require(script.Controllers.HordeHUDController)
 local HordeEffectsController = require(script.Controllers.HordeEffectsController)
 local HordeSpecialTelegraphController = require(script.Controllers.HordeSpecialTelegraphController)
@@ -49,8 +50,6 @@ SurvivorController.start()
 
 WeaponController.init()
 WeaponController.start()
--- Touch controls compose onto the movement and reload paths above; they activate
--- only on a touch device without a keyboard, so desktop input is unaffected.
 MobileControlsController.start()
 WeaponPresentationController.start()
 WeaponAudioController.start()
@@ -70,17 +69,10 @@ EnvironmentAmbienceController.start()
 RouteGuidePresentationController.start()
 LandmarkAccentPresentationController.start()
 MissionController.start()
--- The terminal debrief renders only the server's validated result snapshot and
--- makes no request; it stays hidden until the operation resolves.
 MatchResultController.start()
 MissionObjectPresentationController.start()
--- The expedition HUD is read-only. It renders the sanitized expedition feed and
--- exposes no completion, reward, replay, or start/stop request path.
 ExpeditionHUDController.start()
--- HordeHUDController is the single combat HUD. It renders Field XP, levels, and
--- upgrade offers sourced from ProgressionNetwork; the standalone
--- RunProgressionHUDController is intentionally left uninitialized to avoid a
--- duplicate XP bar and a second upgrade overlay.
+ExpeditionResultController.start()
 HordeHUDController.start()
 SurvivalHUDController.start()
 RPGMenuController.start()
@@ -88,13 +80,9 @@ HordeEffectsController.start()
 HordeSpecialTelegraphController.start()
 SpecialEncounterTelegraphController.start()
 MassacreCrescendoController.start()
--- RPG-0111 relic bar and reward interface. It is the only client surface that
--- may request a relic choice or replacement, and it renders only the server's
--- safe run-build snapshot.
 RunBuildHUDController.start()
 CriticalConditionController.start()
 PresentationSettingsController.start()
--- Mission presentation starts first; class selection then requests authoritative state.
 ClassSelectionController.start()
 ClassActionController.start()
 WeaponSelectionController.start()
