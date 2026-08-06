@@ -24,12 +24,56 @@ local function part(name: string, size: Vector3, cframe: CFrame, parent: Instanc
 	return value
 end
 
+local function doorwayFixture(name: string, cframe: CFrame, roleId: string, parent: Instance)
+	local fixture = Instance.new("Model")
+	fixture.Name = name
+	fixture:SetAttribute("ExpeditionDoorwayFixture", true)
+	fixture:SetAttribute("RoomRoleId", roleId)
+
+	local frameColor = if roleId == "Boss" then Color3.fromRGB(68, 108, 150)
+		elseif roleId == "Elite" then Color3.fromRGB(103, 70, 130)
+		else Color3.fromRGB(73, 82, 89)
+	local energyColor = if roleId == "Boss" then Color3.fromRGB(75, 180, 255)
+		elseif roleId == "Elite" then Color3.fromRGB(181, 93, 255)
+		else Color3.fromRGB(255, 176, 82)
+
+	for _, offset in { -4.5, 4.5 } do
+		local post = part("DoorPost", Vector3.new(1, 10, 1.5), cframe * CFrame.new(offset, 4.5, 0), fixture)
+		post.Material = Enum.Material.CorrodedMetal
+		post.Color = frameColor
+	end
+	local header = part("DoorHeader", Vector3.new(10, 1, 1.5), cframe * CFrame.new(0, 9, 0), fixture)
+	header.Material = Enum.Material.CorrodedMetal
+	header.Color = frameColor
+
+	local barrier = part("EnergyBarrier", Vector3.new(8, 8, 0.35), cframe * CFrame.new(0, 4, 0), fixture)
+	barrier.Material = Enum.Material.ForceField
+	barrier.Color = energyColor
+	barrier.Transparency = 1
+	barrier.CanCollide = false
+	barrier.CastShadow = false
+	barrier:SetAttribute("ExpeditionRevealBarrier", true)
+	barrier:SetAttribute("BaseTransparency", 0.38)
+
+	local light = Instance.new("PointLight")
+	light.Name = "BarrierGlow"
+	light.Color = energyColor
+	light.Brightness = 0
+	light.Range = 13
+	light.Shadows = false
+	light.Parent = barrier
+
+	fixture.PrimaryPart = barrier
+	fixture.Parent = parent
+end
+
 local function buildRoom(placement: any, seed: number, parent: Instance)
 	local model = Instance.new("Model")
 	model.Name = string.format("%02d_%s", placement.Index, placement.RoomId)
 	model:SetAttribute("RoomIndex", placement.Index)
 	model:SetAttribute("RoomId", placement.RoomId)
 	model:SetAttribute("RoomRoleId", placement.RoleId)
+	model:SetAttribute("RevealState", "Hidden")
 
 	local center = placement.Center
 	local size = placement.Size
@@ -41,8 +85,6 @@ local function buildRoom(placement: any, seed: number, parent: Instance)
 	west.Material = Enum.Material.Rock
 	east.Material = Enum.Material.Rock
 
-	-- Broken ceiling ribs preserve the open graybox readability while adding a
-	-- stronger silhouette and giving lights something to rake across.
 	for offset = -1, 1 do
 		local rib = part(
 			"CeilingRib",
@@ -54,13 +96,17 @@ local function buildRoom(placement: any, seed: number, parent: Instance)
 		rib.Color = Color3.fromRGB(61, 65, 69)
 	end
 
-	local entrance = part("EntranceConnector", Vector3.new(8, 8, 1), CFrame.new(placement.Entrance.x, placement.Entrance.y, placement.Entrance.z), model)
+	local entranceCFrame = CFrame.new(placement.Entrance.x, placement.Entrance.y, placement.Entrance.z)
+	local exitCFrame = CFrame.new(placement.Exit.x, placement.Exit.y, placement.Exit.z)
+	local entrance = part("EntranceConnector", Vector3.new(8, 8, 1), entranceCFrame, model)
 	entrance.CanCollide = false
 	entrance.Transparency = 1
-	local exit = part("ExitConnector", Vector3.new(8, 8, 1), CFrame.new(placement.Exit.x, placement.Exit.y, placement.Exit.z), model)
+	local exit = part("ExitConnector", Vector3.new(8, 8, 1), exitCFrame, model)
 	exit.CanCollide = false
 	exit.Transparency = 1
 
+	doorwayFixture("EntranceReveal", entranceCFrame, placement.RoleId, model)
+	doorwayFixture("ExitReveal", exitCFrame, placement.RoleId, model)
 	ExpeditionEnvironmentBuilder.decorate(model, placement, seed)
 	model.PrimaryPart = floor
 	model.Parent = parent
