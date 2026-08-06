@@ -1,54 +1,90 @@
 # Atlas Game Development
 
-An AI-first development framework and home of **Living Kingdoms**, the temporary working title for a brutally difficult cooperative isometric survival game on Roblox.
+Atlas is the GitHub-first development home for a **cooperative first-person action RPG on Roblox**.
 
-## Current objective
+The game combines readable FPS combat, Diablo-style randomized loot and buildcraft, WoW-like long-term progression and world access, and replayable cooperative expeditions.
 
-Build one finite, authored survival operation in which separated players find one another, combine specialist abilities, manage scarce ammunition and recovery resources, withstand escalating enemy pressure, and complete an extraction or final objective.
+## Player promise
 
-The initial MVP targets 1–4 players while keeping the architecture compatible with a later maximum of 8 cooperative players.
+Every meaningful session should provide:
 
-## Operating rule
+1. **Discovery** — a place, route, enemy, secret, item interaction, clue, or system interaction the player did not fully expect.
+2. **Growth** — power, options, access, knowledge, mastery, collection progress, or social progress.
+3. **Story** — at least one moment worth describing to another player.
 
-Atlas exists to help ship the game—not delay it. Infrastructure work is time-boxed, `main` stays playable, and each implementation task should produce one testable result.
+## Primary production rule
+
+> Build one polished, replayable expedition before expanding into a large world.
+
+The first product is a five-to-ten-minute vertical slice containing:
+
+- one preparation room;
+- one short outdoor route;
+- one optional secret;
+- one procedurally assembled dungeon route;
+- three enemy families;
+- one elite encounter;
+- one boss;
+- randomized loot and equipment;
+- saving;
+- solo and cooperative play.
+
+The slice succeeds when outside testers voluntarily start another run.
+
+## Source of truth
+
+The canonical roadmap and active TODO live in:
+
+- [`docs/roadmap/UNIFIED-MASTER-ROADMAP.md`](docs/roadmap/UNIFIED-MASTER-ROADMAP.md)
+
+Existing architecture, systems, and validated gameplay are assets to reuse. They are not automatically product requirements when they conflict with the unified blueprint.
+
+## Current sprint — VS-01 Expedition Foundation
+
+- [x] Establish the unified product direction.
+- [x] Preserve the existing server-authoritative Roblox/Rojo architecture.
+- [x] Define the first expedition contract and completion gates.
+- [ ] Add expedition runtime state ownership.
+- [ ] Add deterministic room-sequence assembly.
+- [ ] Connect existing combat encounters to expedition phases.
+- [ ] Add one elite reward and one boss reward through the equipment pipeline.
+- [ ] Add end-of-run results and replay prompt.
+- [ ] Validate the complete loop in Roblox Studio with 1, 2, and 4 players.
 
 ## Repository map
 
-- `docs/bible/` — canonical product vision and game-design decisions
-- `docs/specifications/` — source-of-truth behavior for game objects and systems when added
+- `docs/roadmap/` — canonical roadmap, milestones, and active TODO
+- `docs/bible/` — supporting product vision and design history
+- `docs/specifications/` — source-of-truth system behavior
 - `docs/architecture/` — technical boundaries and engineering rules
-- `docs/roadmap/` — ordered milestones and executable tasks
-- `docs/decisions/` — architecture and design decision records
-- `docs/production/` — development workflow and Definition of Done
-- `prompts/` — reusable Codex prompts
-- `templates/` — specification, task, decision, and bug templates
-- `games/living-kingdoms/` — Roblox/Rojo project home
+- `docs/decisions/` — design and architecture decisions
+- `docs/production/` — local workflow, validation, and Definition of Done
+- `games/living-kingdoms/` — Roblox/Rojo project
+- `prompts/` — reusable agent prompts
+- `templates/` — task, specification, decision, and bug templates
 
-## Start here
+## Engineering laws
 
-Read these files in order:
+1. The server owns valuable game truth.
+2. `main` stays playable.
+3. Each implementation task produces one testable result.
+4. Reusable engines outrank one-off content piles.
+5. Randomness changes situations, not the basic rules.
+6. Friends should usually be able to play together despite progression gaps.
+7. The polished core loop outranks the eventual feature list.
 
-1. `docs/bible/00-project-charter.md`
-2. `docs/bible/01-mvp.md`
-3. `docs/architecture/technical-blueprint.md`
-4. `docs/roadmap/MASTER-ROADMAP.md`
-5. `docs/roadmap/P6-P12-EXECUTION-ROADMAP.md`
-6. `docs/decisions/0001-cooperative-survival-pivot.md`
-7. `docs/decisions/0002-automatic-combat-targeting.md`
-8. `prompts/codex-master-prompt.md`
+## Agent start order
 
-For Windows installation and Roblox Studio synchronization, follow the [Windows local setup guide](docs/production/LOCAL-SETUP.md).
-For Luau formatting and static analysis, follow the [Luau tooling guide](docs/production/LUAU-TOOLING.md).
-For the reusable Studio launch check and first successful result, see the [smoke-test record](docs/production/SMOKE-TEST.md).
-For the current build's deploy path and an honest account of what is and is not validated before a public launch, see the [deployable-build record](docs/production/DEPLOYABLE-BUILD.md).
+1. Read this file.
+2. Read `docs/roadmap/UNIFIED-MASTER-ROADMAP.md`.
+3. Read the nearest `AGENTS.md` for the files being changed.
+4. Inspect existing contracts/config/services before creating a parallel system.
+5. Implement the first unchecked task in the active sprint unless blocked.
+6. Record acceptance evidence honestly; never invent Studio results.
 
 ## Project status
 
-**Atlas version:** 0.1  
-**Living Kingdoms phase:** P6 is signed off for the current prototype (`P6-0101`–`P6-0107` implementation and telemetry; a qualitative multiplayer sign-off recorded in PR #165). No scarcity tuning was applied and no numeric results were invented — the measured 1/2/4-operative scarcity replay is deferred to P12 (procedure in `docs/production/P6-0108-EVIDENCE-CAPTURE-RUNBOOK.md`). The bounded P6/P7 sequencing exception is retired and P7 is complete: server-owned selection, all three specialist actions, accessible cross-class presentation, adversarial validation, and bounded Studio telemetry are implemented through `P7-0107`. In parallel, the high-ROI horde-and-reward vertical slice ([issue #98](https://github.com/Razzleberrytt/atlas-game-development/issues/98)) has merged bounded slices through PR #128: tuned horde pressure and pacing, confirmed hit/kill impact feedback, floating damage text, shooter hit markers, critical-condition urgency, shared run-only Field XP with squad upgrade choices, scarce enemy ammunition/recovery/Field Intel loot, a server-owned five-weapon loadout roster with distinct models and feel, six readable horde roles, threat-responsive environment mood, and client-local firearm/hostile audio sets.
-
-**Next actions:** the per-milestone status table and the detailed P6–P12 task breakdown live in `docs/roadmap/MASTER-ROADMAP.md`, with canonical acceptance gates in `docs/roadmap/P6-P12-EXECUTION-ROADMAP.md`. P8 is implemented through `P8-0107` (the authored objective chain — restore the relay at the Lookout, charge the signal booster at the Roadblock, and an optional engineer floodlight repair — runs through a generic server-owned runtime with presence-driven progress, relocation pressure, class opportunities, and route presentation; specified in `docs/specifications/authored-objective-chain.md`). `P8-0108` automated security and 1/2/4-operative coverage is complete; the next unblocked gameplay task is `P9-PLAN-001`. Remaining manual gates include the `P8-0108` live Studio playtest of the full objective chain, the representative Studio playtest of the merged horde-and-reward loop (issue #98 / HROI-0108), and the P12 measured 1/2/4-operative scarcity replay. The visual production track (`VIS-0102`–`VIS-0105`) and its Studio visual/mix reviews proceed in parallel per `docs/roadmap/VISUAL-PRODUCTION-TRACK.md`.
-
-The parallel RPG track has delivered every implementable task, `RPG-0101`–`RPG-0111`: the contracts/config, operation-scoped run-build state, the twelve-upgrade pool, shared bounded modifier resolution, the full five-affix elite roster, the relic reward/slot/replacement framework, all twelve run relics wired to authoritative runtime effects, the live reward sources whose owners already exist (confirmed elite deaths, a squad-kill milestone, and confirmed special interrupts), and the relic bar plus reward-choice/replacement interfaces over a bounded `RunBuildNetwork`. Relics can now be earned, chosen, replaced, and read inside a live operation. No implementable RPG task remains: `RPG-0112` (operation-result build summary) is blocked on P10's authoritative result owner, and `RPG-0113` (final balance/security/performance/multiplayer validation) is blocked on Studio evidence. See `docs/roadmap/MASTER-ROADMAP.md` for the authoritative RPG-track detail.
-
-Final public branding is unresolved. Living Kingdoms remains the working title and internal project identifier; naming work is outside the current scope.
+**Phase:** vertical-slice convergence  
+**Active milestone:** VS-01 Expedition Foundation  
+**Working title:** unresolved  
+**Roblox project path:** `games/living-kingdoms/`
