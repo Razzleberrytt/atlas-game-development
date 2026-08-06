@@ -15,6 +15,7 @@ local RunService = game:GetService("RunService")
 
 local ExpeditionConfig = require(game:GetService("ReplicatedStorage").Shared.Config.ExpeditionConfig)
 local ExpeditionServerBootstrap = require(script.Parent.ExpeditionServerBootstrap)
+local ExpeditionRoomPlacementService = require(script.Parent.ExpeditionRoomPlacementService)
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 
 export type StartOptions = {
@@ -132,7 +133,15 @@ function Service.startExpedition(options: StartOptions?): any
 		return result(false, "ExpeditionCreationFailed", nil)
 	end
 
-	activeBootstrap = bootstrapOrError
+	local bootstrap = bootstrapOrError
+	local placement = ExpeditionRoomPlacementService.place(bootstrap:getRoomPlan())
+	if placement.Accepted ~= true then
+		bootstrap:destroy()
+		warn("[ExpeditionLiveRuntime] failed to place expedition rooms:", placement.ReasonId)
+		return result(false, placement.ReasonId, nil)
+	end
+
+	activeBootstrap = bootstrap
 	driveStep()
 	return result(true, "ExpeditionStarted", activeBootstrap:getSnapshot())
 end
@@ -145,6 +154,7 @@ function Service.stopExpedition(reasonId: string?): any
 	local snapshot = bootstrap:getSnapshot()
 	bootstrap:destroy()
 	activeBootstrap = nil
+	ExpeditionRoomPlacementService.destroy()
 	return result(true, reasonId or "ExpeditionStopped", snapshot)
 end
 
@@ -172,6 +182,7 @@ function Service.stop()
 		activeBootstrap:destroy()
 		activeBootstrap = nil
 	end
+	ExpeditionRoomPlacementService.destroy()
 end
 
 return table.freeze(Service)
