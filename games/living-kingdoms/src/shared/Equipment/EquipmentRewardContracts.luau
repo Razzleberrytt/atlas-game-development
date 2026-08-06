@@ -1,10 +1,8 @@
 --!strict
 
---[[
-	VS-0107 shared contracts for authoritative expedition equipment rewards.
-	Definitions are stable content; generated instances are immutable records that
-	can later be persisted or presented without letting clients create inventory.
-]]
+-- Blueprint v1.9 reward contracts. Authored definitions remain stable content;
+-- generated instances carry both a deterministic content signature for replay
+-- diagnostics and a globally unique server-created ownership identifier.
 
 export type EquipmentSlotId = "Primary" | "Secondary" | "Armor" | "Relic"
 export type EquipmentRarityId = "Common" | "Uncommon" | "Rare"
@@ -23,6 +21,7 @@ export type EquipmentDefinition = {
 
 export type EquipmentReward = {
 	InstanceId: string,
+	ContentSignature: string,
 	DefinitionId: string,
 	DefinitionVersion: string,
 	DisplayName: string,
