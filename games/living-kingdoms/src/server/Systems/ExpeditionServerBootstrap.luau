@@ -12,6 +12,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ExpeditionConfig = require(ReplicatedStorage.Shared.Config.ExpeditionConfig)
+local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.ExpeditionContracts)
 local RoomSequenceAssembler = require(ReplicatedStorage.Shared.Expeditions.RoomSequenceAssembler)
 local ExpeditionRuntime = require(script.Parent.ExpeditionRuntime)
 local ExpeditionEncounterCoordinator = require(script.Parent.ExpeditionEncounterCoordinator)
@@ -145,6 +146,15 @@ function Bootstrap:step(nowUnix: number)
 	local state: Internal = self :: any
 	if state.Destroyed then return result(false, "BootstrapDestroyed") end
 	if type(nowUnix) ~= "number" or nowUnix < 0 then return result(false, "InvalidTimestamp") end
+
+	local snapshot = state.Runtime:getSnapshot()
+	if snapshot ~= nil
+		and snapshot.PhaseId == ExpeditionContracts.PhaseIds.Results
+		and snapshot.OutcomeId == ExpeditionContracts.OutcomeIds.InProgress
+	then
+		local finish = state.Runtime:finish(ExpeditionContracts.OutcomeIds.Completed, snapshot.PhaseId, nowUnix)
+		return result(finish.Accepted == true, finish.ReasonId)
+	end
 
 	local active = state.Coordinator:getActiveContext()
 	if active ~= nil then
