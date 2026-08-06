@@ -1,11 +1,5 @@
 --!strict
 
---[[
-	VS-0109 versioned player inventory/equipment persistence contracts.
-	Saved data is server-authored and validated before use. Clients may request
-	presentation or equip intent later, but they never supply authoritative records.
-]]
-
 local EquipmentContracts = require(script.Parent.Parent.Equipment.EquipmentRewardContracts)
 
 export type EquipmentReward = EquipmentContracts.EquipmentReward
@@ -17,6 +11,7 @@ export type PlayerInventoryRecord = {
 	InventoryByInstanceId: { [string]: EquipmentReward },
 	EquippedBySlot: { [EquipmentSlotId]: string? },
 	AppliedRewardInstanceIds: { [string]: boolean },
+	AppliedRewardGrantIds: { [string]: boolean },
 	UpdatedAtUnix: number,
 }
 
@@ -34,5 +29,5 @@ export type MutationResult = {
 }
 
 return table.freeze({
-	CurrentSchemaVersion = 1,
+	CurrentSchemaVersion = 2,
 })
