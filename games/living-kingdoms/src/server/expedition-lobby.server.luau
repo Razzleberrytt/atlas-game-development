@@ -1,8 +1,8 @@
 --!strict
 
 -- Server-authoritative expedition lobby bridge. Clients may request join, leave,
--- or ready changes for themselves only. Launch decisions remain owned by the
--- lobby domain and are forwarded to the live expedition runtime exactly once.
+-- ready changes, or a terminal return for themselves only. Launch and teardown
+-- decisions remain server-owned.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,13 +10,12 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Systems = ServerScriptService:WaitForChild("Systems")
 local ExpeditionConfig = require(ReplicatedStorage.Shared.Config.ExpeditionConfig)
+local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.ExpeditionContracts)
 local ExpeditionLobbyService = require(Systems.ExpeditionLobbyService)
 local ExpeditionLiveRuntimeService = require(Systems.ExpeditionLiveRuntimeService)
 
 local existing = ReplicatedStorage:FindFirstChild("ExpeditionLobbyNetwork")
-if existing ~= nil then
-	existing:Destroy()
-end
+if existing ~= nil then existing:Destroy() end
 
 local network = Instance.new("Folder")
 network.Name = "ExpeditionLobbyNetwork"
@@ -64,6 +63,15 @@ local function broadcast()
 	state:FireAllClients(sanitizedSnapshot())
 end
 
+local function isMember(playerId: number): boolean
+	local snapshot = lobby:readSnapshot()
+	if snapshot == nil then return false end
+	for _, member in snapshot.Members do
+		if member.PlayerId == playerId then return true end
+	end
+	return false
+end
+
 local function attemptLaunch()
 	if launchInFlight then return end
 	local snapshot = lobby:readSnapshot()
@@ -77,31 +85,40 @@ local function attemptLaunch()
 		return
 	end
 
-	local launch = ExpeditionLiveRuntimeService.startExpedition({
-		PartySize = consumed.Snapshot.MemberCount,
-	})
+	local launch = ExpeditionLiveRuntimeService.startExpedition({ PartySize = consumed.Snapshot.MemberCount })
 	if launch.Accepted ~= true then
 		warn("[ExpeditionLobby] launch rejected:", launch.ReasonId)
-		for _, member in consumed.Snapshot.Members do
-			lobby:setReady(member.PlayerId, false)
-		end
 	end
 	launchInFlight = false
 	broadcast()
 end
 
-local function response(result: any): any
-	return table.freeze({
-		Accepted = result.Accepted == true,
-		ReasonId = result.ReasonId,
-		Snapshot = sanitizedSnapshot(),
-	})
+local function response(accepted: boolean, reasonId: string): any
+	return table.freeze({ Accepted = accepted, ReasonId = reasonId, Snapshot = sanitizedSnapshot() })
+end
+
+local function returnToLobby(player: Player): any
+	if not isMember(player.UserId) then
+		return response(false, "PlayerNotJoined")
+	end
+	local expedition = ExpeditionLiveRuntimeService.readSnapshot()
+	if expedition == nil then
+		return response(false, "NoActiveExpedition")
+	end
+	if expedition.OutcomeId == ExpeditionContracts.OutcomeIds.InProgress then
+		return response(false, "RunStillInProgress")
+	end
+
+	local stopped = ExpeditionLiveRuntimeService.stopExpedition("ReturnedToLobby")
+	if stopped.Accepted ~= true then
+		return response(false, stopped.ReasonId)
+	end
+	broadcast()
+	return response(true, "ReturnedToLobby")
 end
 
 request.OnServerInvoke = function(player: Player, action: any, payload: any): any
-	if type(action) ~= "string" then
-		return table.freeze({ Accepted = false, ReasonId = "InvalidAction", Snapshot = sanitizedSnapshot() })
-	end
+	if type(action) ~= "string" then return response(false, "InvalidAction") end
 
 	local result
 	if action == "Join" then
@@ -111,13 +128,15 @@ request.OnServerInvoke = function(player: Player, action: any, payload: any): an
 	elseif action == "SetReady" then
 		local ready = if type(payload) == "table" then payload.Ready else nil
 		result = lobby:setReady(player.UserId, ready)
+	elseif action == "ReturnToLobby" then
+		return returnToLobby(player)
 	else
-		return table.freeze({ Accepted = false, ReasonId = "UnknownAction", Snapshot = sanitizedSnapshot() })
+		return response(false, "UnknownAction")
 	end
 
 	broadcast()
 	attemptLaunch()
-	return response(result)
+	return response(result.Accepted == true, result.ReasonId)
 end
 
 readState.OnServerInvoke = function(_player: Player): any
