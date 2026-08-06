@@ -1,19 +1,13 @@
 --!strict
 
---[[
-	VS-0110 production storage adapter for PlayerInventoryPersistenceService.
-
-	This module is intentionally narrow: it exposes only load/save, owns retry
-	policy, namespaces keys, and never accepts client input directly. Session
-	locking remains a separate integration concern and is documented in the
-	Studio validation checklist.
-]]
+-- Production storage adapter for inventory records and atomic session leases.
 
 local DataStoreService = game:GetService("DataStoreService")
 
 export type Adapter = {
 	load: (self: Adapter, key: string) -> any,
 	save: (self: Adapter, key: string, value: any) -> boolean,
+	update: (self: Adapter, key: string, transform: (any) -> any) -> (boolean, any),
 }
 
 export type Options = {
@@ -63,46 +57,39 @@ function Adapter:load(key: string): any
 	local selfAny = self :: any
 	local qualifiedKey = self:_qualifiedKey(key)
 	local lastError: any = nil
-
 	for attempt = 1, selfAny._maximumAttempts do
 		local success, value = pcall(function()
 			return selfAny._store:GetAsync(qualifiedKey)
 		end)
-		if success then
-			return value
-		end
+		if success then return value end
 		lastError = value
-		if attempt < selfAny._maximumAttempts then
-			task.wait(retryDelay(selfAny._baseRetryDelaySeconds, attempt))
-		end
+		if attempt < selfAny._maximumAttempts then task.wait(retryDelay(selfAny._baseRetryDelaySeconds, attempt)) end
 	end
-
 	warn(string.format("[AtlasPersistence] load failed for %s: %s", qualifiedKey, tostring(lastError)))
 	return nil
 end
 
-function Adapter:save(key: string, value: any): boolean
+function Adapter:update(key: string, transform: (any) -> any): (boolean, any)
 	local selfAny = self :: any
 	local qualifiedKey = self:_qualifiedKey(key)
 	local lastError: any = nil
-
 	for attempt = 1, selfAny._maximumAttempts do
-		local success, errorMessage = pcall(function()
-			selfAny._store:UpdateAsync(qualifiedKey, function()
-				return value
-			end)
+		local success, value = pcall(function()
+			return selfAny._store:UpdateAsync(qualifiedKey, transform)
 		end)
-		if success then
-			return true
-		end
-		lastError = errorMessage
-		if attempt < selfAny._maximumAttempts then
-			task.wait(retryDelay(selfAny._baseRetryDelaySeconds, attempt))
-		end
+		if success then return true, value end
+		lastError = value
+		if attempt < selfAny._maximumAttempts then task.wait(retryDelay(selfAny._baseRetryDelaySeconds, attempt)) end
 	end
+	warn(string.format("[AtlasPersistence] update failed for %s: %s", qualifiedKey, tostring(lastError)))
+	return false, nil
+end
 
-	warn(string.format("[AtlasPersistence] save failed for %s: %s", qualifiedKey, tostring(lastError)))
-	return false
+function Adapter:save(key: string, value: any): boolean
+	local success = self:update(key, function()
+		return value
+	end)
+	return success
 end
 
 return table.freeze(Adapter)
