@@ -29,6 +29,7 @@ local LandmarkAccentPresentationController = require(script.Controllers.Landmark
 local MatchResultController = require(script.Controllers.MatchResultController)
 local MissionController = require(script.Controllers.MissionController)
 local MissionObjectPresentationController = require(script.Controllers.MissionObjectPresentationController)
+local ExpeditionHUDController = require(script.Controllers.ExpeditionHUDController)
 local HordeHUDController = require(script.Controllers.HordeHUDController)
 local HordeEffectsController = require(script.Controllers.HordeEffectsController)
 local HordeSpecialTelegraphController = require(script.Controllers.HordeSpecialTelegraphController)
@@ -73,6 +74,9 @@ MissionController.start()
 -- makes no request; it stays hidden until the operation resolves.
 MatchResultController.start()
 MissionObjectPresentationController.start()
+-- The expedition HUD is read-only. It renders the sanitized expedition feed and
+-- exposes no completion, reward, replay, or start/stop request path.
+ExpeditionHUDController.start()
 -- HordeHUDController is the single combat HUD. It renders Field XP, levels, and
 -- upgrade offers sourced from ProgressionNetwork; the standalone
 -- RunProgressionHUDController is intentionally left uninitialized to avoid a
