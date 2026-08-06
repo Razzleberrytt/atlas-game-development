@@ -21,6 +21,7 @@ state.Parent = resultNetwork
 
 local decisionService: any = nil
 local activeRunId: string? = nil
+local activeSummary: any = nil
 local resolvedRunId: string? = nil
 
 local function captureParticipants(partySize: number): { number }
@@ -35,6 +36,7 @@ local function ensureDecisionService(summary: any)
 	if activeRunId == summary.RunId and decisionService ~= nil then return end
 	if decisionService ~= nil then decisionService:destroy() end
 	activeRunId = summary.RunId
+	activeSummary = summary
 	resolvedRunId = nil
 	decisionService = ExpeditionPartyDecisionService.new(captureParticipants(summary.PartySize))
 end
@@ -51,11 +53,11 @@ local function safeSnapshot(snapshot: any): any
 end
 
 local function resolveIfReady(summary: any, snapshot: any)
-	if snapshot.ResolvedDecisionId == "Undecided" or resolvedRunId == summary.RunId then return end
+	if snapshot == nil or snapshot.ResolvedDecisionId == "Undecided" or resolvedRunId == summary.RunId then return end
 	resolvedRunId = summary.RunId
 	ExpeditionLiveRuntimeService.stopExpedition("PartyDecision")
 	if snapshot.ResolvedDecisionId == "Replay" then
-		local launch = ExpeditionLiveRuntimeService.startExpedition({ PartySize = summary.PartySize })
+		local launch = ExpeditionLiveRuntimeService.startExpedition({ PartySize = snapshot.ParticipantCount })
 		if launch.Accepted ~= true then warn("[ExpeditionReplayDecision] replay rejected:", launch.ReasonId) end
 	end
 end
@@ -72,9 +74,17 @@ request.OnServerInvoke = function(player: Player, decisionId: any): any
 end
 
 Players.PlayerRemoving:Connect(function(player)
-	-- A departed participant cannot be silently replaced mid-vote. The remaining
-	-- party can return through the existing terminal return path.
-	if decisionService ~= nil then state:FireAllClients(safeSnapshot(decisionService:readSnapshot())) end
+	if decisionService == nil or activeSummary == nil then return end
+	local removal = decisionService:removeParticipant(player.UserId)
+	if not removal.Accepted then return end
+	local safe = safeSnapshot(removal.Snapshot)
+	state:FireAllClients(safe)
+	if removal.ReasonId == "PartyEmpty" then
+		ExpeditionLiveRuntimeService.stopExpedition("PartyDisconnected")
+		resolvedRunId = activeSummary.RunId
+		return
+	end
+	resolveIfReady(activeSummary, removal.Snapshot)
 end)
 
 game:BindToClose(function()
