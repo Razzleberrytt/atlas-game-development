@@ -1,8 +1,9 @@
 --!strict
 
 -- Server-owned reward/result integration for the first expedition slice.
--- It observes only authoritative runtime snapshots, claims each source once,
--- finalizes one immutable result, and publishes a sanitized read-only debrief.
+-- It observes authoritative runtime snapshots, freezes the run participant roster,
+-- claims each reward source once, persists rewards idempotently, and publishes
+-- only a sanitized read-only debrief.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -14,6 +15,8 @@ local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.Expedit
 local EquipmentRewardService = require(script.Parent.Systems.EquipmentRewardService)
 local ExpeditionLiveRuntimeService = require(script.Parent.Systems.ExpeditionLiveRuntimeService)
 local ExpeditionResultService = require(script.Parent.Systems.ExpeditionResultService)
+local ExpeditionRewardDistributionService = require(script.Parent.Systems.ExpeditionRewardDistributionService)
+local InventoryLiveService = require(script.Parent.Systems.InventoryLiveService)
 
 local existing = ReplicatedStorage:FindFirstChild("ExpeditionResultNetwork")
 if existing ~= nil then
@@ -35,6 +38,7 @@ readState.Parent = network
 local activeRunId: string? = nil
 local rewardService: any = nil
 local resultService: any = nil
+local distributionService: any = nil
 local lastSafeSummary: any = nil
 local lastSignature = ""
 local accumulatedSeconds = 0
@@ -47,6 +51,10 @@ local function destroyOwners()
 	if resultService ~= nil then
 		resultService:destroy()
 		resultService = nil
+	end
+	if distributionService ~= nil then
+		distributionService:destroy()
+		distributionService = nil
 	end
 	activeRunId = nil
 end
@@ -102,6 +110,18 @@ local function broadcastIfChanged(summary: any)
 	stateRemote:FireAllClients(summary)
 end
 
+local function captureParticipants(partySize: number): { number }
+	local players = Players:GetPlayers()
+	table.sort(players, function(left, right)
+		return left.UserId < right.UserId
+	end)
+	local participantUserIds = {}
+	for index = 1, math.min(partySize, #players) do
+		table.insert(participantUserIds, players[index].UserId)
+	end
+	return participantUserIds
+end
+
 local function ensureRun(snapshot: any)
 	if activeRunId == snapshot.RunId then
 		return
@@ -110,6 +130,10 @@ local function ensureRun(snapshot: any)
 	activeRunId = snapshot.RunId
 	rewardService = EquipmentRewardService.new(snapshot.RunId, snapshot.Seed)
 	resultService = ExpeditionResultService.new()
+	distributionService = ExpeditionRewardDistributionService.new(
+		InventoryLiveService,
+		captureParticipants(snapshot.PartySize)
+	)
 	lastSafeSummary = nil
 	lastSignature = ""
 end
@@ -126,6 +150,23 @@ local function claimIfReached(snapshot: any)
 	end
 end
 
+local function persistRewards(summary: any)
+	if distributionService == nil or distributionService:isComplete() then
+		return
+	end
+
+	local distribution = distributionService:distribute(summary.Rewards, os.time())
+	for playerId, reasonId in distribution.FailureReasonsByPlayerId do
+		if reasonId ~= "PlayerNotLoaded" then
+			warn(string.format(
+				"[ExpeditionRewardResults] reward persistence rejected for %d: %s",
+				playerId,
+				reasonId
+			))
+		end
+	end
+end
+
 local function finalizeIfTerminal(snapshot: any)
 	if resultService == nil or rewardService == nil then
 		return
@@ -133,28 +174,31 @@ local function finalizeIfTerminal(snapshot: any)
 	if snapshot.OutcomeId == ExpeditionContracts.OutcomeIds.InProgress then
 		return
 	end
-	if resultService:getSummary() ~= nil then
-		return
-	end
 
-	local rewards = {}
-	for _, sourceId in { EquipmentContracts.SourceIds.Elite, EquipmentContracts.SourceIds.Boss } do
-		local reward = rewardService:getClaimedReward(sourceId)
-		if reward ~= nil then
-			table.insert(rewards, reward)
+	local summary = resultService:getSummary()
+	if summary == nil then
+		local rewards = {}
+		for _, sourceId in { EquipmentContracts.SourceIds.Elite, EquipmentContracts.SourceIds.Boss } do
+			local reward = rewardService:getClaimedReward(sourceId)
+			if reward ~= nil then
+				table.insert(rewards, reward)
+			end
 		end
+
+		local finalized = resultService:finalize({
+			Snapshot = snapshot,
+			FinishedAtUnix = Workspace:GetServerTimeNow(),
+			Rewards = rewards,
+		})
+		if finalized.Accepted ~= true then
+			warn("[ExpeditionRewardResults] result finalization rejected:", finalized.ReasonId)
+			return
+		end
+		summary = finalized.Summary
+		broadcastIfChanged(safeSummary(summary))
 	end
 
-	local finalized = resultService:finalize({
-		Snapshot = snapshot,
-		FinishedAtUnix = Workspace:GetServerTimeNow(),
-		Rewards = rewards,
-	})
-	if finalized.Accepted ~= true then
-		warn("[ExpeditionRewardResults] result finalization rejected:", finalized.ReasonId)
-		return
-	end
-	broadcastIfChanged(safeSummary(finalized.Summary))
+	persistRewards(summary)
 end
 
 local function step()
