@@ -1,0 +1,145 @@
+# Living Kingdoms Agent Guide
+
+This file applies to everything under `games/living-kingdoms`.
+
+Living Kingdoms is developed repository-first. Coding agents should be able to inspect, modify, test, and review most gameplay work without opening Roblox Studio.
+
+## Canonical layout
+
+```text
+games/living-kingdoms/
+├── default.project.json  # Rojo DataModel mapping
+├── src/
+│   ├── client/           # Local input, camera, HUD, audio, presentation
+│   ├── server/           # Authoritative runtime systems and domain logic
+│   └── shared/           # Contracts, configuration, and pure shared modules
+├── tests/                # Lune fixtures and source audits
+├── assets/               # Asset manifests and source material
+└── README.md
+```
+
+Rojo maps:
+
+- `src/client` to `StarterPlayer/StarterPlayerScripts/Client`;
+- `src/server` to `ServerScriptService/Server`;
+- `src/shared` to `ReplicatedStorage/Shared`.
+
+Do not change those destinations casually. Any mapping change requires a migration note, build validation, and a Studio smoke test.
+
+## Architecture boundaries
+
+### Client
+
+Client code may own:
+
+- local input collection;
+- camera behavior;
+- HUD and menu rendering;
+- audio and visual presentation;
+- non-authoritative prediction or interpolation;
+- sending narrowly scoped intent messages.
+
+Client code must not establish consequential game truth.
+
+### Server
+
+Server code owns:
+
+- combat resolution and target legality;
+- enemy state and spawning;
+- health, incapacitation, revival, and death;
+- loot, rewards, progression, classes, and run builds;
+- mission and operation lifecycle;
+- validation of client intent;
+- persistence and monetization when added.
+
+Remote handlers must validate identity, state, range, cadence, permissions, and payload shape as applicable. Rate-limit or otherwise bound repeatable intents.
+
+### Shared
+
+Shared modules should contain:
+
+- stable contracts and type declarations;
+- configuration values;
+- deterministic resolvers that can be tested through Lune;
+- presentation-safe data structures intentionally disclosed to clients.
+
+Avoid coupling pure shared modules to live Roblox services unless the module is explicitly an integration boundary.
+
+## Coding conventions
+
+- Use strict Luau for new source files.
+- Follow the existing lifecycle pattern where controllers and services expose appropriate `init`, `start`, `stop`, or `destroy` behavior.
+- Make repeated lifecycle calls safe when the surrounding architecture expects them to be safe.
+- Keep functions deterministic when they can be deterministic.
+- Return copied state from pure resolvers instead of mutating caller-owned inputs.
+- Prefer explicit reason IDs and contracts over free-form hidden coupling.
+- Reuse existing network folders and contracts when suitable; do not create duplicate remotes for the same authority boundary.
+- Keep configuration centralized under `src/shared/Config` rather than scattering balance constants through runtime code.
+- Preserve accessibility and mobile behavior when changing controls or presentation.
+
+## Testing expectations
+
+A gameplay rule change should normally include a focused `*.test.luau` fixture. Integration changes should include either an integration fixture or a source audit that proves the intended wiring and security boundary.
+
+Run from repository root:
+
+```bash
+python scripts/validate_living_kingdoms_layout.py
+stylua --check games/living-kingdoms/src
+selene games/living-kingdoms/src
+
+find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 \
+  | sort -z \
+  | xargs -0 -n1 lune run
+
+rojo build games/living-kingdoms/default.project.json \
+  --output /tmp/LivingKingdoms.rbxlx
+```
+
+Do not delete or loosen an existing test because a new implementation fails it unless the underlying documented requirement has intentionally changed.
+
+## Working with a newer Roblox place
+
+A `.rbxl` or `.rbxlx` file is an import source, not an automatic replacement for this directory.
+
+Before reconciling one:
+
+1. Preserve the current Git commit with a backup branch or tag.
+2. Record the incoming file name, byte size, SHA-256 hash, and origin.
+3. Inventory scripts, services, remotes, non-script instances, terrain, assets, and settings in the place.
+4. Diff extracted script sources against this repository.
+5. Merge intentional changes into `src/client`, `src/server`, and `src/shared` according to authority boundaries.
+6. Represent stable instance structure in `default.project.json` or dedicated `.rbxmx` model files only when reviewable and appropriate.
+7. Record everything that remains Studio-owned.
+8. Run all repository validation.
+9. Perform a Studio smoke test before publishing.
+
+Never overwrite the repository with extracted place contents without review. Place files may contain stale copies of scripts, generated instances, plugin artifacts, or Studio-only state.
+
+See `../../docs/production/RBXL-IMPORT-MIGRATION.md` for the full migration procedure.
+
+## Studio-only checks
+
+Flag these clearly rather than pretending they were validated by CI:
+
+- actual multiplayer play behavior;
+- character and physics behavior;
+- terrain and authored map appearance;
+- animations and asset ownership permissions;
+- lighting and audio in the live engine;
+- UI across device safe areas;
+- streaming and network ownership behavior;
+- DataStore behavior in an appropriate test environment;
+- performance and memory;
+- publishing configuration.
+
+## Agent completion checklist
+
+- [ ] Read the applicable design and architecture documents.
+- [ ] Preserved client/server authority boundaries.
+- [ ] Added or updated focused tests.
+- [ ] Ran layout, formatting, lint, fixture, and Rojo build checks.
+- [ ] Documented any Studio-only validation.
+- [ ] Avoided committing generated place files or secrets.
+- [ ] Summarized changed behavior and remaining risks.
