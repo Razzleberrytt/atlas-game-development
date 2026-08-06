@@ -2,21 +2,23 @@
 
 local Adapter = require("../src/server/Systems/EnemyDirectorEncounterAdapter")
 
-local activeEnemyCount = 0
+local liveFacts = {}
 local bossState = { exists = false, isAlive = false, isDefeated = false }
 local stoodDown = 0
 
 local director = {
 	spawnAuthoredWave = function(_waveIndex: number, definitions: { any }): number
-		activeEnemyCount += #definitions
+		for _, definition in definitions do
+			table.insert(liveFacts, { entityId = definition.id, isAlive = true })
+		end
 		return #definitions
 	end,
 	spawnBoss = function(_position: any, _floodlightsRestored: boolean): boolean
 		bossState = { exists = true, isAlive = true, isDefeated = false }
 		return true
 	end,
-	readActiveEnemyCount = function(): number
-		return activeEnemyCount
+	readEnemyCombatFacts = function(): { any }
+		return liveFacts
 	end,
 	readBossState = function(): any
 		return bossState
@@ -40,11 +42,7 @@ end
 
 local adapter = Adapter.new(director, function(encounterContext: any): any
 	if encounterContext.PhaseId == "Boss" then
-		return {
-			Kind = "Boss",
-			BossPosition = { x = 0, y = 4, z = 80 },
-			FloodlightsRestored = true,
-		}
+		return { Kind = "Boss", BossPosition = { x = 0, y = 4, z = 80 }, FloodlightsRestored = true }
 	end
 	return {
 		Kind = "Wave",
@@ -60,7 +58,9 @@ assert(adapter:start(context("wave-token", "Dungeon")) == true)
 assert(adapter:start(context("parallel-token", "Dungeon")) == false)
 local completed, reason = adapter:pollCompletion()
 assert(completed == false and reason == "EncounterInProgress")
-activeEnemyCount = 0
+-- An unrelated enemy does not affect exact authored-wave tracking.
+table.insert(liveFacts, { entityId = "unrelated-enemy", isAlive = true })
+liveFacts = { { entityId = "unrelated-enemy", isAlive = true } }
 local waveDone, waveToken = adapter:pollCompletion()
 assert(waveDone == true and waveToken == "wave-token")
 local duplicate, duplicateReason = adapter:pollCompletion()
@@ -69,8 +69,7 @@ assert(duplicate == false and duplicateReason == "CompletionAlreadyReported")
 adapter:cancel(context("wrong-token", "Dungeon"), "Wrong")
 assert(adapter:getActiveToken() == "wave-token")
 adapter:cancel(context("wave-token", "Dungeon"), "CoordinatorAdvanced")
-assert(adapter:getActiveToken() == nil)
-assert(stoodDown == 1)
+assert(adapter:getActiveToken() == nil and stoodDown == 1)
 
 assert(adapter:start(context("boss-token", "Boss")) == true)
 local bossPending = adapter:pollCompletion()
@@ -80,8 +79,7 @@ local bossDone, bossToken = adapter:pollCompletion()
 assert(bossDone == true and bossToken == "boss-token")
 
 adapter:destroy()
-assert(stoodDown == 2)
-assert(adapter:getActiveToken() == nil)
+assert(stoodDown == 2 and adapter:getActiveToken() == nil)
 local afterDestroy, afterDestroyReason = adapter:pollCompletion()
 assert(afterDestroy == false and afterDestroyReason == "AdapterDestroyed")
 
