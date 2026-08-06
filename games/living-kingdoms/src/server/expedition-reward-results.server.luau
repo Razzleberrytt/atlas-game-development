@@ -15,6 +15,7 @@ local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.Expedit
 local EquipmentRewardService = require(script.Parent.Systems.EquipmentRewardService)
 local ExpeditionLiveRuntimeService = require(script.Parent.Systems.ExpeditionLiveRuntimeService)
 local ExpeditionResultService = require(script.Parent.Systems.ExpeditionResultService)
+local ExpeditionRewardDistributionService = require(script.Parent.Systems.ExpeditionRewardDistributionService)
 local InventoryLiveService = require(script.Parent.Systems.InventoryLiveService)
 
 local existing = ReplicatedStorage:FindFirstChild("ExpeditionResultNetwork")
@@ -37,8 +38,7 @@ readState.Parent = network
 local activeRunId: string? = nil
 local rewardService: any = nil
 local resultService: any = nil
-local participantUserIds: { number } = {}
-local persistedByPlayer: { [number]: boolean } = {}
+local distributionService: any = nil
 local lastSafeSummary: any = nil
 local lastSignature = ""
 local accumulatedSeconds = 0
@@ -52,9 +52,11 @@ local function destroyOwners()
 		resultService:destroy()
 		resultService = nil
 	end
+	if distributionService ~= nil then
+		distributionService:destroy()
+		distributionService = nil
+	end
 	activeRunId = nil
-	table.clear(participantUserIds)
-	table.clear(persistedByPlayer)
 end
 
 local function safeReward(reward: any): any
@@ -108,14 +110,16 @@ local function broadcastIfChanged(summary: any)
 	stateRemote:FireAllClients(summary)
 end
 
-local function captureParticipants(partySize: number)
+local function captureParticipants(partySize: number): { number }
 	local players = Players:GetPlayers()
 	table.sort(players, function(left, right)
 		return left.UserId < right.UserId
 	end)
+	local participantUserIds = {}
 	for index = 1, math.min(partySize, #players) do
 		table.insert(participantUserIds, players[index].UserId)
 	end
+	return participantUserIds
 end
 
 local function ensureRun(snapshot: any)
@@ -126,7 +130,10 @@ local function ensureRun(snapshot: any)
 	activeRunId = snapshot.RunId
 	rewardService = EquipmentRewardService.new(snapshot.RunId, snapshot.Seed)
 	resultService = ExpeditionResultService.new()
-	captureParticipants(snapshot.PartySize)
+	distributionService = ExpeditionRewardDistributionService.new(
+		InventoryLiveService,
+		captureParticipants(snapshot.PartySize)
+	)
 	lastSafeSummary = nil
 	lastSignature = ""
 end
@@ -144,29 +151,18 @@ local function claimIfReached(snapshot: any)
 end
 
 local function persistRewards(summary: any)
-	for _, playerId in participantUserIds do
-		if persistedByPlayer[playerId] then
-			continue
-		end
+	if distributionService == nil or distributionService:isComplete() then
+		return
+	end
 
-		local allApplied = true
-		for _, reward in summary.Rewards do
-			local mutation = InventoryLiveService.applyReward(playerId, reward, os.time())
-			if mutation.Accepted ~= true and mutation.ReasonId ~= "RewardAlreadyApplied" then
-				allApplied = false
-				if mutation.ReasonId ~= "PlayerNotLoaded" then
-					warn(string.format(
-						"[ExpeditionRewardResults] reward persistence rejected for %d: %s",
-						playerId,
-						mutation.ReasonId
-					))
-				end
-				break
-			end
-		end
-
-		if allApplied then
-			persistedByPlayer[playerId] = true
+	local distribution = distributionService:distribute(summary.Rewards, os.time())
+	for playerId, reasonId in distribution.FailureReasonsByPlayerId do
+		if reasonId ~= "PlayerNotLoaded" then
+			warn(string.format(
+				"[ExpeditionRewardResults] reward persistence rejected for %d: %s",
+				playerId,
+				reasonId
+			))
 		end
 	end
 end
