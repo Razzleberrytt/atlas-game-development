@@ -54,7 +54,7 @@ The highest-value unique pieces to adapt into the canonical architecture are:
 
 ## World note
 
-`workspace-index.json (restored from `workspace-index.json.gz.b64.part01` … `part05` by `restore-import.py`)` is a hierarchy-preservation artifact, not a claim of property-perfect reconstruction. The supplied world is valuable authored content and should be promoted into an active source-managed world only after its geometry/properties have been reconstructed and tested against the current operation runtime. Until then, the exact source hash and complete object hierarchy prevent the import from becoming an undocumented black box.
+`workspace-index.json` (restored from `workspace-index.json.gz.b64.part01` … `part05` by `restore-import.py`) is a hierarchy-preservation artifact, not a claim of property-perfect reconstruction. The supplied world is valuable authored content and should be promoted into an active source-managed world only after its geometry/properties have been reconstructed and tested against the current operation runtime. Until then, the exact source hash and complete object hierarchy prevent the import from becoming an undocumented black box.
 
 ## Recovery
 

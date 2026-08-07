@@ -1,0 +1,86 @@
+[
+  {
+    "id": 1772,
+    "class": "Part",
+    "name": "AmbientFireflies",
+    "parent_id": 0,
+    "path": "Workspace/AmbientFireflies"
+  },
+  {
+    "id": 1581,
+    "class": "Part",
+    "name": "BootstrapSafetyFloor",
+    "parent_id": 0,
+    "path": "Workspace/BootstrapSafetyFloor"
+  },
+  {
+    "id": 1580,
+    "class": "SpawnLocation",
+    "name": "BootstrapSafetySpawn",
+    "parent_id": 0,
+    "path": "Workspace/BootstrapSafetySpawn"
+  },
+  {
+    "id": 116,
+    "class": "Folder",
+    "name": "Buildings",
+    "parent_id": 0,
+    "path": "Workspace/Buildings"
+  },
+  {
+    "id": 1,
+    "class": "Camera",
+    "name": "Camera",
+    "parent_id": 0,
+    "path": "Workspace/Camera"
+  },
+  {
+    "id": 118,
+    "class": "Folder",
+    "name": "HubTown",
+    "parent_id": 0,
+    "path": "Workspace/HubTown"
+  },
+  {
+    "id": 3,
+    "class": "Folder",
+    "name": "Resources",
+    "parent_id": 0,
+    "path": "Workspace/Resources"
+  },
+  {
+    "id": 117,
+    "class": "SpawnLocation",
+    "name": "SpawnLocation",
+    "parent_id": 0,
+    "path": "Workspace/SpawnLocation"
+  },
+  {
+    "id": 2,
+    "class": "Terrain",
+    "name": "Terrain",
+    "parent_id": 0,
+    "path": "Workspace/Terrain"
+  },
+  {
+    "id": 1578,
+    "class": "Part",
+    "name": "WorldClouds",
+    "parent_id": 0,
+    "path": "Workspace/WorldClouds"
+  },
+  {
+    "id": 1582,
+    "class": "Folder",
+    "name": "WorldPath",
+    "parent_id": 0,
+    "path": "Workspace/WorldPath"
+  },
+  {
+    "id": 388,
+    "class": "Folder",
+    "name": "WorldStructures",
+    "parent_id": 0,
+    "path": "Workspace/WorldStructures"
+  }
+]
