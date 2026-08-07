@@ -25,6 +25,7 @@ local hordeRuntime = fs.readFile("games/living-kingdoms/src/server/Systems/Horde
 local hordeConfig = fs.readFile("games/living-kingdoms/src/shared/Config/HordeExperienceConfig.luau")
 local serverBootstrap = fs.readFile("games/living-kingdoms/src/server/init.server.luau")
 local clientBootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
+local earlyListener = fs.readFile("games/living-kingdoms/src/client/State/HordeStateEarlyListener.luau")
 local hordeHud = fs.readFile("games/living-kingdoms/src/client/Controllers/HordeHUDController.luau")
 local massacre = fs.readFile("games/living-kingdoms/src/client/Controllers/MassacreCrescendoController.luau")
 local enemyImpact = fs.readFile("games/living-kingdoms/src/client/Controllers/EnemyImpactPresentationController.luau")
@@ -54,8 +55,11 @@ assertThat(
 	"server bootstrap must expose whether the legacy publisher is started"
 )
 
--- Two independently owned canonical listeners are currently present. v2.7 may
--- consolidate delivery later, but the migration must begin from this real count.
+-- R1 adds one early compatibility bridge while two domain listeners still exist.
+-- This intentionally produces three static listeners during containment; R2/R3
+-- must consolidate CL-002/CL-003 onto the bridge before compatibility removal.
+assertThat(contains(earlyListener, "stateRemote.OnClientEvent:Connect(onState)"), "R1 bridge must remain a State listener")
+assertThat(contains(clientBootstrap, "HordeStateEarlyListener.start()"), "R1 bridge must start from client bootstrap")
 for _, listener in {
 	{ name = "HordeHUDController", source = hordeHud },
 	{ name = "MassacreCrescendoController", source = massacre },
@@ -64,7 +68,7 @@ for _, listener in {
 	assertThat(contains(listener.source, 'WaitForChild("State")'), listener.name .. " must retain explicit State ownership")
 	assertThat(
 		contains(listener.source, "stateRemote.OnClientEvent:Connect"),
-		listener.name .. " must remain a statically visible effective State listener"
+		listener.name .. " must remain a statically visible compatibility listener until migrated"
 	)
 	assertThat(
 		contains(clientBootstrap, listener.name .. ".start()"),
@@ -94,4 +98,4 @@ assertThat(contains(hordeRuntime, "created.OutlineTransparency = 1"), "persisten
 assertThat(not contains(routeGuide, 'Instance.new("Highlight")'), "route guide must not allocate Highlights")
 assertThat(not contains(landmarkAccent, 'Instance.new("Highlight")'), "landmark accents must not allocate Highlights")
 
-print("V27ActivePlaceStaticInventorySourceAudit: canonical producer/listener/highlight facts locked; Studio attribution still required")
+print("V27ActivePlaceStaticInventorySourceAudit: canonical producer, three containment listeners, and narrow Highlight facts locked")
