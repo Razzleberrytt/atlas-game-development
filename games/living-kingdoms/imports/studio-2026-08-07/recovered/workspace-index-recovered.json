@@ -1,0 +1,870 @@
+{
+  "format_version": 1,
+  "generated_by": "scripts/verify_studio_import_package.py",
+  "source_place_sha256": "e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16",
+  "declared_instance_count": 1775,
+  "recovered_instance_count": 122,
+  "ordering": "Preserved exactly as emitted by the original extractor: breadth-first by depth, then ascending path within each depth.",
+  "completeness": {
+    "depth_1_complete": true,
+    "depth_2_complete": false,
+    "last_recovered_path": "Workspace/WorldPath/PathSegment_12",
+    "note": "Rows sort by path within a depth level, so every depth-2 path ordering before the last recovered path is complete. Workspace/HubTown, Workspace/Resources, Workspace/Buildings, Workspace/WorldClouds and Workspace/AmbientFireflies are therefore complete at depth 2. Workspace/WorldPath is truncated and Workspace/WorldStructures is absent. No depth-3 row survives."
+  },
+  "instances": [
+    {
+      "id": 0,
+      "class": "Workspace",
+      "name": "Workspace",
+      "parent_id": -1,
+      "path": "Workspace"
+    },
+    {
+      "id": 1772,
+      "class": "Part",
+      "name": "AmbientFireflies",
+      "parent_id": 0,
+      "path": "Workspace/AmbientFireflies"
+    },
+    {
+      "id": 1581,
+      "class": "Part",
+      "name": "BootstrapSafetyFloor",
+      "parent_id": 0,
+      "path": "Workspace/BootstrapSafetyFloor"
+    },
+    {
+      "id": 1580,
+      "class": "SpawnLocation",
+      "name": "BootstrapSafetySpawn",
+      "parent_id": 0,
+      "path": "Workspace/BootstrapSafetySpawn"
+    },
+    {
+      "id": 116,
+      "class": "Folder",
+      "name": "Buildings",
+      "parent_id": 0,
+      "path": "Workspace/Buildings"
+    },
+    {
+      "id": 1,
+      "class": "Camera",
+      "name": "Camera",
+      "parent_id": 0,
+      "path": "Workspace/Camera"
+    },
+    {
+      "id": 118,
+      "class": "Folder",
+      "name": "HubTown",
+      "parent_id": 0,
+      "path": "Workspace/HubTown"
+    },
+    {
+      "id": 3,
+      "class": "Folder",
+      "name": "Resources",
+      "parent_id": 0,
+      "path": "Workspace/Resources"
+    },
+    {
+      "id": 117,
+      "class": "SpawnLocation",
+      "name": "SpawnLocation",
+      "parent_id": 0,
+      "path": "Workspace/SpawnLocation"
+    },
+    {
+      "id": 2,
+      "class": "Terrain",
+      "name": "Terrain",
+      "parent_id": 0,
+      "path": "Workspace/Terrain"
+    },
+    {
+      "id": 1578,
+      "class": "Part",
+      "name": "WorldClouds",
+      "parent_id": 0,
+      "path": "Workspace/WorldClouds"
+    },
+    {
+      "id": 1582,
+      "class": "Folder",
+      "name": "WorldPath",
+      "parent_id": 0,
+      "path": "Workspace/WorldPath"
+    },
+    {
+      "id": 388,
+      "class": "Folder",
+      "name": "WorldStructures",
+      "parent_id": 0,
+      "path": "Workspace/WorldStructures"
+    },
+    {
+      "id": 1773,
+      "class": "Attachment",
+      "name": "FireflyAttach",
+      "parent_id": 1772,
+      "path": "Workspace/AmbientFireflies/FireflyAttach"
+    },
+    {
+      "id": 267,
+      "class": "Part",
+      "name": "Banner",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Banner"
+    },
+    {
+      "id": 266,
+      "class": "Part",
+      "name": "BannerPole",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/BannerPole"
+    },
+    {
+      "id": 268,
+      "class": "Part",
+      "name": "BannerTip",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/BannerTip"
+    },
+    {
+      "id": 120,
+      "class": "Part",
+      "name": "CenterEmblem",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/CenterEmblem"
+    },
+    {
+      "id": 270,
+      "class": "Model",
+      "name": "CentralFountain",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/CentralFountain"
+    },
+    {
+      "id": 305,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 306,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 307,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 308,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 309,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 310,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 311,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 312,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 313,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 314,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 315,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 316,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 317,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 318,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 319,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 320,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 321,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 322,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 323,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 324,
+      "class": "Part",
+      "name": "Crenellation",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Crenellation"
+    },
+    {
+      "id": 327,
+      "class": "Part",
+      "name": "CrystalPedestal_1",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/CrystalPedestal_1"
+    },
+    {
+      "id": 339,
+      "class": "Part",
+      "name": "CrystalPedestal_1",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/CrystalPedestal_1"
+    },
+    {
+      "id": 330,
+      "class": "Part",
+      "name": "CrystalPedestal_2",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/CrystalPedestal_2"
+    },
+    {
+      "id": 342,
+      "class": "Part",
+      "name": "CrystalPedestal_2",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/CrystalPedestal_2"
+    },
+    {
+      "id": 333,
+      "class": "Part",
+      "name": "CrystalPedestal_3",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/CrystalPedestal_3"
+    },
+    {
+      "id": 345,
+      "class": "Part",
+      "name": "CrystalPedestal_3",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/CrystalPedestal_3"
+    },
+    {
+      "id": 336,
+      "class": "Part",
+      "name": "CrystalPedestal_4",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/CrystalPedestal_4"
+    },
+    {
+      "id": 348,
+      "class": "Part",
+      "name": "CrystalPedestal_4",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/CrystalPedestal_4"
+    },
+    {
+      "id": 201,
+      "class": "Folder",
+      "name": "DungeonPortal",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/DungeonPortal"
+    },
+    {
+      "id": 229,
+      "class": "Model",
+      "name": "GrandStaircase",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/GrandStaircase"
+    },
+    {
+      "id": 351,
+      "class": "Part",
+      "name": "HangingBanner_apothecary",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/HangingBanner_apothecary"
+    },
+    {
+      "id": 350,
+      "class": "Part",
+      "name": "HangingBanner_armor_smith",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/HangingBanner_armor_smith"
+    },
+    {
+      "id": 349,
+      "class": "Part",
+      "name": "HangingBanner_weapon_smith",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/HangingBanner_weapon_smith"
+    },
+    {
+      "id": 382,
+      "class": "Model",
+      "name": "HubArchway",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/HubArchway"
+    },
+    {
+      "id": 364,
+      "class": "Part",
+      "name": "HubGroundFog",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/HubGroundFog"
+    },
+    {
+      "id": 265,
+      "class": "Part",
+      "name": "InnerGlowRing",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/InnerGlowRing"
+    },
+    {
+      "id": 352,
+      "class": "Part",
+      "name": "MagicOrb_1",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/MagicOrb_1"
+    },
+    {
+      "id": 354,
+      "class": "Part",
+      "name": "MagicOrb_2",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/MagicOrb_2"
+    },
+    {
+      "id": 356,
+      "class": "Part",
+      "name": "MagicOrb_3",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/MagicOrb_3"
+    },
+    {
+      "id": 358,
+      "class": "Part",
+      "name": "MagicOrb_4",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/MagicOrb_4"
+    },
+    {
+      "id": 360,
+      "class": "Part",
+      "name": "MagicOrb_5",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/MagicOrb_5"
+    },
+    {
+      "id": 362,
+      "class": "Part",
+      "name": "MagicOrb_6",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/MagicOrb_6"
+    },
+    {
+      "id": 325,
+      "class": "Part",
+      "name": "PlazaCrystal_1",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/PlazaCrystal_1"
+    },
+    {
+      "id": 337,
+      "class": "Part",
+      "name": "PlazaCrystal_1",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/PlazaCrystal_1"
+    },
+    {
+      "id": 328,
+      "class": "Part",
+      "name": "PlazaCrystal_2",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/PlazaCrystal_2"
+    },
+    {
+      "id": 340,
+      "class": "Part",
+      "name": "PlazaCrystal_2",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/PlazaCrystal_2"
+    },
+    {
+      "id": 331,
+      "class": "Part",
+      "name": "PlazaCrystal_3",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/PlazaCrystal_3"
+    },
+    {
+      "id": 343,
+      "class": "Part",
+      "name": "PlazaCrystal_3",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/PlazaCrystal_3"
+    },
+    {
+      "id": 334,
+      "class": "Part",
+      "name": "PlazaCrystal_4",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/PlazaCrystal_4"
+    },
+    {
+      "id": 346,
+      "class": "Part",
+      "name": "PlazaCrystal_4",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/PlazaCrystal_4"
+    },
+    {
+      "id": 119,
+      "class": "Part",
+      "name": "PlazaFloor",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/PlazaFloor"
+    },
+    {
+      "id": 264,
+      "class": "Part",
+      "name": "PlazaRing",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/PlazaRing"
+    },
+    {
+      "id": 211,
+      "class": "Part",
+      "name": "Torch_1",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Torch_1"
+    },
+    {
+      "id": 214,
+      "class": "Part",
+      "name": "Torch_2",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Torch_2"
+    },
+    {
+      "id": 217,
+      "class": "Part",
+      "name": "Torch_3",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Torch_3"
+    },
+    {
+      "id": 220,
+      "class": "Part",
+      "name": "Torch_4",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Torch_4"
+    },
+    {
+      "id": 223,
+      "class": "Part",
+      "name": "Torch_5",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Torch_5"
+    },
+    {
+      "id": 226,
+      "class": "Part",
+      "name": "Torch_6",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/Torch_6"
+    },
+    {
+      "id": 121,
+      "class": "Part",
+      "name": "TownWall_1",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/TownWall_1"
+    },
+    {
+      "id": 122,
+      "class": "Part",
+      "name": "TownWall_2",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/TownWall_2"
+    },
+    {
+      "id": 123,
+      "class": "Part",
+      "name": "TownWall_3",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/TownWall_3"
+    },
+    {
+      "id": 124,
+      "class": "Part",
+      "name": "TownWall_4",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/TownWall_4"
+    },
+    {
+      "id": 281,
+      "class": "Part",
+      "name": "WallTorch",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/WallTorch"
+    },
+    {
+      "id": 284,
+      "class": "Part",
+      "name": "WallTorch",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/WallTorch"
+    },
+    {
+      "id": 287,
+      "class": "Part",
+      "name": "WallTorch",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/WallTorch"
+    },
+    {
+      "id": 290,
+      "class": "Part",
+      "name": "WallTorch",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/WallTorch"
+    },
+    {
+      "id": 293,
+      "class": "Part",
+      "name": "WallTorch",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/WallTorch"
+    },
+    {
+      "id": 296,
+      "class": "Part",
+      "name": "WallTorch",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/WallTorch"
+    },
+    {
+      "id": 299,
+      "class": "Part",
+      "name": "WallTorch",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/WallTorch"
+    },
+    {
+      "id": 302,
+      "class": "Part",
+      "name": "WallTorch",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/WallTorch"
+    },
+    {
+      "id": 165,
+      "class": "Folder",
+      "name": "apothecary",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/apothecary"
+    },
+    {
+      "id": 145,
+      "class": "Folder",
+      "name": "armor_smith",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/armor_smith"
+    },
+    {
+      "id": 367,
+      "class": "Folder",
+      "name": "merchant",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/merchant"
+    },
+    {
+      "id": 185,
+      "class": "Folder",
+      "name": "quest_board",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/quest_board"
+    },
+    {
+      "id": 125,
+      "class": "Folder",
+      "name": "weapon_smith",
+      "parent_id": 118,
+      "path": "Workspace/HubTown/weapon_smith"
+    },
+    {
+      "id": 67,
+      "class": "Folder",
+      "name": "IronOre",
+      "parent_id": 3,
+      "path": "Workspace/Resources/IronOre"
+    },
+    {
+      "id": 50,
+      "class": "Folder",
+      "name": "Rocks",
+      "parent_id": 3,
+      "path": "Workspace/Resources/Rocks"
+    },
+    {
+      "id": 4,
+      "class": "Folder",
+      "name": "Trees",
+      "parent_id": 3,
+      "path": "Workspace/Resources/Trees"
+    },
+    {
+      "id": 1579,
+      "class": "Clouds",
+      "name": "Clouds",
+      "parent_id": 1578,
+      "path": "Workspace/WorldClouds/Clouds"
+    },
+    {
+      "id": 1583,
+      "class": "Part",
+      "name": "PathSegment_1",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_1"
+    },
+    {
+      "id": 1592,
+      "class": "Part",
+      "name": "PathSegment_10",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_10"
+    },
+    {
+      "id": 1682,
+      "class": "Part",
+      "name": "PathSegment_100",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_100"
+    },
+    {
+      "id": 1683,
+      "class": "Part",
+      "name": "PathSegment_101",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_101"
+    },
+    {
+      "id": 1684,
+      "class": "Part",
+      "name": "PathSegment_102",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_102"
+    },
+    {
+      "id": 1685,
+      "class": "Part",
+      "name": "PathSegment_103",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_103"
+    },
+    {
+      "id": 1686,
+      "class": "Part",
+      "name": "PathSegment_104",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_104"
+    },
+    {
+      "id": 1687,
+      "class": "Part",
+      "name": "PathSegment_105",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_105"
+    },
+    {
+      "id": 1688,
+      "class": "Part",
+      "name": "PathSegment_106",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_106"
+    },
+    {
+      "id": 1689,
+      "class": "Part",
+      "name": "PathSegment_107",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_107"
+    },
+    {
+      "id": 1690,
+      "class": "Part",
+      "name": "PathSegment_108",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_108"
+    },
+    {
+      "id": 1691,
+      "class": "Part",
+      "name": "PathSegment_109",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_109"
+    },
+    {
+      "id": 1593,
+      "class": "Part",
+      "name": "PathSegment_11",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_11"
+    },
+    {
+      "id": 1692,
+      "class": "Part",
+      "name": "PathSegment_110",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_110"
+    },
+    {
+      "id": 1693,
+      "class": "Part",
+      "name": "PathSegment_111",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_111"
+    },
+    {
+      "id": 1694,
+      "class": "Part",
+      "name": "PathSegment_112",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_112"
+    },
+    {
+      "id": 1695,
+      "class": "Part",
+      "name": "PathSegment_113",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_113"
+    },
+    {
+      "id": 1696,
+      "class": "Part",
+      "name": "PathSegment_114",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_114"
+    },
+    {
+      "id": 1697,
+      "class": "Part",
+      "name": "PathSegment_115",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_115"
+    },
+    {
+      "id": 1698,
+      "class": "Part",
+      "name": "PathSegment_116",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_116"
+    },
+    {
+      "id": 1699,
+      "class": "Part",
+      "name": "PathSegment_117",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_117"
+    },
+    {
+      "id": 1700,
+      "class": "Part",
+      "name": "PathSegment_118",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_118"
+    },
+    {
+      "id": 1701,
+      "class": "Part",
+      "name": "PathSegment_119",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_119"
+    },
+    {
+      "id": 1594,
+      "class": "Part",
+      "name": "PathSegment_12",
+      "parent_id": 1582,
+      "path": "Workspace/WorldPath/PathSegment_12"
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "archives": {
+    "legacy-src": {
+      "chunk_count": 16,
+      "hash_verified_files": [
+        "ReplicatedStorage/Shared/Config/AffixDefinitions.luau",
+        "ReplicatedStorage/Shared/Config/DungeonDefinitions.luau",
+        "ReplicatedStorage/Shared/Config/EnemyDefinitions.luau",
+        "ReplicatedStorage/Shared/Config/ItemDefinitions.luau",
+        "ReplicatedStorage/Shared/Config/LootTables.luau",
+        "ReplicatedStorage/Shared/Config/RNGConfig.luau",
+        "ReplicatedStorage/Shared/Types/CombatTypes.luau",
+        "ReplicatedStorage/Shared/Types/ItemTypes.luau",
+        "ReplicatedStorage/Shared/Types/PlayerDataTypes.luau",
+        "ReplicatedStorage/Shared/Utility/NumberUtility.luau",
+        "ReplicatedStorage/Shared/Utility/RNGEngine.luau",
+        "ReplicatedStorage/Shared/Utility/RandomUtility.luau",
+        "ServerScriptService/MonetizationService.server.luau",
+        "ServerScriptService/RPGServerBootstrap.server.luau",
+        "ServerScriptService/Services/CombatService.luau",
+        "ServerScriptService/Services/DungeonService.luau",
+        "ServerScriptService/Services/EnemyService.luau"
+      ],
+      "joined_base64_length": 86771,
+      "joined_base64_sha256": "3f58b767221fe8196c68830b2314fe4ec74b4181b9e64e1a720a9c4adb9d6344",
+      "recovered_stream_bytes": 233694,
+      "restores_completely": false,
+      "unrecoverable_files": [
+        "ServerScriptService/Services/HubTownService.luau",
+        "ServerScriptService/Services/InventoryService.luau",
+        "ServerScriptService/Services/LootService.luau",
+        "ServerScriptService/Services/PlayerDataService.luau",
+        "ServerScriptService/Services/QuestService.luau",
+        "ServerScriptService/SurvivalGatheringService.server.luau",
+        "StarterGui/RPGUI.client.luau",
+        "StarterGui/ShopUI.client.luau",
+        "StarterGui/SurvivalHUD.client.luau",
+        "StarterPack/Hatchet/SwingController.client.luau",
+        "StarterPlayer/StarterPlayerScripts/RPGClientController.client.luau"
+      ]
+    },
+    "workspace-index": {
+      "chunk_count": 5,
+      "joined_base64_length": 24456,
+      "joined_base64_sha256": "20d8dd52d740be8ab16bc79534c352a25b15f1e5b07a113ba9b469d63841ac1c",
+      "recovered_instance_count": 122,
+      "recovered_instances_sha256": "0281c624b73af669a9a29a7f194effe4415f76cc977c2a0c1fd739c1494b00ca",
+      "recovered_stream_bytes": 192254,
+      "restores_completely": false
+    }
+  },
+  "declared_unique_files": 28,
+  "declared_workspace_instances": 1775,
+  "format_version": 1,
+  "source_place_sha256": "e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16"
+}

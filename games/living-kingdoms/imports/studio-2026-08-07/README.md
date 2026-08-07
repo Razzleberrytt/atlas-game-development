@@ -13,12 +13,27 @@ This directory is the loss-avoidance import package for `livingkingdoms.rbxl` su
 
 The original binary cannot be safely treated as source-of-truth over the tested Rojo tree. The import therefore preserves the material that is unique to the Studio place while leaving the newer repo implementation authoritative where the two overlap.
 
-## What is preserved here
+## Archive integrity — read this first
 
-1. **Every unique old-RPG source file** that is not already represented by the current repo: 28 files in the lossless `legacy-src.tar.gz.b64.part01` … `part16` bundle (restored to `legacy-src/` with `restore-import.py`).
-2. **Every Workspace instance identity and hierarchy path** from the supplied place in `workspace-index.json` (restored from `workspace-index.json.gz.b64.part01` … `part05` by `restore-import.py`) (1,775 entries), including the authored hub, dungeon portal, resources, landmarks/ruins, lighting objects, NPC structures, and other world content.
-3. A complete **script reconciliation manifest** in `manifest.json`, including source hashes and whether the canonical repo or preserved legacy copy owns each script after the import.
-4. The exact source-file fingerprint above, so later conversion/recovery can prove it is operating on the same Studio place.
+The two chunked base64 archives in this directory are **damaged in the committed
+blobs**, so `restore-import.py` fails. What survives has been extracted to
+`recovered/` as plain text and is checked by CI:
+
+- 17 of 28 Studio-only sources, SHA-256-verified
+- 122 of 1,775 Workspace instance rows
+- `Workspace/HubTown` complete at depth 2; `Workspace/WorldStructures` absent; no depth-3 rows
+
+Full finding, exhausted repair attempts and the required Studio re-extraction
+steps: `../../../../docs/production/RBXL-IMPORT-INTEGRITY-2026-08-07.md`.
+Current measurements: `VALIDATION.md`. Pinned recovery level:
+`INTEGRITY-BASELINE.json`.
+
+## What this package was intended to preserve
+
+1. **Every unique old-RPG source file** that is not already represented by the current repo: 28 files in the `legacy-src.tar.gz.b64.part01` … `part16` bundle. 17 are recoverable today and live in `recovered/legacy-src/`.
+2. **Every Workspace instance identity and hierarchy path** from the supplied place (1,775 entries), including the authored hub, dungeon portal, resources, landmarks/ruins, lighting objects, NPC structures, and other world content. 122 rows are recoverable today and live in `recovered/workspace-index-recovered.json`.
+3. A complete **script reconciliation manifest** in `manifest.json`, including source hashes and whether the canonical repo or preserved legacy copy owns each script after the import. This file is intact and remains the identity reference for all 28 sources.
+4. The exact source-file fingerprint above, so later conversion/recovery can prove it is operating on the same Studio place. This is intact.
 
 ## Merge rule
 
@@ -54,7 +69,7 @@ The highest-value unique pieces to adapt into the canonical architecture are:
 
 ## World note
 
-`workspace-index.json` (restored from `workspace-index.json.gz.b64.part01` … `part05` by `restore-import.py`) is a hierarchy-preservation artifact, not a claim of property-perfect reconstruction. The supplied world is valuable authored content and should be promoted into an active source-managed world only after its geometry/properties have been reconstructed and tested against the current operation runtime. Until then, the exact source hash and complete object hierarchy prevent the import from becoming an undocumented black box.
+`recovered/workspace-index-recovered.json` is a hierarchy-preservation artifact, not a claim of property-perfect reconstruction. The supplied world is valuable authored content and should be promoted into an active source-managed world only after its geometry/properties have been reconstructed and tested against the current operation runtime. Until then, the exact source hash and complete object hierarchy prevent the import from becoming an undocumented black box.
 
 ## Recovery
 

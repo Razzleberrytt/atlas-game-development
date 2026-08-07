@@ -42,5 +42,11 @@ __pycache__/
 coverage/
 *.lcov
 
+# Local output of the Studio import restore helper. The reviewed, verified copy
+# of this material is tracked under imports/studio-2026-08-07/recovered/.
+games/living-kingdoms/imports/*/legacy-src/
+games/living-kingdoms/imports/*/workspace-index.json
+games/living-kingdoms/imports/*/workspace-index.partial.json
+
 # Keep deliberately tracked Roblox model files by adding a narrow negate rule
 # beside the owning directory and documenting the reason in that directory.
