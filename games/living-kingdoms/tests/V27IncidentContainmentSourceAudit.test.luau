@@ -20,6 +20,7 @@ local guard = fs.readFile("games/living-kingdoms/src/client/Presentation/BroadHi
 local rolloutConfig = fs.readFile("games/living-kingdoms/src/shared/Config/RuntimeRolloutConfig.luau")
 
 assertThat(contains(rolloutConfig, 'Version = "V2.7-R1-CONTAINMENT"'), "rollout config version must stay explicit")
+assertThat(contains(rolloutConfig, "EnableRuntimeCounters = true"), "R1 diagnostics must default on")
 assertThat(contains(rolloutConfig, "EnableEarlyStateListener = true"), "R1 early listener must default on")
 assertThat(contains(rolloutConfig, "RejectBroadHighlightTargets = true"), "broad Highlight containment must default on")
 assertThat(contains(bootstrap, "RuntimeRolloutConfig.EnableEarlyStateListener"), "bootstrap must gate the R1 listener")
@@ -39,6 +40,10 @@ assertThat(contains(listener, 'WaitForChild("State")'), "early listener must bin
 assertThat(contains(listener, "stateRemote.OnClientEvent:Connect(onState)"), "early listener must consume State immediately")
 assertThat(contains(listener, "latestSnapshot = message"), "early listener must retain latest current state")
 assertThat(contains(listener, "function HordeStateEarlyListener.subscribe"), "early listener must support later listener consolidation")
+assertThat(contains(listener, 'SetAttribute("V27_EarlyStateListenerBound"'), "listener bound diagnostic must exist")
+assertThat(contains(listener, 'SetAttribute("V27_StateMessagesReceived"'), "message-count diagnostic must exist")
+assertThat(contains(listener, 'SetAttribute("V27_StateInvalidMessages"'), "invalid-message diagnostic must exist")
+assertThat(contains(listener, 'SetAttribute("V27_StateLastRevision"'), "last-revision diagnostic must exist")
 for _, forbidden in { "FireServer", "InvokeServer", "TakeDamage", "Humanoid", 'Instance.new("Highlight")' } do
 	assertThat(not contains(listener, forbidden), "early listener must own no gameplay/presentation authority: " .. forbidden)
 end
@@ -49,8 +54,11 @@ assertThat(contains(guard, "target.Parent ~= Workspace"), "guard must leave nest
 assertThat(contains(guard, 'target:IsA("Model") or target:IsA("Folder")'), "guard must scope top-level broad roots")
 assertThat(contains(guard, "instance.Enabled = false"), "guard must disable rejected broad Highlights")
 assertThat(contains(guard, 'instance:SetAttribute("LK_BroadTargetRejected", true)'), "guard must mark rejected Highlights")
+assertThat(contains(guard, 'Workspace:SetAttribute("V27_BroadHighlightGuardActive"'), "guard active diagnostic must exist")
+assertThat(contains(guard, 'Workspace:SetAttribute("V27_BroadHighlightRejectedCount"'), "guard rejection diagnostic must exist")
+assertThat(contains(guard, 'Workspace:SetAttribute("V27_BroadHighlightLastTarget"'), "last broad-target diagnostic must exist")
 for _, forbidden in { "FireServer", "InvokeServer", "TakeDamage", "CombatImpactHighlight", "HordeRoleHighlight", "EnemyEntities" } do
 	assertThat(not contains(guard, forbidden), "guard must not target gameplay or known narrow Highlight owners: " .. forbidden)
 end
 
-print("V27IncidentContainmentSourceAudit: flagged early State listener and conservative broad-Highlight rejection locked")
+print("V27IncidentContainmentSourceAudit: flagged early State listener, diagnostics, and conservative broad-Highlight rejection locked")
