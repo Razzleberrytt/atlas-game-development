@@ -6,6 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local MovementLimits = require(ReplicatedStorage.Shared.Config.MovementLimits)
+local RunProgressionConfig = require(ReplicatedStorage.Shared.Config.RunProgressionConfig)
 
 local Controller = {}
 local player = Players.LocalPlayer
@@ -15,6 +16,7 @@ local survivalStateRemote = survivalNetwork:WaitForChild("State") :: RemoteEvent
 local survivalReadState = survivalNetwork:WaitForChild("ReadState") :: RemoteFunction
 local progressionStateRemote = progressionNetwork:WaitForChild("State") :: RemoteEvent
 local progressionReadState = progressionNetwork:WaitForChild("ReadState") :: RemoteFunction
+local progressionChooseUpgrade = progressionNetwork:WaitForChild("ChooseUpgrade") :: RemoteEvent
 
 local started = false
 local connections: { RBXScriptConnection } = {}
@@ -22,12 +24,14 @@ local gui: ScreenGui? = nil
 local modal: Frame? = nil
 local characterPanel: Frame? = nil
 local inventoryPanel: Frame? = nil
+local skillsPanel: ScrollingFrame? = nil
 local viewport: ViewportFrame? = nil
 local statsList: Frame? = nil
 local inventoryGrid: ScrollingFrame? = nil
 local inventoryTitle: TextLabel? = nil
 local characterTab: TextButton? = nil
 local inventoryTab: TextButton? = nil
+local skillsTab: TextButton? = nil
 local selectedTab = "Character"
 local latestSurvival: any = nil
 local latestProgression: any = nil
@@ -288,13 +292,192 @@ local function rebuildInventory()
 	grid.CanvasSize = UDim2.fromOffset(0, math.ceil(24 / 5) * 116)
 end
 
+local function upgradeStacks(): { [string]: number }
+	local stacks: { [string]: number } = {}
+	if type(latestProgression) ~= "table" or type(latestProgression.activeUpgrades) ~= "table" then
+		return stacks
+	end
+	for _, upgrade in latestProgression.activeUpgrades do
+		if type(upgrade) == "table" and type(upgrade.id) == "string" then
+			stacks[upgrade.id] = tonumber(upgrade.stacks) or 0
+		end
+	end
+	return stacks
+end
+
+local function pendingUpgradeIds(): { [string]: boolean }
+	local pending: { [string]: boolean } = {}
+	if type(latestProgression) ~= "table" or type(latestProgression.pendingChoices) ~= "table" then
+		return pending
+	end
+	for _, choice in latestProgression.pendingChoices do
+		if type(choice) == "table" and type(choice.id) == "string" then
+			pending[choice.id] = true
+		end
+	end
+	return pending
+end
+
+local function prerequisitesMet(definition: any, stacks: { [string]: number }): boolean
+	for _, prerequisiteId in definition.PrerequisiteIds do
+		if (stacks[prerequisiteId] or 0) < 1 then
+			return false
+		end
+	end
+	return true
+end
+
+local function prerequisiteName(definition: any): string
+	local prerequisiteId = definition.PrerequisiteIds[1]
+	if prerequisiteId == nil then
+		return ""
+	end
+	for _, candidate in RunProgressionConfig.UpgradeDefinitions do
+		if candidate.Id == prerequisiteId then
+			return candidate.Name
+		end
+	end
+	return tostring(prerequisiteId)
+end
+
+local TREE_COLORS = table.freeze({
+	Predator = Color3.fromRGB(194, 67, 62),
+	Gunslinger = Color3.fromRGB(221, 166, 62),
+	Survivor = Color3.fromRGB(75, 159, 125),
+})
+
+local function skillNode(
+	parent: Instance,
+	definition: any,
+	stacks: { [string]: number },
+	pending: { [string]: boolean },
+	treeColor: Color3
+)
+	local currentRank = stacks[definition.Id] or 0
+	local isOffered = pending[definition.Id] == true
+	local isUnlocked = prerequisitesMet(definition, stacks)
+	local isMaxed = currentRank >= definition.MaximumStacks
+	local node = Instance.new("TextButton")
+	node.Name = definition.Id
+	node.Position = UDim2.fromOffset(8, 50 + (definition.Tier - 1) * 105)
+	node.Size = UDim2.new(1, -16, 0, 88)
+	node.BackgroundColor3 = if isOffered
+		then Color3.fromRGB(55, 45, 25)
+		elseif currentRank > 0 then Color3.fromRGB(25, 52, 39)
+		elseif isUnlocked then Color3.fromRGB(27, 33, 37)
+		else Color3.fromRGB(15, 18, 19)
+	node.BackgroundTransparency = if isUnlocked or currentRank > 0 then 0 else 0.25
+	node.BorderSizePixel = 0
+	node.AutoButtonColor = isOffered
+	node.Active = isOffered
+	node.Text = ""
+	node.Parent = parent
+	decorate(node, if isOffered then COLORS.gold elseif currentRank > 0 then COLORS.green else treeColor)
+
+	local icon = label(node, definition.Icon, UDim2.fromOffset(7, 8), UDim2.fromOffset(47, 47), 28)
+	icon.TextXAlignment = Enum.TextXAlignment.Center
+	icon.TextColor3 = if isOffered then COLORS.gold elseif currentRank > 0 then COLORS.green else treeColor
+	local name = label(node, definition.Name, UDim2.fromOffset(58, 7), UDim2.new(1, -66, 0, 22), 12)
+	name.TextColor3 = if isUnlocked or currentRank > 0 then COLORS.text else Color3.fromRGB(91, 98, 96)
+	local rank = label(
+		node,
+		string.format("RANK %d / %d", currentRank, definition.MaximumStacks),
+		UDim2.fromOffset(6, 60),
+		UDim2.fromOffset(50, 18),
+		8
+	)
+	rank.TextXAlignment = Enum.TextXAlignment.Center
+	rank.TextColor3 = if isMaxed then COLORS.green elseif isOffered then COLORS.gold else COLORS.muted
+	local description = label(node, definition.Description, UDim2.fromOffset(58, 30), UDim2.new(1, -66, 0, 34), 10)
+	description.TextWrapped = true
+	description.TextColor3 = if isUnlocked or currentRank > 0 then COLORS.muted else Color3.fromRGB(72, 78, 76)
+	local statusText = if isMaxed
+		then "MASTERED"
+		elseif isOffered then "AVAILABLE — CHOOSE"
+		elseif not isUnlocked then "REQUIRES " .. prerequisiteName(definition)
+		elseif currentRank > 0 then "OWNED — AWAIT NEXT POINT"
+		else "UNLOCKED — AWAIT NEXT POINT"
+	local status = label(node, statusText, UDim2.fromOffset(58, 67), UDim2.new(1, -66, 0, 16), 9)
+	status.TextColor3 = if isOffered
+		then COLORS.gold
+		elseif isMaxed then COLORS.green
+		elseif isUnlocked then treeColor
+		else Color3.fromRGB(83, 88, 87)
+	if isOffered then
+		node.Activated:Connect(function()
+			node.Active = false
+			progressionChooseUpgrade:FireServer(definition.Id)
+		end)
+	end
+end
+
+local function rebuildSkillTree()
+	local panel = skillsPanel
+	if panel == nil then
+		return
+	end
+	clearGenerated(panel)
+	local level = if type(latestProgression) == "table" then tonumber(latestProgression.level) or 1 else 1
+	local unclaimed = if type(latestProgression) == "table"
+		then tonumber(latestProgression.unclaimedUpgradeChoices) or 0
+		else 0
+	local heading = label(
+		panel,
+		string.format(
+			"FIELD SKILLS   //   LEVEL %d   //   %s",
+			level,
+			if unclaimed > 0 then "CHOOSE A GLOWING NODE" else "NEXT POINT EARNED WITH FIELD XP"
+		),
+		UDim2.fromOffset(4, 0),
+		UDim2.new(1, -8, 0, 32),
+		13
+	)
+	heading.TextColor3 = if unclaimed > 0 then COLORS.gold else COLORS.muted
+	local stacks = upgradeStacks()
+	local pending = pendingUpgradeIds()
+	for treeIndex, tree in RunProgressionConfig.SkillTrees do
+		local treeColor = TREE_COLORS[tree.Id] or COLORS.gold
+		local column = Instance.new("Frame")
+		column.Name = tree.Id .. "Tree"
+		column.Position = UDim2.new((treeIndex - 1) / 3, if treeIndex == 1 then 0 else 6, 0, 36)
+		column.Size = UDim2.new(1 / 3, -8, 0, 480)
+		column.BackgroundColor3 = COLORS.panel
+		column.BorderSizePixel = 0
+		column.Parent = panel
+		decorate(column, treeColor)
+		local treeName = label(column, tree.Name, UDim2.fromOffset(10, 5), UDim2.new(1, -20, 0, 21), 14)
+		treeName.TextXAlignment = Enum.TextXAlignment.Center
+		treeName.TextColor3 = treeColor
+		local treeDescription = label(column, tree.Description, UDim2.fromOffset(10, 25), UDim2.new(1, -20, 0, 20), 9)
+		treeDescription.TextXAlignment = Enum.TextXAlignment.Center
+		treeDescription.TextColor3 = COLORS.muted
+		for tier = 1, 3 do
+			local connector = Instance.new("Frame")
+			connector.Name = "Connector" .. tostring(tier)
+			connector.AnchorPoint = Vector2.new(0.5, 0)
+			connector.Position = UDim2.new(0.5, 0, 0, 134 + (tier - 1) * 105)
+			connector.Size = UDim2.fromOffset(4, 18)
+			connector.BackgroundColor3 = treeColor
+			connector.BackgroundTransparency = 0.35
+			connector.BorderSizePixel = 0
+			connector.Parent = column
+		end
+		for _, definition in RunProgressionConfig.UpgradeDefinitions do
+			if definition.TreeId == tree.Id then
+				skillNode(column, definition, stacks, pending, treeColor)
+			end
+		end
+	end
+end
+
 local function selectTab(tabName: string)
-	if characterPanel == nil or inventoryPanel == nil then
+	if characterPanel == nil or inventoryPanel == nil or skillsPanel == nil then
 		return
 	end
 	selectedTab = tabName
 	characterPanel.Visible = tabName == "Character"
 	inventoryPanel.Visible = tabName == "Inventory"
+	skillsPanel.Visible = tabName == "Skills"
 	if characterTab ~= nil then
 		characterTab.BackgroundColor3 = if tabName == "Character" then COLORS.gold else COLORS.slot
 		characterTab.TextColor3 = if tabName == "Character" then COLORS.background else COLORS.text
@@ -303,12 +486,18 @@ local function selectTab(tabName: string)
 		inventoryTab.BackgroundColor3 = if tabName == "Inventory" then COLORS.gold else COLORS.slot
 		inventoryTab.TextColor3 = if tabName == "Inventory" then COLORS.background else COLORS.text
 	end
+	if skillsTab ~= nil then
+		skillsTab.BackgroundColor3 = if tabName == "Skills" then COLORS.gold else COLORS.slot
+		skillsTab.TextColor3 = if tabName == "Skills" then COLORS.background else COLORS.text
+	end
 	if tabName == "Character" then
 		rebuildViewport()
 		rebuildEquipment()
 		rebuildStats()
-	else
+	elseif tabName == "Inventory" then
 		rebuildInventory()
+	else
+		rebuildSkillTree()
 	end
 end
 
@@ -357,6 +546,7 @@ local function createPresentation()
 	created.ResetOnSpawn = false
 	created.IgnoreGuiInset = true
 	created.DisplayOrder = 70
+	topButton(created, "K   SKILLS", -284, "Skills")
 	topButton(created, "C   CHARACTER", -148, "Character")
 	topButton(created, "I   INVENTORY", -12, "Inventory")
 
@@ -399,14 +589,19 @@ local function createPresentation()
 
 	local charTab = topButton(window, "CHARACTER", -174, "Character")
 	charTab.AnchorPoint = Vector2.new(0, 0)
-	charTab.Position = UDim2.fromOffset(286, 11)
-	charTab.Size = UDim2.fromOffset(138, 36)
+	charTab.Position = UDim2.fromOffset(275, 11)
+	charTab.Size = UDim2.fromOffset(125, 36)
 	local invTab = topButton(window, "INVENTORY", -12, "Inventory")
 	invTab.AnchorPoint = Vector2.new(0, 0)
-	invTab.Position = UDim2.fromOffset(432, 11)
-	invTab.Size = UDim2.fromOffset(138, 36)
+	invTab.Position = UDim2.fromOffset(407, 11)
+	invTab.Size = UDim2.fromOffset(125, 36)
+	local skillTab = topButton(window, "SKILLS", -12, "Skills")
+	skillTab.AnchorPoint = Vector2.new(0, 0)
+	skillTab.Position = UDim2.fromOffset(539, 11)
+	skillTab.Size = UDim2.fromOffset(125, 36)
 	characterTab = charTab
 	inventoryTab = invTab
+	skillsTab = skillTab
 
 	local charPanel = Instance.new("Frame")
 	charPanel.Name = "CharacterPanel"
@@ -493,6 +688,19 @@ local function createPresentation()
 	gridLayout.Parent = grid
 	inventoryGrid = grid
 
+	local skillPanel = Instance.new("ScrollingFrame")
+	skillPanel.Name = "SkillsPanel"
+	skillPanel.Position = UDim2.fromOffset(14, 58)
+	skillPanel.Size = UDim2.new(1, -28, 1, -72)
+	skillPanel.BackgroundTransparency = 1
+	skillPanel.BorderSizePixel = 0
+	skillPanel.ScrollBarThickness = 6
+	skillPanel.ScrollBarImageColor3 = COLORS.gold
+	skillPanel.CanvasSize = UDim2.fromOffset(0, 525)
+	skillPanel.Visible = false
+	skillPanel.Parent = window
+	skillsPanel = skillPanel
+
 	created.Parent = player:WaitForChild("PlayerGui")
 	gui = created
 	selectTab("Character")
@@ -514,6 +722,8 @@ function Controller.start()
 				toggleTab("Character")
 			elseif input.KeyCode == Enum.KeyCode.I then
 				toggleTab("Inventory")
+			elseif input.KeyCode == Enum.KeyCode.K then
+				toggleTab("Skills")
 			elseif input.KeyCode == Enum.KeyCode.Escape and modal ~= nil and modal.Visible then
 				setOpen(false)
 			end
@@ -534,6 +744,8 @@ function Controller.start()
 			latestProgression = snapshot
 			if characterPanel ~= nil and characterPanel.Visible then
 				rebuildStats()
+			elseif skillsPanel ~= nil and skillsPanel.Visible then
+				rebuildSkillTree()
 			end
 		end)
 	)
@@ -561,6 +773,7 @@ function Controller.start()
 	rebuildEquipment()
 	rebuildStats()
 	rebuildInventory()
+	rebuildSkillTree()
 end
 
 function Controller.stop()
@@ -576,12 +789,14 @@ function Controller.stop()
 	modal = nil
 	characterPanel = nil
 	inventoryPanel = nil
+	skillsPanel = nil
 	viewport = nil
 	statsList = nil
 	inventoryGrid = nil
 	inventoryTitle = nil
 	characterTab = nil
 	inventoryTab = nil
+	skillsTab = nil
 	selectedTab = "Character"
 	latestSurvival = nil
 	latestProgression = nil

@@ -58,6 +58,15 @@ local function validateStacks(stacks: UpgradeStacks): boolean
 	return true
 end
 
+local function hasPrerequisites(definition: any, stacks: UpgradeStacks): boolean
+	for _, prerequisiteId in definition.PrerequisiteIds do
+		if (stacks[prerequisiteId] or 0) < 1 then
+			return false
+		end
+	end
+	return true
+end
+
 function RunUpgradeResolver.generateChoices(
 	stacks: UpgradeStacks,
 	offerSequence: number,
@@ -103,7 +112,11 @@ function RunUpgradeResolver.generateChoices(
 				end
 			end
 		end
-		if isCompatible and (stacks[definition.Id] or 0) < definition.MaximumStacks then
+		if
+			isCompatible
+			and hasPrerequisites(definition, stacks)
+			and (stacks[definition.Id] or 0) < definition.MaximumStacks
+		then
 			table.insert(eligible, definition.Id)
 		end
 	end

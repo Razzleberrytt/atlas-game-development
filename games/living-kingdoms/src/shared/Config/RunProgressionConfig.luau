@@ -44,6 +44,10 @@ local UpgradeDefinitions = table.freeze({
 		Id = "upgrade.overpressure_rounds",
 		Name = "HEAVY ROUNDS",
 		Description = "Your guns deal 20% more damage",
+		TreeId = "Predator",
+		Tier = 1,
+		Icon = "✦",
+		PrerequisiteIds = table.freeze({}),
 		FamilyId = "Firepower",
 		IsBroadlyUseful = true,
 		MaximumStacks = 4,
@@ -53,6 +57,10 @@ local UpgradeDefinitions = table.freeze({
 		Id = "upgrade.hair_trigger",
 		Name = "FASTER FIRING",
 		Description = "Your guns fire 12% faster",
+		TreeId = "Gunslinger",
+		Tier = 1,
+		Icon = "»",
+		PrerequisiteIds = table.freeze({}),
 		FamilyId = "Firepower",
 		IsBroadlyUseful = true,
 		MaximumStacks = 4,
@@ -62,6 +70,10 @@ local UpgradeDefinitions = table.freeze({
 		Id = "upgrade.echo_chamber",
 		Name = "AMMO SAVER",
 		Description = "15% chance to fire without spending a bullet",
+		TreeId = "Survivor",
+		Tier = 3,
+		Icon = "◈",
+		PrerequisiteIds = table.freeze({ "upgrade.field_discipline" }),
 		FamilyId = "AmmunitionReload",
 		IsBroadlyUseful = true,
 		MaximumStacks = 3,
@@ -71,6 +83,10 @@ local UpgradeDefinitions = table.freeze({
 		Id = "upgrade.cull_protocol",
 		Name = "FINISHER",
 		Description = "Deal 35% more damage to badly wounded enemies",
+		TreeId = "Predator",
+		Tier = 2,
+		Icon = "▼",
+		PrerequisiteIds = table.freeze({ "upgrade.overpressure_rounds" }),
 		FamilyId = "Firepower",
 		IsBroadlyUseful = true,
 		MaximumStacks = 3,
@@ -80,6 +96,10 @@ local UpgradeDefinitions = table.freeze({
 		Id = "upgrade.trauma_plating",
 		Name = "THICK SKIN",
 		Description = "Take 10% less damage from enemies",
+		TreeId = "Survivor",
+		Tier = 1,
+		Icon = "⬡",
+		PrerequisiteIds = table.freeze({}),
 		FamilyId = "Survival",
 		IsBroadlyUseful = true,
 		MaximumStacks = 3,
@@ -89,6 +109,10 @@ local UpgradeDefinitions = table.freeze({
 		Id = "upgrade.field_discipline",
 		Name = "FAST LEARNER",
 		Description = "Gain 15% more XP from kills",
+		TreeId = "Survivor",
+		Tier = 2,
+		Icon = "✧",
+		PrerequisiteIds = table.freeze({ "upgrade.trauma_plating" }),
 		FamilyId = "CooperativeUtility",
 		IsBroadlyUseful = true,
 		MaximumStacks = 3,
@@ -98,6 +122,10 @@ local UpgradeDefinitions = table.freeze({
 		Id = "upgrade.combat_loader",
 		Name = "QUICK RELOAD",
 		Description = "Reload your weapon 12% faster",
+		TreeId = "Gunslinger",
+		Tier = 2,
+		Icon = "↻",
+		PrerequisiteIds = table.freeze({ "upgrade.hair_trigger" }),
 		FamilyId = "AmmunitionReload",
 		IsBroadlyUseful = true,
 		MaximumStacks = 3,
@@ -107,6 +135,10 @@ local UpgradeDefinitions = table.freeze({
 		Id = "upgrade.pattern_amplifier",
 		Name = "PATTERN AMPLIFIER",
 		Description = "+15% cleave/pierce secondary damage per stack, up to full primary damage",
+		TreeId = "Predator",
+		Tier = 4,
+		Icon = "✹",
+		PrerequisiteIds = table.freeze({ "upgrade.specialist_munitions" }),
 		FamilyId = "Firepower",
 		IsBroadlyUseful = false,
 		CompatibleWeaponIds = table.freeze({ "weapon.breach-shotgun", "weapon.sniper-rifle" }),
@@ -117,6 +149,10 @@ local UpgradeDefinitions = table.freeze({
 		Id = "upgrade.specialist_munitions",
 		Name = "MONSTER HUNTER",
 		Description = "Deal 20% more damage to special monsters",
+		TreeId = "Predator",
+		Tier = 3,
+		Icon = "☠",
+		PrerequisiteIds = table.freeze({ "upgrade.cull_protocol" }),
 		FamilyId = "Firepower",
 		IsBroadlyUseful = true,
 		MaximumStacks = 3,
@@ -126,6 +162,10 @@ local UpgradeDefinitions = table.freeze({
 		Id = "upgrade.expanded_feed",
 		Name = "BIGGER MAGAZINE",
 		Description = "Your gun magazine holds 15% more bullets",
+		TreeId = "Gunslinger",
+		Tier = 3,
+		Icon = "▤",
+		PrerequisiteIds = table.freeze({ "upgrade.combat_loader" }),
 		FamilyId = "AmmunitionReload",
 		IsBroadlyUseful = true,
 		MaximumStacks = 3,
@@ -135,6 +175,10 @@ local UpgradeDefinitions = table.freeze({
 		Id = "upgrade.scavenger_reach",
 		Name = "LOOT MAGNET",
 		Description = "Collect dropped enemy loot from 1.5 studs farther away",
+		TreeId = "Survivor",
+		Tier = 4,
+		Icon = "◇",
+		PrerequisiteIds = table.freeze({ "upgrade.echo_chamber" }),
 		FamilyId = "AmmunitionReload",
 		IsBroadlyUseful = true,
 		MaximumStacks = 3,
@@ -144,6 +188,10 @@ local UpgradeDefinitions = table.freeze({
 		Id = "upgrade.last_magazine",
 		Name = "LAST STAND",
 		Description = "Deal 15% more damage when reserve ammunition is almost gone",
+		TreeId = "Gunslinger",
+		Tier = 4,
+		Icon = "!",
+		PrerequisiteIds = table.freeze({ "upgrade.expanded_feed" }),
 		FamilyId = "AmmunitionReload",
 		IsBroadlyUseful = true,
 		MaximumStacks = 3,
@@ -152,7 +200,7 @@ local UpgradeDefinitions = table.freeze({
 })
 
 local RunProgressionConfig = {
-	Version = "RPG-0103-v1-twelve-upgrade-pool",
+	Version = "RPG-0103-v2-branching-skill-trees",
 	FieldXpPerConfirmedEnemyDeath = 20,
 	BaseXpToLevel = 80,
 	XpGrowthPerLevel = 1.4,
@@ -176,6 +224,19 @@ local RunProgressionConfig = {
 	MaximumLastMagazineDamageMultiplier = 1.5,
 	LastMagazineReserveFraction = 0.2,
 	UpgradeDefinitions = UpgradeDefinitions,
+	SkillTrees = table.freeze({
+		table.freeze({ Id = "Predator", Name = "PREDATOR", Description = "Precision, execution, and monster killing" }),
+		table.freeze({
+			Id = "Gunslinger",
+			Name = "GUNSLINGER",
+			Description = "Weapon speed, handling, and desperate firepower",
+		}),
+		table.freeze({
+			Id = "Survivor",
+			Name = "SURVIVOR",
+			Description = "Endurance, growth, ammunition, and scavenging",
+		}),
+	}),
 }
 
 assert(
@@ -291,12 +352,24 @@ local knownFamilyIds = {
 	Survival = true,
 	CooperativeUtility = true,
 }
+local knownTreeIds = {
+	Predator = true,
+	Gunslinger = true,
+	Survivor = true,
+}
 for _, definition in RunProgressionConfig.UpgradeDefinitions do
 	assert(type(definition.Id) == "string" and definition.Id ~= "", "upgrade ID must be non-empty")
 	assert(seenUpgradeIds[definition.Id] == nil, "upgrade IDs must be unique")
 	seenUpgradeIds[definition.Id] = true
 	assert(type(definition.Name) == "string" and definition.Name ~= "", "upgrade name must be non-empty")
 	assert(knownFamilyIds[definition.FamilyId] == true, "upgrade family must use the canonical RPG vocabulary")
+	assert(knownTreeIds[definition.TreeId] == true, "upgrade must belong to a visible skill tree")
+	assert(
+		type(definition.Tier) == "number" and definition.Tier >= 1 and definition.Tier <= 4,
+		"skill tier must be one through four"
+	)
+	assert(type(definition.Icon) == "string" and definition.Icon ~= "", "skill nodes require a readable icon")
+	assert(type(definition.PrerequisiteIds) == "table", "skill prerequisites must be explicit")
 	assert(type(definition.IsBroadlyUseful) == "boolean", "upgrade breadth must be explicit")
 	assert(
 		type(definition.Description) == "string" and definition.Description ~= "",
@@ -389,6 +462,21 @@ for _, definition in RunProgressionConfig.UpgradeDefinitions do
 			assert(not seenCompatibleWeaponIds[weaponId], "compatible weapon IDs must be unique")
 			seenCompatibleWeaponIds[weaponId] = true
 		end
+	end
+end
+
+for _, definition in RunProgressionConfig.UpgradeDefinitions do
+	for _, prerequisiteId in definition.PrerequisiteIds do
+		local prerequisiteFound = false
+		for _, candidate in RunProgressionConfig.UpgradeDefinitions do
+			if candidate.Id == prerequisiteId then
+				prerequisiteFound = true
+				assert(candidate.TreeId == definition.TreeId, "skill prerequisites must stay within their tree")
+				assert(candidate.Tier < definition.Tier, "skill prerequisites must come from an earlier tier")
+				break
+			end
+		end
+		assert(prerequisiteFound, "every skill prerequisite must reference a known upgrade")
 	end
 end
 

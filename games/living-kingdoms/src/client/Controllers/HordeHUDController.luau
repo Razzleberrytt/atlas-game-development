@@ -351,7 +351,7 @@ local function renderUpgradeChoices(choices: { any })
 	end
 	hasUpgradeChoices = true
 	if upgradeTitle ~= nil then
-		upgradeTitle.Text = "LEVEL UP!  //  CHOOSE ONE POWER"
+		upgradeTitle.Text = "LEVEL UP!  //  CHOOSE ONE POWER  //  K OPENS SKILL TREES"
 	end
 	for index, choice in choices do
 		if type(choice) ~= "table" or type(choice.id) ~= "string" then

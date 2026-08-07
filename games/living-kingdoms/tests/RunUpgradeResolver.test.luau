@@ -109,12 +109,20 @@ for sequence = 1, 24 do
 end
 
 local sawCompatiblePattern = false
+local predatorPrerequisites = {
+	["upgrade.overpressure_rounds"] = 1,
+	["upgrade.cull_protocol"] = 1,
+	["upgrade.specialist_munitions"] = 1,
+}
 for sequence = 1, 24 do
-	for _, upgradeId in resolver.generateChoices({}, sequence, 5, { "weapon.breach-shotgun" }) do
+	for _, upgradeId in resolver.generateChoices(predatorPrerequisites, sequence, 5, { "weapon.breach-shotgun" }) do
 		sawCompatiblePattern = sawCompatiblePattern or upgradeId == "upgrade.pattern_amplifier"
 	end
 end
-assert(sawCompatiblePattern, "shotgun squads must retain access to Pattern Amplifier")
+assert(sawCompatiblePattern, "shotgun squads that advance Predator must unlock Pattern Amplifier")
+for _, upgradeId in resolver.generateChoices({}, 1, 5, { "weapon.breach-shotgun" }) do
+	assert(upgradeId ~= "upgrade.pattern_amplifier", "tier-four skills must remain locked without prerequisites")
+end
 
 local selectedId = firstChoices[1]
 local accepted = resolver.applyChoice({}, firstChoices, selectedId)
