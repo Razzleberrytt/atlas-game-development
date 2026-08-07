@@ -78,3 +78,11 @@ jobs:
       - name: Build Rojo project
         shell: bash
         run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
+
+      - name: Upload reproducible Living Kingdoms build
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-rbxlx-${{ github.sha }}
+          path: /tmp/LivingKingdoms.rbxlx
+          if-no-files-found: error
+          retention-days: 14
