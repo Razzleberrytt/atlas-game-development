@@ -36,6 +36,13 @@ IMPORT_MANIFEST = IMPORT_DIR / "manifest.json"
 ALLOWED_DISPOSITIONS = {"KEEP", "MIGRATE", "REPLACE", "ARCHIVE"}
 ALLOWED_KINDS = {"instance_group", "script"}
 ALLOWED_EXTRACTION = {"recovered", "requires_studio_extraction"}
+ALLOWED_CLASSIFICATIONS = {
+    "CANONICAL_REPLACEMENT",
+    "REUSABLE_LOGIC_CANDIDATE",
+    "CONTENT_ONLY_REFERENCE",
+    "DEAD_OR_STALE",
+    "REQUIRES_MANUAL_STUDIO_INSPECTION",
+}
 ENTRY_ID_PATTERN = re.compile(r"^[a-z0-9]+(?:[.-][a-z0-9]+)*$")
 TASK_ID_PATTERN = re.compile(r"\bBA-\d{3}\b")
 
@@ -80,6 +87,10 @@ def check_entry_shape(report: Report, name: str, entry: dict[str, Any]) -> None:
     if entry.get("extraction_status") not in ALLOWED_EXTRACTION:
         report.fail(
             name, f"{entry_id}: extraction_status must be one of {sorted(ALLOWED_EXTRACTION)}"
+        )
+    if "classification" in entry and entry["classification"] not in ALLOWED_CLASSIFICATIONS:
+        report.fail(
+            name, f"{entry_id}: classification must be one of {sorted(ALLOWED_CLASSIFICATIONS)}"
         )
     if not str(entry.get("summary", "")).strip():
         report.fail(name, f"{entry_id}: summary is empty")
@@ -148,10 +159,11 @@ def check_canonical_owner(report: Report, name: str, entry: dict[str, Any]) -> N
         if not (ROOT / module).is_file():
             report.fail(name, f"{entry_id}: canonical owner module does not exist: {module}")
     created_by = owner.get("created_by")
-    if not owner.get("modules") and created_by is None:
+    if not owner.get("modules") and created_by is None and owner.get("status") != "none_intended":
         report.fail(
             name,
-            f"{entry_id}: entry has neither an existing canonical owner nor a created_by task",
+            f"{entry_id}: entry has neither an existing canonical owner, a created_by task, "
+            "nor an explicit 'none_intended' owner status",
         )
 
 
@@ -243,6 +255,39 @@ def check_coverage(
         )
 
 
+def check_script_coverage(
+    report: Report,
+    name: str,
+    manifest: dict[str, Any],
+    scripts: set[str],
+    claims: dict[str, list[str]],
+) -> None:
+    scope = (manifest.get("coverage") or {}).get("script_scope")
+    if scope is None:
+        return
+    if scope != "import_manifest_unique_files":
+        report.fail(name, f"unknown script_scope: {scope!r}")
+        return
+
+    seen: dict[str, str] = {}
+    for entry_id, paths in claims.items():
+        for path in paths:
+            if path in seen:
+                report.fail(name, f"script claimed twice: {path} by {seen[path]} and {entry_id}")
+            else:
+                seen[path] = entry_id
+
+    for path in sorted(scripts - set(seen)):
+        report.fail(name, f"preserved script is not classified by any entry: {path}")
+
+    declared = (manifest.get("coverage") or {}).get("scripts_in_scope")
+    if declared is not None and declared != len(scripts):
+        report.fail(
+            name, f"coverage claims {declared} scripts in scope but the import manifest has "
+            f"{len(scripts)}"
+        )
+
+
 def validate(path: Path, rows: dict[str, list[dict[str, Any]]], scripts: set[str],
              known_tasks: set[str], report: Report) -> None:
     name = str(path.relative_to(ROOT))
@@ -255,6 +300,7 @@ def validate(path: Path, rows: dict[str, list[dict[str, Any]]], scripts: set[str
 
     seen_ids: set[str] = set()
     claims: dict[str, list[str]] = {}
+    script_claims: dict[str, list[str]] = {}
     for entry in entries:
         entry_id = str(entry.get("id"))
         if entry_id in seen_ids:
@@ -262,6 +308,11 @@ def validate(path: Path, rows: dict[str, list[dict[str, Any]]], scripts: set[str
         seen_ids.add(entry_id)
         check_entry_shape(report, name, entry)
         claims[entry_id] = check_legacy_references(report, name, entry, rows, scripts)
+        script_claims[entry_id] = [
+            path
+            for path in (entry.get("legacy") or {}).get("paths") or []
+            if entry.get("kind") == "script"
+        ]
         check_canonical_owner(report, name, entry)
 
     gaps = manifest.get("open_gaps") or []
@@ -277,6 +328,7 @@ def validate(path: Path, rows: dict[str, list[dict[str, Any]]], scripts: set[str
 
     check_dependencies(report, name, entries, gap_ids, known_tasks)
     check_coverage(report, name, manifest, rows, claims)
+    check_script_coverage(report, name, manifest, scripts, script_claims)
 
     print(f"[migration] {name}: {len(entries)} entries, {len(gaps)} open gaps")
 

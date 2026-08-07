@@ -15,6 +15,8 @@ than an archaeology exercise.
 |---|---|---|
 | `hubtown-migration-manifest.json` | BA-001 | `Workspace/HubTown` and the legacy hub service |
 | `HUBTOWN-MIGRATION-MANIFEST.md` | BA-001 | Human-readable view of the same data |
+| `legacy-script-disposition-matrix.json` | BA-003 | All 28 preserved Studio-only scripts |
+| `LEGACY-SCRIPT-DISPOSITION-MATRIX.md` | BA-003 | Human-readable view of the same data |
 
 ## Evidence base
 
@@ -40,6 +42,10 @@ treating any absence here as an absence in the real place.
 identity is proven from the repository; `requires_studio_extraction` means the
 identity is proven but the contents beneath it were lost and must come from the
 source place.
+
+Script entries additionally carry a `classification` from the BA-003 taxonomy:
+`CANONICAL_REPLACEMENT`, `REUSABLE_LOGIC_CANDIDATE`, `CONTENT_ONLY_REFERENCE`,
+`DEAD_OR_STALE` or `REQUIRES_MANUAL_STUDIO_INSPECTION`.
 
 ## Validation
 
