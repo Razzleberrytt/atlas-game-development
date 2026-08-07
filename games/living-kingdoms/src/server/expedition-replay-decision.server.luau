@@ -2,9 +2,8 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerScriptService = game:GetService("ServerScriptService")
 
-local Systems = ServerScriptService:WaitForChild("Systems")
+local Systems = script.Parent.Systems
 local ExpeditionLiveRuntimeService = require(Systems.ExpeditionLiveRuntimeService)
 local ExpeditionPartyDecisionService = require(Systems.ExpeditionPartyDecisionService)
 

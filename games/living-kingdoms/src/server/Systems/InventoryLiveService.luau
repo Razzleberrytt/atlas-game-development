@@ -3,6 +3,9 @@
 -- Server-only owner for inventory persistence and per-player session leases.
 
 local HttpService = game:GetService("HttpService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local PlayerInventorySnapshot = require(ReplicatedStorage.Shared.Persistence.PlayerInventorySnapshot)
 local RobloxInventoryDataStoreAdapter = require(script.Parent.RobloxInventoryDataStoreAdapter)
 local PlayerInventoryPersistenceService = require(script.Parent.PlayerInventoryPersistenceService)
 local InventorySessionLeaseService = require(script.Parent.InventorySessionLeaseService)
@@ -14,8 +17,11 @@ local store = RobloxInventoryDataStoreAdapter.new({
 	BaseRetryDelaySeconds = 0.5,
 })
 
-local ownerId = string.format("%s:%s", game.JobId ~= "" and game.JobId or "studio", HttpService:GenerateGUID(false))
-local leases = InventorySessionLeaseService.new(store, ownerId, 90)
+-- Identifies this server instance as the holder of a session lease. Distinct
+-- from a player's inventory owner id, which is always a Roblox user id.
+local leaseOwnerId =
+	string.format("%s:%s", game.JobId ~= "" and game.JobId or "studio", HttpService:GenerateGUID(false))
+local leases = InventorySessionLeaseService.new(store, leaseOwnerId, 90)
 local persistence = PlayerInventoryPersistenceService.new(store)
 local destroyed = false
 
@@ -73,6 +79,18 @@ function Service.getRecord(playerId: number): any
 		return nil
 	end
 	return persistence:getRecord(playerId)
+end
+
+--[[
+	The only inventory read a client is ever served. `requesterId` must be derived
+	from the connection by the caller; this service never accepts an owner
+	identity from a payload. A rejected read discloses no record at all.
+]]
+function Service.readOwnedSnapshot(requesterId: number, ownerId: number): any
+	if destroyed then
+		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Snapshot = nil })
+	end
+	return PlayerInventorySnapshot.forOwner(requesterId, ownerId, persistence:getRecord(ownerId))
 end
 
 function Service.destroy()

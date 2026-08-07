@@ -2,11 +2,10 @@
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local ServerScriptService = game:GetService("ServerScriptService")
 local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
 
-local Systems = ServerScriptService:WaitForChild("Systems")
+local Systems = script.Parent.Systems
 local ExpeditionDiagnosticsService = require(Systems.ExpeditionDiagnosticsService)
 local ExpeditionLiveRuntimeService = require(Systems.ExpeditionLiveRuntimeService)
 

@@ -5,9 +5,8 @@
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local ServerScriptService = game:GetService("ServerScriptService")
 
-local Systems = ServerScriptService:WaitForChild("Systems")
+local Systems = script.Parent.Systems
 local InventoryLiveService = require(Systems.InventoryLiveService)
 
 local RENEW_INTERVAL_SECONDS = 30

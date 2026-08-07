@@ -39,20 +39,34 @@ The repository is currently **E1**. Do not promote it without captured evidence.
 
 ## Current static evidence
 
-The uploaded `Roblox_RPG_Quality_Baseline_v0.7` verification tools were executed on 2026-08-06.
+The repository's own required validation (`AGENTS.md`, `.github/workflows/luau-validation.yml`) was executed on 2026-08-07.
 
-- Blocking issues: **0**
-- Warnings: **1**
-- Warning: known type debt remains — **278 `any` tokens**
-- Luau files: **115**
-- Definitions: **33**
-- Remotes: **22**
-- Services: **20**
-- TODO: **0**
-- FIXME: **0**
-- Deprecated task API: **0**
+- Layout contract: **pass** — 259 Luau source files, 189 Lune fixtures
+- `stylua --check games/living-kingdoms/src`: **pass**
+- `selene games/living-kingdoms/src`: **0 errors, 0 parse errors, 6 warnings**
+- Lune fixtures: **189 / 189 pass**
+- `rojo build`: **pass**
 
 This is static evidence only and does not imply Studio runtime acceptance.
+
+### Correction to the 2026-08-06 baseline
+
+The previously recorded `Roblox_RPG_Quality_Baseline_v0.7` result ("Blocking issues: 0") did not
+reflect the repository's own gates. At that commit `main` failed every one of them:
+
+- `ExpeditionResultService` did not parse (ambiguous call syntax), so result finalization and the
+  replay decision could not load at all;
+- `EnemyDirectorEncounterAdapter` declared `start`/`cancel` as `:` methods while its only consumer
+  invokes them with `.`, so **every** encounter start was rejected and no expedition could leave
+  its first phase;
+- four server scripts resolved `ServerScriptService:WaitForChild("Systems")`, which does not exist
+  under the canonical Rojo mapping (`Systems` is at `ServerScriptService.Server.Systems`), so the
+  lobby, foundation bootstrap, diagnostics, and replay-decision bridge yielded forever;
+- 35 source files failed `stylua --check`;
+- 3 of 187 fixtures failed, two of which had never executed.
+
+All of the above are fixed. The lesson carried forward: an external audit tool's report does not
+substitute for the repository's own gates, and a fixture that has never run proves nothing.
 
 ## User-directed verification timing
 
@@ -67,7 +81,16 @@ Roblox Studio verification is intentionally reserved for the final integrated ve
 
 Because final Studio verification is deferred, proceed through the repo-verifiable safety and integration queue:
 
-1. Owner-only inventory snapshots and cross-player access rejection.
+1. ~~Owner-only inventory snapshots and cross-player access rejection.~~ **Complete (repo-side).**
+   `PlayerInventorySnapshot.forOwner` is the one pure disclosure boundary: it serves only the
+   owner, rejects a cross-player read rather than filtering it, fails closed on an
+   owner/record mismatch, orders items deterministically, freezes what it returns, and drops the
+   server-only replay ledgers (`AppliedRewardInstanceIds`, `AppliedRewardGrantIds`) and each
+   item's `GrantId`/`RunId`/`Seed`. `InventoryLiveService.readOwnedSnapshot` is the only service
+   read a client can reach, and `inventory-network.server.luau` derives the owner from
+   `player.UserId`, rejects any supplied identity, and addresses every push with `FireClient`.
+   Covered by `PlayerInventorySnapshot.test` and `InventoryOwnershipBoundarySourceAudit.test`.
+   Studio verification remains deferred per the timing rule above.
 2. Item comparison and equip-to-combat handoff.
 3. Dismantle and salvage transaction safety.
 4. Capacity retry and durable overflow recovery.
