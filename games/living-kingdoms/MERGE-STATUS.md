@@ -33,13 +33,33 @@ Current source containment on `main` now includes:
 - rollback branch `archive/pre-v2.7-r1-containment-2026-08-07` at `6d88a33df1742981839c59933289eb0381e82074`;
 - prepared runtime packet `../../docs/production/evidence/2026-08-07-336-r1-state-highlight-containment.md`.
 
-These are E1 source facts only. The incident is **not closed** until a Studio/runtime packet proves the R1 behavior.
+Repository-side validation is green. Luau validation run `#800` (`31219832584`) passed repository contract validation, StyLua, Selene, every discovered Lune fixture, the Rojo build, and artifact upload.
+
+### Canonical R1 Studio-test build
+
+Use this exact CI artifact for the R1 runtime packet rather than an unrecorded local build:
+
+- source/build commit: `2c870d270b96064c9a06343cc088b251299373f4`;
+- artifact: `living-kingdoms-rbxlx-2c870d270b96064c9a06343cc088b251299373f4`;
+- artifact ID: `9009926429`;
+- digest: `sha256:587ccc2974f8188bde34a0a757213efb4b9f72e68e940db4615232cace28bf89`;
+- artifact retention through 2026-08-21.
+
+These are still E1/source-build facts only. The incident is **not closed** until a Studio/runtime packet proves the R1 behavior.
+
+## Prepared next-stage work
+
+A non-active preparation branch exists for the post-R1 compatibility-listener consolidation:
+
+`rollout/v2.7-r1-listener-consolidation-prep-2026-08-07`
+
+Do not merge or activate that stage merely because the branch exists. R1 runtime evidence must pass first. The intended change is transport-only: preserve HUD/crescendo presentation semantics while moving their `HordeNetwork.State` consumption onto the application bridge so one physical RemoteEvent listener remains.
 
 ## Where to continue
 
-1. Run/fill `../../docs/production/evidence/2026-08-07-336-r1-state-highlight-containment.md` against the active development place.
+1. Run/fill `../../docs/production/evidence/2026-08-07-336-r1-state-highlight-containment.md` using the exact CI artifact above.
 2. If R1 passes, update `../../docs/production/V2.7-CUTOVER-LEDGER.md` with measured facts.
-3. Consolidate the remaining `HordeHUDController` and `MassacreCrescendoController` direct `State` listeners onto the application bridge.
+3. Finish/validate the prepared listener-consolidation branch and merge it only after R1 acceptance.
 4. Implement R2 `ClientReady` gating, then R3 semantic-key/change-token suppression with before/after send-rate evidence.
 5. Only after the v2.7 stop conditions are accepted should work resume on the preserved HubTown/preparation bridge, authored-world reconstruction, quest reconciliation, and procedural dungeon integration.
 
