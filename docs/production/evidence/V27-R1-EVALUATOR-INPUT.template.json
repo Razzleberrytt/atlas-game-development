@@ -1,0 +1,26 @@
+{
+  "identity": {
+    "sourceCommit": "2c870d270b96064c9a06343cc088b251299373f4",
+    "artifactId": 9009926429,
+    "artifactDigest": "sha256:587ccc2974f8188bde34a0a757213efb4b9f72e68e940db4615232cace28bf89"
+  },
+  "firstCapture": {
+    "schema": "LK_V27_R1_CAPTURE_V1",
+    "listener": {},
+    "highlightGuard": {},
+    "highlightScan": {}
+  },
+  "finalCapture": {
+    "schema": "LK_V27_R1_CAPTURE_V1",
+    "listener": {},
+    "highlightGuard": {},
+    "highlightScan": {}
+  },
+  "manual": {
+    "queueDiscardWarningCount": 0,
+    "startupRegression": false,
+    "narrowEnemyHighlightWorks": true,
+    "broadWorldWashAppears": false,
+    "otherNewClientErrorCount": 0
+  }
+}
