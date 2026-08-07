@@ -1,0 +1,64 @@
+{
+  "source": {
+    "file": "livingkingdoms.rbxl",
+    "size": 1639392,
+    "sha256": "e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16",
+    "instance_count": 2258,
+    "script_count": 290,
+    "workspace_instance_count": 1775
+  },
+  "policy": {
+    "overlap": "Current canonical repo wins for overlapping runtime authority.",
+    "unique_source": "Preserve losslessly in inert import archive, then port deliberately.",
+    "world": "Preserve complete hierarchy identity/path now; reconstruct selected authored geometry/properties in a focused source-managed world pass.",
+    "activation": "Nothing in this import namespace is live Rojo source."
+  },
+  "preserved_systems": [
+    "HubTownService",
+    "QuestService",
+    "DungeonService",
+    "SurvivalGatheringService",
+    "Hatchet SwingController",
+    "RPGClientController",
+    "RPGUI",
+    "ShopUI",
+    "MonetizationService",
+    "legacy CombatService",
+    "legacy EnemyService",
+    "legacy InventoryService",
+    "legacy LootService",
+    "legacy PlayerDataService",
+    "RPGServerBootstrap"
+  ],
+  "do_not_boot_unchanged": [
+    "RPGServerBootstrap",
+    "Services/CombatService",
+    "Services/EnemyService",
+    "Services/InventoryService",
+    "Services/LootService",
+    "Services/PlayerDataService",
+    "MonetizationService"
+  ],
+  "high_value_port_targets": [
+    "HubTown authored environment and preparation/meta-game shell",
+    "Vendor rotation, daily deals, rarity upgrades",
+    "Quest archetypes and modifiers",
+    "Dungeon encounter/modifier ideas mapped onto current Expedition systems",
+    "Resource gathering and hatchet/crafting concepts behind a future scope gate",
+    "RPG/shop interface concepts adapted to current presentation ownership",
+    "Authored world landmarks, dungeon portal, resource fields and ambience"
+  ],
+  "archive": {
+    "format": "tar.gz split into base64 text chunks",
+    "parts": 16,
+    "restored_directory": "legacy-src",
+    "contains": "28 unique old-RPG source files extracted from the supplied place"
+  },
+  "workspace_index": {
+    "format": "gzip-compressed JSON split into base64 text chunks",
+    "parts": 5,
+    "restored_file": "workspace-index.json",
+    "contains": "All 1775 Workspace instance class/name/parent/path records from the supplied place"
+  },
+  "rollback_branch": "archive/pre-rbxl-merge-2026-08-07"
+}
