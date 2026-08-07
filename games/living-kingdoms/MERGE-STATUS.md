@@ -49,19 +49,52 @@ These are still E1/source-build facts only. The incident is **not closed** until
 
 ## Prepared next-stage work
 
-A non-active preparation branch exists for the post-R1 compatibility-listener consolidation:
+Prepared work is intentionally isolated from `main`. CI success on these branches is not runtime acceptance and does not authorize merging them past their rollout gates.
 
-`rollout/v2.7-r1-listener-consolidation-prep-2026-08-07`
+### Draft PR #221 — single compatibility listener
 
-Do not merge or activate that stage merely because the branch exists. R1 runtime evidence must pass first. The intended change is transport-only: preserve HUD/crescendo presentation semantics while moving their `HordeNetwork.State` consumption onto the application bridge so one physical RemoteEvent listener remains.
+`[BLOCKED] Prepare v2.7 single-listener Horde state bridge`
+
+- branch: `rollout/v2.7-r1-listener-consolidation-prep-2026-08-07`;
+- head: `9311a0978ce3c226462a7a5813346266f69440b0`;
+- state: draft / blocked on the R1 Studio evidence packet;
+- scope: transport-only migration of `HordeHUDController` and `MassacreCrescendoController` onto `HordeStateEarlyListener.subscribe(onState)`;
+- result: `HordeStateEarlyListener` is the only physical `HordeNetwork.State.OnClientEvent` owner on the prepared branch;
+- validation: Actions run `#805` (`31220415455`) passed repository contract, StyLua, Selene, all 196 discovered Lune fixtures, Rojo build, and artifact upload;
+- prepared artifact: `living-kingdoms-rbxlx-01fb64491453bf2aa05c5107f01db9eed89f27a6`;
+- artifact ID: `9010142515`;
+- digest: `sha256:4cf474e38f5a39a4e854105e082587e4c1261a3538bfa3691025b0cedca638e0`.
+
+**Do not merge PR #221 until the canonical R1 Studio packet passes.** The canonical R1 test build remains the `2c870d...` artifact listed above, not the prepared #221 build.
+
+### Draft PR #222 — dormant R2 ready-gate primitive
+
+`[STACKED/BLOCKED] Prepare v2.7 R2 ready-gated state publisher`
+
+- branch: `rollout/v2.7-r2-client-ready-prep-2026-08-07`;
+- base: PR #221 branch, not `main`;
+- head: `e116462bd131021cf3b41c6ee70ac417a341857a`;
+- state: stacked draft / blocked;
+- adds a transport-agnostic `ReadyGatedStatePublisher` retaining latest pre-ready state by owner + remote ID + semantic key;
+- behavioral fixture proves keyed latest-value retention, owner isolation, deterministic ready flush, bounded counters, cleanup, and a second readiness cycle;
+- `EnableReadyGatedStatePublisher = false` on the stacked branch;
+- source audit forbids a `ClientReady` remote/signal, bootstrap activation, or `HordeExperienceService` wiring while this remains preparation;
+- R3 unchanged-state suppression is deliberately absent;
+- validation: Actions run `#807` (`31220734943`) passed repository contract, StyLua, Selene, all 198 discovered Lune fixtures, Rojo build, and artifact upload;
+- prepared artifact: `living-kingdoms-rbxlx-db68f5eaf92e39e8aaad961a8eed93b6eb86853a`;
+- artifact ID: `9010258250`;
+- digest: `sha256:f4cc0629ba0f4cec773654ae2dabf7b0de8625346f231d9a64dc6359b8ce9474`.
+
+**Do not merge PR #222 directly to `main`.** It is stacked on #221 and prepares only the dormant R2 primitive. Actual `ClientReady` activation must be a later controlled change after R1 and listener-consolidation evidence permit it.
 
 ## Where to continue
 
-1. Run/fill `../../docs/production/evidence/2026-08-07-336-r1-state-highlight-containment.md` using the exact CI artifact above.
+1. Run/fill `../../docs/production/evidence/2026-08-07-336-r1-state-highlight-containment.md` using the exact canonical R1 CI artifact above.
 2. If R1 passes, update `../../docs/production/V2.7-CUTOVER-LEDGER.md` with measured facts.
-3. Finish/validate the prepared listener-consolidation branch and merge it only after R1 acceptance.
-4. Implement R2 `ClientReady` gating, then R3 semantic-key/change-token suppression with before/after send-rate evidence.
-5. Only after the v2.7 stop conditions are accepted should work resume on the preserved HubTown/preparation bridge, authored-world reconstruction, quest reconciliation, and procedural dungeon integration.
+3. Recheck and promote PR #221 only after the R1 acceptance gate; then collect the listener-consolidation runtime evidence required by v2.7.
+4. After #221 is accepted, use PR #222's tested primitive as the base for a **separate** R2 activation change that adds the ClientReady signal and ready-gates the intended producer path.
+5. Do not begin R3 semantic/change-token suppression until R2 delayed-ready and late-join evidence passes.
+6. Only after the v2.7 stop conditions are accepted should work resume on the preserved HubTown/preparation bridge, authored-world reconstruction, quest reconciliation, and procedural dungeon integration.
 
 ## Merge references
 
