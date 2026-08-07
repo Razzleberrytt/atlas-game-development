@@ -8,11 +8,21 @@ The adoption of v2.7 is a documentation/authority change. It does **not** claim 
 
 1. [`BLUEPRINT-V2.7-EXECUTION.md`](BLUEPRINT-V2.7-EXECUTION.md) — controlling execution authority. Defines precedence, evidence rules, active Studio incidents, runtime-state contract, presentation ownership, rollout stages, Tickets 331–360, stop conditions, and the promotion gate.
 2. [`PRODUCTION-CORE-V2.7.md`](PRODUCTION-CORE-V2.7.md) — daily-use reference. Read this before implementation work to understand the current authority, runtime laws, active queue, and stop conditions.
-3. [`ACTIVE-PLACE-ROLLOUT-V2.7.md`](ACTIVE-PLACE-ROLLOUT-V2.7.md) — detailed R0–R5 migration procedure, cutover ledger, semantic publisher rules, counters, named baselines, rollback discipline, and incident closure packet.
+3. [`ACTIVE-PLACE-ROLLOUT-V2.7.md`](ACTIVE-PLACE-ROLLOUT-V2.7.md) — detailed R0–R5 migration procedure, cutover ledger requirements, semantic publisher rules, counters, named baselines, rollback discipline, and incident closure packet.
 4. [`CROSS-SYSTEM-TRACEABILITY-V2.7.md`](CROSS-SYSTEM-TRACEABILITY-V2.7.md) — mechanical, replication, presentation, streaming/lifecycle, and evidence ownership for critical player-facing state.
 5. [`QUALITY-AUDIT-V2.7.md`](QUALITY-AUDIT-V2.7.md) — what v2.7 changes, what its reference package proves statically, and what remains explicitly unproven in the active place.
 6. [`MASTER-ROADMAP.md`](MASTER-ROADMAP.md) — current milestone-level roadmap. It summarizes the v2.7 rollout gate and what becomes eligible only after runtime acceptance.
 7. [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md) — cross-cutting art/presentation production sequence. It controls asset sequencing only and remains subordinate to the active v2.7 dependency queue and runtime stop conditions.
+
+## Active production-control artifacts
+
+These files operationalize the roadmap and are part of the current workflow:
+
+- [`../production/V2.7-CUTOVER-LEDGER.md`](../production/V2.7-CUTOVER-LEDGER.md) — canonical producer/consumer/presentation migration ledger. Unknown cells remain unknown until source or Studio evidence fills them.
+- [`../production/V2.7-EVIDENCE-PACKET-TEMPLATE.md`](../production/V2.7-EVIDENCE-PACKET-TEMPLATE.md) — required structure for evidence-bearing Studio/runtime runs used to close gates or promote evidence level.
+- [`../production/DEFINITION-OF-DONE.md`](../production/DEFINITION-OF-DONE.md) — completion standard, including v2.7 ownership, rollback, baseline, and evidence rules.
+- [`../production/RBXL-IMPORT-MIGRATION.md`](../production/RBXL-IMPORT-MIGRATION.md) — reconciliation procedure for newer Studio places; imports active-place facts into Git without blindly replacing repository source.
+- [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md) — PR evidence/rollback checklist aligned to the v2.7 rollout.
 
 ## Current active gate
 
