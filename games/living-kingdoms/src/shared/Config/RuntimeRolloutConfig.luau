@@ -5,6 +5,7 @@
 -- network and presentation incident cutover.
 local RuntimeRolloutConfig = {
 	Version = "V2.7-R1-CONTAINMENT",
+	EnableRuntimeCounters = true,
 	EnableEarlyStateListener = true,
 	RejectBroadHighlightTargets = true,
 }
