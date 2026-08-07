@@ -67,7 +67,15 @@ In the **client** context, inspect:
 - `V27_BroadHighlightRejectedCount` — record actual value
 - `V27_BroadHighlightLastTarget` — record when count is greater than zero
 
-Optional Studio command-bar capture in client context:
+Preferred capture path: use `games/living-kingdoms/tools/studio/V27R1Capture.client.luau` from the Studio Command Bar in the **client** context. The helper lives outside `src/`, is not included in the Rojo place, only reads existing diagnostics/Highlights, and prints a machine-readable line beginning with:
+
+```text
+LK_V27_R1_CAPTURE {json}
+```
+
+Run it once shortly after the cold client becomes controllable and once again after at least 60 seconds. Keep both lines with this packet. Full operator instructions are in `docs/production/V2.7-R1-STUDIO-CAPTURE-RUNBOOK.md`.
+
+Fallback manual Studio command-bar capture:
 
 ```lua
 print("Horde diagnostics", game:GetService("ReplicatedStorage").HordeNetwork:GetAttributes())
@@ -116,11 +124,11 @@ That target becomes the next producer-attribution lead; do not infer the produce
 3. Confirm the three rollout flags listed in this packet are `true`.
 4. Clear Studio Output.
 5. Start a one-player play session from a cold client start.
-6. As soon as the client is controllable, inspect `ReplicatedStorage.HordeNetwork` attributes.
-7. Confirm `V27_EarlyStateListenerBound == true` and record the initial received count/revision.
-8. Play for at least 60 seconds, including enough time for normal horde-state publishing.
-9. Inspect the same attributes again; record received count, invalid count, and revision.
-10. Inspect `Workspace` diagnostics and record guard active/rejected count/last target.
+6. As soon as the client is controllable, run `games/living-kingdoms/tools/studio/V27R1Capture.client.luau` in the client Command Bar and retain the `LK_V27_R1_CAPTURE` output line.
+7. Confirm the first capture reports `listener.bound == true`; record its received count/revision.
+8. Play for at least 60 seconds, including enough time for normal horde-state publishing and ordinary enemy hit/kill feedback.
+9. Run the same capture helper again; retain the second JSON line and compare received count/revision against the first capture.
+10. Confirm `highlightScan.stillEnabledBroad` is empty in the second capture and record the guard rejected count/last target.
 11. Observe ordinary enemy hit/kill feedback to verify narrow enemy-model Highlights were not suppressed.
 12. Search Output for `HordeNetwork.State`, `invocation`, `queue`, `discard`, and `[Living Kingdoms] Disabled broad Highlight`.
 13. Stop play and record all facts before changing any flag or source.
@@ -128,14 +136,16 @@ That target becomes the next producer-attribution lead; do not infer the produce
 ## 8. Observations
 
 - Startup behavior:
-- First observed `V27_StateMessagesReceived`:
-- Final `V27_StateMessagesReceived`:
+- First `LK_V27_R1_CAPTURE` line:
+- Final `LK_V27_R1_CAPTURE` line:
+- First/final `V27_StateMessagesReceived`:
 - `V27_StateInvalidMessages`:
 - Initial/final `V27_StateLastRevision`:
 - Queue/discard warning count:
 - Guard active:
 - Broad Highlight rejected count:
 - Last rejected target:
+- `highlightScan.stillEnabledBroad` final count:
 - Narrow enemy Highlight behavior:
 - Visible broad world wash:
 - Any console warnings/errors unrelated to the known legacy publisher:
@@ -151,6 +161,7 @@ R1 may be considered for acceptance only if all are true:
 - [ ] Zero `HordeNetwork.State` invocation-queue/discard warnings occur.
 - [ ] No startup regression is introduced.
 - [ ] Broad world-root Highlight wash does not remain visible.
+- [ ] `highlightScan.stillEnabledBroad` is empty at the final capture.
 - [ ] Legitimate narrow enemy Highlight feedback still works.
 - [ ] Any rejected broad target is recorded by exact target path for producer attribution.
 
