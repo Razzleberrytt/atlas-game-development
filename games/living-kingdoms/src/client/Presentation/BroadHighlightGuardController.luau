@@ -85,11 +85,13 @@ local function inspect(instance: Instance)
 	instance:SetAttribute("LK_BroadTargetRejected", true)
 	rejectedCount += 1
 	writeDiagnostics(target)
-	warn(string.format(
-		"[Living Kingdoms] Disabled broad Highlight %s targeting %s",
-		instance:GetFullName(),
-		if target ~= nil then target:GetFullName() else "nil"
-	))
+	warn(
+		string.format(
+			"[Living Kingdoms] Disabled broad Highlight %s targeting %s",
+			instance:GetFullName(),
+			if target ~= nil then target:GetFullName() else "nil"
+		)
+	)
 end
 
 function BroadHighlightGuardController.start()
