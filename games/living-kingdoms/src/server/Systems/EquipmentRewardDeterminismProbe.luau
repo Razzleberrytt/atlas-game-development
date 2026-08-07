@@ -20,7 +20,7 @@ function Probe.run(): any
 	local repeatedSignature: string? = nil
 	local repeatedInstanceIds: { [string]: boolean } = {}
 
-	for ordinal = 1, REPEAT_COUNT do
+	for _ = 1, REPEAT_COUNT do
 		local service = EquipmentRewardService.new("ticket138:repeat", 12345)
 		local reward = assertReward(service:claimReward("Boss"))
 		if repeatedSignature == nil then

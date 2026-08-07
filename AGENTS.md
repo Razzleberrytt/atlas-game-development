@@ -13,7 +13,7 @@ Read these files before changing it:
 3. `docs/bible/00-project-charter.md`
 4. `docs/bible/01-mvp.md`
 5. `docs/architecture/technical-blueprint.md`
-6. `docs/roadmap/MASTER-ROADMAP.md`
+6. `docs/roadmap/BLUEPRINT-V2.3-EXECUTION.md` (active authority) and `docs/roadmap/PRODUCTION-CORE-V2.3.md`
 
 More specific `AGENTS.md` files override this file for their directory scope.
 
