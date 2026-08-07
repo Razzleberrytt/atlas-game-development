@@ -233,11 +233,17 @@ function ExpeditionEncounterCoordinator:destroy()
 	state.Destroyed = true
 	local active = state.Active
 	if active then
-		local adapter = adapterFor(state, active.PhaseId, if active.RoomIndex then {
-			Index = active.RoomIndex,
-			RoomId = active.RoomId or "",
-			RoleId = active.RoomRoleId or "Traversal",
-		} else nil)
+		local adapter = adapterFor(
+			state,
+			active.PhaseId,
+			if active.RoomIndex
+				then {
+					Index = active.RoomIndex,
+					RoomId = active.RoomId or "",
+					RoleId = active.RoomRoleId or "Traversal",
+				}
+				else nil
+		)
 		if adapter and adapter.cancel then
 			adapter.cancel(active, "CoordinatorDestroyed")
 		end

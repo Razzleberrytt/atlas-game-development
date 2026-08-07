@@ -15,7 +15,14 @@ local ROLE_COLORS = {
 	Secret = Color3.fromRGB(167, 255, 216),
 }
 
-local function visualPart(name: string, size: Vector3, cframe: CFrame, material: Enum.Material, color: Color3, parent: Instance): Part
+local function visualPart(
+	name: string,
+	size: Vector3,
+	cframe: CFrame,
+	material: Enum.Material,
+	color: Color3,
+	parent: Instance
+): Part
 	local value = Instance.new("Part")
 	value.Name = name
 	value.Size = size
@@ -39,7 +46,14 @@ local function markAnimated(instance: Instance, mode: string, phase: number, spe
 end
 
 local function addWallLamp(parent: Instance, position: Vector3, color: Color3, phase: number)
-	local mount = visualPart("WallLamp", Vector3.new(1.2, 3.4, 1.2), CFrame.new(position), Enum.Material.Metal, Color3.fromRGB(55, 61, 67), parent)
+	local mount = visualPart(
+		"WallLamp",
+		Vector3.new(1.2, 3.4, 1.2),
+		CFrame.new(position),
+		Enum.Material.Metal,
+		Color3.fromRGB(55, 61, 67),
+		parent
+	)
 	local core = visualPart("LampCore", Vector3.new(0.55, 1.6, 0.55), mount.CFrame, Enum.Material.Neon, color, parent)
 	local light = Instance.new("PointLight")
 	light.Name = "PracticalLight"
@@ -52,13 +66,34 @@ local function addWallLamp(parent: Instance, position: Vector3, color: Color3, p
 end
 
 local function addPillar(parent: Instance, position: Vector3, color: Color3, phase: number, height: number)
-	visualPart("RunePillar", Vector3.new(3.2, height, 3.2), CFrame.new(position), Enum.Material.Slate, Color3.fromRGB(46, 52, 58), parent)
-	local rune = visualPart("RuneBand", Vector3.new(3.5, 0.45, 3.5), CFrame.new(position + Vector3.new(0, height * 0.2, 0)), Enum.Material.Neon, color, parent)
+	visualPart(
+		"RunePillar",
+		Vector3.new(3.2, height, 3.2),
+		CFrame.new(position),
+		Enum.Material.Slate,
+		Color3.fromRGB(46, 52, 58),
+		parent
+	)
+	local rune = visualPart(
+		"RuneBand",
+		Vector3.new(3.5, 0.45, 3.5),
+		CFrame.new(position + Vector3.new(0, height * 0.2, 0)),
+		Enum.Material.Neon,
+		color,
+		parent
+	)
 	markAnimated(rune, "Pulse", phase, 0.75)
 end
 
 local function addDust(parent: Instance, position: Vector3, color: Color3)
-	local anchor = visualPart("DustAnchor", Vector3.new(0.2, 0.2, 0.2), CFrame.new(position), Enum.Material.SmoothPlastic, color, parent)
+	local anchor = visualPart(
+		"DustAnchor",
+		Vector3.new(0.2, 0.2, 0.2),
+		CFrame.new(position),
+		Enum.Material.SmoothPlastic,
+		color,
+		parent
+	)
 	anchor.Transparency = 1
 	local emitter = Instance.new("ParticleEmitter")
 	emitter.Name = "DriftingDust"
@@ -77,8 +112,22 @@ end
 
 local function addRelicCore(parent: Instance, position: Vector3, color: Color3, phase: number, bossScale: boolean)
 	local scale = if bossScale then 2.2 else 1.2
-	local pedestal = visualPart("RelicPedestal", Vector3.new(6 * scale, 2, 6 * scale), CFrame.new(position), Enum.Material.Slate, Color3.fromRGB(35, 40, 48), parent)
-	local core = visualPart("RelicCore", Vector3.new(2.4 * scale, 2.4 * scale, 2.4 * scale), pedestal.CFrame + Vector3.new(0, 4.5 * scale, 0), Enum.Material.Neon, color, parent)
+	local pedestal = visualPart(
+		"RelicPedestal",
+		Vector3.new(6 * scale, 2, 6 * scale),
+		CFrame.new(position),
+		Enum.Material.Slate,
+		Color3.fromRGB(35, 40, 48),
+		parent
+	)
+	local core = visualPart(
+		"RelicCore",
+		Vector3.new(2.4 * scale, 2.4 * scale, 2.4 * scale),
+		pedestal.CFrame + Vector3.new(0, 4.5 * scale, 0),
+		Enum.Material.Neon,
+		color,
+		parent
+	)
 	core.Shape = Enum.PartType.Ball
 	markAnimated(core, "Orbit", phase, if bossScale then 0.55 else 0.8)
 	local light = Instance.new("PointLight")
@@ -110,7 +159,15 @@ function Builder.decorate(model: Model, placement: any, seed: number)
 
 	if roleId == "Combat" or roleId == "Elite" then
 		for side = -1, 1, 2 do
-			local barricade = visualPart("BrokenBarricade", Vector3.new(8, 2.2, 1.3), CFrame.new(center.x + side * 12, 1.6, center.z + random:NextNumber(-9, 9)) * CFrame.Angles(0, random:NextNumber(-0.35, 0.35), 0), Enum.Material.CorrodedMetal, Color3.fromRGB(72, 66, 60), visuals)
+			local barricade = visualPart(
+				"BrokenBarricade",
+				Vector3.new(8, 2.2, 1.3),
+				CFrame.new(center.x + side * 12, 1.6, center.z + random:NextNumber(-9, 9))
+					* CFrame.Angles(0, random:NextNumber(-0.35, 0.35), 0),
+				Enum.Material.CorrodedMetal,
+				Color3.fromRGB(72, 66, 60),
+				visuals
+			)
 			barricade:SetAttribute("EnvironmentCover", true)
 		end
 	end

@@ -95,7 +95,10 @@ local function signature(summary: any): string
 		tostring(summary.SecretDiscovered),
 	}
 	for _, reward in summary.Rewards do
-		table.insert(parts, string.format("%s:%s:%s:%d", reward.SourceId, reward.DisplayName, reward.Rarity, reward.Power))
+		table.insert(
+			parts,
+			string.format("%s:%s:%s:%d", reward.SourceId, reward.DisplayName, reward.Rarity, reward.Power)
+		)
 	end
 	return table.concat(parts, "|")
 end
@@ -130,10 +133,8 @@ local function ensureRun(snapshot: any)
 	activeRunId = snapshot.RunId
 	rewardService = EquipmentRewardService.new(snapshot.RunId, snapshot.Seed)
 	resultService = ExpeditionResultService.new()
-	distributionService = ExpeditionRewardDistributionService.new(
-		InventoryLiveService,
-		captureParticipants(snapshot.PartySize)
-	)
+	distributionService =
+		ExpeditionRewardDistributionService.new(InventoryLiveService, captureParticipants(snapshot.PartySize))
 	lastSafeSummary = nil
 	lastSignature = ""
 end
@@ -158,11 +159,7 @@ local function persistRewards(summary: any)
 	local distribution = distributionService:distribute(summary.Rewards, os.time())
 	for playerId, reasonId in distribution.FailureReasonsByPlayerId do
 		if reasonId ~= "PlayerNotLoaded" then
-			warn(string.format(
-				"[ExpeditionRewardResults] reward persistence rejected for %d: %s",
-				playerId,
-				reasonId
-			))
+			warn(string.format("[ExpeditionRewardResults] reward persistence rejected for %d: %s", playerId, reasonId))
 		end
 	end
 end

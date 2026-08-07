@@ -15,7 +15,9 @@ local ExpeditionLobbyService = require(Systems.ExpeditionLobbyService)
 local ExpeditionLiveRuntimeService = require(Systems.ExpeditionLiveRuntimeService)
 
 local existing = ReplicatedStorage:FindFirstChild("ExpeditionLobbyNetwork")
-if existing ~= nil then existing:Destroy() end
+if existing ~= nil then
+	existing:Destroy()
+end
 
 local network = Instance.new("Folder")
 network.Name = "ExpeditionLobbyNetwork"
@@ -39,15 +41,20 @@ local launchInFlight = false
 
 local function sanitizedSnapshot(): any
 	local snapshot = lobby:readSnapshot()
-	if snapshot == nil then return nil end
+	if snapshot == nil then
+		return nil
+	end
 	local members = {}
 	for _, member in snapshot.Members do
 		local player = Players:GetPlayerByUserId(member.PlayerId)
-		table.insert(members, table.freeze({
-			PlayerId = member.PlayerId,
-			DisplayName = if player then player.DisplayName else ("Player " .. tostring(member.PlayerId)),
-			Ready = member.Ready,
-		}))
+		table.insert(
+			members,
+			table.freeze({
+				PlayerId = member.PlayerId,
+				DisplayName = if player then player.DisplayName else ("Player " .. tostring(member.PlayerId)),
+				Ready = member.Ready,
+			})
+		)
 	end
 	return table.freeze({
 		Members = table.freeze(members),
@@ -65,17 +72,25 @@ end
 
 local function isMember(playerId: number): boolean
 	local snapshot = lobby:readSnapshot()
-	if snapshot == nil then return false end
+	if snapshot == nil then
+		return false
+	end
 	for _, member in snapshot.Members do
-		if member.PlayerId == playerId then return true end
+		if member.PlayerId == playerId then
+			return true
+		end
 	end
 	return false
 end
 
 local function attemptLaunch()
-	if launchInFlight then return end
+	if launchInFlight then
+		return
+	end
 	local snapshot = lobby:readSnapshot()
-	if snapshot == nil or not snapshot.LaunchPending then return end
+	if snapshot == nil or not snapshot.LaunchPending then
+		return
+	end
 	launchInFlight = true
 
 	local consumed = lobby:consumeLaunch()
@@ -118,7 +133,9 @@ local function returnToLobby(player: Player): any
 end
 
 request.OnServerInvoke = function(player: Player, action: any, payload: any): any
-	if type(action) ~= "string" then return response(false, "InvalidAction") end
+	if type(action) ~= "string" then
+		return response(false, "InvalidAction")
+	end
 
 	local result
 	if action == "Join" then

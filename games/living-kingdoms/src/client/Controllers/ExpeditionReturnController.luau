@@ -45,7 +45,9 @@ local function createGui()
 	corner.Parent = returnButton
 
 	returnButton.Activated:Connect(function()
-		if requestInFlight then return end
+		if requestInFlight then
+			return
+		end
 		requestInFlight = true
 		returnButton.Active = false
 		returnButton.Text = "RETURNING..."
@@ -63,7 +65,9 @@ local function createGui()
 end
 
 local function receive(summary: any)
-	if gui == nil or button == nil then return end
+	if gui == nil or button == nil then
+		return
+	end
 	local terminal = type(summary) == "table"
 		and (summary.OutcomeId == "Completed" or summary.OutcomeId == "Failed" or summary.OutcomeId == "Abandoned")
 	gui.Enabled = terminal
@@ -74,19 +78,33 @@ local function receive(summary: any)
 end
 
 function Controller.start()
-	if started then return end
+	if started then
+		return
+	end
 	started = true
 	createGui()
 	connection = resultState.OnClientEvent:Connect(receive)
-	local ok, initial = pcall(function() return resultRead:InvokeServer() end)
-	if ok then receive(initial) end
+	local ok, initial = pcall(function()
+		return resultRead:InvokeServer()
+	end)
+	if ok then
+		receive(initial)
+	end
 end
 
 function Controller.stop()
-	if not started then return end
+	if not started then
+		return
+	end
 	started = false
-	if connection then connection:Disconnect(); connection = nil end
-	if gui then gui:Destroy(); gui = nil end
+	if connection then
+		connection:Disconnect()
+		connection = nil
+	end
+	if gui then
+		gui:Destroy()
+		gui = nil
+	end
 end
 
 return Controller

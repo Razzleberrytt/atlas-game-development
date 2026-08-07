@@ -47,7 +47,9 @@ end
 
 local function contains(list, value: string): boolean
 	for _, entry in list do
-		if entry == value then return true end
+		if entry == value then
+			return true
+		end
 	end
 	return false
 end
@@ -57,7 +59,9 @@ local function selectRarity(seed: number, source): string
 	local cumulative = 0
 	for _, rarityId in { Contracts.RarityIds.Common, Contracts.RarityIds.Uncommon, Contracts.RarityIds.Rare } do
 		cumulative += source.RarityWeights[rarityId] or 0
-		if roll <= cumulative then return rarityId end
+		if roll <= cumulative then
+			return rarityId
+		end
 	end
 	error("rarity weights did not resolve")
 end
@@ -74,8 +78,17 @@ local function eligibleDefinitions(rarityId: string, source): { any }
 	return eligible
 end
 
-local function contentSignature(definition: any, rarityId: string, power: number, sourceId: string, rollSeed: number): string
-	return table.concat({ "v1", definition.Id, definition.Version, rarityId, tostring(power), sourceId, tostring(rollSeed) }, "|")
+local function contentSignature(
+	definition: any,
+	rarityId: string,
+	power: number,
+	sourceId: string,
+	rollSeed: number
+): string
+	return table.concat(
+		{ "v1", definition.Id, definition.Version, rarityId, tostring(power), sourceId, tostring(rollSeed) },
+		"|"
+	)
 end
 
 local function copyReward(reward: EquipmentReward): EquipmentReward
@@ -102,19 +115,30 @@ end
 function EquipmentRewardService.new(runId: string, seed: number): Service
 	assert(type(runId) == "string" and #runId >= 8 and #runId <= 96, "invalid reward run id")
 	assert(type(seed) == "number" and seed % 1 == 0 and seed >= 1 and seed < MODULUS, "invalid reward seed")
-	return setmetatable({ _state = { RunId = runId, Seed = seed, ClaimedBySource = {}, Destroyed = false } }, EquipmentRewardService) :: any
+	return setmetatable(
+		{ _state = { RunId = runId, Seed = seed, ClaimedBySource = {}, Destroyed = false } },
+		EquipmentRewardService
+	) :: any
 end
 
 function EquipmentRewardService:claimReward(sourceId: RewardSourceId): RewardClaimResult
 	local state: InternalState = (self :: any)._state
-	if state.Destroyed then return reject("ServiceDestroyed") end
+	if state.Destroyed then
+		return reject("ServiceDestroyed")
+	end
 	local source = Config.Sources[sourceId]
-	if source == nil then return reject("UnknownSource") end
-	if state.ClaimedBySource[sourceId] ~= nil then return reject("SourceAlreadyClaimed") end
+	if source == nil then
+		return reject("UnknownSource")
+	end
+	if state.ClaimedBySource[sourceId] ~= nil then
+		return reject("SourceAlreadyClaimed")
+	end
 
 	local rarityId = selectRarity(deriveSeed(state.Seed, sourceId, 11), source)
 	local eligible = eligibleDefinitions(rarityId, source)
-	if #eligible == 0 then return reject("NoEligibleDefinition") end
+	if #eligible == 0 then
+		return reject("NoEligibleDefinition")
+	end
 
 	local definitionSeed = deriveSeed(state.Seed, sourceId, 29)
 	local definition = eligible[(definitionSeed % #eligible) + 1]
@@ -144,7 +168,9 @@ end
 
 function EquipmentRewardService:getClaimedReward(sourceId: RewardSourceId): EquipmentReward?
 	local state: InternalState = (self :: any)._state
-	if state.Destroyed then return nil end
+	if state.Destroyed then
+		return nil
+	end
 	local reward = state.ClaimedBySource[sourceId]
 	return if reward then copyReward(reward) else nil
 end

@@ -34,7 +34,10 @@ end
 function Service.new(store: Store, ownerId: string, leaseDurationSeconds: number): Service
 	assert(type(store) == "table" and type(store.update) == "function", "invalid lease store")
 	assert(type(ownerId) == "string" and #ownerId >= 8 and #ownerId <= 128, "invalid lease owner")
-	assert(type(leaseDurationSeconds) == "number" and leaseDurationSeconds >= 30 and leaseDurationSeconds % 1 == 0, "invalid lease duration")
+	assert(
+		type(leaseDurationSeconds) == "number" and leaseDurationSeconds >= 30 and leaseDurationSeconds % 1 == 0,
+		"invalid lease duration"
+	)
 	return setmetatable({
 		_store = store,
 		_ownerId = ownerId,
@@ -46,7 +49,9 @@ end
 
 function Service:acquire(playerId: number, nowUnix: number): any
 	local selfAny = self :: any
-	if selfAny._destroyed then return result(false, "ServiceDestroyed", nil) end
+	if selfAny._destroyed then
+		return result(false, "ServiceDestroyed", nil)
+	end
 	if not validPlayerId(playerId) or type(nowUnix) ~= "number" or nowUnix < 0 then
 		return result(false, "InvalidAcquireRequest", nil)
 	end
@@ -55,7 +60,8 @@ function Service:acquire(playerId: number, nowUnix: number): any
 	local blocked = false
 	local nextExpiry = nowUnix + selfAny._duration
 	local ok, value = selfAny._store:update(keyFor(playerId), function(current)
-		if type(current) == "table"
+		if
+			type(current) == "table"
 			and type(current.OwnerId) == "string"
 			and type(current.ExpiresAtUnix) == "number"
 			and current.OwnerId ~= selfAny._ownerId
@@ -67,12 +73,16 @@ function Service:acquire(playerId: number, nowUnix: number): any
 		acquired = true
 		return {
 			OwnerId = selfAny._ownerId,
-			AcquiredAtUnix = if type(current) == "table" and current.OwnerId == selfAny._ownerId then current.AcquiredAtUnix or nowUnix else nowUnix,
+			AcquiredAtUnix = if type(current) == "table" and current.OwnerId == selfAny._ownerId
+				then current.AcquiredAtUnix or nowUnix
+				else nowUnix,
 			RenewedAtUnix = nowUnix,
 			ExpiresAtUnix = nextExpiry,
 		}
 	end)
-	if not ok then return result(false, "LeaseStoreFailed", nil) end
+	if not ok then
+		return result(false, "LeaseStoreFailed", nil)
+	end
 	if blocked or not acquired or type(value) ~= "table" or value.OwnerId ~= selfAny._ownerId then
 		return result(false, "LeaseHeldByAnotherServer", if type(value) == "table" then value.ExpiresAtUnix else nil)
 	end
@@ -82,11 +92,15 @@ end
 
 function Service:renew(playerId: number, nowUnix: number): any
 	local selfAny = self :: any
-	if selfAny._destroyed then return result(false, "ServiceDestroyed", nil) end
+	if selfAny._destroyed then
+		return result(false, "ServiceDestroyed", nil)
+	end
 	if not validPlayerId(playerId) or type(nowUnix) ~= "number" or nowUnix < 0 then
 		return result(false, "InvalidRenewRequest", nil)
 	end
-	if selfAny._leases[playerId] == nil then return result(false, "LeaseNotOwned", nil) end
+	if selfAny._leases[playerId] == nil then
+		return result(false, "LeaseNotOwned", nil)
+	end
 
 	local renewed = false
 	local nextExpiry = nowUnix + selfAny._duration
@@ -102,7 +116,9 @@ function Service:renew(playerId: number, nowUnix: number): any
 			ExpiresAtUnix = nextExpiry,
 		}
 	end)
-	if not ok then return result(false, "LeaseStoreFailed", nil) end
+	if not ok then
+		return result(false, "LeaseStoreFailed", nil)
+	end
 	if not renewed or type(value) ~= "table" or value.OwnerId ~= selfAny._ownerId then
 		selfAny._leases[playerId] = nil
 		return result(false, "LeaseLost", nil)
@@ -113,8 +129,12 @@ end
 
 function Service:release(playerId: number): any
 	local selfAny = self :: any
-	if selfAny._destroyed then return result(false, "ServiceDestroyed", nil) end
-	if not validPlayerId(playerId) then return result(false, "InvalidReleaseRequest", nil) end
+	if selfAny._destroyed then
+		return result(false, "ServiceDestroyed", nil)
+	end
+	if not validPlayerId(playerId) then
+		return result(false, "InvalidReleaseRequest", nil)
+	end
 
 	local released = false
 	local ok = selfAny._store:update(keyFor(playerId), function(current)
@@ -125,7 +145,9 @@ function Service:release(playerId: number): any
 		return current
 	end)
 	selfAny._leases[playerId] = nil
-	if not ok then return result(false, "LeaseStoreFailed", nil) end
+	if not ok then
+		return result(false, "LeaseStoreFailed", nil)
+	end
 	return result(released, if released then "LeaseReleased" else "LeaseNotOwned", nil)
 end
 
@@ -138,13 +160,19 @@ end
 function Service:releaseAll()
 	local selfAny = self :: any
 	local playerIds = {}
-	for playerId in selfAny._leases do table.insert(playerIds, playerId) end
-	for _, playerId in playerIds do self:release(playerId) end
+	for playerId in selfAny._leases do
+		table.insert(playerIds, playerId)
+	end
+	for _, playerId in playerIds do
+		self:release(playerId)
+	end
 end
 
 function Service:destroy()
 	local selfAny = self :: any
-	if selfAny._destroyed then return end
+	if selfAny._destroyed then
+		return
+	end
 	self:releaseAll()
 	selfAny._destroyed = true
 end

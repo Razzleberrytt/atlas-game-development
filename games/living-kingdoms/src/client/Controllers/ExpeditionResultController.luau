@@ -45,7 +45,8 @@ local function validReward(reward: any): boolean
 end
 
 local function validSnapshot(payload: any): boolean
-	if type(payload) ~= "table"
+	if
+		type(payload) ~= "table"
 		or type(payload.RunId) ~= "string"
 		or VALID_OUTCOMES[payload.OutcomeId] ~= true
 		or type(payload.DurationSeconds) ~= "number"
@@ -67,7 +68,9 @@ end
 local function createGui()
 	local playerGui = localPlayer:WaitForChild("PlayerGui")
 	local existing = playerGui:FindFirstChild("LK_ExpeditionResult")
-	if existing then existing:Destroy() end
+	if existing then
+		existing:Destroy()
+	end
 
 	local screen = Instance.new("ScreenGui")
 	screen.Name = "LK_ExpeditionResult"
@@ -131,20 +134,25 @@ local function formatRewards(rewards: { any }): string
 	end
 	local lines = { "EQUIPMENT SECURED" }
 	for _, reward in rewards do
-		table.insert(lines, string.format(
-			"%s — %s %s  •  %s  •  Power %d",
-			reward.SourceId,
-			reward.Rarity,
-			reward.DisplayName,
-			reward.Slot,
-			reward.Power
-		))
+		table.insert(
+			lines,
+			string.format(
+				"%s — %s %s  •  %s  •  Power %d",
+				reward.SourceId,
+				reward.Rarity,
+				reward.DisplayName,
+				reward.Slot,
+				reward.Power
+			)
+		)
 	end
 	return table.concat(lines, "\n")
 end
 
 local function applySnapshot(snapshot: any)
-	if gui == nil or headline == nil or summary == nil or rewardsLabel == nil or details == nil then return end
+	if gui == nil or headline == nil or summary == nil or rewardsLabel == nil or details == nil then
+		return
+	end
 
 	gui.Enabled = true
 	if snapshot.OutcomeId == "Completed" then
@@ -171,7 +179,9 @@ end
 
 local function receive(payload: any)
 	if payload == nil then
-		if gui then gui.Enabled = false end
+		if gui then
+			gui.Enabled = false
+		end
 		return
 	end
 	if validSnapshot(payload) then
@@ -180,7 +190,9 @@ local function receive(payload: any)
 end
 
 function Controller.start()
-	if started then return end
+	if started then
+		return
+	end
 	started = true
 	createGui()
 	connection = stateRemote.OnClientEvent:Connect(receive)
@@ -193,10 +205,18 @@ function Controller.start()
 end
 
 function Controller.stop()
-	if not started then return end
+	if not started then
+		return
+	end
 	started = false
-	if connection then connection:Disconnect(); connection = nil end
-	if gui then gui:Destroy(); gui = nil end
+	if connection then
+		connection:Disconnect()
+		connection = nil
+	end
+	if gui then
+		gui:Destroy()
+		gui = nil
+	end
 end
 
 return Controller

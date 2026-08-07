@@ -13,7 +13,9 @@ local connection: RBXScriptConnection? = nil
 
 local function setEnabled(name: string, enabled: boolean)
 	local gui = Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild(name)
-	if gui and gui:IsA("ScreenGui") then gui.Enabled = enabled end
+	if gui and gui:IsA("ScreenGui") then
+		gui.Enabled = enabled
+	end
 end
 
 local function apply(snapshot: any)
@@ -27,20 +29,31 @@ local function apply(snapshot: any)
 end
 
 function Controller.start()
-	if started then return end
+	if started then
+		return
+	end
 	started = true
 	local network = ReplicatedStorage:WaitForChild("ExpeditionNetwork")
 	local state = network:WaitForChild("State") :: RemoteEvent
 	local readState = network:WaitForChild("ReadState") :: RemoteFunction
 	connection = state.OnClientEvent:Connect(apply)
-	local ok, snapshot = pcall(function() return readState:InvokeServer() end)
-	if ok then apply(snapshot) end
+	local ok, snapshot = pcall(function()
+		return readState:InvokeServer()
+	end)
+	if ok then
+		apply(snapshot)
+	end
 end
 
 function Controller.stop()
-	if not started then return end
+	if not started then
+		return
+	end
 	started = false
-	if connection then connection:Disconnect(); connection = nil end
+	if connection then
+		connection:Disconnect()
+		connection = nil
+	end
 end
 
 return Controller

@@ -61,9 +61,13 @@ function Adapter:load(key: string): any
 		local success, value = pcall(function()
 			return selfAny._store:GetAsync(qualifiedKey)
 		end)
-		if success then return value end
+		if success then
+			return value
+		end
 		lastError = value
-		if attempt < selfAny._maximumAttempts then task.wait(retryDelay(selfAny._baseRetryDelaySeconds, attempt)) end
+		if attempt < selfAny._maximumAttempts then
+			task.wait(retryDelay(selfAny._baseRetryDelaySeconds, attempt))
+		end
 	end
 	warn(string.format("[AtlasPersistence] load failed for %s: %s", qualifiedKey, tostring(lastError)))
 	return nil
@@ -77,9 +81,13 @@ function Adapter:update(key: string, transform: (any) -> any): (boolean, any)
 		local success, value = pcall(function()
 			return selfAny._store:UpdateAsync(qualifiedKey, transform)
 		end)
-		if success then return true, value end
+		if success then
+			return true, value
+		end
 		lastError = value
-		if attempt < selfAny._maximumAttempts then task.wait(retryDelay(selfAny._baseRetryDelaySeconds, attempt)) end
+		if attempt < selfAny._maximumAttempts then
+			task.wait(retryDelay(selfAny._baseRetryDelaySeconds, attempt))
+		end
 	end
 	warn(string.format("[AtlasPersistence] update failed for %s: %s", qualifiedKey, tostring(lastError)))
 	return false, nil

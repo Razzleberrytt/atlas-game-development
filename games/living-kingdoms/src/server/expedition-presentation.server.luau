@@ -69,7 +69,13 @@ local connection = RunService.Heartbeat:Connect(function(deltaTime)
 	local snapshot = safeSnapshot()
 	local signature = if snapshot == nil
 		then "none"
-		else string.format("%s|%s|%s|%s", snapshot.RunId, snapshot.PhaseId, snapshot.OutcomeId, tostring(snapshot.SecretDiscovered))
+		else string.format(
+			"%s|%s|%s|%s",
+			snapshot.RunId,
+			snapshot.PhaseId,
+			snapshot.OutcomeId,
+			tostring(snapshot.SecretDiscovered)
+		)
 	if signature == lastSignature then
 		return
 	end

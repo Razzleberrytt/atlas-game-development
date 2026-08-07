@@ -72,7 +72,8 @@ local function driveStep()
 	end
 	local stepResult = bootstrap:step(nowUnix())
 	ExpeditionRoomBarrierStateService.update(bootstrap:getActiveEncounterContext())
-	if stepResult.Accepted ~= true
+	if
+		stepResult.Accepted ~= true
 		and stepResult.ReasonId ~= "EncounterInProgress"
 		and stepResult.ReasonId ~= "PhaseMinimumDuration"
 		and stepResult.ReasonId ~= "EncounterAlreadyActive"
@@ -115,7 +116,11 @@ function Service.startExpedition(options: StartOptions?): any
 	if not validInteger(seed) or seed < limits.MinimumSeed or seed > limits.MaximumSeed then
 		return result(false, "InvalidSeed", nil)
 	end
-	if not validInteger(partySize) or partySize < definition.MinimumPlayers or partySize > definition.MaximumPlayers then
+	if
+		not validInteger(partySize)
+		or partySize < definition.MinimumPlayers
+		or partySize > definition.MaximumPlayers
+	then
 		return result(false, "InvalidPartySize", nil)
 	end
 	if type(runId) ~= "string" or #runId < 8 or #runId > 96 then

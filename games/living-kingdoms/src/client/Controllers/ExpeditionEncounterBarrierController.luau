@@ -25,7 +25,11 @@ local function clearTweens()
 end
 
 local function tween(instance: Instance, duration: number, properties: { [string]: any })
-	local value = TweenService:Create(instance, TweenInfo.new(duration, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), properties)
+	local value = TweenService:Create(
+		instance,
+		TweenInfo.new(duration, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+		properties
+	)
 	table.insert(activeTweens, value)
 	value:Play()
 end

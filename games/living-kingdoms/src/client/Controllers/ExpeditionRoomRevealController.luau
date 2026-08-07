@@ -46,7 +46,11 @@ local function revealRoom(room: Model)
 			local light = descendant:FindFirstChild("BarrierGlow")
 			if light and light:IsA("PointLight") then
 				light.Brightness = if roleId == "Boss" then 4.5 elseif roleId == "Elite" then 3.5 else 2.2
-				playTween(light, TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Brightness = 0 })
+				playTween(
+					light,
+					TweenInfo.new(duration, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+					{ Brightness = 0 }
+				)
 			end
 			playTween(descendant, TweenInfo.new(duration, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
 				Transparency = 1,

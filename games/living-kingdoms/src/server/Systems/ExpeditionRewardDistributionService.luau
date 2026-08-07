@@ -68,7 +68,10 @@ local function snapshot(state: Internal, failureReasons: { [number]: string }): 
 end
 
 function Service.new(inventoryOwner: InventoryOwner, participantUserIds: { number }): Service
-	assert(type(inventoryOwner) == "table" and type(inventoryOwner.applyReward) == "function", "invalid inventory owner")
+	assert(
+		type(inventoryOwner) == "table" and type(inventoryOwner.applyReward) == "function",
+		"invalid inventory owner"
+	)
 	assert(type(participantUserIds) == "table", "invalid participant roster")
 
 	local seen = {}
@@ -82,12 +85,15 @@ function Service.new(inventoryOwner: InventoryOwner, participantUserIds: { numbe
 	end
 	table.sort(ordered)
 
-	return setmetatable({
-		InventoryOwner = inventoryOwner,
-		ParticipantUserIds = copyIds(ordered),
-		CompletedByPlayerId = {},
-		Destroyed = false,
-	} :: Internal, Service) :: any
+	return setmetatable(
+		{
+			InventoryOwner = inventoryOwner,
+			ParticipantUserIds = copyIds(ordered),
+			CompletedByPlayerId = {},
+			Destroyed = false,
+		} :: Internal,
+		Service
+	) :: any
 end
 
 function Service:distribute(rewards: { any }, nowUnix: number): DistributionResult
@@ -129,7 +135,9 @@ end
 
 function Service:isComplete(): boolean
 	local state: Internal = self :: any
-	if state.Destroyed then return false end
+	if state.Destroyed then
+		return false
+	end
 	for _, playerId in state.ParticipantUserIds do
 		if not state.CompletedByPlayerId[playerId] then
 			return false
@@ -140,7 +148,9 @@ end
 
 function Service:destroy()
 	local state: Internal = self :: any
-	if state.Destroyed then return end
+	if state.Destroyed then
+		return
+	end
 	state.Destroyed = true
 	table.clear(state.CompletedByPlayerId)
 end

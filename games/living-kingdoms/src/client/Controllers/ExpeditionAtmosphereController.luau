@@ -40,9 +40,14 @@ local function restore()
 			(Lighting :: any)[key] = value
 		end
 	end
-	for _, effect in effects do effect:Destroy() end
+	for _, effect in effects do
+		effect:Destroy()
+	end
 	table.clear(effects)
-	if drone then drone:Destroy(); drone = nil end
+	if drone then
+		drone:Destroy()
+		drone = nil
+	end
 	originals = nil
 end
 
@@ -55,7 +60,9 @@ local function addEffect(className: string, name: string): any
 end
 
 local function activate()
-	if active then return end
+	if active then
+		return
+	end
 	active = true
 	remember()
 	Lighting.Brightness = 1.35
@@ -103,7 +110,9 @@ local function activate()
 end
 
 local function deactivate()
-	if not active then return end
+	if not active then
+		return
+	end
 	active = false
 	restore()
 end
@@ -112,7 +121,9 @@ local function nearestRoomRole(): string?
 	local root = Workspace:FindFirstChild("ExpeditionRooms")
 	local character = Players.LocalPlayer.Character
 	local pivot = character and character:GetPivot()
-	if root == nil or pivot == nil then return nil end
+	if root == nil or pivot == nil then
+		return nil
+	end
 	local nearestRole: string? = nil
 	local nearestDistance = math.huge
 	for _, child in root:GetChildren() do
@@ -128,9 +139,13 @@ local function nearestRoomRole(): string?
 end
 
 local function step(deltaTime: number)
-	if not active then return end
+	if not active then
+		return
+	end
 	elapsed += deltaTime
-	if elapsed < 0.5 then return end
+	if elapsed < 0.5 then
+		return
+	end
 	elapsed = 0
 	local role = nearestRoomRole()
 	local color = Lighting:FindFirstChild("ExpeditionColorGrade")
@@ -156,24 +171,43 @@ local function step(deltaTime: number)
 end
 
 function Controller.start()
-	if started then return end
+	if started then
+		return
+	end
 	started = true
-	if Workspace:FindFirstChild("ExpeditionRooms") then activate() end
+	if Workspace:FindFirstChild("ExpeditionRooms") then
+		activate()
+	end
 	childAdded = Workspace.ChildAdded:Connect(function(child)
-		if child.Name == "ExpeditionRooms" then activate() end
+		if child.Name == "ExpeditionRooms" then
+			activate()
+		end
 	end)
 	childRemoved = Workspace.ChildRemoved:Connect(function(child)
-		if child.Name == "ExpeditionRooms" then deactivate() end
+		if child.Name == "ExpeditionRooms" then
+			deactivate()
+		end
 	end)
 	heartbeat = RunService.Heartbeat:Connect(step)
 end
 
 function Controller.stop()
-	if not started then return end
+	if not started then
+		return
+	end
 	started = false
-	if heartbeat then heartbeat:Disconnect(); heartbeat = nil end
-	if childAdded then childAdded:Disconnect(); childAdded = nil end
-	if childRemoved then childRemoved:Disconnect(); childRemoved = nil end
+	if heartbeat then
+		heartbeat:Disconnect()
+		heartbeat = nil
+	end
+	if childAdded then
+		childAdded:Disconnect()
+		childAdded = nil
+	end
+	if childRemoved then
+		childRemoved:Disconnect()
+		childRemoved = nil
+	end
 	deactivate()
 end
 

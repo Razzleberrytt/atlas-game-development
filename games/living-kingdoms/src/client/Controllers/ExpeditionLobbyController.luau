@@ -35,7 +35,9 @@ end
 
 local function localMember(snapshot: any): any
 	for _, member in snapshot.Members do
-		if member.PlayerId == player.UserId then return member end
+		if member.PlayerId == player.UserId then
+			return member
+		end
 	end
 	return nil
 end
@@ -100,11 +102,15 @@ local function createGui()
 	leaveButton = createButton(panel, "LEAVE", UDim2.new(1, -196, 1, -58))
 
 	actionButton.Activated:Connect(function()
-		if requestInFlight or currentSnapshot == nil then return end
+		if requestInFlight or currentSnapshot == nil then
+			return
+		end
 		requestInFlight = true
 		local member = localMember(currentSnapshot)
 		local ok, result = pcall(function()
-			if member == nil then return request:InvokeServer("Join") end
+			if member == nil then
+				return request:InvokeServer("Join")
+			end
 			return request:InvokeServer("SetReady", { Ready = not member.Ready })
 		end)
 		requestInFlight = false
@@ -114,18 +120,29 @@ local function createGui()
 	end)
 
 	leaveButton.Activated:Connect(function()
-		if requestInFlight then return end
+		if requestInFlight then
+			return
+		end
 		requestInFlight = true
-		pcall(function() request:InvokeServer("Leave") end)
+		pcall(function()
+			request:InvokeServer("Leave")
+		end)
 		requestInFlight = false
 	end)
 end
 
 local function render(snapshot: any)
 	currentSnapshot = snapshot
-	if gui == nil or statusLabel == nil or membersLabel == nil or actionButton == nil or leaveButton == nil then return end
+	if gui == nil or statusLabel == nil or membersLabel == nil or actionButton == nil or leaveButton == nil then
+		return
+	end
 	local member = localMember(snapshot)
-	statusLabel.Text = string.format("Party %d/%d  •  Minimum %d", snapshot.MemberCount, snapshot.MaximumPlayers, snapshot.MinimumPlayers)
+	statusLabel.Text = string.format(
+		"Party %d/%d  •  Minimum %d",
+		snapshot.MemberCount,
+		snapshot.MaximumPlayers,
+		snapshot.MinimumPlayers
+	)
 	if snapshot.LaunchPending then
 		statusLabel.Text ..= "\nLaunching expedition..."
 	elseif snapshot.AllReady then
@@ -136,9 +153,14 @@ local function render(snapshot: any)
 
 	local lines = {}
 	for _, entry in snapshot.Members do
-		table.insert(lines, string.format("%s  —  %s", entry.DisplayName, if entry.Ready then "READY" else "NOT READY"))
+		table.insert(
+			lines,
+			string.format("%s  —  %s", entry.DisplayName, if entry.Ready then "READY" else "NOT READY")
+		)
 	end
-	if #lines == 0 then table.insert(lines, "No operatives have joined.") end
+	if #lines == 0 then
+		table.insert(lines, "No operatives have joined.")
+	end
 	membersLabel.Text = table.concat(lines, "\n")
 
 	actionButton.Text = if member == nil then "JOIN" elseif member.Ready then "UNREADY" else "READY"
@@ -148,21 +170,37 @@ local function render(snapshot: any)
 end
 
 function Controller.start()
-	if started then return end
+	if started then
+		return
+	end
 	started = true
 	createGui()
 	connection = stateRemote.OnClientEvent:Connect(function(snapshot)
-		if validSnapshot(snapshot) then render(snapshot) end
+		if validSnapshot(snapshot) then
+			render(snapshot)
+		end
 	end)
-	local ok, snapshot = pcall(function() return readState:InvokeServer() end)
-	if ok and validSnapshot(snapshot) then render(snapshot) end
+	local ok, snapshot = pcall(function()
+		return readState:InvokeServer()
+	end)
+	if ok and validSnapshot(snapshot) then
+		render(snapshot)
+	end
 end
 
 function Controller.stop()
-	if not started then return end
+	if not started then
+		return
+	end
 	started = false
-	if connection then connection:Disconnect(); connection = nil end
-	if gui then gui:Destroy(); gui = nil end
+	if connection then
+		connection:Disconnect()
+		connection = nil
+	end
+	if gui then
+		gui:Destroy()
+		gui = nil
+	end
 end
 
 return Controller

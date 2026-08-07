@@ -15,20 +15,29 @@ local lastSignature = "none"
 local accumulated = 0
 
 local existing = ServerStorage:FindFirstChild("ExpeditionDiagnostics")
-if existing then existing:Destroy() end
+if existing then
+	existing:Destroy()
+end
 local control = Instance.new("BindableFunction")
 control.Name = "ExpeditionDiagnostics"
 control.Parent = ServerStorage
 
 local function signature(snapshot: any): string
-	if snapshot == nil then return "none" end
-	return table.concat({ snapshot.RunId, snapshot.PhaseId, snapshot.OutcomeId, tostring(snapshot.SecretDiscovered) }, "|")
+	if snapshot == nil then
+		return "none"
+	end
+	return table.concat(
+		{ snapshot.RunId, snapshot.PhaseId, snapshot.OutcomeId, tostring(snapshot.SecretDiscovered) },
+		"|"
+	)
 end
 
 local function capture()
 	local snapshot = ExpeditionLiveRuntimeService.readSnapshot()
 	local nextSignature = signature(snapshot)
-	if nextSignature == lastSignature then return end
+	if nextSignature == lastSignature then
+		return
+	end
 	lastSignature = nextSignature
 	if snapshot == nil then
 		journal:record("ExpeditionCleared", { PlayerCount = #Players:GetPlayers() }, Workspace:GetServerTimeNow())
@@ -45,23 +54,38 @@ local function capture()
 end
 
 control.OnInvoke = function(action: any): any
-	if action == "Read" then return journal:read() end
-	if action == "Clear" then journal:clear(); return true end
+	if action == "Read" then
+		return journal:read()
+	end
+	if action == "Clear" then
+		journal:clear()
+		return true
+	end
 	return nil
 end
 
 local connection = RunService.Heartbeat:Connect(function(deltaTime)
 	accumulated += deltaTime
-	if accumulated < 0.25 then return end
+	if accumulated < 0.25 then
+		return
+	end
 	accumulated = 0
 	capture()
 end)
 
 Players.PlayerAdded:Connect(function(player)
-	journal:record("PlayerJoined", { PlayerId = player.UserId, PlayerCount = #Players:GetPlayers() }, Workspace:GetServerTimeNow())
+	journal:record(
+		"PlayerJoined",
+		{ PlayerId = player.UserId, PlayerCount = #Players:GetPlayers() },
+		Workspace:GetServerTimeNow()
+	)
 end)
 Players.PlayerRemoving:Connect(function(player)
-	journal:record("PlayerRemoving", { PlayerId = player.UserId, PlayerCount = #Players:GetPlayers() - 1 }, Workspace:GetServerTimeNow())
+	journal:record(
+		"PlayerRemoving",
+		{ PlayerId = player.UserId, PlayerCount = #Players:GetPlayers() - 1 },
+		Workspace:GetServerTimeNow()
+	)
 end)
 
 game:BindToClose(function()

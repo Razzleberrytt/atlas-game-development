@@ -30,10 +30,12 @@ local function doorwayFixture(name: string, cframe: CFrame, roleId: string, pare
 	fixture:SetAttribute("ExpeditionDoorwayFixture", true)
 	fixture:SetAttribute("RoomRoleId", roleId)
 
-	local frameColor = if roleId == "Boss" then Color3.fromRGB(68, 108, 150)
+	local frameColor = if roleId == "Boss"
+		then Color3.fromRGB(68, 108, 150)
 		elseif roleId == "Elite" then Color3.fromRGB(103, 70, 130)
 		else Color3.fromRGB(73, 82, 89)
-	local energyColor = if roleId == "Boss" then Color3.fromRGB(75, 180, 255)
+	local energyColor = if roleId == "Boss"
+		then Color3.fromRGB(75, 180, 255)
 		elseif roleId == "Elite" then Color3.fromRGB(181, 93, 255)
 		else Color3.fromRGB(255, 176, 82)
 
@@ -80,8 +82,10 @@ local function buildRoom(placement: any, seed: number, parent: Instance)
 	local floor = part("Floor", Vector3.new(size.x, 1, size.z), CFrame.new(center.x, 0, center.z), model)
 	floor.Material = Enum.Material.Slate
 	floor.Color = Color3.fromRGB(38, 43, 49)
-	local west = part("WestWall", Vector3.new(1, size.y, size.z), CFrame.new(center.x - size.x / 2, center.y, center.z), model)
-	local east = part("EastWall", Vector3.new(1, size.y, size.z), CFrame.new(center.x + size.x / 2, center.y, center.z), model)
+	local west =
+		part("WestWall", Vector3.new(1, size.y, size.z), CFrame.new(center.x - size.x / 2, center.y, center.z), model)
+	local east =
+		part("EastWall", Vector3.new(1, size.y, size.z), CFrame.new(center.x + size.x / 2, center.y, center.z), model)
 	west.Material = Enum.Material.Rock
 	east.Material = Enum.Material.Rock
 

@@ -26,9 +26,13 @@ local function rejected(reasonId: string)
 end
 
 function Service.loadPlayer(playerId: number, nowUnix: number): any
-	if destroyed then return rejected("ServiceDestroyed") end
+	if destroyed then
+		return rejected("ServiceDestroyed")
+	end
 	local lease = leases:acquire(playerId, nowUnix)
-	if lease.Accepted ~= true then return rejected(lease.ReasonId) end
+	if lease.Accepted ~= true then
+		return rejected(lease.ReasonId)
+	end
 	local loaded = persistence:loadPlayer(playerId, nowUnix)
 	if loaded.Accepted ~= true then
 		leases:release(playerId)
@@ -37,30 +41,44 @@ function Service.loadPlayer(playerId: number, nowUnix: number): any
 end
 
 function Service.renewPlayer(playerId: number, nowUnix: number): any
-	if destroyed then return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed" }) end
+	if destroyed then
+		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed" })
+	end
 	return leases:renew(playerId, nowUnix)
 end
 
 function Service.releasePlayer(playerId: number): any
-	if destroyed then return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed" }) end
+	if destroyed then
+		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed" })
+	end
 	return leases:release(playerId)
 end
 
 function Service.applyReward(playerId: number, reward: any, nowUnix: number): any
-	if destroyed then return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Record = nil }) end
+	if destroyed then
+		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Record = nil })
+	end
 	if not leases:hasLease(playerId, nowUnix) then
-		return table.freeze({ Accepted = false, ReasonId = "SessionLeaseRequired", Record = persistence:getRecord(playerId) })
+		return table.freeze({
+			Accepted = false,
+			ReasonId = "SessionLeaseRequired",
+			Record = persistence:getRecord(playerId),
+		})
 	end
 	return persistence:applyReward(playerId, reward, nowUnix)
 end
 
 function Service.getRecord(playerId: number): any
-	if destroyed then return nil end
+	if destroyed then
+		return nil
+	end
 	return persistence:getRecord(playerId)
 end
 
 function Service.destroy()
-	if destroyed then return end
+	if destroyed then
+		return
+	end
 	leases:releaseAll()
 	persistence:destroy()
 	leases:destroy()

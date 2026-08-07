@@ -14,10 +14,14 @@ local Service = {}
 Service.__index = Service
 
 local function copyFields(fields: any): any
-	if type(fields) ~= "table" then return table.freeze({}) end
+	if type(fields) ~= "table" then
+		return table.freeze({})
+	end
 	local safe = {}
 	for key, value in fields do
-		if type(key) == "string" and (type(value) == "string" or type(value) == "number" or type(value) == "boolean") then
+		if
+			type(key) == "string" and (type(value) == "string" or type(value) == "number" or type(value) == "boolean")
+		then
 			safe[key] = value
 		end
 	end
@@ -32,31 +36,46 @@ end
 
 function Service:record(eventId: string, fields: any?, atUnix: number)
 	local selfAny = self :: any
-	if selfAny._destroyed then return end
+	if selfAny._destroyed then
+		return
+	end
 	assert(type(eventId) == "string" and #eventId >= 3 and #eventId <= 80, "invalid event id")
 	assert(type(atUnix) == "number" and atUnix >= 0, "invalid timestamp")
 	selfAny._sequence += 1
-	table.insert(selfAny._entries, table.freeze({ Sequence = selfAny._sequence, EventId = eventId, AtUnix = atUnix, Fields = copyFields(fields) }))
-	while #selfAny._entries > selfAny._maximum do table.remove(selfAny._entries, 1) end
+	table.insert(
+		selfAny._entries,
+		table.freeze({ Sequence = selfAny._sequence, EventId = eventId, AtUnix = atUnix, Fields = copyFields(fields) })
+	)
+	while #selfAny._entries > selfAny._maximum do
+		table.remove(selfAny._entries, 1)
+	end
 end
 
 function Service:read(): { any }
 	local selfAny = self :: any
-	if selfAny._destroyed then return {} end
+	if selfAny._destroyed then
+		return {}
+	end
 	local copy = {}
-	for index, entry in selfAny._entries do copy[index] = entry end
+	for index, entry in selfAny._entries do
+		copy[index] = entry
+	end
 	return table.freeze(copy)
 end
 
 function Service:clear()
 	local selfAny = self :: any
-	if selfAny._destroyed then return end
+	if selfAny._destroyed then
+		return
+	end
 	table.clear(selfAny._entries)
 end
 
 function Service:destroy()
 	local selfAny = self :: any
-	if selfAny._destroyed then return end
+	if selfAny._destroyed then
+		return
+	end
 	selfAny._destroyed = true
 	table.clear(selfAny._entries)
 end

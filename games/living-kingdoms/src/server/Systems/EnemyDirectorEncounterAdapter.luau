@@ -67,42 +67,41 @@ local function copyContext(context: EncounterContext): EncounterContext
 	})
 end
 
-function Adapter.new(director: Director, resolveDefinition: DefinitionResolver): Adapter
-	assert(type(director) == "table", "director is required")
-	assert(type(resolveDefinition) == "function", "definition resolver is required")
-	return setmetatable({
-		Director = director,
-		ResolveDefinition = resolveDefinition,
-		ActiveContext = nil,
-		ActiveKind = nil,
-		TrackedEntityIds = {},
-		SawTrackedEntity = false,
-		SawBoss = false,
-		CompletionReported = false,
-		Destroyed = false,
-	} :: Internal, Adapter) :: any
-end
-
-function Adapter:start(context: EncounterContext): boolean
-	local state: Internal = self :: any
-	if state.Destroyed or state.ActiveContext ~= nil then return false end
-	if type(context) ~= "table" or type(context.Token) ~= "string" or context.Token == "" then return false end
+local function startEncounter(state: Internal, context: EncounterContext): boolean
+	if state.Destroyed or state.ActiveContext ~= nil then
+		return false
+	end
+	if type(context) ~= "table" or type(context.Token) ~= "string" or context.Token == "" then
+		return false
+	end
 	local definition = state.ResolveDefinition(context)
-	if definition == nil then return false end
+	if definition == nil then
+		return false
+	end
 
 	local tracked = {}
 	if definition.Kind == "Wave" then
 		local waveIndex, wave = definition.WaveIndex, definition.Wave
-		if type(waveIndex) ~= "number" or waveIndex % 1 ~= 0 or type(wave) ~= "table" or #wave == 0 then return false end
+		if type(waveIndex) ~= "number" or waveIndex % 1 ~= 0 or type(wave) ~= "table" or #wave == 0 then
+			return false
+		end
 		for _, enemy in wave do
-			if type(enemy.id) ~= "string" or enemy.id == "" or tracked[enemy.id] then return false end
+			if type(enemy.id) ~= "string" or enemy.id == "" or tracked[enemy.id] then
+				return false
+			end
 			tracked[enemy.id] = true
 		end
-		if state.Director.spawnAuthoredWave(waveIndex, wave) <= 0 then return false end
+		if state.Director.spawnAuthoredWave(waveIndex, wave) <= 0 then
+			return false
+		end
 	elseif definition.Kind == "Boss" then
 		local position = definition.BossPosition
-		if type(position) ~= "table" then return false end
-		if not state.Director.spawnBoss(position, definition.FloodlightsRestored == true) then return false end
+		if type(position) ~= "table" then
+			return false
+		end
+		if not state.Director.spawnBoss(position, definition.FloodlightsRestored == true) then
+			return false
+		end
 	else
 		return false
 	end
@@ -118,9 +117,15 @@ end
 
 function Adapter:pollCompletion(): (boolean, string?)
 	local state: Internal = self :: any
-	if state.Destroyed then return false, "AdapterDestroyed" end
-	if state.ActiveContext == nil or state.ActiveKind == nil then return false, "NoActiveEncounter" end
-	if state.CompletionReported then return false, "CompletionAlreadyReported" end
+	if state.Destroyed then
+		return false, "AdapterDestroyed"
+	end
+	if state.ActiveContext == nil or state.ActiveKind == nil then
+		return false, "NoActiveEncounter"
+	end
+	if state.CompletionReported then
+		return false, "CompletionAlreadyReported"
+	end
 
 	local completed = false
 	if state.ActiveKind == "Wave" then
@@ -137,7 +142,9 @@ function Adapter:pollCompletion(): (boolean, string?)
 		state.SawBoss = state.SawBoss or boss.exists
 		completed = state.SawBoss and boss.isDefeated and not boss.isAlive
 	end
-	if not completed then return false, "EncounterInProgress" end
+	if not completed then
+		return false, "EncounterInProgress"
+	end
 	state.CompletionReported = true
 	return true, state.ActiveContext.Token
 end
@@ -147,9 +154,10 @@ function Adapter:getActiveToken(): string?
 	return if not state.Destroyed and state.ActiveContext then state.ActiveContext.Token else nil
 end
 
-function Adapter:cancel(context: EncounterContext, _reasonId: string)
-	local state: Internal = self :: any
-	if state.Destroyed or state.ActiveContext == nil or context.Token ~= state.ActiveContext.Token then return end
+local function cancelEncounter(state: Internal, context: EncounterContext, _reasonId: string)
+	if state.Destroyed or state.ActiveContext == nil or context.Token ~= state.ActiveContext.Token then
+		return
+	end
 	state.Director.endOperationPressure()
 	state.ActiveContext = nil
 	state.ActiveKind = nil
@@ -157,11 +165,50 @@ function Adapter:cancel(context: EncounterContext, _reasonId: string)
 	state.CompletionReported = false
 end
 
+--[[
+	`ExpeditionEncounterCoordinator.EncounterAdapter` declares `start` and
+	`cancel` as self-less functions and invokes them with `.`, so they are bound
+	to the instance here instead of being declared as `:` methods. The remaining
+	members stay `:` methods, matching how the composition root calls them.
+]]
+function Adapter.new(director: Director, resolveDefinition: DefinitionResolver): Adapter
+	assert(type(director) == "table", "director is required")
+	assert(type(resolveDefinition) == "function", "definition resolver is required")
+	local instance = setmetatable(
+		{
+			Director = director,
+			ResolveDefinition = resolveDefinition,
+			ActiveContext = nil,
+			ActiveKind = nil,
+			TrackedEntityIds = {},
+			SawTrackedEntity = false,
+			SawBoss = false,
+			CompletionReported = false,
+			Destroyed = false,
+		} :: Internal,
+		Adapter
+	)
+
+	local state: Internal = instance :: any
+	local bound = instance :: any
+	bound.start = function(context: EncounterContext): boolean
+		return startEncounter(state, context)
+	end
+	bound.cancel = function(context: EncounterContext, reasonId: string)
+		cancelEncounter(state, context, reasonId)
+	end
+	return bound :: any
+end
+
 function Adapter:destroy()
 	local state: Internal = self :: any
-	if state.Destroyed then return end
+	if state.Destroyed then
+		return
+	end
 	state.Destroyed = true
-	if state.ActiveContext ~= nil then state.Director.endOperationPressure() end
+	if state.ActiveContext ~= nil then
+		state.Director.endOperationPressure()
+	end
 	state.ActiveContext = nil
 	state.ActiveKind = nil
 	table.clear(state.TrackedEntityIds)

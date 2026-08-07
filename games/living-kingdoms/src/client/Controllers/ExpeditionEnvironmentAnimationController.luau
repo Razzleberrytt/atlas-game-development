@@ -19,17 +19,27 @@ local MAX_TRACKED = 96
 local elapsed = 0
 
 local function remove(instance: Instance)
-	if not instance:IsA("BasePart") then return end
+	if not instance:IsA("BasePart") then
+		return
+	end
 	baseCFrames[instance] = nil
 	baseTransparencies[instance] = nil
 	local index = table.find(tracked, instance)
-	if index then table.remove(tracked, index) end
+	if index then
+		table.remove(tracked, index)
+	end
 end
 
 local function consider(instance: Instance)
-	if #tracked >= MAX_TRACKED or not instance:IsA("BasePart") then return end
-	if instance:GetAttribute("ExpeditionAnimated") ~= true then return end
-	if baseCFrames[instance] ~= nil then return end
+	if #tracked >= MAX_TRACKED or not instance:IsA("BasePart") then
+		return
+	end
+	if instance:GetAttribute("ExpeditionAnimated") ~= true then
+		return
+	end
+	if baseCFrames[instance] ~= nil then
+		return
+	end
 	table.insert(tracked, instance)
 	baseCFrames[instance] = instance.CFrame
 	baseTransparencies[instance] = instance.Transparency
@@ -45,12 +55,20 @@ local function scan(root: Instance)
 end
 
 local function bindRoot(root: Instance?)
-	if rootAdded then rootAdded:Disconnect(); rootAdded = nil end
-	if rootRemoved then rootRemoved:Disconnect(); rootRemoved = nil end
+	if rootAdded then
+		rootAdded:Disconnect()
+		rootAdded = nil
+	end
+	if rootRemoved then
+		rootRemoved:Disconnect()
+		rootRemoved = nil
+	end
 	table.clear(tracked)
 	table.clear(baseCFrames)
 	table.clear(baseTransparencies)
-	if root == nil then return end
+	if root == nil then
+		return
+	end
 	scan(root)
 	rootAdded = root.DescendantAdded:Connect(consider)
 	rootRemoved = root.DescendantRemoving:Connect(remove)
@@ -68,14 +86,20 @@ local function step(deltaTime: number)
 		local mode = value:GetAttribute("AnimationMode")
 		local phase = value:GetAttribute("AnimationPhase")
 		local speed = value:GetAttribute("AnimationSpeed")
-		if type(phase) ~= "number" then phase = 0 end
-		if type(speed) ~= "number" then speed = 1 end
+		if type(phase) ~= "number" then
+			phase = 0
+		end
+		if type(speed) ~= "number" then
+			speed = 1
+		end
 		local wave = math.sin(elapsed * speed * math.pi * 2 + phase)
 
 		if mode == "Flicker" then
 			value.Transparency = math.clamp((baseTransparencies[value] or 0) + math.max(0, wave) * 0.12, 0, 0.35)
 			local light = value:FindFirstChildOfClass("PointLight")
-			if light then light.Brightness = 1.9 + (wave + 1) * 0.35 end
+			if light then
+				light.Brightness = 1.9 + (wave + 1) * 0.35
+			end
 		elseif mode == "Pulse" then
 			value.Transparency = math.clamp(0.08 + (wave + 1) * 0.12, 0.05, 0.34)
 		elseif mode == "Orbit" then
@@ -85,22 +109,33 @@ local function step(deltaTime: number)
 end
 
 function Controller.start()
-	if started then return end
+	if started then
+		return
+	end
 	started = true
 	bindRoot(Workspace:FindFirstChild("ExpeditionRooms"))
 	Workspace.ChildAdded:Connect(function(child)
-		if child.Name == "ExpeditionRooms" then bindRoot(child) end
+		if child.Name == "ExpeditionRooms" then
+			bindRoot(child)
+		end
 	end)
 	Workspace.ChildRemoved:Connect(function(child)
-		if child.Name == "ExpeditionRooms" then bindRoot(nil) end
+		if child.Name == "ExpeditionRooms" then
+			bindRoot(nil)
+		end
 	end)
 	connection = RunService.RenderStepped:Connect(step)
 end
 
 function Controller.stop()
-	if not started then return end
+	if not started then
+		return
+	end
 	started = false
-	if connection then connection:Disconnect(); connection = nil end
+	if connection then
+		connection:Disconnect()
+		connection = nil
+	end
 	bindRoot(nil)
 end
 

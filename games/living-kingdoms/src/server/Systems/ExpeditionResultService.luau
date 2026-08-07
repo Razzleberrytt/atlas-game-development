@@ -124,7 +124,8 @@ function ExpeditionResultService:finalize(parameters: FinalizeParameters): Final
 		ReplayDecisionId = ReplayDecisionIds.Undecided,
 	})
 
-	(self :: any)._summary = summary
+	local state = self :: any
+	state._summary = summary
 	return result(true, "ResultFinalized", copySummary(summary))
 end
 
@@ -166,7 +167,8 @@ function ExpeditionResultService:recordReplayDecision(decisionId: ReplayDecision
 		Rewards = summary.Rewards,
 		ReplayDecisionId = decisionId,
 	})
-	(self :: any)._summary = updated
+	local state = self :: any
+	state._summary = updated
 	return result(true, "ReplayDecisionRecorded", copySummary(updated))
 end
 

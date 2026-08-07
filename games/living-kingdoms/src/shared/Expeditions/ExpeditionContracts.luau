@@ -7,14 +7,7 @@
 	ownership to the client or coupling the expedition to a specific map.
 ]]
 
-export type ExpeditionPhaseId =
-	"Preparation"
-	| "Approach"
-	| "Dungeon"
-	| "Elite"
-	| "Boss"
-	| "Rewards"
-	| "Results"
+export type ExpeditionPhaseId = "Preparation" | "Approach" | "Dungeon" | "Elite" | "Boss" | "Rewards" | "Results"
 
 export type ExpeditionOutcomeId = "InProgress" | "Completed" | "Failed" | "Abandoned"
 

@@ -41,7 +41,8 @@ end
 local function candidatesFor(role: string, depth: number, usedIds: { [string]: boolean }): { any }
 	local candidates = {}
 	for _, definition in Config.Rooms do
-		if definition.Role == role
+		if
+			definition.Role == role
 			and depth >= definition.MinimumDepth
 			and depth <= definition.MaximumDepth
 			and (definition.AllowRepeats or not usedIds[definition.Id])

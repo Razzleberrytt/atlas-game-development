@@ -16,12 +16,16 @@ local accumulatedSeconds = 0
 local function loadPlayer(player: Player)
 	local result = InventoryLiveService.loadPlayer(player.UserId, os.time())
 	if not result.Accepted then
-		warn(string.format("[AtlasPersistence] failed to load %s (%d): %s", player.Name, player.UserId, result.ReasonId))
+		warn(
+			string.format("[AtlasPersistence] failed to load %s (%d): %s", player.Name, player.UserId, result.ReasonId)
+		)
 		player:Kick("Your inventory is active on another server or could not be loaded safely. Please rejoin.")
 	end
 end
 
-for _, player in Players:GetPlayers() do task.spawn(loadPlayer, player) end
+for _, player in Players:GetPlayers() do
+	task.spawn(loadPlayer, player)
+end
 Players.PlayerAdded:Connect(loadPlayer)
 Players.PlayerRemoving:Connect(function(player)
 	local released = InventoryLiveService.releasePlayer(player.UserId)
@@ -32,7 +36,9 @@ end)
 
 local renewalConnection = RunService.Heartbeat:Connect(function(deltaTime)
 	accumulatedSeconds += deltaTime
-	if accumulatedSeconds < RENEW_INTERVAL_SECONDS then return end
+	if accumulatedSeconds < RENEW_INTERVAL_SECONDS then
+		return
+	end
 	accumulatedSeconds = 0
 	local nowUnix = os.time()
 	for _, player in Players:GetPlayers() do

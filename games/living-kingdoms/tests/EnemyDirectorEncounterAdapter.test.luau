@@ -54,8 +54,14 @@ local adapter = Adapter.new(director, function(encounterContext: any): any
 	}
 end)
 
-assert(adapter:start(context("wave-token", "Dungeon")) == true)
-assert(adapter:start(context("parallel-token", "Dungeon")) == false)
+-- `ExpeditionEncounterCoordinator` invokes `start`/`cancel` with `.`, so they
+-- must be instance-bound functions rather than `:` methods. Declaring them as
+-- methods silently disables every encounter, so the convention is asserted here.
+assert(rawget(adapter :: any, "start") ~= nil, "start must be bound on the adapter instance")
+assert(rawget(adapter :: any, "cancel") ~= nil, "cancel must be bound on the adapter instance")
+
+assert(adapter.start(context("wave-token", "Dungeon")) == true)
+assert(adapter.start(context("parallel-token", "Dungeon")) == false)
 local completed, reason = adapter:pollCompletion()
 assert(completed == false and reason == "EncounterInProgress")
 -- An unrelated enemy does not affect exact authored-wave tracking.
@@ -66,12 +72,12 @@ assert(waveDone == true and waveToken == "wave-token")
 local duplicate, duplicateReason = adapter:pollCompletion()
 assert(duplicate == false and duplicateReason == "CompletionAlreadyReported")
 
-adapter:cancel(context("wrong-token", "Dungeon"), "Wrong")
+adapter.cancel(context("wrong-token", "Dungeon"), "Wrong")
 assert(adapter:getActiveToken() == "wave-token")
-adapter:cancel(context("wave-token", "Dungeon"), "CoordinatorAdvanced")
+adapter.cancel(context("wave-token", "Dungeon"), "CoordinatorAdvanced")
 assert(adapter:getActiveToken() == nil and stoodDown == 1)
 
-assert(adapter:start(context("boss-token", "Boss")) == true)
+assert(adapter.start(context("boss-token", "Boss")) == true)
 local bossPending = adapter:pollCompletion()
 assert(bossPending == false)
 bossState = { exists = true, isAlive = false, isDefeated = true }

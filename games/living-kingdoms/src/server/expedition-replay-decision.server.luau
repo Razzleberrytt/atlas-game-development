@@ -26,15 +26,23 @@ local resolvedRunId: string? = nil
 
 local function captureParticipants(partySize: number): { number }
 	local players = Players:GetPlayers()
-	table.sort(players, function(a, b) return a.UserId < b.UserId end)
+	table.sort(players, function(a, b)
+		return a.UserId < b.UserId
+	end)
 	local ids = {}
-	for index = 1, math.min(partySize, #players) do table.insert(ids, players[index].UserId) end
+	for index = 1, math.min(partySize, #players) do
+		table.insert(ids, players[index].UserId)
+	end
 	return ids
 end
 
 local function ensureDecisionService(summary: any)
-	if activeRunId == summary.RunId and decisionService ~= nil then return end
-	if decisionService ~= nil then decisionService:destroy() end
+	if activeRunId == summary.RunId and decisionService ~= nil then
+		return
+	end
+	if decisionService ~= nil then
+		decisionService:destroy()
+	end
 	activeRunId = summary.RunId
 	activeSummary = summary
 	resolvedRunId = nil
@@ -42,7 +50,9 @@ local function ensureDecisionService(summary: any)
 end
 
 local function safeSnapshot(snapshot: any): any
-	if snapshot == nil then return nil end
+	if snapshot == nil then
+		return nil
+	end
 	return table.freeze({
 		ParticipantCount = snapshot.ParticipantCount,
 		VoteCount = snapshot.VoteCount,
@@ -53,30 +63,42 @@ local function safeSnapshot(snapshot: any): any
 end
 
 local function resolveIfReady(summary: any, snapshot: any)
-	if snapshot == nil or snapshot.ResolvedDecisionId == "Undecided" or resolvedRunId == summary.RunId then return end
+	if snapshot == nil or snapshot.ResolvedDecisionId == "Undecided" or resolvedRunId == summary.RunId then
+		return
+	end
 	resolvedRunId = summary.RunId
 	ExpeditionLiveRuntimeService.stopExpedition("PartyDecision")
 	if snapshot.ResolvedDecisionId == "Replay" then
 		local launch = ExpeditionLiveRuntimeService.startExpedition({ PartySize = snapshot.ParticipantCount })
-		if launch.Accepted ~= true then warn("[ExpeditionReplayDecision] replay rejected:", launch.ReasonId) end
+		if launch.Accepted ~= true then
+			warn("[ExpeditionReplayDecision] replay rejected:", launch.ReasonId)
+		end
 	end
 end
 
 request.OnServerInvoke = function(player: Player, decisionId: any): any
 	local summary = resultReadState.OnServerInvoke(player)
-	if type(summary) ~= "table" then return table.freeze({ Accepted = false, ReasonId = "ResultUnavailable", Snapshot = nil }) end
+	if type(summary) ~= "table" then
+		return table.freeze({ Accepted = false, ReasonId = "ResultUnavailable", Snapshot = nil })
+	end
 	ensureDecisionService(summary)
 	local result = decisionService:cast(player.UserId, decisionId)
 	local safe = safeSnapshot(result.Snapshot)
 	state:FireAllClients(safe)
-	if result.Accepted then resolveIfReady(summary, result.Snapshot) end
+	if result.Accepted then
+		resolveIfReady(summary, result.Snapshot)
+	end
 	return table.freeze({ Accepted = result.Accepted, ReasonId = result.ReasonId, Snapshot = safe })
 end
 
 Players.PlayerRemoving:Connect(function(player)
-	if decisionService == nil or activeSummary == nil then return end
+	if decisionService == nil or activeSummary == nil then
+		return
+	end
 	local removal = decisionService:removeParticipant(player.UserId)
-	if not removal.Accepted then return end
+	if not removal.Accepted then
+		return
+	end
 	local safe = safeSnapshot(removal.Snapshot)
 	state:FireAllClients(safe)
 	if removal.ReasonId == "PartyEmpty" then
@@ -88,5 +110,7 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 game:BindToClose(function()
-	if decisionService ~= nil then decisionService:destroy() end
+	if decisionService ~= nil then
+		decisionService:destroy()
+	end
 end)

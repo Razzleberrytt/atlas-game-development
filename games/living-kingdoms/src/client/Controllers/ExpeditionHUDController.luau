@@ -137,7 +137,8 @@ local function render(payload: any)
 	local phase = PHASE_DISPLAY[payload.PhaseId] or string.upper(payload.PhaseId)
 	phaseLabel.Text = phase
 	objectiveLabel.Text = payload.ObjectiveText
-	progressLabel.Text = string.format("PHASE %d OF %d  •  %s", payload.PhaseIndex, payload.PhaseCount, payload.OutcomeId)
+	progressLabel.Text =
+		string.format("PHASE %d OF %d  •  %s", payload.PhaseIndex, payload.PhaseCount, payload.OutcomeId)
 	detailLabel.Text = string.format(
 		"PARTY %d  •  SECRET %s",
 		payload.PartySize,
