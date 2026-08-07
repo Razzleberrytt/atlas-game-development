@@ -1,113 +1,202 @@
-# Living Kingdoms — Recommended and Suggested Passes
+# Atlas — Recommended Production Passes v2.7
 
-## Purpose
+This file is **descriptive only**. It does not control ticket IDs, dependency order, or promotion. The current authority is:
 
-Throughout the canon, a **pass** is a bounded production sweep over one concern —
-an art pass, an audio pass, a tuning pass, an accessibility pass — executed once
-its prerequisites exist and reviewed against its own gates. Recommendations for
-future passes are scattered across the roadmap, specifications, and the asset
-registry. This document collects every pass the project currently recommends,
-suggests, or defers, with its source, gating milestone or track, and status.
+1. [`BLUEPRINT-V2.7-EXECUTION.md`](BLUEPRINT-V2.7-EXECUTION.md)
+2. [`PRODUCTION-CORE-V2.7.md`](PRODUCTION-CORE-V2.7.md)
+3. [`ACTIVE-PLACE-ROLLOUT-V2.7.md`](ACTIVE-PLACE-ROLLOUT-V2.7.md)
 
-**This document is descriptive only.** It controls no task IDs, dependencies,
-execution order, or acceptance gates. [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md)
-controls unfinished gameplay tasks and [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md)
-controls presentation sequencing; when this list drifts from them, they win.
+When this file conflicts with the v2.7 queue, the queue wins.
 
-## A. Recommended and pending passes
+## Pass 1 — Runtime producer/consumer inventory
 
-### Audio passes
+**Gate:** Tickets 331–335  
+**Status:** active prerequisite
 
-| Pass | What it covers | Source | Gate / track | Status |
-|---|---|---|---|---|
-| Production firearm audio pass | Approved fire, reload, empty, and handling set owned by `WeaponAudioController`. AUD-0102 completed client-local coverage of all four cues (empty click on authoritative dry transitions, handling cue on reload completion, reload stop-on-interrupt); unique production-approved empty/handling assets and the Studio mix review remain the outstanding gates. | [`../specifications/firearm-audio.md`](../specifications/firearm-audio.md); `VisualAssetConfig.luau` (`AudioBasicFirearm` = `TemporaryPresentation`) | VIS-0102 | In progress |
-| Standard-hostile audio pass | Approved alert, pursuit, attack, hit, and death set for the Exclusion Walker, owned by `EnemyAudioController`. AUD-0103 completed bounded client-local coverage of all five cues from replicated presentation attributes; unique production-approved hostile assets and the Studio mix review remain the outstanding gates. | [`../specifications/enemy-audio.md`](../specifications/enemy-audio.md); [`../specifications/visual-placeholder-inventory.md`](../specifications/visual-placeholder-inventory.md) | VIS-0103 | In progress |
-| World ambience audio-content pass | Wind, insects, wildlife, distant sirens, helicopters, and radio chatter; thunder for the distant-storm flash. Deferred until approved source assets and a mix budget exist. | [`../specifications/living-kingdoms-world-foundation.md`](../specifications/living-kingdoms-world-foundation.md) | VIS-0105 / VIS-0108 | Deferred |
+Cover:
 
-### Art, effects, and presentation passes
+- every `HordeNetwork.State` producer;
+- every effective client listener;
+- baseline attempts/sec and sends/sec;
+- queue/discard evidence;
+- every production Highlight producer and `Adornee`;
+- baseline application/character/round connection gauges;
+- baseline transient presentation counts.
 
-| Pass | What it covers | Source | Gate / track | Status |
-|---|---|---|---|---|
-| Final world art pass | Primitive tree crowns, buildings, vehicles, rocks, tents, and signs are composition references "for a later art pass, not final assets"; landmark labels may be reduced during this pass. | [`../specifications/living-kingdoms-world-foundation.md`](../specifications/living-kingdoms-world-foundation.md) | VIS-0105 | Pending |
-| Authored-place conversion pass | Converting the runtime-generated graybox world into an authored place while preserving stable landmark IDs and route intent. | [`../specifications/living-kingdoms-world-foundation.md`](../specifications/living-kingdoms-world-foundation.md) | After world art approval | Suggested |
-| Burning-wreckage effects pass | VFX wreckage and burning-wreckage particles, deferred until an effects budget and authored assets exist; emergency light stands in today. | [`../specifications/living-kingdoms-world-foundation.md`](../specifications/living-kingdoms-world-foundation.md) | Effects budget | Deferred |
-| Firearm presentation completion | Studio import/readability review, final effects and audio, and performance evidence for the existing model, state motion, and temporary shot effects. | [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md) | VIS-0102 | In progress |
-| Standard-hostile presentation completion | Canonical swap of the Exclusion Walker silhouette plus effects, audio, and horde performance evidence. | [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md) | VIS-0103 | In progress |
-| Operative and class presentation completion | Canonical rig/animation, class-action cues, avatar-scale review, and squad performance evidence over the existing silhouettes, life-state cues, and carry poses. | [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md) | VIS-0104 | In progress |
-| World and interactable material replacement pass | Cache, relay, extraction, routes, and landmark material replacement after the pending Studio visual/accessibility/performance review. | [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md) | VIS-0105 review gate | Blocked on review |
-| Special enemy and boss visual pass | The special-enemy and boss presentation package. | [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md) | VIS-0106, after P9 contracts | Blocked |
-| Cosmetic-variant pass | A very small earned/default variant set limited to the basic firearm, operative body/equipment, the three starting-class sets, and hostile non-gameplay surface variation. | [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md); [`../specifications/visual-placeholder-inventory.md`](../specifications/visual-placeholder-inventory.md) | VIS-0107, after canonical fallbacks and P11 | Blocked |
-| Release-candidate closure pass | Final UI, ambience, accessibility, and performance polish closing the visual track. | [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md) | VIS-0108, with P12 | Blocked |
+No architectural migration begins until the before-state is recorded.
 
-**Recorded anti-recommendation:** the visual track's current decision gate is
-explicit — *"Do not add another broad procedural-geometry pass before Roblox
-Studio review."* The next world-presentation step is review of the existing
-VIS-0102–VIS-0105 output from the gameplay camera, not more generated geometry.
+## Pass 2 — State-delivery cutover
 
-### Tuning passes
+**Gate:** Tickets 336–345  
+**Status:** blocked on Pass 1 evidence
 
-| Pass | What it covers | Source | Gate / track | Status |
-|---|---|---|---|---|
-| P6/P12 scarcity measurement pass | Repeat routed 1/2/4-operative runs with retained raw telemetry; change one logical lever only if repeated evidence supports it. | [`../specifications/ammunition-scarcity-and-supply.md`](../specifications/ammunition-scarcity-and-supply.md) | P12-0104 follow-up to prototype P6 sign-off | Deferred |
-| Pressure-scaling tuning pass | Solo-to-four-player pressure scaling; evidence-supported configuration adjustments only, avoiding fixed player slots. | [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md) | P12-0102 | Not started |
-| Class-dependence tuning pass | Balanced squads gain materially better options while solo and duplicate-role squads keep a difficult but possible path. | [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md) | P12-0103 | Not started |
-| Pacing tuning pass | Aligned ammunition, medical, objective, recovery, defense, disruption, and climax pacing without dominant camping routes or predetermined starvation. | [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md) | P12-0104 | Not started |
+Cover:
 
-### Audit and quality passes
+- earliest intended compatibility listener;
+- client-ready delivery gate;
+- semantic state keys;
+- mutation-derived change tokens;
+- unchanged-state suppression;
+- round/objective/route/landmark producer migration;
+- before/after per-key rate comparison.
 
-| Pass | What it covers | Source | Gate / track | Status |
-|---|---|---|---|---|
-| Performance profiling and optimization pass | Horde, special-enemy, boss, visibility, and UI load; measure first, then focused changes to cadence, budgets, instances, replication, rendering, and cleanup. | [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md) | P12-0105 | Not started |
-| Accessibility and readability pass | Redundant text/shape/position/timing cues, readable contrast, understandable controls, and non-audio-only warnings across every critical state. | [`MASTER-ROADMAP.md`](MASTER-ROADMAP.md); [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md) | P12-0106 | Not started |
-| Fixed-four-player assumption audit pass | Sweep every contract, roster, spawn, UI, scaling, result, persistence, and cleanup path for fixed slots; add synthetic-identity tests beyond four. | [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md) | P12-0107 | Not started |
-| Full security and regression audit pass | Re-run every client abuse case across all systems; prove no client can establish consequential state and no owner leaks after replay or shutdown. | [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md) | P12-0108 | Not started |
+Success means actual network sends fall to the rate required by state mutation without losing current state or creating doubled client presentation.
 
-## B. Completed passes (history)
+## Pass 3 — Presentation-ownership cleanup
 
-- **P5-0102 readability and landmark-identity pass** — gameplay-camera
-  readability, landmark identity, and authored segment clearance over the
-  P5-0101 world ([`../specifications/living-kingdoms-world-foundation.md`](../specifications/living-kingdoms-world-foundation.md)).
-- **HROI-ENV-001 environment mood pass** — presentation-only threat-responsive
-  ambience owned by `EnvironmentAmbienceController`; still registered as
-  temporary presentation pending the ambience audio-content pass.
-- **Enemy-pressure runtime tuning pass** — faster first contact, grouped fills
-  to the existing population ceiling, detection-range pressure spawns, and
-  reduced walker health without raising caps
-  ([`../specifications/enemy-pressure-runtime.md`](../specifications/enemy-pressure-runtime.md)).
-- **Horde progression-pacing pass** — removed opening pressure overlap without
-  weakening enemy combat or server authority
-  ([`../specifications/horde-progression-pacing.md`](../specifications/horde-progression-pacing.md)).
-- **Horde single-source-of-truth stabilization pass** — consolidated progression
-  into a single authoritative owner
-  ([`../specifications/horde-single-source-of-truth.md`](../specifications/horde-single-source-of-truth.md)).
-- **Horde role readability pass** — six visually distinct role presentations
-  composed over the shared 18-part Exclusion Walker shell by rescaling only
-  massless non-colliding presentation parts; the Studio isometric-separation,
-  color-vision, and representative-performance review remains the VIS-0103
-  acceptance gate
-  ([`../specifications/horde-role-readability.md`](../specifications/horde-role-readability.md)).
-- **Horde special-role telegraph pass** — short server-owned warning windows,
-  exact-radius Bloater disclosure, pooled world presentation, and role-specific
-  warning audio for Screamer reinforcement, Bloater burst, and Brute phase two
-  ([`../specifications/horde-special-role-telegraphs.md`](../specifications/horde-special-role-telegraphs.md)).
-- **Massacre crescendo pass** — escalating, non-rewarding kill-chain titles,
-  exact authoritative expiry, fixed audiovisual punch, and one verified tier
-  stinger without changing XP, loot, health, ammunition, or combat power
-  ([`../specifications/massacre-crescendo.md`](../specifications/massacre-crescendo.md)).
-- **Authoritative pattern-hit punctuation pass** — shotgun cleaves and sniper
-  pierces now replace generic local hit confirmation with bounded, mode-specific
-  multi-target punctuation sourced only from committed secondary impacts
-  ([`../specifications/authoritative-pattern-hit-punctuation.md`](../specifications/authoritative-pattern-hit-punctuation.md)).
-- **Pattern-target stability pass** — server-valid equal-utility shotgun and sniper
-  primaries retain the current target inside a six-stud allowance while better
-  utility, active threats, and invalidation still switch immediately
-  ([`../specifications/pattern-target-stability.md`](../specifications/pattern-target-stability.md)).
+**Gate:** Tickets 346–350  
+**Status:** blocked on relevant state cutover
 
-## C. Explicitly excluded
+Cover:
 
-A **battle pass** is a monetization construct, not a production sweep, and the
-canon excludes it from the MVP alongside paid power
-([`../bible/01-mvp.md`](../bible/01-mvp.md),
-[`../specifications/visual-asset-production.md`](../specifications/visual-asset-production.md),
-[`../specifications/run-field-xp.md`](../specifications/run-field-xp.md)). It is
-listed here only so the term is not confused with the passes above.
+- shared Highlight lease ownership;
+- route-guide migration;
+- landmark-accent migration;
+- status/mark integration with the same registry where applicable;
+- broad-target rejection;
+- streaming out/rebind behavior;
+- baseline/peak/end presentation-object gauges.
+
+Do not run another broad visual-polish pass while two controllers still compete for the same primitive.
+
+## Pass 4 — Reset/respawn/late-join soak
+
+**Gate:** Tickets 351–356  
+**Status:** blocked on Passes 2–3
+
+Required matrices:
+
+```text
+five operation resets
+three character respawns
+delayed-ready client
+late join
+two-player reset/disconnect
+100 animation plays
+ten-minute active network/presentation soak
+```
+
+Primary question: does every gauge return to the accepted baseline, and does network rate remain semantically bounded?
+
+## Pass 5 — Profiling and rollout closure
+
+**Gate:** Tickets 357–360  
+**Status:** blocked on clean soak
+
+Cover:
+
+- representative client/server profiling/network capture;
+- P0/P1 defect closure and rerun;
+- incident closure packet;
+- rollback checkpoint review;
+- compatibility removal only for ledger rows with accepted replacement evidence.
+
+Compatibility code is removed per proven row, not in one ceremonial cleanup commit.
+
+## Pass 6 — Visual production continuation
+
+**Gate:** accepted v2.7 runtime/presentation ownership for the relevant feature  
+**Status:** partially active where it cannot interfere with the rollout; otherwise gated
+
+Existing visual work remains useful, including weapon/operative/enemy/world readability, audio, effects, authored-place conversion, and accessibility. However:
+
+- critical route/landmark/status presentation must use the accepted ownership path;
+- no broad procedural geometry pass should be used to avoid Studio review;
+- visual polish may not hide unresolved network/lifecycle leaks;
+- low graphics and reduced motion must preserve essential gameplay cues.
+
+See [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md) and the visual specifications for asset-level detail.
+
+## Pass 7 — Durable-value/persistence proof
+
+**Gate:** accepted rollout plus trustworthy E3/E4 behavior  
+**Status:** blocked
+
+Resume only when in-memory ownership and cleanup are trusted.
+
+Cover:
+
+- persistence adapter boundary;
+- session ownership;
+- sequential migrations;
+- no-blank-overwrite;
+- unknown-write reconciliation;
+- overflow recovery;
+- idempotent transaction replay;
+- leave/rejoin/shutdown/failure tests.
+
+Do not persist a runtime state model that still leaks or duplicates.
+
+## Pass 8 — Vertical-slice integration
+
+**Gate:** accepted runtime and durable-value dependencies  
+**Status:** blocked
+
+Integrate the smallest complete replayable operation:
+
+```text
+prepare/loadout
+→ authored route
+→ mixed pressure
+→ discovery/information interaction
+→ repeatable encounter/dungeon sequence
+→ elite/reward choice
+→ boss/result
+→ return/replay
+```
+
+Existing Living Kingdoms systems may satisfy or replace individual beats; the requirement is one coherent loop using one authoritative state/presentation architecture.
+
+## Pass 9 — Device, accessibility, and performance
+
+**Gate:** representative integrated build  
+**Status:** blocked
+
+Measure:
+
+- desktop/mobile frame time;
+- network send rates;
+- memory/transient object stability;
+- streaming/rebind behavior;
+- low-graphics readability;
+- reduced-motion presentation;
+- UI/input safe areas;
+- multiplayer server soak.
+
+Measure first; optimize the measured bottleneck.
+
+## Pass 10 — Outside-player usability/fun
+
+**Gate:** stable integrated loop  
+**Status:** blocked
+
+Fresh players should be able to explain:
+
+- what they were trying to do;
+- what threatened them and why;
+- why they failed or succeeded;
+- what their build/reward changed;
+- what they want to do next.
+
+The strongest outcome is voluntary replay.
+
+## Explicitly deferred broad passes
+
+Do not schedule these while the active rollout or core-loop gates remain open:
+
+- large world/region expansion;
+- PvP;
+- raids;
+- housing;
+- unrestricted trading/auction systems;
+- battle pass/seasons as a substitute for core retention;
+- dozens of new classes;
+- hundreds of items before build choices are readable;
+- vehicles/mounts;
+- broad monetization catalog.
+
+## Historical passes
+
+Older P6–P12, HROI, RPG, VIS, audio, scarcity, tuning, and presentation passes remain visible in Git history and their original specifications. Completed work remains valid. Their old sequencing does not override Tickets 331–360.
+
+> The next pass is the smallest one that closes the current measurable risk—not the most exciting one that can be imagined.
