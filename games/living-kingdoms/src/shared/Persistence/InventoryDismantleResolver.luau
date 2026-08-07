@@ -120,6 +120,7 @@ local function recordWithoutItem(
 		EquippedBySlot = table.freeze(equipped),
 		AppliedRewardInstanceIds = table.freeze(table.clone(record.AppliedRewardInstanceIds)),
 		AppliedRewardGrantIds = table.freeze(table.clone(record.AppliedRewardGrantIds)),
+		AppliedDismantleTransactions = table.freeze(table.clone(record.AppliedDismantleTransactions or {})),
 		UpdatedAtUnix = nowUnix,
 	})
 end

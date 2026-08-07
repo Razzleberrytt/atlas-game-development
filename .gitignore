@@ -19,10 +19,15 @@ Thumbs.db
 *.rbxm
 *.rbxmx
 *.rbxl.lock
+*.rbxlx.lock
 sourcemap.json
 build/
 dist/
 out/
+
+# Agent tool state and dropped screenshots
+.codex/
+Codex Image *.png
 
 # Tool caches and temporary files
 .rojo-cache/

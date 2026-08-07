@@ -32,6 +32,10 @@ local compareOwnedItem = Instance.new("RemoteFunction")
 compareOwnedItem.Name = "CompareOwnedItem"
 compareOwnedItem.Parent = network
 
+local dismantleOwnedItem = Instance.new("RemoteFunction")
+dismantleOwnedItem.Name = "DismantleOwnedItem"
+dismantleOwnedItem.Parent = network
+
 local state = Instance.new("RemoteEvent")
 state.Name = "State"
 state.Parent = network
@@ -64,6 +68,30 @@ compareOwnedItem.OnServerInvoke = function(player: Player, candidateInstanceId: 
 		return table.freeze({ Accepted = false, ReasonId = "InvalidCandidateItem", Comparison = nil })
 	end
 	return InventoryLiveService.compareOwnedItem(player.UserId, player.UserId, candidateInstanceId)
+end
+
+--[[
+	Destroys one owned item. The client supplies an instance id and a transaction
+	id; the transaction id exists only so a retry after a dropped response is
+	idempotent. The server derives the owner, the clock, and the item's value.
+
+	The owner is pushed a fresh snapshot after an accepted destruction so the
+	client corrects rather than tracking removals itself.
+]]
+dismantleOwnedItem.OnServerInvoke = function(player: Player, instanceId: any, transactionId: any): any
+	if type(instanceId) ~= "string" or type(transactionId) ~= "string" then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidDismantleRequest", Outcome = nil })
+	end
+	local outcome =
+		InventoryLiveService.dismantleOwnedItem(player.UserId, player.UserId, instanceId, transactionId, os.time())
+	if outcome.Accepted == true then
+		state:FireClient(player, readFor(player))
+	end
+	return table.freeze({
+		Accepted = outcome.Accepted == true,
+		ReasonId = outcome.ReasonId,
+		Outcome = outcome.Outcome,
+	})
 end
 
 --[[

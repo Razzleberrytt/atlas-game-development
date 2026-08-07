@@ -119,8 +119,7 @@ Because final Studio verification is deferred, proceed through the repo-verifiab
    The fun gate — a fresh tester explaining a tradeoff unaided — needs a Studio session and stays
    deferred. Persisted `equip()` does not yet drive the live runtime; that belongs with the
    persistence work in item 6.
-3. Dismantle and salvage transaction safety. **Transaction boundary complete (repo-side); salvage
-   pricing and the service/remote wiring outstanding.**
+3. ~~Dismantle and salvage transaction safety.~~ **Complete (repo-side).**
    `InventoryDismantleResolver` is the pure decision for the most dangerous inventory mutation. It
    applies a fixed rejection order — identity before any record read — and covers the full v1.9
    Ticket 143 matrix: valid, replayed, locked (no session lease), equipped, unknown, foreign, and
@@ -131,13 +130,25 @@ Because final Studio verification is deferred, proceed through the repo-verifiab
    an original grant transaction would recreate the destroyed item.
    Covered by `InventoryDismantleResolver.test`.
 
-   **Open decision blocking completion:** salvage has no price because no currency or material
-   category exists, and the blueprint forbids expanding content categories before ownership,
-   retry, migration, and recovery are proven. The resolver therefore reports the *facts* of what
-   was destroyed (`SalvagedDefinitionId`, `SalvagedRarity`, `SalvagedPower`) so an economy can
-   price them later without rewriting this boundary. Crediting salvage needs a new record field and
-   therefore a schema migration, which belongs with item 6. The service method and remote are
-   deliberately not wired until that decision lands.
+   Wired end to end: `PlayerInventoryPersistenceService:dismantle` owns the durable half, and the
+   `DismantleOwnedItem` remote accepts only an instance id and a transaction id — the server
+   derives the owner, the clock, and the item's value, and pushes a corrected snapshot after an
+   accepted destruction. A failed save rolls back cleanly and records nothing, so retrying the same
+   transaction re-runs the decision rather than reporting a destruction that never persisted.
+
+   **Salvage ships unpriced by decision** — see
+   [`../decisions/0003-dismantle-ships-unpriced.md`](../decisions/0003-dismantle-ships-unpriced.md).
+   Dismantle is a capacity action; a currency is a content category, and engineering law 10 bars
+   adding one before ownership, retry, migration, and recovery are proven (items 4 and 6). The
+   boundary records what was destroyed so an economy can price it later additively, and the audit
+   fixture fails if a currency appears at the inventory boundary.
+
+   The one schema change is transaction safety, not economy: the dismantle idempotency ledger is
+   now persisted (record schema 2 → 3), because engineering law 4 requires idempotent transaction
+   ids and an in-memory ledger loses replay protection across a rejoin. Schema support became an
+   explicit `SupportedSchemaVersions` list; the previous check accepted only version 1 or the
+   current version, so any bump would have made every existing version 2 record fail to load and
+   stranded live inventories.
 4. Capacity retry and durable overflow recovery.
 5. Participation eligibility and personal reward isolation.
 6. Persistence adapter hardening, session ownership, sequential migrations, quarantine, unknown-write reconciliation, and no-blank-overwrite.

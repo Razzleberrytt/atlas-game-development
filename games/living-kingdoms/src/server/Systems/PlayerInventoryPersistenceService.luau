@@ -3,6 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Contracts = require(ReplicatedStorage.Shared.Persistence.PlayerInventoryContracts)
+local InventoryDismantleResolver = require(ReplicatedStorage.Shared.Persistence.InventoryDismantleResolver)
 local EquipmentContracts = require(ReplicatedStorage.Shared.Equipment.EquipmentRewardContracts)
 
 export type EquipmentReward = EquipmentContracts.EquipmentReward
@@ -109,24 +110,22 @@ local function newRecord(playerId: number, nowUnix: number): PlayerInventoryReco
 		EquippedBySlot = {},
 		AppliedRewardInstanceIds = {},
 		AppliedRewardGrantIds = {},
+		AppliedDismantleTransactions = {},
 		UpdatedAtUnix = nowUnix,
 	}
 end
 
+--[[
+	A shallow clone per field is sufficient: every value inside these tables is
+	either a scalar or an already-frozen reward/outcome, so no caller can reach
+	through a copy to mutate service state.
+]]
 local function cloneRecord(record: PlayerInventoryRecord): PlayerInventoryRecord
-	local inventory, equipped, instances, grants = {}, {}, {}, {}
-	for id, reward in record.InventoryByInstanceId do
-		inventory[id] = reward
-	end
-	for slot, id in record.EquippedBySlot do
-		equipped[slot] = id
-	end
-	for id, value in record.AppliedRewardInstanceIds do
-		instances[id] = value
-	end
-	for id, value in record.AppliedRewardGrantIds do
-		grants[id] = value
-	end
+	local inventory = table.clone(record.InventoryByInstanceId)
+	local equipped = table.clone(record.EquippedBySlot)
+	local instances = table.clone(record.AppliedRewardInstanceIds)
+	local grants = table.clone(record.AppliedRewardGrantIds)
+	local dismantles = table.clone(record.AppliedDismantleTransactions or {})
 	return table.freeze({
 		SchemaVersion = record.SchemaVersion,
 		PlayerId = record.PlayerId,
@@ -134,6 +133,7 @@ local function cloneRecord(record: PlayerInventoryRecord): PlayerInventoryRecord
 		EquippedBySlot = table.freeze(equipped),
 		AppliedRewardInstanceIds = table.freeze(instances),
 		AppliedRewardGrantIds = table.freeze(grants),
+		AppliedDismantleTransactions = table.freeze(dismantles),
 		UpdatedAtUnix = record.UpdatedAtUnix,
 	})
 end
@@ -146,7 +146,7 @@ local function normalizeRecord(raw: any, playerId: number, nowUnix: number): (Pl
 		return nil, false, "InvalidSavedRecord"
 	end
 	local schema = raw.SchemaVersion
-	if schema ~= nil and schema ~= 1 and schema ~= CURRENT_SCHEMA then
+	if schema ~= nil and not Contracts.isSupportedSchemaVersion(schema) then
 		return nil, false, "UnsupportedSchemaVersion"
 	end
 	if raw.PlayerId ~= nil and raw.PlayerId ~= playerId then
@@ -178,6 +178,30 @@ local function normalizeRecord(raw: any, playerId: number, nowUnix: number): (Pl
 			return nil, false, "InvalidAppliedGrantIndex"
 		end
 		record.AppliedRewardGrantIds[grantId] = true
+	end
+	--[[
+		Schema 3 added the dismantle ledger. Records saved at 1 or 2 simply have
+		none, which migrates to an empty ledger: they predate dismantle, so no
+		transaction can have been applied. A malformed entry is rejected rather
+		than dropped, because silently discarding it would let an already-applied
+		dismantle be replayed into a second destruction.
+	]]
+	for transactionId, outcome in raw.AppliedDismantleTransactions or {} do
+		if type(transactionId) ~= "string" or type(outcome) ~= "table" then
+			return nil, false, "InvalidDismantleLedger"
+		end
+		if type(outcome.InstanceId) ~= "string" or type(outcome.SalvagedDefinitionId) ~= "string" then
+			return nil, false, "InvalidDismantleLedger"
+		end
+		if type(outcome.SalvagedRarity) ~= "string" or type(outcome.SalvagedPower) ~= "number" then
+			return nil, false, "InvalidDismantleLedger"
+		end
+		record.AppliedDismantleTransactions[transactionId] = table.freeze({
+			InstanceId = outcome.InstanceId,
+			SalvagedDefinitionId = outcome.SalvagedDefinitionId,
+			SalvagedRarity = outcome.SalvagedRarity,
+			SalvagedPower = outcome.SalvagedPower,
+		})
 	end
 	for slotId, instanceId in raw.EquippedBySlot or {} do
 		local reward = record.InventoryByInstanceId[instanceId]
@@ -250,6 +274,11 @@ function Service:applyReward(playerId: number, reward: EquipmentReward, nowUnix:
 	for id, applied in record.AppliedRewardGrantIds do
 		nextRecord.AppliedRewardGrantIds[id] = applied
 	end
+	-- Carrying the dismantle ledger forward is mandatory: dropping it would let
+	-- an already-applied dismantle replay into a second destruction.
+	for transactionId, outcome in record.AppliedDismantleTransactions do
+		nextRecord.AppliedDismantleTransactions[transactionId] = outcome
+	end
 	nextRecord.InventoryByInstanceId[normalized.InstanceId] = normalized
 	nextRecord.AppliedRewardInstanceIds[normalized.InstanceId] = true
 	nextRecord.AppliedRewardGrantIds[normalized.GrantId] = true
@@ -297,12 +326,108 @@ function Service:equip(playerId: number, slotId: EquipmentSlotId, instanceId: st
 	for id, applied in record.AppliedRewardGrantIds do
 		nextRecord.AppliedRewardGrantIds[id] = applied
 	end
+	-- Carrying the dismantle ledger forward is mandatory: dropping it would let
+	-- an already-applied dismantle replay into a second destruction.
+	for transactionId, outcome in record.AppliedDismantleTransactions do
+		nextRecord.AppliedDismantleTransactions[transactionId] = outcome
+	end
 	nextRecord.EquippedBySlot[slotId] = instanceId
 	if not selfAny._store:save(keyFor(playerId), nextRecord) then
 		return result(false, "SaveFailed", cloneRecord(record))
 	end
 	selfAny._records[playerId] = nextRecord
 	return result(true, "ItemEquipped", cloneRecord(nextRecord))
+end
+
+--[[
+	Destroys one owned item under a transaction id. The decision belongs to the
+	pure resolver; this method owns only the durable parts — recording the
+	transaction so a replay survives a rejoin, and the write itself.
+
+	A failed save leaves the in-memory record untouched, so a retry of the same
+	transaction re-runs the decision rather than reporting a destruction that
+	was never persisted.
+]]
+function Service:dismantle(
+	playerId: number,
+	instanceId: string,
+	transactionId: string,
+	nowUnix: number,
+	hasSessionLease: boolean,
+	recentRequestTimestamps: { number }
+): any
+	local selfAny = self :: any
+	if selfAny._destroyed then
+		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Outcome = nil, Record = nil })
+	end
+	local record: PlayerInventoryRecord? = selfAny._records[playerId]
+
+	local resolution = InventoryDismantleResolver.resolve({
+		RequesterId = playerId,
+		OwnerId = playerId,
+		InstanceId = instanceId,
+		TransactionId = transactionId,
+		NowUnix = nowUnix,
+	}, {
+		Record = record,
+		HasSessionLease = hasSessionLease == true,
+		AppliedTransactions = if record then record.AppliedDismantleTransactions else {},
+		RecentRequestTimestamps = recentRequestTimestamps or {},
+	})
+
+	if resolution.Accepted ~= true then
+		return table.freeze({
+			Accepted = false,
+			ReasonId = resolution.ReasonId,
+			Outcome = nil,
+			Record = if record then cloneRecord(record) else nil,
+		})
+	end
+
+	-- A replay writes nothing; the original transaction already persisted.
+	if resolution.Replayed == true then
+		return table.freeze({
+			Accepted = true,
+			ReasonId = resolution.ReasonId,
+			Outcome = resolution.Outcome,
+			Record = if record then cloneRecord(record) else nil,
+		})
+	end
+
+	local nextRecord = resolution.NextRecord :: any
+	local durable = newRecord(playerId, nextRecord.UpdatedAtUnix)
+	for id, existing in nextRecord.InventoryByInstanceId do
+		durable.InventoryByInstanceId[id] = existing
+	end
+	for slot, id in nextRecord.EquippedBySlot do
+		durable.EquippedBySlot[slot] = id
+	end
+	for id, applied in nextRecord.AppliedRewardInstanceIds do
+		durable.AppliedRewardInstanceIds[id] = applied
+	end
+	for id, applied in nextRecord.AppliedRewardGrantIds do
+		durable.AppliedRewardGrantIds[id] = applied
+	end
+	for id, outcome in nextRecord.AppliedDismantleTransactions do
+		durable.AppliedDismantleTransactions[id] = outcome
+	end
+	durable.AppliedDismantleTransactions[transactionId] = resolution.Outcome
+
+	if not selfAny._store:save(keyFor(playerId), durable) then
+		return table.freeze({
+			Accepted = false,
+			ReasonId = "SaveFailed",
+			Outcome = nil,
+			Record = if record then cloneRecord(record) else nil,
+		})
+	end
+	selfAny._records[playerId] = durable
+	return table.freeze({
+		Accepted = true,
+		ReasonId = resolution.ReasonId,
+		Outcome = resolution.Outcome,
+		Record = cloneRecord(durable),
+	})
 end
 
 function Service:getRecord(playerId: number): PlayerInventoryRecord?

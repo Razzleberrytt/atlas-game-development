@@ -47,6 +47,22 @@ assert(not contains(network, "Power ="), "clients must not submit item power")
 assert(not contains(network, "Rarity ="), "clients must not submit item rarity")
 assert(contains(liveService, "ItemNotOwned"), "the service must reject a candidate the owner does not hold")
 
+--[[
+	Dismantle is the only destructive client-reachable action. The client may
+	supply an instance id and a transaction id and nothing else — never an owner,
+	a clock, or a value.
+]]
+assert(contains(network, "dismantleOwnedItem"), "the dismantle boundary must exist")
+assert(contains(network, 'type(transactionId) ~= "string"'), "the transaction id must be validated")
+assert(contains(network, "os.time()"), "the server must supply the dismantle clock")
+assert(not contains(network, "SalvagedPower ="), "clients must not submit salvage values")
+assert(contains(liveService, "leases:hasLease"), "a destructive write must require the session lease")
+
+-- Salvage is deliberately unpriced; no currency may appear at this boundary
+-- until the economy decision lands (see docs/decisions/0003).
+assert(not contains(network, "Credits"), "salvage currency is not in scope yet")
+assert(not contains(liveService, "Credits"), "salvage currency is not in scope yet")
+
 -- The service performs the ownership check through the shared pure boundary
 -- rather than re-implementing it.
 assert(contains(liveService, "PlayerInventorySnapshot.forOwner"), "the service must use the shared owner-only boundary")

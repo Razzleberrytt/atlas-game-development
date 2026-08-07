@@ -6,6 +6,7 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local EquipmentComparisonResolver = require(ReplicatedStorage.Shared.Equipment.EquipmentComparisonResolver)
+local InventoryDismantleResolver = require(ReplicatedStorage.Shared.Persistence.InventoryDismantleResolver)
 local EquipmentRewardConfig = require(ReplicatedStorage.Shared.Config.EquipmentRewardConfig)
 local PlayerInventorySnapshot = require(ReplicatedStorage.Shared.Persistence.PlayerInventorySnapshot)
 local RobloxInventoryDataStoreAdapter = require(script.Parent.RobloxInventoryDataStoreAdapter)
@@ -26,6 +27,9 @@ local leaseOwnerId =
 local leases = InventorySessionLeaseService.new(store, leaseOwnerId, 90)
 local persistence = PlayerInventoryPersistenceService.new(store)
 local destroyed = false
+
+-- Accepted dismantle timestamps per owner, for the rate bound only.
+local recentDismantleRequests: { [number]: { number } } = {}
 
 -- Authored definitions are static, so the tag lookup comparison needs is indexed
 -- once rather than scanned per request.
@@ -70,6 +74,7 @@ function Service.releasePlayer(playerId: number): any
 	if destroyed then
 		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed" })
 	end
+	recentDismantleRequests[playerId] = nil
 	return leases:release(playerId)
 end
 
@@ -137,6 +142,59 @@ function Service.compareOwnedItem(requesterId: number, ownerId: number, candidat
 		record.InventoryByInstanceId,
 		lookupEquipmentDefinition
 	)
+end
+
+--[[
+	Destroys one owned item under a client-supplied transaction id. The id is the
+	only client-authored value accepted here, and it can do nothing but make a
+	retry idempotent — it never names an item, an owner, or a value.
+
+	Accepted request timestamps are tracked per owner for the rate bound. They
+	are intentionally in-memory: a rejoin is far slower than the window, so
+	persisting them would buy nothing.
+]]
+function Service.dismantleOwnedItem(
+	requesterId: number,
+	ownerId: number,
+	instanceId: any,
+	transactionId: any,
+	nowUnix: number
+): any
+	if destroyed then
+		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Outcome = nil })
+	end
+	if requesterId ~= ownerId then
+		return table.freeze({ Accepted = false, ReasonId = "CrossPlayerInventoryAccess", Outcome = nil })
+	end
+	if type(instanceId) ~= "string" or type(transactionId) ~= "string" then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidDismantleRequest", Outcome = nil })
+	end
+
+	local timestamps = recentDismantleRequests[ownerId]
+	if timestamps == nil then
+		timestamps = {}
+		recentDismantleRequests[ownerId] = timestamps
+	end
+
+	local outcome = persistence:dismantle(
+		ownerId,
+		instanceId,
+		transactionId,
+		nowUnix,
+		leases:hasLease(ownerId, nowUnix),
+		timestamps
+	)
+
+	-- Only accepted, non-replayed work counts toward the bound, so a client
+	-- cannot exhaust its own budget with rejected probes and then claim to be
+	-- rate limited, and a retry storm of one transaction is not penalised.
+	if outcome.Accepted == true and outcome.ReasonId == "ItemDismantled" then
+		table.insert(timestamps, nowUnix)
+		while #timestamps > InventoryDismantleResolver.MaximumRequestsPerWindow do
+			table.remove(timestamps, 1)
+		end
+	end
+	return outcome
 end
 
 function Service.destroy()
