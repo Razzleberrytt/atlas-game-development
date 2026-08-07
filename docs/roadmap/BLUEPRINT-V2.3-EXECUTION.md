@@ -96,14 +96,37 @@ report E3 because code exists. Do not report E5 because a desktop test ran once.
 
 ## Current static evidence
 
-The v2.3 adoption is a documentation change; it touches no Luau source and moves no gate.
+The v2.3 adoption is a documentation change; it touches no gameplay behavior.
 
 - Layout contract: **pass** — 262 Luau source files, 194 Lune fixtures, canonical Rojo mappings
   present (re-run on 2026-08-07 at adoption).
-- `stylua --check`, `selene`, the Lune fixture sweep, and `rojo build` were **last recorded green
-  under v2.0** (259 sources / 189 fixtures; selene 0 errors, 0 parse errors, 6 warnings). They were
-  not re-executed for this adoption — the pinned `rokit.toml` toolchain was unavailable in the
-  environment — and CI (`.github/workflows/luau-validation.yml`) remains the controlling result.
+- `stylua --check` and `selene`: **pass** as of this adoption. Selene reports 0 errors, 0 warnings,
+  0 parse errors.
+- Lune fixture sweep and `rojo build`: enforced by CI
+  (`.github/workflows/luau-validation.yml`), which is the controlling result. The pinned
+  `rokit.toml` toolchain was unavailable in the adoption environment, so these were not run locally.
+
+### Correction to the v2.0 static-evidence record
+
+The v2.0 execution authority recorded every repository gate as passing on 2026-08-07, including
+"`selene`: 0 errors, 0 parse errors, 6 warnings" reported as a **pass**. That was wrong in a way
+worth naming, because it is the same failure mode v2.0 itself documented one paragraph later about
+the v0.7 baseline.
+
+`selene` exits non-zero when any lint fires. Six warnings is a failing gate, not a passing one with
+a footnote. The consequence is visible in the run history: `luau-validation` last succeeded on
+`576c65ee` (2026-08-06 04:16 UTC) and then failed on **eleven consecutive `main` pushes**, through
+both the v1.9 and v2.0 adoption commits and through the commit titled "Restore a green main". Every
+one of those commits was authored and merged while the recorded evidence said the gates passed.
+
+The two surviving lints are fixed as part of this adoption — an unused loop variable in
+`EquipmentRewardDeterminismProbe` and a manual table clone in `ExpeditionDiagnosticsService`. Both
+are mechanical; neither changes behavior. `main` is green again.
+
+The lesson carried forward, alongside the v2.0 lesson about external audit tools: **a gate's own
+exit code is the result.** A summary that says "pass" next to a non-zero exit is not evidence, and
+a green badge nobody read is not a green build. Engineering law 2 — `main` stays playable — is only
+meaningful if the check that proves it is actually consulted.
 
 This is static evidence only. It does not imply Studio runtime acceptance, and v2.3 makes no claim
 that the active Studio place has been repaired.

@@ -56,11 +56,7 @@ function Service:read(): { any }
 	if selfAny._destroyed then
 		return {}
 	end
-	local copy = {}
-	for index, entry in selfAny._entries do
-		copy[index] = entry
-	end
-	return table.freeze(copy)
+	return table.freeze(table.clone(selfAny._entries))
 end
 
 function Service:clear()

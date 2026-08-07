@@ -35,7 +35,7 @@ The project uses the v2.3 evidence scale:
 
 `E0 design → E1 source → E2 Studio start → E3 solo loop → E4 multiplayer/adversarial → E5 device/reliability → E6 outside-player fun → E7 live telemetry`
 
-**Current level: E1, with unresolved active-Studio incidents.** The layout contract passes at 262 Luau sources and 194 Lune fixtures; `stylua`, `selene`, the fixture sweep, and `rojo build` were last recorded green under v2.0 and are enforced by CI. Static acceptance does not imply Roblox Studio acceptance, and v2.3 makes no claim that the active Studio place has been repaired.
+**Current level: E1, with unresolved active-Studio incidents.** The layout contract passes at 262 Luau sources and 194 Lune fixtures, and `stylua` and `selene` pass clean (0 errors, 0 warnings). The v2.0 record wrongly reported a 6-warning `selene` result as a pass; `luau-validation` had in fact been failing on `main` for eleven consecutive pushes. Both surviving lints are fixed and `main` is green — see the correction in the v2.3 execution doc. Static acceptance does not imply Roblox Studio acceptance, and v2.3 makes no claim that the active Studio place has been repaired.
 
 Two release blockers are visible in the active place, evidenced by a 2026-08-07 Studio screenshot: `ReplicatedStorage.HordeNetwork.State` queue-exhaustion warnings, and escaped broad blue/yellow `Highlight` presentation. The screenshot proves symptoms, not causes — instrument before attributing.
 
