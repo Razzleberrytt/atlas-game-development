@@ -1,94 +1,105 @@
 # Atlas Roadmap Index
 
-**Blueprint v2.3 is the active production authority.** It replaced the v2.0 roadmap on 2026-08-07.
+**Blueprint v2.7 is the active production authority as of 2026-08-07.** It supersedes v2.3 for execution order, active-place rollout, observability, presentation ownership, and promotion gates.
+
+The adoption of v2.7 is a documentation/authority change. It does **not** claim that the active Roblox Studio place is repaired or that the project has advanced beyond its currently accepted evidence level.
 
 ## Active roadmap
 
-1. [`BLUEPRINT-V2.3-EXECUTION.md`](BLUEPRINT-V2.3-EXECUTION.md) — the controlling document. Release
-   intent, authority order and conflict rule, evidence scale, the active Studio release blockers,
-   cross-system runtime ownership, the dependency-ordered ticket 211–240 queue, and every quality
-   gate. When any other document in this repository disagrees about what to build next, this file
-   and captured runtime evidence win.
-2. [`PRODUCTION-CORE-V2.3.md`](PRODUCTION-CORE-V2.3.md) — the daily-use reference: product laws,
-   creative direction, provisional gameplay numbers, server-authority split, presentation
-   ownership, the immediate 13-step critical path, stop conditions, and the daily review checklist.
-3. [`STUDIO-TRIAGE-CHECKLIST-V2.3.md`](STUDIO-TRIAGE-CHECKLIST-V2.3.md) — run this before any broad
-   refactor while the active place shows networking or presentation instability. Covers cold start,
-   `HordeNetwork.State`, highlights, restart/respawn, streaming, animation, and the exit gate.
-4. [`CROSS-SYSTEM-TRACEABILITY-V2.3.md`](CROSS-SYSTEM-TRACEABILITY-V2.3.md) — for each player
-   promise: mechanical owner, presentation owner, visual dependency, and evidence gate. A row is
-   not accepted because one column works.
-5. [`QUALITY-AUDIT-V2.3.md`](QUALITY-AUDIT-V2.3.md) — structural checks, refinements over v2.2, and
-   the runtime unknowns v2.3 deliberately does not guess.
-6. [`REFINEMENT-CHANGELOG-V2.3.md`](REFINEMENT-CHANGELOG-V2.3.md) — what v2.3 changed, and what it
-   explicitly did not change.
-7. [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md) — cross-cutting production-art
-   sequence for replacing placeholder weapons, operatives, enemies, world objects, effects, audio,
-   and optional cosmetic skins without changing gameplay authority. Still current; it controls
-   presentation-asset sequencing only, and is subordinate to ticket ordering.
+1. [`BLUEPRINT-V2.7-EXECUTION.md`](BLUEPRINT-V2.7-EXECUTION.md) — controlling execution authority. Defines precedence, evidence rules, active Studio incidents, runtime-state contract, presentation ownership, rollout stages, Tickets 331–360, stop conditions, and the promotion gate.
+2. [`PRODUCTION-CORE-V2.7.md`](PRODUCTION-CORE-V2.7.md) — daily-use reference. Read this before implementation work to understand the current authority, runtime laws, active queue, and stop conditions.
+3. [`ACTIVE-PLACE-ROLLOUT-V2.7.md`](ACTIVE-PLACE-ROLLOUT-V2.7.md) — detailed R0–R5 migration procedure, cutover ledger, semantic publisher rules, counters, named baselines, rollback discipline, and incident closure packet.
+4. [`CROSS-SYSTEM-TRACEABILITY-V2.7.md`](CROSS-SYSTEM-TRACEABILITY-V2.7.md) — mechanical, replication, presentation, streaming/lifecycle, and evidence ownership for critical player-facing state.
+5. [`QUALITY-AUDIT-V2.7.md`](QUALITY-AUDIT-V2.7.md) — what v2.7 changes, what its reference package proves statically, and what remains explicitly unproven in the active place.
+6. [`MASTER-ROADMAP.md`](MASTER-ROADMAP.md) — current milestone-level roadmap. It summarizes the v2.7 rollout gate and what becomes eligible only after runtime acceptance.
+7. [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md) — cross-cutting art/presentation production sequence. It controls asset sequencing only and remains subordinate to the active v2.7 dependency queue and runtime stop conditions.
 
-Supporting specialist bibles live in [`../bible/`](../bible/):
-[studio integration and presentation](../bible/studio-integration-presentation-bible-v2.3.md) for
-runtime presentation architecture, and
-[visual, environment, and animation](../bible/visual-environment-animation-bible-v2.3.md) for art
-and animation production.
+## Current active gate
+
+The active-place incident evidence still contains two stop-condition symptoms:
+
+1. `ReplicatedStorage.HordeNetwork.State` invocation-queue exhaustion/discard warnings;
+2. escaped broad blue/yellow `Highlight` presentation.
+
+The screenshot proves the symptoms, not the exact cause. v2.7 therefore requires instrumentation, staged migration, and closure evidence rather than declaring either issue fixed in documentation.
+
+The active dependency queue is **Tickets 331–360**:
+
+```text
+331–335  baseline + producer/consumer/Highlight inventory
+336–345  earliest listener, ClientReady gate, semantic producer cutover
+346–350  centralized route/landmark/Highlight ownership
+351–360  reset/respawn/late-join/multiplayer/animation/soak closure
+```
+
+Ticket 360 removes compatibility **only** for ledger rows with accepted replacement evidence and a retained rollback checkpoint.
 
 ## Precedence
 
 ```text
-accepted runtime evidence / current platform behavior
-→ BLUEPRINT-V2.3-EXECUTION.md + PRODUCTION-CORE-V2.3.md
-→ specialist bibles (Studio integration, visual/animation)
+accepted runtime evidence / current Roblox platform behavior
+→ BLUEPRINT-V2.7-EXECUTION.md + PRODUCTION-CORE-V2.7.md
+→ ACTIVE-PLACE-ROLLOUT-V2.7.md + CROSS-SYSTEM-TRACEABILITY-V2.7.md
+→ current specialist bibles and accepted specifications
 → ../architecture/technical-blueprint.md
-→ ../specifications/
-→ historical checkpoints below
+→ historical roadmap checkpoints
 ```
 
-A task moves to complete only after its applicable Definition of Done, automated validation,
-required Studio evidence, documentation, and status update are all satisfied. A deferred manual
-gate remains deferred — not passed — until its evidence is recorded.
+A task moves to complete only after its applicable Definition of Done, automated validation, required Studio/runtime evidence, documentation, and status update are satisfied. A manual/runtime gate remains deferred—not passed—until the evidence is recorded.
+
+## Evidence scale
+
+```text
+E0 design only
+E1 source assembled/static acceptance
+E2 Studio starts and systems initialize
+E3 single-player integrated behavior demonstrated
+E4 multiplayer/adversarial behavior demonstrated
+E5 device/performance/reliability demonstrated
+E6 outside-player fun demonstrated
+E7 live telemetry demonstrated
+```
+
+Roadmap adoption does not promote evidence level.
 
 ## Historical checkpoints
 
-These documents are retained as context, not as orders. Per the v2.3 authority rule, historical
-checkpoints are valuable because they show intended dependency order and original contracts; they
-are **not** a requirement to preserve obsolete implementation shapes, and their closing directives
-no longer control execution. Source-file comments referencing "Blueprint v2.0 queue item N" remain
-accurate provenance for completed work.
+These files are retained for provenance and completed-work context. They no longer control execution:
 
-- [`BLUEPRINT-V2.0-EXECUTION.md`](BLUEPRINT-V2.0-EXECUTION.md) — the previous authority. Its queue
-  items 1–3 (owner-only inventory snapshots, item comparison and equip-to-combat handoff, dismantle
-  and salvage transaction safety) are complete repo-side; items 4–10 are not cancelled but are
-  gated behind v2.3 ticket 240.
-- [`BLUEPRINT-V1.9-EXECUTION.md`](BLUEPRINT-V1.9-EXECUTION.md) — ticket-numbered predecessor still
-  referenced by completed work (Tickets 142, 143).
-- [`MASTER-ROADMAP.md`](MASTER-ROADMAP.md) — the P0–P12 milestone history and completed milestone
-  record.
-- [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md) — the previous PR-sized task
-  breakdown and acceptance gates for P6–P12.
+- [`BLUEPRINT-V2.3-EXECUTION.md`](BLUEPRINT-V2.3-EXECUTION.md) — previous active authority, Tickets 211–240.
+- [`PRODUCTION-CORE-V2.3.md`](PRODUCTION-CORE-V2.3.md) — previous daily authority.
+- [`CROSS-SYSTEM-TRACEABILITY-V2.3.md`](CROSS-SYSTEM-TRACEABILITY-V2.3.md) — previous ownership matrix.
+- [`QUALITY-AUDIT-V2.3.md`](QUALITY-AUDIT-V2.3.md) — previous refinement audit.
+- [`REFINEMENT-CHANGELOG-V2.3.md`](REFINEMENT-CHANGELOG-V2.3.md) — v2.3 change history.
+- [`STUDIO-TRIAGE-CHECKLIST-V2.3.md`](STUDIO-TRIAGE-CHECKLIST-V2.3.md) — previous incident checklist; useful as history, superseded by the v2.7 rollout procedure.
+- [`BLUEPRINT-V2.0-EXECUTION.md`](BLUEPRINT-V2.0-EXECUTION.md) — earlier authority; durable-value work remains useful context but is gated behind current runtime acceptance.
+- [`BLUEPRINT-V1.9-EXECUTION.md`](BLUEPRINT-V1.9-EXECUTION.md) — earlier ticket-numbered predecessor.
+- [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md) — historical PR-sized milestone breakdown.
 - [`UNIFIED-MASTER-ROADMAP.md`](UNIFIED-MASTER-ROADMAP.md) — earlier consolidated roadmap.
-- [`RECOMMENDED-PASSES.md`](RECOMMENDED-PASSES.md) — descriptive cross-reference of recommended,
-  suggested, and deferred production passes. Controls no task IDs, ordering, or acceptance gates.
-- [`SEQUENCING-EXCEPTION-P6-P7.md`](SEQUENCING-EXCEPTION-P6-P7.md) — closed historical exception.
-- [`REPLAY-DECISION-STATUS.md`](REPLAY-DECISION-STATUS.md),
-  [`LIVE-LOBBY-INTEGRATION-NOTE.md`](LIVE-LOBBY-INTEGRATION-NOTE.md) — point-in-time status notes.
+- [`RECOMMENDED-PASSES.md`](RECOMMENDED-PASSES.md) — descriptive historical cross-reference; it does not override v2.7 ticket order.
+- [`SEQUENCING-EXCEPTION-P6-P7.md`](SEQUENCING-EXCEPTION-P6-P7.md) — closed sequencing exception.
+- [`REPLAY-DECISION-STATUS.md`](REPLAY-DECISION-STATUS.md) and [`LIVE-LOBBY-INTEGRATION-NOTE.md`](LIVE-LOBBY-INTEGRATION-NOTE.md) — point-in-time status notes.
 
-## Specifications
+Source comments that cite an older blueprint/ticket remain valid provenance for completed work; they are not current execution orders.
 
-Specifications in [`../specifications/`](../specifications/) define the behavior inside a task and
-remain in force where they do not conflict with v2.3 ownership, cleanup, or presentation rules.
-The most frequently needed:
+## Supporting specialist documents
 
-- [`../specifications/rpg-integration-plan.md`](../specifications/rpg-integration-plan.md) — the
-  operation-bound RPG layer, completed Field Upgrade and elite work, modifier ownership, and the
-  boundary reserving permanent progression for the authoritative result/persistence sequence.
-- [`../specifications/mvp-specialist-classes.md`](../specifications/mvp-specialist-classes.md) —
-  class contracts, selection boundary, and next-action runtime.
+Specifications in [`../specifications/`](../specifications/) define behavior inside a task where they do not conflict with v2.7 authority, lifecycle, security, or presentation ownership.
+
+Current specialist bibles under [`../bible/`](../bible/) remain useful for visual and Studio integration detail. Their older version number does not make them higher authority than v2.7; use them as specialist requirements where v2.7 has not superseded the rule.
+
+Frequently referenced supporting docs:
+
+- [`../architecture/technical-blueprint.md`](../architecture/technical-blueprint.md)
+- [`../specifications/rpg-integration-plan.md`](../specifications/rpg-integration-plan.md)
+- [`../specifications/mvp-specialist-classes.md`](../specifications/mvp-specialist-classes.md)
 - [`../specifications/authored-objective-chain.md`](../specifications/authored-objective-chain.md)
-  — the authored objective chain, its landmarks, order, class opportunities, escalation, and
-  relocation pressure.
-- [`../specifications/visual-asset-production.md`](../specifications/visual-asset-production.md) —
-  visual direction, placeholder replacement, model/rig/skin authority boundaries, asset sourcing,
-  performance budgets, and review gates.
-- [`../specifications/ammunition-scarcity-and-supply.md`](../specifications/ammunition-scarcity-and-supply.md)
-  — the completed prototype scarcity boundary and its deferred measurement limitation.
+- [`../specifications/visual-asset-production.md`](../specifications/visual-asset-production.md)
+- [`../production/RBXL-IMPORT-MIGRATION.md`](../production/RBXL-IMPORT-MIGRATION.md)
+- [`../production/SMOKE-TEST.md`](../production/SMOKE-TEST.md)
+
+## Agent execution rule
+
+Agents should implement the **lowest-numbered incomplete v2.7 ticket that can honestly be completed in the available environment**. Do not skip a runtime evidence gate by replacing it with a source-only test. Do not add broader gameplay scope while a v2.7 stop condition remains open.
+
+> Instrument first. Migrate one owner at a time. Remove compatibility only when the evidence says the bridge is empty.
