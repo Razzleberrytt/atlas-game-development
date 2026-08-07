@@ -1,162 +1,215 @@
-# Atlas Game Development
+# Living Kingdoms
 
-Atlas is the GitHub-first development home for a **cooperative action RPG on Roblox**.
+Living Kingdoms is the temporary working title and internal identifier for a brutally difficult cooperative isometric survival game on Roblox. Final public branding is unresolved; repository, folder, Rojo project, script, and namespace naming remain unchanged.
 
-The project combines readable combat, run-based build decisions, long-term progression/world access, discovery, and replayable cooperative operations. Existing Living Kingdoms systems are preserved as working assets while the roadmap converges them on one authoritative runtime and presentation architecture.
+## Current stage
 
-## Primary production rule
+P1 through P5 are complete. P5 delivered the deterministic, walkable Appalachian exclusion-zone graybox, the first playable operation, and the production enemy lifecycle with horde pressure and everywhere-available automatic combat. The initial MVP targets 1–4 players, while architecture should permit later support for up to 8. Each player controls one specialist operative rather than an army.
 
-> Build and prove one polished, replayable expedition before expanding the world.
+The existing client starts a fixed elevated tactical camera that smoothly follows the local player while Roblox's standard character moves relative to that camera. Mouse-wheel zoom and configurable world-space focus-point bounds remain active. Keyboard camera panning remains implemented but is disabled while survivor movement is active so one keypress cannot move both the character and camera.
 
-## Source of truth
-
-The active implementation and quality authority is **Blueprint v2.7 — Rollout & Observability** (2026-08-07):
-
-- [`docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md`](docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md) — controlling authority and Tickets 331–360
-- [`docs/roadmap/PRODUCTION-CORE-V2.7.md`](docs/roadmap/PRODUCTION-CORE-V2.7.md) — daily-use production rules and current critical path
-- [`docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md`](docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md) — staged migration, observability, rollback, soak, and closure procedure
-- [`docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md`](docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md) — mechanical/replication/presentation ownership and evidence gates
-- [`docs/roadmap/MASTER-ROADMAP.md`](docs/roadmap/MASTER-ROADMAP.md) — milestone-level current roadmap
-- [`docs/roadmap/README.md`](docs/roadmap/README.md) — full roadmap index and historical checkpoints
-
-When documents conflict, **accepted runtime evidence and current Roblox platform behavior win, then the v2.7 authority layer**. Older roadmap files remain provenance, not current execution orders.
-
-## Evidence status
-
-The project uses this evidence scale:
+## Preserved project layout
 
 ```text
-E0 design
-→ E1 source/static acceptance
-→ E2 Studio initialization
-→ E3 single-player integrated behavior
-→ E4 multiplayer/adversarial behavior
-→ E5 device/performance/reliability
-→ E6 outside-player fun
-→ E7 live telemetry
+living-kingdoms/
+├── default.project.json
+├── src/
+│   ├── client/
+│   │   ├── Controllers/
+│   │   │   ├── CameraController.luau
+│   │   │   └── SurvivorController.luau
+│   │   └── init.client.luau
+│   ├── server/
+│   │   ├── Systems/
+│   │   │   ├── MovementStateReplicationSystem.luau
+│   │   │   └── MovementValidationSystem.luau
+│   │   └── init.server.luau
+│   └── shared/
+│       ├── Combat/
+│       ├── Config/
+│       └── Health/
+├── tests/
+└── README.md
 ```
 
-**Current claimed level remains E1 until accepted Studio evidence advances it.** A documentation update does not promote evidence level.
+The shared source and test directories contain placeholder files so Git preserves the scaffold. `default.project.json` maps source into Roblox services as follows:
 
-## Current active gate
+| Source path | Roblox destination |
+| --- | --- |
+| `src/client` | `StarterPlayer/StarterPlayerScripts/Client` |
+| `src/server` | `ServerScriptService/Server` |
+| `src/shared` | `ReplicatedStorage/Shared` |
 
-Two runtime symptoms captured in the active Studio place remain stop conditions until closure evidence exists:
+The bootstrap scripts use strict Luau and print these startup confirmations:
 
-1. `ReplicatedStorage.HordeNetwork.State` invocation-queue exhaustion/discard warnings;
-2. escaped broad blue/yellow `Highlight` presentation.
+- `[Living Kingdoms] Client bootstrap started`
+- `[Living Kingdoms] Server bootstrap started`
 
-The screenshot proves symptoms, not exact causes. v2.7 therefore requires producer/consumer inventory, counters, readiness gating, semantic-state suppression, centralized presentation ownership, reset/respawn/late-join/multiplayer soak testing, and a closure packet.
+## Local survivor movement
 
-## Current checkpoint — Tickets 331–360
+The client bootstrap initializes and starts `SurvivorController` after `CameraController`. Both controllers expose `init()`, `start()`, `stop()`, and `destroy()` with safe repeated calls and terminal destruction.
 
-### 331–335: establish the baseline
+`SurvivorController` binds to the existing local-player character, `Humanoid`, and `HumanoidRootPart`, including respawns and temporary missing instances. W/A/S/D and arrow-key input is converted through the tactical camera's horizontal look and right vectors, normalized to prevent faster diagonals, and applied every render step through `Humanoid:Move()`. Roblox's normal Humanoid movement, collision, and WalkSpeed remain in use. Processed input and text-box focus suppress movement, and Roblox's default character controls are disabled while this controller is active so movement is not double-applied.
 
-- freeze a development copy/build identity;
-- inventory all legacy State producers and effective client listeners;
-- capture baseline State message rates and queue symptoms;
-- inventory Highlight producers/Adornees and presentation gauges.
+## Prototype movement authority boundary
 
-### 336–345: migrate current state deliberately
+Responsive movement still uses the local `SurvivorController`, Roblox's standard `Humanoid`, and normal character network ownership. `MovementLimits` names the shared prototype values: maximum horizontal speed `16` studs per second, observation interval `0.25` seconds, horizontal tolerance `4` studs, and warning cooldown `2` seconds. The client uses the configured speed as its intended Humanoid WalkSpeed; the server independently uses the same speed as a validation limit and does not trust any client-reported position, speed, timestamp, or validation state.
 
-- establish exactly one intended compatibility listener;
-- gate delivery on client readiness;
-- identify current facts with semantic keys;
-- suppress unchanged state using mutation-derived change tokens;
-- migrate round, objective, route, and landmark producers;
-- capture before/after per-key send rates.
+The server starts one `MovementValidationSystem` and uses one shared bounded Heartbeat loop for all active players. For each valid living character, it stores the last accepted root position and server timestamp. At an observation, allowed horizontal displacement is `16 * elapsed server seconds + 4 studs`. Vertical displacement is intentionally excluded so normal jumping, falling, slopes, and small physics variation do not cause corrections.
 
-### 346–350: establish single presentation ownership
+Initial spawn and replacement characters establish a fresh accepted point. Missing characters, missing or replaced `HumanoidRootPart` instances, and dead Humanoids clear the accepted sample so respawn or temporary incomplete character state cannot be compared with stale data. Player state is removed on leave, character replacement overwrites the prior state, and stopping the system disconnects its shared connections and clears all state. No server-authorized teleport or reset gameplay exists yet; any future system that adds one must explicitly coordinate a validation reset before moving the character.
 
-- route route-guide and landmark accents through one shared Highlight lease registry;
-- reject broad production Highlight targets;
-- prove stream-out/rebind behavior;
-- capture baseline/peak/end presentation gauges.
+When horizontal displacement clearly exceeds the formula, the server restores the root to the last accepted full position while preserving its orientation, clears assembly linear and angular velocity, advances the accepted timestamp to stabilize the next observation, and emits `[Living Kingdoms] Corrected impossible movement for <player>` at most once per two-second cooldown. Consequential correction remains server-owned.
 
-### 351–360: soak, close, then remove compatibility
+This is only a prototype movement sanity boundary. It is deliberately tolerant, observes discrete samples rather than continuous paths, and is not production-grade exploit prevention. It does not add movement remotes, custom replication, client prediction/reconciliation, teleport gameplay, or a speculative security framework.
 
-- five-reset and three-respawn leak matrices;
-- delayed-ready and late-join matrix;
-- two-player reset/disconnect matrix;
-- 100-animation-play marker-listener test;
-- ten-minute active network/presentation soak;
-- profiling/network evidence;
-- P0/P1 defect closure;
-- incident closure packet;
-- compatibility removal only for ledger rows with accepted replacement evidence and a retained rollback checkpoint.
+## Survivor facing and replicated movement state
 
-No broader feature expansion is authorized merely because compatibility code hides a warning.
+While survivor control is active, `SurvivorController` temporarily disables the local Humanoid's automatic rotation and turns the character toward the normalized camera-relative movement direction. Releasing input preserves the last facing. The controller restores the Humanoid's prior `AutoRotate` value on stop, character replacement, or destruction. No aiming system exists yet, so all current facing is movement-driven; a future aiming task must explicitly define when aim overrides movement facing.
 
-## Runtime state law
+The server observes every active living character from one shared bounded loop. `MovementStateConfig` names the `SurvivorMovementState` and `SurvivorFacingDirection` character attributes, the `Idle` and `Moving` state IDs, a `0.1`-second observation interval, and a `1`-stud-per-second moving threshold. The server derives speed from successive replicated root positions and publishes the root's horizontal look direction while moving. Idle preserves the last known facing so other clients see stable presentation state.
 
-```text
-client constructs controllers
-→ binds required current-state listeners
-→ ClientReady
-→ reconstruct current authoritative state
-→ consume semantic state changes
-```
+There is no client movement-state remote and the server accepts no client-supplied facing, speed, validation state, or transform. Missing, dead, or replaced characters reset observation samples; replacement clears the old character's attributes, player leave removes state, and system shutdown disconnects the shared connections and clears all replicated state. These attributes are presentation signals, not a production anti-cheat or an animation system. Their discrete observation can briefly lag a transition by one interval and physics-driven horizontal motion can qualify as moving.
 
-Current state is keyed semantically (`round.phase`, `objective.current`, `route.target`, etc.) and is sent because the underlying fact changed—not because a frame elapsed.
+## Preserved camera behavior
 
-Independent current facts that share one physical remote must remain independent in pre-ready retention. Retain by player + remote + semantic key, not one latest payload for the entire remote.
+The client bootstrap initializes and starts `CameraController`. The controller exposes `init()`, `start()`, `stop()`, and `destroy()`; repeated lifecycle calls are safe no-ops when the requested state is already satisfied, and destruction is terminal.
 
-## Presentation ownership law
+The current view uses initial focus point `(-224, 0, -208)` at the ranger-station insertion, pitch `-56` degrees, yaw `45` degrees, and height `68` studs. Mouse-wheel zoom changes height by `10` studs per wheel unit and clamps it from `40` to `132` studs. The closer, slightly lower-angle default creates stronger near-to-far parallax while keeping operative, enemy, and route silhouettes readable. The focus point is clamped from `-320` to `320` on X and Z to contain the authored operation. Keyboard panning remains available to the camera controller at `48` studs per second, but `SurvivorController` disables it while active and restores it on stop.
 
-Exactly one production owner per primitive:
+These values and controls are not the final survival-camera design. Survivor movement owns the shared movement keys while active. Bounds must later be adapted to one authored operation map. Working camera code remains intact unless a focused survival task demonstrates a change is needed.
 
-```text
-Highlight             → shared client Highlight lease registry
-route guide            → RouteGuidePresentationController
-landmark accent        → LandmarkAccentPresentationController
-status/mark outline    → status presentation through the same registry
-viewmodel              → one viewmodel owner
-camera modifiers       → one named modifier stack
-animation marker hooks → owning track/controller scope
-```
+## Local survivor camera follow
 
-Streaming may remove a local Instance. It does not erase the authoritative semantic fact.
+While `SurvivorController` is active, it enables `CameraController` survivor-follow mode and disables keyboard camera panning. Stopping survivor control disables follow and restores keyboard panning. Movement retains sole ownership of W/A/S/D and arrow keys; mouse-wheel zoom remains available.
 
-## Repository map
+The camera follows the local character's `HumanoidRootPart` on the horizontal XZ plane. `SurvivorFollowConfig` centralizes a world-space offset of `(0, 0, 0)`, responsiveness of `12` per second, a `0.05`-stud settle distance, and the `PreserveConfiguredFocusHeight` vertical policy. The follow target is `(root.X + offset.X, configuredFocusY + offset.Y, root.Z + offset.Z)`, clamped to the authored operation's `-320` to `320` X/Z focus bounds.
 
-- `docs/roadmap/` — canonical roadmap and active execution queue
-- `docs/bible/` — supporting product/visual/Studio specialist guidance and history
-- `docs/specifications/` — source-of-truth system behavior inside accepted roadmap boundaries
-- `docs/architecture/` — technical boundaries and engineering rules
-- `docs/decisions/` — design and architecture decisions
-- `docs/production/` — workflow, validation, migration, and Definition of Done
-- `games/living-kingdoms/` — Roblox/Rojo project
-- `prompts/` — reusable agent prompts
-- `templates/` — task, specification, decision, and bug templates
+Each render step uses exponential smoothing with `alpha = 1 - exp(-responsiveness * deltaTime)` and interpolates the current focus toward the bounded target. Once the remaining distance is at most `0.05` studs, the focus is set to the target so it does not drift indefinitely. Root Y is intentionally ignored, so ordinary walking physics, animation, slopes, and jumping do not produce vertical camera bob. Pitch `-60` degrees, yaw `45` degrees, current zoom height, zoom limits `40` to `160`, and `Scriptable` mode are unchanged.
 
-## Engineering laws
+`CameraController` listens for local character addition/removal and for root addition/removal while started. Respawn binds the replacement character and converges from the last valid frame. A missing character, missing root, or missing `Workspace.CurrentCamera` causes no follow update; the last valid focus remains until a valid target or camera returns. Stop and destroy disconnect all follow-owned connections, and repeated lifecycle calls remain safe.
 
-1. The server owns valuable game truth.
-2. `main` stays playable.
-3. Each implementation task produces one testable result.
-4. Stable IDs and explicit versions are mandatory.
-5. Valuable mutations use idempotent transaction IDs where replay is possible.
-6. Clients submit intent, never outcomes.
-7. Reusable engines outrank one-off content piles.
-8. No runtime, Studio, CI, performance, or player result is claimed without evidence.
-9. Do not create parallel authoritative systems.
-10. Runtime current state and client presentation have explicit owners and cleanup scopes.
-11. Source/static acceptance is E1, not gameplay acceptance.
-12. Type, logging, connection, network-rate, and presentation-object debt must not increase silently.
+The configured focus bounds must enclose the authored playable area. If gameplay later permits a survivor to move beyond those bounds, the focus remains correctly clamped and the survivor can eventually leave the frame; viewport-aware bounds and survivor movement confinement are not part of LK-0104.
 
-## Agent start order
+## Canonical direction
 
-1. Read this file.
-2. Read `docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md` and `docs/roadmap/PRODUCTION-CORE-V2.7.md`.
-3. Read `docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md` for any current Studio/state/presentation work.
-4. Read the nearest `AGENTS.md` for files being changed.
-5. Inspect existing contracts, services, remotes, controllers, tests, and lifecycle owners before adding anything.
-6. Implement the **lowest-numbered incomplete v2.7 ticket** that can honestly be completed in the current environment.
-7. Preserve E1 status until accepted Studio evidence supports promotion.
-8. Record evidence and rollback information rather than inferring success from source shape.
+The source of truth is:
 
-## Project status
+1. [`docs/bible/00-project-charter.md`](../../docs/bible/00-project-charter.md)
+2. [`docs/bible/01-mvp.md`](../../docs/bible/01-mvp.md)
+3. [`docs/architecture/technical-blueprint.md`](../../docs/architecture/technical-blueprint.md)
+4. [`docs/roadmap/MASTER-ROADMAP.md`](../../docs/roadmap/MASTER-ROADMAP.md)
+5. [`docs/decisions/0001-cooperative-survival-pivot.md`](../../docs/decisions/0001-cooperative-survival-pivot.md)
+6. [`docs/decisions/0002-automatic-combat-targeting.md`](../../docs/decisions/0002-automatic-combat-targeting.md)
 
-**Phase:** v2.7 active-place rollout and observability  
-**Evidence:** E1 — source/static work exists; active-place runtime closure still required  
-**Active milestone:** Tickets 331–360  
-**Roblox project path:** `games/living-kingdoms/`
+The former worker-selection, economy, construction, production, and army-command plan is superseded. Completed repository and camera work is preserved.
+
+Combat uses server-authoritative automatic target acquisition and fire. Players directly control movement, positioning, interaction, reload timing, class abilities, and resource decisions. A future manual priority-target override remains optional and is not part of the first combat milestone.
+
+## Automatic-combat contracts
+
+LK-0201 adds shared contracts in `src/shared/Combat/CombatContracts.luau`, prototype balance values in `src/shared/Config/FirearmConfig.luau`, and the canonical [`automatic-combat contract specification`](../../docs/specifications/automatic-combat-contracts.md). Pure LK-0202 through LK-0206 server modules consume these declarations. There is still no production runtime targeting, firing, enemy, or health mutation behavior.
+
+The server owns entity and relationship truth, operative and weapon state, visibility, line of sight, range, target legality and selection, cadence, ammunition, hits, damage, and authoritative timestamps. Clients may use only disclosed state for non-authoritative presentation and may never establish combat truth.
+
+## Local validation
+
+Follow [`docs/production/LOCAL-SETUP.md`](../../docs/production/LOCAL-SETUP.md), [`docs/production/LUAU-TOOLING.md`](../../docs/production/LUAU-TOOLING.md), [`docs/production/ROJO-BUILD-VALIDATION.md`](../../docs/production/ROJO-BUILD-VALIDATION.md), and [`docs/production/SMOKE-TEST.md`](../../docs/production/SMOKE-TEST.md).
+
+## Server target-candidate validation
+
+LK-0202 adds `TargetCandidateValidator.validate(operative, candidate)`, a pure, unintegrated server function that evaluates one server-derived hostile candidate in a stable first-failure order. It uses horizontal XZ range, treats exactly the configured maximum range as valid, and keeps gameplay visibility separate from line of sight. The caller—not the validator—must guarantee that all facts came from authoritative server systems.
+
+The standalone fixture runner requires Lune and can be invoked from the repository root with `lune run games/living-kingdoms/tests/TargetCandidateValidator.test.luau`. The validator is not imported by the server bootstrap, so it adds no polling, discovery, selection, firing, damage, enemy, networking, or presentation behavior.
+
+## Deterministic server target selection
+
+LK-0203 adds `TargetCandidateSelector.select(operative, candidates)`, a pure server function that validates every caller-provided candidate through `TargetCandidateValidator` and returns at most one `SelectedTargetState`. Valid hostiles actively threatening the exact operative take priority; otherwise the closest valid hostile wins. Distance is recomputed from authoritative positions on the horizontal XZ plane, and exact equal-distance ties use lexical `CombatEntityId` ordering.
+
+The shared candidate contract adds optional `activelyThreateningOperativeEntityId`, the exact intended victim derived from server threat state. The selector ignores the earlier generic threat boolean because it cannot prove that a hostile is pursuing, attacking, or committed to attack this operative. When there is no valid candidate, selection returns `nil`; it has no timestamp, persistence, hysteresis, cache, or input mutation.
+
+Run its standalone fixture from the repository root with `lune run games/living-kingdoms/tests/TargetCandidateSelector.test.luau`. The selector is not imported by the server bootstrap, so it adds no polling, discovery, automatic firing, cadence mutation, ammunition consumption, damage, enemies, networking, or presentation behavior.
+
+## Server-authoritative automatic-fire transition
+
+LK-0204 adds `AutomaticFireResolver.resolve(operativeState, selectedTarget, weaponState, serverTimestamp)`, a pure server function that accepts or rejects at most one shot. Accepted fire consumes one loaded round, preserves reserve ammunition, advances last and next cadence timestamps from the authoritative fire time, returns a deterministic server-owned ShotId, and leaves hit fields unresolved. Rejected fire preserves all input values and uses a stable first-failure reason.
+
+The resolver trusts no client timestamp, ammunition, cadence, target, or ShotId input. Its caller must provide authoritative state and commit the returned weapon-state copy. Run its standalone fixture with `lune run games/living-kingdoms/tests/AutomaticFireResolver.test.luau`. The module is not imported by the server bootstrap and adds no loop, discovery, hit resolution, damage, enemy, networking, client, or presentation behavior.
+
+## Server-authoritative hit and damage transitions
+
+LK-0205 adds `FirearmHitResolver.resolve(acceptedFireResult, shotContext, targetContext)` and `DamageResolver.resolve(hitResolution, targetHealthState, serverTimestamp)`. The first revalidates current authoritative target identity, life, targetability, hostility, visibility, horizontal XZ range, and one server-owned obstruction outcome for one already accepted shot. The second returns a copied health state and, only for a successful hit, one frozen configured Ballistic damage event. Neither module mutates input state or calls `Humanoid:TakeDamage`.
+
+Duplicate protection is a temporary caller-owned `processedShotIds` set carried in the health state. The caller must atomically commit the returned state; cleanup, lifetime, and runtime ownership remain deferred. Run the standalone fixture with `lune run games/living-kingdoms/tests/FirearmHitDamageResolver.test.luau`. The modules are not imported by the server bootstrap and add no enemy, discovery, loop, networking, reload, client, or presentation behavior.
+
+## Reload input and immediate combat presentation
+
+LK-0206 adds `WeaponController` with the existing `init()`, `start()`, `stop()`, and `destroy()` lifecycle. Desktop `R` sends only the configured equipped `WeaponId`; game-processed input and focused text boxes are ignored, a local `0.5`-second cooldown bounds repeated requests, and stop/destroy disconnect input and presentation connections. The client never sends ammunition, capacity, duration, timestamp, eligibility, target, hit, or damage.
+
+The controller consumes only explicit server-disclosed target, shot, and reload messages. A disclosed target can receive one small temporary highlight, clear destroys it, a disclosed ShotId produces one concise status update, and reload start/completion/interruption produce temporary status text. Unknown messages and shot target IDs never create target indicators. Presentation does not mutate authoritative ammunition or health.
+
+`ReloadResolver.begin` and `ReloadResolver.complete` own the pure authoritative transition. Begin requires a ready operative, the configured equipped weapon, a non-full magazine, reserve ammunition, and no current reload. Completion at or after the configured two-second server deadline moves `min(capacity - loaded, reserve)` without discarding loaded rounds. Incapacitation, death, weapon disablement, or equipped-weapon change interrupts with no transfer; movement and taking damage do not interrupt this initial prototype.
+
+The two explicit RemoteEvents are `CombatNetwork.ReloadIntent` and `CombatNetwork.CombatPresentation`. `ReloadIntent` is the only client-to-server combat listener. Since P5-0106 the bootstrapped combat owner is `OperativeCombatRuntimeService`; the Studio-only `AutomaticCombatDevelopmentHarness` remains available as a manual command-bar diagnostic that composes the same pure P2 modules against two stationary labeled fixtures (stop the production runtime before starting it, as both connect `ReloadIntent`). Run all P2 fixtures plus `CombatSecurityIntegration.test.luau` with Lune for focused validation.
+
+## Operative health and life-state declarations
+
+LK-0301 adds `OperativeLifeContracts` under `src/shared/Health` and `OperativeLifeConfig` under `src/shared/Config`. The contract module declares only the stable `Alive`, `Incapacitated`, and `Dead` life-state vocabulary plus focused health, incapacitation, transition, revive, solo-recovery, and squad-viability shapes. Stable identifier tables and the configuration table are frozen; runtime snapshots are not.
+
+The configuration centralizes maximum health `100`, bleed-out `30` seconds, revive range `8` studs, revive duration `4` seconds, revive health `30`, solo recovery `8` seconds, one solo recovery per operation, and squad-failure grace `3` seconds. Module-load assertions enforce positive finite values, revive health within maximum health, and exactly one solo recovery.
+
+These shared modules are safe for client and server code to require, but the server remains authoritative. No bootstrap imports them, and they add no owner, transition resolver, timers, character changes, remotes, UI, or runtime behavior. The P2 `TargetHealthState`, `DamageResolver.becameDead` semantics, firearm configuration, processed-ShotId boundary, and all P2 fixtures remain unchanged. Run `lune run games/living-kingdoms/tests/OperativeLifeContracts.test.luau` for the LK-0301 fixture.
+
+## Pure operative health and incapacitation transitions
+
+LK-0302 adds `OperativeHealthResolver.resolveDamage(operativeSnapshot, authoritativeDamage, serverTimestamp)`. The pure server-domain resolver validates one canonical operative snapshot and one server-owned damage input, applies finite positive damage only to `Alive`, preserves positive-health results as `Alive`, and turns exact-zero or overkill results into `Incapacitated` at zero health. Incapacitation starts at the exact authoritative timestamp and derives its deadline from the configured 30-second bleed-out duration; the resolver does not complete bleed-out or enter `Dead`.
+
+The returned snapshot carries a copied caller-owned `processedDamageEventIds` set. Duplicate rejection is effective only after a future caller atomically commits the returned snapshot; this task adds no hidden deduplication state, runtime owner, persistence, cleanup, loop, scheduler, character mutation, remote, or presentation. A P2 `AuthoritativeDamageEvent` is structurally compatible as server input, while P2 damage creation, processed ShotIds, and `becameDead` retain their existing semantics.
+
+Run `lune run games/living-kingdoms/tests/OperativeHealthResolver.test.luau` for health boundaries, invalid values, timestamp/identity validation, illegal-state rejection, duplicates, deterministic precedence, and immutability.
+
+LK-0303 adds `OperativeIncapacitationResolver` with three explicit pure APIs: `evaluateBleedOut`, `resolveFinishingDamage`, and `evaluateSoloRecovery`. Bleed-out accepts at the stored snapshot deadline or later without recalculating it. Any accepted positive finishing-damage event transitions `Incapacitated` to `Dead` at zero health and copies its stable identity into the returned processed-event set.
+
+Solo recovery requires explicit server-owned facts that the operation started solo and never had multiple participants, plus canonical snapshot timing. It completes at the stored eight-second deadline, restores the configured `ReviveHealth` of `30`, consumes the one operation use, clears incapacitation/recovery timing, and grants no invulnerability. These synchronous APIs have no scheduler, runtime owner, timer, polling, Humanoid behavior, remote, UI, squad evaluation, or teammate revival. Run `lune run games/living-kingdoms/tests/OperativeIncapacitationResolver.test.luau` for the LK-0303 fixture.
+
+LK-0304 adds the pure `OperativeReviveResolver.beginRevive` and `continueRevive` APIs. Begin requires distinct valid identities, an `Alive` reviver, an `Incapacitated` target, no accepted session already owning the target, at most the configured `8` studs, and server-confirmed line of sight. Distance and line of sight are explicit server-owned facts. The resolver derives an `Active` session's four-second deadline from its authoritative start time; continuation derives clamped progress only from authoritative time and the stored session timestamps.
+
+Every continuation revalidates session ownership, participants, life states, hold continuity, range, and line of sight. It also requires explicit server-owned facts that the reviver remains connected and participating, performed no disallowed movement, and received no accepted interrupting damage during the hold. Any interruption returns a copied `Cancelled` session with zero progress, and a retry must begin a new session with no carried progress.
+
+Completion is impossible before the stored deadline; at or after it, the target becomes `Alive`, receives exactly the configured `ReviveHealth` of `30`, clears incapacitation/recovery timing, and preserves maximum health, recovery eligibility/usage, processed damage IDs, and unrelated state. A focused caller-owned combat companion reuses the P2 weapon, selection, and processed-ShotId shapes: completion preserves ammunition, cadence, and ShotIds by value in copied state while clearing reload and selected target. LK-0304 adds no runtime owner, P2 orchestration, session storage, connection/damage/movement listener, timer, polling, Heartbeat, remote, input, UI, or character/Humanoid mutation. Run `lune run games/living-kingdoms/tests/OperativeReviveResolver.test.luau` for the LK-0304 fixture.
+
+## Operative life runtime
+
+LK-0305 adds `OperativeLifeService`, the production same-server owner of one copied P3 snapshot and monotonic revision per registered player. Identity is derived from server-known `Player.UserId`. Registration creates `Alive` at `100/100`, with no incapacitation, no processed damage IDs, and no invented solo-operation eligibility. `read` returns a deep copy; `commitAcceptedTransition` accepts only an accepted pure resolver result at the current revision and validates identity, structure, health/life invariants, legal direction, and non-regressing authoritative time before atomically replacing state. Player removal clears the owned lifetime.
+
+Alive remains eligible for P1 movement and P2 combat. Incapacitated and Dead are stationary without anchoring, cannot fire/reload/target, and synchronously clear reload and selection while preserving ammunition, cadence, and processed ShotIds. A valid committed return to Alive restores movement/combat eligibility without refilling. Character replacements bind to the existing snapshot; stale characters are disabled. Automatic character loading is disabled and performed deliberately so Roblox respawn cannot reset Dead or Incapacitated. Humanoid health is a positive locomotion shell with its Dead state disabled, not the authoritative P3 health value. `OperativeLifeDevelopmentHarness` composes existing pure resolvers for validation and, only in Studio, creates server-only `BindableFunction` controls in `ServerStorage`; it exposes no remote or production loop. Run `lune run games/living-kingdoms/tests/OperativeLifeService.test.luau` for focused ownership and restriction coverage.
+
+LK-0306 adds the server-only `OperativeLifeService.applyAuthoritativeDamage(operativeEntityId, expectedRevision, authoritativeDamage)` entry point. It copies the current service-owned snapshot, rejects a stale authoritative revision, invokes the pure LK-0302 resolver, validates its accepted correlation and processed-event result, and commits through the existing atomic transition boundary. Successful results are copied. Ordinary nonlethal, lethal, and overkill damage therefore update runtime health and restrictions without allowing ordinary damage to produce `Dead`.
+
+Replay protection remains solely in each authoritative snapshot's `processedDamageEventIds` set: LK-0302 checks and copies it, and `OperativeLifeService` commits and owns it for the registered operative lifetime. No client remote accepts damage, health, life state, revision, timestamps, processed IDs, or transition results. The Studio-only server `ApplyDamage` BindableFunction is isolated in `ServerStorage` for development validation. Run `lune run games/living-kingdoms/tests/OperativeLifeDamageRouting.test.luau` for focused runtime routing coverage.
+
+LK-0307 adds pure `SquadFailureEvaluator.evaluateViability(facts, serverTimestamp)` and `resolve(state, facts, serverTimestamp)` APIs plus the server-only `SquadFailureService`. The stable state vocabulary is `Viable`, `Pending`, and `Failed`. A connected registered `Alive` operative is viable even when no revive can be completed. Otherwise, only one authoritative pending solo recovery is viable: the operation started solo, never had multiplayer participation, the operative is Incapacitated and eligible, the one allowance is unused, and its canonical recovery timing is still valid. Incapacitated or Dead teammates do not prove a revive path.
+
+The first loss of viability stores the server timestamp and its exact `+3` second deadline. Viability returning before that deadline cancels Pending and clears all grace timing; a later loss starts a fresh full grace. Evaluation at or after the stored deadline commits `Failed` once, and ordinary later viability cannot undo it. The runtime reads copied `OperativeLifeService` snapshots, reevaluates on life commits and roster changes, and uses one server timer for deadline completion. Disconnect removes the snapshot immediately; zero connected admitted operatives irreversibly mark the operation abandoned. Participation freezes at explicit operation start, so later registrations are ignored for viability during Pending and Failed; reconnect restoration is not implemented. No client failure remote or client-controlled clock exists. Run the two LK-0307 fixtures with `lune run games/living-kingdoms/tests/SquadFailureEvaluator.test.luau` and `lune run games/living-kingdoms/tests/SquadFailureService.test.luau`.
+
+LK-0308 completes the narrow P3 integration owner. `OperativeLifeRuntimeService` routes server-created finishing damage and centrally evaluates the earliest stored bleed-out or solo-recovery deadline through the existing pure resolvers and `OperativeLifeService` commit boundary. `OperativeReviveSessionService` owns one continuous four-second session per target, derives every eligibility and interruption fact on the server, and accepts only `{ targetOperativeEntityId, phase = "Begin" | "End" }` through its rate-limited `ReviveIntent` remote. Completion preserves ammunition, cadence, and processed ShotIds while clearing reload and target selection.
+
+The client receives copied life, health, deadline, recovery, revive, and squad-failure attributes for prototype validation only. `OperativeLifeController` renders those values as a plain debug label and may request hold begin/end; no disclosed value is echoed as authority. Studio-only bindable controls can route authoritative damage or advance evaluation to an already stored deadline, but they call the same production resolver and commit paths.
+
+## First playable operation
+
+P5-0103 adds **Operation Blackwater Relay**, the first complete vertical slice from insertion through extraction, specified in [`docs/specifications/first-playable-operation.md`](../../docs/specifications/first-playable-operation.md). `MissionDirectorService` owns a deliberately small authoritative phase machine — `Insertion` → `Infiltration` → `Exfiltration` → `Holdout` → `Resolved` — with one authored objective (restore the communications relay at the Forest Service Lookout), extraction unlock at the authored clearing, a 90-second server-owned holdout countdown, and a terminal success/failure outcome. Squad wipe or full-squad disconnect resolves failure through the existing `SquadFailureService`; success requires at least one admitted living operative inside the clearing when extraction arrives.
+
+Objective completion is server-authoritative, deterministic, single-commit, and resilient to disconnects: the console's ProximityPrompt is input only, and `requestObjectiveInteraction` revalidates phase, registration, life state, and server-read position in a stable first-failure order. Escalation spawns production enemies through `EnemyDirectorService.spawnAuthoredWave` — three authored waves, each spawned exactly once. Clients receive one revisioned safe snapshot over `MissionNetwork.State` and send nothing; `MissionController` renders the placeholder objective line, radio transmissions, countdown, and outcome card. Run `lune run games/living-kingdoms/tests/MissionContracts.test.luau` and `lune run games/living-kingdoms/tests/MissionDirectorService.test.luau` for the P5-0103 fixtures.
+
+## Enemy pressure runtime
+
+P5-0104 through P5-0107 add the production enemy system, specified in [`docs/specifications/enemy-pressure-runtime.md`](../../docs/specifications/enemy-pressure-runtime.md). Shared `EnemyContracts`/`EnemyConfig` declare the Exclusion Walker archetype, fair-spawn rules, population caps (6 per operative, 24 absolute), per-escalation roaming cadence, recovery windows, and combat bounds. The pure `EnemyBehaviorResolver` derives fair-spawn legality (a spawn is rejected inside 64 horizontal studs of any alive operative) and deterministic roam/pursue/attack decisions with pursuit-drop hysteresis and LK-0203-style tie-breaks.
+
+`EnemyDirectorService` owns every enemy: graybox Humanoid bodies under `Workspace.EnemyEntities` with server network ownership, a bounded deferred queue for unfair authored placements, mission-driven waves and roaming pressure with authored-wave recovery windows, melee attacks committed through the P3 `applyAuthoritativeDamage` boundary against `Alive` operatives only, a revisioned monotonic enemy-health commit boundary for operative fire, corpse cleanup on the same single evaluation pass, and terminal stand-down at mission resolution. It exposes no remote, uses one heartbeat connection, zero timers, zero raycasts, and no randomness.
+
+`OperativeCombatRuntimeService` is the always-on production automatic-combat owner: darkness-bounded gameplay visibility (60 studs, deliberately inside the 80-stud firearm range), a three-raycast line-of-sight budget per operative per pass, production threat priority from real enemy pursuit intent, the unchanged pure P2 fire/hit/damage/reload pipeline, and the revive combat-state boundary consumed by `OperativeReviveSessionService` — so revives now complete outside Studio. Run `lune run games/living-kingdoms/tests/EnemyContracts.test.luau`, `EnemyBehaviorResolver.test.luau`, `EnemyDirectorService.test.luau`, `OperativeCombatRuntimeService.test.luau`, and `P5IntegrationValidation.test.luau` for the P5 fixtures.
+
+## Current milestone status
+
+P3 is complete and validated; its two-client and solo Studio evidence is recorded in `docs/production/SMOKE-TEST.md`. P5 is complete in source; a live multiplayer Studio playthrough of the full pressure loop remains an outstanding manual check. P6 ammunition scarcity is complete for the current prototype after the project owner reported that the requested local multiplayer tests ran fine; finite ammunition, cache collection, HUD/depletion feedback, and the Studio scarcity telemetry probe remain intact, no unsupported tune was applied, and retained raw balance telemetry is assigned to P12. P7 is complete through `P7-0107`: shared contracts, server-owned selection, all three specialist actions, accessible cross-class presentation, adversarial validation, and a bounded Studio-only telemetry probe are implemented. The per-milestone status table and detailed P6–P12 breakdown live in `docs/roadmap/MASTER-ROADMAP.md` with canonical acceptance gates in `docs/roadmap/P6-P12-EXECUTION-ROADMAP.md`; `P8-PLAN-001` is next. Mission replay flow, persistence, production presentation, and all later gameplay systems remain deferred to their planned milestones.

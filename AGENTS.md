@@ -1,60 +1,88 @@
-# Agent Operating Contract
+# Living Kingdoms Agent Guide
 
-This repository is designed for GitHub-first development by humans and coding agents. The repository is the source of truth for gameplay code, configuration, tests, technical documentation, and reproducible builds.
+This file applies to everything under `games/living-kingdoms`.
 
-## Primary project
+Living Kingdoms is developed repository-first. Coding agents should be able to inspect, modify, test, and review most gameplay work without opening Roblox Studio.
 
-The active Roblox game is `games/living-kingdoms`.
+## Canonical layout
 
-Read these files before changing it:
+```text
+games/living-kingdoms/
+├── default.project.json  # Rojo DataModel mapping
+├── src/
+│   ├── client/           # Local input, camera, HUD, audio, presentation
+│   ├── server/           # Authoritative runtime systems and domain logic
+│   └── shared/           # Contracts, configuration, and pure shared modules
+├── tests/                # Lune fixtures and source audits
+├── assets/               # Asset manifests and source material
+└── README.md
+```
 
-1. `games/living-kingdoms/AGENTS.md`
-2. `games/living-kingdoms/README.md`
-3. `docs/bible/00-project-charter.md`
-4. `docs/bible/01-mvp.md`
-5. `docs/architecture/technical-blueprint.md`
-6. `docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md` (active authority)
-7. `docs/roadmap/PRODUCTION-CORE-V2.7.md`
-8. `docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md` when touching runtime state, remotes, presentation, lifecycle, Studio migration, or incident closure
+Rojo maps:
 
-More specific `AGENTS.md` files override this file for their directory scope.
+- `src/client` to `StarterPlayer/StarterPlayerScripts/Client`;
+- `src/server` to `ServerScriptService/Server`;
+- `src/shared` to `ReplicatedStorage/Shared`.
 
-## Current roadmap rule
+Do not change those destinations casually. Any mapping change requires a migration note, build validation, and a Studio smoke test.
 
-Blueprint v2.7 controls execution order. Implement the lowest-numbered incomplete v2.7 ticket that can honestly be completed in the current environment.
+## Architecture boundaries
 
-Accepted runtime evidence and current Roblox platform behavior outrank roadmap prose. Older v2.3/v2.0/v1.9 roadmap files are historical provenance, not current instructions.
+### Client
 
-Do not claim an E2–E5 result from source inspection alone. The current active-place queue/highlight incidents remain open until the v2.7 closure evidence is recorded.
+Client code may own:
 
-## Source-of-truth rules
+- local input collection;
+- camera behavior;
+- HUD and menu rendering;
+- audio and visual presentation;
+- non-authoritative prediction or interpolation;
+- sending narrowly scoped intent messages.
 
-- Treat `games/living-kingdoms/src` as canonical for Luau source.
-- Treat `games/living-kingdoms/default.project.json` as canonical for the Rojo DataModel mapping.
-- Treat `games/living-kingdoms/tests` as required regression coverage.
-- Do not edit generated `.rbxl`, `.rbxlx`, sourcemap, or build-output files as source code.
-- Do not import a Roblox place by blindly replacing the existing `src` tree.
-- Preserve server authority for combat, progression, persistence, rewards, inventory, health, enemy state, and other consequential gameplay.
-- Never trust client-provided positions, timestamps, damage, targets, cooldown completion, currency, inventory, or progression state without server validation.
-- Do not create a second authoritative state/presentation path when the v2.7 task is to migrate or observe the existing one.
+Client code must not establish consequential game truth.
 
-## Runtime-state and presentation rules
+### Server
 
-When touching current-state delivery or active-place presentation:
+Server code owns:
 
-- inventory existing producers and consumers before adding another path;
-- bind required current-state listeners before declaring the client ready;
-- identify independent current facts with semantic keys;
-- suppress unchanged state using a mutation-derived revision/change token;
-- retain pre-ready current state by player + remote + semantic key where retention is required;
-- route production Highlights through the shared presentation owner/registry rather than allocating competing Highlights;
-- keep application, character, and operation/round connection scopes explicit;
-- preserve semantic truth across streaming even when a local Instance is temporarily absent;
-- capture before/after rates and cleanup gauges for migration work.
+- combat resolution and target legality;
+- enemy state and spawning;
+- health, incapacitation, revival, and death;
+- loot, rewards, progression, classes, and run builds;
+- mission and operation lifecycle;
+- validation of client intent;
+- persistence and monetization when added.
 
-## Required validation
+Remote handlers must validate identity, state, range, cadence, permissions, and payload shape as applicable. Rate-limit or otherwise bound repeatable intents.
 
-From the repository root, install the pinned tools in `rokit.toml`, then run:
+### Shared
+
+Shared modules should contain:
+
+- stable contracts and type declarations;
+- configuration values;
+- deterministic resolvers that can be tested through Lune;
+- presentation-safe data structures intentionally disclosed to clients.
+
+Avoid coupling pure shared modules to live Roblox services unless the module is explicitly an integration boundary.
+
+## Coding conventions
+
+- Use strict Luau for new source files.
+- Follow the existing lifecycle pattern where controllers and services expose appropriate `init`, `start`, `stop`, or `destroy` behavior.
+- Make repeated lifecycle calls safe when the surrounding architecture expects them to be safe.
+- Keep functions deterministic when they can be deterministic.
+- Return copied state from pure resolvers instead of mutating caller-owned inputs.
+- Prefer explicit reason IDs and contracts over free-form hidden coupling.
+- Reuse existing network folders and contracts when suitable; do not create duplicate remotes for the same authority boundary.
+- Keep configuration centralized under `src/shared/Config` rather than scattering balance constants through runtime code.
+- Preserve accessibility and mobile behavior when changing controls or presentation.
+
+## Testing expectations
+
+A gameplay rule change should normally include a focused `*.test.luau` fixture. Integration changes should include either an integration fixture or a source audit that proves the intended wiring and security boundary.
+
+Run from repository root:
 
 ```bash
 python scripts/validate_living_kingdoms_layout.py
@@ -69,39 +97,49 @@ rojo build games/living-kingdoms/default.project.json \
   --output /tmp/LivingKingdoms.rbxlx
 ```
 
-A change is not complete merely because it compiles. Update or add focused tests for behavior changes and document any Roblox-engine behavior that cannot be validated outside Studio.
+Do not delete or loosen an existing test because a new implementation fails it unless the underlying documented requirement has intentionally changed.
 
-For v2.7 runtime migration tickets, static tests do not replace required Studio evidence such as listener timing, reset/respawn baselines, queue warnings, streaming rebind, multiplayer disconnect behavior, or profiling captures.
+## Working with a newer Roblox place
 
-## Change discipline
+A `.rbxl` or `.rbxlx` file is an import source, not an automatic replacement for this directory.
 
-- Make the smallest coherent change that completes the task.
-- Preserve existing architecture unless the task explicitly requires a migration.
-- Prefer pure modules for rules and calculations; keep Roblox service integration at clear runtime boundaries.
-- Keep client, server, and shared responsibilities separated.
-- Do not invent asset IDs, animation IDs, product IDs, place IDs, universe IDs, or secrets.
-- Do not commit credentials, cookies, tokens, local Studio settings, or generated build artifacts.
-- Do not weaken tests or remove security checks to make CI pass.
-- Update relevant documentation when changing architecture, setup, controls, data contracts, rollout flags, runtime state semantics, or the Studio boundary.
-- Compatibility/feature flags introduced for migration require an owner, rollback trigger, evidence gate, and removal condition.
+Before reconciling one:
 
-## Roblox Studio boundary
+1. Preserve the current Git commit with a backup branch or tag.
+2. Record the incoming file name, byte size, SHA-256 hash, and origin.
+3. Inventory scripts, services, remotes, non-script instances, terrain, assets, and settings in the place.
+4. Diff extracted script sources against this repository.
+5. Merge intentional changes into `src/client`, `src/server`, and `src/shared` according to authority boundaries.
+6. Represent stable instance structure in `default.project.json` or dedicated `.rbxmx` model files only when reviewable and appropriate.
+7. Record everything that remains Studio-owned.
+8. Run all repository validation.
+9. Perform a Studio smoke test before publishing.
 
-Routine code development should happen through GitHub, agents, local editors, Rojo, Lune, Selene, StyLua, and CI. Roblox Studio is still required for engine-level playtesting, visual world authoring, terrain, animation authoring, asset permissions, certain instance properties, device emulation, performance profiling, streaming behavior, active network timing, and publishing.
+Never overwrite the repository with extracted place contents without review. Place files may contain stale copies of scripts, generated instances, plugin artifacts, or Studio-only state.
 
-Follow `docs/production/RBXL-IMPORT-MIGRATION.md` whenever a newer `.rbxl` or `.rbxlx` place must be reconciled with repository source.
+See `../../docs/production/RBXL-IMPORT-MIGRATION.md` for the full migration procedure.
 
-For the current rollout, follow `docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md` and preserve the named rollback/build checkpoint before each architectural stage change.
+## Studio-only checks
 
-## Completion report
+Flag these clearly rather than pretending they were validated by CI:
 
-When finishing a task, report:
+- actual multiplayer play behavior;
+- character and physics behavior;
+- terrain and authored map appearance;
+- animations and asset ownership permissions;
+- lighting and audio in the live engine;
+- UI across device safe areas;
+- streaming and network ownership behavior;
+- DataStore behavior in an appropriate test environment;
+- performance and memory;
+- publishing configuration.
 
-- v2.7 ticket number and rollout stage;
-- files changed;
-- behavior changed;
-- validation performed and exact results;
-- before/after runtime counters where applicable;
-- evidence packet or Studio-only checks still required;
-- rollback checkpoint/flag state for migration work;
-- risks, assumptions, or follow-up work.
+## Agent completion checklist
+
+- [ ] Read the applicable design and architecture documents.
+- [ ] Preserved client/server authority boundaries.
+- [ ] Added or updated focused tests.
+- [ ] Ran layout, formatting, lint, fixture, and Rojo build checks.
+- [ ] Documented any Studio-only validation.
+- [ ] Avoided committing generated place files or secrets.
+- [ ] Summarized changed behavior and remaining risks.
