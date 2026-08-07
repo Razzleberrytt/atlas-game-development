@@ -91,7 +91,7 @@ Because final Studio verification is deferred, proceed through the repo-verifiab
    `player.UserId`, rejects any supplied identity, and addresses every push with `FireClient`.
    Covered by `PlayerInventorySnapshot.test` and `InventoryOwnershipBoundarySourceAudit.test`.
    Studio verification remains deferred per the timing rule above.
-2. Item comparison and equip-to-combat handoff. **Comparison complete (repo-side); handoff outstanding.**
+2. ~~Item comparison and equip-to-combat handoff.~~ **Complete (repo-side).**
    `EquipmentComparisonResolver` states an item's tradeoff as facts: a stat verdict
    (`Upgrade`/`Sidegrade`/`Downgrade`/`SameItem`), signed power and rarity deltas, and the role
    change as sorted gained/lost tags. The verdict deliberately covers stats only, so a stronger
@@ -101,10 +101,24 @@ Because final Studio verification is deferred, proceed through the repo-verifiab
    `InventoryLiveService.compareOwnedItem` and the `CompareOwnedItem` remote take only a candidate
    instance id, so a client cannot have the server evaluate an item it does not hold.
    Covered by `EquipmentComparisonResolver.test` and the boundary audit.
-   Still outstanding for this item: the equip-to-combat handoff (v1.9 Ticket 142) — rifle and
-   shotgun variants updating runtime weapon stats, invalidating an in-flight reload, rejecting the
-   replaced weapon, and closing the mid-combat refill exploit. The fun gate (a fresh tester
-   explaining a tradeoff unaided) needs a Studio session and stays deferred.
+   The equip-to-combat handoff (v1.9 Ticket 142) is wired. Each weapon-slot definition carries an
+   authored `WeaponId` — `frontier-rifle → sniper-rifle`, `breach-shotgun → breach-shotgun`,
+   `warden-sidearm → service-pistol` — validated at load, so an item cannot equip and drive
+   nothing, and armor/relic slots must carry none. Equipping bumps the combat state generation,
+   which the reload completion path is already gated on, so an in-flight reload cannot land on the
+   new weapon; the selected target and processed shot ids are cleared, so shots referencing the
+   replaced weapon are rejected.
+
+   The refill exploit is closed. Equipping previously handed over a full magazine, so every swap
+   refilled loaded rounds for free. `WeaponSwapAmmunitionResolver` now governs the transfer: a
+   swap moves ammunition and never creates it. Carried rounds are preserved, fitted magazine-first
+   to the incoming weapon, clamped to its caps, and any overflow is reported as discarded rather
+   than hidden. Covered by `WeaponSwapAmmunitionResolver.test` (conservation across every case) and
+   `EquipToCombatHandoffSourceAudit.test`.
+
+   The fun gate — a fresh tester explaining a tradeoff unaided — needs a Studio session and stays
+   deferred. Persisted `equip()` does not yet drive the live runtime; that belongs with the
+   persistence work in item 6.
 3. Dismantle and salvage transaction safety.
 4. Capacity retry and durable overflow recovery.
 5. Participation eligibility and personal reward isolation.

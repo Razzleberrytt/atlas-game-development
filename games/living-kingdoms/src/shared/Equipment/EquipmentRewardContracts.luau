@@ -17,6 +17,9 @@ export type EquipmentDefinition = {
 	MaximumPower: number,
 	AllowedRarities: { EquipmentRarityId },
 	Tags: { string },
+	-- The combat weapon this item drives when equipped. Present on weapon slots
+	-- only; armor and relic definitions carry none.
+	WeaponId: string?,
 }
 
 export type EquipmentReward = {

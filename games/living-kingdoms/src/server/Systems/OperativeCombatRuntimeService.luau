@@ -47,6 +47,7 @@ local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local RelicModifierService = require(script.Parent.RelicModifierService)
 local ReloadResolver = require(script.Parent.ReloadResolver)
 local RunMagazineCapacityResolver = require(script.Parent.RunMagazineCapacityResolver)
+local WeaponSwapAmmunitionResolver = require(script.Parent.WeaponSwapAmmunitionResolver)
 local WeaponTargetSelector = require(script.Parent.WeaponTargetSelector)
 local WeaponPatternResolver = require(script.Parent.WeaponPatternResolver)
 local weaponLoadoutModule = script.Parent.WeaponLoadoutService
@@ -938,10 +939,31 @@ function OperativeCombatRuntimeService.equipFoundWeapon(player: Player, weaponId
 	if not discoverable then
 		return false
 	end
+	--[[
+		A swap moves ammunition, it never creates it. Handing over a full
+		magazine let a player refill loaded rounds for free on every weapon
+		change, which bypassed scarcity entirely.
+	]]
+	local carried = playerState.weaponState.ammunition
+	local swap = WeaponSwapAmmunitionResolver.resolve({
+		loadedRounds = carried.loadedRounds,
+		reserveRounds = carried.reserveRounds,
+	}, {
+		magazineCapacity = definition.MagazineCapacity,
+		maximumReserveRounds = definition.MaximumReserveRounds,
+	})
+
 	playerState.generation += 1
 	playerState.operativeState.combatStateId = CombatContracts.OperativeCombatStateIds.Ready
 	playerState.operativeState.equippedWeaponId = weaponId
 	playerState.weaponState = createWeaponState(weaponId, 0)
+	if swap.Accepted then
+		playerState.weaponState.ammunition.loadedRounds = swap.LoadedRounds
+		playerState.weaponState.ammunition.reserveRounds = swap.ReserveRounds
+	end
+	playerState.weaponState.readinessStateId = if playerState.weaponState.ammunition.loadedRounds == 0
+		then CombatContracts.WeaponReadinessStateIds.Empty
+		else CombatContracts.WeaponReadinessStateIds.Ready
 	playerState.selectedTargetEntityId = nil
 	table.clear(playerState.processedShotIds)
 	table.clear(playerState.sightedByEntityId)

@@ -12,23 +12,54 @@ end
 
 local CONTRACTS_TOKEN = {}
 local CONFIG_TOKEN = {}
+local COMBAT_CONTRACTS_TOKEN = {}
 
 local contracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentRewardContracts.luau"), {
 	debugName = "EquipmentRewardContracts",
 	injectGlobals = true,
 })()
 
+local combatContracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Combat/CombatContracts.luau"), {
+	debugName = "CombatContracts",
+	injectGlobals = true,
+})()
+
 local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/EquipmentRewardConfig.luau"), {
 	debugName = "EquipmentRewardConfig",
 	environment = {
-		script = { Parent = { Parent = { Equipment = { EquipmentRewardContracts = CONTRACTS_TOKEN } } } },
+		script = {
+			Parent = {
+				Parent = {
+					Equipment = { EquipmentRewardContracts = CONTRACTS_TOKEN },
+					Combat = { CombatContracts = COMBAT_CONTRACTS_TOKEN },
+				},
+			},
+		},
 		require = function(token: unknown)
+			if token == COMBAT_CONTRACTS_TOKEN then
+				return combatContracts
+			end
 			assert(token == CONTRACTS_TOKEN, "unexpected reward config dependency")
 			return contracts
 		end,
 	},
 	injectGlobals = true,
 })()
+
+-- Every weapon-slot definition must drive a real combat weapon, and non-weapon
+-- slots must drive none, or an item could equip and change nothing.
+local weaponSlots = { [contracts.SlotIds.Primary] = true, [contracts.SlotIds.Secondary] = true }
+local weaponLinks = 0
+for _, definition in config.Definitions do
+	if weaponSlots[definition.Slot] then
+		assert(type(definition.WeaponId) == "string", definition.Id .. " must name the weapon it equips")
+		assert(combatContracts.WeaponIds ~= nil, "weapon ids must be declared in the combat contracts")
+		weaponLinks += 1
+	else
+		assert(definition.WeaponId == nil, definition.Id .. " must not name a weapon")
+	end
+end
+assert(weaponLinks >= 3, "the authored roster must link at least the rifle, shotgun, and sidearm")
 
 local replicatedStorage = {
 	Shared = {

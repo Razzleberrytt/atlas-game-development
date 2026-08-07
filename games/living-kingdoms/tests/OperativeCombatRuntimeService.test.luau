@@ -459,6 +459,11 @@ local SELECTOR_TOKEN = {}
 local PATTERN_TOKEN = {}
 local MAGAZINE_TOKEN = {}
 local SUPPLY_TOKEN = {}
+local SWAP_TOKEN = {}
+local swapResolver = loadSimple(
+	"games/living-kingdoms/src/server/Systems/WeaponSwapAmmunitionResolver.luau",
+	"WeaponSwapAmmunitionResolver"
+)
 local configuredEngineerInspector = nil
 local configuredEngineerCommitter = nil
 
@@ -493,6 +498,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				WeaponTargetSelector = SELECTOR_TOKEN,
 				WeaponPatternResolver = PATTERN_TOKEN,
 				RunMagazineCapacityResolver = MAGAZINE_TOKEN,
+				WeaponSwapAmmunitionResolver = SWAP_TOKEN,
 			},
 		},
 		require = function(token)
@@ -546,6 +552,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return magazineResolver
 			elseif token == SUPPLY_TOKEN then
 				return supplyResolver
+			elseif token == SWAP_TOKEN then
+				return swapResolver
 			end
 			error("unexpected OperativeCombatRuntimeService dependency")
 		end,

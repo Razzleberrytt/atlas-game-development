@@ -6,11 +6,19 @@
 	introducing an unbounded tier jump that would make elite rewards irrelevant.
 ]]
 
+local CombatContracts = require(script.Parent.Parent.Combat.CombatContracts)
 local Contracts = require(script.Parent.Parent.Equipment.EquipmentRewardContracts)
 local SlotIds = Contracts.SlotIds
 local RarityIds = Contracts.RarityIds
 local SourceIds = Contracts.SourceIds
+local WeaponIds = CombatContracts.WeaponIds
 
+--[[
+	`WeaponId` is the authored link from an equipment definition to the combat
+	weapon it drives when equipped. It lives on the definition rather than in a
+	handoff service so that adding an item cannot silently produce something that
+	equips but changes nothing. Armor and relic slots carry no weapon.
+]]
 local function item(
 	id: string,
 	displayName: string,
@@ -18,7 +26,8 @@ local function item(
 	minimumPower: number,
 	maximumPower: number,
 	rarities,
-	tags
+	tags,
+	weaponId: string?
 )
 	return table.freeze({
 		Id = id,
@@ -29,6 +38,7 @@ local function item(
 		MaximumPower = maximumPower,
 		AllowedRarities = table.freeze(rarities),
 		Tags = table.freeze(tags),
+		WeaponId = weaponId,
 	})
 end
 
@@ -42,7 +52,8 @@ local EquipmentRewardConfig = {
 			8,
 			14,
 			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare },
-			{ "rifle", "precision" }
+			{ "rifle", "precision" },
+			WeaponIds.SniperRifle
 		),
 		item(
 			"breach-shotgun",
@@ -51,7 +62,8 @@ local EquipmentRewardConfig = {
 			8,
 			14,
 			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare },
-			{ "shotgun", "close-range" }
+			{ "shotgun", "close-range" },
+			WeaponIds.BreachShotgun
 		),
 		item(
 			"warden-sidearm",
@@ -60,7 +72,8 @@ local EquipmentRewardConfig = {
 			7,
 			12,
 			{ RarityIds.Common, RarityIds.Uncommon },
-			{ "sidearm", "reliable" }
+			{ "sidearm", "reliable" },
+			WeaponIds.ServicePistol
 		),
 		item(
 			"delver-plate",
@@ -112,6 +125,26 @@ for _, definition in EquipmentRewardConfig.Definitions do
 		"invalid equipment power bounds"
 	)
 	assert(#definition.AllowedRarities >= 1, "equipment requires at least one rarity")
+
+	-- A weapon slot that drives no weapon would equip and change nothing, and a
+	-- weapon on armor would have no runtime meaning. Both are authoring errors.
+	local drivesWeapon = definition.Slot == SlotIds.Primary or definition.Slot == SlotIds.Secondary
+	if drivesWeapon then
+		assert(type(definition.WeaponId) == "string", definition.Id .. " must name the weapon it equips")
+	else
+		assert(definition.WeaponId == nil, definition.Id .. " occupies a non-weapon slot and must name no weapon")
+	end
+end
+
+-- Every authored weapon link must resolve to a real combat weapon id.
+local knownWeaponIds = {}
+for _, weaponId in WeaponIds do
+	knownWeaponIds[weaponId] = true
+end
+for _, definition in EquipmentRewardConfig.Definitions do
+	if definition.WeaponId ~= nil then
+		assert(knownWeaponIds[definition.WeaponId] == true, definition.Id .. " names an unknown weapon")
+	end
 end
 
 for sourceId, source in EquipmentRewardConfig.Sources do
