@@ -8,14 +8,37 @@ Living Kingdoms is developed repository-first. Coding agents should be able to i
 
 Before selecting implementation work, read:
 
-1. `../../docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md`
-2. `../../docs/roadmap/PRODUCTION-CORE-V2.7.md`
-3. `../../docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md`
-4. `../../docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md` when the change touches player-facing replicated or presentation state.
+1. `../../docs/roadmap/MASTER-ROADMAP.md`
+2. `../../docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md`
+3. `../../docs/roadmap/PRODUCTION-CORE-V2.7.md`
+4. `../../docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md`
+5. `../../docs/roadmap/AGENT-BUILD-AHEAD-QUEUE.md` when the user/maintainer wants useful work to continue while a Studio-only v2.7 runtime gate is still pending.
+6. `../../docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md` when the change touches player-facing replicated or presentation state.
 
-Blueprint v2.7 is the active execution authority. Historical v1.9/v2.0/v2.3 queues are provenance, not task selection. Accepted runtime evidence and current Roblox platform behavior outrank authored roadmap prose. The active queue is Tickets 331–360; do not skip its stop conditions to resume persistence, broad visual expansion, or other deferred work.
+Blueprint v2.7 is the active **runtime** execution authority. Historical v1.9/v2.0/v2.3 queues are provenance, not task selection. Accepted runtime evidence and current Roblox platform behavior outrank authored roadmap prose.
+
+The active runtime queue is Tickets 331–360. Do not skip its stop conditions to activate persistence, broad visual expansion, networking cutovers, or deferred gameplay integration.
+
+The controlled build-ahead queue is a separate preparation lane. It allows agents to prepare migration manifests, pure contracts, content schemas, validation tooling, tests, and isolated/dormant gameplay branches while runtime evidence is pending. It does **not** authorize early runtime activation or false evidence promotion.
 
 Roadmap adoption does not prove the active Studio incidents are fixed. Preserve E1 unless a captured Studio evidence packet justifies promotion.
+
+## Build-ahead branch rules
+
+When working from `AGENT-BUILD-AHEAD-QUEUE.md`:
+
+- fetch current `main` before selecting the task;
+- check related open PRs to avoid duplicate work;
+- prefer one task or tightly coupled task group per branch;
+- use `[BUILD-AHEAD]` or `[BUILD-AHEAD/BLOCKED]` in the PR title;
+- keep future runtime wiring separate from preparatory modules/data;
+- do not merge or activate PR #221/#222 ahead of their documented gates;
+- do not implement/activate R3 semantic suppression before R2 evidence;
+- do not boot preserved legacy gameplay services alongside canonical services;
+- keep source-proven facts separate from Studio-only facts;
+- leave gameplay-prep PRs draft/blocked when their runtime activation gate is not yet open.
+
+Docs, tooling, source audits, pure validators and migration inventories that do not change active runtime behavior may be independently reviewable. Runtime-affecting gameplay preparation should remain isolated until its promotion gate is accepted.
 
 ## Canonical layout
 
@@ -149,10 +172,13 @@ Flag these clearly rather than pretending they were validated by CI:
 
 ## Agent completion checklist
 
-- [ ] Read the active v2.7 roadmap documents and the applicable design/architecture documents.
+- [ ] Read the active roadmap documents and, when applicable, the build-ahead queue.
+- [ ] Re-fetched current `main` and checked for overlapping open PRs.
 - [ ] Preserved client/server authority boundaries.
+- [ ] Kept preparatory work separate from gated runtime activation.
 - [ ] Added or updated focused tests.
 - [ ] Ran layout, formatting, lint, fixture, and Rojo build checks.
 - [ ] Documented any Studio-only validation.
 - [ ] Avoided committing generated place files or secrets.
+- [ ] Updated the applicable roadmap/build-ahead task status when appropriate.
 - [ ] Summarized changed behavior and remaining risks.
