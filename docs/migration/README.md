@@ -15,8 +15,14 @@ than an archaeology exercise.
 |---|---|---|
 | `hubtown-migration-manifest.json` | BA-001 | `Workspace/HubTown` and the legacy hub service |
 | `HUBTOWN-MIGRATION-MANIFEST.md` | BA-001 | Human-readable view of the same data |
+| `authored-world-migration-manifest.json` | BA-002 | Every recovered Workspace row outside HubTown (**partial** — see the file) |
+| `AUTHORED-WORLD-MIGRATION-MANIFEST.md` | BA-002 | Human-readable view of the same data |
 | `legacy-script-disposition-matrix.json` | BA-003 | All 28 preserved Studio-only scripts |
 | `LEGACY-SCRIPT-DISPOSITION-MATRIX.md` | BA-003 | Human-readable view of the same data |
+
+Together the two instance manifests partition the recovered Workspace index with
+no overlap and no gap: BA-001 claims the 81 `Workspace/HubTown` rows, BA-002
+claims the other 41. CI enforces both halves.
 
 ## Evidence base
 

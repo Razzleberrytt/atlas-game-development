@@ -223,14 +223,17 @@ def check_coverage(
     rows: dict[str, list[dict[str, Any]]],
     claims: dict[str, list[str]],
 ) -> None:
-    scopes = (manifest.get("coverage") or {}).get("path_scope") or []
+    coverage = manifest.get("coverage") or {}
+    scopes = coverage.get("path_scope") or []
     if not scopes:
         return
+    excluded = coverage.get("path_exclude") or []
+
+    def matches(path: str, prefixes: list[str]) -> bool:
+        return any(path == prefix or path.startswith(f"{prefix}/") for prefix in prefixes)
 
     in_scope = {
-        path
-        for path in rows
-        if any(path == scope or path.startswith(f"{scope}/") for scope in scopes)
+        path for path in rows if matches(path, scopes) and not matches(path, excluded)
     }
 
     seen: dict[str, str] = {}
@@ -248,7 +251,7 @@ def check_coverage(
 
     # A path can name several instances, so coverage counts rows, not paths.
     rows_in_scope = sum(len(rows[path]) for path in in_scope)
-    declared = (manifest.get("coverage") or {}).get("rows_in_scope")
+    declared = coverage.get("rows_in_scope")
     if declared is not None and declared != rows_in_scope:
         report.fail(
             name, f"coverage claims {declared} rows in scope but {rows_in_scope} were recovered"

@@ -1,0 +1,281 @@
+{
+  "format_version": 1,
+  "task": "BA-002",
+  "title": "Authored-world migration manifest",
+  "generated_on": "2026-08-07",
+  "runtime_neutral": true,
+  "evidence_level": "source-proven only; nothing here is Studio or runtime evidence",
+  "status": "PARTIAL — see coverage.blocked_by",
+  "source": {
+    "place_file": "livingkingdoms.rbxl",
+    "place_sha256": "e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16",
+    "import_package": "games/living-kingdoms/imports/studio-2026-08-07",
+    "instance_evidence": "games/living-kingdoms/imports/studio-2026-08-07/recovered/workspace-index-recovered.json",
+    "roots_evidence": "games/living-kingdoms/imports/studio-2026-08-07/workspace-roots.json",
+    "script_evidence": "games/living-kingdoms/imports/studio-2026-08-07/manifest.json",
+    "integrity_finding": "docs/production/RBXL-IMPORT-INTEGRITY-2026-08-07.md"
+  },
+  "coverage": {
+    "path_scope": ["Workspace"],
+    "path_exclude": ["Workspace/HubTown"],
+    "rows_in_scope": 41,
+    "declared_place_workspace_instances": 1775,
+    "recovered_workspace_instances": 122,
+    "hubtown_rows_delegated": 81,
+    "coverage_rule": "Every recovered Workspace row outside Workspace/HubTown must be claimed by exactly one entry. HubTown is delegated to hubtown-migration-manifest.json. Enforced by scripts/validate_migration_manifests.py.",
+    "blocked_by": "BA-002 cannot be completed from the repository. 1,653 of 1,775 Workspace rows were lost with the damaged preservation archive. Workspace/WorldStructures — the folder that holds the authored structures, ruins and landmarks this task is named for — has no surviving child row at all, and Workspace/WorldPath is truncated after PathSegment_12. This manifest covers what is provable and states the rest as required Studio extraction rather than inferring it.",
+    "completable_after": "Re-extraction of the full Workspace hierarchy per docs/production/RBXL-IMPORT-INTEGRITY-2026-08-07.md"
+  },
+  "dispositions": {
+    "KEEP": "Legacy representation is already correct for the canonical architecture.",
+    "MIGRATE": "Authored value worth reconstructing as source-managed canonical content.",
+    "REPLACE": "Overlaps an existing canonical owner; reproduce the intent through that owner.",
+    "ARCHIVE": "Reference only. Never boot, require, or map into the active project."
+  },
+  "canonical_world_note": "The canonical authored world is already implemented: WorldFoundationConfig declares the world root, seed, playable extent, insertion position, eight named landmarks (RangerStation, LoggingRoad, LookoutTower, Campground, CreekCrossing, RockyOverlook, MilitaryRoadblock, ExtractionClearing), vegetation budgets and lighting constants, and WorldFoundationService builds it including four named outer routes (NorthServiceTrail, MarshBoardwalkRoute, SouthernFireRoad, QuarryHaulRoad). The legacy world is therefore a migration input into an existing owner, not a greenfield import. Most entries below are REPLACE for that reason.",
+  "entries": [
+    {
+      "id": "world.root",
+      "kind": "instance_group",
+      "disposition": "REPLACE",
+      "summary": "The legacy place Workspace root itself.",
+      "legacy": { "paths": ["Workspace"], "class": "Workspace", "instance_ids": [0], "instance_count": 1 },
+      "extraction_status": "recovered",
+      "children_recovered": false,
+      "canonical_owner": { "status": "exists", "modules": ["games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "games/living-kingdoms/src/server/Systems/WorldFoundationService.luau"], "created_by": null },
+      "canonical_representation": "Canonical world content is built under WorldFoundationConfig.WorldRootName by WorldFoundationService. Legacy content becomes data consumed by that owner, never a second Workspace layout.",
+      "depends_on": [],
+      "runtime_gate": "integration",
+      "studio_only": ["all geometry", "all properties", "streaming behaviour"],
+      "notes": "Twelve roots were recovered and are all claimed below, so the top level of the legacy world is completely known even though almost nothing beneath it is."
+    },
+    {
+      "id": "world.structures",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Authored world structures, ruins and landmark buildings — the primary subject of BA-002.",
+      "legacy": { "paths": ["Workspace/WorldStructures"], "class": "Folder", "instance_ids": [388], "instance_count": 1 },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": { "status": "exists", "modules": ["games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "games/living-kingdoms/src/server/Systems/WorldFoundationService.luau", "games/living-kingdoms/src/shared/Config/WorldMaterialLanguageConfig.luau"], "created_by": "BA-052" },
+      "canonical_representation": "Each surviving structure becomes a landmark entry in WorldFoundationConfig.Landmarks with a stable id, display name, position and radius, built by WorldFoundationService and dressed through the canonical material language. Structures that carry gameplay meaning also need discovery definitions from BA-052.",
+      "depends_on": ["BA-052", "BA-002"],
+      "runtime_gate": "integration",
+      "studio_only": ["structure geometry", "materials", "placement", "streaming", "silhouette readability"],
+      "notes": "This is the single largest gap in the whole migration. The folder identity survived; not one child did. The import README describes the folder as holding citadel, tower, monolith and ruin structures, but that description is prose, not extracted data, so no structure id, count, or position can be stated. Nothing under this entry may be designed against until re-extraction."
+    },
+    {
+      "id": "world.buildings",
+      "kind": "instance_group",
+      "disposition": "ARCHIVE",
+      "summary": "Empty Buildings folder.",
+      "legacy": { "paths": ["Workspace/Buildings"], "class": "Folder", "instance_ids": [116], "instance_count": 1 },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": { "status": "none_intended", "modules": [], "created_by": null },
+      "canonical_representation": "None. The folder is empty and carries no content.",
+      "depends_on": [],
+      "runtime_gate": "n/a",
+      "studio_only": [],
+      "notes": "Provably empty rather than truncated: recovered rows are ordered by path within each depth, and rows for Workspace/Camera (which sorts after Workspace/Buildings/…) were recovered, so any child of Buildings would have appeared. Its instance id 116 sits immediately before Workspace/SpawnLocation (117) and Workspace/HubTown (118), suggesting it was created alongside the hub and never filled."
+    },
+    {
+      "id": "world.terrain",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Authored Roblox Terrain.",
+      "legacy": { "paths": ["Workspace/Terrain"], "class": "Terrain", "instance_ids": [2], "instance_count": 1 },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": { "status": "exists", "modules": ["games/living-kingdoms/src/server/Systems/WorldFoundationService.luau"], "created_by": null },
+      "canonical_representation": "Terrain stays Studio-owned. The canonical world declares its playable extent and insertion position in WorldFoundationConfig; terrain voxels are authored in Studio and are not representable as reviewable source.",
+      "depends_on": [],
+      "runtime_gate": "integration",
+      "studio_only": ["terrain voxels", "materials", "water", "collision", "streaming cost"],
+      "notes": "Terrain was never extractable by the preservation index and never will be through this route. It is the clearest example of content that must be reconciled in Studio, following the RBXL-IMPORT-MIGRATION procedure."
+    },
+    {
+      "id": "world.spawn.primary",
+      "kind": "instance_group",
+      "disposition": "REPLACE",
+      "summary": "Primary player spawn for the legacy world.",
+      "legacy": { "paths": ["Workspace/SpawnLocation"], "class": "SpawnLocation", "instance_ids": [117], "instance_count": 1 },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": { "status": "exists", "modules": ["games/living-kingdoms/default.project.json", "games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau"], "created_by": "BA-010" },
+      "canonical_representation": "Spawn placement is already source-managed: default.project.json declares BootstrapSafetySpawn and WorldFoundationConfig.InsertionPosition declares where authored content is inserted. A hub spawn belongs to the BA-010 composition specification, not to a loose Workspace SpawnLocation.",
+      "depends_on": ["BA-010"],
+      "runtime_gate": "integration",
+      "studio_only": ["spawn position", "team/neutral settings", "character spawn behaviour"],
+      "notes": "Its id (117) places it beside the hub folder, so it was very likely the hub spawn. Position was not preserved, so the relationship cannot be confirmed."
+    },
+    {
+      "id": "world.spawn.bootstrap-safety",
+      "kind": "instance_group",
+      "disposition": "KEEP",
+      "summary": "Bootstrap safety floor and spawn that keep a player from falling through an unbuilt world.",
+      "legacy": { "paths": ["Workspace/BootstrapSafetyFloor", "Workspace/BootstrapSafetySpawn"], "class": "Part", "instance_ids": [1580, 1581], "instance_count": 2 },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": { "status": "exists", "modules": ["games/living-kingdoms/default.project.json"], "created_by": null },
+      "canonical_representation": "Already canonical. Both instances are declared directly in default.project.json with explicit properties, positioned at (-224, -3, -208) and (-224, 0.5, -208) to match WorldFoundationConfig.InsertionPosition.",
+      "depends_on": [],
+      "runtime_gate": "none; already active and unchanged",
+      "studio_only": [],
+      "notes": "The only KEEP in this manifest, and it is KEEP because these two instances are not really legacy content: they originate in the canonical Rojo project and appear in the place because the place was synced from it. Useful as a positive control — it proves the recovered index reflects a place that had already received canonical source."
+    },
+    {
+      "id": "world.camera",
+      "kind": "instance_group",
+      "disposition": "ARCHIVE",
+      "summary": "Workspace Camera instance.",
+      "legacy": { "paths": ["Workspace/Camera"], "class": "Camera", "instance_ids": [1], "instance_count": 1 },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": { "status": "none_intended", "modules": [], "created_by": null },
+      "canonical_representation": "None. Workspace.Camera is engine-managed and is never authored content.",
+      "depends_on": [],
+      "runtime_gate": "n/a",
+      "studio_only": ["runtime camera behaviour"],
+      "notes": "Recorded only so the recovered index is fully accounted for. Canonical camera behaviour is client-owned and unrelated to this instance."
+    },
+    {
+      "id": "world.path.corridor",
+      "kind": "instance_group",
+      "disposition": "REPLACE",
+      "summary": "Authored path corridor built from numbered segment parts.",
+      "legacy": {
+        "paths": [
+          "Workspace/WorldPath",
+          "Workspace/WorldPath/PathSegment_1",
+          "Workspace/WorldPath/PathSegment_10",
+          "Workspace/WorldPath/PathSegment_11",
+          "Workspace/WorldPath/PathSegment_12",
+          "Workspace/WorldPath/PathSegment_100",
+          "Workspace/WorldPath/PathSegment_101",
+          "Workspace/WorldPath/PathSegment_102",
+          "Workspace/WorldPath/PathSegment_103",
+          "Workspace/WorldPath/PathSegment_104",
+          "Workspace/WorldPath/PathSegment_105",
+          "Workspace/WorldPath/PathSegment_106",
+          "Workspace/WorldPath/PathSegment_107",
+          "Workspace/WorldPath/PathSegment_108",
+          "Workspace/WorldPath/PathSegment_109",
+          "Workspace/WorldPath/PathSegment_110",
+          "Workspace/WorldPath/PathSegment_111",
+          "Workspace/WorldPath/PathSegment_112",
+          "Workspace/WorldPath/PathSegment_113",
+          "Workspace/WorldPath/PathSegment_114",
+          "Workspace/WorldPath/PathSegment_115",
+          "Workspace/WorldPath/PathSegment_116",
+          "Workspace/WorldPath/PathSegment_117",
+          "Workspace/WorldPath/PathSegment_118",
+          "Workspace/WorldPath/PathSegment_119"
+        ],
+        "class": "Part",
+        "instance_ids": [1582, 1583, 1592, 1593, 1594, 1682, 1683, 1684, 1685, 1686, 1687, 1688, 1689, 1690, 1691, 1692, 1693, 1694, 1695, 1696, 1697, 1698, 1699, 1700, 1701],
+        "instance_count": 25
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": { "status": "exists", "modules": ["games/living-kingdoms/src/server/Systems/WorldFoundationService.luau", "games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau"], "created_by": "BA-050" },
+      "canonical_representation": "A named route in the canonical route system. WorldFoundationService already builds routes from ordered control points with clearance-aware vegetation, so a legacy corridor becomes route data, never a folder of loose segment parts.",
+      "depends_on": ["BA-050"],
+      "runtime_gate": "integration",
+      "studio_only": ["segment positions", "corridor shape", "materials", "traversal feel"],
+      "notes": "The corridor is truncated: 24 of an unknown total segments survive. Contiguous ids 1682-1701 map to PathSegment_100-119 and 1583/1592/1593/1594 map to PathSegment_1/10/11/12, so segments were created in numeric order from id 1583. On that stride PathSegment_1 through at least PathSegment_119 existed, implying roughly 119 or more segments; the exact count cannot be stated. No position survived, so the route's actual shape is unknown. WorldFoundationService's route language (control points plus RouteClearanceStuds) is a strictly better representation than per-segment parts and should be the target regardless of what re-extraction finds."
+    },
+    {
+      "id": "world.resources.groups",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Gatherable resource-node groups: Trees, Rocks and IronOre.",
+      "legacy": {
+        "paths": ["Workspace/Resources", "Workspace/Resources/Trees", "Workspace/Resources/Rocks", "Workspace/Resources/IronOre"],
+        "class": "Folder",
+        "instance_ids": [3, 4, 50, 67],
+        "instance_count": 4
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": { "status": "not_yet_created", "modules": [], "created_by": "BA-023" },
+      "canonical_representation": "Resource ids, node archetypes, respawn and tool-eligibility metadata under the BA-023 gathering/resource-node content model, with harvesting resolved server-side against canonical inventory.",
+      "depends_on": ["BA-023", "BA-022"],
+      "runtime_gate": "integration; gated additionally by an explicit gathering scope decision",
+      "studio_only": ["node geometry", "node placement", "harvest interaction feel"],
+      "notes": "The three group folders are complete at depth 2 and match the three resource groups documented in GATHERING-CRAFTING-CONCEPTS.md exactly, which cross-confirms both records. Node counts are inferable from the id gaps: Trees (4) to Rocks (50) leaves 45 ids, Rocks (50) to IronOre (67) leaves 16, and IronOre to Workspace/SpawnLocation (117) leaves 49. Those are id-range inferences, not extracted counts, and must not be treated as node counts without re-extraction."
+    },
+    {
+      "id": "world.vfx.ambient-fireflies",
+      "kind": "instance_group",
+      "disposition": "REPLACE",
+      "summary": "Ambient firefly particle emitter and its attachment.",
+      "legacy": {
+        "paths": ["Workspace/AmbientFireflies", "Workspace/AmbientFireflies/FireflyAttach"],
+        "class": "Part",
+        "instance_ids": [1772, 1773],
+        "instance_count": 2
+      },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": { "status": "exists", "modules": ["games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau", "games/living-kingdoms/src/shared/Visual/VisualAssetContracts.luau", "games/living-kingdoms/src/shared/Config/PresentationAccessibilityConfig.luau"], "created_by": null },
+      "canonical_representation": "A declared ambient visual asset honouring the canonical accessibility config, not a loose Workspace part with an emitter welded to it.",
+      "depends_on": [],
+      "runtime_gate": "integration",
+      "studio_only": ["particle appearance", "density", "mobile cost", "reduced-motion behaviour"],
+      "notes": "Complete at depth 2: the part and its single Attachment both survive. Its high ids (1772/1773, near the 1775 total) mean it was one of the last things added to the place."
+    },
+    {
+      "id": "world.sky.clouds",
+      "kind": "instance_group",
+      "disposition": "REPLACE",
+      "summary": "World cloud carrier part and its Clouds instance.",
+      "legacy": {
+        "paths": ["Workspace/WorldClouds", "Workspace/WorldClouds/Clouds"],
+        "class": "Part",
+        "instance_ids": [1578, 1579],
+        "instance_count": 2
+      },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": { "status": "exists", "modules": ["games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "games/living-kingdoms/src/server/Systems/WorldFoundationService.luau"], "created_by": null },
+      "canonical_representation": "Sky and atmosphere belong to the canonical world lighting constants. WorldFoundationConfig.Lighting already owns ClockTime, GeographicLatitude, Brightness, ExposureCompensation, FogStart and FogEnd.",
+      "depends_on": [],
+      "runtime_gate": "integration",
+      "studio_only": ["cloud appearance", "sky readability", "low-graphics behaviour"],
+      "notes": "Complete at depth 2 and the only Clouds instance in the place. The canonical world's atmosphere is deliberately tuned (ClockTime 3.85, fog 85-485 studs) for a survival-horror read; legacy clouds should not override that without a design decision."
+    }
+  ],
+  "open_gaps": [
+    {
+      "id": "gap.world.structures-lost",
+      "summary": "Workspace/WorldStructures has no surviving child row, so the authored structures, ruins and landmarks that BA-002 is named for are entirely unknown. Not one structure id, count or position can be stated.",
+      "blocks": ["BA-002", "BA-050", "BA-052"],
+      "resolution": "Re-extract the full Workspace hierarchy from the source place. Until then BA-050 and BA-052 must design against the canonical WorldFoundationConfig landmarks rather than wait for legacy content."
+    },
+    {
+      "id": "gap.world.path-truncated",
+      "summary": "The WorldPath corridor is truncated after PathSegment_12 in path order; 24 of an unknown number of segments survive and no segment position was ever preserved.",
+      "blocks": ["BA-050"],
+      "resolution": "Re-extract, or accept that the legacy corridor shape is lost and author the first route directly in canonical route form."
+    },
+    {
+      "id": "gap.world.no-properties",
+      "summary": "The preservation index recorded identity and parentage only. No CFrame, size, material, colour or attribute survived for any instance in the place, recovered or not.",
+      "blocks": ["BA-002", "BA-050", "BA-052"],
+      "resolution": "Re-extract with properties, or treat the legacy world as compositional reference and re-author geometry canonically."
+    },
+    {
+      "id": "gap.world.class-counts-unattributed",
+      "summary": "The import manifest records place-wide class counts (1,305 Part, 211 Model, 146 PointLight, 31 ParticleEmitter, 22 Fire, 12 Attachment, 10 TextLabel, 4 BillboardGui, 4 Humanoid, 2 SurfaceGui, 1 ProximityPrompt) but only 122 rows survive, so none of those counts can be attributed to a subtree.",
+      "blocks": ["BA-002"],
+      "resolution": "Use the counts only as a scale check after re-extraction. In particular the 4 Humanoid instances are the only evidence that authored NPC bodies existed anywhere in the place, and their location is unknown."
+    },
+    {
+      "id": "gap.world.unverified-fragments",
+      "summary": "NOT EVIDENCE. The corrupted region of the workspace-index stream emits fragments that look like real path names, including 'MountainBeacons/Beacon8', 'OreDeposit_1' under an IronOre path, and further PathSegment names. These come from a desynchronized DEFLATE stream and may be reconstructed noise rather than original content.",
+      "blocks": [],
+      "resolution": "Treat solely as hints for whoever performs the re-extraction. Never cite them as recovered content, and never enter them into a manifest entry."
+    }
+  ]
+}
