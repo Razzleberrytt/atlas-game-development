@@ -1,27 +1,16 @@
-# Roblox Cooperative FPS RPG
-## Cross-System Traceability Matrix — Version 2.3
+# Cross-System Traceability — Version 2.3 Historical Checkpoint
 
-This matrix answers: **what player promise is being protected, who owns it, what presents it, and what proves it?**
+> **Superseded for active execution by [`CROSS-SYSTEM-TRACEABILITY-V2.7.md`](CROSS-SYSTEM-TRACEABILITY-V2.7.md).**
 
-| Promise / state | Mechanical owner | Presentation owner | Visual/asset dependency | Evidence gate |
-|---|---|---|---|---|
-| Rifle shot | WeaponService + CombatService | Weapon/Combat feedback | FP rifle, muzzle, impacts | E3 fire/reload/hit trace |
-| Player health | HealthService | HUD/damage feedback | HUD, hit cue | E3 damage/death/recovery |
-| Pursuer lunge | Enemy attack controller | enemy presentation | Pursuer rig/telegraph | E3 no-damage readability + hit-once |
-| Shooter burst | ranged attack controller | enemy presentation | Shooter rig/VFX/audio | E3 cover blocks + exactly 3 shots |
-| Warden link | CombatModifierService | shield presentation | Warden link VFX | E3 modifier math + cleanup |
-| Mixed encounter | EncounterService | objective/presentation bus | arena + enemy readability | E3/E4 completion once |
-| Pulse Mark | Ability/Status services | mark presentation | pulse + outline + audio | E3 cooldown/targets/expiry |
-| Secret reveal | DiscoverableService | secret presentation | authored clue/cache | E3 correct audience + expiry |
-| Loot roll | LootService | reward UI | item icon/name treatment | E3 deterministic roll |
-| Item ownership | Inventory/Profile | inventory UI | inventory/item compare UI | E3 owner-only mutation |
-| Equip | Inventory/Weapon state | inventory + viewmodel | weapon FP/world models | E3 stats and model agree |
-| Route | gameplay/quest state | route controller | authored anchors/landmarks | E3 wayfinding + stream rebind |
-| Landmark | world semantic state | landmark controller | hero environment asset | E3 narrow highlight + stream rebind |
-| Dungeon room | generator/run state | environment presentation | modular kit/socket metadata | E3 seed valid; E5 performance |
-| Boss phase | boss state machine | boss presentation | Gatekeeper rig/VFX/audio | E3 phase sync; E6 learnability |
-| Durable reward | Transaction + persistence | reward/inventory UI | none required | E4/E5 retry/rejoin/failure |
+This file is retained only as the Version 2.3 ownership checkpoint. It no longer controls runtime ownership, presentation ownership, cleanup, streaming, or evidence gates.
 
-## Acceptance rule
+For current work use:
 
-A row does not become accepted because only one column works. If the mechanical owner is correct but presentation lies, the player experience is wrong. If presentation is beautiful but mechanical authority is weak, player trust is wrong.
+1. [`BLUEPRINT-V2.7-EXECUTION.md`](BLUEPRINT-V2.7-EXECUTION.md)
+2. [`PRODUCTION-CORE-V2.7.md`](PRODUCTION-CORE-V2.7.md)
+3. [`ACTIVE-PLACE-ROLLOUT-V2.7.md`](ACTIVE-PLACE-ROLLOUT-V2.7.md)
+4. [`CROSS-SYSTEM-TRACEABILITY-V2.7.md`](CROSS-SYSTEM-TRACEABILITY-V2.7.md)
+
+The v2.3 checkpoint established the useful rule that a player-facing promise is not accepted merely because its mechanical owner works: replication, presentation, cleanup, and evidence must agree. Version 2.7 preserves that rule and extends it with semantic-key rollout, producer/consumer cutover tracking, centralized Highlight ownership, lifecycle baselines, and explicit closure evidence.
+
+Historical v2.3 rows remain available through Git history when provenance is needed. Do not copy old ownership rows into new work without checking the v2.7 matrix first.
