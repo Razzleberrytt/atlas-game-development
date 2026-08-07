@@ -1,5 +1,11 @@
 --!strict
 
+-- Blueprint v2.7 R1: bind the legacy HordeNetwork.State compatibility listener
+-- before requiring the rest of the client controller graph. This closes the
+-- startup window where server publishes could accumulate with no listener.
+local HordeStateEarlyListener = require(script.State.HordeStateEarlyListener)
+HordeStateEarlyListener.start()
+
 local CameraController = require(script.Controllers.CameraController)
 local SurvivorController = require(script.Controllers.SurvivorController)
 local MobileControlsController = require(script.Controllers.MobileControlsController)
