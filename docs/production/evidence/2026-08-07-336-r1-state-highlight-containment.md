@@ -9,10 +9,16 @@ This packet is prepared for the first Studio/runtime validation of the R1 contai
 - Roadmap ticket(s): 334, 335, 336; containment precursor for 348
 - Rollout stage: `R1`
 - Git branch: `main`
-- Source-under-test Git commit SHA: `5d5edae561d8d7d900f9e87394c57886189e0a30`
+- Source-under-test Git commit SHA: `2c870d270b96064c9a06343cc088b251299373f4`
+- CI validation run: `31219832584` / Luau validation run `#800`
+- CI result: **PASS** — repository contract, StyLua, Selene, all discovered Lune fixtures, Rojo build, and artifact upload completed successfully
+- Reproducible build artifact: `living-kingdoms-rbxlx-2c870d270b96064c9a06343cc088b251299373f4`
+- GitHub artifact ID: `9009926429`
+- Artifact digest: `sha256:587ccc2974f8188bde34a0a757213efb4b9f72e68e940db4615232cace28bf89`
+- Artifact retention through: 2026-08-21
 - Roblox Studio version: to be recorded
 - Place name: Living Kingdoms / active development place
-- Place/source identity: Rojo-sync `games/living-kingdoms/default.project.json`; exact active place identity to be recorded
+- Place/source identity: use the CI artifact above for this packet; do not substitute an unrecorded local build
 - Server/client count: begin with 1 server / 1 client
 - Device(s): desktop Studio client for this packet
 - Feature flags/configuration:
@@ -35,14 +41,14 @@ narrow enemy-model Highlights functional.
 
 ## 3. Preconditions
 
-- Required source synchronized: current `main` at or after the source-under-test commit above
+- Required source/build: CI artifact `living-kingdoms-rbxlx-2c870d270b96064c9a06343cc088b251299373f4`
 - Output cleared before run: **yes**
 - Diagnostics enabled: `EnableRuntimeCounters = true`
 - R1 listener enabled: `EnableEarlyStateListener = true`
 - Broad-target containment enabled: `RejectBroadHighlightTargets = true`
 - Baseline packet used: active-place screenshot/incident evidence from 2026-08-07
 - Known defects intentionally present: legacy server publisher still uses the 0.5-second compatibility snapshot path; two domain controllers still directly listen in addition to the R1 bridge
-- Invalidating conditions: source/flags differ from this packet, unrelated script errors prevent client bootstrap, or Output was not cleared before test
+- Invalidating conditions: artifact/source/flags differ from this packet, unrelated script errors prevent client bootstrap, or Output was not cleared before test
 
 ## 4. Required R1 diagnostics
 
@@ -105,18 +111,19 @@ That target becomes the next producer-attribution lead; do not infer the produce
 
 ## 7. Procedure
 
-1. Sync/open the active development place from current repository source.
-2. Confirm the three rollout flags listed in this packet are `true`.
-3. Clear Studio Output.
-4. Start a one-player play session from a cold client start.
-5. As soon as the client is controllable, inspect `ReplicatedStorage.HordeNetwork` attributes.
-6. Confirm `V27_EarlyStateListenerBound == true` and record the initial received count/revision.
-7. Play for at least 60 seconds, including enough time for normal horde-state publishing.
-8. Inspect the same attributes again; record received count, invalid count, and revision.
-9. Inspect `Workspace` diagnostics and record guard active/rejected count/last target.
-10. Observe ordinary enemy hit/kill feedback to verify narrow enemy-model Highlights were not suppressed.
-11. Search Output for `HordeNetwork.State`, `invocation`, `queue`, `discard`, and `[Living Kingdoms] Disabled broad Highlight`.
-12. Stop play and record all facts before changing any flag or source.
+1. Download/open the exact CI artifact named in Section 1.
+2. Confirm the place under test corresponds to artifact commit `2c870d270b96064c9a06343cc088b251299373f4`.
+3. Confirm the three rollout flags listed in this packet are `true`.
+4. Clear Studio Output.
+5. Start a one-player play session from a cold client start.
+6. As soon as the client is controllable, inspect `ReplicatedStorage.HordeNetwork` attributes.
+7. Confirm `V27_EarlyStateListenerBound == true` and record the initial received count/revision.
+8. Play for at least 60 seconds, including enough time for normal horde-state publishing.
+9. Inspect the same attributes again; record received count, invalid count, and revision.
+10. Inspect `Workspace` diagnostics and record guard active/rejected count/last target.
+11. Observe ordinary enemy hit/kill feedback to verify narrow enemy-model Highlights were not suppressed.
+12. Search Output for `HordeNetwork.State`, `invocation`, `queue`, `discard`, and `[Living Kingdoms] Disabled broad Highlight`.
+13. Stop play and record all facts before changing any flag or source.
 
 ## 8. Observations
 
@@ -137,6 +144,7 @@ That target becomes the next producer-attribution lead; do not infer the produce
 
 R1 may be considered for acceptance only if all are true:
 
+- [ ] Exact CI artifact from Section 1 was used.
 - [ ] `V27_EarlyStateListenerBound == true` during the run.
 - [ ] `V27_StateMessagesReceived > 0`.
 - [ ] `V27_StateInvalidMessages == 0`.
@@ -157,4 +165,4 @@ Do not jump to gameplay expansion. After accepted R1 evidence:
 3. implement R2 `ClientReady` delivery gating;
 4. then implement R3 semantic-key/change-token suppression and measure before/after send rate.
 
-> This packet records a run. Until it is filled from Studio, the repository remains E1 and the incident remains open.
+> Repository validation and the reproducible build are green, but they do not substitute for runtime evidence. Until this packet is filled from Studio, the repository remains E1 and the incident remains open.
