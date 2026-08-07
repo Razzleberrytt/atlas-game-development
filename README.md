@@ -1,66 +1,129 @@
 # Atlas Game Development
 
-Atlas is the GitHub-first development home for a **cooperative first-person action RPG on Roblox**.
+Atlas is the GitHub-first development home for a **cooperative action RPG on Roblox**.
 
-The game combines readable FPS combat, randomized loot and buildcraft, long-term progression and world access, secrets, and replayable cooperative expeditions.
-
-## Player promise
-
-Every meaningful session should provide:
-
-1. **Discovery** — something the player did not fully expect.
-2. **Growth** — power, options, access, knowledge, mastery, collection, or social progress.
-3. **Story** — at least one moment worth describing to another player.
+The project combines readable combat, run-based build decisions, long-term progression/world access, discovery, and replayable cooperative operations. Existing Living Kingdoms systems are preserved as working assets while the roadmap converges them on one authoritative runtime and presentation architecture.
 
 ## Primary production rule
 
-> Build one polished, replayable expedition before expanding into a large world.
-
-The first product is a five-to-ten-minute vertical slice containing preparation, an outdoor route, an optional secret, a short procedurally assembled dungeon, three enemy roles, one elite, the Gatekeeper boss, randomized equipment, saving, and cooperative play.
+> Build and prove one polished, replayable expedition before expanding the world.
 
 ## Source of truth
 
-The active implementation and quality authority is **Blueprint v2.3** (refined release, 2026-08-07):
+The active implementation and quality authority is **Blueprint v2.7 — Rollout & Observability** (2026-08-07):
 
-- [`docs/roadmap/BLUEPRINT-V2.3-EXECUTION.md`](docs/roadmap/BLUEPRINT-V2.3-EXECUTION.md) — authority, ticket 211–240 queue, and gates
-- [`docs/roadmap/PRODUCTION-CORE-V2.3.md`](docs/roadmap/PRODUCTION-CORE-V2.3.md) — daily reference and immediate critical path
-- [`docs/roadmap/STUDIO-TRIAGE-CHECKLIST-V2.3.md`](docs/roadmap/STUDIO-TRIAGE-CHECKLIST-V2.3.md) — the current incident checklist
-- [`docs/roadmap/README.md`](docs/roadmap/README.md) — full roadmap index, precedence, and historical checkpoints
+- [`docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md`](docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md) — controlling authority and Tickets 331–360
+- [`docs/roadmap/PRODUCTION-CORE-V2.7.md`](docs/roadmap/PRODUCTION-CORE-V2.7.md) — daily-use production rules and current critical path
+- [`docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md`](docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md) — staged migration, observability, rollback, soak, and closure procedure
+- [`docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md`](docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md) — mechanical/replication/presentation ownership and evidence gates
+- [`docs/roadmap/MASTER-ROADMAP.md`](docs/roadmap/MASTER-ROADMAP.md) — milestone-level current roadmap
+- [`docs/roadmap/README.md`](docs/roadmap/README.md) — full roadmap index and historical checkpoints
 
-When documents conflict, **captured runtime evidence wins, then Blueprint v2.3**. Existing systems are assets to reconcile with the blueprint, not permission to maintain parallel authoritative implementations. Historical checkpoints (v1.4–v2.2) remain valuable context; their closing directives are not orders.
+When documents conflict, **accepted runtime evidence and current Roblox platform behavior win, then the v2.7 authority layer**. Older roadmap files remain provenance, not current execution orders.
 
 ## Evidence status
 
-The project uses the v2.3 evidence scale:
+The project uses this evidence scale:
 
-`E0 design → E1 source → E2 Studio start → E3 solo loop → E4 multiplayer/adversarial → E5 device/reliability → E6 outside-player fun → E7 live telemetry`
+```text
+E0 design
+→ E1 source/static acceptance
+→ E2 Studio initialization
+→ E3 single-player integrated behavior
+→ E4 multiplayer/adversarial behavior
+→ E5 device/performance/reliability
+→ E6 outside-player fun
+→ E7 live telemetry
+```
 
-**Current level: E1, with unresolved active-Studio incidents.** The layout contract passes at 262 Luau sources and 194 Lune fixtures, and `stylua` and `selene` pass clean (0 errors, 0 warnings). The v2.0 record wrongly reported a 6-warning `selene` result as a pass; `luau-validation` had in fact been failing on `main` for eleven consecutive pushes. Both surviving lints are fixed and `main` is green — see the correction in the v2.3 execution doc. Static acceptance does not imply Roblox Studio acceptance, and v2.3 makes no claim that the active Studio place has been repaired.
+**Current claimed level remains E1 until accepted Studio evidence advances it.** A documentation update does not promote evidence level.
 
-Two release blockers are visible in the active place, evidenced by a 2026-08-07 Studio screenshot: `ReplicatedStorage.HordeNetwork.State` queue-exhaustion warnings, and escaped broad blue/yellow `Highlight` presentation. The screenshot proves symptoms, not causes — instrument before attributing.
+## Current active gate
 
-Studio work is now authorized for incident instrumentation, triage, and soak capture (tickets 211–220), superseding the v2.0 rule that deferred all Studio verification to a final pass. No Studio, multiplayer, device, performance, or player result may still be claimed without a captured evidence packet.
+Two runtime symptoms captured in the active Studio place remain stop conditions until closure evidence exists:
 
-## Current checkpoint — incident closure and integrated runtime baseline
+1. `ReplicatedStorage.HordeNetwork.State` invocation-queue exhaustion/discard warnings;
+2. escaped broad blue/yellow `Highlight` presentation.
 
-The active queue is v2.3 tickets 211–240, in dependency order:
+The screenshot proves symptoms, not exact causes. v2.7 therefore requires producer/consumer inventory, counters, readiness gating, semantic-state suppression, centralized presentation ownership, reset/respawn/late-join/multiplayer soak testing, and a closure packet.
 
-- **211–220 incident closure** — instrument `HordeNetwork.State` producers and listeners, listener-before-ready startup, snapshot plus revisioned semantic deltas, five-reset/three-respawn leak test, enumerate every Highlight producer, migrate to the lease registry, broad-target rejection, clean ten-minute soak;
-- **221–230 integrated visual/runtime baseline** — neutral validation scene, Emberwatch and Verdant Scar greybox captures, stream-out/rebind test, Frontier Rifle FP blockout, 100-play marker-listener test, Pursuer/Shooter/Warden cue integration, Pulse Mark presentation, two-player attribution;
-- **231–240 quality and evidence** — accepted network/connection/effect baselines, device frame-time captures, quality-tier and reduced-motion sets, cross-system traceability, authority-critical type debt, three consecutive solo loops, two-player adversarial loop, first E3 and E4 evidence packets.
+## Current checkpoint — Tickets 331–360
 
-Ticket 240 is a hard gate: durable persistence and the next vertical-slice system resume only after 236–239 produce evidence. The v2.0 persistence queue (capacity retry and overflow recovery, participation eligibility and personal reward isolation, persistence adapters, session ownership, sequential migration, quarantine, unknown-write reconciliation, failure recovery) is not cancelled — it is blocked behind that gate.
+### 331–335: establish the baseline
 
-No broader world, loot-category, social, monetization, or live-service expansion is allowed until this gate is passed.
+- freeze a development copy/build identity;
+- inventory all legacy State producers and effective client listeners;
+- capture baseline State message rates and queue symptoms;
+- inventory Highlight producers/Adornees and presentation gauges.
+
+### 336–345: migrate current state deliberately
+
+- establish exactly one intended compatibility listener;
+- gate delivery on client readiness;
+- identify current facts with semantic keys;
+- suppress unchanged state using mutation-derived change tokens;
+- migrate round, objective, route, and landmark producers;
+- capture before/after per-key send rates.
+
+### 346–350: establish single presentation ownership
+
+- route route-guide and landmark accents through one shared Highlight lease registry;
+- reject broad production Highlight targets;
+- prove stream-out/rebind behavior;
+- capture baseline/peak/end presentation gauges.
+
+### 351–360: soak, close, then remove compatibility
+
+- five-reset and three-respawn leak matrices;
+- delayed-ready and late-join matrix;
+- two-player reset/disconnect matrix;
+- 100-animation-play marker-listener test;
+- ten-minute active network/presentation soak;
+- profiling/network evidence;
+- P0/P1 defect closure;
+- incident closure packet;
+- compatibility removal only for ledger rows with accepted replacement evidence and a retained rollback checkpoint.
+
+No broader feature expansion is authorized merely because compatibility code hides a warning.
+
+## Runtime state law
+
+```text
+client constructs controllers
+→ binds required current-state listeners
+→ ClientReady
+→ reconstruct current authoritative state
+→ consume semantic state changes
+```
+
+Current state is keyed semantically (`round.phase`, `objective.current`, `route.target`, etc.) and is sent because the underlying fact changed—not because a frame elapsed.
+
+Independent current facts that share one physical remote must remain independent in pre-ready retention. Retain by player + remote + semantic key, not one latest payload for the entire remote.
+
+## Presentation ownership law
+
+Exactly one production owner per primitive:
+
+```text
+Highlight             → shared client Highlight lease registry
+route guide            → RouteGuidePresentationController
+landmark accent        → LandmarkAccentPresentationController
+status/mark outline    → status presentation through the same registry
+viewmodel              → one viewmodel owner
+camera modifiers       → one named modifier stack
+animation marker hooks → owning track/controller scope
+```
+
+Streaming may remove a local Instance. It does not erase the authoritative semantic fact.
 
 ## Repository map
 
 - `docs/roadmap/` — canonical roadmap and active execution queue
-- `docs/bible/` — supporting product vision and design history
-- `docs/specifications/` — source-of-truth system behavior
+- `docs/bible/` — supporting product/visual/Studio specialist guidance and history
+- `docs/specifications/` — source-of-truth system behavior inside accepted roadmap boundaries
 - `docs/architecture/` — technical boundaries and engineering rules
 - `docs/decisions/` — design and architecture decisions
-- `docs/production/` — workflow, validation, and Definition of Done
+- `docs/production/` — workflow, validation, migration, and Definition of Done
 - `games/living-kingdoms/` — Roblox/Rojo project
 - `prompts/` — reusable agent prompts
 - `templates/` — task, specification, decision, and bug templates
@@ -71,29 +134,29 @@ No broader world, loot-category, social, monetization, or live-service expansion
 2. `main` stays playable.
 3. Each implementation task produces one testable result.
 4. Stable IDs and explicit versions are mandatory.
-5. Valuable mutations use idempotent transaction IDs.
+5. Valuable mutations use idempotent transaction IDs where replay is possible.
 6. Clients submit intent, never outcomes.
 7. Reusable engines outrank one-off content piles.
 8. No runtime, Studio, CI, performance, or player result is claimed without evidence.
 9. Do not create parallel authoritative systems.
-10. The polished core loop outranks the eventual feature list.
-11. Source assembly is E1, not gameplay acceptance.
-12. Type and logging debt must not increase silently.
+10. Runtime current state and client presentation have explicit owners and cleanup scopes.
+11. Source/static acceptance is E1, not gameplay acceptance.
+12. Type, logging, connection, network-rate, and presentation-object debt must not increase silently.
 
 ## Agent start order
 
 1. Read this file.
-2. Read `docs/roadmap/BLUEPRINT-V2.3-EXECUTION.md`, then `docs/roadmap/PRODUCTION-CORE-V2.3.md`.
-3. Read the nearest `AGENTS.md` for files being changed.
-4. Inspect existing contracts, registries, services, and tests before adding anything.
-5. Implement the lowest-numbered incomplete v2.3 ticket that can honestly be completed in the current environment.
-6. Preserve E1 status until a Studio evidence packet exists.
-7. Record acceptance evidence honestly and prepare the verification path.
+2. Read `docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md` and `docs/roadmap/PRODUCTION-CORE-V2.7.md`.
+3. Read `docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md` for any current Studio/state/presentation work.
+4. Read the nearest `AGENTS.md` for files being changed.
+5. Inspect existing contracts, services, remotes, controllers, tests, and lifecycle owners before adding anything.
+6. Implement the **lowest-numbered incomplete v2.7 ticket** that can honestly be completed in the current environment.
+7. Preserve E1 status until accepted Studio evidence supports promotion.
+8. Record evidence and rollback information rather than inferring success from source shape.
 
 ## Project status
 
-**Phase:** runtime incident closure and integrated visual/runtime baseline  
-**Evidence:** E1 — source assembled and statically audited, active-Studio incidents unresolved  
-**Active milestone:** Blueprint v2.3 tickets 211–240, gated at 240  
-**Working title:** unresolved  
+**Phase:** v2.7 active-place rollout and observability  
+**Evidence:** E1 — source/static work exists; active-place runtime closure still required  
+**Active milestone:** Tickets 331–360  
 **Roblox project path:** `games/living-kingdoms/`
