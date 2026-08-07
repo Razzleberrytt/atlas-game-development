@@ -19,7 +19,9 @@ local listener = fs.readFile("games/living-kingdoms/src/client/State/HordeStateE
 local guard = fs.readFile("games/living-kingdoms/src/client/Presentation/BroadHighlightGuardController.luau")
 local rolloutConfig = fs.readFile("games/living-kingdoms/src/shared/Config/RuntimeRolloutConfig.luau")
 
-assertThat(contains(rolloutConfig, 'Version = "V2.7-R1-CONTAINMENT"'), "rollout config version must stay explicit")
+local hasExplicitSupportedRolloutVersion = contains(rolloutConfig, 'Version = "V2.7-R1-CONTAINMENT"')
+	or contains(rolloutConfig, 'Version = "V2.7-R2-PREP"')
+assertThat(hasExplicitSupportedRolloutVersion, "rollout config version must identify an explicit supported v2.7 stage")
 assertThat(contains(rolloutConfig, "EnableRuntimeCounters = true"), "R1 diagnostics must default on")
 assertThat(contains(rolloutConfig, "EnableEarlyStateListener = true"), "R1 early listener must default on")
 assertThat(contains(rolloutConfig, "RejectBroadHighlightTargets = true"), "broad Highlight containment must default on")
@@ -97,5 +99,5 @@ do
 end
 
 print(
-	"V27IncidentContainmentSourceAudit: flagged early State listener, diagnostics, and conservative broad-Highlight rejection locked"
+	"V27IncidentContainmentSourceAudit: staged v2.7 rollout, early State listener diagnostics, and conservative broad-Highlight rejection locked"
 )
