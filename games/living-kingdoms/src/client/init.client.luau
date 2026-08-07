@@ -1,15 +1,22 @@
 --!strict
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RuntimeRolloutConfig = require(ReplicatedStorage.Shared.Config.RuntimeRolloutConfig)
+
 -- Blueprint v2.7 R1: bind the legacy HordeNetwork.State compatibility listener
 -- before requiring the rest of the client controller graph. This closes the
 -- startup window where server publishes could accumulate with no listener.
-local HordeStateEarlyListener = require(script.State.HordeStateEarlyListener)
-HordeStateEarlyListener.start()
+if RuntimeRolloutConfig.EnableEarlyStateListener then
+	local HordeStateEarlyListener = require(script.State.HordeStateEarlyListener)
+	HordeStateEarlyListener.start()
+end
 
 -- Blueprint v2.7 incident containment: reject only obviously broad Highlight
 -- targets before the rest of the presentation graph starts.
-local BroadHighlightGuardController = require(script.Presentation.BroadHighlightGuardController)
-BroadHighlightGuardController.start()
+if RuntimeRolloutConfig.RejectBroadHighlightTargets then
+	local BroadHighlightGuardController = require(script.Presentation.BroadHighlightGuardController)
+	BroadHighlightGuardController.start()
+end
 
 local CameraController = require(script.Controllers.CameraController)
 local SurvivorController = require(script.Controllers.SurvivorController)
