@@ -119,7 +119,25 @@ Because final Studio verification is deferred, proceed through the repo-verifiab
    The fun gate — a fresh tester explaining a tradeoff unaided — needs a Studio session and stays
    deferred. Persisted `equip()` does not yet drive the live runtime; that belongs with the
    persistence work in item 6.
-3. Dismantle and salvage transaction safety.
+3. Dismantle and salvage transaction safety. **Transaction boundary complete (repo-side); salvage
+   pricing and the service/remote wiring outstanding.**
+   `InventoryDismantleResolver` is the pure decision for the most dangerous inventory mutation. It
+   applies a fixed rejection order — identity before any record read — and covers the full v1.9
+   Ticket 143 matrix: valid, replayed, locked (no session lease), equipped, unknown, foreign, and
+   rate-limited. Idempotency is by `TransactionId`: a replay is **accepted** and returns the
+   original outcome, so a client retrying after a dropped response is never told its item still
+   exists, and a replay is answered even after the lease lapses. A distinct transaction naming the
+   same item is rejected. The grant replay ledgers are preserved across a dismantle, or re-running
+   an original grant transaction would recreate the destroyed item.
+   Covered by `InventoryDismantleResolver.test`.
+
+   **Open decision blocking completion:** salvage has no price because no currency or material
+   category exists, and the blueprint forbids expanding content categories before ownership,
+   retry, migration, and recovery are proven. The resolver therefore reports the *facts* of what
+   was destroyed (`SalvagedDefinitionId`, `SalvagedRarity`, `SalvagedPower`) so an economy can
+   price them later without rewriting this boundary. Crediting salvage needs a new record field and
+   therefore a schema migration, which belongs with item 6. The service method and remote are
+   deliberately not wired until that decision lands.
 4. Capacity retry and durable overflow recovery.
 5. Participation eligibility and personal reward isolation.
 6. Persistence adapter hardening, session ownership, sequential migrations, quarantine, unknown-write reconciliation, and no-blank-overwrite.
