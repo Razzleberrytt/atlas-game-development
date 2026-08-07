@@ -16,6 +16,8 @@ Read these files before changing it:
 6. `docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md` (active authority)
 7. `docs/roadmap/PRODUCTION-CORE-V2.7.md`
 8. `docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md` when touching runtime state, remotes, presentation, lifecycle, Studio migration, or incident closure
+9. `docs/production/V2.7-CUTOVER-LEDGER.md` for producer/consumer/presentation migration work
+10. `docs/production/V2.7-EVIDENCE-PACKET-TEMPLATE.md` before any Studio/runtime run intended to close a gate or promote evidence level
 
 More specific `AGENTS.md` files override this file for their directory scope.
 
@@ -43,6 +45,7 @@ Do not claim an E2–E5 result from source inspection alone. The current active-
 When touching current-state delivery or active-place presentation:
 
 - inventory existing producers and consumers before adding another path;
+- record affected rows in `docs/production/V2.7-CUTOVER-LEDGER.md`;
 - bind required current-state listeners before declaring the client ready;
 - identify independent current facts with semantic keys;
 - suppress unchanged state using a mutation-derived revision/change token;
@@ -50,7 +53,8 @@ When touching current-state delivery or active-place presentation:
 - route production Highlights through the shared presentation owner/registry rather than allocating competing Highlights;
 - keep application, character, and operation/round connection scopes explicit;
 - preserve semantic truth across streaming even when a local Instance is temporarily absent;
-- capture before/after rates and cleanup gauges for migration work.
+- capture before/after rates and cleanup gauges for migration work;
+- create a new evidence packet for evidence-bearing Studio/runtime runs instead of editing an older packet to fit a later result.
 
 ## Required validation
 
@@ -84,6 +88,7 @@ For v2.7 runtime migration tickets, static tests do not replace required Studio 
 - Do not weaken tests or remove security checks to make CI pass.
 - Update relevant documentation when changing architecture, setup, controls, data contracts, rollout flags, runtime state semantics, or the Studio boundary.
 - Compatibility/feature flags introduced for migration require an owner, rollback trigger, evidence gate, and removal condition.
+- Compatibility removal must update the cutover ledger and retain the required rollback checkpoint.
 
 ## Roblox Studio boundary
 
@@ -91,7 +96,9 @@ Routine code development should happen through GitHub, agents, local editors, Ro
 
 Follow `docs/production/RBXL-IMPORT-MIGRATION.md` whenever a newer `.rbxl` or `.rbxlx` place must be reconciled with repository source.
 
-For the current rollout, follow `docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md` and preserve the named rollback/build checkpoint before each architectural stage change.
+For the current rollout, follow `docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md`, update `docs/production/V2.7-CUTOVER-LEDGER.md`, and preserve the named rollback/build checkpoint before each architectural stage change.
+
+For any Studio/runtime run used as acceptance evidence, create a packet from `docs/production/V2.7-EVIDENCE-PACKET-TEMPLATE.md` and record the exact build/commit/place identity.
 
 ## Completion report
 
@@ -101,6 +108,7 @@ When finishing a task, report:
 - files changed;
 - behavior changed;
 - validation performed and exact results;
+- cutover ledger rows changed;
 - before/after runtime counters where applicable;
 - evidence packet or Studio-only checks still required;
 - rollback checkpoint/flag state for migration work;
