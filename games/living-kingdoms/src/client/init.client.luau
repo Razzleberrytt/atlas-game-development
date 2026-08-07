@@ -6,6 +6,11 @@
 local HordeStateEarlyListener = require(script.State.HordeStateEarlyListener)
 HordeStateEarlyListener.start()
 
+-- Blueprint v2.7 incident containment: reject only obviously broad Highlight
+-- targets before the rest of the presentation graph starts.
+local BroadHighlightGuardController = require(script.Presentation.BroadHighlightGuardController)
+BroadHighlightGuardController.start()
+
 local CameraController = require(script.Controllers.CameraController)
 local SurvivorController = require(script.Controllers.SurvivorController)
 local MobileControlsController = require(script.Controllers.MobileControlsController)
