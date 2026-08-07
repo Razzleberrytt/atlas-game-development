@@ -28,6 +28,10 @@ local readOwnInventory = Instance.new("RemoteFunction")
 readOwnInventory.Name = "ReadOwnInventory"
 readOwnInventory.Parent = network
 
+local compareOwnedItem = Instance.new("RemoteFunction")
+compareOwnedItem.Name = "CompareOwnedItem"
+compareOwnedItem.Parent = network
+
 local state = Instance.new("RemoteEvent")
 state.Name = "State"
 state.Parent = network
@@ -47,6 +51,19 @@ readOwnInventory.OnServerInvoke = function(player: Player, requestedOwnerId: any
 		return rejected("CrossPlayerInventoryAccess")
 	end
 	return readFor(player)
+end
+
+--[[
+	Comparison takes only a candidate instance id, and the server resolves both
+	the candidate and the incumbent from the caller's own record. A client cannot
+	submit item values to be compared, so it cannot have the server evaluate an
+	item it does not hold.
+]]
+compareOwnedItem.OnServerInvoke = function(player: Player, candidateInstanceId: any): any
+	if type(candidateInstanceId) ~= "string" then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidCandidateItem", Comparison = nil })
+	end
+	return InventoryLiveService.compareOwnedItem(player.UserId, player.UserId, candidateInstanceId)
 end
 
 --[[

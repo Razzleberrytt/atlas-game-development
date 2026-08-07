@@ -58,8 +58,18 @@ local SourceIds = table.freeze({
 	Boss = "Boss" :: RewardSourceId,
 })
 
+-- Rarity is an ordered scale, so comparison needs one shared ranking rather than
+-- each caller inventing its own. Ranks are contiguous from 1 so a difference of
+-- ranks is a meaningful step count.
+local RarityRanks = table.freeze({
+	[RarityIds.Common] = 1,
+	[RarityIds.Uncommon] = 2,
+	[RarityIds.Rare] = 3,
+})
+
 return table.freeze({
 	SlotIds = SlotIds,
 	RarityIds = RarityIds,
 	SourceIds = SourceIds,
+	RarityRanks = RarityRanks,
 })

@@ -39,6 +39,14 @@ assert(contains(network, "FireClient"), "inventory pushes must be addressed to a
 assert(not contains(network, "getRecord"), "the remote boundary must not read raw persistence records")
 assert(not contains(network, "applyReward"), "the read boundary must expose no mutation path")
 
+-- Comparison names a candidate by instance id only. Accepting item values would
+-- let a client have the server evaluate an item it does not own.
+assert(contains(network, "compareOwnedItem"), "the comparison boundary must exist")
+assert(contains(network, 'type(candidateInstanceId) ~= "string"'), "the candidate must be an instance id")
+assert(not contains(network, "Power ="), "clients must not submit item power")
+assert(not contains(network, "Rarity ="), "clients must not submit item rarity")
+assert(contains(liveService, "ItemNotOwned"), "the service must reject a candidate the owner does not hold")
+
 -- The service performs the ownership check through the shared pure boundary
 -- rather than re-implementing it.
 assert(contains(liveService, "PlayerInventorySnapshot.forOwner"), "the service must use the shared owner-only boundary")
