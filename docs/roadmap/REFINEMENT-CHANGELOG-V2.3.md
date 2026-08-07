@@ -1,21 +1,38 @@
-# Version 2.3 Refinement Changelog
+# Version 2.3 Refinement Changelog — Historical Handoff
 
-## Changed
+Version 2.3 is no longer active execution authority. Its refinement work is preserved as project history and is superseded operationally by Version 2.7.
 
-- Unified current authority across the master, Production Core, visual bible, and Studio integration bible.
-- Preserved historical chapters while explicitly demoting old closing directives when they conflict with current evidence.
-- Added cross-system ownership for mechanical state, replication, and presentation.
-- Hardened the proposed runtime state protocol around ClientReady, snapshot, revisioned deltas, and resync.
-- Strengthened Highlight ownership and broad-target protection.
-- Joined streaming behavior to visual semantics through stable target IDs.
-- Added camera/viewmodel ownership and animation-marker leak requirements.
-- Added graphics quality and reduced-motion preservation rules.
-- Added incident closure procedures and baseline ratchets.
-- Added Tickets 211–240.
+## What v2.3 established
 
-## Not changed
+- one document-precedence model;
+- explicit mechanical, replication, presentation, authoring, operational, and historical authority classes;
+- cross-system ownership and cleanup responsibilities;
+- listener-before-ready startup direction;
+- snapshot/delta presentation semantics;
+- centralized Highlight ownership direction;
+- streaming-safe presentation rules;
+- animation-marker, viewmodel, and camera lifecycle rules;
+- Full / Reduced / Minimum Readable presentation tiers;
+- incident closure as evidence rather than assumption.
 
-- No new region, class, enemy family, weapon family, currency, or monetization surface.
-- No claim that the active Roblox Studio place has been repaired automatically.
-- No claim that provisional performance values are accepted device budgets.
-- No change to server-authority principles for valuable gameplay truth.
+## What v2.7 adds
+
+Version 2.7 turns those principles into an active rollout system:
+
+- Tickets 331–360;
+- R0–R5 staged migration;
+- producer/consumer cutover ledger;
+- semantic-key publishing and unchanged-state suppression;
+- explicit ClientReady gating;
+- one shared Highlight registry;
+- named runtime baselines;
+- reset/respawn/late-join/two-player soak gates;
+- rollback checkpoints;
+- compatibility-removal criteria;
+- closure packets for the network and Highlight incidents.
+
+## Current authority
+
+Use [`BLUEPRINT-V2.7-EXECUTION.md`](BLUEPRINT-V2.7-EXECUTION.md), [`PRODUCTION-CORE-V2.7.md`](PRODUCTION-CORE-V2.7.md), and [`ACTIVE-PLACE-ROLLOUT-V2.7.md`](ACTIVE-PLACE-ROLLOUT-V2.7.md).
+
+The original v2.3 changelog remains available through Git history. This wrapper exists so direct links cannot be mistaken for current instructions.
