@@ -12,14 +12,29 @@
 	Rejected examples: Workspace, Terrain, or a very large top-level world root.
 ]]
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+
+local RuntimeRolloutConfig = require(ReplicatedStorage.Shared.Config.RuntimeRolloutConfig)
 
 local BroadHighlightGuardController = {}
 
 local MAXIMUM_TOP_LEVEL_TARGET_PARTS = 64
 
 local started = false
+local rejectedCount = 0
 local descendantAddedConnection: RBXScriptConnection? = nil
+
+local function writeDiagnostics(lastTarget: Instance?)
+	if not RuntimeRolloutConfig.EnableRuntimeCounters then
+		return
+	end
+	Workspace:SetAttribute("V27_BroadHighlightGuardActive", started)
+	Workspace:SetAttribute("V27_BroadHighlightRejectedCount", rejectedCount)
+	if lastTarget ~= nil then
+		Workspace:SetAttribute("V27_BroadHighlightLastTarget", lastTarget:GetFullName())
+	end
+end
 
 local function effectiveTarget(highlight: Highlight): Instance?
 	if highlight.Adornee ~= nil then
@@ -68,6 +83,8 @@ local function inspect(instance: Instance)
 
 	instance.Enabled = false
 	instance:SetAttribute("LK_BroadTargetRejected", true)
+	rejectedCount += 1
+	writeDiagnostics(target)
 	warn(string.format(
 		"[Living Kingdoms] Disabled broad Highlight %s targeting %s",
 		instance:GetFullName(),
@@ -80,6 +97,8 @@ function BroadHighlightGuardController.start()
 		return
 	end
 	started = true
+	rejectedCount = 0
+	writeDiagnostics(nil)
 
 	for _, descendant in Workspace:GetDescendants() do
 		inspect(descendant)
@@ -100,6 +119,8 @@ function BroadHighlightGuardController.stop()
 		descendantAddedConnection:Disconnect()
 		descendantAddedConnection = nil
 	end
+	writeDiagnostics(nil)
+	rejectedCount = 0
 end
 
 return table.freeze(BroadHighlightGuardController)
