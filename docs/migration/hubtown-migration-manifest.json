@@ -1,0 +1,742 @@
+{
+  "format_version": 1,
+  "task": "BA-001",
+  "title": "HubTown migration manifest",
+  "generated_on": "2026-08-07",
+  "runtime_neutral": true,
+  "evidence_level": "source-proven only; nothing here is Studio or runtime evidence",
+  "source": {
+    "place_file": "livingkingdoms.rbxl",
+    "place_sha256": "e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16",
+    "import_package": "games/living-kingdoms/imports/studio-2026-08-07",
+    "instance_evidence": "games/living-kingdoms/imports/studio-2026-08-07/recovered/workspace-index-recovered.json",
+    "script_evidence": "games/living-kingdoms/imports/studio-2026-08-07/manifest.json",
+    "integrity_finding": "docs/production/RBXL-IMPORT-INTEGRITY-2026-08-07.md"
+  },
+  "coverage": {
+    "path_scope": ["Workspace/HubTown"],
+    "rows_in_scope": 81,
+    "hubtown_root_rows": 1,
+    "hubtown_child_rows": 80,
+    "distinct_paths_in_scope": 47,
+    "depth_2_complete": true,
+    "depth_3_recovered": false,
+    "coverage_rule": "Every recovered row whose path is 'Workspace/HubTown' or starts with 'Workspace/HubTown/' must be claimed by exactly one entry in this manifest. Enforced by scripts/validate_migration_manifests.py.",
+    "path_is_not_a_key": "Ten HubTown names are shared by more than one instance (Crenellation, WallTorch, PlazaCrystal_1..4, CrystalPedestal_1..4). Legacy instance ids are the only unique legacy handle, so canonical content must mint its own stable ids rather than deriving them from instance names."
+  },
+  "dispositions": {
+    "KEEP": "Legacy representation is already correct for the canonical architecture and can be adopted as-is.",
+    "MIGRATE": "Legacy content carries authored value and should be reconstructed as source-managed canonical content under a canonical owner.",
+    "REPLACE": "Legacy representation overlaps an existing canonical owner. Reproduce the intent through that owner; do not re-create the legacy instances or scripts as a second path.",
+    "ARCHIVE": "Preserve for reference only. Never boot, require, or map into the active project."
+  },
+  "extraction_status_values": {
+    "recovered": "The row is present in the recovered workspace index and its identity is proven.",
+    "requires_studio_extraction": "Identity is proven but the contents below it were lost with the damaged archive and must be re-extracted from the source place."
+  },
+  "entries": [
+    {
+      "id": "hubtown.root",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Authored hub/social space root folder.",
+      "legacy": {
+        "paths": ["Workspace/HubTown"],
+        "class": "Folder",
+        "instance_ids": [118],
+        "instance_count": 1
+      },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": {
+        "status": "not_yet_created",
+        "modules": [],
+        "created_by": "BA-010"
+      },
+      "canonical_representation": "A source-managed HubTown composition specification plus a reviewable placement representation. HubTown has no canonical owner in src today; BA-010 defines the composition and BA-011 the model/placement strategy.",
+      "depends_on": ["BA-010", "BA-011"],
+      "runtime_gate": "integration; must not be bootstrapped before the v2.7 rollout gates and the integration gate open",
+      "studio_only": ["geometry", "materials", "CFrames", "terrain interaction", "streaming behaviour"],
+      "notes": "The canonical world today is the forest/extraction setting described by WorldFoundationConfig. HubTown is a second, medieval-themed space from the legacy RPG. Reconciling those two art directions is a design decision that BA-010 must record, not an automatic port."
+    },
+    {
+      "id": "hubtown.plaza.floor",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Main plaza floor slab; the hub's traversal surface and spawn reference.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/PlazaFloor"],
+        "class": "Part",
+        "instance_ids": [119],
+        "instance_count": 1
+      },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": {
+        "status": "closest_existing",
+        "modules": ["games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau"],
+        "created_by": "BA-010"
+      },
+      "canonical_representation": "Authored-world constant plus placement data, following the WorldFoundationConfig pattern of stable ids with replaceable graybox geometry.",
+      "depends_on": ["hubtown.root", "BA-004"],
+      "runtime_gate": "integration",
+      "studio_only": ["exact size", "material", "CFrame", "collision"],
+      "notes": "Safe-zone boundary semantics belong to BA-010, not to the geometry itself."
+    },
+    {
+      "id": "hubtown.plaza.ring",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Plaza ring border that reads the hub's circular layout.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/PlazaRing"],
+        "class": "Part",
+        "instance_ids": [264],
+        "instance_count": 1
+      },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": {
+        "status": "closest_existing",
+        "modules": ["games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau"],
+        "created_by": "BA-010"
+      },
+      "canonical_representation": "Placement data under the HubTown composition specification.",
+      "depends_on": ["hubtown.plaza.floor"],
+      "runtime_gate": "integration",
+      "studio_only": ["exact size", "material", "CFrame"],
+      "notes": ""
+    },
+    {
+      "id": "hubtown.plaza.center-emblem",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Central emblem decal/part marking the plaza focal point.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/CenterEmblem"],
+        "class": "Part",
+        "instance_ids": [120],
+        "instance_count": 1
+      },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": {
+        "status": "closest_existing",
+        "modules": [
+          "games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau",
+          "games/living-kingdoms/src/shared/Visual/VisualAssetContracts.luau"
+        ],
+        "created_by": "BA-010"
+      },
+      "canonical_representation": "A declared visual asset entry rather than an ad-hoc authored part, so the asset manifest owns its identity.",
+      "depends_on": ["hubtown.plaza.floor"],
+      "runtime_gate": "integration",
+      "studio_only": ["texture/decal identity", "asset permissions"],
+      "notes": "Do not invent an asset id. The emblem texture, if any, must be re-extracted from the place before it can be declared."
+    },
+    {
+      "id": "hubtown.plaza.inner-glow-ring",
+      "kind": "instance_group",
+      "disposition": "REPLACE",
+      "summary": "Emissive inner ring used as ambient plaza glow.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/InnerGlowRing"],
+        "class": "Part",
+        "instance_ids": [265],
+        "instance_count": 1
+      },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": {
+        "status": "exists",
+        "modules": [
+          "games/living-kingdoms/src/shared/Config/GameplayLightingConfig.luau",
+          "games/living-kingdoms/src/shared/Lighting/GameplayLightContracts.luau",
+          "games/living-kingdoms/src/server/Systems/GameplayLightingService.luau"
+        ],
+        "created_by": null
+      },
+      "canonical_representation": "A gameplay-light descriptor validated by GameplayLightDescriptorValidator, not a free-standing emissive part.",
+      "depends_on": ["hubtown.plaza.floor"],
+      "runtime_gate": "integration",
+      "studio_only": ["perceived brightness", "low-graphics readability"],
+      "notes": "Lighting already has a canonical owner. Re-creating legacy emissive parts would create a second lighting path, which the build-ahead rules forbid."
+    },
+    {
+      "id": "hubtown.wall.segments",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Four town wall segments enclosing the hub.",
+      "legacy": {
+        "paths": [
+          "Workspace/HubTown/TownWall_1",
+          "Workspace/HubTown/TownWall_2",
+          "Workspace/HubTown/TownWall_3",
+          "Workspace/HubTown/TownWall_4"
+        ],
+        "class": "Part",
+        "instance_ids": [121, 122, 123, 124],
+        "instance_count": 4
+      },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": {
+        "status": "closest_existing",
+        "modules": ["games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau"],
+        "created_by": "BA-010"
+      },
+      "canonical_representation": "Placement data with stable per-segment ids. These segments imply the safe-zone boundary that BA-010 must state explicitly.",
+      "depends_on": ["hubtown.root"],
+      "runtime_gate": "integration",
+      "studio_only": ["exact geometry", "collision", "streaming"],
+      "notes": "Wall segments are the only recovered evidence of the hub's extent. Their CFrames were lost, so the extent itself is unknown until re-extraction."
+    },
+    {
+      "id": "hubtown.wall.crenellations",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Twenty crenellation caps decorating the wall line.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/Crenellation"],
+        "class": "Part",
+        "instance_ids": [305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324],
+        "instance_count": 20
+      },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": {
+        "status": "closest_existing",
+        "modules": ["games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau"],
+        "created_by": "BA-010"
+      },
+      "canonical_representation": "Generated decoration derived from the wall placement rule rather than twenty hand-placed instances.",
+      "depends_on": ["hubtown.wall.segments"],
+      "runtime_gate": "integration",
+      "studio_only": ["exact spacing", "materials"],
+      "notes": "All twenty share the name 'Crenellation'. Decorative repetition like this should be produced by a deterministic placement rule so it costs one canonical id, not twenty."
+    },
+    {
+      "id": "hubtown.archway",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Hub entry archway model.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/HubArchway"],
+        "class": "Model",
+        "instance_ids": [382],
+        "instance_count": 1
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": {
+        "status": "not_yet_created",
+        "modules": [],
+        "created_by": "BA-010"
+      },
+      "canonical_representation": "A named entry landmark in the HubTown composition specification, with the model represented per BA-011.",
+      "depends_on": ["hubtown.root", "BA-011"],
+      "runtime_gate": "integration",
+      "studio_only": ["model contents", "geometry", "materials"],
+      "notes": "The model's children were lost with the damaged archive. Re-extract before committing any representation."
+    },
+    {
+      "id": "hubtown.grand-staircase",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Grand staircase model connecting plaza levels.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/GrandStaircase"],
+        "class": "Model",
+        "instance_ids": [229],
+        "instance_count": 1
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": {
+        "status": "not_yet_created",
+        "modules": [],
+        "created_by": "BA-010"
+      },
+      "canonical_representation": "A navigation landmark in the HubTown composition specification with a reviewable model representation.",
+      "depends_on": ["hubtown.root", "BA-011"],
+      "runtime_gate": "integration",
+      "studio_only": ["model contents", "step geometry", "character traversal"],
+      "notes": "Traversal geometry affects character movement and cannot be validated outside Studio."
+    },
+    {
+      "id": "hubtown.central-fountain",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Central fountain model; the hub's primary visual anchor.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/CentralFountain"],
+        "class": "Model",
+        "instance_ids": [270],
+        "instance_count": 1
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": {
+        "status": "not_yet_created",
+        "modules": [],
+        "created_by": "BA-010"
+      },
+      "canonical_representation": "A named navigation landmark plus a reviewable model representation. Any water/particle effect it contains becomes a declared visual asset, not an inline authored effect.",
+      "depends_on": ["hubtown.root", "BA-011"],
+      "runtime_gate": "integration",
+      "studio_only": ["model contents", "particle effects", "audio"],
+      "notes": "Recovered class counts show 31 ParticleEmitter and 22 Fire instances place-wide; some are expected here, but their exact placement was lost."
+    },
+    {
+      "id": "hubtown.banner.town",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Town banner assembly (pole, banner, tip).",
+      "legacy": {
+        "paths": [
+          "Workspace/HubTown/Banner",
+          "Workspace/HubTown/BannerPole",
+          "Workspace/HubTown/BannerTip"
+        ],
+        "class": "Part",
+        "instance_ids": [266, 267, 268],
+        "instance_count": 3
+      },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": {
+        "status": "closest_existing",
+        "modules": [
+          "games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau",
+          "games/living-kingdoms/src/shared/Visual/VisualAssetContracts.luau"
+        ],
+        "created_by": "BA-010"
+      },
+      "canonical_representation": "One declared decorative asset composed of three parts, carrying a single canonical id.",
+      "depends_on": ["hubtown.plaza.floor"],
+      "runtime_gate": "integration",
+      "studio_only": ["texture identity", "asset permissions"],
+      "notes": ""
+    },
+    {
+      "id": "hubtown.banner.vendor-signage",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Hanging banners identifying the apothecary, armor smith and weapon smith.",
+      "legacy": {
+        "paths": [
+          "Workspace/HubTown/HangingBanner_apothecary",
+          "Workspace/HubTown/HangingBanner_armor_smith",
+          "Workspace/HubTown/HangingBanner_weapon_smith"
+        ],
+        "class": "Part",
+        "instance_ids": [349, 350, 351],
+        "instance_count": 3
+      },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": {
+        "status": "not_yet_created",
+        "modules": [],
+        "created_by": "BA-012"
+      },
+      "canonical_representation": "Wayfinding presentation bound to the vendor interaction id, so signage and vendor identity cannot drift apart.",
+      "depends_on": [
+        "hubtown.vendor.apothecary",
+        "hubtown.vendor.armor-smith",
+        "hubtown.vendor.weapon-smith",
+        "BA-024"
+      ],
+      "runtime_gate": "integration",
+      "studio_only": ["texture identity", "readability at distance"],
+      "notes": "These three banner names are the strongest surviving evidence that apothecary, armor_smith and weapon_smith were player-facing vendors rather than scenery. There is no HangingBanner for 'merchant' or 'quest_board'."
+    },
+    {
+      "id": "hubtown.light.standing-torches",
+      "kind": "instance_group",
+      "disposition": "REPLACE",
+      "summary": "Six standing plaza torches.",
+      "legacy": {
+        "paths": [
+          "Workspace/HubTown/Torch_1",
+          "Workspace/HubTown/Torch_2",
+          "Workspace/HubTown/Torch_3",
+          "Workspace/HubTown/Torch_4",
+          "Workspace/HubTown/Torch_5",
+          "Workspace/HubTown/Torch_6"
+        ],
+        "class": "Part",
+        "instance_ids": [211, 214, 217, 220, 223, 226],
+        "instance_count": 6
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": {
+        "status": "exists",
+        "modules": [
+          "games/living-kingdoms/src/shared/Config/GameplayLightingConfig.luau",
+          "games/living-kingdoms/src/shared/Lighting/GameplayLightContracts.luau",
+          "games/living-kingdoms/src/shared/Lighting/GameplayLightDescriptorValidator.luau",
+          "games/living-kingdoms/src/server/Systems/GameplayLightingService.luau"
+        ],
+        "created_by": null
+      },
+      "canonical_representation": "Six gameplay-light descriptors with stable light ids, activated through the existing lighting owner.",
+      "depends_on": ["hubtown.plaza.floor"],
+      "runtime_gate": "integration",
+      "studio_only": ["light range/brightness in engine", "performance cost", "low-graphics readability"],
+      "notes": "Each torch id is followed by two unrecovered child ids (a PointLight and a Fire, by the gap pattern 211/214/217/...), so the emitters themselves must be re-extracted. Reproduce the lighting intent through the canonical descriptors; do not restore raw PointLight/Fire instances."
+    },
+    {
+      "id": "hubtown.light.wall-torches",
+      "kind": "instance_group",
+      "disposition": "REPLACE",
+      "summary": "Eight wall-mounted torches along the town wall.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/WallTorch"],
+        "class": "Part",
+        "instance_ids": [281, 284, 287, 290, 293, 296, 299, 302],
+        "instance_count": 8
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": {
+        "status": "exists",
+        "modules": [
+          "games/living-kingdoms/src/shared/Config/GameplayLightingConfig.luau",
+          "games/living-kingdoms/src/shared/Lighting/GameplayLightContracts.luau",
+          "games/living-kingdoms/src/server/Systems/GameplayLightingService.luau"
+        ],
+        "created_by": null
+      },
+      "canonical_representation": "Gameplay-light descriptors placed by the same rule that places the wall segments.",
+      "depends_on": ["hubtown.wall.segments"],
+      "runtime_gate": "integration",
+      "studio_only": ["light range/brightness in engine", "performance cost"],
+      "notes": "All eight share the name 'WallTorch'; canonical ids must be minted, not derived. The same three-id stride suggests each carries an unrecovered PointLight and Fire."
+    },
+    {
+      "id": "hubtown.vfx.magic-orbs",
+      "kind": "instance_group",
+      "disposition": "REPLACE",
+      "summary": "Six floating magic orbs providing ambient plaza VFX.",
+      "legacy": {
+        "paths": [
+          "Workspace/HubTown/MagicOrb_1",
+          "Workspace/HubTown/MagicOrb_2",
+          "Workspace/HubTown/MagicOrb_3",
+          "Workspace/HubTown/MagicOrb_4",
+          "Workspace/HubTown/MagicOrb_5",
+          "Workspace/HubTown/MagicOrb_6"
+        ],
+        "class": "Part",
+        "instance_ids": [352, 354, 356, 358, 360, 362],
+        "instance_count": 6
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": {
+        "status": "exists",
+        "modules": [
+          "games/living-kingdoms/src/shared/Config/GameplayLightingConfig.luau",
+          "games/living-kingdoms/src/shared/Config/PresentationAccessibilityConfig.luau",
+          "games/living-kingdoms/src/shared/Visual/VisualAssetContracts.luau"
+        ],
+        "created_by": null
+      },
+      "canonical_representation": "Declared ambient visual assets plus gameplay-light descriptors where they actually light the space.",
+      "depends_on": ["hubtown.plaza.floor"],
+      "runtime_gate": "integration",
+      "studio_only": ["animation/float motion", "particle behaviour", "reduced-motion behaviour"],
+      "notes": "Reduced-motion and low-graphics behaviour is a canonical accessibility concern; a straight port of animated legacy orbs would bypass PresentationAccessibilityConfig."
+    },
+    {
+      "id": "hubtown.vfx.plaza-crystals",
+      "kind": "instance_group",
+      "disposition": "REPLACE",
+      "summary": "Four plaza crystals, each present as two instances.",
+      "legacy": {
+        "paths": [
+          "Workspace/HubTown/PlazaCrystal_1",
+          "Workspace/HubTown/PlazaCrystal_2",
+          "Workspace/HubTown/PlazaCrystal_3",
+          "Workspace/HubTown/PlazaCrystal_4"
+        ],
+        "class": "Part",
+        "instance_ids": [325, 328, 331, 334, 337, 340, 343, 346],
+        "instance_count": 8
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": {
+        "status": "exists",
+        "modules": [
+          "games/living-kingdoms/src/shared/Config/GameplayLightingConfig.luau",
+          "games/living-kingdoms/src/shared/Visual/VisualAssetContracts.luau"
+        ],
+        "created_by": null
+      },
+      "canonical_representation": "Declared visual assets paired with gameplay-light descriptors, mounted on the canonical pedestals.",
+      "depends_on": ["hubtown.structure.crystal-pedestals"],
+      "runtime_gate": "integration",
+      "studio_only": ["material/transparency", "emitted light", "particle behaviour"],
+      "notes": "Each of the four names appears twice (ids 325/337, 328/340, 331/343, 334/346). Whether that is a duplicate pair per pedestal or an authoring mistake cannot be decided without CFrames, so it is an explicit open question for re-extraction."
+    },
+    {
+      "id": "hubtown.structure.crystal-pedestals",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Four crystal pedestals, each present as two instances.",
+      "legacy": {
+        "paths": [
+          "Workspace/HubTown/CrystalPedestal_1",
+          "Workspace/HubTown/CrystalPedestal_2",
+          "Workspace/HubTown/CrystalPedestal_3",
+          "Workspace/HubTown/CrystalPedestal_4"
+        ],
+        "class": "Part",
+        "instance_ids": [327, 330, 333, 336, 339, 342, 345, 348],
+        "instance_count": 8
+      },
+      "extraction_status": "recovered",
+      "children_recovered": true,
+      "canonical_owner": {
+        "status": "closest_existing",
+        "modules": ["games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau"],
+        "created_by": "BA-010"
+      },
+      "canonical_representation": "Placement data with four stable pedestal ids and an explicit mount point for the paired crystal.",
+      "depends_on": ["hubtown.plaza.floor"],
+      "runtime_gate": "integration",
+      "studio_only": ["exact geometry", "materials", "CFrames"],
+      "notes": "Pedestal ids interleave with the crystal ids (325/327, 328/330, ...), which supports reading each crystal/pedestal as one authored unit."
+    },
+    {
+      "id": "hubtown.vfx.ground-fog",
+      "kind": "instance_group",
+      "disposition": "REPLACE",
+      "summary": "Ground fog volume dressing the plaza.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/HubGroundFog"],
+        "class": "Part",
+        "instance_ids": [364],
+        "instance_count": 1
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": {
+        "status": "exists",
+        "modules": [
+          "games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau",
+          "games/living-kingdoms/src/shared/Config/PresentationAccessibilityConfig.luau"
+        ],
+        "created_by": null
+      },
+      "canonical_representation": "Atmosphere expressed through the canonical lighting/fog constants, not a bespoke fog part.",
+      "depends_on": ["hubtown.plaza.floor"],
+      "runtime_gate": "integration",
+      "studio_only": ["engine fog appearance", "low-graphics readability", "mobile cost"],
+      "notes": "WorldFoundationConfig.Lighting already owns FogStart/FogEnd for the canonical world. A hub-local fog part would compete with it."
+    },
+    {
+      "id": "hubtown.portal.dungeon",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Dungeon portal folder; the hub's expedition entry point.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/DungeonPortal"],
+        "class": "Folder",
+        "instance_ids": [201],
+        "instance_count": 1
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": {
+        "status": "exists_for_destination_only",
+        "modules": [
+          "games/living-kingdoms/src/server/Systems/ExpeditionLobbyService.luau",
+          "games/living-kingdoms/src/shared/Expeditions/ExpeditionContracts.luau"
+        ],
+        "created_by": "BA-031"
+      },
+      "canonical_representation": "A portal definition carrying a stable portal id, destination route/dungeon id, eligibility prerequisites and explicit denial reasons (BA-031), whose accepted launch is handed to the existing server-authoritative expedition lobby.",
+      "depends_on": ["BA-031", "BA-030", "hubtown.root"],
+      "runtime_gate": "integration; launch authority stays with ExpeditionLobbyService and must not be duplicated",
+      "studio_only": ["portal geometry", "ProximityPrompt placement", "VFX", "teleport feel"],
+      "notes": "This is the single highest-value HubTown row: it is the seam between the hub and the canonical expedition loop. The place contains exactly one ProximityPrompt, which is a strong candidate for this portal's interaction, but its parent was lost. Client interaction may only request a launch; eligibility and launch remain server-owned."
+    },
+    {
+      "id": "hubtown.vendor.weapon-smith",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Weapon smith vendor structure/anchor folder.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/weapon_smith"],
+        "class": "Folder",
+        "instance_ids": [125],
+        "instance_count": 1
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": {
+        "status": "not_yet_created",
+        "modules": [],
+        "created_by": "BA-024"
+      },
+      "canonical_representation": "A vendor definition with a stable vendor id and catalog reference (BA-024) plus an interaction anchor in the HubTown interaction registry (BA-012).",
+      "depends_on": ["BA-024", "BA-012", "hubtown.root"],
+      "runtime_gate": "integration; no purchase mutation path may be wired before the integration gate",
+      "studio_only": ["structure geometry", "NPC model", "prompt placement"],
+      "notes": "The legacy vendor id was the folder name 'weapon_smith', which HubTownService used to key HubTownConfig.VendorCatalog. That config was never present in the place, so the catalog contents are unknown."
+    },
+    {
+      "id": "hubtown.vendor.armor-smith",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Armor smith vendor structure/anchor folder.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/armor_smith"],
+        "class": "Folder",
+        "instance_ids": [145],
+        "instance_count": 1
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": {
+        "status": "not_yet_created",
+        "modules": [],
+        "created_by": "BA-024"
+      },
+      "canonical_representation": "A vendor definition with a stable vendor id and catalog reference plus an interaction anchor.",
+      "depends_on": ["BA-024", "BA-012", "hubtown.root"],
+      "runtime_gate": "integration",
+      "studio_only": ["structure geometry", "NPC model", "prompt placement"],
+      "notes": ""
+    },
+    {
+      "id": "hubtown.vendor.apothecary",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Apothecary vendor structure/anchor folder.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/apothecary"],
+        "class": "Folder",
+        "instance_ids": [165],
+        "instance_count": 1
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": {
+        "status": "not_yet_created",
+        "modules": [],
+        "created_by": "BA-024"
+      },
+      "canonical_representation": "A vendor definition with a stable vendor id and catalog reference plus an interaction anchor.",
+      "depends_on": ["BA-024", "BA-012", "hubtown.root"],
+      "runtime_gate": "integration",
+      "studio_only": ["structure geometry", "NPC model", "prompt placement"],
+      "notes": "Consumable pricing must reference canonical inventory items rather than reviving the legacy item model."
+    },
+    {
+      "id": "hubtown.vendor.merchant",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "General merchant structure/anchor folder.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/merchant"],
+        "class": "Folder",
+        "instance_ids": [367],
+        "instance_count": 1
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": {
+        "status": "not_yet_created",
+        "modules": [],
+        "created_by": "BA-024"
+      },
+      "canonical_representation": "A vendor definition with a stable vendor id and catalog reference plus an interaction anchor.",
+      "depends_on": ["BA-024", "BA-012", "hubtown.root"],
+      "runtime_gate": "integration",
+      "studio_only": ["structure geometry", "NPC model", "prompt placement"],
+      "notes": "Unlike the other three vendors this one has no HangingBanner, and its instance id (367) sits far from the 125/145/165 cluster, so it was probably added later. Treat its vendor role as unconfirmed until re-extraction."
+    },
+    {
+      "id": "hubtown.interaction.quest-board",
+      "kind": "instance_group",
+      "disposition": "MIGRATE",
+      "summary": "Quest board structure/anchor folder.",
+      "legacy": {
+        "paths": ["Workspace/HubTown/quest_board"],
+        "class": "Folder",
+        "instance_ids": [185],
+        "instance_count": 1
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": {
+        "status": "not_yet_created",
+        "modules": [],
+        "created_by": "BA-020"
+      },
+      "canonical_representation": "A quest-offer interaction anchor referencing canonical quest ids (BA-020) through the HubTown interaction registry (BA-012).",
+      "depends_on": ["BA-020", "BA-012", "hubtown.root"],
+      "runtime_gate": "integration; quest state stays server-authoritative and unwired until the integration gate",
+      "studio_only": ["board geometry", "SurfaceGui layout", "prompt placement"],
+      "notes": "The place holds 2 SurfaceGui and 10 TextLabel instances; some are likely the quest board's face, but their parents were lost."
+    },
+    {
+      "id": "hubtown.script.hub-town-service",
+      "kind": "script",
+      "disposition": "ARCHIVE",
+      "summary": "Legacy server-authoritative hub service: vendor stock rotation, purchases and NPC interaction.",
+      "legacy": {
+        "paths": ["ServerScriptService/Services/HubTownService.luau"],
+        "class": "ModuleScript",
+        "instance_ids": [],
+        "instance_count": 1
+      },
+      "extraction_status": "requires_studio_extraction",
+      "children_recovered": false,
+      "canonical_owner": {
+        "status": "partially_exists",
+        "modules": [
+          "games/living-kingdoms/src/server/Systems/InventoryLiveService.luau",
+          "games/living-kingdoms/src/shared/Persistence/PlayerInventoryContracts.luau"
+        ],
+        "created_by": "BA-024"
+      },
+      "canonical_representation": "Vendor behaviour re-expressed as a deterministic, testable resolver over canonical inventory/currency authority. The legacy module must never be booted.",
+      "depends_on": ["BA-024", "BA-022"],
+      "runtime_gate": "integration; blocked additionally by the legacy-service resurrection guard (BA-071)",
+      "studio_only": [],
+      "notes": "Byte-exact source was lost with the damaged archive; a normalized readable copy survives at imports/studio-2026-08-07/readable-reference/ServerScriptService/Services/HubTownService.luau. It requires HubTownConfig and HubTownContracts, neither of which existed in the place, so it could not have run there either. Concepts worth keeping: 600s rotating stock, 60-100% catalog subset, 20% daily deal at 15-40% off, 5% rarity upgrade with a 1.3x stat bump, 15% bonus affix on purchase. Its os.clock() timing, unbounded purchase handler and client-trusted payload shape are not acceptable under canonical rules."
+    }
+  ],
+  "open_gaps": [
+    {
+      "id": "gap.hubtown.depth3",
+      "summary": "No depth-3 HubTown row survives, so every folder and model listed above is an identity without contents.",
+      "blocks": ["BA-010", "BA-011", "BA-012"],
+      "resolution": "Re-extract the Workspace hierarchy from the source place per docs/production/RBXL-IMPORT-INTEGRITY-2026-08-07.md."
+    },
+    {
+      "id": "gap.hubtown.transforms",
+      "summary": "The preservation index records identity and parentage only. No CFrame, size, material, colour or attribute survived for any HubTown instance.",
+      "blocks": ["BA-010", "BA-011"],
+      "resolution": "Re-extract with properties, or re-author the hub as canonical graybox and treat the legacy layout as reference only."
+    },
+    {
+      "id": "gap.hubtown.config",
+      "summary": "HubTownConfig and HubTownContracts are named by HubTownService but were absent from the place, so the legacy vendor catalog, NPC roster, greetings and rarity value table have no surviving source anywhere.",
+      "blocks": ["BA-012", "BA-024"],
+      "resolution": "Treat the vendor catalog as new canonical design work. Do not reconstruct it by guessing from HubTownService call sites."
+    },
+    {
+      "id": "gap.hubtown.theme",
+      "summary": "HubTown is a medieval RPG hub while the canonical authored world in WorldFoundationConfig is a forest/extraction setting with a survival-horror presentation language.",
+      "blocks": ["BA-010"],
+      "resolution": "BA-010 must record an explicit art-direction decision before any geometry is migrated. This is a product decision, not a migration mechanic."
+    }
+  ]
+}
