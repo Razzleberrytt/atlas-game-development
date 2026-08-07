@@ -4,6 +4,19 @@ This file applies to everything under `games/living-kingdoms`.
 
 Living Kingdoms is developed repository-first. Coding agents should be able to inspect, modify, test, and review most gameplay work without opening Roblox Studio.
 
+## Active production authority
+
+Before selecting implementation work, read:
+
+1. `../../docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md`
+2. `../../docs/roadmap/PRODUCTION-CORE-V2.7.md`
+3. `../../docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md`
+4. `../../docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md` when the change touches player-facing replicated or presentation state.
+
+Blueprint v2.7 is the active execution authority. Historical v1.9/v2.0/v2.3 queues are provenance, not task selection. Accepted runtime evidence and current Roblox platform behavior outrank authored roadmap prose. The active queue is Tickets 331–360; do not skip its stop conditions to resume persistence, broad visual expansion, or other deferred work.
+
+Roadmap adoption does not prove the active Studio incidents are fixed. Preserve E1 unless a captured Studio evidence packet justifies promotion.
+
 ## Canonical layout
 
 ```text
@@ -136,7 +149,7 @@ Flag these clearly rather than pretending they were validated by CI:
 
 ## Agent completion checklist
 
-- [ ] Read the applicable design and architecture documents.
+- [ ] Read the active v2.7 roadmap documents and the applicable design/architecture documents.
 - [ ] Preserved client/server authority boundaries.
 - [ ] Added or updated focused tests.
 - [ ] Ran layout, formatting, lint, fixture, and Rojo build checks.
