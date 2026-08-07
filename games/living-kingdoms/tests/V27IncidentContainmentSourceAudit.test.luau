@@ -17,6 +17,13 @@ end
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 local listener = fs.readFile("games/living-kingdoms/src/client/State/HordeStateEarlyListener.luau")
 local guard = fs.readFile("games/living-kingdoms/src/client/Presentation/BroadHighlightGuardController.luau")
+local rolloutConfig = fs.readFile("games/living-kingdoms/src/shared/Config/RuntimeRolloutConfig.luau")
+
+assertThat(contains(rolloutConfig, 'Version = "V2.7-R1-CONTAINMENT"'), "rollout config version must stay explicit")
+assertThat(contains(rolloutConfig, "EnableEarlyStateListener = true"), "R1 early listener must default on")
+assertThat(contains(rolloutConfig, "RejectBroadHighlightTargets = true"), "broad Highlight containment must default on")
+assertThat(contains(bootstrap, "RuntimeRolloutConfig.EnableEarlyStateListener"), "bootstrap must gate the R1 listener")
+assertThat(contains(bootstrap, "RuntimeRolloutConfig.RejectBroadHighlightTargets"), "bootstrap must gate Highlight containment")
 
 local listenerStart = string.find(bootstrap, "HordeStateEarlyListener.start()", 1, true)
 local guardStart = string.find(bootstrap, "BroadHighlightGuardController.start()", 1, true)
@@ -46,4 +53,4 @@ for _, forbidden in { "FireServer", "InvokeServer", "TakeDamage", "CombatImpactH
 	assertThat(not contains(guard, forbidden), "guard must not target gameplay or known narrow Highlight owners: " .. forbidden)
 end
 
-print("V27IncidentContainmentSourceAudit: early State listener and conservative broad-Highlight rejection locked")
+print("V27IncidentContainmentSourceAudit: flagged early State listener and conservative broad-Highlight rejection locked")
