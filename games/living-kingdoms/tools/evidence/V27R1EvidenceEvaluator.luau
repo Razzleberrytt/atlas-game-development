@@ -12,9 +12,9 @@
 local Evaluator = {}
 
 local EXPECTED_SCHEMA = "LK_V27_R1_CAPTURE_V1"
-local EXPECTED_SOURCE_COMMIT = "2c870d270b96064c9a06343cc088b251299373f4"
-local EXPECTED_ARTIFACT_ID = 9009926429
-local EXPECTED_ARTIFACT_DIGEST = "sha256:587ccc2974f8188bde34a0a757213efb4b9f72e68e940db4615232cace28bf89"
+local EXPECTED_SOURCE_COMMIT = "c55287fac4ecefc120c541958a6a06049b0a78cd"
+local EXPECTED_ARTIFACT_ID = 9028866465
+local EXPECTED_ARTIFACT_DIGEST = "sha256:4cdb778a37e22c9172216d999a2dfcffec75e05e29baffaad2233a2c5dbf92c5"
 
 local function append(target: { string }, message: string)
 	table.insert(target, message)

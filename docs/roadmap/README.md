@@ -20,17 +20,17 @@ Read [`../bible/00-current-product-authority.md`](../bible/00-current-product-au
 
 ## Current runtime gate
 
-Accepted evidence remains **E1**.
+Accepted evidence is **E2**, supported by the pinned-artifact R1/replay packet at
+[`../production/evidence/2026-08-08-r1-playable-replay-loop.md`](../production/evidence/2026-08-08-r1-playable-replay-loop.md).
 
-The 2026-08-08 Studio findings invalidated the older R1 acceptance artifact because an unrelated client-bootstrap stall prevented a trustworthy complete-client R1 run against that build.
+The 2026-08-08 Studio findings invalidated the older R1 artifact because an unrelated client-bootstrap stall prevented a trustworthy complete-client run. The replacement recorded artifact and fresh packet now satisfy R1.
 
-The next accepted R1 attempt must:
+The next runtime sequence is:
 
-- use a recorded CI artifact at or after client-bootstrap fix `91a1ebe3d04b6d99495f19e7a809bc2b4135fd97`;
-- use a fresh evidence packet bound to exact build/place identity;
-- rerun the required R1 measurements/invalidation checks;
-- treat the local post-fix capture as informational only;
-- leave #221/#222 blocked until their declared evidence dependencies pass.
+- rebase/revalidate PR #221's prepared single-listener consolidation against current `main`;
+- capture its declared listener/presentation evidence while retaining the R1 rollback checkpoint;
+- keep PR #222 blocked until consolidation is accepted;
+- then execute R2 delayed-ready/current-state delivery evidence before R3 suppression.
 
 ## Current combined-world truth
 

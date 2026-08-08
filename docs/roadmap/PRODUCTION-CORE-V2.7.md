@@ -3,7 +3,7 @@
 **Purpose:** daily-use canonical reference for implementation, Studio rollout, review, and production decisions. If this file conflicts with an older roadmap checkpoint, this file controls unless accepted runtime evidence or current Roblox behavior says otherwise.
 
 **Release date:** 2026-08-07  
-**Runtime status:** repository/source work remains E1 until accepted Studio evidence advances it.  
+**Runtime status:** E2 accepted on the pinned R1 CI artifact; E3–E5 remain open.
 **Active queue:** Tickets 331–360 in [`BLUEPRINT-V2.7-EXECUTION.md`](BLUEPRINT-V2.7-EXECUTION.md).
 
 ## 1. North star
@@ -53,16 +53,15 @@ E6 outside-player fun demonstrated
 E7 live telemetry demonstrated
 ```
 
-**Current claimed level: E1.** Do not report E2–E5 without an evidence packet.
+**Current claimed level: E2.** The accepted packet is
+[`../production/evidence/2026-08-08-r1-playable-replay-loop.md`](../production/evidence/2026-08-08-r1-playable-replay-loop.md).
+Do not report E3–E5 without their required evidence.
 
 ## 5. Current release blockers
 
-The active-place incident evidence shows:
+R1 containment is accepted on the pinned artifact: zero queue/discard warnings, zero enabled broad Highlight targets, and a clean initialization/replay boundary. The flat blue/yellow/green editor view encountered during validation was traced to hidden local Studio physics-visualization flags rather than gameplay Highlight presentation.
 
-1. `ReplicatedStorage.HordeNetwork.State` invocation-queue exhaustion/discard warnings.
-2. escaped broad blue/yellow `Highlight` presentation.
-
-These are stop conditions. The screenshot proves symptoms only. Instrument producers, listeners, ownership, rate, lifecycle, and `Adornee` selection before attributing a root cause.
+Remaining runtime blockers are the known extra compatibility listeners, R2 delayed-ready/current-state delivery, R3 semantic suppression, centralized presentation ownership, and the reset/respawn/late-join/multiplayer/streaming matrices. Preserve the R1 checkpoint while closing them in dependency order.
 
 ## 6. Runtime state law
 
