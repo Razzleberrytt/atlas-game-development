@@ -1,0 +1,36 @@
+{
+  "format_version": 1,
+  "generated_on": "2026-08-07",
+  "status": "BA-005_PROPERTY_EVIDENCE_V1",
+  "source_rbxl": {
+    "bytes": 1639392,
+    "sha256": "e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16"
+  },
+  "extractor": "scripts/roblox/extract_rbxl_world_properties.py",
+  "full_property_json": {
+    "bytes": 1546379,
+    "sha256": "078a64153fbc1d29409e326c924ba7bb1cd3cbe7137277697955af7c448708ea",
+    "workspace_property_rows": 1699,
+    "note": "The raw decoder output is the generation source for authored-world source modules. This manifest pins it even when the raw generated artifact is not committed."
+  },
+  "committed_summary": "docs/migration/current/reextracted-property-evidence.json",
+  "positive_controls": {
+    "Workspace/BootstrapSafetyFloor": {
+      "position": [-224.0, -3.0, -208.0],
+      "size": [48.0, 6.0, 48.0]
+    },
+    "Workspace/BootstrapSafetySpawn": {
+      "position": [-224.0, 0.5, -208.0],
+      "size": [12.0, 1.0, 12.0],
+      "transparency": 1.0,
+      "neutral": true
+    }
+  },
+  "current_scope": {
+    "classes": ["Attachment", "Fire", "Model", "Part", "PointLight", "ProximityPrompt", "SpawnLocation"],
+    "unsupported_allowed_properties": 0,
+    "terrain_voxels_decoded": false,
+    "particle_sequences_decoded": false,
+    "runtime_activation": false
+  }
+}

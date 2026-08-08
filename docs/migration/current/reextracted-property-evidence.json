@@ -1,0 +1,287 @@
+{
+  "format_version": 1,
+  "generated_on": "2026-08-07",
+  "status": "BA-005_PROPERTY_EVIDENCE_V1",
+  "source_rbxl": {
+    "bytes": 1639392,
+    "sha256": "e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16"
+  },
+  "extractor_scope": "bounded world-property decode; no runtime activation",
+  "coverage": {
+    "workspace_property_rows": 1699,
+    "classes": {
+      "Attachment": 12,
+      "Fire": 22,
+      "Model": 211,
+      "Part": 1305,
+      "PointLight": 146,
+      "ProximityPrompt": 1,
+      "SpawnLocation": 2
+    },
+    "unsupported_allowed_properties": []
+  },
+  "positive_controls": {
+    "Workspace/BootstrapSafetyFloor": {
+      "Anchored": true,
+      "CFrame": {
+        "position": [-224.0, -3.0, -208.0],
+        "rotation_id": 2,
+        "rotation": [1, 0, 0, 0, 1, 0, 0, 0, 1]
+      },
+      "CanCollide": true,
+      "CanQuery": true,
+      "CanTouch": true,
+      "CastShadow": true,
+      "Color3uint8": [0.10980392156862745, 0.1568627450980392, 0.14901960784313725],
+      "Material": 800,
+      "Reflectance": 0.0,
+      "Transparency": 0.0,
+      "shape": 1,
+      "size": [48.0, 6.0, 48.0]
+    },
+    "Workspace/BootstrapSafetySpawn": {
+      "Anchored": true,
+      "CFrame": {
+        "position": [-224.0, 0.5, -208.0],
+        "rotation_id": 2,
+        "rotation": [1, 0, 0, 0, 1, 0, 0, 0, 1]
+      },
+      "CanCollide": true,
+      "CanQuery": true,
+      "CanTouch": true,
+      "CastShadow": true,
+      "Color3uint8": [0.6392156862745098, 0.6352941176470588, 0.6470588235294118],
+      "Enabled": true,
+      "Material": 256,
+      "Neutral": true,
+      "Reflectance": 0.0,
+      "TeamColor": 194,
+      "Transparency": 1.0,
+      "shape": 1,
+      "size": [12.0, 1.0, 12.0]
+    }
+  },
+  "subtrees": {
+    "Workspace/WorldStructures": {
+      "property_rows": 1163,
+      "class_counts": {
+        "Attachment": 7,
+        "Fire": 8,
+        "Model": 175,
+        "Part": 894,
+        "PointLight": 79
+      },
+      "cframe_rows": 894,
+      "rotation_id_counts": {"0": 288, "2": 606},
+      "material_value_counts": {
+        "1284": 174,
+        "896": 152,
+        "512": 114,
+        "288": 99,
+        "816": 86,
+        "784": 77,
+        "1328": 36,
+        "272": 28,
+        "1088": 27,
+        "800": 21,
+        "1280": 18,
+        "1040": 15,
+        "256": 15,
+        "788": 14,
+        "1536": 9,
+        "832": 3,
+        "1792": 3,
+        "1376": 2,
+        "1072": 1
+      },
+      "position_bounds": {
+        "min": [-1844.2164306640625, 0.5, -3184.34619140625],
+        "max": [2831.502685546875, 1400.0, 1899.7440185546875]
+      }
+    },
+    "Workspace/HubTown": {
+      "property_rows": 232,
+      "class_counts": {
+        "Attachment": 4,
+        "Fire": 14,
+        "Model": 7,
+        "Part": 157,
+        "PointLight": 49,
+        "ProximityPrompt": 1
+      },
+      "cframe_rows": 157,
+      "rotation_id_counts": {"0": 4, "2": 153},
+      "material_value_counts": {
+        "512": 36,
+        "784": 27,
+        "848": 24,
+        "288": 22,
+        "528": 12,
+        "1312": 10,
+        "256": 9,
+        "1584": 8,
+        "272": 4,
+        "1072": 2,
+        "1088": 1,
+        "1568": 1,
+        "800": 1
+      },
+      "position_bounds": {
+        "min": [-60.81118392944336, 0.5, -60.0],
+        "max": [60.81118392944336, 78.29562377929688, 65.81118774414062]
+      }
+    },
+    "Workspace/WorldPath": {
+      "property_rows": 189,
+      "class_counts": {"Part": 189},
+      "cframe_rows": 189,
+      "rotation_id_counts": {"2": 189},
+      "material_value_counts": {"880": 189},
+      "position_bounds": {
+        "min": [0.0, 0.10000000149011612, -1500.0],
+        "max": [0.0, 0.10000000149011612, -2.9629626274108887]
+      },
+      "segment_count": 189,
+      "ordered_samples": [
+        {"segment": 1, "position": [0.0, 0.10000000149011612, -2.9629626274108887], "size": [6.0, 0.20000000298023224, 6.0]},
+        {"segment": 2, "position": [0.0, 0.10000000149011612, -10.925925254821777], "size": [6.0, 0.20000000298023224, 6.0]},
+        {"segment": 3, "position": [0.0, 0.10000000149011612, -18.888891220092773], "size": [6.0, 0.20000000298023224, 6.0]},
+        {"segment": 10, "position": [0.0, 0.10000000149011612, -74.62963104248047], "size": [6.0, 0.20000000298023224, 6.0]},
+        {"segment": 20, "position": [0.0, 0.10000000149011612, -154.25926208496094], "size": [6.0, 0.20000000298023224, 6.0]},
+        {"segment": 40, "position": [0.0, 0.10000000149011612, -313.5185241699219], "size": [6.0, 0.20000000298023224, 6.0]},
+        {"segment": 60, "position": [0.0, 0.10000000149011612, -472.7778015136719], "size": [6.0, 0.20000000298023224, 6.0]},
+        {"segment": 80, "position": [0.0, 0.10000000149011612, -632.0370483398438], "size": [6.0, 0.20000000298023224, 6.0]},
+        {"segment": 100, "position": [0.0, 0.10000000149011612, -791.2963256835938], "size": [6.0, 0.20000000298023224, 6.0]},
+        {"segment": 120, "position": [0.0, 0.10000000149011612, -950.5556030273438], "size": [6.0, 0.20000000298023224, 6.0]},
+        {"segment": 140, "position": [0.0, 0.10000000149011612, -1109.8148193359375], "size": [6.0, 0.20000000298023224, 6.0]},
+        {"segment": 160, "position": [0.0, 0.10000000149011612, -1269.0740966796875], "size": [6.0, 0.20000000298023224, 6.0]},
+        {"segment": 180, "position": [0.0, 0.10000000149011612, -1428.3333740234375], "size": [6.0, 0.20000000298023224, 6.0]},
+        {"segment": 189, "position": [0.0, 0.10000000149011612, -1500.0], "size": [6.0, 0.20000000298023224, 6.0]}
+      ]
+    },
+    "Workspace/Resources": {
+      "property_rows": 109,
+      "class_counts": {"Model": 29, "Part": 62, "PointLight": 18},
+      "cframe_rows": 62,
+      "rotation_id_counts": {"2": 62},
+      "material_value_counts": {"288": 18, "1280": 15, "512": 15, "800": 14},
+      "position_bounds": {
+        "min": [-70.0, 0.0, -60.0],
+        "max": [70.0, 14.0, 70.0]
+      }
+    }
+  },
+  "selected_instances": {
+    "Workspace/SpawnLocation": {
+      "id": 117,
+      "class": "SpawnLocation",
+      "properties": {
+        "Anchored": true,
+        "CFrame": {"position": [0.0, 7.0, 30.0], "rotation_id": 2, "rotation": [1, 0, 0, 0, 1, 0, 0, 0, 1]},
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "Color3uint8": [1.0, 0.8627450980392157, 0.5882352941176471],
+        "Enabled": true,
+        "Material": 288,
+        "Neutral": true,
+        "Reflectance": 0.0,
+        "TeamColor": 194,
+        "Transparency": 0.0,
+        "shape": 1,
+        "size": [6.0, 1.0, 6.0]
+      }
+    },
+    "Workspace/WorldStructures/DestinyMonolith/CoreTower": {
+      "id": 390,
+      "class": "Part",
+      "properties": {
+        "Anchored": true,
+        "CFrame": {"position": [0.0, 200.0, -1500.0], "rotation_id": 2, "rotation": [1, 0, 0, 0, 1, 0, 0, 0, 1]},
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "Color3uint8": [0.23529411764705882, 0.2549019607843137, 0.3137254901960784],
+        "Material": 1088,
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "shape": 1,
+        "size": [80.0, 400.0, 80.0]
+      }
+    },
+    "Workspace/WorldStructures/CrystalTower/SpireBase": {
+      "id": 415,
+      "class": "Part",
+      "properties": {
+        "Anchored": true,
+        "CFrame": {"position": [1500.0, 15.0, 0.0], "rotation_id": 2, "rotation": [1, 0, 0, 0, 1, 0, 0, 0, 1]},
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "Color3uint8": [0.7843137254901961, 0.8235294117647058, 0.9019607843137255],
+        "Material": 272,
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "shape": 1,
+        "size": [120.0, 30.0, 120.0]
+      }
+    },
+    "Workspace/HubTown/DungeonPortal/PortalFrame": {
+      "id": 202,
+      "class": "Part",
+      "properties": {
+        "Anchored": true,
+        "CFrame": {"position": [0.0, 8.0, 22.0], "rotation_id": 2, "rotation": [1, 0, 0, 0, 1, 0, 0, 0, 1]},
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "Color3uint8": [0.27450980392156865, 0.2549019607843137, 0.23529411764705882],
+        "Material": 800,
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "shape": 1,
+        "size": [10.0, 16.0, 4.0]
+      }
+    },
+    "Workspace/Resources/IronOre/IronOre_1/OreRock": {
+      "id": 69,
+      "class": "Part",
+      "properties": {
+        "Anchored": true,
+        "CFrame": {"position": [35.0, 0.0, -28.0], "rotation_id": 2, "rotation": [1, 0, 0, 0, 1, 0, 0, 0, 1]},
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "Color3uint8": [0.3137254901960784, 0.27450980392156865, 0.2549019607843137],
+        "Material": 800,
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "shape": 1,
+        "size": [3.0, 2.5, 3.0]
+      }
+    },
+    "Workspace/Resources/IronOre/IronOre_1/OreDeposit_1": {
+      "id": 70,
+      "class": "Part",
+      "properties": {
+        "Anchored": true,
+        "CFrame": {"position": [36.20000076293945, 0.800000011920929, -29.200000762939453], "rotation_id": 2, "rotation": [1, 0, 0, 0, 1, 0, 0, 0, 1]},
+        "CanCollide": false,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "Color3uint8": [0.7843137254901961, 0.5098039215686274, 0.3137254901960784],
+        "Material": 288,
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "shape": 1,
+        "size": [0.800000011920929, 0.800000011920929, 0.800000011920929]
+      }
+    }
+  }
+}
