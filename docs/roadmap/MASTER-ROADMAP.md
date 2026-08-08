@@ -66,7 +66,7 @@ Runtime evidence refresh after adoption:
 - **BA-012 closed at E1**: the canonical Hub interaction registry (preparation/board/vendor/NPC/crafting/gathering/portal/social anchors and owner/dependency boundaries) is complete in [`../specifications/canonical-hub-interaction-registry.md`](../specifications/canonical-hub-interaction-registry.md) (merged via PR #243); no runtime activation;
 - root `CLAUDE.md` was added as a companion mechanical/architecture reference alongside this operating contract; it does not change roadmap authority or task selection;
 - accepted evidence level is E2, PR #222 remains blocked behind consolidation/R2 dependencies, and the combined-world preservation counts remain unchanged; the R1 re-pin requirement is closed by the runtime-evidence refresh above;
-- the highest-ROI build-ahead task after this refresh is **BA-013 — Environment production plan**, per [`AGENT-BUILD-AHEAD-QUEUE.md`](AGENT-BUILD-AHEAD-QUEUE.md), which also records the parallel-safe assignment across concurrent agents.
+- the Main World environment production plan is complete at E1 through BA-013; the next assigned Track 1 task is **BA-014 — Main World acceptance matrix**, per [`AGENT-BUILD-AHEAD-QUEUE.md`](AGENT-BUILD-AHEAD-QUEUE.md).
 
 ## Current program state
 
@@ -235,8 +235,11 @@ streaming groups, and arrival/return anchor policy in
 [`../specifications/main-world-source-representation-strategy.md`](../specifications/main-world-source-representation-strategy.md),
 locked by `MainWorldRepresentationConfig`. Its completion does not activate the Main
 World, create a Roblox place, reconstruct Terrain, or change the current operation
-runtime. BA-012 has since completed the canonical Hub interaction registry; the
-next dependency-safe Main World task is BA-013 — environment production plan.
+runtime. BA-012 has since completed the canonical Hub interaction registry, and
+BA-013 defines the held environment kits, quality tiers, production ceilings,
+Terrain workflow and streaming/performance targets in
+[`../specifications/main-world-environment-production-plan.md`](../specifications/main-world-environment-production-plan.md).
+The next dependency-safe Main World task is BA-014 — acceptance matrix.
 
 Define a readable loop:
 
@@ -258,7 +261,17 @@ Lock:
 
 ## W2 — Environment production
 
-**Status: [L]**
+**Status: [~] PRODUCTION PLAN COMPLETE; BROAD PRODUCTION/ACTIVATION HELD**
+
+BA-013 defines the evidence-bounded production units, ownership boundaries,
+provisional asset/scene budgets, quality tiers, Terrain manifest workflow,
+semantic streaming rules and BA-014 performance targets in
+[`../specifications/main-world-environment-production-plan.md`](../specifications/main-world-environment-production-plan.md).
+These are E1 planning ceilings, not accepted Studio/device evidence and not
+permission to activate the Main World. Playable MVP + Patch Execution v2.9
+keeps broad environment production in Patch 0.5; Gate 0/MVP 0.1 may use only a
+separately authorized minimal preparation/return surface and do not wait for
+the final Main World.
 
 Production scope includes:
 

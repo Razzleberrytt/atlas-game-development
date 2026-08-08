@@ -110,7 +110,7 @@ This is now a first-class product lane under Master Roadmap Phase W.
 | BA-010 | DONE | **Main World + environment audit and composition specification.** Audit live Forward Operations Hub plus recovered authored overworld against the `Arrival → Orientation → Exploration → Interaction → Preparation → Adventure → Return` loop. | Completed in `docs/specifications/main-world-environment-audit.md`; source/evidence dispositions and Studio-only acceptance work are explicit. No runtime activation or broad geometry was added. |
 | BA-011 | DONE | Main World source representation/placement strategy. | Dedicated held Main World place/project boundary, source/model/Terrain ownership, streaming groups and arrival/return anchor policy are defined in `docs/specifications/main-world-source-representation-strategy.md` and locked by `MainWorldRepresentationConfig`. No runtime activation. |
 | BA-012 | DONE | Canonical Hub interaction registry. | Stable preparation/board/vendor/NPC/crafting/gathering/portal/social anchors and owner/dependency boundaries are defined in `docs/specifications/canonical-hub-interaction-registry.md`; no runtime activation. |
-| BA-013 | READY | Environment production plan. | Terrain/biome/prop/material/lighting/VFX/audio kits, repetition budgets, LOD/streaming/performance targets. No speculative geometry pass. |
+| BA-013 | DONE | Environment production plan. | [`docs/specifications/main-world-environment-production-plan.md`](../specifications/main-world-environment-production-plan.md) defines evidence-bounded terrain/route/structure/prop/foliage/material/lighting/VFX/audio kits, provisional asset and visible-scene ceilings, Full/Reduced/Minimum-readable behavior, Terrain manifests, semantic streaming units and measured BA-014 performance targets. E1 plan only; no geometry or runtime activation. |
 | BA-014 | READY | Main World acceptance matrix. | Studio checklist for orientation, navigation, landmark recognition, service finding, return flow, visual quality and measured performance. |
 
 ## P2 — quest, NPC, crafting, gathering, vendor/economy domains
@@ -194,24 +194,30 @@ Do not:
 
 Before starting, always re-fetch `main` and inspect PR #239 plus any newer PRs.
 
-### Highest-ROI agent task
+### Highest-ROI build-ahead task after current-patch work
 
-**BA-013 — Environment production plan.**
+Playable MVP + Patch Execution v2.9 now controls global implementation order.
+Gate 0 runtime stabilization and the smallest MVP 0.1 enablers outrank this
+queue. Use the task below only when the runtime/evidence lane cannot proceed or
+build-ahead work is explicitly requested.
+
+**BA-014 — Main World acceptance matrix.**
 
 Why now:
 
 - BA-010 classified the live bridge and recovered authored content;
 - BA-011 fixed the dedicated place/project, source/model/Terrain ownership, streaming-group and arrival/return boundaries;
-- BA-012 now assigns stable interaction anchors, existing owners and explicit blocked ownership seams;
-- BA-013 can define terrain/structure/prop/foliage/material/lighting/VFX/audio kits, quality tiers and measured budgets without activating held content.
+- BA-012 assigns stable interaction anchors, existing owners and explicit blocked ownership seams;
+- BA-013 now defines environment kits, quality reductions, provisional budgets and measurement targets without activating held content;
+- BA-014 can turn those targets into a repeatable Studio/camera/traversal/streaming/performance acceptance matrix while the Main World remains held.
 
 ### Parallel assignment — concurrent agents (2026-08-08)
 
 More than one agent is working this queue at the same time. BA-010 → BA-011 → BA-012 landed back to back through PRs #241/#242/#243, so anyone continuing that thread should keep going rather than collide with a second agent starting the same ticket. Two file-disjoint tracks are named here so both can run simultaneously without inspecting each other's branch first:
 
-**Track 1 — Main World / Hub lane (continue in sequence).** `BA-013 → BA-014`. Touches `docs/specifications/`, `src/shared/Config/`, `src/shared/World/`, and matching `tests/` for environment/acceptance content only. Whichever agent already holds this thread (most recently the agent that landed BA-012 via PR #243) should continue it rather than switch lanes.
+**Track 1 — Main World / Hub lane (continue in sequence).** `BA-013 (done) → BA-014`. Touches `docs/specifications/`, `src/shared/Config/`, `src/shared/World/`, and matching `tests/` for environment/acceptance content only. The agent continuing this thread should complete BA-014 rather than switch lanes.
 
-**Track 2 — combat/RPG depth audits (P4).** `BA-040 → BA-042 → BA-044`. Pure gap-matrix audits read existing enemy/loot/progression source and write new `docs/specifications/*-audit.md` files; they add no code and touch no file Track 1 depends on. This is the recommended track for whichever agent is not already mid-thread on Track 1.
+**Track 2 — combat/RPG depth audits (P4; complete).** `BA-040 → BA-042 → BA-044`. The three E1 gap-matrix audits are merged; BA-041 and BA-043 remain blocked on their recorded product decisions.
 
 Both tracks still obey every build-ahead law below, in particular: fetch current `main` and check open PRs before starting, do not duplicate work already in flight, and keep new content unbooted/dormant until its runtime gate opens.
 
