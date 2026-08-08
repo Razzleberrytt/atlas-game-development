@@ -132,7 +132,7 @@ Do not solve overlap by running both systems.
 ## Next integration order
 
 1. Use the BA-011 dedicated Main World place/project, representation, streaming-group and arrival/return strategy in `../../docs/specifications/main-world-source-representation-strategy.md`.
-2. Define BA-012 stable Hub interaction anchors and canonical owners; do not revive legacy QuestService or HubTownService authority.
+2. Use the BA-012 stable Hub interaction anchors and owner/dependency boundaries in `../../docs/specifications/canonical-hub-interaction-registry.md`; do not revive legacy QuestService or HubTownService authority.
 3. Define BA-013 environment kits, profile ownership, quality tiers and measured budgets.
 4. Continue coherent BA-005 reconstruction groups such as Central Fountain, vendor presentation, Resources and high-value WorldStructures behind the hold.
 5. Create the dedicated Main World Rojo project only after its property-validated model/bootstrap creation gate is satisfied.
