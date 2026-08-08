@@ -118,7 +118,10 @@ assert(runtime:markSecretDiscovered() == false, "terminal runs must reject later
 
 runtime:destroy()
 assert(runtime:getSnapshot() == nil, "destroyed runtime must not disclose live state")
-assert(runtime:advancePhase(phaseIds.Dungeon, 1_050).ReasonId == "RunDestroyed", "destroyed runs must reject advancement")
+assert(
+	runtime:advancePhase(phaseIds.Dungeon, 1_050).ReasonId == "RunDestroyed",
+	"destroyed runs must reject advancement"
+)
 runtime:destroy()
 
 local completionRuntime = runtimeModule.new(definition, {

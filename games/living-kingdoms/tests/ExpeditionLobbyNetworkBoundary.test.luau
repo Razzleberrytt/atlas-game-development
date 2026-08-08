@@ -8,7 +8,9 @@ local fs = require("@lune/fs")
 local source = fs.readFile("games/living-kingdoms/src/server/expedition-lobby.server.luau")
 
 local function assert(condition: unknown, message: string)
-	if not condition then error(message, 2) end
+	if not condition then
+		error(message, 2)
+	end
 end
 
 assert(string.find(source, 'action == "Join"', 1, true) ~= nil, "join action should exist")

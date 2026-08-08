@@ -88,12 +88,18 @@ assert(coordinator:sync(102).ReasonId == "EncounterAlreadyActive", "parallel enc
 assert(coordinator:completeActive("wrong-token", 103).ReasonId == "StaleEncounterToken", "stale token was accepted")
 assert(coordinator:completeActive(approachContext.Token, 104).Accepted, "approach completion failed")
 assert(advanceCalls == 1 and snapshot.PhaseId == "Dungeon", "approach did not advance to dungeon")
-assert(coordinator:completeActive(approachContext.Token, 105).ReasonId == "EncounterAlreadyCompleted", "duplicate completion was accepted")
+assert(
+	coordinator:completeActive(approachContext.Token, 105).ReasonId == "EncounterAlreadyCompleted",
+	"duplicate completion was accepted"
+)
 
 assert(coordinator:sync(106).Accepted and started[2].Label == "Traversal", "first dungeon room did not start")
 local traversal = coordinator:getActiveContext()
 assert(traversal and traversal.RoomId == "hall-a", "wrong traversal room context")
-assert(coordinator:completeActive(traversal.Token, 107).ReasonId == "DungeonRoomCompleted", "dungeon room completion failed")
+assert(
+	coordinator:completeActive(traversal.Token, 107).ReasonId == "DungeonRoomCompleted",
+	"dungeon room completion failed"
+)
 assert(advanceCalls == 1, "individual dungeon room incorrectly advanced phase")
 
 assert(coordinator:sync(108).Accepted and started[3].Label == "Combat", "combat room did not start")
@@ -116,6 +122,9 @@ assert(boss ~= nil, "boss context missing")
 coordinator:destroy()
 assert(#cancelled == 1 and cancelled[1].ReasonId == "CoordinatorDestroyed", "active boss was not cancelled on destroy")
 assert(coordinator:sync(114).ReasonId == "CoordinatorDestroyed", "destroyed coordinator accepted work")
-assert(coordinator:completeActive(boss.Token, 115).ReasonId == "CoordinatorDestroyed", "destroyed coordinator accepted completion")
+assert(
+	coordinator:completeActive(boss.Token, 115).ReasonId == "CoordinatorDestroyed",
+	"destroyed coordinator accepted completion"
+)
 
 print("ExpeditionEncounterCoordinator fixture passed")

@@ -4,7 +4,9 @@ local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
 local function assert(condition: unknown, message: string?)
-	if not condition then error(message or "lobby assertion failed", 2) end
+	if not condition then
+		error(message or "lobby assertion failed", 2)
+	end
 end
 
 local module = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/ExpeditionLobbyService.luau"), {
@@ -26,7 +28,10 @@ assert(not snapshot.AllReady, "lobby should not launch before readiness")
 assert(lobby:setReady(10, true).Accepted, "player 10 should ready")
 assert(lobby:setReady(20, true).Accepted, "player 20 should ready")
 local finalReady = lobby:setReady(30, true)
-assert(finalReady.Accepted and finalReady.Snapshot.AllReady and finalReady.Snapshot.LaunchPending, "all ready should arm launch")
+assert(
+	finalReady.Accepted and finalReady.Snapshot.AllReady and finalReady.Snapshot.LaunchPending,
+	"all ready should arm launch"
+)
 assert(not lobby:join(40).Accepted, "membership must freeze while launch is pending")
 
 local launch = lobby:consumeLaunch()

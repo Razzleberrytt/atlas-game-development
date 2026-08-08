@@ -57,7 +57,13 @@ local function validateCaptureShape(label: string, capture: any, invalid: { stri
 	return true
 end
 
-local function requireManualField(manual: any, field: string, expectedType: string, missing: { string }, invalid: { string }): any
+local function requireManualField(
+	manual: any,
+	field: string,
+	expectedType: string,
+	missing: { string },
+	invalid: { string }
+): any
 	if type(manual) ~= "table" or manual[field] == nil then
 		append(missing, "manual observation " .. field .. " is missing")
 		return nil
@@ -195,7 +201,8 @@ function Evaluator.evaluate(input: any)
 	local manual = input.manual
 	local queueDiscardWarningCount = requireManualField(manual, "queueDiscardWarningCount", "number", missing, invalid)
 	local startupRegression = requireManualField(manual, "startupRegression", "boolean", missing, invalid)
-	local narrowEnemyHighlightWorks = requireManualField(manual, "narrowEnemyHighlightWorks", "boolean", missing, invalid)
+	local narrowEnemyHighlightWorks =
+		requireManualField(manual, "narrowEnemyHighlightWorks", "boolean", missing, invalid)
 	local broadWorldWashAppears = requireManualField(manual, "broadWorldWashAppears", "boolean", missing, invalid)
 	local otherNewClientErrorCount = requireManualField(manual, "otherNewClientErrorCount", "number", missing, invalid)
 

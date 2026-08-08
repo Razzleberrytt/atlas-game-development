@@ -58,9 +58,16 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
+      # Formatting covers every Luau tree in the game, not just src. Fixtures
+      # and tooling drifted unchecked until 2026-08-08 because this step was
+      # scoped to src alone.
       - name: Check Luau formatting
         shell: bash
-        run: stylua --check games/living-kingdoms/src
+        run: |
+          stylua --check \
+            games/living-kingdoms/src \
+            games/living-kingdoms/tests \
+            games/living-kingdoms/tools
 
       - name: Run Selene
         shell: bash
