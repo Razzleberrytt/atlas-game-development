@@ -1,108 +1,133 @@
 # Living Kingdoms Merge Status
 
-**Current merge:** Studio `livingkingdoms.rbxl` + canonical Atlas/Living Kingdoms Rojo source  
+**Current merge:** original Studio `livingkingdoms.rbxl` + canonical Atlas/Living Kingdoms Rojo source  
 **Import date:** 2026-08-07  
-**Evidence level:** E1 source/reconciliation only
+**Current main milestone:** preservation repaired, canonical ownership clarified, forward-operations hub shell integrated  
+**Runtime evidence posture:** repository/CI proven; full Studio multiplayer acceptance is still outstanding
+
+## Read this first
+
+This file is the current human-facing merge status.
+
+Older migration documents that say only **122 / 1,775** Workspace rows survived describe the damaged first archive. They are historical planning evidence, not the current preservation state.
+
+Current repaired evidence lives in:
+
+- `../../docs/migration/REEXTRACTED-WORLD-EVIDENCE.md`
+- `../../docs/migration/reextracted-world-evidence.json`
+- `imports/studio-2026-08-07/reextracted/`
 
 ## Canonical rule
 
-The active `src/` tree remains authoritative for combat, enemies, operative life state, inventory, persistence, rewards, expedition runtime, networking, and presentation. The Studio import is additive and inert until each unique feature is reconciled against those owners.
+`games/living-kingdoms/src/` is the only gameplay-authoritative source tree.
 
-## Preserved Studio material
+The Studio import is preservation and migration input. It must never become a second combat, persistence, inventory, loot, enemy, mission, networking, monetization, or expedition authority.
 
-- 28 Studio-only source files preserved losslessly under `imports/studio-2026-08-07/` as a restorable source archive.
-- 1,775 Workspace objects preserved by identity/path in the restorable Workspace hierarchy index.
-- Authored HubTown, dungeon portal, resource fields, landmarks/ruins, world structures, lighting/VFX and NPC structures retained as migration inputs.
-- Legacy quest, gathering/crafting, vendor/economy, dungeon and UI concepts retained for best-of-both integration.
+Do **not** boot the imported `RPGServerBootstrap`, `CombatService`, `EnemyService`, `InventoryService`, `LootService`, `PlayerDataService`, or `MonetizationService` beside the modern runtime.
 
-## Do not boot unchanged
+## Preservation status
 
-`RPGServerBootstrap`, legacy `CombatService`, `EnemyService`, `InventoryService`, `LootService`, `PlayerDataService`, and `MonetizationService` are reference implementations only. They overlap newer server authority.
+The original uploaded RBXL is intact and has been re-extracted directly.
 
-## Active v2.7 incident gate
+Verified facts:
 
-The active-place network/Highlight incident still outranks feature expansion.
+- source RBXL: `1,639,392` bytes
+- source SHA-256: `e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16`
+- Studio-only sources: **28 / 28** preserved exactly
+- Workspace identity/hierarchy: **1,775 / 1,775** rows preserved
+- Workspace index SHA-256: `320d1ec49b0bc3a0feaed7fdc07348a18ebc248682bddc1a338514c82421b6c3`
 
-Current source containment on `main` now includes:
+The preservation verifier now checks the repaired set rather than treating the damaged first archive as the recovery ceiling.
 
-- an R1 `HordeStateEarlyListener` that binds `HordeNetwork.State` before the remaining client controller graph;
-- bounded client diagnostics for listener-bound state, received/invalid message counts, and last revision;
-- a conservative `BroadHighlightGuardController` that disables only Workspace/Terrain/very-large top-level world-root Highlight targets;
-- bounded diagnostics for rejected broad Highlights and the last rejected target;
-- temporary rollout flags in `RuntimeRolloutConfig`;
-- rollback branch `archive/pre-v2.7-r1-containment-2026-08-07` at `6d88a33df1742981839c59933289eb0381e82074`;
-- prepared runtime packet `../../docs/production/evidence/2026-08-07-336-r1-state-highlight-containment.md`.
+## Recovered world scale
 
-Repository-side validation is green. Luau validation run `#800` (`31219832584`) passed repository contract validation, StyLua, Selene, every discovered Lune fixture, the Rojo build, and artifact upload.
+Current identity/hierarchy evidence proves:
 
-### Canonical R1 Studio-test build
+- `Workspace/WorldStructures` — **1,190 rows** across 17 named top-level authored groups
+- `Workspace/HubTown` — **270 rows** across 46 immediate child paths
+- `Workspace/WorldPath` — **190 rows**, including contiguous `PathSegment_1` through `PathSegment_189`
+- `Workspace/Resources` — **113 rows** (`Trees`, `Rocks`, `IronOre`)
 
-Use this exact CI artifact for the R1 runtime packet rather than an unrecorded local build:
+This is identity/hierarchy evidence only. Property-perfect geometry has **not** yet been recovered into source definitions.
 
-- source/build commit: `2c870d270b96064c9a06343cc088b251299373f4`;
-- artifact: `living-kingdoms-rbxlx-2c870d270b96064c9a06343cc088b251299373f4`;
-- artifact ID: `9009926429`;
-- digest: `sha256:587ccc2974f8188bde34a0a757213efb4b9f72e68e940db4615232cace28bf89`;
-- artifact retention through 2026-08-21.
+## What is live now
 
-These are still E1/source-build facts only. The incident is **not closed** until a Studio/runtime packet proves the R1 behavior.
+### Modern runtime
 
-## Prepared next-stage work
+The modern source tree remains authoritative for:
 
-Prepared work is intentionally isolated from `main`. CI success on these branches is not runtime acceptance and does not authorize merging them past their rollout gates.
+- combat and weapons
+- enemies and encounter direction
+- operative life / revive / failure
+- missions and results
+- inventory, loot, survival resources and persistence boundaries
+- class selection and class actions
+- run progression and build state
+- expedition lobby/runtime/lifecycle
+- world foundation and operation landmarks
 
-### Draft PR #221 — single compatibility listener
+### Forward Operations Hub
 
-`[BLOCKED] Prepare v2.7 single-listener Horde state bridge`
+PR **#230** added a source-managed preparation shell at the current Ranger Station/insertion area.
 
-- branch: `rollout/v2.7-r1-listener-consolidation-prep-2026-08-07`;
-- head: `9311a0978ce3c226462a7a5813346266f69440b0`;
-- state: draft / blocked on the R1 Studio evidence packet;
-- scope: transport-only migration of `HordeHUDController` and `MassacreCrescendoController` onto `HordeStateEarlyListener.subscribe(onState)`;
-- result: `HordeStateEarlyListener` is the only physical `HordeNetwork.State.OnClientEvent` owner on the prepared branch;
-- validation: Actions run `#805` (`31220415455`) passed repository contract, StyLua, Selene, all 196 discovered Lune fixtures, Rojo build, and artifact upload;
-- prepared artifact: `living-kingdoms-rbxlx-01fb64491453bf2aa05c5107f01db9eed89f27a6`;
-- artifact ID: `9010142515`;
-- digest: `sha256:4cf474e38f5a39a4e854105e082587e4c1261a3538bfa3691025b0cedca638e0`.
+It provides three physical access points:
 
-**Do not merge PR #221 until the canonical R1 Studio packet passes.** The canonical R1 test build remains the `2c870d...` artifact listed above, not the prepared #221 build.
+1. Specialist Assignment
+2. Armory Rack
+3. Expedition Terminal
 
-### Draft PR #222 — dormant R2 ready-gate primitive
+These stations only reveal existing modern UI/services. They do not own gameplay state.
 
-`[STACKED/BLOCKED] Prepare v2.7 R2 ready-gated state publisher`
+The existing `C` / `I` / `K` RPG character, inventory and skills menu remains canonical and is advertised on the hub field board instead of being duplicated.
 
-- branch: `rollout/v2.7-r2-client-ready-prep-2026-08-07`;
-- base: PR #221 branch, not `main`;
-- head: `e116462bd131021cf3b41c6ee70ac417a341857a`;
-- state: stacked draft / blocked;
-- adds a transport-agnostic `ReadyGatedStatePublisher` retaining latest pre-ready state by owner + remote ID + semantic key;
-- behavioral fixture proves keyed latest-value retention, owner isolation, deterministic ready flush, bounded counters, cleanup, and a second readiness cycle;
-- `EnableReadyGatedStatePublisher = false` on the stacked branch;
-- source audit forbids a `ClientReady` remote/signal, bootstrap activation, or `HordeExperienceService` wiring while this remains preparation;
-- R3 unchanged-state suppression is deliberately absent;
-- validation: Actions run `#807` (`31220734943`) passed repository contract, StyLua, Selene, all 198 discovered Lune fixtures, Rojo build, and artifact upload;
-- prepared artifact: `living-kingdoms-rbxlx-db68f5eaf92e39e8aaad961a8eed93b6eb86853a`;
-- artifact ID: `9010258250`;
-- digest: `sha256:f4cc0629ba0f4cec773654ae2dabf7b0de8625346f231d9a64dc6359b8ce9474`.
+The archived Studio `HubTown` remains **preserved and inactive**. The live Forward Operations Hub is a safe bridge, not a claim that the old authored town has already been reconstructed.
 
-**Do not merge PR #222 directly to `main`.** It is stacked on #221 and prepares only the dormant R2 primitive. Actual `ClientReady` activation must be a later controlled change after R1 and listener-consolidation evidence permit it.
+## Current validation
 
-## Where to continue
+PR #230 head `de3485e389f46f51b13534f21858a018574206ea` passed Luau validation run **#834** (`31234335708`), including:
 
-1. Run/fill `../../docs/production/evidence/2026-08-07-336-r1-state-highlight-containment.md` using the exact canonical R1 CI artifact above.
-2. If R1 passes, update `../../docs/production/V2.7-CUTOVER-LEDGER.md` with measured facts.
-3. Recheck and promote PR #221 only after the R1 acceptance gate; then collect the listener-consolidation runtime evidence required by v2.7.
-4. After #221 is accepted, use PR #222's tested primitive as the base for a **separate** R2 activation change that adds the ClientReady signal and ready-gates the intended producer path.
-5. Do not begin R3 semantic/change-token suppression until R2 delayed-ready and late-join evidence passes.
-6. Only after the v2.7 stop conditions are accepted should work resume on the preserved HubTown/preparation bridge, authored-world reconstruction, quest reconciliation, and procedural dungeon integration.
+- repository contract validation
+- complete Studio preservation verification
+- migration-manifest validation
+- StyLua
+- Selene
+- all discovered Lune fixtures
+- Rojo build
+- reproducible build artifact upload
 
-## Merge references
+PR #230 merged to `main` as `d09d6affb8c67809d01de3e5341222c28a1e1834`.
 
-1. `../../docs/production/RBXL-MERGE-2026-08-07.md` — reconciliation matrix and M0–M5 integration order.
-2. `../../docs/decisions/2026-08-07-living-kingdoms-rbxl-merge.md` — merge decision and authority rules.
-3. `imports/studio-2026-08-07/README.md`, `manifest.json`, and `VALIDATION.md` — preserved Studio import details.
+## What is not complete
+
+Do not describe the games as fully fused yet.
+
+Still open:
+
+- property-backed reconstruction of the imported authored world
+- true separate town/preparation lifecycle versus always-started operation runtime
+- authored Studio HubTown visual parity
+- quest-board integration into canonical mission contracts
+- dungeon portal/modifier integration into canonical expedition runtime
+- gathering/crafting through canonical inventory/persistence transaction boundaries
+- vendor/economy integration through canonical owners
+- legacy UI concept harvesting where it improves current presentation
+- Studio runtime / multiplayer evidence for the combined build
+- any unresolved historical v2.7 runtime-evidence packet remains an evidence concern; it does not authorize bypassing runtime validation
+
+## Next highest-ROI task
+
+**BA-005 — deterministic authored-world reconstruction, behind the source hold.**
+
+Use two phases:
+
+1. **Identity phase:** generate deterministic source-managed hierarchy/content definitions from the complete 1,775-row re-extraction and stable world-content IDs. No guessed transforms or materials.
+2. **Property phase:** extend the RBXL extractor to recover supported part/light/VFX properties, generate property-backed definitions, and add parity assertions before activation.
+
+The old 122-row BA-001/BA-002 manifests may still be validated as historical artifacts, but BA-005 planning must use the post-repair evidence files named above.
 
 ## Recovery
 
-- Untouched pre-RBXL-merge repository: `archive/pre-rbxl-merge-2026-08-07` at `852de4953155379a4cc4733fe8dd05cd6f51477e`.
-- Pre-v2.7-R1-containment repository: `archive/pre-v2.7-r1-containment-2026-08-07` at `6d88a33df1742981839c59933289eb0381e82074`.
+- untouched pre-RBXL-merge repository: `archive/pre-rbxl-merge-2026-08-07` at `852de4953155379a4cc4733fe8dd05cd6f51477e`
+- repaired preservation merge: PR #228
+- canonical-runtime/world-ID cleanup: PR #229
+- Forward Operations Hub shell: PR #230
