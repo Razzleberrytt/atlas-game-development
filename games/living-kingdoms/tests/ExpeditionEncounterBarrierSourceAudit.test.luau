@@ -19,7 +19,8 @@ assertThat(
 	"composition root must expose a read-only active encounter context"
 )
 assertThat(
-	string.find(runtime, "ExpeditionRoomBarrierStateService.update(bootstrap:getActiveEncounterContext())", 1, true) ~= nil,
+	string.find(runtime, "ExpeditionRoomBarrierStateService.update(bootstrap:getActiveEncounterContext())", 1, true)
+		~= nil,
 	"live runtime must drive barrier state from authoritative encounter context"
 )
 assertThat(
@@ -34,10 +35,7 @@ assertThat(
 	string.find(owner, "MAX_", 1, true) == nil,
 	"server owner should operate only on the bounded expedition room root"
 )
-assertThat(
-	string.find(controller, "MAX_TRACKED_ROOMS = 48", 1, true) ~= nil,
-	"client room scanning must be bounded"
-)
+assertThat(string.find(controller, "MAX_TRACKED_ROOMS = 48", 1, true) ~= nil, "client room scanning must be bounded")
 assertThat(
 	string.find(controller, "MAX_TRACKED_BARRIERS = 96", 1, true) ~= nil,
 	"client barrier tracking must be bounded"

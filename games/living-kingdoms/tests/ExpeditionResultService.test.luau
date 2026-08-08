@@ -13,35 +13,38 @@ local EQUIPMENT_TOKEN = {}
 local EXPEDITION_TOKEN = {}
 local RESULT_TOKEN = {}
 
-local equipmentContracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentRewardContracts.luau"), {
-	debugName = "EquipmentRewardContracts",
-	injectGlobals = true,
-})()
-local expeditionContracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/ExpeditionContracts.luau"), {
-	debugName = "ExpeditionContracts",
-	injectGlobals = true,
-})()
-local resultContracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/ExpeditionResultContracts.luau"), {
-	debugName = "ExpeditionResultContracts",
-	environment = {
-		script = {
-			Parent = {
-				ExpeditionContracts = EXPEDITION_TOKEN,
-				Parent = { Equipment = { EquipmentRewardContracts = EQUIPMENT_TOKEN } },
+local equipmentContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentRewardContracts.luau"), {
+		debugName = "EquipmentRewardContracts",
+		injectGlobals = true,
+	})()
+local expeditionContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/ExpeditionContracts.luau"), {
+		debugName = "ExpeditionContracts",
+		injectGlobals = true,
+	})()
+local resultContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/ExpeditionResultContracts.luau"), {
+		debugName = "ExpeditionResultContracts",
+		environment = {
+			script = {
+				Parent = {
+					ExpeditionContracts = EXPEDITION_TOKEN,
+					Parent = { Equipment = { EquipmentRewardContracts = EQUIPMENT_TOKEN } },
+				},
 			},
+			require = function(token: unknown)
+				if token == EQUIPMENT_TOKEN then
+					return equipmentContracts
+				end
+				if token == EXPEDITION_TOKEN then
+					return expeditionContracts
+				end
+				error("unexpected result contracts dependency")
+			end,
 		},
-		require = function(token: unknown)
-			if token == EQUIPMENT_TOKEN then
-				return equipmentContracts
-			end
-			if token == EXPEDITION_TOKEN then
-				return expeditionContracts
-			end
-			error("unexpected result contracts dependency")
-		end,
-	},
-	injectGlobals = true,
-})()
+		injectGlobals = true,
+	})()
 
 local replicatedStorage = {
 	Shared = {
@@ -121,7 +124,10 @@ assert(not service:recordReplayDecision(ReplayDecisionIds.Replay).Accepted, "dec
 
 local inProgress = table.clone(snapshot)
 inProgress.OutcomeId = OutcomeIds.InProgress
-assert(not service:finalize({ Snapshot = inProgress, FinishedAtUnix = 520, Rewards = {} }).Accepted, "active run must not finalize")
+assert(
+	not service:finalize({ Snapshot = inProgress, FinishedAtUnix = 520, Rewards = {} }).Accepted,
+	"active run must not finalize"
+)
 
 local finalized = service:finalize({
 	Snapshot = snapshot,
@@ -133,20 +139,35 @@ assert(finalized.Summary ~= nil and finalized.Summary.DurationSeconds == 450, "d
 assert(finalized.Summary.SecretDiscovered, "secret status must be preserved")
 assert(#finalized.Summary.Rewards == 2, "both rewards must be summarized once")
 assert(finalized.Summary.ReplayDecisionId == ReplayDecisionIds.Undecided, "decision starts undecided")
-assert(not service:finalize({ Snapshot = snapshot, FinishedAtUnix = 551, Rewards = {} }).Accepted, "duplicate finalization must fail")
+assert(
+	not service:finalize({ Snapshot = snapshot, FinishedAtUnix = 551, Rewards = {} }).Accepted,
+	"duplicate finalization must fail"
+)
 
 local decision = service:recordReplayDecision(ReplayDecisionIds.Replay)
 assert(decision.Accepted, "first valid replay decision should succeed")
-assert(decision.Summary ~= nil and decision.Summary.ReplayDecisionId == ReplayDecisionIds.Replay, "replay choice must be stored")
-assert(not service:recordReplayDecision(ReplayDecisionIds.ReturnToPreparation).Accepted, "second replay decision must fail")
+assert(
+	decision.Summary ~= nil and decision.Summary.ReplayDecisionId == ReplayDecisionIds.Replay,
+	"replay choice must be stored"
+)
+assert(
+	not service:recordReplayDecision(ReplayDecisionIds.ReturnToPreparation).Accepted,
+	"second replay decision must fail"
+)
 
 local mismatchService = serviceModule.new()
 local wrongReward = table.clone(eliteReward)
 wrongReward.RunId = "another-run"
-assert(not mismatchService:finalize({ Snapshot = snapshot, FinishedAtUnix = 550, Rewards = { wrongReward } }).Accepted, "foreign reward must fail")
+assert(
+	not mismatchService:finalize({ Snapshot = snapshot, FinishedAtUnix = 550, Rewards = { wrongReward } }).Accepted,
+	"foreign reward must fail"
+)
 
 local duplicateService = serviceModule.new()
-assert(not duplicateService:finalize({ Snapshot = snapshot, FinishedAtUnix = 550, Rewards = { eliteReward, eliteReward } }).Accepted, "duplicate reward instance must fail")
+assert(
+	not duplicateService:finalize({ Snapshot = snapshot, FinishedAtUnix = 550, Rewards = { eliteReward, eliteReward } }).Accepted,
+	"duplicate reward instance must fail"
+)
 
 service:destroy()
 service:destroy()

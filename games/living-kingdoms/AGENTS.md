@@ -122,7 +122,13 @@ Run from repository root:
 
 ```bash
 python scripts/validate_living_kingdoms_layout.py
-stylua --check games/living-kingdoms/src
+python scripts/verify_studio_import_package.py
+python scripts/validate_migration_manifests.py
+
+stylua --check \
+  games/living-kingdoms/src \
+  games/living-kingdoms/tests \
+  games/living-kingdoms/tools
 selene games/living-kingdoms/src
 
 find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 \
@@ -132,6 +138,12 @@ find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 \
 rojo build games/living-kingdoms/default.project.json \
   --output /tmp/LivingKingdoms.rbxlx
 ```
+
+StyLua covers `src`, `tests` and `tools` — format new fixtures and tooling, not
+just runtime source. Selene remains scoped to `src`: it downloads the Roblox API
+dump from `setup.rbxcdn.com`, which some sandboxes block, so it is a CI-only
+check there. Extending Selene to `tests` and `tools` is unfinished work; do it
+from an environment that can actually run it.
 
 Do not delete or loosen an existing test because a new implementation fails it unless the underlying documented requirement has intentionally changed.
 

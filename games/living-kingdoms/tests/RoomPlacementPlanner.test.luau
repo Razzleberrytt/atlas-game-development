@@ -26,7 +26,10 @@ for index, connector in first.Connectors do
 end
 
 local badOk = pcall(function()
-	Planner.plan({ Seed = 1, Nodes = { { Index = 2, RoomId = "bad", Role = "Entry" }, { Index = 2, RoomId = "bad2", Role = "Boss" } } })
+	Planner.plan({
+		Seed = 1,
+		Nodes = { { Index = 2, RoomId = "bad", Role = "Entry" }, { Index = 2, RoomId = "bad2", Role = "Boss" } },
+	})
 end)
 assert(badOk == false)
 

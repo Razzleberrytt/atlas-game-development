@@ -4,7 +4,9 @@ local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
 local function assert(condition: unknown, message: string?)
-	if not condition then error(message or "lease assertion failed", 2) end
+	if not condition then
+		error(message or "lease assertion failed", 2)
+	end
 end
 
 local module = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/InventorySessionLeaseService.luau"), {
@@ -15,7 +17,9 @@ local module = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/I
 
 local store = { data = {}, fail = false }
 function store:update(key: string, transform)
-	if self.fail then return false, nil end
+	if self.fail then
+		return false, nil
+	end
 	local nextValue = transform(self.data[key])
 	self.data[key] = nextValue
 	return true, nextValue
@@ -57,7 +61,10 @@ store.fail = false
 first:acquire(303, 1300)
 first:acquire(404, 1300)
 first:releaseAll()
-assert(store.data["player:303:lease"] == nil and store.data["player:404:lease"] == nil, "releaseAll should clear owned leases")
+assert(
+	store.data["player:303:lease"] == nil and store.data["player:404:lease"] == nil,
+	"releaseAll should clear owned leases"
+)
 
 first:destroy()
 second:destroy()

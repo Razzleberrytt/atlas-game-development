@@ -30,7 +30,8 @@ local hordeHud = fs.readFile("games/living-kingdoms/src/client/Controllers/Horde
 local massacre = fs.readFile("games/living-kingdoms/src/client/Controllers/MassacreCrescendoController.luau")
 local enemyImpact = fs.readFile("games/living-kingdoms/src/client/Controllers/EnemyImpactPresentationController.luau")
 local routeGuide = fs.readFile("games/living-kingdoms/src/client/Controllers/RouteGuidePresentationController.luau")
-local landmarkAccent = fs.readFile("games/living-kingdoms/src/client/Controllers/LandmarkAccentPresentationController.luau")
+local landmarkAccent =
+	fs.readFile("games/living-kingdoms/src/client/Controllers/LandmarkAccentPresentationController.luau")
 
 -- Static RemoteEvent mapping and the confirmed canonical producer.
 assertThat(contains(project, '"HordeNetwork"'), "Rojo mapping must retain HordeNetwork")
@@ -58,14 +59,25 @@ assertThat(
 -- R1 adds one early compatibility bridge while two domain listeners still exist.
 -- This intentionally produces three static listeners during containment; R2/R3
 -- must consolidate CL-002/CL-003 onto the bridge before compatibility removal.
-assertThat(contains(earlyListener, "stateRemote.OnClientEvent:Connect(onState)"), "R1 bridge must remain a State listener")
+assertThat(
+	contains(earlyListener, "stateRemote.OnClientEvent:Connect(onState)"),
+	"R1 bridge must remain a State listener"
+)
 assertThat(contains(clientBootstrap, "HordeStateEarlyListener.start()"), "R1 bridge must start from client bootstrap")
-for _, listener in {
-	{ name = "HordeHUDController", source = hordeHud },
-	{ name = "MassacreCrescendoController", source = massacre },
-} do
-	assertThat(contains(listener.source, "HordeNetwork"), listener.name .. " must retain explicit HordeNetwork ownership")
-	assertThat(contains(listener.source, 'WaitForChild("State")'), listener.name .. " must retain explicit State ownership")
+for _, listener in
+	{
+		{ name = "HordeHUDController", source = hordeHud },
+		{ name = "MassacreCrescendoController", source = massacre },
+	}
+do
+	assertThat(
+		contains(listener.source, "HordeNetwork"),
+		listener.name .. " must retain explicit HordeNetwork ownership"
+	)
+	assertThat(
+		contains(listener.source, 'WaitForChild("State")'),
+		listener.name .. " must retain explicit State ownership"
+	)
 	assertThat(
 		contains(listener.source, "stateRemote.OnClientEvent:Connect"),
 		listener.name .. " must remain a statically visible compatibility listener until migrated"
@@ -83,14 +95,20 @@ assertThat(
 	"enemy impact feedback must remain explicitly inventoried as a Highlight owner"
 )
 assertThat(contains(enemyImpact, "highlight.Adornee = model"), "enemy impact Highlight must target one enemy model")
-assertThat(not contains(enemyImpact, "highlight.Adornee = Workspace"), "enemy impact Highlight must never target Workspace")
+assertThat(
+	not contains(enemyImpact, "highlight.Adornee = Workspace"),
+	"enemy impact Highlight must never target Workspace"
+)
 assertThat(
 	contains(hordeRuntime, 'created.Name = "HordeRoleHighlight"'),
 	"horde role Highlight reference must remain inventoried"
 )
 assertThat(contains(hordeRuntime, "created.Adornee = record.model"), "horde role Highlight must target one enemy model")
 assertThat(contains(hordeRuntime, "created.FillTransparency = 1"), "persistent role Highlight fill must stay invisible")
-assertThat(contains(hordeRuntime, "created.OutlineTransparency = 1"), "persistent role Highlight outline must stay invisible")
+assertThat(
+	contains(hordeRuntime, "created.OutlineTransparency = 1"),
+	"persistent role Highlight outline must stay invisible"
+)
 
 -- Canonical route and landmark presentation currently use bounded geometry,
 -- not Highlights. A broad route/landmark Highlight seen in Studio therefore
@@ -98,4 +116,6 @@ assertThat(contains(hordeRuntime, "created.OutlineTransparency = 1"), "persisten
 assertThat(not contains(routeGuide, 'Instance.new("Highlight")'), "route guide must not allocate Highlights")
 assertThat(not contains(landmarkAccent, 'Instance.new("Highlight")'), "landmark accents must not allocate Highlights")
 
-print("V27ActivePlaceStaticInventorySourceAudit: canonical producer, three containment listeners, and narrow Highlight facts locked")
+print(
+	"V27ActivePlaceStaticInventorySourceAudit: canonical producer, three containment listeners, and narrow Highlight facts locked"
+)

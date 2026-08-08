@@ -62,7 +62,13 @@ From the repository root, install the pinned tools in `rokit.toml`, then run:
 
 ```bash
 python scripts/validate_living_kingdoms_layout.py
-stylua --check games/living-kingdoms/src
+python scripts/verify_studio_import_package.py
+python scripts/validate_migration_manifests.py
+
+stylua --check \
+  games/living-kingdoms/src \
+  games/living-kingdoms/tests \
+  games/living-kingdoms/tools
 selene games/living-kingdoms/src
 
 find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 \
@@ -72,6 +78,9 @@ find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 \
 rojo build games/living-kingdoms/default.project.json \
   --output /tmp/LivingKingdoms.rbxlx
 ```
+
+StyLua covers `src`, `tests` and `tools`. Selene is scoped to `src` only; it
+needs the Roblox API dump, which some sandboxes cannot reach.
 
 A change is not complete merely because it compiles. Update or add focused tests for behavior changes and document any Roblox-engine behavior that cannot be validated outside Studio.
 

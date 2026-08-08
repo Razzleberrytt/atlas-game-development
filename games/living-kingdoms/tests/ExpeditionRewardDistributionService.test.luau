@@ -4,14 +4,17 @@ local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
 local function assert(condition: unknown, message: string?)
-	if not condition then error(message or "reward distribution assertion failed", 2) end
+	if not condition then
+		error(message or "reward distribution assertion failed", 2)
+	end
 end
 
-local module = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/ExpeditionRewardDistributionService.luau"), {
-	debugName = "ExpeditionRewardDistributionService",
-	environment = {},
-	injectGlobals = true,
-})()
+local module =
+	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/ExpeditionRewardDistributionService.luau"), {
+		debugName = "ExpeditionRewardDistributionService",
+		environment = {},
+		injectGlobals = true,
+	})()
 
 local eliteReward = {
 	InstanceId = "run-203:Elite:1",
@@ -67,11 +70,17 @@ end
 local service = module.new(owner, { 303, 101, 202, 101 })
 local first = service:distribute({ eliteReward, bossReward }, 1000)
 assert(not first.Complete, "distribution should remain pending while players fail")
-assert(#first.CompletedPlayerIds == 1 and first.CompletedPlayerIds[1] == 101, "loaded successful player should complete")
+assert(
+	#first.CompletedPlayerIds == 1 and first.CompletedPlayerIds[1] == 101,
+	"loaded successful player should complete"
+)
 assert(#first.PendingPlayerIds == 2, "two players should remain pending")
 assert(first.FailureReasonsByPlayerId[202] == "PlayerNotLoaded", "unloaded player should remain retryable")
 assert(first.FailureReasonsByPlayerId[303] == "SaveFailed", "save failure should remain retryable")
-assert(owner.applied[101][eliteReward.InstanceId] and owner.applied[101][bossReward.InstanceId], "successful player should receive both rewards")
+assert(
+	owner.applied[101][eliteReward.InstanceId] and owner.applied[101][bossReward.InstanceId],
+	"successful player should receive both rewards"
+)
 
 local callsAfterFirstFor101 = owner.calls[101]
 owner.loaded[202] = true
@@ -80,8 +89,14 @@ assert(second.Complete, "retry should complete remaining players")
 assert(#second.CompletedPlayerIds == 3, "all unique participants should complete")
 assert(#second.PendingPlayerIds == 0, "no players should remain pending")
 assert(owner.calls[101] == callsAfterFirstFor101, "completed players must not be processed again")
-assert(owner.applied[202][eliteReward.InstanceId] and owner.applied[202][bossReward.InstanceId], "previously unloaded player should recover")
-assert(owner.applied[303][eliteReward.InstanceId] and owner.applied[303][bossReward.InstanceId], "temporary save failure should recover")
+assert(
+	owner.applied[202][eliteReward.InstanceId] and owner.applied[202][bossReward.InstanceId],
+	"previously unloaded player should recover"
+)
+assert(
+	owner.applied[303][eliteReward.InstanceId] and owner.applied[303][bossReward.InstanceId],
+	"temporary save failure should recover"
+)
 
 local callsAfterComplete = {
 	[101] = owner.calls[101],

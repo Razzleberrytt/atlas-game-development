@@ -2,7 +2,10 @@
 
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
-local module = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/ExpeditionDiagnosticsService.luau"), { injectGlobals = true })()
+local module = luau.load(
+	fs.readFile("games/living-kingdoms/src/server/Systems/ExpeditionDiagnosticsService.luau"),
+	{ injectGlobals = true }
+)()
 
 local journal = module.new(10)
 for index = 1, 12 do

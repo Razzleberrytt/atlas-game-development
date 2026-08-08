@@ -75,7 +75,10 @@ local wrongOk, wrongReason = resolver.discover(state, chosenPlan.HostIndex + 100
 assert(not wrongOk and wrongReason == "WrongHost", "wrong room must not discover secret")
 
 local earlyClaim, earlyReason, earlyAmount = resolver.claim(state)
-assert(not earlyClaim and earlyReason == "SecretUndiscovered" and earlyAmount == 0, "undiscovered reward must be blocked")
+assert(
+	not earlyClaim and earlyReason == "SecretUndiscovered" and earlyAmount == 0,
+	"undiscovered reward must be blocked"
+)
 
 local discovered, discoveredReason = resolver.discover(state, chosenPlan.HostIndex)
 assert(discovered and discoveredReason == "SecretDiscovered", "correct host should discover secret")
@@ -88,7 +91,10 @@ assert(claimed and claimReason == "RewardClaimed", "first claim should succeed")
 assert(amount == config.Reward.RunCurrencyAmount, "claim amount must use bounded config")
 
 local duplicateClaim, duplicateClaimReason, duplicateAmount = resolver.claim(state)
-assert(not duplicateClaim and duplicateClaimReason == "RewardAlreadyClaimed" and duplicateAmount == 0, "reward must not duplicate")
+assert(
+	not duplicateClaim and duplicateClaimReason == "RewardAlreadyClaimed" and duplicateAmount == 0,
+	"reward must not duplicate"
+)
 
 local noSecretSeed = nil
 for seed = 1, 500 do

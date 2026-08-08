@@ -4,7 +4,9 @@ local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
 local function assert(condition: unknown, message: string?)
-	if not condition then error(message or "party decision assertion failed", 2) end
+	if not condition then
+		error(message or "party decision assertion failed", 2)
+	end
 end
 
 local module = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/ExpeditionPartyDecisionService.luau"), {
