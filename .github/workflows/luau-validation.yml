@@ -8,6 +8,7 @@ on:
       - "games/living-kingdoms/**"
       - "docs/**"
       - "scripts/validate_living_kingdoms_layout.py"
+      - "scripts/roblox/**"
       - "rokit.toml"
       - "stylua.toml"
       - "selene.toml"
@@ -21,6 +22,7 @@ on:
       - "games/living-kingdoms/**"
       - "docs/**"
       - "scripts/validate_living_kingdoms_layout.py"
+      - "scripts/roblox/**"
       - "rokit.toml"
       - "stylua.toml"
       - "selene.toml"
@@ -49,6 +51,10 @@ jobs:
       - name: Validate migration manifests
         shell: bash
         run: python scripts/validate_migration_manifests.py
+
+      - name: Self-test RBXL property decoder
+        shell: bash
+        run: python scripts/roblox/extract_rbxl_world_properties.py --self-test
 
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
