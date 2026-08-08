@@ -913,6 +913,10 @@ for _, prohibited in { "FireServer", "InvokeServer" } do
 		"mission controller must send nothing: " .. prohibited
 	)
 end
+assert(
+	string.find(controllerSource, "snapshot.operationId == previous.operationId", 1, true),
+	"a fresh operation must not be rejected because its revision restarted"
+)
 
 print(
 	"MissionDirectorService: phases, authored objective chain, relocation, extraction, holdout, wipe, disconnect, 1/2/4 validation, and cleanup passed"

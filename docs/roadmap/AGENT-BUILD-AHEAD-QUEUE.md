@@ -23,13 +23,13 @@ Read first:
 - Game path: `games/living-kingdoms`
 - Checkpoint used for this refresh: `60229a32ec1f7db3b87a68e5f81ddf8115e665f1`
 - Refreshed in place at `944c684520c2ebaf6cf821a8a94a21a33588dc4f` (2026-08-08): BA-010, BA-011 and BA-012 closed via PR #241/#242/#243, `CLAUDE.md` added, BA-074 closed with `scripts/validate_roadmap_authority.py`. The task table below reflects current status; re-fetch `main` before starting any task regardless — this queue is being actively worked by more than one agent in parallel (see "Parallel assignment" below).
-- Evidence: **E1**
+- Evidence: **E2** (pinned-artifact Studio initialization/R1; later integrated matrices remain open)
 - Studio import preservation is **repaired**: 28/28 Studio-only sources and 1,775/1,775 Workspace identity/hierarchy rows are preserved.
 - Property-backed authored-world recovery is now available; older documents that cite only 122 recoverable Workspace rows are historical damage-state evidence, not current truth.
 - The recovered authored overworld is a separate future coordinate/lifecycle space from the modern operation forest.
 - The live Ranger Station Forward Operations Hub is a temporary preparation bridge, not the final Main World.
-- R1 requires a new recorded CI artifact at/after client-bootstrap fix `91a1ebe3d04b6d99495f19e7a809bc2b4135fd97`; the older pinned artifact is invalid for acceptance.
-- PR #221 remains blocked pending R1 acceptance.
+- R1 is accepted on recorded artifact 9028866465; the older pre-bootstrap-fix artifact remains invalid historical evidence.
+- PR #221 is no longer blocked by R1, but must be rebased/revalidated and satisfy its own evidence gate before merge.
 - PR #222 remains stacked/blocked pending #221 and its required evidence.
 - PR #239 is an open held pre-launch operation-selection contract; do not duplicate or activate it blindly.
 

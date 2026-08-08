@@ -3,7 +3,7 @@
 **Milestone/product authority:** Atlas v2.8 complete product path  
 **Active runtime execution authority:** Blueprint v2.7 Rollout & Observability  
 **Date:** 2026-08-08  
-**Current evidence claim:** E1 until accepted Studio evidence advances it
+**Current evidence claim:** E2 on the accepted pinned-artifact R1/replay packet
 
 This document describes the full dependency-gated path from the current repository through a polished vertical slice, durable game, launch, and post-launch operation.
 
@@ -51,14 +51,21 @@ Repository state at v2.8 adoption (commit `60229a32ec1f7db3b87a68e5f81ddf8115e66
 - held source-managed reconstructions exist for major authored-overworld elements including WorldPath, DungeonPortal, and the quest board;
 - a pre-launch operation-selection contract is being prepared separately; its existence does not authorize early runtime wiring.
 
+Runtime evidence refresh after adoption:
+
+- **R1 accepted on a new pinned CI artifact**: workflow run 31282591558, artifact ID 9028866465, source/build identity c55287fac4ecefc120c541958a6a06049b0a78cd; the fresh packet is [`../production/evidence/2026-08-08-r1-playable-replay-loop.md`](../production/evidence/2026-08-08-r1-playable-replay-loop.md);
+- the capture advanced from 50 to 238 valid compatibility-state messages over 94 seconds, with zero invalid messages, zero queue/discard warnings, and zero enabled broad Highlight targets;
+- the same run closed a P10-0105 acceptance defect: after a terminal result, run 2 now restores 100 health and movement, dismisses the prior debrief, accepts the new operation's revision, and advances the opening objective;
+- accepted evidence advances to **E2** because the pinned artifact started and initialized cleanly; E3–E5 remain open because later reset/respawn, delayed-ready, late-join, multiplayer, streaming, and profiling matrices are not closed by a one-client R1 run.
+
 ## Refreshed since adoption — 2026-08-08
 
-- current `main` checkpoint as of this audit pass: `944c684520c2ebaf6cf821a8a94a21a33588dc4f`;
+- current `main` checkpoint before PR #245: `26898b21bffd8e4b50001da2e3812e17760bab6a`;
 - **BA-010 closed at E1**: the Main World/environment audit and composition specification is complete in [`../specifications/main-world-environment-audit.md`](../specifications/main-world-environment-audit.md) (merged via PR #241); see the refreshed W0 status below;
 - **BA-011 closed at E1**: the Main World source representation/placement strategy is complete in [`../specifications/main-world-source-representation-strategy.md`](../specifications/main-world-source-representation-strategy.md), locked by `MainWorldRepresentationConfig` (merged via PR #242); see the refreshed W1 status below;
 - **BA-012 closed at E1**: the canonical Hub interaction registry (preparation/board/vendor/NPC/crafting/gathering/portal/social anchors and owner/dependency boundaries) is complete in [`../specifications/canonical-hub-interaction-registry.md`](../specifications/canonical-hub-interaction-registry.md) (merged via PR #243); no runtime activation;
 - root `CLAUDE.md` was added as a companion mechanical/architecture reference alongside this operating contract; it does not change roadmap authority or task selection;
-- every other fact recorded at adoption above — evidence level, the R1 re-pin requirement, PR #221/#222 status, and the combined-world preservation counts — remains unchanged;
+- accepted evidence level is E2, PR #222 remains blocked behind consolidation/R2 dependencies, and the combined-world preservation counts remain unchanged; the R1 re-pin requirement is closed by the runtime-evidence refresh above;
 - the highest-ROI build-ahead task after this refresh is **BA-013 — Environment production plan**, per [`AGENT-BUILD-AHEAD-QUEUE.md`](AGENT-BUILD-AHEAD-QUEUE.md), which also records the parallel-safe assignment across concurrent agents.
 
 ## Current program state
@@ -68,10 +75,10 @@ Repository state at v2.8 adoption (commit `60229a32ec1f7db3b87a68e5f81ddf8115e66
 | Repository/tooling foundation | [x] | GitHub-first source, Rojo, validation, CI, reproducible builds and agent workflow exist. |
 | Combined-game preservation | [x] | Studio source/hierarchy recovery is repaired; preserved legacy services remain inert. |
 | Product authority reconciliation | [x] | Current Atlas product authority exists; older Living Kingdoms charter is explicitly historical. |
-| v2.7 runtime rollout | [~] | **Primary runtime lane.** R1 requires a new valid pinned evidence artifact/run before promotion. |
+| v2.7 runtime rollout | [~] | **Primary runtime lane.** R1 is accepted on pinned artifact 9028866465; single-listener consolidation is the next dependency before R2. |
 | Controlled build-ahead | [~] | Pure contracts, data, audits, reconstruction and dormant seams may continue without activating future runtime scope. |
 | Main World / environment preparation | [~] | Forward Operations Hub is live as a bridge; authored overworld reconstruction is held; full overworld lifecycle is not active. |
-| E2–E4 integrated evidence | [!] | Blocked until runtime rollout is trustworthy enough for accepted Studio/integrated testing. |
+| E2–E4 integrated evidence | [~] | E2 Studio initialization accepted; E3/E4 integrated and multiplayer evidence remain blocked by later runtime gates. |
 | Durable persistence/value | [!] | Deliberately blocked until runtime ownership/cleanup is accepted. |
 | Vertical-slice activation | [!] | Preparation allowed; broad runtime integration waits for active gates. |
 | Device/performance/accessibility | [!] | Requires representative integrated build and measured evidence. |
@@ -139,13 +146,14 @@ Do not duplicate Tickets 331–360 here. The controlling detail remains:
 - [`ACTIVE-PLACE-ROLLOUT-V2.7.md`](ACTIVE-PLACE-ROLLOUT-V2.7.md)
 - [`CROSS-SYSTEM-TRACEABILITY-V2.7.md`](CROSS-SYSTEM-TRACEABILITY-V2.7.md)
 
-Current mandatory correction before R1 acceptance:
+R1 acceptance is complete on the exact identity recorded in
+[`../production/evidence/2026-08-08-r1-playable-replay-loop.md`](../production/evidence/2026-08-08-r1-playable-replay-loop.md).
+The next dependency-safe runtime sequence is:
 
-1. build/pin a recorded CI artifact containing the client-bootstrap fix;
-2. create/use a fresh evidence packet tied to that exact build/place identity;
-3. rerun R1 measurements and invalidation checks;
-4. do not infer acceptance from the informational local capture;
-5. keep #221/#222 blocked until their declared evidence dependencies are satisfied.
+1. rebase and revalidate PR #221's single-listener consolidation against current `main`;
+2. capture its declared listener/presentation evidence without removing the R1 rollback checkpoint;
+3. keep PR #222's R2 publisher blocked until consolidation is accepted;
+4. then execute R2 delayed-ready/current-state delivery evidence before R3 semantic suppression.
 
 ### R exit gate
 
@@ -329,11 +337,14 @@ Existing lobby membership/readiness remains an asset; new topology must extend r
 
 # E — Evidence promotion
 
-**Status: [!] BLOCKED BY R**
+**Status: [~] E2 ACCEPTED; E3–E4 BLOCKED BY LATER RUNTIME GATES**
 
 ## E2 — Studio initialization
 
 Accept only when a repository-synchronized build starts cleanly enough for the intended systems to initialize and diagnostics to be trustworthy.
+
+**Accepted 2026-08-08** on pinned artifact 9028866465. See
+[`../production/evidence/2026-08-08-r1-playable-replay-loop.md`](../production/evidence/2026-08-08-r1-playable-replay-loop.md).
 
 ## E3 — Single-player integrated behavior
 
@@ -713,7 +724,7 @@ Two lanes remain valid:
 
 ### Human/Studio runtime lane
 
-**Re-pin and rerun the v2.7 R1 evidence packet using a recorded CI artifact containing the client-bootstrap fix.** This is the highest-value blocker removal because accepted runtime evidence unlocks the staged state/presentation rollout.
+**Rebase/revalidate the prepared PR #221 single-listener consolidation and capture its declared listener/presentation evidence.** R1 is now accepted; consolidation is the next dependency before the R2 ready-gated publisher may activate.
 
 ### Agent build-ahead lane
 
