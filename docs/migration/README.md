@@ -19,6 +19,8 @@ than an archaeology exercise.
 | `AUTHORED-WORLD-MIGRATION-MANIFEST.md` | BA-002 | Human-readable view of the same data |
 | `legacy-script-disposition-matrix.json` | BA-003 | All 28 preserved Studio-only scripts |
 | `LEGACY-SCRIPT-DISPOSITION-MATRIX.md` | BA-003 | Human-readable view of the same data |
+| `combined-game-integration-graph.json` | BA-070 | Ordered integration graph with runtime gates |
+| `COMBINED-GAME-INTEGRATION-GRAPH.md` | BA-070 | Human-readable view, with diagram |
 
 Together the two instance manifests partition the recovered Workspace index with
 no overlap and no gap: BA-001 claims the 81 `Workspace/HubTown` rows, BA-002
@@ -64,6 +66,10 @@ or instance id that was never recovered, a script that is not in the import
 manifest, a canonical owner module that does not exist, an unknown build-ahead
 task, a dependency cycle, or when a manifest with a declared `path_scope` leaves
 a recovered row unclaimed or claims one twice.
+
+A file carrying `"document_type": "dependency_graph"` is validated as a graph
+instead: unique node ids, resolvable dependencies, real task ids, real manifest
+entry ids, real module paths, and no cycles.
 
 That last rule is what makes a manifest trustworthy: the HubTown manifest cannot
 silently omit content, because every recovered `Workspace/HubTown` row must be

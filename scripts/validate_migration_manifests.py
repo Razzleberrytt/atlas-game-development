@@ -291,10 +291,85 @@ def check_script_coverage(
         )
 
 
+def validate_dependency_graph(
+    report: Report,
+    name: str,
+    document: dict[str, Any],
+    known_tasks: set[str],
+    manifest_entry_ids: set[str],
+) -> None:
+    """BA-070: the integration graph must reference real work and stay acyclic."""
+    nodes = document.get("nodes")
+    if not isinstance(nodes, list) or not nodes:
+        report.fail(name, "dependency graph has no nodes")
+        return
+
+    graph: dict[str, set[str]] = {}
+    seen: set[str] = set()
+    for node in nodes:
+        node_id = str(node.get("id"))
+        if node_id in seen:
+            report.fail(name, f"duplicate graph node id: {node_id}")
+        seen.add(node_id)
+        if not str(node.get("summary", "")).strip():
+            report.fail(name, f"{node_id}: summary is empty")
+        if not str(node.get("gate", "")).strip():
+            report.fail(name, f"{node_id}: gate is empty")
+        graph[node_id] = set()
+
+    for node in nodes:
+        node_id = str(node.get("id"))
+        for dependency in node.get("depends_on") or []:
+            if dependency == node_id:
+                report.fail(name, f"{node_id}: node depends on itself")
+            elif dependency in seen:
+                graph[node_id].add(dependency)
+            else:
+                report.fail(name, f"{node_id}: unresolved graph dependency {dependency!r}")
+        for task in node.get("build_ahead_tasks") or []:
+            if known_tasks and task not in known_tasks:
+                report.fail(name, f"{node_id}: unknown build-ahead task {task}")
+        for entry_id in node.get("manifest_entries") or []:
+            if entry_id not in manifest_entry_ids:
+                report.fail(name, f"{node_id}: unknown manifest entry {entry_id!r}")
+        for module in node.get("canonical_modules") or []:
+            if not (ROOT / module).is_file():
+                report.fail(name, f"{node_id}: canonical module does not exist: {module}")
+
+    visiting: set[str] = set()
+    done: set[str] = set()
+
+    def walk(node_id: str, trail: list[str]) -> None:
+        if node_id in done:
+            return
+        if node_id in visiting:
+            report.fail(name, "dependency cycle: " + " -> ".join(trail + [node_id]))
+            return
+        visiting.add(node_id)
+        for child in sorted(graph.get(node_id, ())):
+            walk(child, trail + [node_id])
+        visiting.discard(node_id)
+        done.add(node_id)
+
+    for node_id in sorted(graph):
+        walk(node_id, [])
+
+    print(f"[migration] {name}: dependency graph with {len(nodes)} nodes")
+
+
 def validate(path: Path, rows: dict[str, list[dict[str, Any]]], scripts: set[str],
              known_tasks: set[str], report: Report) -> None:
     name = str(path.relative_to(ROOT))
     manifest = json.loads(path.read_text(encoding="utf-8"))
+
+    if manifest.get("document_type") == "dependency_graph":
+        entry_ids: set[str] = set()
+        for other in sorted(MIGRATION_DIR.glob("*.json")):
+            document = json.loads(other.read_text(encoding="utf-8"))
+            for entry in document.get("entries") or []:
+                entry_ids.add(str(entry.get("id")))
+        validate_dependency_graph(report, name, manifest, known_tasks, entry_ids)
+        return
 
     entries = manifest.get("entries")
     if not isinstance(entries, list) or not entries:

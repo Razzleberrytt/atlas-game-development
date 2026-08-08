@@ -13,7 +13,11 @@ It does **not** replace Blueprint v2.7. It defines work that may be prepared in 
 - Canonical repository: `Razzleberrytt/atlas-game-development`
 - Canonical game path: `games/living-kingdoms`
 - Current `main` at creation of this queue: `fda4e823bf662abbbbac2aa61e297ac7a51ed1f0`
-- Evidence level: **E1**
+- Evidence level: **E1** (unchanged by the P0 build-ahead pass)
+- Preservation-package integrity: **DAMAGED**. 17 of 28 Studio-only sources and
+  122 of 1,775 Workspace rows are recoverable; the rest needs re-extraction from
+  the source place. See `docs/production/RBXL-IMPORT-INTEGRITY-2026-08-07.md`.
+  Every P0 manifest is bounded by this limit.
 - Required manual gate: canonical R1 Studio evidence packet
 - Canonical R1 test artifact remains:
   - commit `2c870d270b96064c9a06343cc088b251299373f4`
@@ -91,10 +95,23 @@ These tasks make the old Studio world/content usable without rebooting stale sys
 
 | ID | Status | Task | Deliverable | Merge posture |
 |---|---|---|---|---|
-| BA-001 | READY | Build a canonical HubTown migration manifest from preserved RBXL import material. | Machine-readable inventory mapping HubTown instances/assets/scripts to `KEEP`, `MIGRATE`, `REPLACE`, `ARCHIVE`, with canonical owner and dependencies. | Docs/data/tooling may merge if runtime-neutral. |
-| BA-002 | READY | Build the authored-world migration manifest for structures, ruins, landmarks, resources, portals, NPC structures, lighting and VFX. | Stable IDs, source paths, asset refs, intended canonical representation, Studio-only notes, dependency matrix. | Docs/data/tooling may merge if runtime-neutral. |
-| BA-003 | READY | Produce a legacy-script disposition matrix for all preserved Studio-only scripts. | Every preserved script classified: canonical replacement, reusable logic candidate, content-only reference, dead/stale, or requires manual Studio inspection. | Docs/tooling only. |
+| BA-000 | DONE | Recover and pin the damaged Studio import preservation package. Unlisted prerequisite discovered while sourcing BA-001. | `scripts/verify_studio_import_package.py`, `INTEGRITY-BASELINE.json`, `imports/studio-2026-08-07/recovered/`, `docs/production/RBXL-IMPORT-INTEGRITY-2026-08-07.md`. | Merged (PR #226). |
+| BA-001 | DONE | Build a canonical HubTown migration manifest from preserved RBXL import material. | `docs/migration/hubtown-migration-manifest.json` + `.md`. 81 recovered rows, 25 entries, 4 open gaps. | Merged (PR #226). |
+| BA-002 | PARTIAL | Build the authored-world migration manifest for structures, ruins, landmarks, resources, portals, NPC structures, lighting and VFX. | `docs/migration/authored-world-migration-manifest.json` + `.md`. 41 recovered rows, 11 entries, 5 open gaps. | Merged (PR #226); reopen after Studio re-extraction. |
+| BA-003 | DONE | Produce a legacy-script disposition matrix for all preserved Studio-only scripts. | `docs/migration/legacy-script-disposition-matrix.json` + `.md`. All 28 scripts classified. | Merged (PR #226). |
 | BA-004 | READY | Define stable world-content IDs/contracts shared by HubTown, portals, NPCs, landmarks, resources and authored encounters. | Strict Luau types + validation fixtures; no active runtime wiring. | Draft if added under runtime source; safe to merge only if truly dormant. |
+
+**BA-002 is intentionally `PARTIAL`, not `DONE`.** `Workspace/WorldStructures` —
+the folder holding the authored structures, ruins and landmarks the task is
+named for — survived as an identity with no child rows, and no transform
+survived for any instance in the place. The manifest covers all 41 provable rows
+and records the rest as required Studio extraction. It should be revised, not
+replaced, once re-extraction lands.
+
+**BA-050 and BA-052 are unblocked by BA-002 rather than gated by it.** The
+legacy world contributes almost nothing recoverable, and the canonical authored
+world already exists in `WorldFoundationConfig` and `WorldFoundationService`, so
+those tasks design against canonical landmarks and routes today.
 
 ### P1 — HubTown and social-space preparation
 
@@ -138,9 +155,9 @@ These tasks make the old Studio world/content usable without rebooting stale sys
 
 | ID | Status | Task | Deliverable | Merge posture |
 |---|---|---|---|---|
-| BA-050 | BLOCKED on BA-002/004 | Define first authored outdoor route as data. | Route IDs, encounter beats, landmark IDs, optional discovery node, entrance/exit, readable objective sequence. | Draft/dormant. |
+| BA-050 | READY (was BLOCKED on BA-002/004) | Define first authored outdoor route as data, against the canonical `WorldFoundationConfig` landmarks and `WorldFoundationService` routes. | Route IDs, encounter beats, landmark IDs, optional discovery node, entrance/exit, readable objective sequence. | Draft/dormant. |
 | BA-051 | BLOCKED on BA-050 | Prepare encounter beat definitions for the first route. | Mixed enemy groups, pacing constraints, objective/trigger references, elite placement, failure/recovery assumptions. | Draft/dormant. |
-| BA-052 | BLOCKED on BA-002 | Prepare landmark/discovery content definitions. | Stable discovery IDs, presentation intent, gameplay meaning, rewards references, streaming-safe identity. | Draft/dormant. |
+| BA-052 | READY (was BLOCKED on BA-002) | Prepare landmark/discovery content definitions, against canonical landmarks. | Stable discovery IDs, presentation intent, gameplay meaning, rewards references, streaming-safe identity. | Draft/dormant. |
 
 ### P6 — Player onboarding and control preparation
 
@@ -155,9 +172,9 @@ These tasks make the old Studio world/content usable without rebooting stale sys
 
 | ID | Status | Task | Deliverable | Merge posture |
 |---|---|---|---|---|
-| BA-070 | READY | Create a combined-game integration dependency graph. | Ordered graph from preserved RBXL content through HubTown → route → dungeon → loot → return, with runtime-gate dependencies explicit. | Docs/tooling safe. |
-| BA-071 | READY | Add source audits protecting against legacy service resurrection. | Tests fail if old `RPGServerBootstrap`/duplicate CombatService/EnemyService/Inventory/Loot/Persistence/Monetization paths are accidentally bootstrapped. | Safe if test-only. |
-| BA-072 | READY | Add canonical content-ID collision/orphan validator tooling. | Validator scans prepared content manifests/contracts and reports duplicates, broken refs, cycles where forbidden. | Safe if tooling/test-only. |
+| BA-070 | DONE | Create a combined-game integration dependency graph. | `docs/migration/combined-game-integration-graph.json` + `.md`. 26 nodes, CI-validated, acyclic, runtime gates explicit. | Merged (PR #226). |
+| BA-071 | DONE | Add source audits protecting against legacy service resurrection. | `tests/LegacyServiceResurrectionSourceAudit.test.luau`. Verified negatively as well as positively. | Merged (PR #226). |
+| BA-072 | DONE | Add canonical content-ID collision/orphan validator tooling. | `scripts/validate_migration_manifests.py`, run in CI. Covers manifests and the dependency graph. Contract (Luau) scanning remains an extension point for BA-025. | Merged (PR #226). |
 | BA-073 | BLOCKED on BA-001–072 relevant subsets | Assemble a `VERTICAL-SLICE-INTEGRATION-PLAN.md`. | Exact PR/merge order after v2.7 gates open; identifies which prepared branches can be promoted and what Studio evidence each requires. | Docs safe. |
 
 ## Tasks agents must NOT perform yet
@@ -178,23 +195,46 @@ Until the corresponding runtime gate is accepted, do not:
 
 ## Current recommended assignment for Claude
 
-If Claude is being given one autonomous run, assign in this order until time/context runs out:
+The first pass of this list is complete and merged as PR #226:
 
 ```text
-BA-001 HubTown migration manifest
-→ BA-002 authored-world migration manifest
-→ BA-003 legacy-script disposition matrix
-→ BA-070 combined-game dependency graph
-→ BA-071 legacy-service resurrection audits
-→ BA-072 content reference validator
-→ BA-020 quest contracts/resolver
-→ BA-022 crafting contracts/resolver
-→ BA-030 dungeon/expedition contract
-→ BA-040 enemy coverage audit
-→ BA-042 loot/build-decision audit
+BA-000 import recovery + integrity gate   DONE  (unlisted prerequisite)
+BA-001 HubTown migration manifest         DONE
+BA-002 authored-world migration manifest  PARTIAL (Studio re-extraction required)
+BA-003 legacy-script disposition matrix   DONE
+BA-070 combined-game dependency graph     DONE
+BA-071 legacy-service resurrection audits DONE
+BA-072 content reference validator        DONE
 ```
 
-The first six items are especially valuable because they reduce integration uncertainty while touching little or no active gameplay runtime.
+Next autonomous run, in this order — the ordering comes from
+`docs/migration/COMBINED-GAME-INTEGRATION-GRAPH.md`, which now records the real
+dependency structure:
+
+```text
+BA-004 stable world-content IDs/contracts   (unblocks the most)
+→ BA-040 enemy coverage audit               (docs/data, no dependencies)
+→ BA-042 loot/build-decision audit
+→ BA-044 progression/skill mapping audit
+→ BA-020 quest contracts/resolver
+→ BA-022 crafting contracts/resolver
+→ BA-023 gathering/resource-node model
+→ BA-024 vendor/catalog/pricing contracts
+→ BA-030 dungeon/expedition contract
+→ BA-031 portal destination/eligibility contract
+→ BA-050 first authored outdoor route
+→ BA-025 cross-domain reference validation
+```
+
+Two items need a human rather than an agent:
+
+1. **Studio re-extraction** of the 11 lost sources and the full 1,775-row
+   Workspace hierarchy. Steps are in
+   `docs/production/RBXL-IMPORT-INTEGRITY-2026-08-07.md`. This is the only
+   blocker on BA-010/011/012 and therefore on HubTown activation.
+2. **The HubTown art-direction decision** BA-010 owes: HubTown is a medieval hub
+   and the canonical world is a forest extraction setting. That decision is not
+   blocked by re-extraction and changes what HubTown migration means.
 
 ## Promotion rule after the user completes R1 Studio evidence
 
