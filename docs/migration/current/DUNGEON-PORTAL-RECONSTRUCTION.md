@@ -1,6 +1,6 @@
 # BA-005 DungeonPortal Reconstruction
 
-The first property-backed authored-overworld object group is now represented as an **inert source contract**:
+The first property-backed authored-overworld object group is represented as an **inert source contract**:
 
 `games/living-kingdoms/src/shared/Config/RecoveredDungeonPortalConfig.luau`
 
@@ -8,15 +8,18 @@ Source group:
 
 `Workspace/HubTown/DungeonPortal`
 
-## What is recovered now
+## Current recovery level
 
-The original group contains **10 identity rows**. BA-005 currently represents them as:
+The original group contains **10 identity rows**. BA-005 now represents them as:
 
 - 1 generated container (`DungeonPortal` folder)
-- 6 property-backed recovered nodes
-- 3 identity-backed nodes whose remaining presentation properties are intentionally pending
+- **9 / 9 non-container nodes with decoded reconstruction properties**
+- 0 property-pending nodes
+- 1 known visual-property omission: the TextLabel `FontFace` binary value
 
-### Property-backed nodes
+This is substantially stronger than the first portal contract, which deliberately held the particle and UI descendants until their binary types were verified.
+
+## Recovered geometry and lights
 
 | Source node | Class | Recovered evidence |
 |---|---|---|
@@ -27,19 +30,69 @@ The original group contains **10 identity rows**. BA-005 currently represents th
 | `PortalSwirlAttach` | Attachment | identity CFrame at the PortalEffect origin |
 | `PortalSign` | Part | position `(0, 17, 22)`, size `8 x 2 x 0.5`, material enum `528`, RGB `80/55/25`, collidable |
 
-All three recovered Parts use identity rotation and preserve their original authored-overworld coordinates.
+All recovered Parts use identity rotation and preserve their original authored-overworld coordinates.
 
-### Pending property nodes
+## Recovered sign presentation
 
-The following nodes are preserved by identity but are **not yet claimed as property-perfect**:
+The SurfaceGui is now property-backed:
 
-- `PortalEffect/PortalSwirlAttach/PortalSwirl` — `ParticleEmitter`
-- `PortalSign/SurfaceGui` — `SurfaceGui`
-- `PortalSign/SurfaceGui/TextLabel` — `TextLabel`
+- canvas size: `800 x 600`
+- face enum value: `5`
+- `PixelsPerStud = 50`
+- brightness `1`
+- enabled
+- not always-on-top
+- zero light influence / Z offset
 
-Their class/path/source IDs are preserved. Their remaining particle sequence and UI layout/font properties stay pending until the RBXL property decoder is extended and verified for those types.
+The recovered TextLabel fills the full SurfaceGui and contains the original text:
 
-No substitute values should be invented merely to make the portal look complete.
+> `ENTER THE DEPTHS`  
+> `[G] to enter dungeon`
+
+Recovered label behavior includes:
+
+- `Position = UDim2(0, 0, 0, 0)`
+- `Size = UDim2(1, 0, 1, 0)`
+- background transparency `1`
+- text scaled and wrapped
+- visible
+- pale-blue recovered text color
+- X alignment enum value `2`
+- Y alignment enum value `1`
+
+The old `[G]` wording is **presentation evidence only**. It is not a modern input contract and must not be interpreted as permission to revive the old dungeon interaction code.
+
+### Known UI omission
+
+`TextLabel.FontFace` is serialized as binary type `0x20`, which is outside the current BA-005 presentation decoder scope.
+
+The contract records that omission explicitly. Do not invent a font and call it exact parity.
+
+## Recovered portal swirl
+
+The portal ParticleEmitter is now property-backed, including its sequence types:
+
+- texture: `rbxassetid://241876674`
+- enabled
+- rate: `40`
+- lifetime: `2..3` seconds
+- speed: `1..3`
+- acceleration: `(0, 2, 0)`
+- spread angle: `(360, 360)`
+- purple color sequence from time `0` through `1`
+- size sequence: `1 → 2 → 0.5`
+- transparency sequence: approximately `0.8 → 0.2 → 0.8`
+- no rotation speed
+- time scale `1`
+- zero velocity inheritance / drag / Z offset
+
+The decoder extension that produced this evidence lives at:
+
+`scripts/roblox/extract_rbxl_presentation_properties.py`
+
+Committed evidence lives at:
+
+`docs/migration/current/reextracted-presentation-evidence.json`
 
 ## No recovered prompt is invented
 
@@ -68,15 +121,15 @@ No current runtime module requires this reconstruction config.
 
 ## Why this is the first HubTown slice
 
-DungeonPortal is a useful proof of the combined-game architecture because it connects the strongest ideas from both versions without creating duplicate authority:
+DungeonPortal demonstrates the merge pattern for the rest of the authored overworld:
 
-- the older Studio game contributes the authored portal structure and its original location inside HubTown
+- the older Studio game contributes authored structures, signs, lighting, atmosphere and spatial identity
 - the modern repo retains expedition membership, readiness, launch and runtime authority
 
-That is the merge pattern to repeat throughout the authored overworld: **recover the old world faithfully; route gameplay through modern owners.**
+The rule remains: **recover the old world faithfully; route gameplay through modern owners.**
 
 ## Next safe work
 
-The strongest next step is to extend the property decoder for the basic `SurfaceGui` / `TextLabel` types required by the recovered sign. ParticleEmitter sequence support can follow separately.
+The presentation decoder now also covers the UI/particle types used by other HubTown content. The next high-value reconstruction slice should reuse that capability on a coherent authored group such as the quest board, Central Fountain, or vendor presentation rather than widening runtime authority.
 
-After those properties are verified, the portal presentation contract can reach a higher visual-parity level without guessing. It should still remain held until the dedicated authored-overworld lifecycle/place boundary exists.
+The portal itself remains held until the dedicated authored-overworld lifecycle/place boundary exists.
