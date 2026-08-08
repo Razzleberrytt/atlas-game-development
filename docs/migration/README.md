@@ -1,87 +1,84 @@
-# Combined-Game Migration Manifests
+# Combined-Game Migration Evidence
 
-Machine-readable migration truth for the preserved 2026-08-07 Studio place.
-These manifests are the P0 deliverables of the build-ahead lane described in
-`../roadmap/AGENT-BUILD-AHEAD-QUEUE.md`.
+This directory contains two generations of migration evidence for the 2026-08-07 Studio place. **Do not mix them up.**
 
-They are **inert data**. Nothing here is mapped by `default.project.json`, read
-by runtime code, or evidence of Studio behavior. They exist so that when the
-v2.7 runtime gates open, integration is a review of prepared decisions rather
-than an archaeology exercise.
+## Current post-repair evidence
 
-## Files
+Use these files for new reconstruction work:
 
-| File | Task | Scope |
+- `REEXTRACTED-WORLD-EVIDENCE.md`
+- `reextracted-world-evidence.json`
+
+They summarize the direct re-extraction from the original `livingkingdoms.rbxl` after PR #228 repaired the preservation failure.
+
+Current verified facts:
+
+- **28 / 28** Studio-only source files preserved exactly
+- **1,775 / 1,775** Workspace identity/hierarchy rows preserved
+- `Workspace/HubTown` — 270 rows
+- `Workspace/WorldStructures` — 1,190 rows
+- `Workspace/WorldPath` — 190 rows, including contiguous `PathSegment_1` through `PathSegment_189`
+- `Workspace/Resources` — 113 rows
+
+This evidence proves identity and hierarchy. It does **not** yet prove CFrame, size, material, color, terrain voxel, mesh, light, particle, fire, or other property parity.
+
+## Historical damaged-archive manifests
+
+The following manifests were produced **before** the repair, when only 122 Workspace rows were available in the first damaged preservation archive:
+
+| File | Task | Historical scope |
 |---|---|---|
-| `hubtown-migration-manifest.json` | BA-001 | `Workspace/HubTown` and the legacy hub service |
-| `HUBTOWN-MIGRATION-MANIFEST.md` | BA-001 | Human-readable view of the same data |
-| `authored-world-migration-manifest.json` | BA-002 | Every recovered Workspace row outside HubTown (**partial** — see the file) |
-| `AUTHORED-WORLD-MIGRATION-MANIFEST.md` | BA-002 | Human-readable view of the same data |
-| `legacy-script-disposition-matrix.json` | BA-003 | All 28 preserved Studio-only scripts |
-| `LEGACY-SCRIPT-DISPOSITION-MATRIX.md` | BA-003 | Human-readable view of the same data |
-| `combined-game-integration-graph.json` | BA-070 | Ordered integration graph with runtime gates |
-| `COMBINED-GAME-INTEGRATION-GRAPH.md` | BA-070 | Human-readable view, with diagram |
+| `hubtown-migration-manifest.json` | BA-001 | partial recovered HubTown rows from the damaged archive |
+| `HUBTOWN-MIGRATION-MANIFEST.md` | BA-001 | human-readable view of that historical data |
+| `authored-world-migration-manifest.json` | BA-002 | partial recovered non-HubTown rows from the damaged archive |
+| `AUTHORED-WORLD-MIGRATION-MANIFEST.md` | BA-002 | human-readable view of that historical data |
+| `legacy-script-disposition-matrix.json` | BA-003 | classification of the 28 Studio-only scripts |
+| `LEGACY-SCRIPT-DISPOSITION-MATRIX.md` | BA-003 | human-readable script disposition |
+| `combined-game-integration-graph.json` | BA-070 | prepared dependency graph |
+| `COMBINED-GAME-INTEGRATION-GRAPH.md` | BA-070 | human-readable graph |
 
-Together the two instance manifests partition the recovered Workspace index with
-no overlap and no gap: BA-001 claims the 81 `Workspace/HubTown` rows, BA-002
-claims the other 41. CI enforces both halves.
+The BA-001/BA-002 row counts and “missing subtree” conclusions are **superseded for current planning**. They remain in the repository because they record the original preservation failure and the decisions made against that evidence.
 
-## Evidence base
+Do not cite these historical statements as current facts:
 
-Every legacy reference resolves to preserved import material:
+- only 122 / 1,775 Workspace rows survived
+- HubTown has only 81 recoverable rows
+- WorldStructures has no recoverable children
+- WorldPath ends after PathSegment_12
+- 1,653 Workspace rows still require re-extraction
 
-- instance rows — `games/living-kingdoms/imports/studio-2026-08-07/recovered/workspace-index-recovered.json`
-- script identity — `games/living-kingdoms/imports/studio-2026-08-07/manifest.json`
+PR #228 invalidated those missing-row conclusions by re-extracting the intact original RBXL.
 
-The preservation archives are damaged; only part of the place survives in the
-repository. Read `../production/RBXL-IMPORT-INTEGRITY-2026-08-07.md` before
-treating any absence here as an absence in the real place.
+## Canonical ownership rule
 
-## Dispositions
+Migration evidence is inert. It never authorizes a second runtime authority.
 
-| Value | Meaning |
-|---|---|
-| `KEEP` | Legacy representation is already correct for the canonical architecture. |
-| `MIGRATE` | Authored value worth reconstructing as source-managed canonical content. |
-| `REPLACE` | Overlaps an existing canonical owner; reproduce the intent through that owner. |
-| `ARCHIVE` | Reference only. Never boot, require, or map into the active project. |
+When old and new systems overlap:
 
-`extraction_status` is separate from disposition. `recovered` means the row's
-identity is proven from the repository; `requires_studio_extraction` means the
-identity is proven but the contents beneath it were lost and must come from the
-source place.
+- keep the current source-managed owner
+- migrate authored content, rules, presentation, or data into that owner
+- never boot both implementations
 
-Script entries additionally carry a `classification` from the BA-003 taxonomy:
-`CANONICAL_REPLACEMENT`, `REUSABLE_LOGIC_CANDIDATE`, `CONTENT_ONLY_REFERENCE`,
-`DEAD_OR_STALE` or `REQUIRES_MANUAL_STUDIO_INSPECTION`.
+The imported legacy combat, enemy, inventory, persistence, loot, monetization, quest, dungeon, gathering and RPG bootstrap services remain reference material unless explicitly adapted through current contracts.
 
 ## Validation
 
+Two different checks currently exist:
+
 ```bash
+python scripts/verify_studio_import_package.py
 python scripts/validate_migration_manifests.py
 ```
 
-CI runs this on every change. It fails when an entry references a Workspace path
-or instance id that was never recovered, a script that is not in the import
-manifest, a canonical owner module that does not exist, an unknown build-ahead
-task, a dependency cycle, or when a manifest with a declared `path_scope` leaves
-a recovered row unclaimed or claims one twice.
+`verify_studio_import_package.py` validates the **current repaired preservation set**: all 28 sources and all 1,775 Workspace rows.
 
-A file carrying `"document_type": "dependency_graph"` is validated as a graph
-instead: unique node ids, resolvable dependencies, real task ids, real manifest
-entry ids, real module paths, and no cycles.
+`validate_migration_manifests.py` still validates the older BA-001/BA-002 manifest generation against the frozen damaged-archive index they were authored from. A green result means those historical manifests are internally consistent; it does **not** mean their 122-row evidence base is the latest preservation truth.
 
-That last rule is what makes a manifest trustworthy: the HubTown manifest cannot
-silently omit content, because every recovered `Workspace/HubTown` row must be
-claimed by exactly one entry.
+## Next use
 
-## Rules these manifests follow
+BA-005 should consume the post-repair evidence in two phases:
 
-- Do not create a second authority path. Where a canonical owner exists, the
-  disposition is `REPLACE` and the owner is named by file path.
-- Do not invent asset ids, place ids, or product ids. Missing assets are
-  recorded as open gaps.
-- Do not infer content that was lost. An unrecovered subtree is
-  `requires_studio_extraction`, never a guess.
-- Keep runtime activation out. Every entry carries a `runtime_gate`, and none of
-  them is open today.
+1. deterministic identity/hierarchy reconstruction behind the source hold
+2. supported property extraction and property-backed parity assertions
+
+Do not invent geometry or properties to fill gaps between those phases.
