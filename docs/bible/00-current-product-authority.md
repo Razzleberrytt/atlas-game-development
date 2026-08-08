@@ -3,7 +3,8 @@
 **Status:** CURRENT PRODUCT AUTHORITY  
 **Adopted:** 2026-08-08  
 **Scope:** Product direction, roadmap interpretation, and conflict resolution.  
-**Runtime execution authority:** Blueprint v2.7 remains controlling for the active rollout until its gates close.
+**Runtime execution authority:** Blueprint v2.7 remains controlling for the active rollout until its gates close.  
+**Implementation sequencing authority:** [`../roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md`](../roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md) controls which player-facing slice is built next once work is dependency-safe.
 
 This document exists because the repository contains valuable Living Kingdoms history whose product assumptions no longer describe the entire Atlas destination. Historical documents remain useful provenance, but agents must not let an older camera, combat, world, or genre statement silently override the current Atlas roadmap.
 
@@ -26,9 +27,20 @@ The current Living Kingdoms runtime is an important implementation asset, not a 
 
 ## Primary production rule
 
-> Build and prove one polished, replayable cooperative expedition and one coherent prepare/adventure/return loop before expanding breadth.
+> Build the smallest complete playable loop, prove it, then improve Atlas through coherent upgrade patches while preserving the playable baseline.
 
-The roadmap may describe the full destination now. Description does not authorize early implementation.
+The required development rhythm is:
+
+```text
+stabilize
+→ playable MVP
+→ play / debug / fix
+→ one coherent upgrade patch
+→ replay / regression test
+→ next patch
+```
+
+The roadmap may describe the full destination now. Description does not authorize early implementation, and a later broad phase may not leapfrog the current playable patch merely because its specification is complete.
 
 ## Player-facing macro loop
 
@@ -203,6 +215,8 @@ A release candidate is not the end of the roadmap. The product path includes:
 - rollback/hotfix operations;
 - post-launch balance and content expansion driven by evidence.
 
+The implementation path to that release is governed by the playable patch sequence rather than by completing every long-range phase in isolation.
+
 ## Explicit non-goals before the core loop is proven
 
 Do not prematurely build:
@@ -228,15 +242,18 @@ When product documents conflict, use this order:
 ```text
 accepted runtime evidence / current Roblox platform behavior
 → active runtime execution authority (currently Blueprint v2.7 + Production Core v2.7)
-→ this Current Product Authority + MASTER-ROADMAP.md
+→ PLAYABLE-MVP-PATCH-EXECUTION.md for implementation sequencing
+→ this Current Product Authority + MASTER-ROADMAP.md for product direction and complete scope
 → active rollout / cross-system / production-control documents
 → accepted current specifications and architecture decisions
 → specialist visual/environment/Studio bibles
 → historical project charters, pivots, and older roadmaps
 ```
 
+`MASTER-ROADMAP.md` remains the complete product-path and requirements inventory. When its phase ordering can be satisfied in more than one safe way, the playable patch document controls the chosen implementation order.
+
 Historical documents may still contain intentionally preserved principles. They do not regain authority merely because a current implementation originated there.
 
 ## Change rule
 
-If a future decision materially changes product identity—camera model, combat model, overworld structure, progression philosophy, multiplayer topology, monetization guardrails, or another foundational assumption—record it as an explicit decision and update this authority document and the master roadmap together.
+If a future decision materially changes product identity—camera model, combat model, overworld structure, progression philosophy, multiplayer topology, monetization guardrails, or another foundational assumption—record it as an explicit decision and update this authority document, the playable patch execution document, and the master roadmap together.
