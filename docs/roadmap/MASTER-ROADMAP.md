@@ -24,7 +24,7 @@ Older P0–P12 and blueprint roadmaps remain historical implementation records. 
 | Combined-game preservation | [x] | Incoming RBXL content/scripts/hierarchy were preserved as migration inputs without replacing canonical systems. |
 | Core gameplay systems | [H] | Significant movement/combat/life/enemy/objective/run-build/result work exists in source. Existing behavior is preserved as an asset, not treated as proof of the new runtime gate. |
 | v2.7 state/presentation rollout | [~] | **Primary runtime milestone.** R1 containment is implemented; runtime evidence is pending; #221 and #222 are prepared but intentionally blocked. |
-| Parallel agent build-ahead | [~] | **Authorized preparation lane.** Claude/Codex may prepare migration manifests, pure contracts, validators, content data and isolated draft PRs without activating future gameplay/runtime scope. |
+| Parallel agent build-ahead | [~] | **Authorized preparation lane.** P0 migration truth is complete and merged (BA-001/003/070/071/072 plus the import recovery; BA-002 partial). Contract, audit and content preparation continues without activating future gameplay/runtime scope. |
 | E2 Studio initialization | [!] | Cannot be claimed from documentation or CI alone. Requires captured Studio startup evidence. |
 | E3 integrated solo behavior | [!] | Begins only after rollout blockers are closed enough to run a trustworthy integrated loop. |
 | E4 multiplayer/adversarial | [!] | Requires two-player reset/disconnect/ownership/attribution evidence after E3 path is stable. |
@@ -44,7 +44,9 @@ Repository facts at this checkpoint:
 - R1 capture tooling and deterministic evidence evaluation tooling are on `main`;
 - PR #221 is a prepared draft for single physical `HordeNetwork.State` listener ownership and must not merge before R1 acceptance;
 - PR #222 is stacked/prepared R2 publisher infrastructure and must not merge/activate before #221 plus its required evidence;
-- the user may defer the Studio run while agents work the build-ahead queue, but deferred runtime gates are not considered passed.
+- the user may defer the Studio run while agents work the build-ahead queue, but deferred runtime gates are not considered passed;
+- the P0 build-ahead pass merged as PR #226 changed no runtime source, no Rojo mapping and no active-place behavior, so the pinned R1 artifact remains valid and the evidence level remains E1;
+- a second Studio task now exists alongside the R1 run: re-extracting the damaged preservation package. It is independent of R1 and blocks only HubTown composition work.
 
 ## North-star sequence
 
@@ -174,12 +176,29 @@ The canonical detailed queue is [`AGENT-BUILD-AHEAD-QUEUE.md`](AGENT-BUILD-AHEAD
 
 Highest priority because it turns the preserved RBXL import into a controlled integration plan.
 
-- [ ] HubTown migration manifest.
-- [ ] Authored-world migration manifest covering structures, ruins, landmarks, resources, portals, NPC structures, lighting and VFX.
-- [ ] Disposition matrix for all preserved Studio-only scripts.
-- [ ] Stable world-content ID/contracts and reference validation.
-- [ ] Combined-game dependency graph.
-- [ ] Source audits preventing legacy gameplay-service resurrection.
+- [x] HubTown migration manifest. `docs/migration/hubtown-migration-manifest.json`, 81 recovered rows claimed exactly once.
+- [~] Authored-world migration manifest covering structures, ruins, landmarks, resources, portals, NPC structures, lighting and VFX. All 41 provable rows covered; `Workspace/WorldStructures` has no surviving child row, so the manifest is **partial pending Studio re-extraction**.
+- [x] Disposition matrix for all preserved Studio-only scripts. All 28 classified; 17 from recovered source, 11 from identity plus reference copies.
+- [ ] Stable world-content ID/contracts and reference validation. Manifest/graph reference validation is done (BA-072); the Luau contracts (BA-004) are not started.
+- [x] Combined-game dependency graph. `docs/migration/combined-game-integration-graph.json`, 26 nodes, CI-validated and acyclic.
+- [x] Source audits preventing legacy gameplay-service resurrection. `tests/LegacyServiceResurrectionSourceAudit.test.luau`.
+
+### B0 finding — the preservation package is damaged
+
+Sourcing this work surfaced a defect that bounds everything above: the
+2026-08-07 RBXL preservation archives do not restore. 17 of 28 Studio-only
+sources and 122 of 1,775 Workspace instance rows survive; the rest is
+unrecoverable from the repository. `VALIDATION.md` had asserted a lossless
+round trip that is not reproducible, and has been corrected.
+
+The recoverable material is now stored as plain text under
+`games/living-kingdoms/imports/studio-2026-08-07/recovered/` and pinned in CI by
+`scripts/verify_studio_import_package.py`. The finding and the required Studio
+re-extraction steps are in
+[`../production/RBXL-IMPORT-INTEGRITY-2026-08-07.md`](../production/RBXL-IMPORT-INTEGRITY-2026-08-07.md).
+
+This does not change the evidence level and does not affect the active-place
+runtime, the pinned R1 artifact, or any canonical source.
 
 ## B1 — Gameplay-domain preparation
 

@@ -1,0 +1,4 @@
+# The recovered Studio-only sources are preservation artifacts checked against
+# the SHA-256 values in manifest.json. Line-ending normalization would change
+# their bytes and break that check, so they are excluded from it.
+recovered/legacy-src/** -text

@@ -42,6 +42,14 @@ jobs:
         shell: bash
         run: python scripts/validate_living_kingdoms_layout.py
 
+      - name: Verify preserved Studio import package
+        shell: bash
+        run: python scripts/verify_studio_import_package.py
+
+      - name: Validate migration manifests
+        shell: bash
+        run: python scripts/validate_migration_manifests.py
+
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
         with:
