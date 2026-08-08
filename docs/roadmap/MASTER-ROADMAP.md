@@ -36,9 +36,8 @@ A future phase being documented here is not permission to implement it early.
 
 # Current checkpoint — 2026-08-08
 
-Repository state at adoption:
+Repository state at v2.8 adoption (commit `60229a32ec1f7db3b87a68e5f81ddf8115e665f1`):
 
-- current `main` checkpoint used for this roadmap pass: `60229a32ec1f7db3b87a68e5f81ddf8115e665f1`;
 - accepted evidence remains **E1**;
 - the earlier R1 artifact is no longer valid as an acceptance run because a client-bootstrap stall invalidated every run against that artifact;
 - R1 must be re-pinned to a recorded CI artifact at or after the client-bootstrap fix (`91a1ebe3d04b6d99495f19e7a809bc2b4135fd97`) and rerun under the evidence packet rules;
@@ -51,6 +50,16 @@ Repository state at adoption:
 - the recovered authored overworld is intentionally a separate future coordinate/lifecycle space from the modern operation forest;
 - held source-managed reconstructions exist for major authored-overworld elements including WorldPath, DungeonPortal, and the quest board;
 - a pre-launch operation-selection contract is being prepared separately; its existence does not authorize early runtime wiring.
+
+## Refreshed since adoption — 2026-08-08
+
+- current `main` checkpoint as of this audit pass: `944c684520c2ebaf6cf821a8a94a21a33588dc4f`;
+- **BA-010 closed at E1**: the Main World/environment audit and composition specification is complete in [`../specifications/main-world-environment-audit.md`](../specifications/main-world-environment-audit.md) (merged via PR #241); see the refreshed W0 status below;
+- **BA-011 closed at E1**: the Main World source representation/placement strategy is complete in [`../specifications/main-world-source-representation-strategy.md`](../specifications/main-world-source-representation-strategy.md), locked by `MainWorldRepresentationConfig` (merged via PR #242); see the refreshed W1 status below;
+- **BA-012 closed at E1**: the canonical Hub interaction registry (preparation/board/vendor/NPC/crafting/gathering/portal/social anchors and owner/dependency boundaries) is complete in [`../specifications/canonical-hub-interaction-registry.md`](../specifications/canonical-hub-interaction-registry.md) (merged via PR #243); no runtime activation;
+- root `CLAUDE.md` was added as a companion mechanical/architecture reference alongside this operating contract; it does not change roadmap authority or task selection;
+- every other fact recorded at adoption above — evidence level, the R1 re-pin requirement, PR #221/#222 status, and the combined-world preservation counts — remains unchanged;
+- the highest-ROI build-ahead task after this refresh is **BA-013 — Environment production plan**, per [`AGENT-BUILD-AHEAD-QUEUE.md`](AGENT-BUILD-AHEAD-QUEUE.md), which also records the parallel-safe assignment across concurrent agents.
 
 ## Current program state
 
@@ -211,7 +220,15 @@ Studio visual review is required for composition/atmosphere claims.
 
 ## W1 — Main World spatial plan
 
-**Status: [!] BLOCKED FOR FINAL ACTIVATION; SPECS MAY BE PREPARED**
+**Status: [~] SOURCE/PLACEMENT STRATEGY COMPLETE; FINAL ACTIVATION BLOCKED**
+
+BA-011 defines the dedicated place/project boundary, source/model/Terrain ownership,
+streaming groups, and arrival/return anchor policy in
+[`../specifications/main-world-source-representation-strategy.md`](../specifications/main-world-source-representation-strategy.md),
+locked by `MainWorldRepresentationConfig`. Its completion does not activate the Main
+World, create a Roblox place, reconstruct Terrain, or change the current operation
+runtime. BA-012 has since completed the canonical Hub interaction registry; the
+next dependency-safe Main World task is BA-013 — environment production plan.
 
 Define a readable loop:
 

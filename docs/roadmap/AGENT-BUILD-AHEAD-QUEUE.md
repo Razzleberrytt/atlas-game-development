@@ -22,6 +22,7 @@ Read first:
 - Repository: `Razzleberrytt/atlas-game-development`
 - Game path: `games/living-kingdoms`
 - Checkpoint used for this refresh: `60229a32ec1f7db3b87a68e5f81ddf8115e665f1`
+- Refreshed in place at `944c684520c2ebaf6cf821a8a94a21a33588dc4f` (2026-08-08): BA-010, BA-011 and BA-012 closed via PR #241/#242/#243, `CLAUDE.md` added, BA-074 closed with `scripts/validate_roadmap_authority.py`. The task table below reflects current status; re-fetch `main` before starting any task regardless — this queue is being actively worked by more than one agent in parallel (see "Parallel assignment" below).
 - Evidence: **E1**
 - Studio import preservation is **repaired**: 28/28 Studio-only sources and 1,775/1,775 Workspace identity/hierarchy rows are preserved.
 - Property-backed authored-world recovery is now available; older documents that cite only 122 recoverable Workspace rows are historical damage-state evidence, not current truth.
@@ -170,7 +171,7 @@ This is now a first-class product lane under Master Roadmap Phase W.
 | BA-071 | DONE | Legacy-service resurrection audits. | Keep current and extend when new adapters appear. |
 | BA-072 | DONE | Content-ID/migration reference validator tooling. | Extend toward live Luau/content contracts as BA-025 lands. |
 | BA-073 | BLOCKED on relevant prepared domains + v2.7 gate | Vertical-slice integration plan. | Exact promotion order and Studio evidence requirements after runtime gates open. |
-| BA-074 | READY | v2.8 roadmap/authority source audit. | Add a lightweight check/docs review preventing agents from treating historical product charter/roadmap files as active authority. |
+| BA-074 | DONE | v2.8 roadmap/authority source audit. | `scripts/validate_roadmap_authority.py` checks the authority-stack documents for broken relative links, direct links to historical checkpoints (which must be reached only through `docs/roadmap/README.md`), and dangling commit-hash references; run it alongside the other repository validators. This audit pass also repaired stale checkpoint pins in `MASTER-ROADMAP.md` and this queue and added the explicit W1/BA-011 cross-reference. |
 
 # Tasks agents must NOT perform yet
 
@@ -204,14 +205,21 @@ Why now:
 - BA-012 now assigns stable interaction anchors, existing owners and explicit blocked ownership seams;
 - BA-013 can define terrain/structure/prop/foliage/material/lighting/VFX/audio kits, quality tiers and measured budgets without activating held content.
 
+### Parallel assignment — concurrent agents (2026-08-08)
+
+More than one agent is working this queue at the same time. BA-010 → BA-011 → BA-012 landed back to back through PRs #241/#242/#243, so anyone continuing that thread should keep going rather than collide with a second agent starting the same ticket. Two file-disjoint tracks are named here so both can run simultaneously without inspecting each other's branch first:
+
+**Track 1 — Main World / Hub lane (continue in sequence).** `BA-013 → BA-014`. Touches `docs/specifications/`, `src/shared/Config/`, `src/shared/World/`, and matching `tests/` for environment/acceptance content only. Whichever agent already holds this thread (most recently the agent that landed BA-012 via PR #243) should continue it rather than switch lanes.
+
+**Track 2 — combat/RPG depth audits (P4).** `BA-040 → BA-042 → BA-044`. Pure gap-matrix audits read existing enemy/loot/progression source and write new `docs/specifications/*-audit.md` files; they add no code and touch no file Track 1 depends on. This is the recommended track for whichever agent is not already mid-thread on Track 1.
+
+Both tracks still obey every build-ahead law below, in particular: fetch current `main` and check open PRs before starting, do not duplicate work already in flight, and keep new content unbooted/dormant until its runtime gate opens.
+
 ### Other safe parallel candidates
 
-After avoiding overlap with open PRs:
+Once Track 1 and Track 2 are both claimed, or if either track turns out to already be in progress on `main`, these remain safe (after checking for overlap with open PRs):
 
 ```text
-BA-040 enemy coverage audit
-BA-042 loot/build-decision audit
-BA-044 progression/skill mapping audit
 BA-020 quest contracts
 BA-021 NPC contracts
 BA-022 crafting contracts
@@ -224,7 +232,6 @@ BA-052 landmark/discovery definitions
 BA-060 onboarding sequence
 BA-061 action-map audit
 BA-063 UI information architecture
-BA-074 authority-source audit
 ```
 
 ### Human/Studio lane
