@@ -1,0 +1,157 @@
+{
+  "format_version": 1,
+  "generated_on": "2026-08-07",
+  "status": "BA-005_PRESENTATION_EVIDENCE_V1",
+  "source_rbxl": {
+    "bytes": 1639392,
+    "sha256": "e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16"
+  },
+  "extractor": "scripts/roblox/extract_rbxl_presentation_properties.py",
+  "full_presentation_property_json": {
+    "bytes": 1660969,
+    "sha256": "e8142dc973d0dd17673f0584d02643cf42938335562227530cd741451f4b99eb",
+    "workspace_property_rows": 1742
+  },
+  "coverage": {
+    "classes": {
+      "Attachment": 12,
+      "Fire": 22,
+      "Model": 211,
+      "Part": 1305,
+      "ParticleEmitter": 31,
+      "PointLight": 146,
+      "ProximityPrompt": 1,
+      "SpawnLocation": 2,
+      "SurfaceGui": 2,
+      "TextLabel": 10
+    },
+    "unsupported_allowed_properties": []
+  },
+  "dungeon_portal": {
+    "identity_rows": 10,
+    "property_backed_rows": 9,
+    "generated_container_rows": 1,
+    "surface_gui": {
+      "source_id": 209,
+      "path": "Workspace/HubTown/DungeonPortal/PortalSign/SurfaceGui",
+      "properties": {
+        "Active": true,
+        "AlwaysOnTop": false,
+        "Brightness": 1.0,
+        "CanvasSize": [800.0, 600.0],
+        "ClipsDescendants": false,
+        "Enabled": true,
+        "Face": 5,
+        "LightInfluence": 0.0,
+        "MaxDistance": 0.0,
+        "PixelsPerStud": 50.0,
+        "ResetOnSpawn": true,
+        "SizingMode": 0,
+        "ToolPunchThroughDistance": 0.0,
+        "ZIndexBehavior": 0,
+        "ZOffset": 0.0
+      }
+    },
+    "text_label": {
+      "source_id": 210,
+      "path": "Workspace/HubTown/DungeonPortal/PortalSign/SurfaceGui/TextLabel",
+      "properties": {
+        "Active": false,
+        "AnchorPoint": [0.0, 0.0],
+        "AutomaticSize": 0,
+        "BackgroundColor3": [0.6392157077789307, 0.6352941393852234, 0.6470588445663452],
+        "BackgroundTransparency": 1.0,
+        "BorderColor3": [0.10588235408067703, 0.16470588743686676, 0.2078431397676468],
+        "BorderMode": 0,
+        "BorderSizePixel": 1,
+        "ClipsDescendants": false,
+        "Interactable": true,
+        "LayoutOrder": 0,
+        "LineHeight": 1.0,
+        "Position": {
+          "x": {"scale": 0.0, "offset": 0},
+          "y": {"scale": 0.0, "offset": 0}
+        },
+        "RichText": false,
+        "Rotation": 0.0,
+        "Selectable": false,
+        "SelectionGroup": false,
+        "SelectionOrder": 0,
+        "Size": {
+          "x": {"scale": 1.0, "offset": 0},
+          "y": {"scale": 1.0, "offset": 0}
+        },
+        "SizeConstraint": 0,
+        "Text": "ENTER THE DEPTHS\n[G] to enter dungeon",
+        "TextColor3": [0.7843137383460999, 0.8627451062202454, 1.0],
+        "TextDirection": 0,
+        "TextScaled": true,
+        "TextSize": 8.0,
+        "TextStrokeColor3": [0.0, 0.0, 0.0],
+        "TextStrokeTransparency": 1.0,
+        "TextTransparency": 0.0,
+        "TextTruncate": 0,
+        "TextWrapped": true,
+        "TextXAlignment": 2,
+        "TextYAlignment": 1,
+        "Visible": true,
+        "ZIndex": 1
+      }
+    },
+    "particle_emitter": {
+      "source_id": 207,
+      "path": "Workspace/HubTown/DungeonPortal/PortalEffect/PortalSwirlAttach/PortalSwirl",
+      "properties": {
+        "Acceleration": [0.0, 2.0, 0.0],
+        "Brightness": 1.0,
+        "Color": [
+          {"time": 0.0, "color": [0.5882353186607361, 0.19607843458652496, 1.0], "envelope": 0.0},
+          {"time": 1.0, "color": [0.5882353186607361, 0.19607843458652496, 1.0], "envelope": 0.0}
+        ],
+        "Drag": 0.0,
+        "EmissionDirection": 1,
+        "Enabled": true,
+        "FlipbookBlendFrames": true,
+        "FlipbookFramerate": [1.0, 1.0],
+        "FlipbookLayout": 0,
+        "FlipbookMode": 0,
+        "FlipbookSizeX": 1,
+        "FlipbookSizeY": 1,
+        "FlipbookStartRandom": false,
+        "Lifetime": [2.0, 3.0],
+        "LightEmission": 0.0,
+        "LightInfluence": 0.0,
+        "LockedToPart": false,
+        "Orientation": 0,
+        "Rate": 40.0,
+        "RotSpeed": [0.0, 0.0],
+        "Rotation": [0.0, 0.0],
+        "Shape": 0,
+        "ShapeInOut": 0,
+        "ShapePartial": 1.0,
+        "ShapeStyle": 0,
+        "Size": [
+          {"time": 0.0, "value": 1.0, "envelope": 0.0},
+          {"time": 0.5, "value": 2.0, "envelope": 0.0},
+          {"time": 1.0, "value": 0.5, "envelope": 0.0}
+        ],
+        "Speed": [1.0, 3.0],
+        "SpreadAngle": [360.0, 360.0],
+        "Squash": [
+          {"time": 0.0, "value": 0.0, "envelope": 0.0},
+          {"time": 1.0, "value": 0.0, "envelope": 0.0}
+        ],
+        "Texture": "rbxassetid://241876674",
+        "TimeScale": 1.0,
+        "Transparency": [
+          {"time": 0.0, "value": 0.800000011920929, "envelope": 0.0},
+          {"time": 0.5, "value": 0.20000000298023224, "envelope": 0.0},
+          {"time": 1.0, "value": 0.800000011920929, "envelope": 0.0}
+        ],
+        "VelocityInheritance": 0.0,
+        "WindAffectsDrag": false,
+        "ZOffset": 0.0
+      }
+    }
+  }
+}
