@@ -396,6 +396,15 @@ local function fakeInstance(className: string)
 	function instance.FindFirstChild(_, _childName)
 		return nil
 	end
+	function instance.GetChildren(self)
+		local children = {}
+		for _, candidate in createdInstances do
+			if candidate.Parent == self and not candidate._destroyed then
+				table.insert(children, candidate)
+			end
+		end
+		return children
+	end
 	if className == "Part" then
 		function instance.SetNetworkOwner(_, _owner) end
 	end

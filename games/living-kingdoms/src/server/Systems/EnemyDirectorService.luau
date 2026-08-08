@@ -1689,18 +1689,36 @@ function EnemyDirectorService.evaluateAt(serverTimestamp: number): EvaluationSum
 	return summary
 end
 
+-- Replay reuses the folder instance rather than replacing it. Every consumer --
+-- the server presentation, loot, experience and probe owners, plus the client
+-- enemy presentation, impact, audio and telegraph controllers -- caches this
+-- reference and binds ChildAdded to it once. Destroying the folder orphans all
+-- of those bindings, so enemies spawned after a replay would keep their bare
+-- server root and never receive a presentation rig.
+local function clearEnemyFolder(folder: Folder)
+	for _, child in folder:GetChildren() do
+		child:Destroy()
+	end
+end
+
 function EnemyDirectorService.start()
 	if started then
 		return
 	end
 	started = true
 	local existing = Workspace:FindFirstChild(ENEMY_FOLDER_NAME)
-	if existing ~= nil then
-		existing:Destroy()
+	local folder: Folder
+	if existing ~= nil and existing:IsA("Folder") then
+		folder = existing
+		clearEnemyFolder(folder)
+	else
+		if existing ~= nil then
+			existing:Destroy()
+		end
+		folder = Instance.new("Folder")
+		folder.Name = ENEMY_FOLDER_NAME
+		folder.Parent = Workspace
 	end
-	local folder = Instance.new("Folder")
-	folder.Name = ENEMY_FOLDER_NAME
-	folder.Parent = Workspace
 	enemyFolder = folder
 	accumulatedSeconds = 0
 	heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
@@ -1740,7 +1758,7 @@ function EnemyDirectorService.stop()
 	sequenceCounter = 0
 	local folder = enemyFolder
 	if folder ~= nil then
-		folder:Destroy()
+		clearEnemyFolder(folder)
 		enemyFolder = nil
 	end
 end

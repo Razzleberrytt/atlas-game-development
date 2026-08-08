@@ -28,6 +28,47 @@ local function retryDelay(baseDelay: number, attempt: number): number
 	return math.min(baseDelay * (2 ^ (attempt - 1)), 8)
 end
 
+-- An unpublished place has no DataStore access, so `GetDataStore` throws at
+-- construction time. Every read/write below is already retried under pcall, but
+-- a throw here loads-errors this module and takes the whole inventory,
+-- expedition-reward and expedition-result chain down with it. Fall back to a
+-- process-local store so Studio sessions stay bootable; a live server always
+-- reaches the real DataStore and never takes this path.
+local function createVolatileStore()
+	local values: { [string]: any } = {}
+	local store = {}
+
+	function store:GetAsync(key: string): any
+		return values[key]
+	end
+
+	function store:UpdateAsync(key: string, transform: (any) -> any): any
+		local updated = transform(values[key])
+		values[key] = updated
+		return updated
+	end
+
+	return store
+end
+
+local function resolveStore(dataStoreName: string): (any, boolean)
+	local success, storeOrError = pcall(function()
+		return DataStoreService:GetDataStore(dataStoreName)
+	end)
+	if success then
+		return storeOrError, false
+	end
+	warn(
+		string.format(
+			"[AtlasPersistence] DataStore %s is unavailable (%s); using a volatile in-memory store. "
+				.. "Progress will not persist across sessions.",
+			dataStoreName,
+			tostring(storeOrError)
+		)
+	)
+	return createVolatileStore(), true
+end
+
 function Adapter.new(options: Options?): Adapter
 	local resolved = options or {}
 	local dataStoreName = resolved.DataStoreName or "AtlasPlayerInventoryV1"
@@ -40,8 +81,11 @@ function Adapter.new(options: Options?): Adapter
 	assertPositiveInteger(maximumAttempts, "MaximumAttempts")
 	assert(type(baseRetryDelaySeconds) == "number" and baseRetryDelaySeconds >= 0, "invalid retry delay")
 
+	local store, isVolatile = resolveStore(dataStoreName)
+
 	return setmetatable({
-		_store = DataStoreService:GetDataStore(dataStoreName),
+		_store = store,
+		_isVolatile = isVolatile,
 		_keyPrefix = keyPrefix,
 		_maximumAttempts = maximumAttempts,
 		_baseRetryDelaySeconds = baseRetryDelaySeconds,
