@@ -36,6 +36,7 @@ local GUI_NAME = "LK_MatchResultDebrief"
 
 local started = false
 local resultConnection: RBXScriptConnection? = nil
+local missionPhaseConnection: RBXScriptConnection? = nil
 local screenGui: ScreenGui? = nil
 local headlineLabel: TextLabel? = nil
 local causeLabel: TextLabel? = nil
@@ -48,6 +49,16 @@ local hasDisplayedResult = false
 local localPlayer = Players.LocalPlayer
 local missionNetwork = ReplicatedStorage:WaitForChild("MissionNetwork")
 local resultRemote = missionNetwork:WaitForChild("Result") :: RemoteEvent
+
+local function onMissionPhaseChanged()
+	if localPlayer:GetAttribute("LK_HUD_MissionPhase") ~= "Insertion" then
+		return
+	end
+	hasDisplayedResult = false
+	if screenGui ~= nil then
+		screenGui.Enabled = false
+	end
+end
 
 -- Plain-language headline and explanation per authored cause. Text, never colour
 -- alone, carries the outcome.
@@ -262,6 +273,8 @@ function MatchResultController.start()
 	-- Listen only. A client that arrives after resolution is pushed the frozen
 	-- debrief by the mission owner on join, so no request is ever needed.
 	resultConnection = resultRemote.OnClientEvent:Connect(applyResult)
+	missionPhaseConnection = localPlayer:GetAttributeChangedSignal("LK_HUD_MissionPhase"):Connect(onMissionPhaseChanged)
+	onMissionPhaseChanged()
 end
 
 function MatchResultController.stop()
@@ -273,6 +286,10 @@ function MatchResultController.stop()
 	if resultConnection ~= nil then
 		resultConnection:Disconnect()
 		resultConnection = nil
+	end
+	if missionPhaseConnection ~= nil then
+		missionPhaseConnection:Disconnect()
+		missionPhaseConnection = nil
 	end
 	if screenGui ~= nil then
 		screenGui:Destroy()

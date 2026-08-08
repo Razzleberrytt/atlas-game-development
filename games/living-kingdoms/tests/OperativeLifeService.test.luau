@@ -87,6 +87,7 @@ local function fakePlayer(userId: number)
 		IsA = function(_self, className)
 			return className == "Player"
 		end,
+		LoadCharacter = function() end,
 	}
 	players._members[player] = true
 	return player
@@ -156,6 +157,17 @@ local environment = {
 	end,
 	Vector3 = { zero = { X = 0, Y = 0, Z = 0 } },
 	Enum = { HumanoidStateType = { Dead = "Dead" } },
+	task = {
+		spawn = function(callback)
+			callback()
+		end,
+		defer = function(callback)
+			callback()
+		end,
+		delay = function(_seconds, callback)
+			callback()
+		end,
+	},
 }
 
 local loader = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/OperativeLifeService.luau"), {
@@ -501,6 +513,40 @@ assert(deadReplacementHumanoid.WalkSpeed == 0, "replacement restored Dead moveme
 local deadRead = service.read(characterPlayer)
 assert(deadRead.snapshot.lifeStateId == "Dead" and deadRead.snapshot.healthState.currentHealth == 0, "spawn reset Dead")
 
+-- Replay resets operation state without disconnecting application-scoped life
+-- consumers or rebinding the current character.
+local replayNotifications = 0
+service.subscribe(function()
+	replayNotifications += 1
+end)
+service.start()
+local beforeReplay = service.read(player)
+assert(beforeReplay.snapshot.lifeStateId == "Dead", "replay fixture must begin from a terminal life state")
+local retainedPlayer = fakePlayer(505)
+local retainedRead = service.registerPlayer(retainedPlayer)
+local retainedDown = service.commitAcceptedTransition(
+	retainedPlayer,
+	retainedRead.revision,
+	transition("Alive", incapacitated(retainedRead.snapshot, 60), 60)
+)
+assert(retainedDown.didCommit and service.unregisterPlayer(retainedPlayer), "retained replay fixture setup failed")
+assert(service.hasRetainedSession("operative.player:505"), "fixture did not retain the disconnected operative")
+assert(service.grantTemporaryArmor("operative.player:101", 20, 100), "temporary armor fixture setup failed")
+service.resetForReplay()
+local afterReplay = service.read(player)
+assert(afterReplay.revision == beforeReplay.revision + 1, "replay must advance the life revision")
+assert(afterReplay.snapshot.lifeStateId == "Alive", "replay did not restore Alive")
+assert(afterReplay.snapshot.healthState.currentHealth == 100, "replay did not restore maximum health")
+assert(next(afterReplay.snapshot.processedDamageEventIds) == nil, "replay retained processed damage IDs")
+assert(replayNotifications > 0, "replay disconnected the existing life subscriber")
+assert(service.readTemporaryArmor("operative.player:101", 61) == 0, "replay retained temporary armor")
+assert(not service.hasRetainedSession("operative.player:505"), "replay retained a disconnected prior-run snapshot")
+local freshReconnect = service.registerPlayer(retainedPlayer)
+assert(
+	freshReconnect ~= nil and freshReconnect.snapshot.lifeStateId == "Alive",
+	"a replay reconnect resumed the prior operation"
+)
+
 -- Source-level compatibility/authority boundaries that complement fake objects.
 local movementSource = fs.readFile("games/living-kingdoms/src/server/Systems/MovementValidationSystem.luau")
 assert(string.find(movementSource, "isCharacterMovementAllowed", 1, true), "movement sanity boundary lacks life gate")
@@ -513,5 +559,6 @@ assert(not string.find(developmentSource, "OnServerEvent", 1, true), "developmen
 assert(service.unregisterPlayer(characterPlayer), "authoritative lifetime teardown failed")
 assert(service.read(characterPlayer) == nil, "teardown retained snapshot")
 assert(not service.unregisterPlayer(characterPlayer), "duplicate teardown was not deterministic")
+service.stop()
 
 print("OperativeLifeService: ownership, revisions, movement/combat restrictions, and character lifecycle passed")

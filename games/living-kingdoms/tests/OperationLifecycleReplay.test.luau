@@ -74,6 +74,11 @@ local function owner(name: string)
 	}
 end
 
+local operativeLife = owner("OperativeLife")
+operativeLife.resetForReplay = function()
+	table.insert(calls, "OperativeLife.resetForReplay")
+end
+
 local missionDirector = {
 	start = function()
 		table.insert(calls, "MissionDirector.start")
@@ -116,7 +121,7 @@ local modulesByToken = {
 	[TOKENS.EnemyDirectorService] = owner("EnemyDirector"),
 	[TOKENS.MatchResultService] = owner("ContributionRecord"),
 	[TOKENS.MissionDirectorService] = missionDirector,
-	[TOKENS.OperativeLifeService] = owner("OperativeLife"),
+	[TOKENS.OperativeLifeService] = operativeLife,
 	[TOKENS.OperativeReviveSessionService] = owner("ReviveSessions"),
 	[TOKENS.SquadFailureService] = owner("SquadFailure"),
 }
@@ -199,13 +204,22 @@ for _, call in calls do
 		table.insert(startCalls, name)
 	end
 end
-assertThat(
-	#stopCalls == #matchResultConfig.CleanupStopOrder,
-	"every declared cleanup owner must be stopped exactly once"
-)
-for index, ownerId in matchResultConfig.CleanupStopOrder do
+local expectedStops = {}
+for _, ownerId in matchResultConfig.CleanupStopOrder do
+	if ownerId ~= "OperativeLife" then
+		table.insert(expectedStops, ownerId)
+	end
+end
+assertThat(#stopCalls == #expectedStops, "every operation-scoped cleanup owner must be stopped exactly once")
+for index, ownerId in expectedStops do
 	assertThat(stopCalls[index] == ownerId, "the stop order must follow the documented sequence at " .. tostring(index))
 end
+assertThat(not table.find(calls, "OperativeLife.stop"), "replay must preserve application-scoped life subscribers")
+assertThat(not table.find(calls, "OperativeLife.start"), "replay must not rebuild application-scoped life bindings")
+assertThat(
+	table.find(calls, "OperativeLife.resetForReplay") ~= nil,
+	"replay must reset operation life state through the existing application owner"
+)
 -- The objective runtime releases at its documented place, before the director
 -- tears the rest of itself down last.
 assertThat(
@@ -270,6 +284,12 @@ assertThat(
 assertThat(
 	contains(lifecycle, "cancelScheduledReplay()") and contains(lifecycle, "terminalConnection:Disconnect()"),
 	"teardown must release the timer and the subscription"
+)
+assertThat(
+	contains(lifecycle, "OperativeLifeService.resetForReplay()")
+		and not contains(lifecycle, "OperativeLifeService.stop()")
+		and not contains(lifecycle, "OperativeLifeService.start()"),
+	"replay must reset life state without tearing down application-scoped bindings"
 )
 
 -- A replayed operation is a fresh run, never a resume.

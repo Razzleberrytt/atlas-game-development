@@ -72,6 +72,7 @@ type ListenerConnection = {
 type OperativeLifeService = {
 	start: () -> (),
 	stop: () -> (),
+	resetForReplay: () -> (),
 	registerPlayer: (player: Player) -> AuthoritativeRead?,
 	unregisterPlayer: (player: Player) -> boolean,
 	read: (player: Player) -> AuthoritativeRead?,
@@ -969,6 +970,29 @@ local function reconcilePlayers()
 			addPlayer(player)
 		end
 	end
+end
+
+-- Begin a fresh operation without tearing down application-scoped player,
+-- character, or subscriber bindings. OperationLifecycleService used to call
+-- stop/start here, which silently disconnected every long-lived life and roster
+-- consumer after the first run. Revisions remain monotonic for the lifetime of
+-- this service; the new operation is identified by MissionDirectorService's
+-- operationId rather than by rewinding this owner.
+function OperativeLifeService.resetForReplay()
+	if not started then
+		return
+	end
+	table.clear(temporaryArmorByPlayer)
+	table.clear(retainedSnapshotByOperativeEntityId)
+	for player, entry in entries do
+		entry.snapshot = initialSnapshot(entry.operativeEntityId)
+		entry.revision += 1
+		entry.lastTransitionServerTimestamp = nil
+		entry.soloOperationEligible = false
+		applyCharacterRestrictions(entry)
+		notifyListeners(player, entry)
+	end
+	reconcilePlayers()
 end
 
 function OperativeLifeService.start()

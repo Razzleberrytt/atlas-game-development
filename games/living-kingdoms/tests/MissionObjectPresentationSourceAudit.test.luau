@@ -56,6 +56,7 @@ assertThat(makePartCount == 24, "factory must contain one helper plus exactly 23
 for _, required in
 	{
 		"MissionContracts.validateSafeMissionSnapshot(payload)",
+		"snapshot.operationId == previous.operationId",
 		"snapshot.revision <= previous.revision",
 		"stateRemote.OnClientEvent:Connect(onSnapshot)",
 		"Workspace.DescendantAdded:Connect(inspectInstance)",
