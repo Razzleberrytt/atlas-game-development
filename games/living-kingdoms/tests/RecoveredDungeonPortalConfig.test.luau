@@ -22,7 +22,7 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Re
 	injectGlobals = true,
 })()
 
-check(config.Version == "BA-005-DUNGEON-PORTAL-v1")
+check(config.Version == "BA-005-DUNGEON-PORTAL-v2")
 check(config.SourcePath == "Workspace/HubTown/DungeonPortal")
 check(config.CoordinateSpaceId == "authored-overworld")
 check(config.SourceHold == true)
@@ -30,21 +30,23 @@ check(config.RuntimeEnabled == false)
 check(config.Interaction.CanonicalContentId == "portal.expedition.primary")
 check(config.Interaction.CanonicalAuthority == "ExpeditionLobbyService")
 check(config.Interaction.LegacyGameplayAuthority == false)
+check(config.Interaction.RecoveredTextIsPresentationOnly == true)
 check(config.Interaction.RuntimeEnabled == false)
 
 check(config.Evidence.IdentityRows == 10)
-check(config.Evidence.PropertyBackedRows == 6)
-check(config.Evidence.PendingPropertyRows == 3)
+check(config.Evidence.PropertyBackedRows == 9)
 check(config.Evidence.GeneratedContainerRows == 1)
-check(
-	config.Evidence.PropertyBackedRows + config.Evidence.PendingPropertyRows + config.Evidence.GeneratedContainerRows
-		== config.Evidence.IdentityRows
-)
+check(config.Evidence.PendingNodeRows == 0)
+check(config.Evidence.KnownVisualPropertyOmissions == 1)
+check(config.Evidence.PropertyBackedRows + config.Evidence.GeneratedContainerRows == config.Evidence.IdentityRows)
 
 check(#config.Parts == 3)
 check(#config.PointLights == 2)
 check(#config.Attachments == 1)
-check(#config.PendingPropertyNodes == 3)
+check(#config.SurfaceGuis == 1)
+check(#config.TextLabels == 1)
+check(#config.ParticleEmitters == 1)
+check(#config.KnownVisualPropertyOmissions == 1)
 
 local partsByName = {}
 for _, definition in config.Parts do
@@ -115,12 +117,49 @@ check(attachment.parent == "PortalEffect")
 check(attachment.rotationId == 2)
 checkVector(attachment.position, { 0.0, 0.0, 0.0 }, "PortalSwirlAttach.position")
 
-local pendingClasses = {}
-for _, node in config.PendingPropertyNodes do
-	pendingClasses[node.className] = true
-	check(type(node.reason) == "string" and node.reason ~= "")
-end
-check(pendingClasses.ParticleEmitter == true)
-check(pendingClasses.SurfaceGui == true)
-check(pendingClasses.TextLabel == true)
-check(pendingClasses.ProximityPrompt ~= true)
+local surface = config.SurfaceGuis[1]
+check(surface.sourceId == 209)
+check(surface.parent == "PortalSign")
+check(surface.active == true)
+check(surface.enabled == true)
+check(surface.canvasSize.x == 800.0 and surface.canvasSize.y == 600.0)
+check(surface.faceEnumValue == 5)
+check(surface.pixelsPerStud == 50.0)
+check(surface.alwaysOnTop == false)
+
+local label = config.TextLabels[1]
+check(label.sourceId == 210)
+check(label.parent == "SurfaceGui")
+check(label.text == "ENTER THE DEPTHS\n[G] to enter dungeon")
+check(label.textScaled == true)
+check(label.textWrapped == true)
+check(label.visible == true)
+check(label.backgroundTransparency == 1.0)
+check(label.position.x.scale == 0.0 and label.position.x.offset == 0)
+check(label.position.y.scale == 0.0 and label.position.y.offset == 0)
+check(label.size.x.scale == 1.0 and label.size.x.offset == 0)
+check(label.size.y.scale == 1.0 and label.size.y.offset == 0)
+check(label.textXAlignmentEnumValue == 2)
+check(label.textYAlignmentEnumValue == 1)
+
+local emitter = config.ParticleEmitters[1]
+check(emitter.sourceId == 207)
+check(emitter.parent == "PortalSwirlAttach")
+check(emitter.texture == "rbxassetid://241876674")
+check(emitter.rate == 40.0)
+check(emitter.enabled == true)
+check(emitter.lifetime.min == 2.0 and emitter.lifetime.max == 3.0)
+check(emitter.speed.min == 1.0 and emitter.speed.max == 3.0)
+check(emitter.spreadAngle.x == 360.0 and emitter.spreadAngle.y == 360.0)
+check(emitter.acceleration.x == 0.0 and emitter.acceleration.y == 2.0 and emitter.acceleration.z == 0.0)
+check(#emitter.colorSequence == 2)
+check(#emitter.sizeSequence == 3)
+check(#emitter.transparencySequence == 3)
+check(emitter.sizeSequence[2].time == 0.5 and emitter.sizeSequence[2].value == 2.0)
+check(math.abs(emitter.transparencySequence[2].value - 0.20000000298023224) <= 1e-8)
+
+local omission = config.KnownVisualPropertyOmissions[1]
+check(omission.className == "TextLabel")
+check(omission.propertyName == "FontFace")
+check(omission.typeId == 0x20)
+check(type(omission.reason) == "string" and omission.reason ~= "")
