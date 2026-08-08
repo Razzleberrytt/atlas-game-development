@@ -1,5 +1,7 @@
 # Living Kingdoms — Project Charter
 
+> **Historical product charter.** This document records the cooperative-survival/isometric direction that shaped the current Living Kingdoms runtime and remains useful for preserved design principles. It is **not the current top-level Atlas product authority**. For new roadmap interpretation and product-scope decisions, read [`00-current-product-authority.md`](00-current-product-authority.md) first. Existing runtime camera/combat behavior remains preserved until an explicit decision changes it; this historical notice does not itself authorize a rewrite.
+
 ## High-concept pitch
 
 Living Kingdoms is a brutally difficult cooperative isometric survival game for up to eight players. Each player controls one specialized operative who begins isolated on a dark, hostile operation map. The team must find one another, share scarce ammunition and medical support, move between temporary defensive positions, and survive escalating threats long enough to complete an authored objective and extract. Victory comes primarily from knowledge, execution, resource management, and coordination—not permanent power.
