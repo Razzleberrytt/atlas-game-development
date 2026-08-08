@@ -1,5 +1,5 @@
 {
-  "format_version": 2,
+  "format_version": 3,
   "source_rbxl": {
     "file": "livingkingdoms.rbxl",
     "bytes": 1639392,
@@ -20,7 +20,8 @@
       "studio-reextraction-complete.tar.gz.b64.part02",
       "studio-reextraction-complete.tar.gz.b64.part03",
       "studio-reextraction-complete.tar.gz.b64.part04a",
-      "studio-reextraction-complete.tar.gz.b64.part04b",
+      "studio-reextraction-complete.tar.gz.b64.part04b1",
+      "studio-reextraction-complete.tar.gz.b64.part04b2",
       "studio-reextraction-complete.tar.gz.b64.part05"
     ]
   },
