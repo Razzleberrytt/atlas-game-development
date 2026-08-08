@@ -183,7 +183,11 @@ The modern Forward Operations Hub is the current bridge, not the final Main Worl
 
 ## W0 — Current-world audit and disposition
 
-**Status: [~]**
+**Status: [~] SOURCE/EVIDENCE AUDIT COMPLETE; STUDIO VISUAL REVIEW PENDING**
+
+BA-010 records the current dispositions and composition requirements in
+[`../specifications/main-world-environment-audit.md`](../specifications/main-world-environment-audit.md).
+Its completion does not constitute visual, traversal, streaming, audio or performance acceptance.
 
 Audit all current/preserved world content and classify significant elements as:
 
