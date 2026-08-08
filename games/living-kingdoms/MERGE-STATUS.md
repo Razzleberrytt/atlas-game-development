@@ -14,7 +14,7 @@ Older migration documents that say only **122 / 1,775** Workspace rows survived 
 Current repaired evidence lives in:
 
 - `../../docs/migration/REEXTRACTED-WORLD-EVIDENCE.md`
-- `../../docs/migration/reextracted-world-evidence.json`
+- `../../docs/migration/current/reextracted-world-evidence.json`
 - `imports/studio-2026-08-07/reextracted/`
 
 ## Canonical rule
