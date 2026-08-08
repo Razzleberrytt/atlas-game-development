@@ -122,6 +122,7 @@ From the repository root, install the pinned tools in `rokit.toml`, then run:
 python scripts/validate_living_kingdoms_layout.py
 python scripts/verify_studio_import_package.py
 python scripts/validate_migration_manifests.py
+python scripts/validate_roadmap_authority.py
 
 stylua --check \
   games/living-kingdoms/src \
@@ -139,7 +140,7 @@ rojo build games/living-kingdoms/default.project.json \
 
 StyLua covers `src`, `tests` and `tools`. Selene is scoped to `src` only; it needs the Roblox API dump, which some sandboxes cannot reach.
 
-A documentation-only roadmap/authority change must still be checked for broken links, contradictory authority claims, and stale status facts. Do not claim runtime validation from a docs-only change.
+A documentation-only roadmap/authority change must still be checked for broken links, contradictory authority claims, and stale status facts — run `python scripts/validate_roadmap_authority.py` (BA-074) to check link integrity, historical-checkpoint leakage, and dangling commit references, and manually confirm status prose still matches the current task table/checkpoint. Do not claim runtime validation from a docs-only change.
 
 For v2.7 runtime migration tickets, static tests do not replace required Studio evidence such as listener timing, reset/respawn baselines, queue warnings, streaming rebind, multiplayer disconnect behavior, or profiling captures.
 
