@@ -29,6 +29,14 @@ local descriptors: { ContentDescriptor } = {
 		notes = "Preserved Studio-authored hub; pending reconciliation into current preparation flow.",
 	}),
 	table.freeze({
+		id = "zone.hub.forward_operations",
+		kind = "zone",
+		displayName = "Forward Operations Hub",
+		legacyAliases = table.freeze({}),
+		active = true,
+		notes = "Source-managed preparation shell attached to the current Ranger Station/insertion area.",
+	}),
+	table.freeze({
 		id = "route.world.primary",
 		kind = "route",
 		displayName = "Primary World Path",
@@ -56,6 +64,52 @@ local descriptors: { ContentDescriptor } = {
 		displayName = "Operation Insertion",
 		legacyAliases = table.freeze({ "SpawnLocation", "BootstrapSafetySpawn" }),
 		active = true,
+	}),
+	table.freeze({
+		id = "station.hub.character",
+		kind = "station",
+		displayName = "Operative Console",
+		legacyAliases = table.freeze({}),
+		active = false,
+		notes = "Reserved ID; current C-key RPG menu remains the active character surface.",
+	}),
+	table.freeze({
+		id = "station.hub.inventory",
+		kind = "station",
+		displayName = "Field Locker",
+		legacyAliases = table.freeze({}),
+		active = false,
+		notes = "Reserved ID; current I-key RPG menu remains the active inventory surface.",
+	}),
+	table.freeze({
+		id = "station.hub.skills",
+		kind = "station",
+		displayName = "Training Board",
+		legacyAliases = table.freeze({}),
+		active = false,
+		notes = "Reserved ID; current K-key RPG menu remains the active skills surface.",
+	}),
+	table.freeze({
+		id = "station.hub.class",
+		kind = "station",
+		displayName = "Specialist Assignment",
+		legacyAliases = table.freeze({}),
+		active = true,
+	}),
+	table.freeze({
+		id = "station.hub.weapon",
+		kind = "station",
+		displayName = "Armory Rack",
+		legacyAliases = table.freeze({}),
+		active = true,
+	}),
+	table.freeze({
+		id = "portal.expedition.primary",
+		kind = "portal",
+		displayName = "Expedition Terminal",
+		legacyAliases = table.freeze({}),
+		active = true,
+		notes = "Presentation entry point only; canonical ExpeditionLobbyService remains launch authority.",
 	}),
 	table.freeze({
 		id = "resource.tree",
@@ -140,7 +194,7 @@ local byId = WorldContentContracts.indexById(descriptors)
 local legacyAliases = WorldContentContracts.indexLegacyAliases(descriptors)
 
 return table.freeze({
-	Version = "BA-004-v1",
+	Version = "BA-004-v2-hub-shell",
 	Descriptors = table.freeze(descriptors),
 	ById = table.freeze(byId),
 	LegacyAliases = table.freeze(legacyAliases),

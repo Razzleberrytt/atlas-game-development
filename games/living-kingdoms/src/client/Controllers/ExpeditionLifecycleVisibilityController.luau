@@ -1,8 +1,9 @@
 --!strict
 
--- Central client presentation policy for mutually exclusive expedition surfaces.
--- It never sends requests; it only hides preparation UI while a run is active
--- and restores it when no run exists or a terminal result is reached.
+-- Client presentation safety veto for mutually exclusive expedition surfaces.
+-- It never sends requests. While a run is active it force-closes preparation
+-- and terminal surfaces; outside a run, the hub interaction layer decides when
+-- the lobby is opened instead of this controller forcing it visible.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,8 +21,8 @@ end
 
 local function apply(snapshot: any)
 	local active = type(snapshot) == "table" and snapshot.OutcomeId == "InProgress"
-	setEnabled("LK_ExpeditionLobby", not active)
 	if active then
+		setEnabled("LK_ExpeditionLobby", false)
 		setEnabled("LK_ExpeditionResult", false)
 		setEnabled("LK_ExpeditionReturn", false)
 		setEnabled("LK_ExpeditionReplayDecision", false)

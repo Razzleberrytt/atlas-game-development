@@ -7,7 +7,16 @@
 
 local WorldContentContracts = {}
 
-export type ContentKind = "world" | "zone" | "landmark" | "route" | "portal" | "vendor" | "resource" | "spawn"
+export type ContentKind =
+	"world"
+	| "zone"
+	| "landmark"
+	| "route"
+	| "portal"
+	| "vendor"
+	| "station"
+	| "resource"
+	| "spawn"
 
 export type ContentId = string
 
@@ -27,6 +36,7 @@ local VALID_KINDS = table.freeze({
 	route = true,
 	portal = true,
 	vendor = true,
+	station = true,
 	resource = true,
 	spawn = true,
 })

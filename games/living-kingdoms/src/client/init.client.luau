@@ -67,6 +67,7 @@ local CriticalConditionController = require(script.Controllers.CriticalCondition
 local PresentationSettingsController = require(script.Controllers.PresentationSettingsController)
 local SurvivalHUDController = require(script.Controllers.SurvivalHUDController)
 local RPGMenuController = require(script.Controllers.RPGMenuController)
+local HubPreparationController = require(script.Controllers.HubPreparationController)
 
 CameraController.init()
 CameraController.start()
@@ -120,5 +121,6 @@ WeaponSelectionController.start()
 ClassSilhouetteController.start()
 ClassSquadPresentationController.start()
 OperativeLifeWorldPresentationController.start()
+HubPreparationController.start()
 
 print("[Living Kingdoms] Client bootstrap started")
