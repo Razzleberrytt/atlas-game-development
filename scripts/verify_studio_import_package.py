@@ -118,7 +118,7 @@ def verify_reextraction(
     source = reextract["source_rbxl"]
     if source["sha256"] != manifest["source"]["sha256"]:
         errors.append("re-extraction source RBXL SHA does not match import manifest")
-    if source["bytes"] != manifest["source"]["bytes"]:
+    if source["bytes"] != manifest["source"]["size"]:
         errors.append("re-extraction source RBXL byte count does not match import manifest")
 
     bundle, bundle_errors = load_reextraction_bundle(reextract)
