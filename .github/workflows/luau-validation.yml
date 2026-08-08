@@ -8,6 +8,7 @@ on:
       - "games/living-kingdoms/**"
       - "docs/**"
       - "scripts/validate_living_kingdoms_layout.py"
+      - "scripts/validate_reextracted_property_evidence.py"
       - "scripts/roblox/**"
       - "rokit.toml"
       - "stylua.toml"
@@ -22,6 +23,7 @@ on:
       - "games/living-kingdoms/**"
       - "docs/**"
       - "scripts/validate_living_kingdoms_layout.py"
+      - "scripts/validate_reextracted_property_evidence.py"
       - "scripts/roblox/**"
       - "rokit.toml"
       - "stylua.toml"
@@ -55,6 +57,10 @@ jobs:
       - name: Self-test RBXL property decoder
         shell: bash
         run: python scripts/roblox/extract_rbxl_world_properties.py --self-test
+
+      - name: Validate re-extracted property evidence
+        shell: bash
+        run: python scripts/validate_reextracted_property_evidence.py
 
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
