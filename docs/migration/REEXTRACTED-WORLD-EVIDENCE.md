@@ -13,7 +13,7 @@ It supersedes the damaged first archive **for current migration planning**. The 
 - Workspace index SHA-256: `320d1ec49b0bc3a0feaed7fdc07348a18ebc248682bddc1a338514c82421b6c3`
 - CI preservation verifier: **28 / 28 Studio-only sources + 1,775 Workspace rows**
 
-Machine-readable summary: [`reextracted-world-evidence.json`](reextracted-world-evidence.json).
+Machine-readable summary: [`current/reextracted-world-evidence.json`](current/reextracted-world-evidence.json).
 
 ## What is actually present
 
