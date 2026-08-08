@@ -140,8 +140,8 @@ This is now a first-class product lane under Master Roadmap Phase W.
 
 | ID | Status | Task | Deliverable / boundary |
 |---|---|---|---|
-| BA-040 | READY | Enemy-archetype coverage audit. | Gap matrix for pressure/counter/readability, not a new EnemyService. |
-| BA-041 | BLOCKED on BA-040 | Missing enemy configs/pure behavior primitives. | Use canonical enemy authority. |
+| BA-040 | DONE | Enemy-archetype coverage audit. | [`docs/specifications/enemy-archetype-coverage-audit.md`](../specifications/enemy-archetype-coverage-audit.md) — pressure/counter/readability matrix across the walker, six HROI roles, Blight Spitter, the Progenitor boss, and the five RPG elite affixes. Finds Spitter/boss/affixes and two of six HROI roles (Screamer, Bloater) fully evidenced; flags Runner/Crawler/Brute as likely presentation-only with no confirmed distinct mechanic, pending direct verification of `horde-special-role-telegraphs.md`. No runtime activation, no EnemyService change. |
+| BA-041 | READY | Missing enemy configs/pure behavior primitives. | Use canonical enemy authority. Read `enemy-archetype-coverage-audit.md` first — verify the Runner/Crawler/Brute finding against `horde-special-role-telegraphs.md`/`HordeExperienceService.luau` before adding any config. |
 | BA-042 | READY | Loot/build-decision coverage audit. | Affix/stat/set/rarity decision gaps tied to player choices. |
 | BA-043 | BLOCKED on BA-042 | Deterministic item/affix generation rules. | Seedable bounded resolver using canonical loot/inventory owners. |
 | BA-044 | READY | Progression/skill mapping audit. | Current-vs-historical mapping + smallest useful vertical-slice progression. |
