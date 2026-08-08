@@ -3,8 +3,8 @@
 -- BA-005 property-backed reconstruction contract for the Studio-authored
 -- Workspace/HubTown/quest_board group.
 --
--- This is authored-overworld presentation evidence only. The legacy QuestService
--- must not return. A future board interaction requires a new pre-launch
+-- This is authored-overworld presentation evidence only. The legacy quest
+-- runtime must not return. A future board interaction requires a new pre-launch
 -- operation/mission selection contract; MissionDirectorService remains the
 -- authoritative runtime owner once an operation has started.
 
@@ -22,7 +22,7 @@ local Config = {
 	SourceHold = true,
 	RuntimeEnabled = false,
 	Interaction = table.freeze({
-		LegacyQuestServiceAuthority = false,
+		LegacyQuestAuthority = false,
 		RecoveredShortcutTextIsPresentationOnly = true,
 		RecoveredPromptExists = false,
 		FuturePrelaunchSelectionContractRequired = true,
