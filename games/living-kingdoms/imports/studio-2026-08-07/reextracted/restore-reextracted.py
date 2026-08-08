@@ -11,6 +11,7 @@ import base64
 import hashlib
 import io
 import json
+import shutil
 import tarfile
 from pathlib import Path
 
@@ -25,14 +26,19 @@ def sha256(data: bytes) -> str:
 
 def main() -> None:
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-    expected_parts = manifest["bundle"]["base64_parts"]
-    parts = [ROOT / f"studio-reextraction-complete.tar.gz.b64.part{i:02d}" for i in range(1, expected_parts + 1)]
-    missing = [str(path.name) for path in parts if not path.is_file()]
+    part_names = manifest["bundle"]["base64_files"]
+    parts = [ROOT / name for name in part_names]
+    missing = [path.name for path in parts if not path.is_file()]
     if missing:
         raise SystemExit(f"missing bundle parts: {', '.join(missing)}")
 
     encoded = "".join(path.read_text(encoding="ascii").strip() for path in parts)
     bundle = base64.b64decode(encoded, validate=True)
+    expected_bytes = manifest["bundle"]["bytes"]
+    if len(bundle) != expected_bytes:
+        raise SystemExit(
+            f"bundle size mismatch: expected {expected_bytes}, got {len(bundle)}"
+        )
     actual_bundle_sha = sha256(bundle)
     expected_bundle_sha = manifest["bundle"]["sha256"]
     if actual_bundle_sha != expected_bundle_sha:
@@ -41,8 +47,6 @@ def main() -> None:
         )
 
     if OUT.exists():
-        import shutil
-
         shutil.rmtree(OUT)
     OUT.mkdir(parents=True)
 
