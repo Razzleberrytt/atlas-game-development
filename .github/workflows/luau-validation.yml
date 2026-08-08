@@ -64,6 +64,10 @@ jobs:
         shell: bash
         run: python scripts/roblox/extract_rbxl_presentation_properties.py --self-test
 
+      - name: Self-test RBXL BillboardGui decoder
+        shell: bash
+        run: python scripts/roblox/extract_rbxl_billboard_properties.py --self-test
+
       - name: Validate re-extracted property evidence
         shell: bash
         run: python scripts/validate_reextracted_property_evidence.py
