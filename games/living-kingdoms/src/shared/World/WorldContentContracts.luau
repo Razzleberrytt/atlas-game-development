@@ -7,7 +7,16 @@
 
 local WorldContentContracts = {}
 
-export type ContentKind = "world" | "zone" | "landmark" | "route" | "portal" | "vendor" | "station" | "resource" | "spawn"
+export type ContentKind =
+	"world"
+	| "zone"
+	| "landmark"
+	| "route"
+	| "portal"
+	| "vendor"
+	| "station"
+	| "resource"
+	| "spawn"
 
 export type ContentId = string
 
