@@ -44,6 +44,36 @@ local function decorateStation(part: Part, displayName: string)
 	label.Parent = gui
 end
 
+local function buildControlsBoard(parent: Instance, origin: Vector3)
+	local board = Instance.new("Part")
+	board.Name = "FieldMenuBoard"
+	board.Size = Vector3.new(30, 7, 1)
+	board.Position = origin + Vector3.new(0, 4, 26)
+	board.Anchored = true
+	board.CanCollide = true
+	board.CanTouch = false
+	board.Material = Enum.Material.WoodPlanks
+	board.Color = Color3.fromRGB(66, 55, 43)
+	board:SetAttribute("LK_PresentationOnly", true)
+	board.Parent = parent
+
+	local gui = Instance.new("SurfaceGui")
+	gui.Name = "Controls"
+	gui.Face = Enum.NormalId.Front
+	gui.PixelsPerStud = 48
+	gui.Parent = board
+
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Font = Enum.Font.GothamBold
+	label.Text = HubPreparationConfig.ControlsBoardText
+	label.TextColor3 = Color3.fromRGB(235, 230, 207)
+	label.TextScaled = true
+	label.TextWrapped = true
+	label.Parent = gui
+end
+
 local function buildStation(parent: Instance, origin: Vector3, definition: any)
 	local descriptor = WorldContentConfig.ById[definition.contentId]
 	assert(descriptor ~= nil and descriptor.active, "hub station must reference active world content")
@@ -95,6 +125,7 @@ function HubPreparationService.start()
 	root = createdRoot
 
 	local origin = anchorPosition()
+	buildControlsBoard(createdRoot, origin)
 	for _, station in HubPreparationConfig.Stations do
 		buildStation(createdRoot, origin, station)
 	end
