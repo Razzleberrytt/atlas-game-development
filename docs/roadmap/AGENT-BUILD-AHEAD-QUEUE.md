@@ -106,11 +106,11 @@ This is now a first-class product lane under Master Roadmap Phase W.
 
 | ID | Status | Task | Deliverable / boundary |
 |---|---|---|---|
-| BA-010 | READY | **Main World + environment audit and composition specification.** Audit live Forward Operations Hub plus recovered authored overworld against the `Arrival → Orientation → Exploration → Interaction → Preparation → Adventure → Return` loop. | `docs/specifications/main-world-environment-audit.md` with KEEP/REFINE/REBUILD/REPLACE/REMOVE/MISSING disposition; spawn flow, landmarks, traversal, POIs, expansion seams, terrain/vegetation/props, lighting/atmosphere/VFX/audio, streaming/performance, and Studio-only review checklist. No broad runtime activation. |
-| BA-011 | BLOCKED on BA-010 | Main World source representation/placement strategy. | Reviewable Rojo/data/reconstruction strategy preserving authored-overworld coordinates and streaming boundaries. |
-| BA-012 | BLOCKED on BA-010 | Canonical Hub interaction registry. | NPC/vendor/quest/crafting/portal/social anchors with stable IDs; definitions only. |
-| BA-013 | BLOCKED on BA-010 | Environment production plan. | Terrain/biome/prop/material/lighting/VFX/audio kits, repetition budgets, LOD/streaming/performance targets. No speculative geometry pass. |
-| BA-014 | BLOCKED on BA-010 | Main World acceptance matrix. | Studio checklist for orientation, navigation, landmark recognition, service finding, return flow, visual quality and measured performance. |
+| BA-010 | DONE | **Main World + environment audit and composition specification.** Audit live Forward Operations Hub plus recovered authored overworld against the `Arrival → Orientation → Exploration → Interaction → Preparation → Adventure → Return` loop. | Completed in `docs/specifications/main-world-environment-audit.md`; source/evidence dispositions and Studio-only acceptance work are explicit. No runtime activation or broad geometry was added. |
+| BA-011 | READY | Main World source representation/placement strategy. | Reviewable Rojo/data/reconstruction strategy preserving authored-overworld coordinates and streaming boundaries. |
+| BA-012 | READY | Canonical Hub interaction registry. | NPC/vendor/quest/crafting/portal/social anchors with stable IDs; definitions only. |
+| BA-013 | READY | Environment production plan. | Terrain/biome/prop/material/lighting/VFX/audio kits, repetition budgets, LOD/streaming/performance targets. No speculative geometry pass. |
+| BA-014 | READY | Main World acceptance matrix. | Studio checklist for orientation, navigation, landmark recognition, service finding, return flow, visual quality and measured performance. |
 
 ## P2 — quest, NPC, crafting, gathering, vendor/economy domains
 
@@ -195,15 +195,14 @@ Before starting, always re-fetch `main` and inspect PR #239 plus any newer PRs.
 
 ### Highest-ROI agent task
 
-**BA-010 — Main World + environment audit and composition specification.**
+**BA-011 — Main World source representation/placement strategy.**
 
 Why now:
 
-- preservation/property recovery and world-content IDs are no longer the blocker they were on 2026-08-07;
-- the Forward Operations Hub already exposes the current preparation loop;
-- the recovered authored overworld now has a clear separate-space policy;
-- a structured audit can determine what to preserve, refine or rebuild before agents generate more world geometry;
-- it directly unlocks BA-011/012/013/014 and strengthens the vertical-slice return loop.
+- BA-010 has classified the live bridge, recovered authored content and missing lifecycle/streaming boundaries;
+- the authored-overworld coordinate policy is already accepted, but its reviewable source/Studio representation is not;
+- resolving representation, streaming groups and spawn/return anchors prevents BA-012/013 work from binding to an accidental hierarchy;
+- it advances Main World preparation without activating held content or bypassing v2.7 runtime gates.
 
 ### Other safe parallel candidates
 
