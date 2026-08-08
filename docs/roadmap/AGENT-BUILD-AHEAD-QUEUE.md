@@ -107,7 +107,7 @@ This is now a first-class product lane under Master Roadmap Phase W.
 | ID | Status | Task | Deliverable / boundary |
 |---|---|---|---|
 | BA-010 | DONE | **Main World + environment audit and composition specification.** Audit live Forward Operations Hub plus recovered authored overworld against the `Arrival → Orientation → Exploration → Interaction → Preparation → Adventure → Return` loop. | Completed in `docs/specifications/main-world-environment-audit.md`; source/evidence dispositions and Studio-only acceptance work are explicit. No runtime activation or broad geometry was added. |
-| BA-011 | READY | Main World source representation/placement strategy. | Reviewable Rojo/data/reconstruction strategy preserving authored-overworld coordinates and streaming boundaries. |
+| BA-011 | DONE | Main World source representation/placement strategy. | Dedicated held Main World place/project boundary, source/model/Terrain ownership, streaming groups and arrival/return anchor policy are defined in `docs/specifications/main-world-source-representation-strategy.md` and locked by `MainWorldRepresentationConfig`. No runtime activation. |
 | BA-012 | READY | Canonical Hub interaction registry. | NPC/vendor/quest/crafting/portal/social anchors with stable IDs; definitions only. |
 | BA-013 | READY | Environment production plan. | Terrain/biome/prop/material/lighting/VFX/audio kits, repetition budgets, LOD/streaming/performance targets. No speculative geometry pass. |
 | BA-014 | READY | Main World acceptance matrix. | Studio checklist for orientation, navigation, landmark recognition, service finding, return flow, visual quality and measured performance. |
@@ -195,14 +195,14 @@ Before starting, always re-fetch `main` and inspect PR #239 plus any newer PRs.
 
 ### Highest-ROI agent task
 
-**BA-011 — Main World source representation/placement strategy.**
+**BA-012 — Canonical Hub interaction registry.**
 
 Why now:
 
-- BA-010 has classified the live bridge, recovered authored content and missing lifecycle/streaming boundaries;
-- the authored-overworld coordinate policy is already accepted, but its reviewable source/Studio representation is not;
-- resolving representation, streaming groups and spawn/return anchors prevents BA-012/013 work from binding to an accidental hierarchy;
-- it advances Main World preparation without activating held content or bypassing v2.7 runtime gates.
+- BA-010 classified the live bridge and recovered authored content;
+- BA-011 now fixes the dedicated place/project, source/model/Terrain ownership, streaming-group and arrival/return boundaries;
+- BA-012 can assign stable interaction anchors and canonical owners without binding to an accidental hierarchy;
+- it advances preparation surfaces without activating held content or bypassing v2.7 runtime gates.
 
 ### Other safe parallel candidates
 
