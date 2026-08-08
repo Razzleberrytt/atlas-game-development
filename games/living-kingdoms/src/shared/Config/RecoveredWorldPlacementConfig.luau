@@ -61,10 +61,15 @@ function Config.coordinateSpaceForPath(path: string): string?
 	return nil
 end
 
-function Config.authoredPointToCanonical(point: { x: number, y: number, z: number }): { x: number, y: number, z: number }
+function Config.authoredPointToCanonical(
+	point: { x: number, y: number, z: number }
+): { x: number, y: number, z: number }
 	assert(Config.AuthoredOverworld.UniformScale == 1.0, "authored overworld scale policy changed")
 	local translation = Config.AuthoredOverworld.Translation
-	assert(translation.x == 0 and translation.y == 0 and translation.z == 0, "authored overworld translation policy changed")
+	assert(
+		translation.x == 0 and translation.y == 0 and translation.z == 0,
+		"authored overworld translation policy changed"
+	)
 	return { x = point.x, y = point.y, z = point.z }
 end
 
