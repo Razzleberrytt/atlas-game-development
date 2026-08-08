@@ -108,7 +108,7 @@ This is now a first-class product lane under Master Roadmap Phase W.
 |---|---|---|---|
 | BA-010 | DONE | **Main World + environment audit and composition specification.** Audit live Forward Operations Hub plus recovered authored overworld against the `Arrival → Orientation → Exploration → Interaction → Preparation → Adventure → Return` loop. | Completed in `docs/specifications/main-world-environment-audit.md`; source/evidence dispositions and Studio-only acceptance work are explicit. No runtime activation or broad geometry was added. |
 | BA-011 | DONE | Main World source representation/placement strategy. | Dedicated held Main World place/project boundary, source/model/Terrain ownership, streaming groups and arrival/return anchor policy are defined in `docs/specifications/main-world-source-representation-strategy.md` and locked by `MainWorldRepresentationConfig`. No runtime activation. |
-| BA-012 | READY | Canonical Hub interaction registry. | NPC/vendor/quest/crafting/portal/social anchors with stable IDs; definitions only. |
+| BA-012 | DONE | Canonical Hub interaction registry. | Stable preparation/board/vendor/NPC/crafting/gathering/portal/social anchors and owner/dependency boundaries are defined in `docs/specifications/canonical-hub-interaction-registry.md`; no runtime activation. |
 | BA-013 | READY | Environment production plan. | Terrain/biome/prop/material/lighting/VFX/audio kits, repetition budgets, LOD/streaming/performance targets. No speculative geometry pass. |
 | BA-014 | READY | Main World acceptance matrix. | Studio checklist for orientation, navigation, landmark recognition, service finding, return flow, visual quality and measured performance. |
 
@@ -195,14 +195,14 @@ Before starting, always re-fetch `main` and inspect PR #239 plus any newer PRs.
 
 ### Highest-ROI agent task
 
-**BA-012 — Canonical Hub interaction registry.**
+**BA-013 — Environment production plan.**
 
 Why now:
 
 - BA-010 classified the live bridge and recovered authored content;
-- BA-011 now fixes the dedicated place/project, source/model/Terrain ownership, streaming-group and arrival/return boundaries;
-- BA-012 can assign stable interaction anchors and canonical owners without binding to an accidental hierarchy;
-- it advances preparation surfaces without activating held content or bypassing v2.7 runtime gates.
+- BA-011 fixed the dedicated place/project, source/model/Terrain ownership, streaming-group and arrival/return boundaries;
+- BA-012 now assigns stable interaction anchors, existing owners and explicit blocked ownership seams;
+- BA-013 can define terrain/structure/prop/foliage/material/lighting/VFX/audio kits, quality tiers and measured budgets without activating held content.
 
 ### Other safe parallel candidates
 
