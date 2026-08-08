@@ -99,7 +99,7 @@ Allowed forms include:
 | BA-003 | DONE | Legacy-script disposition/anti-resurrection boundary. | Legacy gameplay services remain non-authoritative. |
 | BA-004 | DONE | Stable world-content IDs/contracts and canonical runtime map. | Landed through PR #229; current ownership documented in `CANONICAL-RUNTIME.md`. |
 | BA-005 | IN PROGRESS | Source-managed authored-overworld reconstruction behind hold. | Property recovery + WorldPath + coordinate-space decision + DungeonPortal + quest board landed across PRs #232–#238. Continue coherent HubTown/resource/world-structure groups without booting them. |
-| BA-006 | READY | Refresh migration validators/docs so historical damaged-archive manifests cannot be mistaken for current reconstruction truth. | Keep current evidence and historical provenance clearly separated. |
+| BA-006 | DONE | Refresh migration validators/docs so historical damaged-archive manifests cannot be mistaken for current reconstruction truth. | `scripts/validate_migration_current_evidence.py` pins the four required current-evidence files to the canonical RBXL identity and post-repair 28/28-source, 1,775/1,775-row baseline; the historical manifest validator now labels its frozen 122-row scope explicitly, and CI runs both boundaries. No runtime activation. |
 
 ## P1 — Main World / HubTown / environment preparation
 

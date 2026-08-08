@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
-"""Validate the prepared combined-game migration manifests.
+"""Validate the historical damaged-archive migration manifests.
 
 Build-ahead task BA-072. The manifests under ``docs/migration`` are the bridge
 between the preserved Studio place and the canonical architecture, so they are
-only useful if their references are real. This validator checks them against
-the evidence they claim to be derived from:
+only useful if their references are real. BA-006 preserves their provenance:
+this validator checks them against the frozen 122-row recovered Workspace
+index they were authored from. A green result proves internal consistency, not
+current reconstruction truth. ``validate_migration_current_evidence.py`` owns
+the post-repair evidence boundary.
+
+This validator checks the historical manifests against the evidence they claim
+to be derived from:
 
 * every legacy instance path and id must exist in the recovered Workspace index;
 * every legacy script path must exist in the import ``manifest.json``;
@@ -354,7 +360,7 @@ def validate_dependency_graph(
     for node_id in sorted(graph):
         walk(node_id, [])
 
-    print(f"[migration] {name}: dependency graph with {len(nodes)} nodes")
+    print(f"[migration-historical] {name}: dependency graph with {len(nodes)} nodes")
 
 
 def validate(path: Path, rows: dict[str, list[dict[str, Any]]], scripts: set[str],
@@ -408,17 +414,17 @@ def validate(path: Path, rows: dict[str, list[dict[str, Any]]], scripts: set[str
     check_coverage(report, name, manifest, rows, claims)
     check_script_coverage(report, name, manifest, scripts, script_claims)
 
-    print(f"[migration] {name}: {len(entries)} entries, {len(gaps)} open gaps")
+    print(f"[migration-historical] {name}: {len(entries)} entries, {len(gaps)} open gaps")
 
 
 def main() -> int:
     if not MIGRATION_DIR.is_dir():
-        print("[migration] ERROR: docs/migration is missing", file=sys.stderr)
+        print("[migration-historical] ERROR: docs/migration is missing", file=sys.stderr)
         return 1
 
     manifests = sorted(MIGRATION_DIR.glob("*.json"))
     if not manifests:
-        print("[migration] ERROR: no manifests found under docs/migration", file=sys.stderr)
+        print("[migration-historical] ERROR: no manifests found under docs/migration", file=sys.stderr)
         return 1
 
     rows = load_recovered_rows()
@@ -431,11 +437,18 @@ def main() -> int:
 
     if report.errors:
         for error in report.errors:
-            print(f"[migration] ERROR: {error}", file=sys.stderr)
-        print(f"[migration] FAILED with {len(report.errors)} error(s)", file=sys.stderr)
+            print(f"[migration-historical] ERROR: {error}", file=sys.stderr)
+        print(
+            f"[migration-historical] FAILED with {len(report.errors)} error(s)",
+            file=sys.stderr,
+        )
         return 1
 
-    print(f"[migration] OK: {len(manifests)} manifest(s) validated against recovered evidence")
+    print(
+        f"[migration-historical] OK: {len(manifests)} manifest(s) validated "
+        "against the frozen 122-row damaged-archive evidence; this is not "
+        "current reconstruction truth"
+    )
     return 0
 
 
