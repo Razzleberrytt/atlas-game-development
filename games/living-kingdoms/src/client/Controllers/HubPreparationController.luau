@@ -5,6 +5,7 @@
 
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local Controller = {}
@@ -17,6 +18,7 @@ local UI_BY_ACTION = table.freeze({
 })
 
 local started = false
+local runActive = false
 local connections: { RBXScriptConnection } = {}
 
 local function playerGui(): PlayerGui
@@ -36,7 +38,17 @@ local function closeHubUi()
 	end
 end
 
+local function applyExpeditionState(snapshot: any)
+	runActive = type(snapshot) == "table" and snapshot.OutcomeId == "InProgress"
+	if runActive then
+		closeHubUi()
+	end
+end
+
 local function openAction(actionId: string)
+	if runActive then
+		return
+	end
 	local guiName = UI_BY_ACTION[actionId]
 	if guiName == nil then
 		return
@@ -51,6 +63,17 @@ function Controller.start()
 	end
 	started = true
 	closeHubUi()
+
+	local expeditionNetwork = ReplicatedStorage:WaitForChild("ExpeditionNetwork")
+	local expeditionState = expeditionNetwork:WaitForChild("State") :: RemoteEvent
+	local expeditionReadState = expeditionNetwork:WaitForChild("ReadState") :: RemoteFunction
+	table.insert(connections, expeditionState.OnClientEvent:Connect(applyExpeditionState))
+	local stateOk, snapshot = pcall(function()
+		return expeditionReadState:InvokeServer()
+	end)
+	if stateOk then
+		applyExpeditionState(snapshot)
+	end
 
 	table.insert(
 		connections,
@@ -89,6 +112,7 @@ function Controller.stop()
 		connection:Disconnect()
 	end
 	table.clear(connections)
+	runActive = false
 	closeHubUi()
 end
 
