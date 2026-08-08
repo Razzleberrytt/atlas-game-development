@@ -140,10 +140,10 @@ This is now a first-class product lane under Master Roadmap Phase W.
 
 | ID | Status | Task | Deliverable / boundary |
 |---|---|---|---|
-| BA-040 | READY | Enemy-archetype coverage audit. | Gap matrix for pressure/counter/readability, not a new EnemyService. |
-| BA-041 | BLOCKED on BA-040 | Missing enemy configs/pure behavior primitives. | Use canonical enemy authority. |
-| BA-042 | READY | Loot/build-decision coverage audit. | Affix/stat/set/rarity decision gaps tied to player choices. |
-| BA-043 | BLOCKED on BA-042 | Deterministic item/affix generation rules. | Seedable bounded resolver using canonical loot/inventory owners. |
+| BA-040 | DONE | Enemy-archetype coverage audit. | [`docs/specifications/enemy-archetype-coverage-audit.md`](../specifications/enemy-archetype-coverage-audit.md) — direct config/runtime verification finds Runner speed, Screamer reinforcement, Bloater death burst, and Brute second phase mechanically coherent with their presentation; Crawler alone remains thin because its faster low posture promises stalking/ambush behavior the shared owner does not implement. Covers the walker, six horde roles, Spitter, Progenitor, and five elite affixes. No runtime activation. |
+| BA-041 | BLOCKED on scoped Crawler identity decision | Missing enemy configs/pure behavior primitives. | BA-040 found no broad missing-role implementation: Runner and Brute already have source-proven mechanics. Decide whether Crawler's faster low-profile identity is sufficient or whether one bounded canonical behavior is wanted before changing `HordeExperienceService` or enemy config. |
+| BA-042 | DONE | Loot/build-decision coverage audit. | [`docs/specifications/loot-build-decision-coverage-audit.md`](../specifications/loot-build-decision-coverage-audit.md) — finds a complete operation-bound run-build choice path beside an older mapped persistent equipment grant/persistence path whose rarity/Power model lacks a client equip/application loop and conflicts with the first RPG integration's exclusions. Records 12/17 Field Upgrades, 12/12 Run Relics, three configured relic sources, no independent temporary-resource choice layer, no player-item affixes/sets, and outstanding Studio evidence. No runtime activation. |
+| BA-043 | BLOCKED on explicit equipment/run-build authority decision | Deterministic item/affix generation rules. | Existing `EquipmentReward*` and inventory owners already define persistent rarity/Power rewards, while the first run-RPG integration excludes that shape and no player item-affix/set contract exists. Decide whether persistent equipment is retained, held, or migrated before adding a seedable affix resolver; never create a parallel loot/inventory/persistence owner. |
 | BA-044 | READY | Progression/skill mapping audit. | Current-vs-historical mapping + smallest useful vertical-slice progression. |
 
 ## P5 — authored route, exploration and discovery preparation
