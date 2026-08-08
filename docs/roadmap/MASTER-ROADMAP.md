@@ -227,7 +227,8 @@ streaming groups, and arrival/return anchor policy in
 [`../specifications/main-world-source-representation-strategy.md`](../specifications/main-world-source-representation-strategy.md),
 locked by `MainWorldRepresentationConfig`. Its completion does not activate the Main
 World, create a Roblox place, reconstruct Terrain, or change the current operation
-runtime. The next dependency-safe task is BA-012 — canonical Hub interaction registry.
+runtime. BA-012 has since completed the canonical Hub interaction registry; the
+next dependency-safe Main World task is BA-013 — environment production plan.
 
 Define a readable loop:
 

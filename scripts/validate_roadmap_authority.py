@@ -49,6 +49,7 @@ AUTHORITY_FILES = (
     ROOT / "docs" / "production" / "V2.7-CUTOVER-LEDGER.md",
     ROOT / "docs" / "specifications" / "main-world-environment-audit.md",
     ROOT / "docs" / "specifications" / "main-world-source-representation-strategy.md",
+    ROOT / "docs" / "specifications" / "canonical-hub-interaction-registry.md",
 )
 
 # The roadmap index is the single place allowed to point at historical
