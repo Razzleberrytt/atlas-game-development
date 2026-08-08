@@ -67,7 +67,9 @@ function WorldContentContracts.validateDescriptor(descriptor: ContentDescriptor)
 	return true, nil
 end
 
-function WorldContentContracts.indexById(descriptors: { ContentDescriptor }): { [ContentId]: ContentDescriptor }
+function WorldContentContracts.indexById(
+	descriptors: { ContentDescriptor }
+): { [ContentId]: ContentDescriptor }
 	local byId: { [ContentId]: ContentDescriptor } = {}
 	for _, descriptor in descriptors do
 		local valid, reason = WorldContentContracts.validateDescriptor(descriptor)
@@ -78,7 +80,9 @@ function WorldContentContracts.indexById(descriptors: { ContentDescriptor }): { 
 	return byId
 end
 
-function WorldContentContracts.indexLegacyAliases(descriptors: { ContentDescriptor }): { [string]: ContentId }
+function WorldContentContracts.indexLegacyAliases(
+	descriptors: { ContentDescriptor }
+): { [string]: ContentId }
 	local aliases: { [string]: ContentId } = {}
 	for _, descriptor in descriptors do
 		for _, alias in descriptor.legacyAliases do
