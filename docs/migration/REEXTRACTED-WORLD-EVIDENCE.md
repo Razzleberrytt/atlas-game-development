@@ -1,5 +1,14 @@
 # Re-extracted World Evidence — Current Planning Truth
 
+**Status (BA-006):** `CURRENT_POST_REPAIR_EVIDENCE` — this document and its
+companion `current/reextracted-world-evidence.json` are the current source of
+truth for reconstruction planning. The historical damaged-archive manifests
+under `docs/migration/` are validated only for internal consistency by
+`scripts/validate_migration_manifests.py`; their 122-row evidence base is
+**not** current truth. `scripts/validate_migration_current_evidence.py`
+enforces the split and fails if current evidence drifts from the canonical
+import identity and post-repair totals.
+
 This document records the **post-repair** Workspace identity/hierarchy evidence recovered directly from the original `livingkingdoms.rbxl`.
 
 It supersedes the damaged first archive **for current migration planning**. The older 122-row recovered index and BA-001/BA-002 manifests remain useful as historical records of the first failed preservation pass, but their missing-row conclusions are no longer current facts.
