@@ -1,0 +1,57 @@
+{
+  "format_version": 1,
+  "source_rbxl": {
+    "file": "livingkingdoms.rbxl",
+    "bytes": 1639392,
+    "sha256": "e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16"
+  },
+  "direct_reextraction": {
+    "instances": 2258,
+    "classes": 98,
+    "scripts": 290,
+    "workspace_rows": 1775
+  },
+  "bundle": {
+    "file": "studio-reextraction-complete.tar.gz",
+    "sha256": "812da7ce92d77ad69c4b1d9ffc0454c85a5b12e9b10499bc8be266535c08e156",
+    "base64_parts": 5
+  },
+  "remaining_source_files": [
+    {
+      "path": "ServerScriptService/SurvivalGatheringService.server.luau",
+      "bytes": 21212,
+      "sha256": "5636c191bf1aee3207d69e5105e0a39d63551f5c8c2375beb8d6f4e4019fa6cb"
+    },
+    {
+      "path": "StarterGui/RPGUI.client.luau",
+      "bytes": 31158,
+      "sha256": "acf29cbfb1e8db6a32130d3e4829106cb5725185cbb1a16a3a1842945b28172c"
+    },
+    {
+      "path": "StarterGui/ShopUI.client.luau",
+      "bytes": 13465,
+      "sha256": "1c7b20517402bf7e63415738a31df72dc1d330b6e2050c7ec534e83279b6f792"
+    },
+    {
+      "path": "StarterGui/SurvivalHUD.client.luau",
+      "bytes": 11463,
+      "sha256": "3253ede60ed7ef31924db78b4eea30621c91915b3eaa9d200c01ef8f9f56cf4c"
+    },
+    {
+      "path": "StarterPack/Hatchet/SwingController.client.luau",
+      "bytes": 6620,
+      "sha256": "b1490169a3e3644b92314583db8519cc36746cbe64f744c92a2596373c8e821c"
+    },
+    {
+      "path": "StarterPlayer/StarterPlayerScripts/RPGClientController.client.luau",
+      "bytes": 13439,
+      "sha256": "7105eb88422e5f451762dbf6271f1c340dc3b338307414ea19b3a5ada78cdc62"
+    }
+  ],
+  "workspace_index": {
+    "bytes": 278542,
+    "sha256": "320d1ec49b0bc3a0feaed7fdc07348a18ebc248682bddc1a338514c82421b6c3",
+    "rows": 1775,
+    "scope": "identity/hierarchy only; no claim of property-perfect transforms/materials/VFX"
+  }
+}
