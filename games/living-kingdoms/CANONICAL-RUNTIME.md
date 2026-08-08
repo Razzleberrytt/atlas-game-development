@@ -24,7 +24,7 @@ The repaired direct re-extraction verifies:
 Current world evidence is summarized in:
 
 - `../../docs/migration/REEXTRACTED-WORLD-EVIDENCE.md`
-- `../../docs/migration/reextracted-world-evidence.json`
+- `../../docs/migration/current/reextracted-world-evidence.json`
 
 Older migration files that cite only 122 recovered Workspace rows describe the damaged first archive. Do not use those missing-row conclusions as current BA-005 evidence.
 
