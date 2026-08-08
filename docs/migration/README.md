@@ -7,7 +7,7 @@ This directory contains two generations of migration evidence for the 2026-08-07
 Use these files for new reconstruction work:
 
 - `REEXTRACTED-WORLD-EVIDENCE.md`
-- `reextracted-world-evidence.json`
+- `current/reextracted-world-evidence.json`
 
 They summarize the direct re-extraction from the original `livingkingdoms.rbxl` after PR #228 repaired the preservation failure.
 
@@ -73,6 +73,8 @@ python scripts/validate_migration_manifests.py
 `verify_studio_import_package.py` validates the **current repaired preservation set**: all 28 sources and all 1,775 Workspace rows.
 
 `validate_migration_manifests.py` still validates the older BA-001/BA-002 manifest generation against the frozen damaged-archive index they were authored from. A green result means those historical manifests are internally consistent; it does **not** mean their 122-row evidence base is the latest preservation truth.
+
+The current machine-readable evidence lives under `docs/migration/current/` specifically so the historical manifest validator cannot mistake it for one of the old manifest schemas.
 
 ## Next use
 
