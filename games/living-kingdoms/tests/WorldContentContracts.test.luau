@@ -9,10 +9,13 @@ local function check(condition: unknown, message: string?)
 	end
 end
 
-local contracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/World/WorldContentContracts.luau"), {
-	debugName = "WorldContentContracts",
-	injectGlobals = true,
-})()
+local contracts = luau.load(
+	fs.readFile("games/living-kingdoms/src/shared/World/WorldContentContracts.luau"),
+	{
+		debugName = "WorldContentContracts",
+		injectGlobals = true,
+	}
+)()
 
 check(contracts.isValidId("world.operation.forest"))
 check(contracts.isValidId("resource.iron_ore"))
@@ -28,22 +31,25 @@ local replicatedStorage = {
 	},
 }
 
-local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/WorldContentConfig.luau"), {
-	debugName = "WorldContentConfig",
-	environment = {
-		game = {
-			GetService = function(_: unknown, serviceName: string)
-				check(serviceName == "ReplicatedStorage")
-				return replicatedStorage
+local config = luau.load(
+	fs.readFile("games/living-kingdoms/src/shared/Config/WorldContentConfig.luau"),
+	{
+		debugName = "WorldContentConfig",
+		environment = {
+			game = {
+				GetService = function(_: unknown, serviceName: string)
+					check(serviceName == "ReplicatedStorage")
+					return replicatedStorage
+				end,
+			},
+			require = function(token: unknown)
+				check(token == contractsToken, "unexpected WorldContentConfig dependency")
+				return contracts
 			end,
 		},
-		require = function(token: unknown)
-			check(token == contractsToken, "unexpected WorldContentConfig dependency")
-			return contracts
-		end,
-	},
-	injectGlobals = true,
-})()
+		injectGlobals = true,
+	}
+)()
 
 check(config.Version == "BA-004-v1")
 check(table.isfrozen(config))
