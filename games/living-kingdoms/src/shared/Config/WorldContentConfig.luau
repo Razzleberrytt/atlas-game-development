@@ -62,8 +62,24 @@ local descriptors: { ContentDescriptor } = {
 		id = "spawn.operation.insertion",
 		kind = "spawn",
 		displayName = "Operation Insertion",
-		legacyAliases = table.freeze({ "SpawnLocation", "BootstrapSafetySpawn" }),
+		legacyAliases = table.freeze({ "BootstrapSafetySpawn" }),
 		active = true,
+	}),
+	table.freeze({
+		id = "spawn.main_world.arrival",
+		kind = "spawn",
+		displayName = "Main World Arrival",
+		legacyAliases = table.freeze({ "SpawnLocation" }),
+		active = false,
+		notes = "Recovered authored-overworld spawn; held until the dedicated Main World lifecycle is accepted.",
+	}),
+	table.freeze({
+		id = "spawn.main_world.return",
+		kind = "spawn",
+		displayName = "Main World Return",
+		legacyAliases = table.freeze({}),
+		active = false,
+		notes = "Required semantic return anchor; placement remains unassigned pending return-flow composition.",
 	}),
 	table.freeze({
 		id = "station.hub.character",
@@ -194,7 +210,7 @@ local byId = WorldContentContracts.indexById(descriptors)
 local legacyAliases = WorldContentContracts.indexLegacyAliases(descriptors)
 
 return table.freeze({
-	Version = "BA-004-v2-hub-shell",
+	Version = "BA-011-v1-main-world-anchors",
 	Descriptors = table.freeze(descriptors),
 	ById = table.freeze(byId),
 	LegacyAliases = table.freeze(legacyAliases),

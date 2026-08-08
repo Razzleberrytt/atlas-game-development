@@ -50,7 +50,7 @@ local hubConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config
 	injectGlobals = true,
 })()
 
-check(config.Version == "BA-004-v2-hub-shell")
+check(config.Version == "BA-011-v1-main-world-anchors")
 check(table.isfrozen(config))
 check(table.isfrozen(config.Descriptors))
 check(config.ById["world.operation.forest"].active == true)
@@ -64,7 +64,10 @@ check(config.LegacyAliases.WorldPath == "route.world.primary")
 check(config.LegacyAliases.Resources == "zone.resources.primary")
 check(config.LegacyAliases.WorldStructures == "zone.structures.primary")
 check(config.LegacyAliases.Buildings == "zone.structures.primary")
-check(config.LegacyAliases.SpawnLocation == "spawn.operation.insertion")
+check(config.LegacyAliases.SpawnLocation == "spawn.main_world.arrival")
+check(config.LegacyAliases.BootstrapSafetySpawn == "spawn.operation.insertion")
+check(config.ById["spawn.main_world.arrival"].active == false)
+check(config.ById["spawn.main_world.return"].active == false)
 check(config.LegacyAliases.RangerStation == "landmark.ranger_station")
 check(config.LegacyAliases.ExtractionClearing == "landmark.extraction_clearing")
 
