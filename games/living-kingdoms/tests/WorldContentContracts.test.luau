@@ -45,11 +45,20 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Wo
 	injectGlobals = true,
 })()
 
-check(config.Version == "BA-004-v1")
+local hubConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/HubPreparationConfig.luau"), {
+	debugName = "HubPreparationConfig",
+	injectGlobals = true,
+})()
+
+check(config.Version == "BA-004-v2-hub-shell")
 check(table.isfrozen(config))
 check(table.isfrozen(config.Descriptors))
 check(config.ById["world.operation.forest"].active == true)
 check(config.ById["world.hub.primary"].active == false)
+check(config.ById["zone.hub.forward_operations"].active == true)
+check(config.ById["station.hub.class"].kind == "station")
+check(config.ById["station.hub.weapon"].kind == "station")
+check(config.ById["portal.expedition.primary"].kind == "portal")
 check(config.LegacyAliases.HubTown == "world.hub.primary")
 check(config.LegacyAliases.WorldPath == "route.world.primary")
 check(config.LegacyAliases.Resources == "zone.resources.primary")
@@ -66,3 +75,17 @@ for _, descriptor in config.Descriptors do
 	check(not seen[descriptor.id], "duplicate content id: " .. descriptor.id)
 	seen[descriptor.id] = true
 end
+
+check(hubConfig.Version == "HUB-SHELL-v1")
+check(hubConfig.ZoneContentId == "zone.hub.forward_operations")
+check(#hubConfig.Stations == 3)
+local hubActions = {}
+for _, station in hubConfig.Stations do
+	check(config.ById[station.contentId] ~= nil, "hub station content ID must be registered")
+	check(config.ById[station.contentId].active == true, "hub station content ID must be active")
+	check(not hubActions[station.actionId], "duplicate hub action: " .. station.actionId)
+	hubActions[station.actionId] = true
+end
+check(hubActions.OpenClass == true)
+check(hubActions.OpenWeapon == true)
+check(hubActions.OpenExpedition == true)
