@@ -30,16 +30,18 @@ check(config.Rules.NeverParentRecoveredWorldUnderOperationFoundation == true)
 check(config.Rules.LegacyHubTownIsPresentationContentNotGameplayAuthority == true)
 check(config.Rules.ForwardOperationsHubIsTemporaryBridge == true)
 
-for _, path in {
-	"Workspace/HubTown",
-	"Workspace/HubTown/DungeonPortal/PortalFrame",
-	"Workspace/Resources/IronOre/IronOre_1/OreRock",
-	"Workspace/WorldPath/PathSegment_189",
-	"Workspace/WorldStructures/DestinyMonolith/CoreTower",
-	"Workspace/SpawnLocation",
-	"Workspace/AmbientFireflies/Attachment",
-	"Workspace/WorldClouds/CloudEmitter",
-} do
+for _, path in
+	{
+		"Workspace/HubTown",
+		"Workspace/HubTown/DungeonPortal/PortalFrame",
+		"Workspace/Resources/IronOre/IronOre_1/OreRock",
+		"Workspace/WorldPath/PathSegment_189",
+		"Workspace/WorldStructures/DestinyMonolith/CoreTower",
+		"Workspace/SpawnLocation",
+		"Workspace/AmbientFireflies/Attachment",
+		"Workspace/WorldClouds/CloudEmitter",
+	}
+do
 	check(config.coordinateSpaceForPath(path) == "authored-overworld", "unexpected coordinate space for " .. path)
 end
 
