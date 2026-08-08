@@ -1,0 +1,120 @@
+{
+  "format_version": 1,
+  "generated_on": "2026-08-07",
+  "status": "CURRENT_POST_REPAIR_EVIDENCE",
+  "evidence_level": "identity/hierarchy only; no transform, size, material, color, terrain voxel, or VFX property parity claimed",
+  "source_rbxl": {
+    "bytes": 1639392,
+    "sha256": "e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16"
+  },
+  "workspace_index": {
+    "rows": 1775,
+    "bytes": 278542,
+    "sha256": "320d1ec49b0bc3a0feaed7fdc07348a18ebc248682bddc1a338514c82421b6c3"
+  },
+  "top_level": [
+    { "name": "AmbientFireflies", "class": "Part", "subtree_rows": 3 },
+    { "name": "BootstrapSafetyFloor", "class": "Part", "subtree_rows": 1 },
+    { "name": "BootstrapSafetySpawn", "class": "SpawnLocation", "subtree_rows": 1 },
+    { "name": "Buildings", "class": "Folder", "subtree_rows": 1 },
+    { "name": "Camera", "class": "Camera", "subtree_rows": 1 },
+    { "name": "HubTown", "class": "Folder", "subtree_rows": 270 },
+    { "name": "Resources", "class": "Folder", "subtree_rows": 113 },
+    { "name": "SpawnLocation", "class": "SpawnLocation", "subtree_rows": 1 },
+    { "name": "Terrain", "class": "Terrain", "subtree_rows": 1 },
+    { "name": "WorldClouds", "class": "Part", "subtree_rows": 2 },
+    { "name": "WorldPath", "class": "Folder", "subtree_rows": 190 },
+    { "name": "WorldStructures", "class": "Folder", "subtree_rows": 1190 }
+  ],
+  "key_subtrees": {
+    "HubTown": {
+      "rows": 270,
+      "immediate_child_paths": 46,
+      "class_counts": {
+        "Attachment": 4,
+        "BillboardGui": 4,
+        "Fire": 14,
+        "Folder": 7,
+        "Humanoid": 4,
+        "Model": 7,
+        "Part": 157,
+        "ParticleEmitter": 5,
+        "PointLight": 49,
+        "ProximityPrompt": 1,
+        "SurfaceGui": 2,
+        "TextLabel": 10,
+        "WeldConstraint": 6
+      },
+      "selected_groups": {
+        "DungeonPortal": 10,
+        "quest_board": 16,
+        "apothecary": 20,
+        "armor_smith": 20,
+        "weapon_smith": 20,
+        "merchant": 15,
+        "CentralFountain": 11,
+        "GrandStaircase": 35,
+        "HubArchway": 6
+      }
+    },
+    "WorldStructures": {
+      "rows": 1190,
+      "immediate_child_paths": 17,
+      "class_counts": {
+        "Attachment": 7,
+        "Fire": 8,
+        "Folder": 1,
+        "Model": 175,
+        "Part": 894,
+        "ParticleEmitter": 25,
+        "PointLight": 79,
+        "Shirt": 1
+      },
+      "groups": [
+        { "name": "AncientBridge", "rows": 36 },
+        { "name": "CrystalTower", "rows": 32 },
+        { "name": "DarkCitadel", "rows": 31 },
+        { "name": "DarkMist", "rows": 11 },
+        { "name": "DestinyMonolith", "rows": 25 },
+        { "name": "EnergyBeams", "rows": 7 },
+        { "name": "FalloutRuins", "rows": 122 },
+        { "name": "FloatingDebris", "rows": 16 },
+        { "name": "FloatingIslands", "rows": 42 },
+        { "name": "GlowingCracks", "rows": 25 },
+        { "name": "GrandEntrance", "rows": 10 },
+        { "name": "MagicalAtmosphere", "rows": 37 },
+        { "name": "MountainBeacons", "rows": 25 },
+        { "name": "MountainRanges", "rows": 98 },
+        { "name": "SkyElements", "rows": 10 },
+        { "name": "WorldDetails", "rows": 201 },
+        { "name": "WorldVegetation", "rows": 461 }
+      ]
+    },
+    "WorldPath": {
+      "rows": 190,
+      "folder_rows": 1,
+      "segment_parts": 189,
+      "segment_range": [1, 189],
+      "contiguous": true
+    },
+    "Resources": {
+      "rows": 113,
+      "class_counts": {
+        "Folder": 4,
+        "Model": 29,
+        "Part": 62,
+        "PointLight": 18
+      },
+      "groups": [
+        { "name": "IronOre", "rows": 49 },
+        { "name": "Rocks", "rows": 17 },
+        { "name": "Trees", "rows": 46 }
+      ]
+    }
+  },
+  "supersedes_for_current_planning": {
+    "historical_index": "games/living-kingdoms/imports/studio-2026-08-07/recovered/workspace-index-recovered.json",
+    "historical_rows": 122,
+    "note": "The 122-row recovered index remains historical evidence of the damaged first archive. Current reconstruction planning must use the verified re-extraction evidence summarized here."
+  }
+}
