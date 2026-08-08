@@ -2,6 +2,22 @@
 
 This packet is prepared for the first Studio/runtime validation of the R1 containment slice. It is **not accepted evidence until the runtime fields below are filled from an actual run**.
 
+> **BLOCKED — do not capture against the artifact pinned in Section 1.**
+>
+> The artifact pinned below is commit `2c870d270b96064c9a06343cc088b251299373f4`, which predates the
+> client-bootstrap fix in `91a1ebe3d04b6d99495f19e7a809bc2b4135fd97`. On that build an unbounded
+> `WaitForChild("PlayerModule")` in the fourth client controller halted the bootstrap permanently, so
+> no controller after it ever started. That meets this packet's own invalidating condition
+> "unrelated script errors prevent client bootstrap", and it does so on every run.
+>
+> The R1 listener starts ahead of the stall, so its gauges still read `true` — this packet could
+> therefore have been filled in and reported as passing against a client that was dead from its
+> fourth controller onward.
+>
+> Re-pin Section 1 to a CI artifact built at or after `91a1ebe3d04b6d99495f19e7a809bc2b4135fd97`
+> before capturing. See `2026-08-08-r1-capture-blocked-by-client-bootstrap-stall.md` for the finding
+> and for an informational local-build capture.
+
 ## 1. Identity
 
 - Date/time: 2026-08-07; runtime time to be recorded
