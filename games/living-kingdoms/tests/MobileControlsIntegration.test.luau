@@ -48,7 +48,22 @@ assertThat(
 	contains(survivor, "playerModule:GetControls()"),
 	"the survivor controller must acquire Roblox's native controls"
 )
-assertThat(contains(survivor, "state.playerControls:Enable()"), "native controls must be explicitly enabled")
+assertThat(
+	contains(survivor, "state.playerControls = controls") and contains(survivor, "controls:Enable()"),
+	"native controls must be retained and explicitly enabled once acquired"
+)
+-- Acquisition is bounded and off the bootstrap thread. This controller starts
+-- ahead of every HUD, weapon, enemy and expedition owner, so an unbounded wait on
+-- a place-template module that a `rojo build` place may not carry would stall the
+-- whole client instead of only native movement.
+assertThat(
+	not contains(survivor, 'WaitForChild("PlayerModule")'),
+	"PlayerModule must never be awaited without a timeout"
+)
+assertThat(
+	contains(survivor, "PLAYER_MODULE_WAIT_SECONDS") and contains(survivor, "task.spawn"),
+	"native controls must be acquired with a bounded wait off the bootstrap thread"
+)
 assertThat(not contains(survivor, ":Disable()"), "the survivor controller must never disable Roblox's native controls")
 assertThat(
 	not contains(survivor, "Humanoid:Move") and not contains(survivor, "RenderStepped"),
