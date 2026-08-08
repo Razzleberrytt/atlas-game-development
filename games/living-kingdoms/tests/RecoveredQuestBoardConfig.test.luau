@@ -27,7 +27,7 @@ check(config.CoordinateSpaceId == "authored-overworld")
 check(config.SourceHold == true)
 check(config.RuntimeEnabled == false)
 
-check(config.Interaction.LegacyQuestServiceAuthority == false)
+check(config.Interaction.LegacyQuestAuthority == false)
 check(config.Interaction.RecoveredShortcutTextIsPresentationOnly == true)
 check(config.Interaction.RecoveredPromptExists == false)
 check(config.Interaction.FuturePrelaunchSelectionContractRequired == true)
