@@ -1,5 +1,5 @@
 {
-  "format_version": 1,
+  "format_version": 2,
   "source_rbxl": {
     "file": "livingkingdoms.rbxl",
     "bytes": 1639392,
@@ -13,8 +13,16 @@
   },
   "bundle": {
     "file": "studio-reextraction-complete.tar.gz",
+    "bytes": 41888,
     "sha256": "812da7ce92d77ad69c4b1d9ffc0454c85a5b12e9b10499bc8be266535c08e156",
-    "base64_parts": 5
+    "base64_files": [
+      "studio-reextraction-complete.tar.gz.b64.part01",
+      "studio-reextraction-complete.tar.gz.b64.part02",
+      "studio-reextraction-complete.tar.gz.b64.part03",
+      "studio-reextraction-complete.tar.gz.b64.part04a",
+      "studio-reextraction-complete.tar.gz.b64.part04b",
+      "studio-reextraction-complete.tar.gz.b64.part05"
+    ]
   },
   "remaining_source_files": [
     {
