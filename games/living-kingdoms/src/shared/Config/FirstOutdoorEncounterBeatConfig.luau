@@ -3,10 +3,11 @@
 --[[
 	BA-051 authored encounter-beat definitions for the first outdoor route.
 
-	This module is data-only. It binds canonical enemy/horde vocabulary to the
-	three BA-050 route-local encounter slots and records pacing/recovery intent.
-	It does not spawn enemies, start timers, grant recovery, choose elite affixes,
-	or override the canonical EliteAffixResolver / EnemyDirector authorities.
+	The expedition bootstrap now consumes these beats as the authoritative
+	Approach combat sequence through the existing EnemyDirector adapter. This does
+	not activate BA-050 route geometry, teleport players, grant rewards, choose
+	elite affixes, or override the canonical EliteAffixResolver / EnemyDirector
+	authorities. Route traversal/geometry remains a separate prepared-data seam.
 ]]
 
 local EnemyContracts = require(script.Parent.Parent.Combat.EnemyContracts)
@@ -69,10 +70,11 @@ local function beat(
 end
 
 local FirstOutdoorEncounterBeatConfig = {
-	Version = "BA-051-v1",
+	Version = "BA-051-v2-approach-live",
 	RouteId = FirstOutdoorRouteConfig.RouteId,
 	RouteVersion = FirstOutdoorRouteConfig.RouteVersion,
-	RuntimeConsumptionActive = false,
+	RuntimeConsumptionActive = true,
+	RuntimeConsumptionScopeId = "ApproachCombatSequenceOnly",
 	ElitePlacementIntentIds = ElitePlacementIntentIds,
 	RecoveryIntentIds = RecoveryIntentIds,
 	Beats = table.freeze({
@@ -131,8 +133,12 @@ local FirstOutdoorEncounterBeatConfig = {
 	}),
 }
 
-assert(FirstOutdoorEncounterBeatConfig.RuntimeConsumptionActive == false, "BA-051 encounter beats must remain dormant")
-assert(FirstOutdoorRouteConfig.RuntimeConsumptionActive == false, "BA-051 cannot activate the BA-050 route")
+assert(FirstOutdoorEncounterBeatConfig.RuntimeConsumptionActive == true, "BA-051 approach combat must remain live")
+assert(
+	FirstOutdoorEncounterBeatConfig.RuntimeConsumptionScopeId == "ApproachCombatSequenceOnly",
+	"BA-051 live scope must not imply route-geometry activation"
+)
+assert(FirstOutdoorRouteConfig.RuntimeConsumptionActive == false, "BA-051 cannot activate the BA-050 route geometry")
 assert(#FirstOutdoorEncounterBeatConfig.Beats == 3, "the first outdoor route requires exactly three encounter beats")
 
 local expectedEncounterSlotIds = table.freeze({
