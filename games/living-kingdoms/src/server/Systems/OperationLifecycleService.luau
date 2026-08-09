@@ -1,7 +1,7 @@
 --!strict
 
 --[[
-	P10-0105 deterministic match cleanup and replay.
+	P10-0105 deterministic match cleanup and deliberate replay preparation.
 
 	This is the one owner of the terminal stop/start sequence. It holds no gameplay
 	state of its own: it executes `MatchResultConfig.CleanupStopOrder` and
@@ -10,15 +10,15 @@
 	orders are asserted to cover every declared cleanup owner exactly once, so no
 	owner can be skipped or torn down twice.
 
-	Replay is a clean restart of the same authored operation, never a resume. The
-	mission director mints a fresh per-run `operationId` on each start, so a
-	replayed operation is a distinct result with no stale timers, connections,
-	revisions, cache history, class resources, enemies, boss state, contribution
-	records, or terminal result.
+	A resolved operation now stays resolved until the server-owned expedition lobby
+	consumes a fresh deliberate launch. That launch calls `prepareForLaunch()` to
+	run the existing clean stop/start sequence immediately before pressure is armed
+	and a new expedition is created. The mission director still mints a fresh
+	per-run `operationId`, so a repeated operation is never a resume.
 
-	It owns exactly one timer and one subscription, and it accepts no client
-	request — replay is server-driven, so a resolved server restarts without
-	developer intervention.
+	This owner has one terminal subscription and no timer or client request surface.
+	It prepares fresh operation state; it never decides that a new expedition
+	should launch.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -42,7 +42,7 @@ local ReplayStateIds = MatchResultContracts.OperationReplayStateIds
 
 local OperationLifecycleService = {}
 
--- Each declared cleanup owner mapped to the lifecycle it already exposes. The
+-- Each declared cleanup owner maps to the lifecycle it already exposes. The
 -- objective runtime is owned by the mission director, so it releases its own
 -- state at its documented place and the director tears the rest down last.
 local stopByOwnerId: { [string]: () -> () } = {
@@ -62,8 +62,8 @@ local stopByOwnerId: { [string]: () -> () } = {
 		OperativeReviveSessionService.stop()
 	end,
 	-- OperativeLifeService owns application-scoped player and subscriber
-	-- bindings. Replay resets its operation state during the start sequence
-	-- instead of stopping it and orphaning long-lived consumers.
+	-- bindings. A fresh run resets operation state instead of stopping it and
+	-- orphaning long-lived consumers.
 	[CleanupOwnerIds.OperativeLife] = function() end,
 	[CleanupOwnerIds.SquadFailure] = function()
 		SquadFailureService.stop()
@@ -107,25 +107,12 @@ local startByOwnerId: { [string]: () -> () } = {
 
 local started = false
 local replayStateId: OperationReplayStateId = ReplayStateIds.InProgress
-local replayGeneration = 0
-local replayThread: thread? = nil
 local terminalConnection: ListenerConnection? = nil
 local completedReplayCount = 0
 
-local function cancelScheduledReplay()
-	replayGeneration += 1
-	if replayThread ~= nil then
-		pcall(task.cancel, replayThread)
-		replayThread = nil
-	end
-end
-
---[[
-	Runs the documented stop order, then the documented start order. Every step is
-	isolated: one owner erroring cannot strand the rest half-torn-down, because the
-	sequence is configuration-driven and each call is protected.
-]]
-local function performReplay()
+-- Runs the documented stop order, then the documented start order. Every step is
+-- isolated so one owner error cannot prevent the rest of the cleanup sequence.
+local function prepareFreshRun()
 	for _, ownerId in MatchResultConfig.CleanupStopOrder do
 		local stopOwner = stopByOwnerId[ownerId]
 		if stopOwner ~= nil then
@@ -147,27 +134,23 @@ local function onResolved()
 		return
 	end
 	replayStateId = ReplayStateIds.Resolved
-	cancelScheduledReplay()
-	local generation = replayGeneration
-	replayThread = task.delay(MatchResultConfig.ReplayDebriefSeconds, function()
-		if not started or generation ~= replayGeneration then
-			return
-		end
-		replayThread = nil
-		replayStateId = ReplayStateIds.Replayable
-		performReplay()
-	end)
 end
 
--- Server-only immediate replay, for validation and for a future operator control.
--- It is never reachable from a client.
-function OperationLifecycleService.replayNow(): boolean
+-- Called only by the server-owned deliberate launch path. The first launch is
+-- already fresh and is a no-op here. After a terminal result, the next launch
+-- prepares all operation-scoped owners before the lobby arms pressure.
+function OperationLifecycleService.prepareForLaunch(): boolean
 	if not started then
 		return false
 	end
-	cancelScheduledReplay()
+	if replayStateId == ReplayStateIds.InProgress then
+		return true
+	end
+	if replayStateId ~= ReplayStateIds.Resolved then
+		return false
+	end
 	replayStateId = ReplayStateIds.Replayable
-	performReplay()
+	prepareFreshRun()
 	return true
 end
 
@@ -194,7 +177,6 @@ function OperationLifecycleService.stop()
 		return
 	end
 	started = false
-	cancelScheduledReplay()
 	if terminalConnection ~= nil then
 		terminalConnection:Disconnect()
 		terminalConnection = nil
