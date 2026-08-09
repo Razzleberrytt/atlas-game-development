@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
+local InputActionMapConfig = require(ReplicatedStorage.Shared.Config.InputActionMapConfig)
 local MovementLimits = require(ReplicatedStorage.Shared.Config.MovementLimits)
 local RunProgressionConfig = require(ReplicatedStorage.Shared.Config.RunProgressionConfig)
 
@@ -29,6 +30,8 @@ local viewport: ViewportFrame? = nil
 local statsList: Frame? = nil
 local inventoryGrid: ScrollingFrame? = nil
 local inventoryTitle: TextLabel? = nil
+local characterLauncherButton: TextButton? = nil
+local inventoryLauncherButton: TextButton? = nil
 local characterTab: TextButton? = nil
 local inventoryTab: TextButton? = nil
 local skillsTab: TextButton? = nil
@@ -45,6 +48,40 @@ local COLORS = table.freeze({
 	muted = Color3.fromRGB(154, 164, 159),
 	green = Color3.fromRGB(105, 214, 139),
 })
+
+local function usesKeyboardShortcutLabels(inputType: Enum.UserInputType): boolean
+	if inputType == Enum.UserInputType.None then
+		return UserInputService.KeyboardEnabled
+	end
+	return inputType == Enum.UserInputType.Keyboard
+		or inputType == Enum.UserInputType.MouseButton1
+		or inputType == Enum.UserInputType.MouseButton2
+		or inputType == Enum.UserInputType.MouseButton3
+		or inputType == Enum.UserInputType.MouseMovement
+		or inputType == Enum.UserInputType.MouseWheel
+end
+
+local function keyboardShortcut(actionId: string): string
+	local definition = InputActionMapConfig.get(actionId)
+	if definition == nil then
+		return ""
+	end
+	return definition.KeyboardKeyCodeNames[1] or ""
+end
+
+local function updateLauncherLabels(inputType: Enum.UserInputType)
+	local showShortcut = usesKeyboardShortcutLabels(inputType)
+	local characterButton = characterLauncherButton
+	if characterButton ~= nil then
+		local shortcut = keyboardShortcut("OpenCharacter")
+		characterButton.Text = if showShortcut and shortcut ~= "" then shortcut .. "   CHARACTER" else "CHARACTER"
+	end
+	local inventoryButton = inventoryLauncherButton
+	if inventoryButton ~= nil then
+		local shortcut = keyboardShortcut("OpenInventory")
+		inventoryButton.Text = if showShortcut and shortcut ~= "" then shortcut .. "   INVENTORY" else "INVENTORY"
+	end
+end
 
 local function decorate(target: GuiObject, color: Color3?)
 	local corner = Instance.new("UICorner")
@@ -550,8 +587,9 @@ local function createPresentation()
 	created.ResetOnSpawn = false
 	created.IgnoreGuiInset = true
 	created.DisplayOrder = 70
-	topButton(created, "C   CHARACTER", -148, "Character")
-	topButton(created, "I   INVENTORY", -12, "Inventory")
+	characterLauncherButton = topButton(created, "CHARACTER", -148, "Character")
+	inventoryLauncherButton = topButton(created, "INVENTORY", -12, "Inventory")
+	updateLauncherLabels(UserInputService:GetLastInputType())
 
 	local shade = Instance.new("Frame")
 	shade.Name = "Modal"
@@ -711,6 +749,7 @@ function Controller.start()
 	end
 	started = true
 	createPresentation()
+	table.insert(connections, UserInputService.LastInputTypeChanged:Connect(updateLauncherLabels))
 	table.insert(
 		connections,
 		UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -792,6 +831,8 @@ function Controller.stop()
 	statsList = nil
 	inventoryGrid = nil
 	inventoryTitle = nil
+	characterLauncherButton = nil
+	inventoryLauncherButton = nil
 	characterTab = nil
 	inventoryTab = nil
 	skillsTab = nil

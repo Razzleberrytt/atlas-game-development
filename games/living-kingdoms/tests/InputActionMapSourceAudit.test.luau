@@ -7,8 +7,8 @@
 	`docs/specifications/input-action-map-audit.md` to the source they were read
 	from, so the audit cannot silently rot.
 
-	BA-062 closes M1, C1/C2 and now M2/M3 in isolated source increments while
-	keeping the later shared-action-map work separate.
+	BA-062 closes M1-M3 and C1/C2 in isolated source increments, has now landed
+	the shared action-map foundation, and is continuing the remaining UI cleanup.
 ]]
 
 local fs = require("@lune/fs")
@@ -210,17 +210,14 @@ local squadPingConfig = read(SHARED .. "SquadPingConfig.luau")
 assert(contains(flashlightConfig, 'KeyboardKeyCodeName = "F"') and contains(flashlightConfig, "ButtonY"))
 assert(contains(squadPingConfig, 'KeyboardKeyCodeName = "G"') and contains(squadPingConfig, "DPadUp"))
 
--- Exactly two actions remain config-driven; BA-062 fixes concrete coverage and
--- conflicts without prematurely building the later shared action map.
-local configDrivenActions = 0
-for _, source in { flashlight, squadPing, weapon, survivor, operativeLife, classAction, rpgMenu, hubPreparation } do
-	if contains(source, "KeyboardKeyCodeName") then
-		configDrivenActions += 1
-	end
-end
+-- The shared map foundation now exists and is the canonical descriptive registry.
+local sharedActionMap = read(SHARED .. "InputActionMapConfig.luau")
+assert(contains(sharedActionMap, "ActionOrder"), "the shared semantic action registry must exist")
+assert(contains(sharedActionMap, '"OpenCharacter"'), "the map must include Character")
+assert(contains(sharedActionMap, '"OpenInventory"'), "the map must include Inventory")
 assert(
-	configDrivenActions == 2,
-	"the structural finding assumes exactly two config-driven actions — update the BA-061 audit"
+	contains(rpgMenu, "Shared.Config.InputActionMapConfig"),
+	"M5 labels must consume the shared map instead of duplicating shortcut copy"
 )
 
 -- The audit stays honest about its own scope and remediation ledger.
@@ -242,4 +239,4 @@ for _, finding in { "M4", "M5", "C3", "C4" } do
 	assert(contains(audit, finding), `the audit must retain finding {finding}`)
 end
 
-print("BA-061/062 InputActionMapSourceAudit: M1-M3 and C1/C2 remediated; remaining gaps locked")
+print("BA-061/062 InputActionMapSourceAudit: M1-M3/C1-C2 remediated; shared map present; remaining UI gaps locked")
