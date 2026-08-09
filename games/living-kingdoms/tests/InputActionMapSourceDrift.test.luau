@@ -62,7 +62,10 @@ only(classAction.KeyboardKeyCodeNames, "Q", "Class action keyboard")
 only(classAction.GamepadKeyCodeNames, "ButtonB", "Class action gamepad")
 assert(string.find(classActionSource, "Enum.KeyCode.Q", 1, true) ~= nil)
 assert(string.find(classActionSource, "Enum.KeyCode.ButtonB", 1, true) ~= nil)
-assert(string.find(classActionSource, "Enum.KeyCode.ButtonX", 1, true) == nil, "class action must not reclaim prompt ButtonX")
+assert(
+	string.find(classActionSource, "Enum.KeyCode.ButtonX", 1, true) == nil,
+	"class action must not reclaim prompt ButtonX"
+)
 
 local revive = actionMap.Actions.Revive
 only(revive.KeyboardKeyCodeNames, "V", "Revive keyboard")
