@@ -13,6 +13,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ExpeditionConfig = require(ReplicatedStorage.Shared.Config.ExpeditionConfig)
 local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.ExpeditionContracts)
+local RoomPlacementPlanner = require(ReplicatedStorage.Shared.Expeditions.RoomPlacementPlanner)
 local RoomSequenceAssembler = require(ReplicatedStorage.Shared.Expeditions.RoomSequenceAssembler)
 local ExpeditionRuntime = require(script.Parent.ExpeditionRuntime)
 local ExpeditionEncounterCoordinator = require(script.Parent.ExpeditionEncounterCoordinator)
@@ -69,37 +70,67 @@ end
 
 local function deterministicOffset(seed: number, ordinal: number): (number, number)
 	local value = (seed * 48_271 + ordinal * 7_919) % 2_147_483_647
-	local x = ((value % 17) - 8) * 6
-	local z = ((math.floor(value / 17) % 11) - 5) * 6
+	local x = math.clamp(((value % 17) - 8) * 6, -18, 18)
+	local z = math.clamp(((math.floor(value / 17) % 11) - 5) * 6, -24, 24)
 	return x, z
 end
 
-local function resolveEncounter(context: any): any
-	if context.PhaseId == "Boss" then
-		return {
-			Kind = "Boss",
-			BossPosition = { x = 0, y = 4, z = 120 },
-			FloodlightsRestored = true,
-		}
+local function buildEncounterResolver(rawPlan: any): (any) -> any
+	local layout = RoomPlacementPlanner.plan(rawPlan)
+	local placementByRoomId = {}
+	local placementByRoleId = {}
+	for _, placement in layout.Placements do
+		placementByRoomId[placement.RoomId] = placement
+		placementByRoleId[placement.RoleId] = placement
 	end
 
-	local count = if context.PhaseId == "Elite" then 1 elseif context.PhaseId == "Approach" then 2 else 3
-	local wave = {}
-	for ordinal = 1, count do
-		local x, z = deterministicOffset(context.Seed, ordinal + (context.RoomIndex or 0) * 5)
-		table.insert(wave, {
-			id = string.format("%s:enemy:%d", context.Token, ordinal),
-			name = if context.PhaseId == "Elite" then "Warden Elite" else "Warden",
-			x = x,
-			y = 4,
-			z = z + if context.PhaseId == "Approach" then 24 else 64,
-		})
+	local function anchorFor(context: any): any?
+		if context.PhaseId == "Approach" then
+			return { x = 0, y = 4, z = 24 }
+		end
+		local placement
+		if context.PhaseId == "Dungeon" and type(context.RoomId) == "string" then
+			placement = placementByRoomId[context.RoomId]
+		elseif context.PhaseId == "Elite" or context.PhaseId == "Boss" then
+			placement = placementByRoleId[context.PhaseId]
+		end
+		if placement == nil then
+			return nil
+		end
+		return { x = placement.Center.x, y = 4, z = placement.Center.z }
 	end
-	return {
-		Kind = "Wave",
-		WaveIndex = context.RoomIndex or (if context.PhaseId == "Elite" then 90 else 1),
-		Wave = wave,
-	}
+
+	return function(context: any): any
+		local anchor = anchorFor(context)
+		if anchor == nil then
+			return nil
+		end
+		if context.PhaseId == "Boss" then
+			return {
+				Kind = "Boss",
+				BossPosition = anchor,
+				FloodlightsRestored = true,
+			}
+		end
+
+		local count = if context.PhaseId == "Elite" then 1 elseif context.PhaseId == "Approach" then 2 else 3
+		local wave = {}
+		for ordinal = 1, count do
+			local xOffset, zOffset = deterministicOffset(context.Seed, ordinal + (context.RoomIndex or 0) * 5)
+			table.insert(wave, {
+				id = string.format("%s:enemy:%d", context.Token, ordinal),
+				name = if context.PhaseId == "Elite" then "Warden Elite" else "Warden",
+				x = anchor.x + xOffset,
+				y = anchor.y,
+				z = anchor.z + zOffset,
+			})
+		end
+		return {
+			Kind = "Wave",
+			WaveIndex = context.RoomIndex or (if context.PhaseId == "Elite" then 90 else 1),
+			Wave = wave,
+		}
+	end
 end
 
 local function passiveTraversalAdapter()
@@ -131,7 +162,7 @@ function Bootstrap.new(director: EnemyDirector, parameters: StartParameters): Se
 	local runtime = ExpeditionRuntime.new(definition, parameters)
 	local rawPlan = RoomSequenceAssembler.assemble(parameters.Seed)
 	local plan = normalizedPlan(rawPlan)
-	local combatAdapter = EnemyDirectorEncounterAdapter.new(director, resolveEncounter)
+	local combatAdapter = EnemyDirectorEncounterAdapter.new(director, buildEncounterResolver(rawPlan))
 	local traversalAdapter = passiveTraversalAdapter()
 
 	local coordinator = ExpeditionEncounterCoordinator.new(runtime, plan, {
