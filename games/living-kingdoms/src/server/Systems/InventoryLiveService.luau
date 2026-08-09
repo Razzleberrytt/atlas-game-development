@@ -145,6 +145,40 @@ function Service.compareOwnedItem(requesterId: number, ownerId: number, candidat
 end
 
 --[[
+	Equips one item the owner already holds. The client names only the instance;
+	the server resolves its slot from the durable record and requires the live
+	session lease before persistence can change. No client-authored slot, item
+	definition, power, or weapon id crosses this boundary.
+]]
+function Service.equipOwnedItem(requesterId: number, ownerId: number, instanceId: any, nowUnix: number): any
+	if destroyed then
+		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Record = nil })
+	end
+	if requesterId ~= ownerId then
+		return table.freeze({ Accepted = false, ReasonId = "CrossPlayerInventoryAccess", Record = nil })
+	end
+	if type(instanceId) ~= "string" or instanceId == "" or type(nowUnix) ~= "number" then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidEquipRequest", Record = nil })
+	end
+	if not leases:hasLease(ownerId, nowUnix) then
+		return table.freeze({
+			Accepted = false,
+			ReasonId = "SessionLeaseRequired",
+			Record = persistence:getRecord(ownerId),
+		})
+	end
+	local record = persistence:getRecord(ownerId)
+	if record == nil then
+		return table.freeze({ Accepted = false, ReasonId = "InventoryNotLoaded", Record = nil })
+	end
+	local item = record.InventoryByInstanceId[instanceId]
+	if item == nil then
+		return table.freeze({ Accepted = false, ReasonId = "ItemNotOwned", Record = record })
+	end
+	return persistence:equip(ownerId, item.Slot, instanceId, nowUnix)
+end
+
+--[[
 	Destroys one owned item under a client-supplied transaction id. The id is the
 	only client-authored value accepted here, and it can do nothing but make a
 	retry idempotent — it never names an item, an owner, or a value.

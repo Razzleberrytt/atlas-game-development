@@ -11,6 +11,7 @@ local Systems = script.Parent.Systems
 local ExpeditionConfig = require(ReplicatedStorage.Shared.Config.ExpeditionConfig)
 local FirstDungeonContentConfig = require(ReplicatedStorage.Shared.Config.FirstDungeonContentConfig)
 local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.ExpeditionContracts)
+local DurableStartingLoadoutService = require(Systems.DurableStartingLoadoutService)
 local ExpeditionLobbyService = require(Systems.ExpeditionLobbyService)
 local ExpeditionLiveRuntimeService = require(Systems.ExpeditionLiveRuntimeService)
 local OperationLifecycleService = require(Systems.OperationLifecycleService)
@@ -86,6 +87,25 @@ local function isMember(playerId: number): boolean
 	return false
 end
 
+local function applyDurableStartingLoadouts(members: { any })
+	for _, member in members do
+		local player = Players:GetPlayerByUserId(member.PlayerId)
+		if player == nil then
+			continue
+		end
+		local result = DurableStartingLoadoutService.applyForPlayer(player)
+		if result.Accepted ~= true and result.ReasonId ~= "NoEquippedDurableWeapon" then
+			warn(
+				string.format(
+					"[ExpeditionLobby] durable starting loadout rejected for %d: %s",
+					member.PlayerId,
+					result.ReasonId
+				)
+			)
+		end
+	end
+end
+
 local function attemptLaunch()
 	if launchInFlight then
 		return
@@ -115,6 +135,11 @@ local function attemptLaunch()
 		return
 	end
 
+	-- Replay reset deliberately clears all temporary power first. Only after that
+	-- clean boundary do we apply a durable owner-equipped weapon from persistence.
+	-- A player with no saved weapon remains on the Field Hatchet opening path.
+	applyDurableStartingLoadouts(consumed.Snapshot.Members)
+
 	-- The player has now deliberately left safe arrival; release the mission
 	-- clock and horde pressure that stayed dormant since server boot.
 	MissionDirectorService.armPressure()
@@ -122,7 +147,6 @@ local function attemptLaunch()
 
 	-- MVP 0.1 deliberately runs the authored First Descent seed so the complete
 	-- route is reproducible during build-through and the consolidated Studio pass.
-	-- The live runtime remains seed-capable; broader variation stays a later patch.
 	local launch = ExpeditionLiveRuntimeService.startExpedition({
 		PartySize = consumed.Snapshot.MemberCount,
 		Seed = FirstDungeonContentConfig.CanonicalSeed,

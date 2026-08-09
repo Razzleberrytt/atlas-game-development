@@ -34,6 +34,10 @@ local compareOwnedItem = Instance.new("RemoteFunction")
 compareOwnedItem.Name = "CompareOwnedItem"
 compareOwnedItem.Parent = network
 
+local equipOwnedItem = Instance.new("RemoteFunction")
+equipOwnedItem.Name = "EquipOwnedItem"
+equipOwnedItem.Parent = network
+
 local dismantleOwnedItem = Instance.new("RemoteFunction")
 dismantleOwnedItem.Name = "DismantleOwnedItem"
 dismantleOwnedItem.Parent = network
@@ -89,20 +93,12 @@ local function releasePlayer(player: Player)
 end
 
 readOwnInventory.OnServerInvoke = function(player: Player, requestedOwnerId: any): any
-	-- The remote takes no owner argument. Anything supplied is an attempt to
-	-- read an inventory the connection does not own.
 	if requestedOwnerId ~= nil then
 		return rejected("CrossPlayerInventoryAccess")
 	end
 	return readFor(player)
 end
 
---[[
-	Comparison takes only a candidate instance id, and the server resolves both
-	the candidate and the incumbent from the caller's own record. A client cannot
-	submit item values to be compared, so it cannot have the server evaluate an
-	item it does not hold.
-]]
 compareOwnedItem.OnServerInvoke = function(player: Player, candidateInstanceId: any): any
 	if type(candidateInstanceId) ~= "string" then
 		return table.freeze({ Accepted = false, ReasonId = "InvalidCandidateItem", Comparison = nil })
@@ -110,14 +106,19 @@ compareOwnedItem.OnServerInvoke = function(player: Player, candidateInstanceId: 
 	return InventoryLiveService.compareOwnedItem(player.UserId, player.UserId, candidateInstanceId)
 end
 
---[[
-	Destroys one owned item. The client supplies an instance id and a transaction
-	id; the transaction id exists only so a retry after a dropped response is
-	idempotent. The server derives the owner, the clock, and the item's value.
+-- The client names only an owned instance. Slot, definition and any combat
+-- WeaponId are derived by server-owned inventory/config state.
+equipOwnedItem.OnServerInvoke = function(player: Player, instanceId: any): any
+	if type(instanceId) ~= "string" then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidEquipRequest" })
+	end
+	local outcome = InventoryLiveService.equipOwnedItem(player.UserId, player.UserId, instanceId, os.time())
+	if outcome.Accepted == true then
+		pushTo(player)
+	end
+	return table.freeze({ Accepted = outcome.Accepted == true, ReasonId = outcome.ReasonId })
+end
 
-	The owner is pushed a fresh snapshot after an accepted destruction so the
-	client corrects rather than tracking removals itself.
-]]
 dismantleOwnedItem.OnServerInvoke = function(player: Player, instanceId: any, transactionId: any): any
 	if type(instanceId) ~= "string" or type(transactionId) ~= "string" then
 		return table.freeze({ Accepted = false, ReasonId = "InvalidDismantleRequest", Outcome = nil })
