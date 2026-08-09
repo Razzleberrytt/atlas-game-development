@@ -1,4 +1,4 @@
-# Atlas — Execution Dashboard v1.2
+# Atlas — Execution Dashboard v1.3
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-09  
@@ -11,7 +11,8 @@ For detailed patch acceptance, use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For comple
 - **MVP 0.1 source implementation:** **100% BUILT — VERIFICATION PENDING**.
 - **Known required MVP 0.1 source gaps:** none currently identified.
 - **Human/Studio P0 lane:** one consolidated exact-build MVP 0.1 play/device/performance pass.
-- **Agent/source lane:** **Patch 0.2 — Combat Feel + Readability**.
+- **Agent/source lane:** **Patch 0.2 — Combat Feel + Readability**, with the current high-confidence source-safe combat/readability pass merged and **verification now the limiting dependency**.
+- **Merged Patch 0.2 increments:** PR #322 teammate melee swing readability; PR #323 confirmed melee impact + broader enemy reactions; PR #324 directional teammate firearm reports; PR #325 directional hostile/special/boss telegraph audio.
 - **Engineering leverage policy:** active; comparable dependency-safe tasks favor reusable/data-driven/testable/toolable implementations without delaying player value for speculative abstraction.
 - **Estimated path to 1.0:** ~30% planning estimate only; status/evidence labels are authoritative.
 
@@ -28,25 +29,27 @@ safe arrival → prepare → melee start → deliberate expedition launch
 
 ### NOW
 
-**Finish existing overlapping Patch 0.2 PR #316 before creating duplicate teammate-melee presentation work.**
+**Run the consolidated exact-build Studio/device PLAY / FIX pass.**
 
-Desired result: server-confirmed teammate melee swings are readable in third person without moving combat authority to the client.
+This is now the highest-ROI dependency because both MVP 0.1 acceptance and the Patch 0.2 exit question require runtime evidence. The source pass has already strengthened melee readability, confirmed melee impact, enemy hit/kill reactions, firearm co-op directionality, hostile directionality, and special/boss warning audio. Do not invent another presentation layer merely to avoid testing.
+
+Desired result: establish whether the current run is actually clear and satisfying in first-person play, and convert every reproducible failure into the next source task.
 
 ### NEXT
 
-After #316 is resolved and no MVP 0.1 runtime failure has appeared:
+After the exact-build pass:
 
-1. improve **local melee impact + enemy reaction quality**;
-2. then improve **firearm differentiation / recoil / FOV / audio / VFX readability**;
-3. then **enemy telegraphs / elite / boss readability**.
+1. fix any reproducible MVP 0.1 correctness/device/performance failure first;
+2. fix any concrete Patch 0.2 combat-feel/readability failure revealed by play evidence;
+3. if MVP 0.1 and Patch 0.2 acceptance evidence are both sufficient, promote the applicable status and begin **Patch 0.3 — Loot + Build Replayability**.
 
-Within those increments, prefer extending reusable presentation/reaction contracts so later weapons and enemies become cheaper to add, but do not stop Patch 0.2 for a speculative framework.
+Do not advance to Patch 0.3 merely because source code can be added. Patch 0.2's exit question is experiential: the same MVP run must be substantially more enjoyable because fighting itself feels good.
 
 ### LATER
 
 Do not pull these forward unless they remove a real dependency for the current patch:
 
-- Patch 0.3 loot/build replayability;
+- Patch 0.3 loot/build replayability until the Patch 0.2 play gate is satisfied;
 - Patch 0.4 RPG progression;
 - Patch 0.5 Main World/environment expansion;
 - Patch 0.6 systemic replayability;
@@ -72,12 +75,13 @@ Run one exact-build pass covering:
 spawn / safe arrival
 → deliberate launch
 → route/navigation
-→ Field Hatchet input/cadence/feedback
+→ Field Hatchet input/cadence/local impact/teammate readability
 → Service Pistol recovery
-→ firearm response
-→ Stalker/Spitter pressure
+→ firearm recoil/FOV/audio/VFX + directional teammate gunfire
+→ Stalker/Spitter pressure + directional warning readability
 → loot + upgrade/relic interaction
-→ elite
+→ elite readability
+→ Progenitor telegraph/status/Slam readability
 → boss/terminal
 → result/debrief
 → return
@@ -88,7 +92,9 @@ spawn / safe arrival
 → representative performance/readability
 ```
 
-Promote MVP 0.1 to **VERIFIED** only when the required evidence passes. Any actual failure discovered here becomes NOW immediately and preempts Patch 0.2.
+Promote MVP 0.1 to **VERIFIED** only when the required evidence passes. Any actual failure discovered here becomes NOW immediately and preempts later-patch expansion.
+
+For Patch 0.2 specifically, record whether melee impact, enemy reactions, weapon differentiation, directional co-op audio, hostile warnings, elite readability and boss mechanics are understandable under real combat pressure. Source audits prove ownership/bounds; they do not prove fun or perceptual quality.
 
 ## 4. Planning snapshot
 
@@ -99,7 +105,7 @@ Percentages are rough planning indicators, not acceptance evidence.
 | Foundation / architecture | ~85% | mature |
 | MVP 0.1 source | **100%** | **BUILT — VERIFICATION PENDING** |
 | MVP 0.1 consolidated verification | ~94% | integrated pass remains |
-| 0.2 combat feel/readability | ~15% | BUILDING |
+| 0.2 combat feel/readability | ~55% | **BUILT — VERIFICATION PENDING** for current source pass |
 | 0.3 loot/builds | ~25% | foundations present |
 | 0.4 RPG progression | ~20% | foundations present |
 | 0.5 Main World/environment | ~25% | planning advanced, production partial |
