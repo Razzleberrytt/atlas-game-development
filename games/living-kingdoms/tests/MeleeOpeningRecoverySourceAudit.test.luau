@@ -52,8 +52,12 @@ assert(
 )
 
 assert(
-	contains(lootConfig, "OpeningRecoveryWeaponId = FirearmConfig.DefaultSelectableWeaponId"),
-	"opening recovery must use the humble Service Pistol"
+	contains(lootConfig, 'OpeningRecoveryWeaponId = "weapon.service-pistol"'),
+	"opening recovery must use the canonical humble Service Pistol ID"
+)
+assert(
+	not contains(lootConfig, "require(script.Parent.FirearmConfig)"),
+	"loot configuration should not load firearm runtime config just to name a stable ID"
 )
 assert(contains(lootConfig, "OpeningRecoveryByOpenedChest = 1"), "first personal chest must guarantee firearm recovery")
 assert(
