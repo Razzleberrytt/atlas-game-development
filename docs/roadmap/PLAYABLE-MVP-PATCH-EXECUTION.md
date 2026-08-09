@@ -154,6 +154,21 @@ Do **not** block MVP 0.1 on broad crafting, a full economy, a huge skill tree, m
 
 **Primary product signal:** a tester voluntarily chooses to start another run.
 
+## MVP 0.1 implementation checkpoint — 2026-08-08
+
+**Status: [~] ACTIVE — the complete run is not yet accepted.**
+
+- [x] Supply-chest loot uses one native `E` / controller / touch prompt and keeps every loot consequence server-owned.
+- [x] The click-only item remote, chest-card overlay, always-on survival/backpack surfaces and wave-style threat strip are removed from ordinary play.
+- [x] Discovered-weapon equip replaces the immutable ammunition snapshot without changing combat authority.
+- [ ] A real safe-arrival/preparation beat must prevent hostile pressure from starting before deliberate expedition launch.
+- [ ] The complete elite → terminal encounter → return → upgrade → replay loop still requires exact-build Studio acceptance.
+
+Exact-build evidence for the completed interaction/HUD slice is recorded in
+[`../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md`](../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md).
+
+**Next highest-ROI MVP 0.1 task:** add the smallest server-authoritative safe-arrival and deliberate launch boundary that defers mission/enemy pressure until the player starts the expedition. Reuse the Forward Operations Hub, canonical expedition lobby/runtime and the held operation-selection contract; do not create another mission, lobby or enemy owner.
+
 # Patch 0.2 — Combat Feel + Readability
 
 **Goal:** make the already-playable loop satisfying to control and understand.
