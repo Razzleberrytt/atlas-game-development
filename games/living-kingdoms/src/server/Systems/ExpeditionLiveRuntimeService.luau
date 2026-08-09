@@ -16,6 +16,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ExpeditionConfig = require(ReplicatedStorage.Shared.Config.ExpeditionConfig)
 local FirstDungeonRewardDecisionConfig = require(ReplicatedStorage.Shared.Config.FirstDungeonRewardDecisionConfig)
+local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.ExpeditionContracts)
 local ExpeditionServerBootstrap = require(script.Parent.ExpeditionServerBootstrap)
 local ExpeditionRoomPlacementService = require(script.Parent.ExpeditionRoomPlacementService)
 local ExpeditionRoomBarrierStateService = require(script.Parent.ExpeditionRoomBarrierStateService)
@@ -39,6 +40,8 @@ local started = false
 local STEP_INTERVAL_SECONDS = 0.25
 local BOSS_REWARD_ROOM_ID = "keeper-core"
 local BossRewardDecision = FirstDungeonRewardDecisionConfig.DecisionByRoomId[BOSS_REWARD_ROOM_ID]
+local PhaseIds = ExpeditionContracts.PhaseIds
+local OutcomeIds = ExpeditionContracts.OutcomeIds
 
 local function result(accepted: boolean, reasonId: string, snapshot: any?)
 	return table.freeze({ Accepted = accepted, ReasonId = reasonId, Snapshot = snapshot })
@@ -169,6 +172,48 @@ function Service.startExpedition(options: StartOptions?): any
 	activeBootstrap = bootstrap
 	driveStep()
 	return result(true, "ExpeditionStarted", activeBootstrap:getSnapshot())
+end
+
+-- BA-052: the live composition root is the only integration surface allowed to
+-- mutate the expedition's existing SecretDiscovered state. The caller must bind
+-- the claim to the currently observed run id; stale run claims and non-Approach
+-- claims are rejected before the authoritative runtime is touched.
+function Service.markSecretDiscovered(expectedRunId: string): any
+	if not started then
+		return result(false, "ServiceStopped", nil)
+	end
+	local bootstrap = activeBootstrap
+	if bootstrap == nil then
+		return result(false, "NoActiveExpedition", nil)
+	end
+	local snapshot = bootstrap:getSnapshot()
+	if snapshot == nil then
+		return result(false, "NoActiveExpedition", nil)
+	end
+	if type(expectedRunId) ~= "string" or expectedRunId ~= snapshot.RunId then
+		return result(false, "StaleRun", snapshot)
+	end
+	if snapshot.OutcomeId ~= OutcomeIds.InProgress then
+		return result(false, "RunTerminal", snapshot)
+	end
+	if snapshot.PhaseId ~= PhaseIds.Approach then
+		return result(false, "DiscoveryPhaseInvalid", snapshot)
+	end
+	if snapshot.SecretDiscovered == true then
+		return result(false, "SecretAlreadyDiscovered", snapshot)
+	end
+
+	-- ExpeditionServerBootstrap owns this exact ExpeditionRuntime instance. The
+	-- mutation stays inside the composition root and does not create a parallel
+	-- discovery state store or any client-authoritative path.
+	local runtime = (bootstrap :: any).Runtime
+	if runtime == nil or type(runtime.markSecretDiscovered) ~= "function" then
+		return result(false, "SecretMutationUnavailable", snapshot)
+	end
+	if runtime:markSecretDiscovered() ~= true then
+		return result(false, "SecretClaimRejected", bootstrap:getSnapshot())
+	end
+	return result(true, "SecretDiscovered", bootstrap:getSnapshot())
 end
 
 function Service.stopExpedition(reasonId: string?): any
