@@ -27,6 +27,10 @@ local VALID_OUTCOMES = {
 	Failed = true,
 	Abandoned = true,
 }
+local VALID_REWARD_DISPOSITIONS = {
+	Banked = true,
+	Forfeited = true,
+}
 
 local VALID_SLOTS = { Primary = true, Secondary = true, Armor = true, Relic = true }
 local VALID_RARITIES = { Common = true, Uncommon = true, Rare = true }
@@ -49,6 +53,7 @@ local function validSnapshot(payload: any): boolean
 		type(payload) ~= "table"
 		or type(payload.RunId) ~= "string"
 		or VALID_OUTCOMES[payload.OutcomeId] ~= true
+		or VALID_REWARD_DISPOSITIONS[payload.RewardDispositionId] ~= true
 		or type(payload.DurationSeconds) ~= "number"
 		or payload.DurationSeconds < 0
 		or type(payload.PartySize) ~= "number"
@@ -128,11 +133,16 @@ local function formatDuration(seconds: number): string
 	return string.format("%d:%02d", whole // 60, whole % 60)
 end
 
-local function formatRewards(rewards: { any }): string
+local function formatRewards(rewards: { any }, rewardDispositionId: string): string
 	if #rewards == 0 then
+		if rewardDispositionId == "Forfeited" then
+			return "RUN LOOT FORFEITED\nNo equipment was carried out of the failed run."
+		end
 		return "REWARDS\nNo equipment rewards were secured."
 	end
-	local lines = { "EQUIPMENT SECURED" }
+	local lines = {
+		if rewardDispositionId == "Forfeited" then "EQUIPMENT FORFEITED" else "EQUIPMENT SECURED",
+	}
 	for _, reward in rewards do
 		table.insert(
 			lines,
@@ -145,6 +155,9 @@ local function formatRewards(rewards: { any }): string
 				reward.Power
 			)
 		)
+	end
+	if rewardDispositionId == "Forfeited" then
+		table.insert(lines, "These run rewards were not added to your durable inventory.")
 	end
 	return table.concat(lines, "\n")
 end
@@ -160,13 +173,13 @@ local function applySnapshot(snapshot: any)
 		summary.Text = "The Keeper has fallen and the descent is secure."
 	elseif snapshot.OutcomeId == "Failed" then
 		headline.Text = "EXPEDITION FAILED"
-		summary.Text = "The squad could not complete the descent."
+		summary.Text = "The squad could not complete the descent. Unbanked run equipment was lost."
 	else
 		headline.Text = "EXPEDITION ABANDONED"
-		summary.Text = "The run ended before the objective was completed."
+		summary.Text = "The run ended before the objective was completed. Unbanked run equipment was lost."
 	end
 
-	rewardsLabel.Text = formatRewards(snapshot.Rewards)
+	rewardsLabel.Text = formatRewards(snapshot.Rewards, snapshot.RewardDispositionId)
 	local secretText = if snapshot.SecretDiscovered then "Secret reliquary discovered" else "Secret reliquary not found"
 	details.Text = string.format(
 		"Duration: %s  •  Party: %d\n%s\nRun: %s\n\nReturn to preparation to begin another seeded expedition.",
