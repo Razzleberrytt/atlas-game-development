@@ -37,6 +37,17 @@
       "notes": "Prefer item/reward definitions over bespoke reward scripts as Patch 0.3 expands."
     },
     {
+      "id": "equipment-affixes",
+      "name": "Deterministic equipment affix resolution",
+      "owner": "shared-contract",
+      "status": "active",
+      "extension_points": ["games/living-kingdoms/src/shared/Equipment/EquipmentAffixContracts.luau", "games/living-kingdoms/src/shared/Equipment/EquipmentAffixResolver.luau", "games/living-kingdoms/src/shared/Config/EquipmentAffixConfig.luau"],
+      "consumers": ["equipment-rewards", "loot-comparison", "build-replayability"],
+      "tests_glob": "games/living-kingdoms/tests/EquipmentAffixResolver.test.luau",
+      "data_driven": true,
+      "notes": "Stable deterministic metadata seam only; runtime combat application and persistence remain owned by their existing authorities."
+    },
+    {
       "id": "hub-interactions",
       "name": "Canonical hub interaction registry",
       "owner": "server/shared-contract",
