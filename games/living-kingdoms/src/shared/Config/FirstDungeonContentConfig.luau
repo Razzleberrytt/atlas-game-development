@@ -70,75 +70,39 @@ local FirstDungeonContentConfig = {
 	}),
 	Encounters = table.freeze({
 		["descent-entry"] = encounter("descent-entry", EncounterSlotIds.None, 0, {}, nil),
-		["collapsed-gallery"] = encounter(
-			"collapsed-gallery",
-			EncounterSlotIds.LightPatrol,
-			1,
-			{
-				wave({
-					unit(EnemyArchetypeIds.ExclusionWalker, 2, HordeRoles.Basic.Id),
-				}),
-			},
-			nil
-		),
-		["warden-barracks"] = encounter(
-			"warden-barracks",
-			EncounterSlotIds.StandardSquad,
-			2,
-			{
-				wave({
-					unit(EnemyArchetypeIds.ExclusionWalker, 2, HordeRoles.Basic.Id),
-					unit(EnemyArchetypeIds.ExclusionWalker, 1, HordeRoles.Runner.Id),
-				}),
-			},
-			nil
-		),
-		["broken-sanctum"] = encounter(
-			"broken-sanctum",
-			EncounterSlotIds.LightPatrol,
-			1,
-			{
-				wave({
-					unit(EnemyArchetypeIds.ExclusionWalker, 2, HordeRoles.Crawler.Id),
-				}),
-			},
-			nil
-		),
-		["sunken-archive"] = encounter(
-			"sunken-archive",
-			EncounterSlotIds.StandardSquad,
-			2,
-			{
-				wave({
-					unit(EnemyArchetypeIds.ExclusionWalker, 2, HordeRoles.Basic.Id),
-					unit(EnemyArchetypeIds.BlightSpitter, 1, nil),
-				}),
-			},
-			nil
-		),
-		["warden-threshold"] = encounter(
-			"warden-threshold",
-			EncounterSlotIds.EliteGuard,
-			1,
-			{
-				wave({
-					unit(EnemyArchetypeIds.ExclusionWalker, 1, HordeRoles.Brute.Id),
-					unit(EnemyArchetypeIds.ExclusionWalker, 1, HordeRoles.Screamer.Id),
-				}),
-			},
-			"Elite"
-		),
-		["keeper-core"] = encounter(
-			"keeper-core",
-			EncounterSlotIds.BossEncounter,
-			3,
-			{
-				wave({
-					unit(EnemyArchetypeIds.Progenitor, 1, nil),
-				}),
-			},
-			"Boss"
-		),
+		["collapsed-gallery"] = encounter("collapsed-gallery", EncounterSlotIds.LightPatrol, 1, {
+			wave({
+				unit(EnemyArchetypeIds.ExclusionWalker, 2, HordeRoles.Basic.Id),
+			}),
+		}, nil),
+		["warden-barracks"] = encounter("warden-barracks", EncounterSlotIds.StandardSquad, 2, {
+			wave({
+				unit(EnemyArchetypeIds.ExclusionWalker, 2, HordeRoles.Basic.Id),
+				unit(EnemyArchetypeIds.ExclusionWalker, 1, HordeRoles.Runner.Id),
+			}),
+		}, nil),
+		["broken-sanctum"] = encounter("broken-sanctum", EncounterSlotIds.LightPatrol, 1, {
+			wave({
+				unit(EnemyArchetypeIds.ExclusionWalker, 2, HordeRoles.Crawler.Id),
+			}),
+		}, nil),
+		["sunken-archive"] = encounter("sunken-archive", EncounterSlotIds.StandardSquad, 2, {
+			wave({
+				unit(EnemyArchetypeIds.ExclusionWalker, 2, HordeRoles.Basic.Id),
+				unit(EnemyArchetypeIds.BlightSpitter, 1, nil),
+			}),
+		}, nil),
+		["warden-threshold"] = encounter("warden-threshold", EncounterSlotIds.EliteGuard, 1, {
+			wave({
+				unit(EnemyArchetypeIds.ExclusionWalker, 1, HordeRoles.Brute.Id),
+				unit(EnemyArchetypeIds.ExclusionWalker, 1, HordeRoles.Screamer.Id),
+			}),
+		}, "Elite"),
+		["keeper-core"] = encounter("keeper-core", EncounterSlotIds.BossEncounter, 3, {
+			wave({
+				unit(EnemyArchetypeIds.Progenitor, 1, nil),
+			}),
+		}, "Boss"),
 	}),
 }
 
@@ -202,7 +166,10 @@ for index, roomId in FirstDungeonContentConfig.RoomSequence do
 	for _, authoredWave in content.Waves do
 		assert(#authoredWave.Units >= 1, "authored dungeon waves cannot be empty")
 		for _, authoredUnit in authoredWave.Units do
-			assert(knownEnemyArchetypeIds[authoredUnit.ArchetypeId] == true, "unknown enemy archetype in dungeon content")
+			assert(
+				knownEnemyArchetypeIds[authoredUnit.ArchetypeId] == true,
+				"unknown enemy archetype in dungeon content"
+			)
 			assert(
 				authoredUnit.Count >= 1 and authoredUnit.Count % 1 == 0,
 				"authored dungeon enemy counts must be positive integers"
@@ -219,11 +186,20 @@ for index, roomId in FirstDungeonContentConfig.RoomSequence do
 	end
 
 	if index == 1 then
-		assert(definition.Role == RoomAssemblyContracts.RoleIds.Entry, "the authored dungeon must begin at the safe entry")
+		assert(
+			definition.Role == RoomAssemblyContracts.RoleIds.Entry,
+			"the authored dungeon must begin at the safe entry"
+		)
 	elseif index == #FirstDungeonContentConfig.RoomSequence - 1 then
-		assert(definition.Role == RoomAssemblyContracts.RoleIds.Elite, "the authored dungeon must stage an elite before its boss")
+		assert(
+			definition.Role == RoomAssemblyContracts.RoleIds.Elite,
+			"the authored dungeon must stage an elite before its boss"
+		)
 	elseif index == #FirstDungeonContentConfig.RoomSequence then
-		assert(definition.Role == RoomAssemblyContracts.RoleIds.Boss, "the authored dungeon must terminate in the boss room")
+		assert(
+			definition.Role == RoomAssemblyContracts.RoleIds.Boss,
+			"the authored dungeon must terminate in the boss room"
+		)
 	end
 end
 
