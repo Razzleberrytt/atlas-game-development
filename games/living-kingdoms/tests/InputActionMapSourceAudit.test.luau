@@ -187,8 +187,14 @@ assert(
 assert(contains(audit, "**Roadmap ticket:** BA-061"), "the audit must identify its originating ticket")
 assert(contains(audit, "E1"), "the audit must state its evidence level")
 assert(contains(audit, "M1 — Firing device coverage — source-remediated"), "the audit must record M1 remediation")
-assert(contains(audit, "C1 — `E` / Revive prompt collision — source-remediated"), "the audit must record C1 remediation")
-assert(contains(audit, "C2 — `ButtonX` / class-action prompt collision — source-remediated"), "the audit must record C2 remediation")
+assert(
+	contains(audit, "C1 — `E` / Revive prompt collision — source-remediated"),
+	"the audit must record C1 remediation"
+)
+assert(
+	contains(audit, "C2 — `ButtonX` / class-action prompt collision — source-remediated"),
+	"the audit must record C2 remediation"
+)
 assert(not contains(audit, "rbxassetid://"), "an input audit invents no asset IDs")
 for _, finding in { "M2", "M3", "M4", "M5", "C3", "C4" } do
 	assert(contains(audit, finding), `the audit must retain finding {finding}`)
