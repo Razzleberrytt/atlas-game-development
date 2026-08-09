@@ -14,12 +14,11 @@
 
 local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local EnvironmentAmbienceController = {}
+local HordeStateEarlyListener = require(script.Parent.Parent.State.HordeStateEarlyListener)
 
-local stateRemote = ReplicatedStorage:WaitForChild("HordeNetwork"):WaitForChild("State") :: RemoteEvent
+local EnvironmentAmbienceController = {}
 
 local UPDATE_INTERVAL_SECONDS = 0.1
 local BASE_WIND_SPEED = 0.7
@@ -231,7 +230,7 @@ function EnvironmentAmbienceController.start()
 	end
 	started = true
 	createMoodEffects()
-	threatConnection = stateRemote.OnClientEvent:Connect(onHordeState)
+	threatConnection = HordeStateEarlyListener.subscribe(onHordeState)
 	heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
 		elapsed += deltaTime
 		accumulated += deltaTime

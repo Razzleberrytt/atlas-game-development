@@ -7,9 +7,8 @@ on:
       - ".gitignore"
       - "games/living-kingdoms/**"
       - "docs/**"
-      - "scripts/validate_living_kingdoms_layout.py"
-      - "scripts/validate_reextracted_property_evidence.py"
-      - "scripts/validate_reextracted_presentation_evidence.py"
+      - "scripts/validate_*.py"
+      - "scripts/verify_studio_import_package.py"
       - "scripts/roblox/**"
       - "rokit.toml"
       - "stylua.toml"
@@ -23,9 +22,8 @@ on:
       - ".gitignore"
       - "games/living-kingdoms/**"
       - "docs/**"
-      - "scripts/validate_living_kingdoms_layout.py"
-      - "scripts/validate_reextracted_property_evidence.py"
-      - "scripts/validate_reextracted_presentation_evidence.py"
+      - "scripts/validate_*.py"
+      - "scripts/verify_studio_import_package.py"
       - "scripts/roblox/**"
       - "rokit.toml"
       - "stylua.toml"
@@ -55,6 +53,10 @@ jobs:
       - name: Validate migration manifests
         shell: bash
         run: python scripts/validate_migration_manifests.py
+
+      - name: Validate current migration evidence
+        shell: bash
+        run: python scripts/validate_migration_current_evidence.py
 
       - name: Self-test RBXL property decoder
         shell: bash

@@ -76,7 +76,9 @@ Historical closing directives are context, not orders.
 - **E6** — outside-player fun demonstrated
 - **E7** — live telemetry demonstrated
 
-**Current claimed level remains E1 until accepted Studio evidence says otherwise.** A roadmap commit cannot promote evidence level.
+**Current claimed level: E2.** The accepted pinned-artifact Studio packet is
+[`../production/evidence/2026-08-08-r1-playable-replay-loop.md`](../production/evidence/2026-08-08-r1-playable-replay-loop.md).
+It proves initialization and the R1/replay claims it records; it does not claim E3–E5. A roadmap commit alone cannot promote evidence level.
 
 ## Active Studio incidents
 
@@ -86,6 +88,8 @@ The active-place screenshot captured on 2026-08-07 showed two blocking symptoms:
 2. escaped broad blue/yellow `Highlight` presentation.
 
 The screenshot proves symptoms, not exact root causes. The producer scripts, effective listener lifetime, send-rate growth, bad `Adornee`, duplicate ownership, and any `.rbxl`-only code remain facts to measure in the active place.
+
+**2026-08-08 update:** R1 containment passed on the newly pinned CI artifact with zero queue/discard warnings and zero enabled broad Highlight targets. The flat false-color editor view encountered during the run was independently traced to hidden local Studio physics-visualization flags, not gameplay Highlight state. This does not skip CL-002/CL-003 consolidation, R2 readiness, R3 suppression, or later lifecycle matrices.
 
 ## Rollout stages
 

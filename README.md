@@ -2,89 +2,122 @@
 
 Atlas is the GitHub-first development home for a **cooperative action RPG on Roblox**.
 
-The project combines readable combat, run-based build decisions, long-term progression/world access, discovery, and replayable cooperative operations. Existing Living Kingdoms systems are preserved as working assets while the roadmap converges them on one authoritative runtime and presentation architecture.
+The project combines readable combat, run-based build decisions, durable progression/world access, discovery, a recognizable Main World, and replayable cooperative operations. Existing Living Kingdoms systems are preserved as working assets while the roadmap converges them on one authoritative runtime and presentation architecture.
 
 ## Primary production rule
 
-> Build and prove one polished, replayable expedition before expanding the world.
+> **Always leave Atlas playable. Build the smallest complete loop, test it, fix it, then add one coherent upgrade layer.**
 
-## Source of truth
-
-The active implementation and quality authority is **Blueprint v2.7 — Rollout & Observability** (2026-08-07):
-
-- [`docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md`](docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md) — controlling authority and Tickets 331–360
-- [`docs/roadmap/PRODUCTION-CORE-V2.7.md`](docs/roadmap/PRODUCTION-CORE-V2.7.md) — daily-use production rules and current critical path
-- [`docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md`](docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md) — staged migration, observability, rollback, soak, and closure procedure
-- [`docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md`](docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md) — mechanical/replication/presentation ownership and evidence gates
-- [`docs/roadmap/MASTER-ROADMAP.md`](docs/roadmap/MASTER-ROADMAP.md) — milestone-level current roadmap
-- [`docs/roadmap/README.md`](docs/roadmap/README.md) — full roadmap index and historical checkpoints
-
-When documents conflict, **accepted runtime evidence and current Roblox platform behavior win, then the v2.7 authority layer**. Older roadmap files remain provenance, not current execution orders.
-
-## Evidence status
-
-The project uses this evidence scale:
+The development rhythm is now explicitly:
 
 ```text
-E0 design
-→ E1 source/static acceptance
-→ E2 Studio initialization
-→ E3 single-player integrated behavior
-→ E4 multiplayer/adversarial behavior
-→ E5 device/performance/reliability
-→ E6 outside-player fun
-→ E7 live telemetry
+stabilize
+→ playable MVP
+→ play / debug / fix
+→ coherent upgrade patch
+→ replay / regression test
+→ next patch
 ```
 
-**Current claimed level remains E1 until accepted Studio evidence advances it.** A documentation update does not promote evidence level.
+The complete roadmap remains valuable, but broad future phases may not leapfrog the current playable patch merely because they are already documented.
 
-## Current active gate
+## Product authority
 
-Two runtime symptoms captured in the active Studio place remain stop conditions until closure evidence exists:
+Read [`docs/bible/00-current-product-authority.md`](docs/bible/00-current-product-authority.md) before interpreting older product documents.
 
-1. `ReplicatedStorage.HordeNetwork.State` invocation-queue exhaustion/discard warnings;
-2. escaped broad blue/yellow `Highlight` presentation.
+The older [`docs/bible/00-project-charter.md`](docs/bible/00-project-charter.md) is retained as historical Living Kingdoms design provenance. Its older product assumptions do not silently override the current Atlas direction. Existing runtime behavior is still preserved until an explicit decision authorizes a migration.
 
-The screenshot proves symptoms, not exact causes. v2.7 therefore requires producer/consumer inventory, counters, readiness gating, semantic-state suppression, centralized presentation ownership, reset/respawn/late-join/multiplayer soak testing, and a closure packet.
+## Roadmap authority
 
-## Current checkpoint — Tickets 331–360
+Three layers intentionally coexist:
 
-### 331–335: establish the baseline
+### 1. Active runtime stabilization
 
-- freeze a development copy/build identity;
-- inventory all legacy State producers and effective client listeners;
-- capture baseline State message rates and queue symptoms;
-- inventory Highlight producers/Adornees and presentation gauges.
+**Blueprint v2.7 — Rollout & Observability** controls current runtime safety/stabilization while its applicable evidence gates remain open:
 
-### 336–345: migrate current state deliberately
+- [`docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md`](docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md)
+- [`docs/roadmap/PRODUCTION-CORE-V2.7.md`](docs/roadmap/PRODUCTION-CORE-V2.7.md)
+- [`docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md`](docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md)
+- [`docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md`](docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md)
 
-- establish exactly one intended compatibility listener;
-- gate delivery on client readiness;
-- identify current facts with semantic keys;
-- suppress unchanged state using mutation-derived change tokens;
-- migrate round, objective, route, and landmark producers;
-- capture before/after per-key send rates.
+### 2. Playable implementation sequence — current precedence
 
-### 346–350: establish single presentation ownership
+[`docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md`](docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md) is **Playable MVP + Patch Execution v2.9** and controls which player-facing slice is implemented next once work is dependency-safe.
 
-- route route-guide and landmark accents through one shared Highlight lease registry;
-- reject broad production Highlight targets;
-- prove stream-out/rebind behavior;
-- capture baseline/peak/end presentation gauges.
+Its order is:
 
-### 351–360: soak, close, then remove compatibility
+```text
+Gate 0   runtime stabilization
+MVP 0.1  first complete run
+0.2      combat feel/readability
+0.3      loot + build replayability
+0.4      RPG progression
+0.5      Main World + environment expansion
+0.6      procedural/systemic replayability
+0.7      durable persistence hardening
+0.8      co-op/social/session expansion
+0.9      content expansion + production pipeline
+RC       production hardening
+1.0      release
+LIVE     measured upgrade patches
+```
 
-- five-reset and three-respawn leak matrices;
-- delayed-ready and late-join matrix;
-- two-player reset/disconnect matrix;
-- 100-animation-play marker-listener test;
-- ten-minute active network/presentation soak;
-- profiling/network evidence;
-- P0/P1 defect closure;
-- incident closure packet;
-- compatibility removal only for ledger rows with accepted replacement evidence and a retained rollback checkpoint.
+Every player-facing milestone ends with a hard **STOP / PLAY / FIX / REPLAY / THEN EXPAND** gate.
 
-No broader feature expansion is authorized merely because compatibility code hides a warning.
+### 3. Complete product path
+
+[`docs/roadmap/MASTER-ROADMAP.md`](docs/roadmap/MASTER-ROADMAP.md) remains **Master Roadmap v2.8**, the complete product-path and requirements inventory. It preserves the full scope through world/environment, persistence, progression, economy, content pipelines, quality, analytics, operations, safety/compliance, localization, ethical monetization, launch and live operations.
+
+Those requirements are mapped into the playable patch sequence rather than discarded. When a broad v2.8 phase contains more scope than the current patch needs, agents implement the **smallest coherent dependency-safe subset** that advances the current playable patch.
+
+## First player-facing target — MVP 0.1
+
+After the active stabilization gate is sufficiently safe, the highest-priority target is one complete repeatable run:
+
+```text
+spawn / arrive
+→ orient and prepare
+→ choose a weapon/build
+→ enter one expedition
+→ explore a readable route
+→ fight
+→ receive loot/reward decisions
+→ defeat an elite
+→ defeat one boss / terminal encounter
+→ return
+→ equip or apply an upgrade
+→ start another run
+```
+
+Target first-run duration is roughly **5–10 minutes**, subject to play evidence.
+
+The primary product signal is not feature count. It is whether a tester can finish the loop without developer intervention and voluntarily wants another run.
+
+## Combined-world status
+
+The original Studio preservation gap has been repaired:
+
+- 28/28 Studio-only source files are preserved;
+- 1,775/1,775 Workspace identity/hierarchy rows are preserved;
+- broad property-backed authored-world reconstruction exists;
+- stable world-content IDs/contracts exist;
+- the live Forward Operations Hub is the current preparation bridge;
+- the recovered authored overworld remains a separate future coordinate/lifecycle space;
+- the intended end state is **authored overworld / HubTown → canonical expedition launch → modern operation runtime → return**.
+
+See [`games/living-kingdoms/CANONICAL-RUNTIME.md`](games/living-kingdoms/CANONICAL-RUNTIME.md).
+
+## Main World rule
+
+The Main World is a first-class product surface, not a decorative 3D menu.
+
+Its target loop is:
+
+```text
+Arrival → Orientation → Exploration → Interaction → Preparation → Adventure → Return
+```
+
+BA-010 and subsequent Main World specifications control world disposition and production decisions. MVP 0.1 should use only the smallest coherent preparation/return surface required for the complete run; broader environment expansion becomes a first-class focus in Patch 0.5.
 
 ## Runtime state law
 
@@ -96,67 +129,77 @@ client constructs controllers
 → consume semantic state changes
 ```
 
-Current state is keyed semantically (`round.phase`, `objective.current`, `route.target`, etc.) and is sent because the underlying fact changed—not because a frame elapsed.
-
-Independent current facts that share one physical remote must remain independent in pre-ready retention. Retain by player + remote + semantic key, not one latest payload for the entire remote.
+Independent current facts sharing one physical remote remain independently keyed/retained. Current state is sent because authoritative facts change, not because frames pass.
 
 ## Presentation ownership law
 
-Exactly one production owner per primitive:
+Exactly one production owner per primitive/lifecycle responsibility. Route/landmark/status Highlight presentation must converge through the shared lease/ownership architecture rather than competing allocations.
 
-```text
-Highlight             → shared client Highlight lease registry
-route guide            → RouteGuidePresentationController
-landmark accent        → LandmarkAccentPresentationController
-status/mark outline    → status presentation through the same registry
-viewmodel              → one viewmodel owner
-camera modifiers       → one named modifier stack
-animation marker hooks → owning track/controller scope
-```
-
-Streaming may remove a local Instance. It does not erase the authoritative semantic fact.
+Streaming may remove a local Instance. It does not erase authoritative semantic truth.
 
 ## Repository map
 
-- `docs/roadmap/` — canonical roadmap and active execution queue
-- `docs/bible/` — supporting product/visual/Studio specialist guidance and history
-- `docs/specifications/` — source-of-truth system behavior inside accepted roadmap boundaries
+- `docs/roadmap/` — playable execution sequence, active runtime authority, complete master path, build-ahead queue and history
+- `docs/bible/` — current product authority plus supporting/historical product and visual guidance
+- `docs/specifications/` — system behavior inside accepted roadmap boundaries
 - `docs/architecture/` — technical boundaries and engineering rules
-- `docs/decisions/` — design and architecture decisions
-- `docs/production/` — workflow, validation, migration, and Definition of Done
-- `games/living-kingdoms/` — Roblox/Rojo project
+- `docs/decisions/` — explicit product/architecture decisions
+- `docs/production/` — workflow, evidence, validation and Definition of Done
+- `games/living-kingdoms/` — canonical Roblox/Rojo game project
 - `prompts/` — reusable agent prompts
-- `templates/` — task, specification, decision, and bug templates
+- `templates/` — task/specification/decision/bug templates
 
 ## Engineering laws
 
 1. The server owns valuable game truth.
 2. `main` stays playable.
 3. Each implementation task produces one testable result.
-4. Stable IDs and explicit versions are mandatory.
-5. Valuable mutations use idempotent transaction IDs where replay is possible.
-6. Clients submit intent, never outcomes.
-7. Reusable engines outrank one-off content piles.
-8. No runtime, Studio, CI, performance, or player result is claimed without evidence.
-9. Do not create parallel authoritative systems.
-10. Runtime current state and client presentation have explicit owners and cleanup scopes.
-11. Source/static acceptance is E1, not gameplay acceptance.
-12. Type, logging, connection, network-rate, and presentation-object debt must not increase silently.
+4. Every player-facing patch preserves and replays the previous playable baseline.
+5. Stable IDs and explicit versions are mandatory.
+6. Valuable mutations use idempotent transaction IDs where replay is possible.
+7. Clients submit intent, never outcomes.
+8. Reusable engines and validated content contracts outrank one-off content piles.
+9. No runtime, Studio, CI, performance, player-fun, or live-telemetry claim exists without the matching evidence.
+10. Do not create parallel authoritative systems.
+11. Runtime current state and client presentation have explicit owners and cleanup scopes.
+12. Source/static acceptance is E1, not gameplay acceptance.
+13. Type, logging, connection, network-rate, presentation-object, world-performance, and content-reference debt must not increase silently.
+14. Recovered Studio content is migration/presentation input, not permission to reboot legacy gameplay services.
+15. A future roadmap phase being documented is not authorization to implement it early.
+16. A known blocker in the current playable loop blocks later-patch breadth until it is fixed or explicitly re-scoped by authority.
 
 ## Agent start order
 
 1. Read this file.
-2. Read `docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md` and `docs/roadmap/PRODUCTION-CORE-V2.7.md`.
-3. Read `docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md` for any current Studio/state/presentation work.
-4. Read the nearest `AGENTS.md` for files being changed.
-5. Inspect existing contracts, services, remotes, controllers, tests, and lifecycle owners before adding anything.
-6. Implement the **lowest-numbered incomplete v2.7 ticket** that can honestly be completed in the current environment.
-7. Preserve E1 status until accepted Studio evidence supports promotion.
-8. Record evidence and rollback information rather than inferring success from source shape.
+2. Read `docs/bible/00-current-product-authority.md`.
+3. Read `docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md` and identify the current playable patch.
+4. Read `docs/roadmap/MASTER-ROADMAP.md` for complete requirements/context.
+5. Read `docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md` and `PRODUCTION-CORE-V2.7.md` for active runtime blockers.
+6. Read `docs/roadmap/AGENT-BUILD-AHEAD-QUEUE.md` when runtime evidence is blocked or build-ahead work is requested.
+7. Read `games/living-kingdoms/CANONICAL-RUNTIME.md` and the nearest `AGENTS.md`.
+8. Fetch current `main` and inspect open related PRs before editing.
+9. If a v2.7 dependency blocks the current playable milestone, execute the next dependency-safe blocker or preparation that directly enables it.
+10. Otherwise execute the highest-ROI unfinished task for the current playable patch.
+11. Do not begin later-patch breadth while a known current-patch blocker remains.
+12. Record evidence, ownership, rollback, STOP / PLAY / FIX status and unresolved Studio requirements accurately.
+
+## Authority precedence
+
+```text
+accepted runtime evidence / current Roblox platform behavior
+→ Blueprint v2.7 + Production Core v2.7 while active stabilization gates remain open
+→ Playable MVP + Patch Execution v2.9 for implementation sequencing
+→ Current Product Authority + Master Roadmap v2.8 for product direction and complete scope
+→ active rollout / cross-system / production controls
+→ accepted specifications / architecture decisions
+→ specialist visual/environment/Studio guidance
+→ historical documents
+```
 
 ## Project status
 
-**Phase:** v2.7 active-place rollout and observability  
-**Evidence:** E1 — source/static work exists; active-place runtime closure still required  
-**Active milestone:** Tickets 331–360  
+**Implementation sequencing:** Playable MVP + Patch Execution v2.9  
+**Complete product path:** Master Roadmap v2.8  
+**Active runtime stabilization:** Blueprint v2.7 rollout/observability  
+**Primary player-facing target after Gate 0:** MVP 0.1 First Complete Run  
 **Roblox project path:** `games/living-kingdoms/`

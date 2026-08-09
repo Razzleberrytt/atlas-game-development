@@ -3,7 +3,7 @@
 **Current merge:** original Studio `livingkingdoms.rbxl` + canonical Atlas/Living Kingdoms Rojo source  
 **Import date:** 2026-08-07  
 **Current main milestone:** BA-005 property-backed authored-overworld reconstruction in progress  
-**Runtime evidence posture:** repository/CI proven; full Studio multiplayer acceptance is still outstanding
+**Runtime evidence posture:** repository/CI proven; single-player Studio boot verified 2026-08-08 after three runtime defects were fixed; full Studio multiplayer acceptance is still outstanding
 
 ## Read this first
 
@@ -172,6 +172,44 @@ PR **#230** added the live source-managed preparation shell at the Ranger Statio
 It exposes the existing Specialist Assignment, Armory Rack, and Expedition Terminal without creating duplicate gameplay owners. The existing `C` / `I` / `K` RPG menu remains canonical for character/inventory/skills.
 
 The archived Studio HubTown remains held reconstruction input, not a live legacy runtime.
+
+## Studio runtime defects fixed 2026-08-08
+
+Three defects found by playing the build in Studio, each of which produced visible damage and none of
+which any repository gate could catch:
+
+1. **Client bootstrap halted at controller four.** `SurvivorController.start()` awaited
+   `PlayerModule` with an unbounded `WaitForChild`. `default.project.json` builds
+   `StarterPlayerScripts` from `$className`, and `PlayerModule` ships with the Studio place template,
+   so a place built from this project has none. The bootstrap parked forever and none of the ~40
+   controllers after it started: `PlayerGui` held only the CoreScript `Freecam`, and no HUD,
+   crosshair, weapon, class, expedition or horde UI existed. Fixed in `91a1ebe`; `PlayerGui` now
+   holds 22 ScreenGuis and `[Living Kingdoms] Client bootstrap started` prints.
+
+2. **Enemy presentation rigs lost on replay.** `EnemyDirectorService.stop()` destroyed the
+   `EnemyEntities` folder and `start()` created a new one. Roughly a dozen server and client
+   consumers bind `ChildAdded` once and cache the instance, so every enemy spawned after the first
+   replay stayed a bare root part. Fixed in `3b0d8e3` by reusing the folder across replay.
+
+3. **DataStore construction cascade.** `RobloxInventoryDataStoreAdapter.new()` called `GetDataStore`
+   unguarded, which throws in an unpublished place. That load-error propagated through
+   `InventoryLiveService`, `inventory-network`, `expedition-reward-results` and
+   `ExpeditionFoundationBootstrap`, leaving `ExpeditionResultNetwork` uncreated and two consumers in
+   infinite yield. Fixed in `3b0d8e3` with a volatile in-memory fallback; live servers are unaffected.
+
+The reported "wire-like outlines on everything" was **not** a source defect. It was
+`settings().Rendering.EnableFRM = false` in the operator's local Studio, with
+`settings().Physics.AreOwnersShown = true` adding network-ownership adorns. Both are machine-local
+Studio settings and were reset.
+
+### Consequence for v2.7 R1
+
+Defect 1 meets the R1 evidence packet's own invalidating condition, "unrelated script errors prevent
+client bootstrap", on every run of the pinned artifact. The R1 packet is therefore **blocked pending
+a re-pin** to a build at or after `91a1ebe`. An informational local-build capture — listener bound,
+547 messages, 0 invalid, guard active, no broad Highlights — is recorded in
+`../../docs/production/evidence/2026-08-08-r1-capture-blocked-by-client-bootstrap-stall.md` and is
+explicitly not accepted evidence.
 
 ## Current validation
 

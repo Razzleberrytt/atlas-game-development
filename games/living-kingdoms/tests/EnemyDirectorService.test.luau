@@ -314,6 +314,15 @@ local function fakeInstance(className: string)
 	function instance.IsA(_, otherClassName)
 		return otherClassName == className
 	end
+	function instance.GetChildren(self)
+		local children = {}
+		for _, candidate in createdInstances do
+			if candidate.Parent == self and not candidate._destroyed then
+				table.insert(children, candidate)
+			end
+		end
+		return children
+	end
 	if className == "Part" then
 		instance.movedTo = {}
 		function instance.SetNetworkOwner(_, _owner) end
@@ -334,7 +343,12 @@ local workspaceMock = {
 	GetServerTimeNow = function()
 		return now
 	end,
-	FindFirstChild = function()
+	FindFirstChild = function(self: unknown, name: string)
+		for _, candidate in createdInstances do
+			if candidate.Parent == self and candidate.Name == name and not candidate._destroyed then
+				return candidate
+			end
+		end
 		return nil
 	end,
 }
@@ -1407,14 +1421,27 @@ now = 1000
 heartbeatSignal:Fire(config.EvaluationIntervalSeconds + 0.01)
 -- (No assertion beyond not erroring: evaluation content is covered above.)
 
--- Teardown: folder destroyed, state cleared, heartbeat disconnected.
+-- Teardown: folder emptied but preserved, state cleared, heartbeat disconnected.
+-- The folder instance must outlive a replay cycle: server and client consumers
+-- bind ChildAdded to it once, so replacing it would silently orphan them and
+-- leave post-replay enemies without a presentation rig.
 local folder = findCreated("EnemyEntities")
 assert(folder ~= nil)
+assert(#folder:GetChildren() > 0, "the populated run must leave enemies in the folder")
 service.stop()
-assert(folder._destroyed, "stop must destroy the enemy folder")
+assert(not folder._destroyed, "stop must preserve the enemy folder instance")
+assert(#folder:GetChildren() == 0, "stop must remove every enemy from the folder")
 assert(heartbeatSignal:count() == 0, "stop must disconnect the heartbeat")
 assert(service.readActiveEnemyCount() == 0)
 assert(service.spawnEnemy(request("enemy.late", 0, 0)).rejectionReasonId == "ServiceStopped")
+service.stop()
+
+-- Replay: restarting must reuse the surviving folder rather than create another.
+service.start()
+assert(findCreated("EnemyEntities") == folder, "replay must reuse the existing enemy folder")
+local replaySpawn = service.spawnEnemy(request("enemy.replay", 0, 0))
+assert(replaySpawn.didSpawn, "the reused folder must accept spawns after replay")
+assert(#folder:GetChildren() == 1, "the replayed enemy must land in the reused folder")
 service.stop()
 
 -- Bootstrap wiring: the production director starts before the mission director.

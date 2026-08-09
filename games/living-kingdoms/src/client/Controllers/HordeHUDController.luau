@@ -13,10 +13,10 @@ local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
+local HordeStateEarlyListener = require(script.Parent.Parent.State.HordeStateEarlyListener)
+
 local Controller = {}
 local localPlayer = Players.LocalPlayer
-local network = ReplicatedStorage:WaitForChild("HordeNetwork")
-local stateRemote = network:WaitForChild("State") :: RemoteEvent
 
 -- Progression is owned by RunProgressionService. The combat HUD only renders its
 -- published snapshot and submits one offered upgrade ID back to it.
@@ -563,6 +563,9 @@ local function createPresentation()
 
 	local threatPanel =
 		createPanel(gui, "ThreatPanel", UDim2.new(0.5, 0, 0, 68), UDim2.fromOffset(340, 38), Vector2.new(0.5, 0))
+	-- Threat remains available to ambience and diagnostics, but the permanent
+	-- wave-style meter added noise without helping the player's next decision.
+	threatPanel.Visible = false
 	threatLabel = createLabel(
 		threatPanel,
 		"Threat",
@@ -823,7 +826,7 @@ function Controller.start()
 		StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
 	end)
 	createPresentation()
-	table.insert(connections, stateRemote.OnClientEvent:Connect(onState))
+	table.insert(connections, HordeStateEarlyListener.subscribe(onState))
 	table.insert(connections, progressionStateRemote.OnClientEvent:Connect(onProgressionState))
 	table.insert(connections, RunService.RenderStepped:Connect(updateFrame))
 

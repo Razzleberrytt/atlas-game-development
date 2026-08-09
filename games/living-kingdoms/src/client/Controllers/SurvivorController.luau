@@ -43,6 +43,8 @@ local state: LifecycleState = {
 
 local sprinting = false
 
+local PLAYER_MODULE_WAIT_SECONDS = 10
+
 local function applyMovementSpeed()
 	local localPlayer = state.localPlayer
 	local character = if localPlayer == nil then nil else localPlayer.Character
@@ -71,10 +73,56 @@ local function configureCharacter(character: Model)
 	humanoid.AutoRotate = true
 end
 
-local function getPlayerControls(localPlayer: Player): PlayerControls
-	local playerScripts = localPlayer:WaitForChild("PlayerScripts")
-	local playerModule = require(playerScripts:WaitForChild("PlayerModule")) :: any
-	return playerModule:GetControls() :: PlayerControls
+-- PlayerModule ships with the Studio place template rather than with this Rojo
+-- tree, so a `rojo build` place can start without it. Both waits are bounded and
+-- the result is optional: this controller starts fourth in the client bootstrap,
+-- ahead of every HUD, weapon, enemy and expedition owner, so an unbounded
+-- WaitForChild here stalls the entire client rather than just native movement.
+local function findPlayerControls(localPlayer: Player): PlayerControls?
+	local playerScripts = localPlayer:FindFirstChildOfClass("PlayerScripts")
+		or localPlayer:WaitForChild("PlayerScripts", PLAYER_MODULE_WAIT_SECONDS)
+	if playerScripts == nil then
+		return nil
+	end
+
+	local moduleScript = playerScripts:FindFirstChild("PlayerModule")
+		or playerScripts:WaitForChild("PlayerModule", PLAYER_MODULE_WAIT_SECONDS)
+	if moduleScript == nil or not moduleScript:IsA("ModuleScript") then
+		return nil
+	end
+
+	local loaded, controls = pcall(function()
+		local playerModule = require(moduleScript) :: any
+		return playerModule:GetControls()
+	end)
+	if not loaded or controls == nil then
+		return nil
+	end
+	return controls :: PlayerControls
+end
+
+-- Acquired off the bootstrap thread for the same reason: native movement is an
+-- enhancement to this controller, never a precondition for the controllers that
+-- start after it.
+local function enablePlayerControlsAsync(localPlayer: Player)
+	task.spawn(function()
+		local controls = findPlayerControls(localPlayer)
+		if state.destroyed or not state.started then
+			return
+		end
+		if controls == nil then
+			warn(
+				"[SurvivorController] PlayerModule is unavailable, so this controller cannot manage the "
+					.. "control state. Roblox's built-in movement still applies and the rest of the "
+					.. "client started normally."
+			)
+			return
+		end
+		state.playerControls = controls
+		-- Explicitly restore PlayerModule in case an earlier controller or Studio
+		-- hot reload left it disabled. PlayerModule owns every movement input path.
+		controls:Enable()
+	end)
 end
 
 function SurvivorController.init()
@@ -98,10 +146,7 @@ function SurvivorController.start()
 	end
 
 	state.started = true
-	state.playerControls = getPlayerControls(localPlayer)
-	-- Explicitly restore PlayerModule in case an earlier controller or Studio hot
-	-- reload left it disabled. PlayerModule now owns every movement input path.
-	state.playerControls:Enable()
+	enablePlayerControlsAsync(localPlayer)
 
 	CameraController.setKeyboardPanningEnabled(false)
 	CameraController.setSurvivorFollowEnabled(true)

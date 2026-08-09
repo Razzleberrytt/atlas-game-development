@@ -63,22 +63,30 @@ The imported legacy combat, enemy, inventory, persistence, loot, monetization, q
 
 ## Validation
 
-Two different checks currently exist:
+Three boundary checks keep current preservation truth separate from historical
+manifest provenance:
 
 ```bash
 python scripts/verify_studio_import_package.py
 python scripts/validate_migration_manifests.py
+python scripts/validate_migration_current_evidence.py
 ```
 
 `verify_studio_import_package.py` validates the **current repaired preservation set**: all 28 sources and all 1,775 Workspace rows.
 
 `validate_migration_manifests.py` still validates the older BA-001/BA-002 manifest generation against the frozen damaged-archive index they were authored from. A green result means those historical manifests are internally consistent; it does **not** mean their 122-row evidence base is the latest preservation truth.
 
+`validate_migration_current_evidence.py` validates every required JSON under
+`docs/migration/current/` against the canonical RBXL identity, the 28/28 source
+baseline and the 1,775/1,775 Workspace baseline. It also requires the explicit
+supersession marker and checks the human-readable evidence summary's counts.
+
 The current machine-readable evidence lives under `docs/migration/current/` specifically so the historical manifest validator cannot mistake it for one of the old manifest schemas.
 
 ## Next use
 
-BA-005 should consume the post-repair evidence in two phases:
+BA-005 reconstruction must continue to consume the post-repair evidence in two
+phases:
 
 1. deterministic identity/hierarchy reconstruction behind the source hold
 2. supported property extraction and property-backed parity assertions

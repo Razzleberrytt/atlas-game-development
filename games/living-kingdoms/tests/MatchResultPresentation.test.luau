@@ -69,6 +69,12 @@ assertThat(
 )
 assertThat(contains(controller, "if hasDisplayedResult or"), "the debrief must render exactly once per operation")
 assertThat(count(controller, "OnClientEvent:Connect") == 1, "the debrief must use one disclosure connection")
+assertThat(
+	contains(controller, 'GetAttributeChangedSignal("LK_HUD_MissionPhase")')
+		and contains(controller, 'GetAttribute("LK_HUD_MissionPhase") ~= "Insertion"')
+		and contains(controller, "screenGui.Enabled = false"),
+	"a fresh operation must dismiss the prior debrief and permit the next result"
+)
 
 -- Outcome and cause are carried by text, and every authored cause has plain
 -- language rather than a raw identifier.

@@ -1,0 +1,54 @@
+{
+  "identity": {
+    "sourceCommit": "c55287fac4ecefc120c541958a6a06049b0a78cd",
+    "artifactId": 9028866465,
+    "artifactDigest": "sha256:4cdb778a37e22c9172216d999a2dfcffec75e05e29baffaad2233a2c5dbf92c5"
+  },
+  "firstCapture": {
+    "schema": "LK_V27_R1_CAPTURE_V1",
+    "unixTime": 1786229523,
+    "listener": {
+      "bound": true,
+      "messagesReceived": 50,
+      "invalidMessages": 0,
+      "lastRevision": 50
+    },
+    "highlightGuard": {
+      "active": true,
+      "rejectedCount": 0
+    },
+    "highlightScan": {
+      "total": 14,
+      "enabled": 14,
+      "rejectedInstances": [],
+      "stillEnabledBroad": []
+    }
+  },
+  "finalCapture": {
+    "schema": "LK_V27_R1_CAPTURE_V1",
+    "unixTime": 1786229617,
+    "listener": {
+      "bound": true,
+      "messagesReceived": 238,
+      "invalidMessages": 0,
+      "lastRevision": 238
+    },
+    "highlightGuard": {
+      "active": true,
+      "rejectedCount": 0
+    },
+    "highlightScan": {
+      "total": 36,
+      "enabled": 26,
+      "rejectedInstances": [],
+      "stillEnabledBroad": []
+    }
+  },
+  "manual": {
+    "queueDiscardWarningCount": 0,
+    "startupRegression": false,
+    "narrowEnemyHighlightWorks": true,
+    "broadWorldWashAppears": false,
+    "otherNewClientErrorCount": 0
+  }
+}

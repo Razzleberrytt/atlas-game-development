@@ -61,9 +61,10 @@ local stopByOwnerId: { [string]: () -> () } = {
 	[CleanupOwnerIds.ReviveSessions] = function()
 		OperativeReviveSessionService.stop()
 	end,
-	[CleanupOwnerIds.OperativeLife] = function()
-		OperativeLifeService.stop()
-	end,
+	-- OperativeLifeService owns application-scoped player and subscriber
+	-- bindings. Replay resets its operation state during the start sequence
+	-- instead of stopping it and orphaning long-lived consumers.
+	[CleanupOwnerIds.OperativeLife] = function() end,
 	[CleanupOwnerIds.SquadFailure] = function()
 		SquadFailureService.stop()
 	end,
@@ -91,7 +92,7 @@ local startByOwnerId: { [string]: () -> () } = {
 		OperativeReviveSessionService.start()
 	end,
 	[CleanupOwnerIds.OperativeLife] = function()
-		OperativeLifeService.start()
+		OperativeLifeService.resetForReplay()
 	end,
 	[CleanupOwnerIds.SquadFailure] = function()
 		SquadFailureService.start()

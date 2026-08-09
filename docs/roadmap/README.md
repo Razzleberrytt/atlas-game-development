@@ -1,61 +1,167 @@
 # Atlas Roadmap Index
 
-**Blueprint v2.7 is the active production authority as of 2026-08-07.** It supersedes v2.3 for execution order, active-place rollout, observability, presentation ownership, and promotion gates.
+**Playable MVP + Patch Execution v2.9 is the current implementation-sequencing authority as of 2026-08-08.**  
+**Master Roadmap v2.8 remains the complete product-path and requirements inventory.**  
+**Blueprint v2.7 remains the active runtime stabilization/rollout authority until its applicable gates close.**
 
-The adoption of v2.7 is a documentation/authority change. It does **not** claim that the active Roblox Studio place is repaired or that the project has advanced beyond its currently accepted evidence level.
+This three-layer split is intentional:
 
-## Active roadmap
+- v2.7 protects the active runtime and decides what is technically safe to activate now;
+- v2.9 decides which **playable player-facing slice** should be built next once work is dependency-safe;
+- v2.8 preserves the complete destination so later requirements are not forgotten.
 
-1. [`BLUEPRINT-V2.7-EXECUTION.md`](BLUEPRINT-V2.7-EXECUTION.md) — controlling execution authority. Defines precedence, evidence rules, active Studio incidents, runtime-state contract, presentation ownership, rollout stages, Tickets 331–360, stop conditions, and the promotion gate.
-2. [`PRODUCTION-CORE-V2.7.md`](PRODUCTION-CORE-V2.7.md) — daily-use reference. Read this before implementation work to understand the current authority, runtime laws, active queue, and stop conditions.
-3. [`ACTIVE-PLACE-ROLLOUT-V2.7.md`](ACTIVE-PLACE-ROLLOUT-V2.7.md) — detailed R0–R5 migration procedure, cutover ledger requirements, semantic publisher rules, counters, named baselines, rollback discipline, and incident closure packet.
-4. [`CROSS-SYSTEM-TRACEABILITY-V2.7.md`](CROSS-SYSTEM-TRACEABILITY-V2.7.md) — mechanical, replication, presentation, streaming/lifecycle, and evidence ownership for critical player-facing state.
-5. [`QUALITY-AUDIT-V2.7.md`](QUALITY-AUDIT-V2.7.md) — what v2.7 changes, what its reference package proves statically, and what remains explicitly unproven in the active place.
-6. [`MASTER-ROADMAP.md`](MASTER-ROADMAP.md) — current milestone-level roadmap. It summarizes the v2.7 rollout gate and what becomes eligible only after runtime acceptance.
-7. [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md) — cross-cutting art/presentation production sequence. It controls asset sequencing only and remains subordinate to the active v2.7 dependency queue and runtime stop conditions.
+Read [`../bible/00-current-product-authority.md`](../bible/00-current-product-authority.md) before older product charters.
+
+## Current roadmap stack
+
+1. [`PLAYABLE-MVP-PATCH-EXECUTION.md`](PLAYABLE-MVP-PATCH-EXECUTION.md) — **current implementation-sequencing authority.** Establishes Gate 0, MVP 0.1, upgrade patches 0.2–0.9, the STOP / PLAY / FIX gate, release-candidate hardening, and post-1.0 patch discipline.
+2. [`MASTER-ROADMAP.md`](MASTER-ROADMAP.md) — **v2.8 complete product path and requirements inventory.** Its phases remain valid, but later broad phases may not leapfrog the current playable patch.
+3. [`BLUEPRINT-V2.7-EXECUTION.md`](BLUEPRINT-V2.7-EXECUTION.md) — **active runtime stabilization/rollout authority** for Tickets 331–360 while those gates remain open.
+4. [`PRODUCTION-CORE-V2.7.md`](PRODUCTION-CORE-V2.7.md) — daily runtime-production rules/current critical path.
+5. [`ACTIVE-PLACE-ROLLOUT-V2.7.md`](ACTIVE-PLACE-ROLLOUT-V2.7.md) — staged current-state/presentation migration, observability, rollback, soak and closure.
+6. [`CROSS-SYSTEM-TRACEABILITY-V2.7.md`](CROSS-SYSTEM-TRACEABILITY-V2.7.md) — mechanical/replication/presentation/lifecycle ownership and evidence gates.
+7. [`AGENT-BUILD-AHEAD-QUEUE.md`](AGENT-BUILD-AHEAD-QUEUE.md) — dependency-safe preparation while runtime evidence is blocked. READY work should preferentially enable the **current playable patch**.
+8. [`QUALITY-AUDIT-V2.7.md`](QUALITY-AUDIT-V2.7.md) — static quality/refinement history for the active rollout.
+9. [`VISUAL-PRODUCTION-TRACK.md`](VISUAL-PRODUCTION-TRACK.md) — cross-cutting art/presentation sequence subordinate to gameplay/runtime gates, current playable-patch priority, and Studio review.
+
+## Controlling development rhythm
+
+```text
+stabilize
+→ MVP 0.1: first complete run
+→ STOP / PLAY / FIX
+→ 0.2 combat feel
+→ STOP / PLAY / FIX
+→ 0.3 loot + build replayability
+→ STOP / PLAY / FIX
+→ 0.4 RPG progression
+→ STOP / PLAY / FIX
+→ 0.5 Main World + environment expansion
+→ STOP / PLAY / FIX
+→ 0.6 procedural/systemic replayability
+→ STOP / PLAY / FIX
+→ 0.7 durable persistence hardening
+→ STOP / PLAY / FIX
+→ 0.8 co-op/social/session expansion
+→ STOP / PLAY / FIX
+→ 0.9 content expansion + production pipeline
+→ release-candidate hardening
+→ 1.0
+→ measured live upgrade patches
+```
+
+At the end of every player-facing milestone, Atlas must still be playable end to end. A known blocker in the current loop prevents the next patch from becoming runtime-eligible.
+
+## Playable patch precedence
+
+When a long-range roadmap phase contains more work than is necessary for the current playable milestone, build the smallest coherent subset needed to satisfy the current patch exit gate.
+
+Examples:
+
+- MVP 0.1 needs a compact preparation/return surface, not the final giant Main World;
+- MVP 0.1 may use minimal safe persistence, while full valuable-state hardening belongs primarily to Patch 0.7;
+- basic co-op support may be required early, while broad party/matchmaking/social infrastructure belongs primarily to Patch 0.8;
+- loot and progression should first be deep enough to evaluate replayability, not broad enough to satisfy an item-count target;
+- content breadth belongs after the underlying combat/reward/progression/replayability systems have survived repeated playtests.
+
+## MVP 0.1 — First Complete Run
+
+The highest-priority player-facing milestone after the active stabilization gate is:
+
+```text
+spawn / arrive
+→ prepare
+→ choose a weapon/build
+→ enter one expedition
+→ explore
+→ fight
+→ receive loot/reward decisions
+→ defeat an elite
+→ defeat one boss / terminal encounter
+→ return
+→ equip or apply an upgrade
+→ voluntarily start another run
+```
+
+Target first-run duration is roughly **5–10 minutes**, subject to play evidence.
+
+The primary product signal is not feature count. It is whether a tester can complete the loop without developer intervention and wants to start another run.
+
+## STOP / PLAY / FIX gate
+
+Every patch closes with:
+
+1. **STOP** expansion when a known blocker breaks the current end-to-end loop.
+2. **PLAY** the representative loop in Studio with the applicable evidence checklist.
+3. **FIX** regressions, lifecycle failures, unreadable gameplay, broken transitions, reward/progression faults, or severe performance defects.
+4. **REPLAY** the loop to prove it can repeat, including multiplayer/device variants when the current patch requires them.
+5. **THEN EXPAND** into the next patch.
+
+Static tests remain mandatory but do not substitute for Studio/runtime evidence.
+
+## Master Roadmap v2.8 phase inventory
+
+The complete long-range scope remains:
+
+```text
+A0    product authority reconciliation
+R     active runtime rollout / incident closure
+B     controlled build-ahead preparation
+W     Main World + environment
+S     party / social / matchmaking-session infrastructure
+E     evidence promotion E2–E7
+D     durable persistence / valuable state
+M     long-term progression
+ECON  economy / crafting / resource value
+C     content production pipeline
+V     first complete vertical slice
+Q     quality / balance / device / performance / accessibility
+F     outside-player fun + repeat-intent gate
+T     production telemetry / E7
+OPS   runtime configuration / staged rollout / rollback
+SAFE  platform safety / security / compliance
+LOC   localization readiness
+MON   ethical monetization (locked behind F)
+L     alpha → beta → soft launch → production launch
+LIVE  post-launch operations and expansion
+```
+
+These requirements are **mapped into** the playable patch order; they are not deleted. The v2.9 sequencing document controls when broad implementation happens.
+
+## Main World / environment policy
+
+The Main World target loop remains:
+
+```text
+Arrival → Orientation → Exploration → Interaction → Preparation → Adventure → Return
+```
+
+BA-010 and subsequent Main World specifications determine KEEP/REFINE/REBUILD/REPLACE/REMOVE/MISSING disposition, navigation/landmark/traversal policy, visual/environment/audio direction, expansion readiness, streaming/performance requirements, and Studio-only acceptance checks.
+
+MVP 0.1 should use only the smallest coherent world surface required for the complete run. Broader environment production becomes a first-class focus in Patch 0.5 after the core loop is playable.
 
 ## Active production-control artifacts
 
-These files operationalize the roadmap and are part of the current workflow:
-
-- [`../production/V2.7-CUTOVER-LEDGER.md`](../production/V2.7-CUTOVER-LEDGER.md) — canonical producer/consumer/presentation migration ledger. Unknown cells remain unknown until source or Studio evidence fills them.
-- [`../production/V2.7-EVIDENCE-PACKET-TEMPLATE.md`](../production/V2.7-EVIDENCE-PACKET-TEMPLATE.md) — required structure for evidence-bearing Studio/runtime runs used to close gates or promote evidence level.
-- [`../production/DEFINITION-OF-DONE.md`](../production/DEFINITION-OF-DONE.md) — completion standard, including v2.7 ownership, rollback, baseline, and evidence rules.
-- [`../production/RBXL-IMPORT-MIGRATION.md`](../production/RBXL-IMPORT-MIGRATION.md) — reconciliation procedure for newer Studio places; imports active-place facts into Git without blindly replacing repository source.
-- [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md) — PR evidence/rollback checklist aligned to the v2.7 rollout.
-
-## Current active gate
-
-The active-place incident evidence still contains two stop-condition symptoms:
-
-1. `ReplicatedStorage.HordeNetwork.State` invocation-queue exhaustion/discard warnings;
-2. escaped broad blue/yellow `Highlight` presentation.
-
-The screenshot proves the symptoms, not the exact cause. v2.7 therefore requires instrumentation, staged migration, and closure evidence rather than declaring either issue fixed in documentation.
-
-The active dependency queue is **Tickets 331–360**:
-
-```text
-331–335  baseline + producer/consumer/Highlight inventory
-336–345  earliest listener, ClientReady gate, semantic producer cutover
-346–350  centralized route/landmark/Highlight ownership
-351–360  reset/respawn/late-join/multiplayer/animation/soak closure
-```
-
-Ticket 360 removes compatibility **only** for ledger rows with accepted replacement evidence and a retained rollback checkpoint.
+- [`../production/V2.7-CUTOVER-LEDGER.md`](../production/V2.7-CUTOVER-LEDGER.md) — producer/consumer/presentation migration ledger.
+- [`../production/V2.7-EVIDENCE-PACKET-TEMPLATE.md`](../production/V2.7-EVIDENCE-PACKET-TEMPLATE.md) — required structure for evidence-bearing Studio/runtime runs.
+- [`../production/DEFINITION-OF-DONE.md`](../production/DEFINITION-OF-DONE.md) — repository completion standard.
+- [`../production/RBXL-IMPORT-MIGRATION.md`](../production/RBXL-IMPORT-MIGRATION.md) — Studio-place reconciliation procedure.
+- [`.github/PULL_REQUEST_TEMPLATE.md`](../../.github/PULL_REQUEST_TEMPLATE.md) — PR evidence/rollback checklist.
 
 ## Precedence
 
 ```text
 accepted runtime evidence / current Roblox platform behavior
-→ BLUEPRINT-V2.7-EXECUTION.md + PRODUCTION-CORE-V2.7.md
-→ ACTIVE-PLACE-ROLLOUT-V2.7.md + CROSS-SYSTEM-TRACEABILITY-V2.7.md
-→ current specialist bibles and accepted specifications
-→ ../architecture/technical-blueprint.md
-→ historical roadmap checkpoints
+→ Blueprint v2.7 + Production Core v2.7 while active stabilization/rollout gates remain open
+→ Playable MVP + Patch Execution v2.9 for implementation sequencing
+→ Current Product Authority + Master Roadmap v2.8 for product direction and complete scope
+→ Active Place Rollout + Cross-System Traceability + production controls
+→ accepted current specifications / architecture decisions
+→ specialist visual/environment/Studio guidance
+→ historical charters and roadmap checkpoints
 ```
 
-A task moves to complete only after its applicable Definition of Done, automated validation, required Studio/runtime evidence, documentation, and status update are satisfied. A manual/runtime gate remains deferred—not passed—until the evidence is recorded.
+A manual/runtime gate remains deferred—not passed—until reproducible evidence is recorded.
 
 ## Evidence scale
 
@@ -70,46 +176,40 @@ E6 outside-player fun demonstrated
 E7 live telemetry demonstrated
 ```
 
-Roadmap adoption does not promote evidence level.
+Roadmap/documentation adoption does not promote evidence level.
 
 ## Historical checkpoints
 
-These files are retained for provenance and completed-work context. They no longer control execution:
+These remain useful provenance, not current execution authority:
 
-- [`BLUEPRINT-V2.3-EXECUTION.md`](BLUEPRINT-V2.3-EXECUTION.md) — previous active authority, Tickets 211–240.
-- [`PRODUCTION-CORE-V2.3.md`](PRODUCTION-CORE-V2.3.md) — previous daily authority.
-- [`CROSS-SYSTEM-TRACEABILITY-V2.3.md`](CROSS-SYSTEM-TRACEABILITY-V2.3.md) — previous ownership matrix.
-- [`QUALITY-AUDIT-V2.3.md`](QUALITY-AUDIT-V2.3.md) — previous refinement audit.
-- [`REFINEMENT-CHANGELOG-V2.3.md`](REFINEMENT-CHANGELOG-V2.3.md) — v2.3 change history.
-- [`STUDIO-TRIAGE-CHECKLIST-V2.3.md`](STUDIO-TRIAGE-CHECKLIST-V2.3.md) — previous incident checklist; useful as history, superseded by the v2.7 rollout procedure.
-- [`BLUEPRINT-V2.0-EXECUTION.md`](BLUEPRINT-V2.0-EXECUTION.md) — earlier authority; durable-value work remains useful context but is gated behind current runtime acceptance.
-- [`BLUEPRINT-V1.9-EXECUTION.md`](BLUEPRINT-V1.9-EXECUTION.md) — earlier ticket-numbered predecessor.
-- [`P6-P12-EXECUTION-ROADMAP.md`](P6-P12-EXECUTION-ROADMAP.md) — historical PR-sized milestone breakdown.
-- [`UNIFIED-MASTER-ROADMAP.md`](UNIFIED-MASTER-ROADMAP.md) — earlier consolidated roadmap.
-- [`RECOMMENDED-PASSES.md`](RECOMMENDED-PASSES.md) — descriptive historical cross-reference; it does not override v2.7 ticket order.
-- [`SEQUENCING-EXCEPTION-P6-P7.md`](SEQUENCING-EXCEPTION-P6-P7.md) — closed sequencing exception.
-- [`REPLAY-DECISION-STATUS.md`](REPLAY-DECISION-STATUS.md) and [`LIVE-LOBBY-INTEGRATION-NOTE.md`](LIVE-LOBBY-INTEGRATION-NOTE.md) — point-in-time status notes.
+- `BLUEPRINT-V2.3-EXECUTION.md`
+- `PRODUCTION-CORE-V2.3.md`
+- `CROSS-SYSTEM-TRACEABILITY-V2.3.md`
+- `QUALITY-AUDIT-V2.3.md`
+- `REFINEMENT-CHANGELOG-V2.3.md`
+- `STUDIO-TRIAGE-CHECKLIST-V2.3.md`
+- `BLUEPRINT-V2.0-EXECUTION.md`
+- `BLUEPRINT-V1.9-EXECUTION.md`
+- `P6-P12-EXECUTION-ROADMAP.md`
+- `UNIFIED-MASTER-ROADMAP.md`
+- `RECOMMENDED-PASSES.md`
+- `SEQUENCING-EXCEPTION-P6-P7.md`
+- `REPLAY-DECISION-STATUS.md`
+- `LIVE-LOBBY-INTEGRATION-NOTE.md`
 
-Source comments that cite an older blueprint/ticket remain valid provenance for completed work; they are not current execution orders.
-
-## Supporting specialist documents
-
-Specifications in [`../specifications/`](../specifications/) define behavior inside a task where they do not conflict with v2.7 authority, lifecycle, security, or presentation ownership.
-
-Current specialist bibles under [`../bible/`](../bible/) remain useful for visual and Studio integration detail. Their older version number does not make them higher authority than v2.7; use them as specialist requirements where v2.7 has not superseded the rule.
-
-Frequently referenced supporting docs:
-
-- [`../architecture/technical-blueprint.md`](../architecture/technical-blueprint.md)
-- [`../specifications/rpg-integration-plan.md`](../specifications/rpg-integration-plan.md)
-- [`../specifications/mvp-specialist-classes.md`](../specifications/mvp-specialist-classes.md)
-- [`../specifications/authored-objective-chain.md`](../specifications/authored-objective-chain.md)
-- [`../specifications/visual-asset-production.md`](../specifications/visual-asset-production.md)
-- [`../production/RBXL-IMPORT-MIGRATION.md`](../production/RBXL-IMPORT-MIGRATION.md)
-- [`../production/SMOKE-TEST.md`](../production/SMOKE-TEST.md)
+Historical P11/P12 requirements remain valuable inputs and are re-adopted into the appropriate playable patch rather than treated as executable legacy tickets.
 
 ## Agent execution rule
 
-Agents should implement the **lowest-numbered incomplete v2.7 ticket that can honestly be completed in the available environment**. Do not skip a runtime evidence gate by replacing it with a source-only test. Do not add broader gameplay scope while a v2.7 stop condition remains open.
+When asked to continue the roadmap:
 
-> Instrument first. Migrate one owner at a time. Remove compatibility only when the evidence says the bridge is empty.
+1. Fetch current `main` and inspect related open PRs.
+2. Read Current Product Authority and `PLAYABLE-MVP-PATCH-EXECUTION.md`.
+3. Check Blueprint v2.7 for any active stabilization dependency that blocks the current playable milestone.
+4. If blocked, perform the next dependency-safe blocker or safe preparation that most directly enables the current playable milestone.
+5. If unblocked, work only on the highest-ROI unfinished requirement for the **current playable patch**.
+6. Do not begin later-patch breadth while a known current-patch blocker remains.
+7. Preserve the previous playable baseline with regression coverage and required Studio evidence.
+8. Report the current patch, evidence, blocker status, and next highest-ROI task.
+
+> **Complete map, playable execution:** know the whole destination, but ship and prove one coherent layer at a time.

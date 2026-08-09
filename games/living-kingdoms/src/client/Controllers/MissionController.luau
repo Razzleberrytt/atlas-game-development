@@ -96,7 +96,7 @@ local function onSnapshot(payload: unknown)
 	end
 	local snapshot = payload :: SafeMissionSnapshot
 	local previous = latestSnapshot
-	if previous ~= nil and snapshot.revision <= previous.revision then
+	if previous ~= nil and snapshot.operationId == previous.operationId and snapshot.revision <= previous.revision then
 		return
 	end
 	latestSnapshot = snapshot
