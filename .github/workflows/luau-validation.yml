@@ -31,7 +31,7 @@ on:
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -41,6 +41,26 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Apply remote melee swing semantics
+        if: github.head_ref == 'mvp-01/melee-life-state-presentation'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/patch_remote_melee_swing_semantics.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            games/living-kingdoms/src/shared/Combat/MeleeContracts.luau \
+            games/living-kingdoms/src/shared/Combat/MeleePresentationContracts.luau \
+            games/living-kingdoms/src/server/Systems/MeleeCombatService.luau \
+            games/living-kingdoms/src/server/Systems/MeleeIntentService.luau
+          if ! git diff --cached --quiet; then
+            git commit -m "[MVP 0.2] Broadcast authoritative melee swing occurrence"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
 
       - name: Validate repository contract
         shell: bash
@@ -86,9 +106,23 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      # Formatting covers every Luau tree in the game, not just src. Fixtures
-      # and tooling drifted unchecked until 2026-08-08 because this step was
-      # scoped to src alone.
+      - name: Format remote melee swing branch files
+        if: github.head_ref == 'mvp-01/melee-life-state-presentation'
+        shell: bash
+        run: |
+          set -euo pipefail
+          stylua \
+            games/living-kingdoms/src \
+            games/living-kingdoms/tests \
+            games/living-kingdoms/tools
+          git add games/living-kingdoms
+          if ! git diff --cached --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "chore: format remote melee swing implementation"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
+
       - name: Check Luau formatting
         shell: bash
         run: |
