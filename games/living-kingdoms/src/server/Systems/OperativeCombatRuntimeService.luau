@@ -27,6 +27,7 @@ local AmmunitionScarcityContracts = require(ReplicatedStorage.Shared.Combat.Ammu
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local HordeExperienceConfig = require(ReplicatedStorage.Shared.Config.HordeExperienceConfig)
+local PrimaryCombatModeContracts = require(ReplicatedStorage.Shared.Combat.PrimaryCombatModeContracts)
 
 local function resolveWeaponDefinition(weaponId: unknown)
 	local getter = FirearmConfig.get
@@ -44,6 +45,7 @@ local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 local FirearmHitResolver = require(script.Parent.FirearmHitResolver)
 local MatchResultService = require(script.Parent.MatchResultService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
+local PrimaryCombatModeService = require(script.Parent.PrimaryCombatModeService)
 local RelicModifierService = require(script.Parent.RelicModifierService)
 local ReloadResolver = require(script.Parent.ReloadResolver)
 local RunMagazineCapacityResolver = require(script.Parent.RunMagazineCapacityResolver)
@@ -105,6 +107,7 @@ type OperativeCombatRuntimeService = {
 	publishAmmunitionState: (player: Player, grantedRounds: number?) -> boolean,
 	equipFoundWeapon: (player: Player, weaponId: string) -> boolean,
 	grantFoundAmmunition: (player: Player, requestedRounds: number) -> number,
+	resetForReplay: () -> (),
 	evaluateAt: (serverTimestamp: number) -> (),
 	readEngineerResupplyState: (player: Player) -> any,
 }
@@ -112,6 +115,11 @@ type OperativeCombatRuntimeService = {
 local SERVER_REQUEST_COOLDOWN_SECONDS = 0.25
 local FIRE_INTENT_COOLDOWN_SECONDS = 0.025
 local AIM_CONE_MINIMUM_DOT = math.cos(math.rad(13))
+local PrimaryCombatModeIds = PrimaryCombatModeContracts.ModeIds
+
+local function firearmModeActive(player: Player): boolean
+	return PrimaryCombatModeService.readMode(player) == PrimaryCombatModeIds.Firearm
+end
 
 local function setPlayerAttribute(player: Player, attributeName: string, value: unknown)
 	local candidate = player :: any
@@ -214,6 +222,9 @@ local function createPlayerState(player: Player): PlayerCombatState
 	local operativeEntityId = deriveOperativeEntityId(player)
 	local retained = retainedCombatByOperativeEntityId[operativeEntityId]
 	retainedCombatByOperativeEntityId[operativeEntityId] = nil
+	if retained ~= nil then
+		PrimaryCombatModeService.setMode(player, PrimaryCombatModeIds.Firearm)
+	end
 	local weaponId = if retained ~= nil then retained.weaponId else FirearmConfig.DefaultSelectableWeaponId
 	local weaponState = createWeaponState(weaponId)
 	if retained ~= nil then
@@ -929,7 +940,7 @@ function OperativeCombatRuntimeService.equipFoundWeapon(player: Player, weaponId
 	if playerState == nil or definition == nil or not OperativeLifeService.isCombatAllowed(player) then
 		return false
 	end
-	local discoverable = false
+	local discoverable = weaponId == FirearmConfig.DefaultSelectableWeaponId
 	for _, candidateId in FirearmConfig.DiscoverableWeaponIds do
 		if candidateId == weaponId then
 			discoverable = true
@@ -976,6 +987,7 @@ function OperativeCombatRuntimeService.equipFoundWeapon(player: Player, weaponId
 	table.clear(playerState.sightedByEntityId)
 	playerState.lockedLoadoutApplied = true
 	setPlayerAttribute(player, "LK_EquippedWeaponId", weaponId)
+	PrimaryCombatModeService.setMode(player, PrimaryCombatModeIds.Firearm)
 	RelicModifierService.resetSustainedShots(player)
 	OperativeCombatRuntimeService.publishAmmunitionState(player)
 	return true
@@ -1023,6 +1035,13 @@ local function evaluatePlayer(
 		if restricted ~= nil then
 			playerStates[player] = restricted
 		end
+		return
+	end
+	if not firearmModeActive(player) then
+		playerState.isFiring = false
+		playerState.aimDirection = nil
+		discloseTarget(player, playerState, nil, nowTimestamp)
+		RelicModifierService.resetSustainedShots(player)
 		return
 	end
 	local operativePosition = getOperativePosition(player)
@@ -1144,6 +1163,13 @@ local function onFireIntent(player: Player, isFiring: unknown, aimDirection: unk
 	if playerState == nil then
 		return
 	end
+	if not firearmModeActive(player) then
+		if isFiring == false then
+			playerState.isFiring = false
+			playerState.aimDirection = nil
+		end
+		return
+	end
 	local direction = aimDirection :: Vector3
 	if
 		direction.X ~= direction.X
@@ -1174,6 +1200,7 @@ local function onReloadIntent(player: Player, weaponId: unknown, ...: unknown)
 	local playerState = playerStates[player]
 	if
 		playerState == nil
+		or not firearmModeActive(player)
 		or not OperativeLifeService.isCombatAllowed(player)
 		or weaponId ~= playerState.operativeState.equippedWeaponId
 	then
@@ -1248,6 +1275,17 @@ local function applyLifeStateRestriction(player: Player)
 	playerStates[player] = restricted
 	if wasReloading and restricted.weaponState.reloadState == nil then
 		broadcastReloadPresentation(restricted, CombatContracts.PresentationMessageKindIds.ReloadInterrupted, nil)
+	end
+end
+
+function OperativeCombatRuntimeService.resetForReplay()
+	table.clear(retainedCombatByOperativeEntityId)
+	for player in playerStates do
+		playerStates[player] = createPlayerState(player)
+		local state = playerStates[player]
+		setPlayerAttribute(player, "LK_EquippedWeaponId", state.weaponState.weaponId)
+		RelicModifierService.resetSustainedShots(player)
+		OperativeCombatRuntimeService.publishAmmunitionState(player)
 	end
 end
 

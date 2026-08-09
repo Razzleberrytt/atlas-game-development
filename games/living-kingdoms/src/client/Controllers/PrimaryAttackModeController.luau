@@ -15,6 +15,7 @@ local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local PrimaryCombatModeContracts = require(ReplicatedStorage.Shared.Combat.PrimaryCombatModeContracts)
+local MeleeCombatConfig = require(ReplicatedStorage.Shared.Config.MeleeCombatConfig)
 local WeaponController = require(script.Parent.WeaponController)
 
 local Controller = {}
@@ -73,6 +74,17 @@ local function onMouseInputBegan(input: InputObject, gameProcessedEvent: boolean
 	requestStrike()
 end
 
+local function presentMeleeHud()
+	local weapon = MeleeCombatConfig.OpeningWeapon
+	localPlayer:SetAttribute("LK_HUD_WeaponId", weapon.WeaponId)
+	localPlayer:SetAttribute("LK_HUD_WeaponName", weapon.ShortName)
+	localPlayer:SetAttribute("LK_HUD_LoadedRounds", nil)
+	localPlayer:SetAttribute("LK_HUD_ReserveRounds", nil)
+	localPlayer:SetAttribute("LK_HUD_MagazineCapacity", nil)
+	localPlayer:SetAttribute("LK_HUD_CombatStatus", "RECOVER A FIREARM")
+	localPlayer:SetAttribute("LK_HUD_CombatStatusUntil", nil)
+end
+
 local function bindMelee()
 	if meleeBound then
 		return
@@ -80,6 +92,7 @@ local function bindMelee()
 	-- WeaponController owns mouse/R2/touch firearm intent. Stop it first so the
 	-- same physical press cannot reach both authoritative combat paths.
 	WeaponController.stop()
+	presentMeleeHud()
 	ContextActionService:BindAction(FIRE_ACTION_NAME, onMeleeAction, true, Enum.KeyCode.ButtonR2)
 	ContextActionService:SetTitle(FIRE_ACTION_NAME, "Attack")
 	mouseConnection = UserInputService.InputBegan:Connect(onMouseInputBegan)

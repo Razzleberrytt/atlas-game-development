@@ -22,7 +22,7 @@ end
 local function ensurePlayer(player: Player)
 	local current = player:GetAttribute(AttributeName)
 	if not PrimaryCombatModeContracts.isModeId(current) then
-		setAttribute(player, ModeIds.Firearm)
+		setAttribute(player, ModeIds.Melee)
 	end
 end
 
@@ -31,15 +31,24 @@ function Service.readMode(player: Player): string
 	if PrimaryCombatModeContracts.isModeId(current) then
 		return current :: string
 	end
-	return ModeIds.Firearm
+	return ModeIds.Melee
 end
 
+-- Trusted server systems may need to restore a retained firearm before this
+-- application's mount has started. Setting an already-validated server fact does
+-- not require the lifecycle listener to be active.
 function Service.setMode(player: Player, modeId: unknown): boolean
-	if not started or not PrimaryCombatModeContracts.isModeId(modeId) then
+	if not PrimaryCombatModeContracts.isModeId(modeId) then
 		return false
 	end
 	setAttribute(player, modeId :: string)
 	return true
+end
+
+function Service.resetAllToMelee()
+	for _, player in Players:GetPlayers() do
+		setAttribute(player, ModeIds.Melee)
+	end
 end
 
 function Service.start()

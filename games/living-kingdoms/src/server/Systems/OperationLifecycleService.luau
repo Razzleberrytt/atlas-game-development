@@ -30,9 +30,12 @@ local ClassService = require(script.Parent.ClassService)
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
 local MatchResultService = require(script.Parent.MatchResultService)
 local MissionDirectorService = require(script.Parent.MissionDirectorService)
+local OperativeCombatRuntimeService = require(script.Parent.OperativeCombatRuntimeService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
+local PrimaryCombatModeService = require(script.Parent.PrimaryCombatModeService)
 local OperativeReviveSessionService = require(script.Parent.OperativeReviveSessionService)
 local SquadFailureService = require(script.Parent.SquadFailureService)
+local SurvivalLootService = require(script.Parent.SurvivalLootService)
 
 type OperationReplayStateId = MatchResultContracts.OperationReplayStateId
 type ListenerConnection = { Disconnect: (self: ListenerConnection) -> () }
@@ -119,6 +122,12 @@ local function prepareFreshRun()
 			pcall(stopOwner)
 		end
 	end
+	-- These application-scoped owners carry run-sensitive state but predate the
+	-- cleanup-owner vocabulary. Reset them explicitly at the replay seam so a
+	-- deliberate new run always returns to the same melee opening contract.
+	PrimaryCombatModeService.resetAllToMelee()
+	OperativeCombatRuntimeService.resetForReplay()
+	SurvivalLootService.resetForReplay()
 	for _, ownerId in MatchResultConfig.ReplayStartOrder do
 		local startOwner = startByOwnerId[ownerId]
 		if startOwner ~= nil then
