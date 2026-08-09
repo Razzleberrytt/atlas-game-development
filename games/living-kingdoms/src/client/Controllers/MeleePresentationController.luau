@@ -28,6 +28,7 @@ local MODEL_NAME = "MeleePresentation"
 local FIRST_PERSON_MODEL_NAME = "FirstPersonMelee"
 local SWING_DURATION_SECONDS = math.min(0.5, MeleeCombatConfig.OpeningWeapon.CadenceSeconds * 0.8)
 local HIT_FLASH_DURATION_SECONDS = 0.12
+local IMPACT_KICK_DURATION_SECONDS = 0.11
 local BLADE_IDLE_COLOR = Color3.fromRGB(116, 123, 122)
 local BLADE_HIT_COLOR = Color3.fromRGB(225, 238, 220)
 local BLADE_KILL_COLOR = Color3.fromRGB(255, 219, 132)
@@ -46,6 +47,7 @@ local localHandle: BasePart? = nil
 local localBlade: BasePart? = nil
 local localSwingStartedAtClock: number? = nil
 local localHitConfirmedAtClock: number? = nil
+local localImpactConfirmedAtClock: number? = nil
 local localHitWasKill = false
 local meleeNetwork = ReplicatedStorage:WaitForChild("MeleeNetwork")
 local presentationRemote = meleeNetwork:WaitForChild("Presentation") :: RemoteEvent
@@ -115,6 +117,7 @@ local function destroyLocalModel()
 	localBlade = nil
 	localSwingStartedAtClock = nil
 	localHitConfirmedAtClock = nil
+	localImpactConfirmedAtClock = nil
 	localHitWasKill = false
 end
 
@@ -236,6 +239,20 @@ local function localSwingAmount(nowClock: number): number
 	return math.sin(math.clamp(progress, 0, 1) * math.pi)
 end
 
+local function localImpactAmount(nowClock: number): number
+	local confirmedAt = localImpactConfirmedAtClock
+	if confirmedAt == nil then
+		return 0
+	end
+	local progress = (nowClock - confirmedAt) / IMPACT_KICK_DURATION_SECONDS
+	if progress >= 1 then
+		localImpactConfirmedAtClock = nil
+		return 0
+	end
+	local decay = 1 - math.clamp(progress, 0, 1)
+	return decay * decay
+end
+
 local function applyLocalHitFlash(blade: BasePart, nowClock: number)
 	local confirmedAt = localHitConfirmedAtClock
 	if confirmedAt ~= nil and nowClock - confirmedAt <= HIT_FLASH_DURATION_SECONDS then
@@ -258,7 +275,9 @@ local function onPresentation(message: unknown)
 		return
 	end
 	local confirmed = message :: MeleePresentationContracts.HitConfirmedMessage
-	localHitConfirmedAtClock = os.clock()
+	local nowClock = os.clock()
+	localHitConfirmedAtClock = nowClock
+	localImpactConfirmedAtClock = nowClock
 	localHitWasKill = confirmed.becameDead
 end
 
@@ -304,12 +323,14 @@ function Controller.start()
 
 		local nowClock = os.clock()
 		local swing = localSwingAmount(nowClock)
-		local x = 0.72 - 0.16 * swing
-		local y = -0.78 + 0.1 * swing
-		local z = -1.25 - 0.24 * swing
-		local pitchDegrees = -8 + 58 * swing
-		local yawDegrees = -12 * swing
-		local rollDegrees = -20 - 52 * swing
+		local impact = localImpactAmount(nowClock)
+		local impactScale = if localHitWasKill then 1.25 else 1
+		local x = 0.72 - 0.16 * swing + 0.04 * impact * impactScale
+		local y = -0.78 + 0.1 * swing - 0.03 * impact * impactScale
+		local z = -1.25 - 0.24 * swing + 0.18 * impact * impactScale
+		local pitchDegrees = -8 + 58 * swing - 12 * impact * impactScale
+		local yawDegrees = -12 * swing + 4 * impact * impactScale
+		local rollDegrees = -20 - 52 * swing + 8 * impact * impactScale
 		handle.CFrame = camera.CFrame
 			* CFrame.new(x, y, z)
 			* CFrame.Angles(math.rad(pitchDegrees), math.rad(yawDegrees), math.rad(rollDegrees))
