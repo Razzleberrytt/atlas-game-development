@@ -172,15 +172,21 @@ local function passiveTraversalAdapter()
 	local activeToken: string? = nil
 	return {
 		start = function(context: any): boolean
-			if activeToken ~= nil then return false end
+			if activeToken ~= nil then
+				return false
+			end
 			activeToken = context.Token
 			return true
 		end,
 		cancel = function(context: any, _reasonId: string)
-			if activeToken == context.Token then activeToken = nil end
+			if activeToken == context.Token then
+				activeToken = nil
+			end
 		end,
 		pollCompletion = function(): (boolean, string?)
-			if activeToken == nil then return false, "NoActiveEncounter" end
+			if activeToken == nil then
+				return false, "NoActiveEncounter"
+			end
 			return true, activeToken
 		end,
 	}
@@ -200,15 +206,33 @@ function Bootstrap.new(director: EnemyDirector, parameters: StartParameters): Se
 		Elite = combatAdapter,
 		Boss = combatAdapter,
 	})
-	return setmetatable({ Runtime = runtime, Coordinator = coordinator, CombatAdapter = combatAdapter, TraversalAdapter = traversalAdapter, RoomPlan = rawPlan, Destroyed = false } :: Internal, Bootstrap) :: any
+	return setmetatable(
+		{
+			Runtime = runtime,
+			Coordinator = coordinator,
+			CombatAdapter = combatAdapter,
+			TraversalAdapter = traversalAdapter,
+			RoomPlan = rawPlan,
+			Destroyed = false,
+		} :: Internal,
+		Bootstrap
+	) :: any
 end
 
 function Bootstrap:step(nowUnix: number)
 	local state: Internal = self :: any
-	if state.Destroyed then return result(false, "BootstrapDestroyed") end
-	if type(nowUnix) ~= "number" or nowUnix < 0 then return result(false, "InvalidTimestamp") end
+	if state.Destroyed then
+		return result(false, "BootstrapDestroyed")
+	end
+	if type(nowUnix) ~= "number" or nowUnix < 0 then
+		return result(false, "InvalidTimestamp")
+	end
 	local snapshot = state.Runtime:getSnapshot()
-	if snapshot ~= nil and snapshot.PhaseId == ExpeditionContracts.PhaseIds.Results and snapshot.OutcomeId == ExpeditionContracts.OutcomeIds.InProgress then
+	if
+		snapshot ~= nil
+		and snapshot.PhaseId == ExpeditionContracts.PhaseIds.Results
+		and snapshot.OutcomeId == ExpeditionContracts.OutcomeIds.InProgress
+	then
 		local finish = state.Runtime:finish(ExpeditionContracts.OutcomeIds.Completed, snapshot.PhaseId, nowUnix)
 		return result(finish.Accepted == true, finish.ReasonId)
 	end
@@ -219,7 +243,9 @@ function Bootstrap:step(nowUnix: number)
 		if completed and token ~= nil then
 			local completion = state.Coordinator:completeActive(token, nowUnix)
 			adapter.cancel(active, "EncounterCompleted")
-			if completion.Accepted ~= true then return result(false, completion.ReasonId) end
+			if completion.Accepted ~= true then
+				return result(false, completion.ReasonId)
+			end
 			return result(true, completion.ReasonId)
 		end
 		return result(false, "EncounterInProgress")
@@ -230,25 +256,33 @@ end
 
 function Bootstrap:getSnapshot(): ExpeditionSnapshot?
 	local state: Internal = self :: any
-	if state.Destroyed then return nil end
+	if state.Destroyed then
+		return nil
+	end
 	return state.Runtime:getSnapshot()
 end
 
 function Bootstrap:getRoomPlan(): any
 	local state: Internal = self :: any
-	if state.Destroyed then return nil end
+	if state.Destroyed then
+		return nil
+	end
 	return state.RoomPlan
 end
 
 function Bootstrap:getActiveEncounterContext(): any?
 	local state: Internal = self :: any
-	if state.Destroyed then return nil end
+	if state.Destroyed then
+		return nil
+	end
 	return state.Coordinator:getActiveContext()
 end
 
 function Bootstrap:destroy()
 	local state: Internal = self :: any
-	if state.Destroyed then return end
+	if state.Destroyed then
+		return
+	end
 	state.Destroyed = true
 	state.Coordinator:destroy()
 	state.CombatAdapter:destroy()
