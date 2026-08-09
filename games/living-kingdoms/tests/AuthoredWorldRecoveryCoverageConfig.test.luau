@@ -53,3 +53,17 @@ check(config.Groups.Atmosphere.reconstructionModule == nil)
 check(config.canPromoteNewGeometry("Atmosphere") == false)
 check(config.canPromoteNewGeometry("Unknown") == false)
 check(#config.ResumeRequirements == 3)
+
+local worldPathConfig =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RecoveredWorldPathConfig.luau"), {
+		debugName = "RecoveredWorldPathConfig",
+		injectGlobals = true,
+	})()
+
+check(worldPathConfig.Version == "BA-005-WORLDPATH-v1")
+check(worldPathConfig.RuntimeEnabled == false)
+check(worldPathConfig.Evidence.SegmentCount == 189)
+local firstSegment = worldPathConfig.segmentCenter(1)
+check(firstSegment.z == worldPathConfig.Route.StartCenter.z)
+local lastSegment = worldPathConfig.segmentCenter(189)
+check(math.abs(lastSegment.z - worldPathConfig.Route.EndCenter.z) < 0.0001)
