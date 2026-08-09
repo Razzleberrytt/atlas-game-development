@@ -48,10 +48,7 @@ assert(
 	contains(serverMount, 'ReplicatedStorage:FindFirstChild("MeleeNetwork")'),
 	"server mount must own runtime melee network creation"
 )
-assert(
-	contains(serverMount, 'Instance.new("RemoteEvent")'),
-	"server mount must create the narrow melee transport"
-)
+assert(contains(serverMount, 'Instance.new("RemoteEvent")'), "server mount must create the narrow melee transport")
 assert(
 	contains(serverMount, 'for _, remoteName in { "StrikeIntent", "Presentation" } do'),
 	"runtime melee transport must expose exactly the strike-intent and server-presentation channels"
