@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
+local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.OperativeLifeContracts)
 local PrimaryCombatModeContracts = require(ReplicatedStorage.Shared.Combat.PrimaryCombatModeContracts)
 local MeleeCombatConfig = require(ReplicatedStorage.Shared.Config.MeleeCombatConfig)
 local MeleePresentationController = require(script.Parent.MeleePresentationController)
@@ -23,6 +24,8 @@ local Controller = {}
 local localPlayer = Players.LocalPlayer
 local AttributeName = PrimaryCombatModeContracts.AttributeName
 local ModeIds = PrimaryCombatModeContracts.ModeIds
+local LifeStateIds = OperativeLifeContracts.OperativeLifeStateIds
+local LIFE_STATE_ATTRIBUTE = "LK_P3_LifeState"
 local FIRE_ACTION_NAME = "LK_Fire"
 
 local started = false
@@ -45,6 +48,12 @@ end
 
 local function requestStrike()
 	if UserInputService:GetFocusedTextBox() ~= nil then
+		return
+	end
+	-- This replicated life state is presentation/input guidance only. Failing
+	-- closed here prevents false local swings and useless traffic while down/dead;
+	-- the server still independently owns and revalidates combat eligibility.
+	if localPlayer:GetAttribute(LIFE_STATE_ATTRIBUTE) ~= LifeStateIds.Alive then
 		return
 	end
 	local direction = currentAimDirection()
