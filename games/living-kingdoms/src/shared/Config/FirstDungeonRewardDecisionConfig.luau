@@ -109,7 +109,10 @@ assert(
 	FirstDungeonRewardDecisionConfig.RuntimeConsumptionEnabled == true,
 	"BA-033 must disclose that at least one authored reward decision is live"
 )
-assert(EliteDecision.RuntimeConsumptionEnabled == false, "the authored elite room must not double-pay generic elite rewards")
+assert(
+	EliteDecision.RuntimeConsumptionEnabled == false,
+	"the authored elite room must not double-pay generic elite rewards"
+)
 assert(BossDecision.RuntimeConsumptionEnabled == true, "the authored boss reward decision must remain live")
 assert(
 	FirstDungeonRewardDecisionConfig.PersistentEquipmentEligible == false,
