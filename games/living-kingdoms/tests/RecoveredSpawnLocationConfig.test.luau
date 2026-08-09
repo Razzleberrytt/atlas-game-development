@@ -54,9 +54,14 @@ check(config.Ownership.TeleportAuthority == false)
 check(config.Ownership.RuntimeEnabled == false)
 
 local worldContentSource = fs.readFile("games/living-kingdoms/src/shared/Config/WorldContentConfig.luau")
-check(string.find(worldContentSource, 'id = "spawn.main_world.arrival"', 1, true) ~= nil)
-check(string.find(worldContentSource, 'legacyAliases = table.freeze({ "SpawnLocation" })', 1, true) ~= nil)
-check(string.find(worldContentSource, 'displayName = "Main World Arrival"', 1, true) ~= nil)
+local heldArrivalDescriptor = table.concat({
+	'id = "spawn.main_world.arrival",',
+	'\t\tkind = "spawn",',
+	'\t\tdisplayName = "Main World Arrival",',
+	'\t\tlegacyAliases = table.freeze({ "SpawnLocation" }),',
+	"\t\tactive = false,",
+}, "\n")
+check(string.find(worldContentSource, heldArrivalDescriptor, 1, true) ~= nil)
 
 local placementSource = fs.readFile("games/living-kingdoms/src/shared/Config/RecoveredWorldPlacementConfig.luau")
 check(string.find(placementSource, '"Workspace/SpawnLocation"', 1, true) ~= nil)
