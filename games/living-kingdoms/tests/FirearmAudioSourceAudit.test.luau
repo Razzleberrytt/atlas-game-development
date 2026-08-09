@@ -131,6 +131,4 @@ assertThat(
 	"visual asset registry must attribute firearm audio to its owner"
 )
 
-print(
-	"FirearmAudioSourceAudit: bounded local cues, spatial remote fire, deferred authority, and bootstrap passed"
-)
+print("FirearmAudioSourceAudit: bounded local cues, spatial remote fire, deferred authority, and bootstrap passed")
