@@ -397,7 +397,10 @@ killTrackedEnemies()
 local _, loggingRecoveryReason = step()
 assert(loggingRecoveryReason == "EncounterInProgress", "logging-road clear must preserve its recovery window")
 local _, campgroundStartReason = step()
-assert(campgroundStartReason == "EncounterInProgress", "campground stage remains under the same Approach encounter token")
+assert(
+	campgroundStartReason == "EncounterInProgress",
+	"campground stage remains under the same Approach encounter token"
+)
 assert(#spawnedWaves == 2, "campground wave should start after the authored eight-second breather")
 assert(#spawnedWaves[2].Definitions == 3, "campground must spawn the authored three-enemy mixed wave")
 local campgroundRoles = {}
