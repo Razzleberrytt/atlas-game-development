@@ -75,7 +75,7 @@ Runtime evidence refresh after adoption:
 | Repository/tooling foundation | [x] | GitHub-first source, Rojo, validation, CI, reproducible builds and agent workflow exist. |
 | Combined-game preservation | [x] | Studio source/hierarchy recovery is repaired; preserved legacy services remain inert. |
 | Product authority reconciliation | [x] | Current Atlas product authority exists; older Living Kingdoms charter is explicitly historical. |
-| v2.7 runtime rollout | [~] | **Primary runtime lane.** R1 is accepted on pinned artifact 9028866465; single-listener consolidation is the next dependency before R2. |
+| v2.7 runtime rollout | [~] | **Primary runtime lane.** R1 and exact-build single-listener consolidation are accepted; R2 remains the next runtime dependency. |
 | Controlled build-ahead | [~] | Pure contracts, data, audits, reconstruction and dormant seams may continue without activating future runtime scope. |
 | Main World / environment preparation | [~] | Forward Operations Hub is live as a bridge; authored overworld reconstruction is held; full overworld lifecycle is not active. |
 | E2–E4 integrated evidence | [~] | E2 Studio initialization accepted; E3/E4 integrated and multiplayer evidence remain blocked by later runtime gates. |
@@ -93,32 +93,34 @@ The strategic loop is:
 
 ```text
 Main World arrival
-→ orientation / discovery
-→ interaction / preparation / build choice
-→ party or expedition context
-→ authored route / operation / dungeon
+→ safe orientation / discovery
+→ interaction / humble starting-path choice
+→ deliberate party or expedition launch
+→ seeded authored route / operation / dungeon
 → mixed combat + exploration + discovery
 → build / loot / reward decisions
 → elite / boss / terminal outcome
-→ return to Main World
-→ durable progress where allowed
+→ return safely to Main World
+→ bank eligible progress and retain durable identity
 → choose what to do next
 ```
 
 The first proof remains deliberately smaller:
 
 ```text
-prepare
-→ choose a build/weapon
-→ readable authored route
+arrive safely and prepare
+→ choose a humble starting path
+→ deliberately enter one readable seeded route
 → mixed combat with distinct tactical questions
 → information/discovery interaction
 → repeatable dungeon/encounter sequence
 → elite/reward decision
 → boss/result
-→ return
+→ return or lose unbanked run gains on death
 → choose to play again
 ```
+
+Current product authority defines this as an exploration-first, hard-but-fair extraction RPG. Existing horde/director machinery may supply roaming pressure and authored encounter events, but numbered-wave/tower-defense presentation is not a target experience. The ordinary HUD is contextual; direct world interactions use native `E`/controller/touch prompts with server-owned consequences; seeded variation must remain reproducible, navigable and winnable. The humble melee-first opening, safe-home lifecycle and durable death/unlock boundary require their own scoped runtime migrations and evidence rather than compatibility shortcuts.
 
 # A0 — Product authority reconciliation
 

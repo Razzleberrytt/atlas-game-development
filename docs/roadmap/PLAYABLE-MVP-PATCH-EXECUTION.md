@@ -88,17 +88,17 @@ Target player loop:
 
 ```text
 spawn / arrive
-→ orient and prepare
-→ choose a weapon/build
-→ enter one expedition
-→ explore a readable route
+→ breathe in a safe home/preparation space
+→ orient and choose a humble starting path
+→ deliberately launch one seeded expedition
+→ explore a readable route and optional discovery
 → fight several encounter types
-→ receive loot/reward decisions
+→ collect loot through clear world interaction and make reward decisions
 → defeat an elite
 → reach and defeat one boss / terminal encounter
 → receive result/reward
-→ return to preparation space
-→ equip or apply an upgrade
+→ return to safety and bank eligible progress
+→ equip, unlock or apply an upgrade
 → start another run
 ```
 
@@ -112,6 +112,7 @@ Minimum target content:
 
 - one compact preparation/Main World bridge surface;
 - one expedition launch path;
+- a real safe-arrival beat before hostile pressure begins;
 - one authored outdoor/route segment;
 - one small repeatable dungeon/encounter sequence;
 - roughly three distinct enemy tactical questions/families or equivalent encounter roles;
@@ -120,13 +121,21 @@ Minimum target content:
 - two or three meaningfully distinct weapon/build choices;
 - basic abilities where required by the current combat identity;
 - health, failure, recovery/retry and return flow;
+- run-loss rules that remove unbanked loot/temporary power without erasing achievements, discoveries or unlocked starting options;
 - basic randomized or choice-based loot/rewards;
+- direct contextual world interaction (`E` on keyboard plus native controller/touch support) with server-owned reward validation;
 - minimal equipment/loadout handling;
 - minimal inventory sufficient for the loop;
 - minimal progression sufficient to make the second run meaningfully different;
 - minimal safe persistence only for state that must survive the test/rejoin loop;
 - basic 1–4 player support only to the extent required by current co-op foundations and evidence gates;
 - at least one optional discovery/secret or equivalent curiosity reward.
+
+The opening power curve should begin with a humble melee-capable path and make firearms feel discovered or earned. Because the current canonical combat owner is firearm-specific, this requires a focused server-authoritative migration with tests and Studio evidence; do not fake it by assigning firearm ammunition/state contracts to a melee item.
+
+Use a reproducible server-owned run seed immediately where it helps identity and debugging. MVP 0.1 needs only one readable variation seam; broad modular route/encounter generation remains Patch 0.6 scope.
+
+Existing horde/director systems may provide roaming pressure and authored encounter events, but numbered-wave or tower-defense presentation is not part of the target player experience.
 
 Do **not** block MVP 0.1 on broad crafting, a full economy, a huge skill tree, multiple regions, hundreds of items, full matchmaking, final overworld art, or launch monetization.
 
@@ -138,8 +147,27 @@ Do **not** block MVP 0.1 on broad crafting, a full economy, a huge skill tree, m
 - Can the loop be repeated in the same session?
 - Does a reward or build decision create a reason to try again?
 - Are combat, objectives and navigation readable enough to diagnose fun rather than confusion?
+- Does the HUD show only information useful to the player's current decision?
+- Can keyboard, controller and touch players collect world loot without a separate click-only inventory overlay?
+- Does death create meaningful run stakes while preserving durable RPG identity?
+- Does every generated variation remain readable, navigable and winnable?
 
 **Primary product signal:** a tester voluntarily chooses to start another run.
+
+## MVP 0.1 implementation checkpoint — 2026-08-08
+
+**Status: [~] ACTIVE — the complete run is not yet accepted.**
+
+- [x] Supply-chest loot uses one native `E` / controller / touch prompt and keeps every loot consequence server-owned.
+- [x] The click-only item remote, chest-card overlay, always-on survival/backpack surfaces and wave-style threat strip are removed from ordinary play.
+- [x] Discovered-weapon equip replaces the immutable ammunition snapshot without changing combat authority.
+- [ ] A real safe-arrival/preparation beat must prevent hostile pressure from starting before deliberate expedition launch.
+- [ ] The complete elite → terminal encounter → return → upgrade → replay loop still requires exact-build Studio acceptance.
+
+Exact-build evidence for the completed interaction/HUD slice is recorded in
+[`../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md`](../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md).
+
+**Next highest-ROI MVP 0.1 task:** add the smallest server-authoritative safe-arrival and deliberate launch boundary that defers mission/enemy pressure until the player starts the expedition. Reuse the Forward Operations Hub, canonical expedition lobby/runtime and the held operation-selection contract; do not create another mission, lobby or enemy owner.
 
 # Patch 0.2 — Combat Feel + Readability
 
@@ -244,6 +272,8 @@ Candidate multipliers:
 - boss/miniboss variation where readable.
 
 Randomness must preserve navigation, objective and difficulty clarity.
+
+Prefer seeded, server-owned assembly from curated rooms, routes, encounter groups and reward tables. Record enough seed/content identity to reproduce a bad run. Do not randomize the safe home, controls, core combat rules, progression math, story truth or reward authority.
 
 **Exit question:** can the same content kit generate meaningfully different runs without becoming incoherent?
 

@@ -48,6 +48,11 @@ assert(contains(equipBody, "playerState.selectedTargetEntityId = nil"), "equippi
 assert(contains(equipBody, "table.clear(playerState.processedShotIds)"), "equipping must clear processed shots")
 assert(contains(equipBody, "WeaponSwapAmmunitionResolver.resolve"), "equipping must carry ammunition, not refill it")
 assert(not contains(equipBody, "PrototypeInitialLoadedRounds"), "equipping must not seed a fresh magazine")
+assert(
+	not contains(equipBody, "playerState.weaponState.ammunition.loadedRounds ="),
+	"equipping must replace the immutable ammunition snapshot instead of mutating it"
+)
+assert(contains(equipBody, "nextWeaponState.ammunition = {"), "equipping must atomically replace carried ammunition")
 
 assert(
 	contains(combatRuntime, "playerState.generation ~= expectedGeneration"),

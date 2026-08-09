@@ -98,14 +98,6 @@ local function ensureSurvivalNetwork()
 	else
 		assert(state:IsA("RemoteEvent"), "SurvivalNetwork.State must be a RemoteEvent")
 	end
-	local collectItem = network:FindFirstChild("CollectItem")
-	if collectItem == nil then
-		collectItem = Instance.new("RemoteEvent")
-		collectItem.Name = "CollectItem"
-		collectItem.Parent = network
-	else
-		assert(collectItem:IsA("RemoteEvent"), "SurvivalNetwork.CollectItem must be a RemoteEvent")
-	end
 	local readState = network:FindFirstChild("ReadState")
 	if readState == nil then
 		readState = Instance.new("RemoteFunction")

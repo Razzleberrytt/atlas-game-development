@@ -563,6 +563,9 @@ local function createPresentation()
 
 	local threatPanel =
 		createPanel(gui, "ThreatPanel", UDim2.new(0.5, 0, 0, 68), UDim2.fromOffset(340, 38), Vector2.new(0.5, 0))
+	-- Threat remains available to ambience and diagnostics, but the permanent
+	-- wave-style meter added noise without helping the player's next decision.
+	threatPanel.Visible = false
 	threatLabel = createLabel(
 		threatPanel,
 		"Threat",

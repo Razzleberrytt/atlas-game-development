@@ -25,6 +25,38 @@ The current Living Kingdoms runtime is an important implementation asset, not a 
 
 **Do not infer a camera or combat rewrite from this strategic authority document.** Camera mode, aiming model, and combat presentation remain whatever the canonical runtime and accepted specifications currently implement until an explicit architecture/design decision changes them with migration and evidence.
 
+## Current playable-identity decisions — 2026-08-08
+
+The first playable target is an **exploration-first, hard-but-fair extraction RPG**, not a tower-defense or stationary wave-survival game.
+
+Player-facing expedition rhythm:
+
+```text
+safe arrival / home
+→ choose a humble starting path
+→ enter a seeded expedition
+→ explore and discover
+→ face readable roaming pressure and authored encounters
+→ collect meaningful loot through direct world interaction
+→ decide whether to press deeper or preserve the run
+→ defeat an elite and terminal encounter
+→ return, bank progress and prepare again
+```
+
+The following decisions control playable work:
+
+- enemies may use existing horde/director machinery internally, but presentation and mission pacing must read as roaming danger, ambushes, elite events and terminal encounters — never as waiting for numbered waves;
+- the default HUD is contextual and decision-focused; persistent diagnostics, duplicate inventory panels and non-actionable meters do not belong on the ordinary play surface;
+- desktop world interactions use a clear nearby `E` action, with the same native prompt path supporting controller and touch; clients never author loot identity, value or ownership;
+- difficulty comes from readable threats, resource pressure, enemy combinations, navigation risk and the decision to continue, not opaque one-shots, unwinnable generation or inflated health alone;
+- a death ends the active expedition and forfeits unbanked run loot and temporary run power; durable identity such as achievements, discoveries, codex progress, unlocked starting options, cosmetics and safely banked state may persist through canonical owners;
+- a humble melee-first opening is the target power curve, with firearms becoming discoveries or later starting unlocks; implementing it requires a dedicated server-authoritative combat migration rather than disguising a melee weapon as a firearm;
+- seeded server-owned variation should drive expedition route assembly, encounters, loot, weather, side events and discoveries wherever practical; the seed must be reproducible and every admitted layout must remain navigable and winnable;
+- the safe home, core controls, combat rules, progression math, story truth and reward validation remain stable rather than random;
+- gathering and tree cutting are not MVP requirements until gathered resources have a coherent inventory/economy use beyond busywork.
+
+These are product and sequencing decisions, not permission to bypass the active rollout gates or activate the held Main World, gathering, economy or operation-selection systems without their required contracts and evidence.
+
 ## Primary production rule
 
 > Build the smallest complete playable loop, prove it, then improve Atlas through coherent upgrade patches while preserving the playable baseline.
