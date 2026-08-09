@@ -12,6 +12,8 @@ local Workspace = game:GetService("Workspace")
 
 local EquipmentContracts = require(ReplicatedStorage.Shared.Equipment.EquipmentRewardContracts)
 local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.ExpeditionContracts)
+local ExpeditionRewardDispositionResolver =
+	require(ReplicatedStorage.Shared.Expeditions.ExpeditionRewardDispositionResolver)
 local EquipmentRewardService = require(script.Parent.Systems.EquipmentRewardService)
 local ExpeditionLiveRuntimeService = require(script.Parent.Systems.ExpeditionLiveRuntimeService)
 local ExpeditionResultService = require(script.Parent.Systems.ExpeditionResultService)
@@ -77,6 +79,7 @@ local function safeSummary(summary: any): any
 	return table.freeze({
 		RunId = summary.RunId,
 		OutcomeId = summary.OutcomeId,
+		RewardDispositionId = ExpeditionRewardDispositionResolver.resolve(summary.OutcomeId),
 		DurationSeconds = summary.DurationSeconds,
 		PartySize = summary.PartySize,
 		SecretDiscovered = summary.SecretDiscovered,
@@ -91,6 +94,7 @@ local function signature(summary: any): string
 	local parts = {
 		summary.RunId,
 		summary.OutcomeId,
+		tostring(summary.RewardDispositionId),
 		tostring(summary.DurationSeconds),
 		tostring(summary.SecretDiscovered),
 	}
@@ -195,7 +199,9 @@ local function finalizeIfTerminal(snapshot: any)
 		broadcastIfChanged(safeSummary(summary))
 	end
 
-	persistRewards(summary)
+	if ExpeditionRewardDispositionResolver.shouldPersist(summary.OutcomeId) then
+		persistRewards(summary)
+	end
 end
 
 local function step()
