@@ -33,11 +33,11 @@ assert(
 	contains(modeService, "return ModeIds.Melee"),
 	"missing/early combat-mode reads must fail closed to the melee opening"
 )
+assert(contains(modeService, "function Service.setMode"), "trusted server systems need the melee/firearm handoff seam")
 assert(
-	contains(modeService, "function Service.setMode"),
-	"trusted server systems need the melee/firearm handoff seam"
+	contains(modeService, "function Service.resetAllToMelee"),
+	"deliberate replay needs an explicit melee reset seam"
 )
-assert(contains(modeService, "function Service.resetAllToMelee"), "deliberate replay needs an explicit melee reset seam")
 assert(not contains(modeService, "RemoteEvent"), "clients cannot choose their primary combat mode")
 
 assert(
@@ -78,8 +78,14 @@ assert(
 	"melee touch action must have a truthful label"
 )
 assert(contains(router, "strikeIntent:FireServer"), "client melee routing must send only intent")
-assert(contains(router, 'localPlayer:SetAttribute("LK_HUD_WeaponName", weapon.ShortName)'), "melee HUD must identify the Field Hatchet")
-assert(contains(router, 'localPlayer:SetAttribute("LK_HUD_LoadedRounds", nil)'), "melee HUD cannot show hidden firearm ammo")
+assert(
+	contains(router, 'localPlayer:SetAttribute("LK_HUD_WeaponName", weapon.ShortName)'),
+	"melee HUD must identify the Field Hatchet"
+)
+assert(
+	contains(router, 'localPlayer:SetAttribute("LK_HUD_LoadedRounds", nil)'),
+	"melee HUD cannot show hidden firearm ammo"
+)
 assert(contains(router, "WeaponController.start()"), "firearm input must restore when server mode returns to firearm")
 assert(not contains(router, "FireIntent"), "mode router cannot become a second firearm intent owner")
 assert(not contains(router, "ReloadIntent"), "mode router cannot create a second reload owner")

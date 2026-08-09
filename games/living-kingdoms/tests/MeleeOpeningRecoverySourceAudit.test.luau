@@ -46,9 +46,15 @@ assert(
 	contains(combatRuntime, "weaponId == FirearmConfig.DefaultSelectableWeaponId"),
 	"the recovered Service Pistol must be accepted by the found-weapon handoff"
 )
-assert(contains(combatRuntime, "function OperativeCombatRuntimeService.resetForReplay()"), "replay must reset hidden firearm runtime state")
+assert(
+	contains(combatRuntime, "function OperativeCombatRuntimeService.resetForReplay()"),
+	"replay must reset hidden firearm runtime state"
+)
 
-assert(contains(lootConfig, "OpeningRecoveryWeaponId = FirearmConfig.DefaultSelectableWeaponId"), "opening recovery must use the humble Service Pistol")
+assert(
+	contains(lootConfig, "OpeningRecoveryWeaponId = FirearmConfig.DefaultSelectableWeaponId"),
+	"opening recovery must use the humble Service Pistol"
+)
 assert(contains(lootConfig, "OpeningRecoveryByOpenedChest = 1"), "first personal chest must guarantee firearm recovery")
 assert(
 	contains(lootService, "state.openedChests == Config.OpeningRecoveryByOpenedChest"),
@@ -66,7 +72,10 @@ assert(
 	contains(lootService, "local weapons = Config.DiscoverableWeaponIds"),
 	"stronger firearm discovery pool must remain active after pistol recovery"
 )
-assert(contains(lootService, "function Service.resetForReplay()"), "survival loot/chests must reset for deliberate replay")
+assert(
+	contains(lootService, "function Service.resetForReplay()"),
+	"survival loot/chests must reset for deliberate replay"
+)
 
 assert(
 	contains(weaponPresentation, "player:GetAttribute(PRIMARY_COMBAT_MODE_ATTRIBUTE) == PrimaryCombatModeIds.Melee"),
@@ -76,13 +85,22 @@ assert(
 	contains(weaponPresentation, "combatModeAttributeConnection"),
 	"firearm presentation must reconcile when recovery flips the mode"
 )
-assert(contains(meleePresentation, 'FIRST_PERSON_MODEL_NAME = "FirstPersonMelee"'), "local melee opening must show a first-person hatchet")
-assert(contains(meleePresentation, 'MODEL_NAME = "MeleePresentation"'), "squadmates in melee mode need a readable third-person hatchet")
+assert(
+	contains(meleePresentation, 'FIRST_PERSON_MODEL_NAME = "FirstPersonMelee"'),
+	"local melee opening must show a first-person hatchet"
+)
+assert(
+	contains(meleePresentation, 'MODEL_NAME = "MeleePresentation"'),
+	"squadmates in melee mode need a readable third-person hatchet"
+)
 assert(not contains(meleePresentation, "FireServer"), "melee presentation cannot own combat intent")
 assert(not contains(meleePresentation, "EnemyDirector"), "melee presentation cannot own damage/target authority")
 
 assert(contains(lifecycle, "PrimaryCombatModeService.resetAllToMelee()"), "replay must restore the melee opening")
-assert(contains(lifecycle, "OperativeCombatRuntimeService.resetForReplay()"), "replay must clear carried firearm runtime state")
+assert(
+	contains(lifecycle, "OperativeCombatRuntimeService.resetForReplay()"),
+	"replay must clear carried firearm runtime state"
+)
 assert(contains(lifecycle, "SurvivalLootService.resetForReplay()"), "replay must restore recoverable survival loot")
 
 print("MeleeOpeningRecoverySourceAudit: melee-first recovery and replay authority passed")
