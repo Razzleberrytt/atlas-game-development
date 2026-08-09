@@ -1,8 +1,8 @@
 # Atlas — Agent Build-Ahead Queue v2.8
 
-**Status:** ACTIVE PARALLEL PREPARATION LANE  
-**Refreshed:** 2026-08-08  
-**Primary use:** Codex/Claude/other coding agents working while Blueprint v2.7 runtime evidence remains gated by Studio evidence
+**Status:** ACTIVE PREPARATION LANE  
+**Refreshed:** 2026-08-09  
+**Primary use:** sequential coding-agent work while Blueprint v2.7 runtime evidence remains gated by Studio evidence
 
 This queue authorizes useful preparation without pretending the active runtime rollout has passed.
 
@@ -22,7 +22,7 @@ Read first:
 - Repository: `Razzleberrytt/atlas-game-development`
 - Game path: `games/living-kingdoms`
 - Checkpoint used for this refresh: `60229a32ec1f7db3b87a68e5f81ddf8115e665f1`
-- Refreshed in place at `944c684520c2ebaf6cf821a8a94a21a33588dc4f` (2026-08-08): BA-010, BA-011 and BA-012 closed via PR #241/#242/#243, `CLAUDE.md` added, BA-074 closed with `scripts/validate_roadmap_authority.py`. The task table below reflects current status; re-fetch `main` before starting any task regardless — this queue is being actively worked by more than one agent in parallel (see "Parallel assignment" below).
+- The task table below reflects current status; always re-fetch `main` and inspect open related PRs before starting work. **No READY task is reserved to Codex, Claude, or any other named agent.** While coding-agent quotas are constrained, work proceeds sequentially: finish and merge one task before claiming the next unless the user explicitly re-enables parallel execution.
 - Evidence: **E2** (pinned-artifact Studio initialization/R1; later integrated matrices remain open)
 - Studio import preservation is **repaired**: 28/28 Studio-only sources and 1,775/1,775 Workspace identity/hierarchy rows are preserved.
 - Property-backed authored-world recovery is now available; older documents that cite only 122 recoverable Workspace rows are historical damage-state evidence, not current truth.
@@ -32,6 +32,7 @@ Read first:
 - PR #221 is merged with its exact-build single-listener evidence accepted at E2; later runtime matrices remain open.
 - PR #222 is merged as dormant R2 preparation only; `ClientReady` activation and R2 runtime evidence remain separate controlled work.
 - PR #239 is merged as the held pre-launch operation-selection contract; its runtime/network/launch handoff remains disabled.
+- PR #264 merged BA-061's PC/mobile/controller source audit; BA-062 is the next highest-ROI build-ahead item because gamepad/touch firing is currently absent in source.
 
 ## Two-lane rule
 
@@ -77,6 +78,7 @@ Allowed forms include:
 9. Source CI does not prove Studio behavior.
 10. Every source change needs focused tests and full applicable validation.
 11. Future phases in Master Roadmap v2.8 remain locked unless this queue explicitly marks a task READY.
+12. READY work is unassigned. Do not reserve tasks to Codex, Claude, or another named agent; while quota-limited sequential mode is active, finish and merge the current task before starting the next.
 
 ## Status values
 
@@ -221,19 +223,22 @@ collisions by sinking input, which would break world interaction.
 Main World Track 1 is complete as a preparation sequence (BA-010 → BA-014) and
 its next step is measurement in the human/Studio lane, not this queue.
 
-### Parallel assignment — concurrent agents (2026-08-08)
+### Assignment policy — no reserved agent tasks (2026-08-09)
 
-More than one agent is working this queue at the same time. BA-010 → BA-011 → BA-012 landed back to back through PRs #241/#242/#243, so anyone continuing that thread should keep going rather than collide with a second agent starting the same ticket. Two file-disjoint tracks are named here so both can run simultaneously without inspecting each other's branch first:
+Coding-agent quotas are currently constrained. **No READY ticket is assigned or reserved to Codex, Claude, or any other named agent.** The earlier parallel Track 1/Track 2 reservation scheme is retired; completed work remains recorded in the priority tables above.
 
-**Track 1 — Main World / Hub lane (complete).** `BA-010 → BA-011 → BA-012 → BA-013 → BA-014` all landed. The lane's next step is executing the BA-014 matrix, which requires a working Studio evidence transport and belongs to the human/Studio lane below. Do not re-open Track 1 as build-ahead work; take a P2/P6 candidate instead.
+Execution policy while this mode is active:
 
-**Track 2 — combat/RPG depth audits (P4; complete).** `BA-040 → BA-042 → BA-044`. The three E1 gap-matrix audits are merged; BA-041 and BA-043 remain blocked on their recorded product decisions.
+1. re-fetch `main` and inspect open PRs;
+2. choose the highest-ROI READY task allowed by the active playable-patch authority;
+3. finish that task on an isolated branch/PR;
+4. run applicable CI/static validation;
+5. merge the completed task before starting another;
+6. repeat only after `main` is refreshed again.
 
-Both tracks still obey every build-ahead law below, in particular: fetch current `main` and check open PRs before starting, do not duplicate work already in flight, and keep new content unbooted/dormant until its runtime gate opens.
+### Unassigned READY backlog
 
-### Other safe parallel candidates
-
-Both named tracks are now complete, so these are the remaining safe candidates (after checking for overlap with open PRs). `BA-020 → BA-024` form one dependency chain that ends in BA-025's cross-domain validation, and are the natural second lane beside the BA-062 input work:
+These tickets are available but **not assigned to any agent**. BA-062 currently outranks them because it repairs an MVP 0.1 device-parity blocker.
 
 ```text
 BA-020 quest contracts
@@ -241,6 +246,7 @@ BA-021 NPC contracts
 BA-022 crafting contracts
 BA-023 gathering/resource-node model
 BA-024 vendor/catalog contracts
+BA-062 input abstraction improvements
 BA-063 UI information architecture
 ```
 
