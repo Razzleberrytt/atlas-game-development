@@ -1,8 +1,9 @@
 # BA-052 — First Outdoor Discovery
 
-**Status:** DATA-ONLY / DORMANT  
-**Runtime activation:** No  
-**Primary source:** `games/living-kingdoms/src/shared/Config/FirstOutdoorDiscoveryConfig.luau`
+**Status:** RUNTIME-LIVE / SOURCE-VERIFIED  
+**Runtime activation:** Yes — Lookout Cache interaction only  
+**Primary source:** `games/living-kingdoms/src/shared/Config/FirstOutdoorDiscoveryConfig.luau`  
+**Runtime owner:** `games/living-kingdoms/src/server/Systems/FirstOutdoorDiscoveryService.luau`
 
 ## First discovery: Lookout Cache
 
@@ -13,40 +14,59 @@ Stable identities:
 - discovery: `discovery.first-descent.lookout-cache`
 - route slot: `discovery-slot.outdoor.first-descent.lookout-tower`
 - landmark anchor: `landmark.lookout_tower`
+- generated landmark identity: `LookoutTower`
 - streaming identity: `streaming.discovery.first-descent.lookout-cache`
-- reward reference: `reward-source.authored-container`
+- reward source: `reward-source.authored-container`
 
 Gameplay meaning is **OptionalVantageCache**: a small detour that rewards curiosity and gives the player a useful vantage/lore moment without becoming mandatory progression.
 
-Presentation intent is **ReadableOptionalDetour**: the discovery should be noticeable from normal route traversal but clearly optional, with no required hidden-pixel search or raw Instance-path dependency.
+Presentation intent is **ReadableOptionalDetour**: the discovery is mounted visibly inside the source-generated collapsed Lookout ruin. It uses a proximity prompt with a short hold and does not require hidden-pixel searching or a client-authored reward request.
+
+## Runtime integration
+
+The generated `WorldFoundationService` world already supplies a deterministic Forest Service Lookout and `RuinedFloor` anchor. BA-052 consumes that active source-managed landmark; it does **not** activate the held imported BA-050 `WorldPath` geometry.
+
+`FirstOutdoorDiscoveryService`:
+
+- finds the canonical generated `LookoutTower` model and validates its `LandmarkId`;
+- mounts one `LookoutDiscoveryCache` on the existing `RuinedFloor`;
+- receives only the triggering `Player` from `ProximityPrompt`;
+- re-derives the player's `HumanoidRootPart` position on the server and enforces the configured 10-stud maximum distance;
+- requires combat eligibility and a live expedition still in `Approach`;
+- asks `ExpeditionLiveRuntimeService` to commit the existing per-run `SecretDiscovered` fact using both expected `RunId` and expected phase guards;
+- only after that commit succeeds, fans the reward out through `RunBuildService.offerRelicRewardToParticipants` using `reward-source.authored-container`;
+- creates no reward remote, persistence layer, route owner, or parallel discovery state machine.
+
+The existing `ExpeditionRuntime.SecretDiscovered` fact is the duplicate gate. A second trigger in the same run cannot commit and therefore cannot grant again. A deliberate replay creates a fresh expedition runtime/RunId, which naturally restores discovery eligibility without a separate replay-reset owner.
 
 ## Ownership boundaries
 
-BA-052 does not:
+BA-052 still does not:
 
-- activate the BA-050 route;
-- create or move Workspace geometry;
+- activate the BA-050 imported route;
+- move or reinterpret recovered Studio route geometry;
 - own streaming logic;
-- open/grant a container reward;
 - write persistence/account progression;
-- fire remotes;
-- define client presentation behavior;
-- create a second discovery/progression runtime.
+- create client-to-server reward networking;
+- bypass `RunBuildService` reward validation;
+- define a second expedition/discovery lifecycle.
 
-`reward-source.authored-container` is an existing Run RPG reward-source vocabulary entry. Its current implementation state remains planned; BA-052 only references it so later integration has a canonical reward seam.
-
-The stable streaming identity is deliberately separate from the landmark content ID. Runtime integration may use the landmark as a streaming anchor while retaining discovery identity across unload/reload, but this task does not implement that behavior.
+The source-generated lookout presentation remains owned by `WorldFoundationService`. BA-052 adds only its own cache part and interaction under that landmark.
 
 ## Validation
 
-`games/living-kingdoms/tests/FirstOutdoorDiscoveryConfig.test.luau` verifies:
+Automated validation covers:
 
-- exactly one discovery is authored for the first route;
-- it binds to the BA-050 Lookout Tower discovery slot;
-- the anchor is the canonical Lookout Tower landmark;
-- the streaming identity is stable and separate from the landmark ID;
-- the discovery remains optional;
-- the reward reference is `RunRpgContracts.RewardSourceIds.AuthoredContainer`;
-- the source contains no raw `Workspace/` path, DataStore ownership, or remote firing.
+- exactly one discovery authored for the first route;
+- binding to the BA-050 Lookout Tower discovery slot;
+- active canonical Lookout landmark anchoring;
+- stable discovery/streaming identities;
+- optional status;
+- configured interaction bounds;
+- canonical `RunRpgContracts.RewardSourceIds.AuthoredContainer` reward source;
+- server-side position and Approach-phase checks;
+- stale `RunId` / stale phase guards before the existing expedition secret mutation;
+- canonical RunBuild reward fan-out after the secret commit;
+- absence of new remote or DataStore ownership.
 
-Studio/manual verification is deferred under the MVP build-through policy because BA-052 is dormant data. Visual discoverability, streaming behavior, interaction feel, and reward presentation belong to later runtime integration / consolidated MVP Studio acceptance.
+Studio/manual verification remains part of consolidated MVP acceptance for visual discoverability, prompt feel, and the practical detour/readability experience. It is not a hard gate for source implementation/merge under the build-through policy.
