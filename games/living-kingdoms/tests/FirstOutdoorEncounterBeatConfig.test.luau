@@ -144,7 +144,10 @@ for _, authoredWave in roadblock.Waves do
 		if authoredUnit.ArchetypeId == enemyContracts.EnemyArchetypeIds.BlightSpitter then
 			roadblockHasSpitter = true
 		end
-		assert(authoredUnit.ArchetypeId ~= enemyContracts.EnemyArchetypeIds.Progenitor, "outdoor route cannot contain boss content")
+		assert(
+			authoredUnit.ArchetypeId ~= enemyContracts.EnemyArchetypeIds.Progenitor,
+			"outdoor route cannot contain boss content"
+		)
 	end
 end
 assert(roadblockHasSpitter, "roadblock must introduce the canonical ranged special before the dungeon")
@@ -173,6 +176,9 @@ end
 local source = fs.readFile("games/living-kingdoms/src/shared/Config/FirstOutdoorEncounterBeatConfig.luau")
 assert(string.find(source, "EliteAffixResolver", 1, true) ~= nil, "source must document canonical elite ownership")
 assert(string.find(source, "Workspace/", 1, true) == nil, "BA-051 cannot author raw Workspace paths")
-assert(string.find(source, "RewardSource", 1, true) == nil, "BA-051 must not smuggle reward authority into route pacing")
+assert(
+	string.find(source, "RewardSource", 1, true) == nil,
+	"BA-051 must not smuggle reward authority into route pacing"
+)
 
 print("BA-051 FirstOutdoorEncounterBeatConfig fixture passed")
