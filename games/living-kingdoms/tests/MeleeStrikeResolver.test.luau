@@ -74,7 +74,7 @@ local dead = resolver.selectTarget(origin, forward, {
 assert(dead.targetEntityId == nil)
 assert(dead.rejectionReasonId == "NoTarget")
 
-local invalidDirection = resolver.selectTarget(origin, Vector3.zero, candidates)
+local invalidDirection = resolver.selectTarget(origin, Vector3.new(0, 0, 0), candidates)
 assert(invalidDirection.targetEntityId == nil)
 assert(invalidDirection.rejectionReasonId == "InvalidIntent")
 
