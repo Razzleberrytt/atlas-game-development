@@ -1,6 +1,6 @@
 # BA-005 — Recovered Main World Spawn Location
 
-**Status:** PROPERTY-BACKED / DORMANT  
+**Status:** PROPERTY-BACKED / DORMANT / COMPOSITION-LINKED  
 **Runtime activation:** No  
 **Canonical content ID:** `spawn.main_world.arrival`  
 **Source path:** `Workspace/SpawnLocation`
@@ -28,6 +28,8 @@ The committed BA-005 property evidence identifies source ID `117` as a `SpawnLoc
 
 The existing `WorldContentConfig` descriptor `spawn.main_world.arrival` remains inactive until a dedicated Main World lifecycle is accepted. `RecoveredWorldPlacementConfig` keeps this path in the separate `authored-overworld` coordinate space with absolute coordinates preserved at 1:1 scale.
 
+`MainWorldRepresentationConfig` now identifies `RecoveredSpawnLocationConfig` as the source contract for its held Arrival anchor. Its fixture loads both source-managed configs and requires the content ID, source path, coordinate space, contract version and position to agree. This linkage prevents the representation plan from silently drifting away from the recovered evidence while preserving the inactive boundary.
+
 ## Evidence
 
 Generation/validation sources:
@@ -49,5 +51,7 @@ The evidence manifest pins the uncommitted full decoder output by byte count and
 - dormant/no-authority ownership flags;
 - the existing inactive Main World arrival descriptor;
 - placement in the separate authored-overworld coordinate space.
+
+`games/living-kingdoms/tests/MainWorldRepresentationConfig.test.luau` additionally cross-checks the held Arrival anchor against `RecoveredSpawnLocationConfig` and verifies that the recovered contract remains non-runtime and owns neither player movement nor teleport behavior.
 
 Studio/manual verification is not required for this dormant evidence-preservation slice. Runtime spawn acceptance remains part of a later dedicated Main World lifecycle / consolidated Studio pass.
