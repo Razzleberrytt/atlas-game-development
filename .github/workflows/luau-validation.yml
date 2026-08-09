@@ -31,7 +31,7 @@ on:
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate:
@@ -41,8 +41,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Validate repository contract
         shell: bash
@@ -88,21 +86,9 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      - name: Apply and format durable inventory menu patch
-        if: github.head_ref == 'mvp-01/durable-inventory-rpg-menu'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python scripts/patch_durable_inventory_rpg_menu.py
-          stylua games/living-kingdoms/src/client/Controllers/RPGMenuController.luau games/living-kingdoms/tests/DurableInventoryRPGMenuSourceAudit.test.luau
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add games/living-kingdoms/src/client/Controllers/RPGMenuController.luau games/living-kingdoms/tests/DurableInventoryRPGMenuSourceAudit.test.luau
-          if ! git diff --cached --quiet; then
-            git commit -m "[MVP 0.1] Wire durable inventory into RPG menu"
-            git push origin HEAD:${{ github.head_ref }}
-          fi
-
+      # Formatting covers every Luau tree in the game, not just src. Fixtures
+      # and tooling drifted unchecked until 2026-08-08 because this step was
+      # scoped to src alone.
       - name: Check Luau formatting
         shell: bash
         run: |
