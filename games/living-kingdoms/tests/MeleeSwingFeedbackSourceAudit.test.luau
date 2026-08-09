@@ -25,7 +25,8 @@ assert(
 	"client prediction must document that the server remains combat authority"
 )
 assert(
-	string.find(server, "serverTimestamp - state.lastAcceptedSwingServerTimestamp < Weapon.CadenceSeconds", 1, true) ~= nil,
+	string.find(server, "serverTimestamp - state.lastAcceptedSwingServerTimestamp < Weapon.CadenceSeconds", 1, true)
+		~= nil,
 	"server melee cadence must remain independently authoritative"
 )
 
