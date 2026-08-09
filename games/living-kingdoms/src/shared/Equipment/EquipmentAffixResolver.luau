@@ -79,13 +79,7 @@ local function validateConfig(config: any): boolean
 		seen[definition.Id] = true
 	end
 	for rarityId, count in config.AffixCountByRarity do
-		if
-			type(rarityId) ~= "string"
-			or type(count) ~= "number"
-			or count % 1 ~= 0
-			or count < 0
-			or count > 3
-		then
+		if type(rarityId) ~= "string" or type(count) ~= "number" or count % 1 ~= 0 or count < 0 or count > 3 then
 			return false
 		end
 	end
@@ -109,7 +103,9 @@ end
 local function copyEligible(config: any, context: any): { any }
 	local eligible = {}
 	for _, definition in config.Definitions do
-		if contains(definition.AllowedSlots, context.Slot) and hasRequiredTags(context.Tags, definition.RequiredTags) then
+		if
+			contains(definition.AllowedSlots, context.Slot) and hasRequiredTags(context.Tags, definition.RequiredTags)
+		then
 			table.insert(eligible, definition)
 		end
 	end
