@@ -135,7 +135,10 @@ assert(string.find(source, "Instance.new", 1, true) == nil, "BA-063 cannot creat
 assert(string.find(source, "FireServer", 1, true) == nil, "BA-063 cannot fire remotes")
 assert(string.find(source, "InvokeServer", 1, true) == nil, "BA-063 cannot invoke server mutation")
 assert(string.find(source, "GetService", 1, true) == nil, "BA-063 cannot become a runtime service/controller")
-assert(string.find(source, "Enum.KeyCode", 1, true) == nil, "BA-063 must consume BA-061 instead of duplicating action bindings")
+assert(
+	string.find(source, "Enum.KeyCode", 1, true) == nil,
+	"BA-063 must consume BA-061 instead of duplicating action bindings"
+)
 assert(string.find(source, "DataStore", 1, true) == nil, "BA-063 cannot own persistence")
 
 print("BA-063 UIInformationArchitectureConfig fixture passed")
