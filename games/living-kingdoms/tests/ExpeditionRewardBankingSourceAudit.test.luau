@@ -38,17 +38,16 @@ assert(
 		and contains(client, "not added to your durable inventory"),
 	"failed-run debrief must truthfully distinguish forfeited equipment from banked equipment"
 )
-assert(
-	contains(client, '"EQUIPMENT SECURED"'),
-	"successful runs must still disclose secured equipment"
-)
+assert(contains(client, '"EQUIPMENT SECURED"'), "successful runs must still disclose secured equipment")
 
-for _, forbidden in {
-	"DiscoveryMemoryService",
-	"Achievement",
-	"UnlockedStarting",
-	"PrimaryCombatModeService",
-} do
+for _, forbidden in
+	{
+		"DiscoveryMemoryService",
+		"Achievement",
+		"UnlockedStarting",
+		"PrimaryCombatModeService",
+	}
+do
 	assert(
 		not contains(server, forbidden) and not contains(resolver, forbidden),
 		"run reward forfeiture must not erase durable discovery/unlock state: " .. forbidden
