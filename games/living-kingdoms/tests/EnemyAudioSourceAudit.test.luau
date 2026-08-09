@@ -1,11 +1,11 @@
 --!strict
 
 --[[
-	AUD-0103 Exclusion Walker audio audit. Locks the client-local, bounded,
-	server-deferred shape of the hostile sound presentation — one small reused
-	pool, per-cue global throttles, camera-distance falloff, silent first-sight
-	tracking — so it can never grow authority, per-enemy Sounds, or an unbounded
-	horde cacophony.
+	AUD-0103 hostile audio audit. Locks the client-local, bounded, server-deferred
+	shape of hostile sound presentation — one reused Sound/emitter pool, per-cue
+	global throttles, camera-distance falloff, spatial direction, and silent
+	first-sight tracking — so it can never grow combat authority or per-enemy
+	presentation objects under horde pressure.
 ]]
 
 local fs = require("@lune/fs")
@@ -29,8 +29,9 @@ local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/Ene
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 local visualConfig = fs.readFile("games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau")
 
--- Config: the five recommended cues with real asset ids and bounded values.
-for _, cueName in { "Alert", "Windup", "Strike", "Hit", "Death" } do
+for _, cueName in
+	{ "Alert", "Windup", "Strike", "Hit", "ScreamerWarning", "BloaterWarning", "BruteWarning", "Death" }
+do
 	local cue = config[cueName]
 	assertThat(type(cue) == "table", "hostile audio must define the cue: " .. cueName)
 	assertThat(
@@ -50,9 +51,14 @@ assertThat(
 	config.MaximumAudibleDistanceStuds > config.FullVolumeDistanceStuds and config.FullVolumeDistanceStuds > 0,
 	"hostile audio distances must be ordered"
 )
+assertThat(config.SpatialEmitterSizeStuds > 0, "hostile spatial emitter must have positive size")
+assertThat(config.SpatialRollOffMinDistanceStuds > 0, "hostile spatial rolloff minimum must be positive")
+assertThat(
+	config.SpatialRollOffMaxDistanceStuds > config.SpatialRollOffMinDistanceStuds
+		and config.SpatialRollOffMaxDistanceStuds <= config.MaximumAudibleDistanceStuds,
+	"hostile spatial rolloff must remain bounded by the audible budget"
+)
 
--- Controller: reacts to replicated server-authored attributes, never
--- establishes them, and discloses nothing the enemy models do not carry.
 assertThat(
 	contains(controller, "PresentationAttributeNames.BehaviorStateId"),
 	"hostile audio must read the replicated behavior state"
@@ -73,10 +79,17 @@ assertThat(
 	contains(controller, "PresentationAttributeNames.HitSequence"),
 	"hostile audio must read the replicated hit sequence"
 )
+assertThat(
+	contains(controller, "SpecialAttributeNames.Sequence"),
+	"special warning audio must read the server-authored telegraph sequence"
+)
+assertThat(contains(controller, "SpecialKindIds.ScreamerReinforcement"), "Screamer warnings must retain audio")
+assertThat(contains(controller, "SpecialKindIds.BloaterDeathBurst"), "Bloater warnings must retain audio")
+assertThat(contains(controller, "SpecialKindIds.BruteSecondPhase"), "Brute warnings must retain audio")
 assertThat(contains(controller, "BehaviorStateIds.Pursuing"), "the alert cue must key on entering pursuit")
-assertThat(contains(controller, "PresentationLifeStateIds.Dead"), "the death cue must key on the replicated death")
+assertThat(contains(controller, "PresentationLifeStateIds.Dead"), "the death cue must key on replicated death")
 assertThat(contains(controller, "MinimumIntervalSeconds"), "hostile audio must honor the per-cue throttle")
-assertThat(contains(controller, "EnemyAudioConfig.PoolSize"), "hostile audio must build a bounded, reused Sound pool")
+assertThat(contains(controller, "EnemyAudioConfig.PoolSize"), "hostile audio must build a bounded reused pool")
 assertThat(
 	contains(controller, "MaximumAudibleDistanceStuds"),
 	"hostile audio must fall silent beyond the bounded distance"
@@ -87,10 +100,19 @@ assertThat(
 	"hostile audio tracking must stay bounded"
 )
 
--- The Sound pool is built once in createPresentation, never per enemy or per
--- cue: exactly one construction site.
+assertThat(contains(controller, "local emitterPool: { Part } = {}"), "hostile audio must use a bounded emitter pool")
+assertThat(contains(controller, "emitter.Position = record.root.Position"), "each cue must originate at its enemy")
+assertThat(contains(controller, "sound.Parent = emitter"), "hostile cues must use spatial sound parenting")
+assertThat(contains(controller, "Enum.RollOffMode.Inverse"), "hostile cues must use bounded spatial rolloff")
+assertThat(
+	contains(controller, "EnemyAudioConfig.SpatialRollOffMaxDistanceStuds"),
+	"hostile cues must honor the configured maximum spatial distance"
+)
+
 local _, soundConstructions = string.gsub(controller, 'Instance.new%("Sound"%)', "")
 assertThat(soundConstructions == 1, "hostile audio must construct its pooled Sounds at exactly one site")
+local _, emitterConstructions = string.gsub(controller, 'Instance.new%("Part"%)', "")
+assertThat(emitterConstructions == 1, "hostile audio must construct its pooled emitters at exactly one site")
 
 for _, prohibited in
 	{
@@ -112,18 +134,13 @@ do
 	)
 end
 
--- Bootstrap starts the audio owner exactly once.
 assertThat(contains(bootstrap, "EnemyAudioController.start()"), "client bootstrap must start hostile audio")
 local _, startCount = string.gsub(bootstrap, "EnemyAudioController.start()", "")
 assertThat(startCount == 1, "hostile audio must start exactly once")
 
--- Registry honestly records the audio owner and its temporary status.
 assertThat(
 	contains(visualConfig, "src/client/Controllers/EnemyAudioController.luau"),
 	"visual asset registry must attribute hostile audio to its owner"
 )
 
-print(
-	"EnemyAudioSourceAudit: bounded client-local alert, windup, strike, hit, and death audio, "
-		.. "deferred authority, and bootstrap passed"
-)
+print("EnemyAudioSourceAudit: bounded spatial hostile cues, special warnings, deferred authority, and bootstrap passed")
