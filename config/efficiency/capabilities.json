@@ -39,7 +39,7 @@
     {
       "id": "equipment-affixes",
       "name": "Deterministic equipment affix resolution",
-      "owner": "shared-contract",
+      "owner": "shared",
       "status": "active",
       "extension_points": ["games/living-kingdoms/src/shared/Equipment/EquipmentAffixContracts.luau", "games/living-kingdoms/src/shared/Equipment/EquipmentAffixResolver.luau", "games/living-kingdoms/src/shared/Config/EquipmentAffixConfig.luau"],
       "consumers": ["equipment-rewards", "loot-comparison", "build-replayability"],
