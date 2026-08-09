@@ -16,7 +16,7 @@ Then load specialist documents **only when the task touches them**:
 | Product identity / design conflict | `docs/bible/00-current-product-authority.md` |
 | Patch scope / exit criteria | `docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md` |
 | Long-range requirement lookup | `docs/roadmap/MASTER-ROADMAP.md` |
-| Repeated implementation friction / reusable-system decision / leverage tie-break | `docs/roadmap/DEVELOPMENT-FLYWHEEL.md` |
+| Repeated implementation friction / reusable-system decision / leverage tie-break | `docs/roadmap/DEVELOPMENT-FLYWHEEL.md`, `docs/production/ENGINEERING-EFFICIENCY-OPS.md` |
 | Runtime safety, current-state delivery, lifecycle, remotes, rollback | `docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md`, `docs/roadmap/PRODUCTION-CORE-V2.7.md`, and when applicable `docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md` |
 | Replicated/presentation ownership migration | `docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md` and `docs/production/V2.7-CUTOVER-LEDGER.md` |
 | Evidence-bearing Studio run | `docs/production/V2.7-EVIDENCE-PACKET-TEMPLATE.md` |
@@ -95,6 +95,19 @@ The repository should become easier to extend as it grows. When proportionate to
 - keep ownership, extension points, validation commands, and exit signals discoverable;
 - run a bounded leverage pass when a pattern reaches roughly its third implementation, a failure class repeats, or a patch is about to scale content breadth.
 
+Use the repository tooling rather than relying on memory:
+
+```bash
+python scripts/efficiency.py bootstrap
+python scripts/efficiency.py registry
+python scripts/efficiency.py audit
+python scripts/dev_metrics.py
+```
+
+The capability registry is `config/efficiency/capabilities.json`. Update it when a durable reusable owner or extension point is created, materially changed, or retired. Audit/telemetry findings are advisory candidates, not automatic refactor orders.
+
+When two roadmap candidates are otherwise similarly valid, use `python scripts/efficiency.py score ...` to make the leverage tie-break explicit. Player value and dependency removal remain weighted above leverage.
+
 Player value, dependency order, server authority, and evidence gates remain primary. Never build abstraction for abstraction's sake.
 
 ## Change discipline
@@ -124,7 +137,7 @@ Report only the useful execution facts:
 - files/behavior changed;
 - validation run and exact result;
 - authority/data/lifecycle boundaries touched;
-- leverage outcome when applicable (reuse, data conversion, regression defense, tooling, or intentionally none);
+- leverage outcome when applicable (reuse, data conversion, regression defense, tooling, capability-registry update, or intentionally none);
 - status: BUILDING / BUILT — VERIFICATION PENDING / VERIFIED / etc.;
 - Studio/device evidence still pending, if any;
 - concrete blocker, if any;

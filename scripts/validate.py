@@ -2,7 +2,7 @@
 """Unified Atlas repository validation entry point.
 
 Profiles:
-  docs  Documentation/roadmap authority checks only.
+  docs  Documentation/roadmap authority + efficiency-construct checks only.
   fast  R1 iteration: docs + layout + formatting/lint + all Lune fixtures + Rojo build.
   full  R2/R3/CI: fast plus import/migration/evidence decoder and reconciliation checks.
 
@@ -41,6 +41,7 @@ def python_script(label: str, script: str, *args: str) -> None:
 
 def validate_docs() -> None:
     python_script("roadmap/authority integrity", "scripts/validate_roadmap_authority.py")
+    python_script("engineering efficiency construct", "scripts/validate_efficiency_construct.py")
 
 
 def validate_full_preflight() -> None:
