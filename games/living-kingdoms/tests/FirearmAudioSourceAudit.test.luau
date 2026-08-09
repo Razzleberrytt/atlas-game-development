@@ -4,7 +4,8 @@
 	AUD-0102 firearm audio audit. Locks the client-local, bounded, server-deferred
 	shape of the firearm sound presentation — fire pool, reload, empty click, and
 	handling cue — so it can never grow combat authority or spawn unbounded
-	Sounds under sustained automatic fire.
+	instances under sustained automatic fire. Remote accepted shots additionally
+	retain directional co-op readability through the bounded emitter pool.
 ]]
 
 local fs = require("@lune/fs")
@@ -32,18 +33,22 @@ local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/Wea
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 local visualConfig = fs.readFile("games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau")
 
--- Config: real, verified asset ids and a bounded pool covering the full set.
 assertThat(isRealAssetId(config.Fire.SoundId), "fire sound must reference a real asset id")
 assertThat(isRealAssetId(config.Reload.SoundId), "reload sound must reference a real asset id")
 assertThat(isRealAssetId(config.Empty.SoundId), "empty click must reference a real asset id")
 assertThat(isRealAssetId(config.Handling.SoundId), "handling cue must reference a real asset id")
 assertThat(config.FirePoolSize > 0 and config.FirePoolSize <= 32, "fire pool must stay small and bounded")
 assertThat(config.Fire.MaxPlaybackSpeed >= config.Fire.MinPlaybackSpeed, "fire playback speed scatter must be ordered")
+assertThat(config.Fire.RemoteEmitterSizeStuds > 0, "remote fire emitter size must be positive")
+assertThat(config.Fire.RemoteRollOffMinDistanceStuds > 0, "remote fire rolloff minimum must be positive")
+assertThat(
+	config.Fire.RemoteRollOffMaxDistanceStuds > config.Fire.RemoteRollOffMinDistanceStuds,
+	"remote fire rolloff distances must be ordered"
+)
 assertThat(config.Empty.MinimumIntervalSeconds > 0, "empty click must be throttled")
 assertThat(config.Empty.PlaybackSpeed > 0, "empty click playback speed must be positive")
 assertThat(config.Handling.PlaybackSpeed > 0, "handling playback speed must be positive")
 
--- Controller: reacts to the authoritative disclosure, never establishes it.
 assertThat(contains(controller, "presentationRemote.OnClientEvent:Connect"), "audio must react to the shot disclosure")
 assertThat(
 	contains(controller, "CombatContracts.PresentationMessageKindIds.ShotFired"),
@@ -71,10 +76,30 @@ assertThat(contains(controller, "isKnownWeaponId(payload.weaponId)"), "audio mus
 assertThat(contains(controller, "resolveWeaponDefinition"), "audio must retain legacy fixture compatibility")
 assertThat(contains(controller, "FirearmAudioConfig.FirePoolSize"), "audio must build a bounded, reused Sound pool")
 
--- Every Sound is built once in createPresentation, never per message: the fire
--- pool call site plus the reload, empty, and handling singles.
+assertThat(contains(controller, "local fireEmitters: { Part } = {}"), "remote fire must use a bounded emitter pool")
+assertThat(
+	contains(controller, "local function playerForOperativeEntityId"),
+	"remote fire position must resolve from the disclosed operative identity"
+)
+assertThat(
+	contains(controller, 'character:FindFirstChild("HumanoidRootPart")'),
+	"remote fire position must come from the replicated operative root"
+)
+assertThat(contains(controller, "emitter.Position = position"), "remote accepted shots must place the spatial emitter")
+assertThat(contains(controller, "sound.Parent = emitter"), "remote accepted shots must become spatial audio")
+assertThat(
+	contains(controller, "sound.Parent = holder"),
+	"local or unresolved shots must retain the safe non-positional fallback"
+)
+assertThat(
+	contains(controller, "RemoteRollOffMaxDistanceStuds"),
+	"remote fire must honor the configured bounded audible range"
+)
+
 local _, soundConstructions = string.gsub(controller, 'Instance.new%("Sound"%)', "")
 assertThat(soundConstructions == 4, "audio must construct its bounded Sound set exactly once, not per shot")
+local _, emitterConstructions = string.gsub(controller, 'Instance.new%("Part"%)', "")
+assertThat(emitterConstructions == 1, "remote fire emitters must only be constructed by the bounded pool loop")
 
 for _, prohibited in
 	{
@@ -97,18 +122,15 @@ do
 	)
 end
 
--- Bootstrap starts the audio owner exactly once.
 assertThat(contains(bootstrap, "WeaponAudioController.start()"), "client bootstrap must start firearm audio")
 local _, startCount = string.gsub(bootstrap, "WeaponAudioController.start()", "")
 assertThat(startCount == 1, "firearm audio must start exactly once")
 
--- Registry honestly records the audio owner and its temporary status.
 assertThat(
 	contains(visualConfig, "src/client/Controllers/WeaponAudioController.luau"),
 	"visual asset registry must attribute firearm audio to its owner"
 )
 
 print(
-	"FirearmAudioSourceAudit: bounded client-local fire, reload, empty, and handling audio, "
-		.. "deferred authority, and bootstrap passed"
+	"FirearmAudioSourceAudit: bounded local cues, spatial remote fire, deferred authority, and bootstrap passed"
 )
