@@ -35,8 +35,10 @@ assert(
 )
 assert(not contains(modeService, "RemoteEvent"), "clients cannot choose their primary combat mode")
 
-assert(contains(project, '"MeleeNetwork"'), "Rojo project must map the melee network")
-assert(contains(project, '"StrikeIntent"'), "Rojo project must map the melee strike intent")
+assert(not contains(project, '"MeleeNetwork"'), "later melee transport must not inflate the frozen committed Rojo remote surface")
+assert(contains(serverMount, 'ReplicatedStorage:FindFirstChild("MeleeNetwork")'), "server mount must own runtime melee network creation")
+assert(contains(serverMount, 'Instance.new("RemoteEvent")'), "server mount must create the narrow melee strike transport")
+assert(contains(serverMount, 'intent.Name = "StrikeIntent"'), "runtime melee transport must expose only StrikeIntent")
 assert(
 	contains(intentService, "PrimaryCombatModeService.readMode(player) ~= ModeIds.Melee"),
 	"server must reject melee intent outside melee mode"
