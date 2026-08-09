@@ -26,8 +26,14 @@ assert(
 	"the lifecycle owner must expose server-only fresh-run preparation"
 )
 assert(string.find(lifecycle, "task.delay(", 1, true) == nil, "terminal resolution must not auto-schedule replay")
-assert(string.find(lobby, "OperationLifecycleService.prepareForLaunch()", 1, true) ~= nil, "lobby must prepare fresh state")
-assert(string.find(lobby, 'return response(false, "ExpeditionActive")', 1, true) ~= nil, "active run must reject readiness")
+assert(
+	string.find(lobby, "OperationLifecycleService.prepareForLaunch()", 1, true) ~= nil,
+	"lobby must prepare fresh state"
+)
+assert(
+	string.find(lobby, 'return response(false, "ExpeditionActive")', 1, true) ~= nil,
+	"active run must reject readiness"
+)
 
 local prepareAt = string.find(lobby, "OperationLifecycleService.prepareForLaunch()", 1, true)
 local pressureAt = string.find(lobby, "MissionDirectorService.armPressure()", 1, true)
