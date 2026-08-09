@@ -20,15 +20,26 @@ local UI_BY_ACTION = table.freeze({
 local started = false
 local runActive = false
 local connections: { RBXScriptConnection } = {}
+local closeAffordanceGui: ScreenGui? = nil
+local closeAffordanceButton: TextButton? = nil
 
 local function playerGui(): PlayerGui
 	return player:WaitForChild("PlayerGui") :: PlayerGui
 end
 
-local function setHubUiEnabled(guiName: string, enabled: boolean)
+local function setHubUiEnabled(guiName: string, enabled: boolean): boolean
 	local candidate = playerGui():FindFirstChild(guiName)
 	if candidate ~= nil and candidate:IsA("ScreenGui") then
 		candidate.Enabled = enabled
+		return true
+	end
+	return false
+end
+
+local function setCloseAffordanceVisible(visible: boolean)
+	local button = closeAffordanceButton
+	if button ~= nil then
+		button.Visible = visible
 	end
 end
 
@@ -36,6 +47,46 @@ local function closeHubUi()
 	for _, guiName in UI_BY_ACTION do
 		setHubUiEnabled(guiName, false)
 	end
+	setCloseAffordanceVisible(false)
+end
+
+local function createCloseAffordance()
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "HubCloseAffordance"
+	gui.ResetOnSpawn = false
+	gui.IgnoreGuiInset = false
+	gui.DisplayOrder = 95
+
+	local button = Instance.new("TextButton")
+	button.Name = "Close"
+	button.AnchorPoint = Vector2.new(1, 0)
+	button.Position = UDim2.new(1, -18, 0, 18)
+	button.Size = UDim2.fromOffset(126, 42)
+	button.BackgroundColor3 = Color3.fromRGB(38, 42, 45)
+	button.BackgroundTransparency = 0.08
+	button.BorderSizePixel = 0
+	button.AutoButtonColor = true
+	button.Active = true
+	button.Selectable = true
+	button.Font = Enum.Font.GothamBold
+	button.Text = "CLOSE"
+	button.TextColor3 = Color3.fromRGB(244, 244, 238)
+	button.TextSize = 14
+	button.Visible = false
+	button.Parent = gui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 7)
+	corner.Parent = button
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(190, 163, 102)
+	stroke.Transparency = 0.25
+	stroke.Parent = button
+
+	table.insert(connections, button.Activated:Connect(closeHubUi))
+	gui.Parent = playerGui()
+	closeAffordanceGui = gui
+	closeAffordanceButton = button
 end
 
 local function applyExpeditionState(snapshot: any)
@@ -54,7 +105,9 @@ local function openAction(actionId: string)
 		return
 	end
 	closeHubUi()
-	setHubUiEnabled(guiName, true)
+	if setHubUiEnabled(guiName, true) then
+		setCloseAffordanceVisible(true)
+	end
 end
 
 function Controller.start()
@@ -62,6 +115,7 @@ function Controller.start()
 		return
 	end
 	started = true
+	createCloseAffordance()
 	closeHubUi()
 
 	local expeditionNetwork = ReplicatedStorage:WaitForChild("ExpeditionNetwork")
@@ -108,12 +162,17 @@ function Controller.stop()
 		return
 	end
 	started = false
+	closeHubUi()
 	for _, connection in connections do
 		connection:Disconnect()
 	end
 	table.clear(connections)
+	if closeAffordanceGui ~= nil then
+		closeAffordanceGui:Destroy()
+		closeAffordanceGui = nil
+	end
+	closeAffordanceButton = nil
 	runActive = false
-	closeHubUi()
 end
 
 return table.freeze(Controller)
