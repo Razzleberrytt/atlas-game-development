@@ -34,8 +34,8 @@ local landmarkAccent =
 	fs.readFile("games/living-kingdoms/src/client/Controllers/LandmarkAccentPresentationController.luau")
 
 -- Static RemoteEvent mapping and the confirmed canonical producer.
-assertThat(contains(project, '\"HordeNetwork\"'), "Rojo mapping must retain HordeNetwork")
-assertThat(contains(project, '\"State\"'), "Rojo mapping must retain HordeNetwork.State")
+assertThat(contains(project, '"HordeNetwork"'), "Rojo mapping must retain HordeNetwork")
+assertThat(contains(project, '"State"'), "Rojo mapping must retain HordeNetwork.State")
 assertThat(
 	contains(hordeRuntime, 'local stateRemote = network:WaitForChild("State") :: RemoteEvent'),
 	"HordeExperienceService must identify the legacy State remote explicitly"
@@ -125,4 +125,6 @@ assertThat(
 assertThat(not contains(routeGuide, 'Instance.new("Highlight")'), "route guide must not allocate Highlights")
 assertThat(not contains(landmarkAccent, 'Instance.new("Highlight")'), "landmark accents must not allocate Highlights")
 
-print("V27ActivePlaceStaticInventorySourceAudit: one physical State listener, bridge consumers, and narrow Highlight facts locked")
+print(
+	"V27ActivePlaceStaticInventorySourceAudit: one physical State listener, bridge consumers, and narrow Highlight facts locked"
+)
