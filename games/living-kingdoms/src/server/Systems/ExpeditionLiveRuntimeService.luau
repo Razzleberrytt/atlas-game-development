@@ -13,11 +13,15 @@ local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
-local ExpeditionConfig = require(game:GetService("ReplicatedStorage").Shared.Config.ExpeditionConfig)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ExpeditionConfig = require(ReplicatedStorage.Shared.Config.ExpeditionConfig)
+local FirstDungeonRewardDecisionConfig = require(ReplicatedStorage.Shared.Config.FirstDungeonRewardDecisionConfig)
 local ExpeditionServerBootstrap = require(script.Parent.ExpeditionServerBootstrap)
 local ExpeditionRoomPlacementService = require(script.Parent.ExpeditionRoomPlacementService)
 local ExpeditionRoomBarrierStateService = require(script.Parent.ExpeditionRoomBarrierStateService)
+local ExpeditionBossRewardTransitionResolver = require(script.Parent.ExpeditionBossRewardTransitionResolver)
 local EnemyDirectorService = require(script.Parent.EnemyDirectorService)
+local RunBuildService = require(script.Parent.RunBuildService)
 
 export type StartOptions = {
 	Seed: number?,
@@ -33,6 +37,8 @@ local accumulatedSeconds = 0
 local started = false
 
 local STEP_INTERVAL_SECONDS = 0.25
+local BOSS_REWARD_ROOM_ID = "keeper-core"
+local BossRewardDecision = FirstDungeonRewardDecisionConfig.DecisionByRoomId[BOSS_REWARD_ROOM_ID]
 
 local function result(accepted: boolean, reasonId: string, snapshot: any?)
 	return table.freeze({ Accepted = accepted, ReasonId = reasonId, Snapshot = snapshot })
@@ -65,16 +71,27 @@ local function disconnectHeartbeat()
 	accumulatedSeconds = 0
 end
 
+local function offerBossReward(previousSnapshot: any?, currentSnapshot: any?)
+	local rewardEvent =
+		ExpeditionBossRewardTransitionResolver.resolve(previousSnapshot, currentSnapshot, BossRewardDecision)
+	if rewardEvent ~= nil then
+		RunBuildService.offerRelicRewardToParticipants(rewardEvent.EventId, rewardEvent.SourceId)
+	end
+end
+
 local function driveStep()
 	local bootstrap = activeBootstrap
 	if bootstrap == nil then
 		return
 	end
+	local previousSnapshot = bootstrap:getSnapshot()
 	local stepResult = bootstrap:step(nowUnix())
+	local currentSnapshot = bootstrap:getSnapshot()
 	ExpeditionRoomBarrierStateService.update(bootstrap:getActiveEncounterContext())
-	if
-		stepResult.Accepted ~= true
-		and stepResult.ReasonId ~= "EncounterInProgress"
+	if stepResult.Accepted == true then
+		offerBossReward(previousSnapshot, currentSnapshot)
+	elseif
+		stepResult.ReasonId ~= "EncounterInProgress"
 		and stepResult.ReasonId ~= "PhaseMinimumDuration"
 		and stepResult.ReasonId ~= "EncounterAlreadyActive"
 	then

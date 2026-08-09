@@ -45,12 +45,14 @@ for _, sourceId in contracts.RewardSourceIds do
 	knownSourceIds[sourceId] = true
 end
 
--- RPG-0110 connects the three sources whose authoritative owners exist today.
--- Authored objectives, authored containers, and boss milestones wait for P8/P9.
+-- RPG-0110 owns the original three live sources. The authoritative First
+-- Descent Boss -> Rewards transition now also owns BossMilestone; authored
+-- objectives and authored containers remain planned.
 local liveSourceIds = {
 	[contracts.RewardSourceIds.EliteKill] = true,
 	[contracts.RewardSourceIds.SpecialInterrupt] = true,
 	[contracts.RewardSourceIds.HordeClear] = true,
+	[contracts.RewardSourceIds.BossMilestone] = true,
 }
 local seenSourceIds = {}
 local implementedSourceCount = 0
@@ -69,7 +71,7 @@ for _, definition in config.RewardSourceCatalog do
 	end
 	seenSourceIds[definition.sourceId] = true
 end
-assertThat(implementedSourceCount == 3, "exactly the three live reward sources may be implemented")
+assertThat(implementedSourceCount == 4, "exactly the four live reward sources may be implemented")
 
 for _, sourceId in contracts.RewardSourceIds do
 	assertThat(seenSourceIds[sourceId], "every stable reward source requires one catalog definition")

@@ -1,9 +1,10 @@
 --!strict
 
--- RPG-0110 live relic-reward sources: confirmed elite deaths, a squad-kill
--- milestone, and confirmed special interrupts open bounded choices through the
--- existing run-build owner. Every offer keeps a deterministic per-operative
--- request ID, so replays and queue ceilings still reject.
+-- RPG-0110+ live relic-reward sources: confirmed elite deaths, a squad-kill
+-- milestone, confirmed special interrupts, and the authored First Descent boss
+-- transition open bounded choices through the existing run-build owner. Every
+-- offer keeps a deterministic per-operative request ID, so replays and queue
+-- ceilings still reject.
 
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
@@ -227,10 +228,11 @@ assertThat(
 	"an empty event ID must offer nothing"
 )
 
--- Source audits: the live sources are applied by the owners that already observe
--- the confirmed events, and the unavailable sources stay unimplemented.
+-- Source audits: each live source is applied by an owner that already observes
+-- the authoritative confirming event. Unavailable authored sources stay planned.
 local progression = fs.readFile("games/living-kingdoms/src/server/Systems/RunProgressionService.luau")
 local interrupts = fs.readFile("games/living-kingdoms/src/server/Systems/ScreamerInterruptRewardService.luau")
+local expedition = fs.readFile("games/living-kingdoms/src/server/Systems/ExpeditionLiveRuntimeService.luau")
 
 assertThat(
 	contains(progression, "RunBuildService.offerRelicRewardToParticipants"),
@@ -256,6 +258,18 @@ assertThat(
 	contains(interrupts, "RunRpgContracts.RewardSourceIds.SpecialInterrupt"),
 	"the interrupt observer must offer under its own source"
 )
+assertThat(
+	contains(expedition, "ExpeditionBossRewardTransitionResolver.resolve"),
+	"the expedition owner must derive the boss reward only from the guarded phase transition"
+)
+assertThat(
+	contains(expedition, "RunBuildService.offerRelicRewardToParticipants"),
+	"the boss transition must fan out through the existing run-build owner"
+)
+assertThat(
+	contains(expedition, "FirstDungeonRewardDecisionConfig.DecisionByRoomId"),
+	"the boss reward must consume the authored First Descent decision mapping"
+)
 
 local rewardStates = {}
 for _, definition in rpgConfig.RewardSourceCatalog do
@@ -267,10 +281,13 @@ assertThat(rewardStates[rpgContracts.RewardSourceIds.EliteKill] == Implemented, 
 assertThat(rewardStates[rpgContracts.RewardSourceIds.SpecialInterrupt] == Implemented, "interrupts must be live")
 assertThat(rewardStates[rpgContracts.RewardSourceIds.HordeClear] == Implemented, "horde milestones must be live")
 assertThat(
+	rewardStates[rpgContracts.RewardSourceIds.BossMilestone] == Implemented,
+	"First Descent boss milestone must be live"
+)
+assertThat(
 	rewardStates[rpgContracts.RewardSourceIds.ObjectiveCompletion] == Planned
-		and rewardStates[rpgContracts.RewardSourceIds.AuthoredContainer] == Planned
-		and rewardStates[rpgContracts.RewardSourceIds.BossMilestone] == Planned,
-	"sources without an authoritative owner must remain planned"
+		and rewardStates[rpgContracts.RewardSourceIds.AuthoredContainer] == Planned,
+	"reward sources without an authoritative owner must remain planned"
 )
 
-print("RelicRewardSourceIntegration: bounded live reward sources, deterministic IDs, and deferrals passed")
+print("RelicRewardSourceIntegration: four bounded live reward sources and deterministic fan-out passed")
