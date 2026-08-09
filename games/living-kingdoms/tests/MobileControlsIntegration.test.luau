@@ -36,7 +36,7 @@ local life = fs.readFile("games/living-kingdoms/src/client/Controllers/Operative
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 
 -- The controls activate only on a touch device without a keyboard, so desktop
--- input is never altered.
+-- input is never altered by the touch-only controller.
 assertThat(
 	contains(mobile, "UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled"),
 	"mobile controls must activate only on a touch device without a keyboard"
@@ -79,49 +79,64 @@ assertThat(
 )
 assertThat(contains(survivor, "Enum.KeyCode.LeftShift"), "desktop sprint must use the conventional shift key")
 assertThat(
+	contains(survivor, "ContextActionService:BindAction(SPRINT_ACTION_NAME, onSprintAction, false, Enum.KeyCode.ButtonL3)"),
+	"gamepad sprint must reuse the survivor owner without creating a touch button"
+)
+assertThat(
 	contains(mobile, "ContextActionService:BindAction(SPRINT_ACTION, onSprintAction, true)"),
 	"touch players require a dedicated sprint action"
 )
 
 -- Reload is a ContextActionService touch button in the same auto-arranged cluster
--- as the other actions -- not a hand-placed corner button -- and it routes through
--- WeaponController's one reload path.
+-- as the other actions -- not a hand-placed corner button -- and both touch and
+-- gamepad route through WeaponController's one reload path.
 assertThat(
 	contains(mobile, "ContextActionService:BindAction(RELOAD_ACTION, onReloadAction, true)"),
 	"reload must be a ContextAction touch button so Roblox arranges it with the cluster"
 )
 assertThat(
+	contains(weapon, "ContextActionService:BindAction(RELOAD_ACTION_NAME, onReloadAction, false, Enum.KeyCode.ButtonR1)"),
+	"gamepad reload must reuse the weapon owner without creating a touch button"
+)
+assertThat(
 	contains(mobile, "ContextActionService:UnbindAction(RELOAD_ACTION)"),
-	"the reload action must be unbound on teardown"
+	"the touch reload action must be unbound on teardown"
+)
+assertThat(
+	contains(weapon, "ContextActionService:UnbindAction(RELOAD_ACTION_NAME)"),
+	"the gamepad reload action must be unbound on teardown"
 )
 assertThat(
 	not contains(mobile, "ReloadButton") and not contains(mobile, ".Activated:Connect"),
 	"the hand-placed corner reload button must be gone"
 )
-assertThat(contains(mobile, "WeaponController.requestReload()"), "the reload button must call the shared reload path")
+assertThat(contains(mobile, "WeaponController.requestReload()"), "the touch reload button must call the shared reload path")
 assertThat(
 	contains(weapon, "function WeaponController.requestReload(): boolean"),
 	"the weapon controller must expose one reload path"
 )
 assertThat(
 	count(weapon, "reloadIntentRemote:FireServer") == 1,
-	"reload must fire from exactly one place, shared by keyboard and touch"
+	"reload must fire from exactly one place, shared by keyboard, gamepad and touch"
 )
 assertThat(
 	contains(weapon, "WeaponController.requestReload()") and contains(weapon, "input.KeyCode ~= Enum.KeyCode.R"),
 	"the keyboard handler must route through the same shared reload path"
 )
 
--- Revive is core co-op. It binds keyboard V plus an auto-created touch button
--- through one ContextActionService action, keeping E free for world prompts while
--- preserving the exact server intent shape.
+-- Revive is core co-op. One ContextActionService action serves keyboard V,
+-- gamepad D-pad Down and the auto-created touch button, keeping E/ButtonX free
+-- for world prompts while preserving the exact server intent shape.
 assertThat(
-	contains(life, "ContextActionService:BindAction(ACTION_NAME, onReviveAction, true, Enum.KeyCode.V)"),
-	"revive must bind keyboard V and an auto-created touch button through one action"
+	contains(
+		life,
+		"ContextActionService:BindAction(ACTION_NAME, onReviveAction, true, Enum.KeyCode.V, Enum.KeyCode.DPadDown)"
+	),
+	"revive must bind keyboard, gamepad and auto-created touch through one action"
 )
 assertThat(
 	contains(life, "inputState == Enum.UserInputState.Begin") and contains(life, "Enum.UserInputState.End"),
-	"the revive touch button must hold: Begin on press, End on release"
+	"the revive touch/gamepad hold must use Begin on press and End on release"
 )
 assertThat(
 	contains(life, 'phase = "Begin"') and contains(life, 'phase = "End"'),
@@ -129,7 +144,7 @@ assertThat(
 )
 assertThat(
 	not contains(life, "UserInputService.InputBegan") and not contains(life, "input.KeyCode ~= Enum.KeyCode.V"),
-	"the keyboard-only revive path must be replaced, not duplicated"
+	"the raw keyboard-only revive path must remain gone"
 )
 assertThat(
 	not contains(life, "normalizedProgress") and not contains(life, "completionServerTimestamp ="),
@@ -137,7 +152,7 @@ assertThat(
 )
 
 -- No new authority: the touch controls send no remote of their own and hold no
--- gameplay fact. Movement and reload are the only intents, both via their owners.
+-- gameplay fact. Movement and reload are intents routed via their existing owners.
 for _, forbidden in { "FireServer", "OnServerEvent", "applyAuthoritativeDamage", "Humanoid:Move", "damage", "Health" } do
 	assertThat(not contains(mobile, forbidden), "mobile controls must add no authority: " .. forbidden)
 end
@@ -170,4 +185,4 @@ assertThat(
 	"mobile controls must start after the movement and reload owners they compose onto"
 )
 
-print("MobileControlsIntegration: native touch movement plus reload and revive add no new authority")
+print("MobileControlsIntegration: native touch plus gamepad core actions add no new authority")
