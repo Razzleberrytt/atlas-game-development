@@ -3,13 +3,11 @@
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
-local Resolver = luau.load(
-	fs.readFile("games/living-kingdoms/src/server/Systems/ExpeditionBossRewardTransitionResolver.luau"),
-	{
+local Resolver =
+	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/ExpeditionBossRewardTransitionResolver.luau"), {
 		debugName = "ExpeditionBossRewardTransitionResolver",
 		injectGlobals = true,
-	}
-)()
+	})()
 
 local decision = {
 	DecisionId = "first-descent.boss-relic-choice",
@@ -44,14 +42,11 @@ assert(
 	Resolver.resolve(snapshot("run:alpha", "Boss"), snapshot("run:beta", "Rewards"), decision) == nil,
 	"cross-run snapshots must fail closed"
 )
-assert(
-	Resolver.resolve(snapshot("run:alpha", "Boss"), snapshot("run:alpha", "Rewards"), {
-		DecisionId = decision.DecisionId,
-		RunRewardSourceId = decision.RunRewardSourceId,
-		RuntimeConsumptionEnabled = false,
-	}) == nil,
-	"a dormant authored decision must never resolve a live reward"
-)
+assert(Resolver.resolve(snapshot("run:alpha", "Boss"), snapshot("run:alpha", "Rewards"), {
+	DecisionId = decision.DecisionId,
+	RunRewardSourceId = decision.RunRewardSourceId,
+	RuntimeConsumptionEnabled = false,
+}) == nil, "a dormant authored decision must never resolve a live reward")
 assert(Resolver.resolve(nil, snapshot("run:alpha", "Rewards"), decision) == nil, "missing snapshots must fail closed")
 
 print("ExpeditionBossRewardTransitionResolver: deterministic one-transition boss reward passed")
