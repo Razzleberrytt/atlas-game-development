@@ -14,10 +14,11 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Ma
 	injectGlobals = true,
 })()
 
-local recoveredArrival = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RecoveredSpawnLocationConfig.luau"), {
-	debugName = "RecoveredSpawnLocationConfig",
-	injectGlobals = true,
-})()
+local recoveredArrival =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RecoveredSpawnLocationConfig.luau"), {
+		debugName = "RecoveredSpawnLocationConfig",
+		injectGlobals = true,
+	})()
 
 check(config.Version == "BA-011-v2-arrival-contract-link")
 check(config.SourceHold == true)
