@@ -2,6 +2,8 @@
 
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
+local roblox = require("@lune/roblox")
+local Vector3 = roblox.Vector3
 
 local CONTRACTS_TOKEN = {}
 local CONFIG_TOKEN = {}
