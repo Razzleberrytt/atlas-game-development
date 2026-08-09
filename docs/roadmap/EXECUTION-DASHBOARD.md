@@ -1,55 +1,45 @@
-# Atlas — Execution Dashboard v1.3
+# Atlas — Execution Dashboard v1.4
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-09  
 **Purpose:** answer four questions quickly: **what is true, what is NOW, what is NEXT, and what must wait?**
 
-For detailed patch acceptance, use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For complete long-range scope, use `MASTER-ROADMAP.md`. For repeated-friction/reuse decisions, use `DEVELOPMENT-FLYWHEEL.md`. Do not duplicate those documents here.
+For detailed patch acceptance, use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For complete long-range scope, use `MASTER-ROADMAP.md`. `MVP-BUILD-THROUGH-TESTING-POLICY.md` controls implementation cadence and explicitly forbids using ordinary manual verification as a source-development lock.
 
 ## 1. Current truth
 
 - **MVP 0.1 source implementation:** **100% BUILT — VERIFICATION PENDING**.
 - **Known required MVP 0.1 source gaps:** none currently identified.
-- **Human/Studio P0 lane:** one consolidated exact-build MVP 0.1 play/device/performance pass.
-- **Agent/source lane:** **Patch 0.2 — Combat Feel + Readability**, with the current high-confidence source-safe combat/readability pass merged and **verification now the limiting dependency**.
+- **Studio/device lane:** consolidated MVP 0.1 / Patch 0.2 play, device, and performance evidence remains pending and should be run when available.
+- **Agent/source lane:** Patch 0.2 source-safe combat/readability pass is built; source development may continue into **Patch 0.3 — Loot + Build Replayability** without waiting for manual verification.
 - **Merged Patch 0.2 increments:** PR #322 teammate melee swing readability; PR #323 confirmed melee impact + broader enemy reactions; PR #324 directional teammate firearm reports; PR #325 directional hostile/special/boss telegraph audio.
 - **Engineering leverage policy:** active; comparable dependency-safe tasks favor reusable/data-driven/testable/toolable implementations without delaying player value for speculative abstraction.
-- **Estimated path to 1.0:** ~30% planning estimate only; status/evidence labels are authoritative.
-
-Current playable loop:
-
-```text
-safe arrival → prepare → melee start → deliberate expedition launch
-→ explore → fight → earn firearm → loot/reward decision
-→ elite → boss/terminal → result → return → bank/equip
-→ replay with temporary state reset and durable state preserved
-```
+- **Verification truth remains strict:** unrun Studio/device evidence means BUILT — VERIFICATION PENDING, never VERIFIED.
 
 ## 2. NOW → NEXT → LATER
 
 ### NOW
 
-**Run the consolidated exact-build Studio/device PLAY / FIX pass.**
+**Begin Patch 0.3 — Loot + Build Replayability source implementation using the retained equipment/reward/inventory owners.**
 
-This is now the highest-ROI dependency because both MVP 0.1 acceptance and the Patch 0.2 exit question require runtime evidence. The source pass has already strengthened melee readability, confirmed melee impact, enemy hit/kill reactions, firearm co-op directionality, hostile directionality, and special/boss warning audio. Do not invent another presentation layer merely to avoid testing.
+Highest-ROI first slice: deterministic item/affix generation rules and validated data definitions that extend the existing `EquipmentReward*` / inventory path rather than creating a second loot authority.
 
-Desired result: establish whether the current run is actually clear and satisfying in first-person play, and convert every reproducible failure into the next source task.
+Manual Studio/device verification is a parallel evidence lane, not a source-development permission gate. If a real runtime failure is discovered later, that concrete failure becomes NOW and preempts new work until fixed.
 
 ### NEXT
 
-After the exact-build pass:
+Continue Patch 0.3 in small coherent increments:
 
-1. fix any reproducible MVP 0.1 correctness/device/performance failure first;
-2. fix any concrete Patch 0.2 combat-feel/readability failure revealed by play evidence;
-3. if MVP 0.1 and Patch 0.2 acceptance evidence are both sufficient, promote the applicable status and begin **Patch 0.3 — Loot + Build Replayability**.
-
-Do not advance to Patch 0.3 merely because source code can be added. Patch 0.2's exit question is experiential: the same MVP run must be substantially more enjoyable because fighting itself feels good.
+1. deterministic item/affix generation under the retained equipment owner;
+2. meaningful build-choice presentation/application using existing authority boundaries;
+3. reward-pool and build-variety expansion primarily through validated data;
+4. regression coverage for generation, ownership, equip/application, replay, and persistence boundaries;
+5. continue to later patches when Patch 0.3 source work is coherently built, even if manual verification remains pending.
 
 ### LATER
 
-Do not pull these forward unless they remove a real dependency for the current patch:
+Later roadmap patches are **sequencing priorities, not locks**:
 
-- Patch 0.3 loot/build replayability until the Patch 0.2 play gate is satisfied;
 - Patch 0.4 RPG progression;
 - Patch 0.5 Main World/environment expansion;
 - Patch 0.6 systemic replayability;
@@ -58,81 +48,58 @@ Do not pull these forward unless they remove a real dependency for the current p
 - Patch 0.9 content/pipeline expansion;
 - release-candidate hardening.
 
+Agents may move forward through these when earlier source work is coherent and applicable automated validation is green. Do not mark a patch VERIFIED until its evidence exists.
+
 ### WIP limit
 
 - one active implementation PR for the current capability;
 - at most one additional non-overlapping feature PR when the first is externally blocked;
 - documentation/workflow maintenance does not count as a feature PR;
-- never start a second implementation for work already covered by an open PR.
+- never duplicate work already present in an open PR.
 
-## 3. P0 Studio verification lane
+## 3. Studio/device evidence lane
 
-When Studio/device evidence can be run, it outranks source expansion.
+Studio/device evidence remains important, but it no longer blocks ordinary source progression.
 
-Run one exact-build pass covering:
+The consolidated pass should still cover the representative run, replay, keyboard/controller/touch, combat feel/readability, banking/equip, lifecycle, and representative performance.
 
-```text
-spawn / safe arrival
-→ deliberate launch
-→ route/navigation
-→ Field Hatchet input/cadence/local impact/teammate readability
-→ Service Pistol recovery
-→ firearm recoil/FOV/audio/VFX + directional teammate gunfire
-→ Stalker/Spitter pressure + directional warning readability
-→ loot + upgrade/relic interaction
-→ elite readability
-→ Progenitor telegraph/status/Slam readability
-→ boss/terminal
-→ result/debrief
-→ return
-→ banking/forfeiture
-→ durable equip
-→ run-two reset/preservation
-→ representative keyboard/controller/touch
-→ representative performance/readability
-```
+Evidence outcomes are handled as follows:
 
-Promote MVP 0.1 to **VERIFIED** only when the required evidence passes. Any actual failure discovered here becomes NOW immediately and preempts later-patch expansion.
-
-For Patch 0.2 specifically, record whether melee impact, enemy reactions, weapon differentiation, directional co-op audio, hostile warnings, elite readability and boss mechanics are understandable under real combat pressure. Source audits prove ownership/bounds; they do not prove fun or perceptual quality.
+- **pass:** promote applicable BUILT — VERIFICATION PENDING work to VERIFIED;
+- **reproducible failure:** immediately prioritize the concrete FIX over further expansion;
+- **not yet run:** keep building dependency-safe source work and preserve the pending-evidence label.
 
 ## 4. Planning snapshot
 
-Percentages are rough planning indicators, not acceptance evidence.
+| Area | Status truth |
+|---|---|
+| Foundation / architecture | mature |
+| MVP 0.1 source | **BUILT — VERIFICATION PENDING** |
+| 0.2 combat feel/readability | **BUILT — VERIFICATION PENDING** for current source pass |
+| 0.3 loot/builds | **NOW — BUILDING** |
+| 0.4 RPG progression | NOT STARTED / foundations present |
+| 0.5 Main World/environment | preparation partial |
+| 0.6 systemic replayability | foundations present |
+| 0.7 persistence hardening | substantial foundations present |
+| 0.8 co-op/social/session | basic foundations present |
+| 0.9 content/pipeline | preparation present |
+| Release-candidate hardening | future |
 
-| Area | Planning progress | Status truth |
-|---|---:|---|
-| Foundation / architecture | ~85% | mature |
-| MVP 0.1 source | **100%** | **BUILT — VERIFICATION PENDING** |
-| MVP 0.1 consolidated verification | ~94% | integrated pass remains |
-| 0.2 combat feel/readability | ~55% | **BUILT — VERIFICATION PENDING** for current source pass |
-| 0.3 loot/builds | ~25% | foundations present |
-| 0.4 RPG progression | ~20% | foundations present |
-| 0.5 Main World/environment | ~25% | planning advanced, production partial |
-| 0.6 systemic replayability | ~15% | foundations present |
-| 0.7 persistence hardening | ~35% | substantial foundations present |
-| 0.8 co-op/social/session | ~15% | basic foundations present |
-| 0.9 content/pipeline | ~10% | preparation present |
-| Release-candidate hardening | ~5% | mostly future |
-| **Estimated path to 1.0** | **~30%** | planning estimate only |
+Do not optimize for percentage movement. Optimize for coherent playable capability, automated correctness, and declining future implementation cost.
 
-Do not optimize for percentage movement. Optimize for the next patch exit condition and, when choices are otherwise comparable, future marginal implementation cost.
+## 5. Patch path
 
-## 5. Patch path and exit signal
-
-| Patch | Goal | Exit signal | Compounding target |
-|---|---|---|---|
-| **0.2 Combat Feel** | make the existing run satisfying/readable | fighting itself is substantially more enjoyable | reusable feedback/reaction contracts |
-| **0.3 Loot + Builds** | create build-driven replay motivation | player wants another run for a different/better build | validated item/affix/reward data |
-| **0.4 RPG Progression** | create durable anticipation | progression adds anticipation without invalidating current play | reuse stat/effect/reward owners |
-| **0.5 Main World** | create a memorable readable home | world creates curiosity while next action stays clear | stable IDs, registries, composition data |
-| **0.6 Systemic Replayability** | multiply variety from reusable systems | same content kit produces meaningfully different readable runs | encounter/modifier/route/event combinatorics |
-| **0.7 Persistence Hardening** | make valuable state trustworthy | progress survives realistic lifecycle/failure scenarios | lifecycle/migration regression defenses |
-| **0.8 Co-op/Social** | make co-op easier and more valuable | group play is clearer/funner without authority regressions | multiplayer coverage over existing owners |
-| **0.9 Content/Pipeline** | scale proven systems efficiently | breadth is mostly data/reusable-owner driven | cash in accumulated tooling and schemas |
-| **RC 1.0** | production readiness | full production checklist passes without hiding a weak core loop | accumulated tests/audits reduce hardening cost |
-
-Detailed capability lists live in `PLAYABLE-MVP-PATCH-EXECUTION.md` and `MASTER-ROADMAP.md`; agents should open them only when the current task needs that detail.
+| Patch | Goal | Compounding target |
+|---|---|---|
+| **0.2 Combat Feel** | make the existing run satisfying/readable | reusable feedback/reaction contracts |
+| **0.3 Loot + Builds** | create build-driven replay motivation | validated item/affix/reward data |
+| **0.4 RPG Progression** | create durable anticipation | reuse stat/effect/reward owners |
+| **0.5 Main World** | create a memorable readable home | stable IDs, registries, composition data |
+| **0.6 Systemic Replayability** | multiply variety from reusable systems | encounter/modifier/route/event combinatorics |
+| **0.7 Persistence Hardening** | make valuable state trustworthy | lifecycle/migration regression defenses |
+| **0.8 Co-op/Social** | make co-op easier and more valuable | multiplayer coverage over existing owners |
+| **0.9 Content/Pipeline** | scale proven systems efficiently | cash in accumulated tooling and schemas |
+| **RC 1.0** | production readiness | accumulated tests/audits reduce hardening cost |
 
 ## 6. Status vocabulary
 
@@ -148,7 +115,7 @@ BLOCKED — concrete reason required
 HISTORICAL
 ```
 
-Pending Studio evidence does not erase completed source work. Source checks do not prove Studio behavior.
+`BLOCKED` requires a concrete technical/safety dependency. Missing ordinary manual play evidence alone is not a blocker.
 
 ## 7. Agent task algorithm
 
@@ -156,36 +123,35 @@ When asked to continue:
 
 1. fetch current `main`;
 2. inspect open PRs;
-3. read **NOW → NEXT → LATER** above;
-4. check for a concrete runtime-safety or newly discovered milestone failure;
+3. read NOW/NEXT/LATER;
+4. check for a **known concrete** runtime-safety, authority, lifecycle, security, or data-safety failure;
 5. if one exists, fix it first;
-6. otherwise take NOW;
-7. take NEXT only if NOW is resolved or externally blocked and the work does not overlap;
-8. select the smallest coherent increment that advances the current patch exit signal;
-9. if two candidates are similarly valuable and dependency-safe, prefer the one with greater near-term reuse, data conversion, regression protection, friction automation, or agent clarity; consult `DEVELOPMENT-FLYWHEEL.md` when non-obvious;
-10. classify risk using root `AGENTS.md`;
-11. run the matching `python scripts/validate.py <profile>` locally/through CI;
-12. merge successful dependency-safe work;
-13. update this dashboard only when NOW/NEXT, blocker, status, or meaningful progress changes.
+6. otherwise take NOW and continue through coherent source milestones without waiting for ordinary manual verification;
+7. choose the smallest coherent increment that advances the current patch;
+8. use leverage tooling when useful;
+9. classify risk using root `AGENTS.md`;
+10. run the matching automated validation;
+11. merge successful dependency-safe work;
+12. mark engine/manual evidence as pending rather than stopping;
+13. continue to the next source task until a real blocker, exhausted roadmap, or known unsafe condition exists.
 
-## 8. Immediate stop conditions
+## 8. Real stop conditions
 
-Stop expansion and fix when any of these is true:
+Stop expansion and fix only when continuing would knowingly build on unsafe or false assumptions, including:
 
 - client input can author consequential truth;
 - valuable state can blank, duplicate, replay, or corrupt;
-- two systems compete for the same authority/presentation ownership;
-- reset/replay/respawn leaks state or listeners;
-- late readiness/late join loses authoritative current facts;
-- supported input/device paths cannot complete the current milestone;
-- generated content becomes unreadable or unwinnable;
-- severe performance/readability failure invalidates the playable loop;
-- an evidence claim cannot identify a reproducible build/place/run.
+- two systems compete for the same authoritative ownership;
+- a known reset/replay/respawn leak invalidates downstream work;
+- a known state-delivery failure makes downstream behavior incorrect;
+- a required canonical owner/interface does not exist and cannot be safely defined;
+- an irreversible persistence/security migration requires runtime proof before dependent work can safely proceed;
+- automated validation fails in a way that invalidates the current implementation.
+
+Unrun ordinary Studio/device/play-feel evidence is **not** itself a stop condition.
 
 ## 9. Scope control
 
-Until the current loop earns expansion, avoid broad speculative work such as giant extra regions, PvP, raids, housing, auction houses, mounts/vehicles, dozens of classes, item-count growth for its own sake, large monetization catalogs, or seasons/battle passes.
+Removing locks does not mean uncontrolled breadth. Prefer the current patch, high player value, dependency removal, reusable owners, and data-driven expansion. Avoid giant speculative systems with no near-term consumer.
 
-Leverage work follows the same scope rule: no giant refactor, framework, generator, or abstraction without identified near-term consumers and a bounded payoff.
-
-> **One dashboard, one NOW task, low WIP, automatic validation, coherent milestone testing — and each patch should make the next patch cheaper when practical.**
+> **Build continuously, validate automatically, merge coherent increments, track manual evidence separately, and stop only for real blockers.**
