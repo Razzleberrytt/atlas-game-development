@@ -30,7 +30,10 @@ assert(not contains(melee, "FireServer"), "melee impact presentation must not se
 assert(not contains(melee, "commitHealthState"), "melee impact presentation must not mutate health")
 assert(not contains(melee, "EnemyDirector"), "melee impact presentation must not own enemy truth")
 
-assert(contains(enemyImpact, "local function isEnemyModel"), "enemy impact tracking must use an archetype-agnostic predicate")
+assert(
+	contains(enemyImpact, "local function isEnemyModel"),
+	"enemy impact tracking must use an archetype-agnostic predicate"
+)
 assert(
 	contains(enemyImpact, 'model:GetAttribute("EnemyArchetypeId")'),
 	"enemy impact tracking must rely on the existing server-replicated archetype identity"
@@ -55,4 +58,6 @@ assert(not contains(enemyImpact, "FireServer"), "enemy reaction presentation mus
 assert(not contains(enemyImpact, "TakeDamage"), "enemy reaction presentation must not mutate damage")
 assert(not contains(enemyImpact, "commitHealthState"), "enemy reaction presentation must not mutate health state")
 
-print("MeleeImpactEnemyReactionSourceAudit: confirmed melee impact and archetype-wide enemy reactions remain presentation-only")
+print(
+	"MeleeImpactEnemyReactionSourceAudit: confirmed melee impact and archetype-wide enemy reactions remain presentation-only"
+)
