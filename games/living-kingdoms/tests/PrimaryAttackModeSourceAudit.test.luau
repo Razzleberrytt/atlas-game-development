@@ -50,9 +50,16 @@ assert(
 )
 assert(
 	contains(serverMount, 'Instance.new("RemoteEvent")'),
-	"server mount must create the narrow melee strike transport"
+	"server mount must create the narrow melee transport"
 )
-assert(contains(serverMount, 'intent.Name = "StrikeIntent"'), "runtime melee transport must expose only StrikeIntent")
+assert(
+	contains(serverMount, 'for _, remoteName in { "StrikeIntent", "Presentation" } do'),
+	"runtime melee transport must expose exactly the strike-intent and server-presentation channels"
+)
+assert(
+	not contains(serverMount, '"State"') and not contains(serverMount, '"ReadState"'),
+	"melee transport cannot broaden into a general client state surface"
+)
 assert(
 	contains(intentService, "PrimaryCombatModeService.readMode(player) ~= ModeIds.Melee"),
 	"server must reject melee intent outside melee mode"
@@ -62,6 +69,14 @@ assert(
 	"accepted melee intent must reuse authoritative melee combat"
 )
 assert(contains(intentService, 'typeof(aimDirection) ~= "Vector3"'), "server must validate the melee aim payload")
+assert(
+	contains(intentService, 'meleeNetwork:WaitForChild("StrikeIntent")'),
+	"client-to-server melee transport must remain the narrow StrikeIntent channel"
+)
+assert(
+	contains(intentService, 'meleeNetwork:WaitForChild("Presentation")'),
+	"server-to-client melee feedback must remain the separate Presentation channel"
+)
 assert(contains(serverMount, "PrimaryCombatModeService.start()"), "server combat-mode owner must be mounted")
 assert(contains(serverMount, "MeleeCombatService.start()"), "authoritative melee service must be mounted")
 assert(contains(serverMount, "MeleeIntentService.start()"), "melee intent bridge must be mounted")
