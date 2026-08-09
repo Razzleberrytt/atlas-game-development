@@ -17,7 +17,6 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local CombatImpactPresentationConfig = require(ReplicatedStorage.Shared.Config.CombatImpactPresentationConfig)
-local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 local PresentationAccessibilityConfig = require(ReplicatedStorage.Shared.Config.PresentationAccessibilityConfig)
 local PresentationAccessibilityState = require(script.Parent.Parent.Presentation.PresentationAccessibilityState)
@@ -72,11 +71,16 @@ local function readStringAttribute(model: Model, attributeName: string): string?
 	return if type(value) == "string" then value else nil
 end
 
+local function isEnemyModel(model: Model): boolean
+	local archetypeId = model:GetAttribute("EnemyArchetypeId")
+	return type(archetypeId) == "string" and archetypeId ~= ""
+end
+
 local function findEnemyModel(instance: Instance): Model?
 	local folder = enemyFolder
 	local current: Instance? = instance
 	while current ~= nil and current ~= folder do
-		if current:IsA("Model") and current:GetAttribute("EnemyArchetypeId") == EnemyConfig.Walker.ArchetypeId then
+		if current:IsA("Model") and isEnemyModel(current) then
 			return current
 		end
 		current = current.Parent
@@ -177,7 +181,7 @@ local function trackModel(model: Model)
 		records[model] ~= nil
 		or trackingModels[model] == true
 		or trackedCount >= CombatImpactPresentationConfig.MaximumTrackedEnemyModels
-		or model:GetAttribute("EnemyArchetypeId") ~= EnemyConfig.Walker.ArchetypeId
+		or not isEnemyModel(model)
 	then
 		return
 	end
