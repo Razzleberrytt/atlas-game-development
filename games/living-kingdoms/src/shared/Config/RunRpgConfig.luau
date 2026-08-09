@@ -188,7 +188,7 @@ local UpgradeCatalog = table.freeze({
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.EchoChamber,
-		familyId = UpgradeFamilyIds.AmmunitionReload,
+		familyId = UpgradeFamilyIds.Firepower,
 		displayName = "AMMO SAVER",
 		implementationStateId = ImplementationStateIds.Implemented,
 	}),
@@ -500,7 +500,7 @@ local RewardSourceCatalog = table.freeze({
 		implementationStateId = ImplementationStateIds.Planned,
 	}),
 	table.freeze({ sourceId = RewardSourceIds.HordeClear, implementationStateId = ImplementationStateIds.Implemented }),
-	table.freeze({ sourceId = RewardSourceIds.BossMilestone, implementationStateId = ImplementationStateIds.Planned }),
+	table.freeze({ sourceId = RewardSourceIds.BossMilestone, implementationStateId = ImplementationStateIds.Implemented }),
 })
 
 local Config = {
@@ -810,9 +810,10 @@ for _, definition in RewardSourceCatalog do
 		implementedRewardSourceCount += 1
 	end
 end
--- RPG-0110 connects the three sources whose authoritative owners exist today.
--- Authored objectives, authored containers, and boss milestones wait for P8/P9.
-assert(implementedRewardSourceCount == 3, "exactly the live reward sources may be implemented")
+-- RPG-0110 connects the original three live sources. First Descent now also
+-- consumes BossMilestone through the authoritative Boss -> Rewards transition;
+-- authored objectives and authored containers remain planned.
+assert(implementedRewardSourceCount == 4, "exactly the live reward sources may be implemented")
 assert(#RewardSourceCatalog == countVocabulary(RewardSourceIds), "every reward source requires one catalog entry")
 
 return table.freeze(Config)
