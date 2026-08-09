@@ -131,18 +131,20 @@ assert(
 		and EnemyAudioConfig.SpatialRollOffMaxDistanceStuds <= EnemyAudioConfig.MaximumAudibleDistanceStuds,
 	"enemy spatial rolloff range must stay ordered and within the audible budget"
 )
-for _, cueName in {
-	"Alert",
-	"Windup",
-	"Strike",
-	"Hit",
-	"ScreamerWarning",
-	"BloaterWarning",
-	"BruteWarning",
-	"SpitterBloomWarning",
-	"ProgenitorSlamWarning",
-	"Death",
-} do
+for _, cueName in
+	{
+		"Alert",
+		"Windup",
+		"Strike",
+		"Hit",
+		"ScreamerWarning",
+		"BloaterWarning",
+		"BruteWarning",
+		"SpitterBloomWarning",
+		"ProgenitorSlamWarning",
+		"Death",
+	}
+do
 	local cue = (EnemyAudioConfig :: any)[cueName]
 	assert(type(cue) == "table", "enemy audio cue must exist: " .. cueName)
 	assert(
