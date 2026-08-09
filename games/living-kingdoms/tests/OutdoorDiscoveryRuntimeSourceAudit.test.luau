@@ -30,7 +30,10 @@ assert(
 	"live integration must mutate the existing expedition secret state"
 )
 
-assert(string.find(discoverySource, "ProximityPrompt", 1, true) ~= nil, "Lookout Cache must expose a server-owned prompt")
+assert(
+	string.find(discoverySource, "ProximityPrompt", 1, true) ~= nil,
+	"Lookout Cache must expose a server-owned prompt"
+)
 assert(
 	string.find(discoverySource, "Discovery.Interaction.MaximumDistanceStuds", 1, true) ~= nil,
 	"Lookout Cache must revalidate server-side distance"
