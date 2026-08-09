@@ -1,23 +1,20 @@
 --!strict
 
 --[[
-	AUD-0103 client-local Exclusion Walker audio. One frame connection reads the
-	existing replicated presentation attributes and plays bounded 2D cues for
-	alert (entering pursuit), attack windup, committed strike, confirmed hit,
-	and death through one small reused Sound pool with per-cue global throttles
-	and camera-distance volume falloff.
+	AUD-0103 client-local hostile audio. One frame connection reads the existing
+	replicated presentation attributes and plays bounded spatial cues for alert,
+	attack windup, committed strike, confirmed hit, death, and horde-special
+	warnings through one small reused Sound/emitter pool with global throttles.
 
-	The controller creates no remote, predicts nothing, reads no Humanoid
-	health, and cannot move enemies, apply damage, establish death, or disclose
-	anything the replicated enemy models do not already carry. Two folder
-	lifecycle connections and one frame connection serve every tracked enemy;
-	there are zero per-enemy connections, zero per-enemy Sounds, and zero
-	delayed tasks.
+	The controller creates no remote, predicts nothing, reads no Humanoid health,
+	and cannot move enemies, apply damage, establish death, or disclose anything
+	the replicated enemy models do not already carry. Two folder lifecycle
+	connections and one frame connection serve every tracked enemy; there are zero
+	per-enemy connections, zero per-enemy Sounds, and zero delayed tasks.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local SoundService = game:GetService("SoundService")
 local Workspace = game:GetService("Workspace")
 
 local EnemyAudioConfig = require(ReplicatedStorage.Shared.Config.EnemyAudioConfig)
@@ -36,6 +33,7 @@ local SpecialKindIds = HordeSpecialTelegraphConfig.KindIds
 
 local ENEMY_FOLDER_NAME = "EnemyEntities"
 local SOUND_HOLDER_NAME = "LivingKingdomsEnemyAudio"
+local EMITTER_HOLDER_NAME = "LivingKingdomsEnemyAudioEmitters"
 
 local started = false
 local enemyFolder: Folder? = nil
@@ -43,7 +41,9 @@ local descendantAddedConnection: RBXScriptConnection? = nil
 local childRemovedConnection: RBXScriptConnection? = nil
 local renderConnection: RBXScriptConnection? = nil
 local soundHolder: Folder? = nil
+local emitterHolder: Folder? = nil
 local soundPool: { Sound } = {}
+local emitterPool: { Part } = {}
 local poolCursor = 0
 local lastCuePlayClock: { [string]: number } = {}
 
@@ -92,16 +92,38 @@ end
 local function createPresentation()
 	local holder = Instance.new("Folder")
 	holder.Name = SOUND_HOLDER_NAME
+	holder.Parent = Workspace
+
+	local emitters = Instance.new("Folder")
+	emitters.Name = EMITTER_HOLDER_NAME
+	emitters.Parent = Workspace
 
 	for index = 1, EnemyAudioConfig.PoolSize do
+		local emitter = Instance.new("Part")
+		emitter.Name = "EnemyCueEmitter" .. tostring(index)
+		emitter.Size = Vector3.new(0.1, 0.1, 0.1)
+		emitter.Transparency = 1
+		emitter.Anchored = true
+		emitter.CanCollide = false
+		emitter.CanTouch = false
+		emitter.CanQuery = false
+		emitter.CastShadow = false
+		emitter.CFrame = CFrame.new(0, -1000, 0)
+		emitter.Parent = emitters
+		table.insert(emitterPool, emitter)
+
 		local sound = Instance.new("Sound")
 		sound.Name = "EnemyCue" .. tostring(index)
-		sound.Parent = holder
+		sound.RollOffMode = Enum.RollOffMode.Inverse
+		sound.RollOffMinDistance = EnemyAudioConfig.SpatialRollOffMinDistanceStuds
+		sound.RollOffMaxDistance = EnemyAudioConfig.SpatialRollOffMaxDistanceStuds
+		sound.EmitterSize = EnemyAudioConfig.SpatialEmitterSizeStuds
+		sound.Parent = emitter
 		table.insert(soundPool, sound)
 	end
 
-	holder.Parent = SoundService
 	soundHolder = holder
+	emitterHolder = emitters
 end
 
 local function distanceVolumeScale(root: BasePart): number
@@ -137,6 +159,11 @@ local function playCue(cueName: string, cue: CueDefinition, record: Record)
 	lastCuePlayClock[cueName] = nowClock
 	poolCursor = (poolCursor % #soundPool) + 1
 	local sound = soundPool[poolCursor]
+	local emitter = emitterPool[poolCursor]
+	if emitter == nil then
+		return
+	end
+	emitter.Position = record.root.Position
 	sound.SoundId = cue.SoundId
 	sound.Volume = math.clamp(cue.Volume * scale, 0, 1)
 	sound.PlaybackSpeed = cue.PlaybackSpeed
@@ -173,8 +200,6 @@ local function trackModel(model: Model)
 		return
 	end
 
-	-- First sight records the replicated state silently so joining a session
-	-- mid-operation cannot trigger a burst of stale cues.
 	records[model] = {
 		root = root,
 		lastBehaviorStateId = behaviorStateId,
@@ -317,7 +342,12 @@ function EnemyAudioController.stop()
 		soundHolder:Destroy()
 		soundHolder = nil
 	end
+	if emitterHolder ~= nil then
+		emitterHolder:Destroy()
+		emitterHolder = nil
+	end
 	table.clear(soundPool)
+	table.clear(emitterPool)
 	poolCursor = 0
 	table.clear(lastCuePlayClock)
 	table.clear(records)
