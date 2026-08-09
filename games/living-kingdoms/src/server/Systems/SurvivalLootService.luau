@@ -7,10 +7,13 @@ local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config.SurvivalLootConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
+local PrimaryCombatModeContracts = require(ReplicatedStorage.Shared.Combat.PrimaryCombatModeContracts)
 local OperativeCombatRuntimeService = require(script.Parent.OperativeCombatRuntimeService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 
 local Service = {}
+local PrimaryCombatModeAttributeName = PrimaryCombatModeContracts.AttributeName
+local PrimaryCombatModeIds = PrimaryCombatModeContracts.ModeIds
 local network = ReplicatedStorage:WaitForChild("SurvivalNetwork")
 local stateRemote = network:WaitForChild("State") :: RemoteEvent
 local readState = network:WaitForChild("ReadState") :: RemoteFunction
@@ -179,7 +182,9 @@ local function tryCollectPendingLoot(player: Player, itemId: unknown): (boolean,
 		if not OperativeCombatRuntimeService.equipFoundWeapon(player, item.weaponId) then
 			return false, "WEAPON CANNOT BE EQUIPPED RIGHT NOW"
 		end
-		state.foundWeapon = true
+		if item.weaponId ~= Config.OpeningRecoveryWeaponId then
+			state.foundWeapon = true
+		end
 		state.pendingLoot[itemId] = nil
 		eventText = item.displayName .. " EQUIPPED"
 	else
@@ -458,7 +463,11 @@ local function createChest(parent: Instance, index: number, position: Vector3)
 			local rounds = Config.AmmoRoundsMinimum
 				+ (index * 3 % (Config.AmmoRoundsMaximum - Config.AmmoRoundsMinimum + 1))
 			local roll = (index * 37 + player.UserId) % 100
-			local shouldFindWeapon = not state.foundWeapon
+			local shouldRecoverOpeningWeapon = state.openedChests == Config.OpeningRecoveryByOpenedChest
+				and player:GetAttribute(PrimaryCombatModeAttributeName) == PrimaryCombatModeIds.Melee
+				and not hasPendingWeapon(state)
+			local shouldFindWeapon = not shouldRecoverOpeningWeapon
+				and not state.foundWeapon
 				and not hasPendingWeapon(state)
 				and (
 					state.openedChests >= Config.GuaranteedWeaponByOpenedChest
@@ -484,15 +493,23 @@ local function createChest(parent: Instance, index: number, position: Vector3)
 				worldPosition = position,
 				weaponId = nil,
 			})
-			if shouldFindWeapon then
-				local weapons = Config.DiscoverableWeaponIds
-				local weaponId = weapons[(index % #weapons) + 1]
+			if shouldRecoverOpeningWeapon or shouldFindWeapon then
+				local weaponId: string
+				local rarityId: string
+				if shouldRecoverOpeningWeapon then
+					weaponId = Config.OpeningRecoveryWeaponId
+					rarityId = "Uncommon"
+				else
+					local weapons = Config.DiscoverableWeaponIds
+					weaponId = weapons[(index % #weapons) + 1]
+					rarityId = "Rare"
+				end
 				stageLoot(state, {
 					itemId = chestId .. ".weapon",
 					kindId = "weapon",
 					displayName = (FirearmConfig.get(weaponId) :: any).DisplayName,
 					quantity = 1,
-					rarityId = "Rare",
+					rarityId = rarityId,
 					chestId = chestId,
 					worldPosition = position,
 					weaponId = weaponId,
@@ -586,6 +603,14 @@ function Service.start()
 			end
 		end
 	end)
+end
+
+function Service.resetForReplay()
+	if not started then
+		return
+	end
+	Service.stop()
+	Service.start()
 end
 
 function Service.stop()

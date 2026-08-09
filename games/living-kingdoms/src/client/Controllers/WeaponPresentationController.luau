@@ -15,6 +15,7 @@ local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
+local PrimaryCombatModeContracts = require(ReplicatedStorage.Shared.Combat.PrimaryCombatModeContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local WeaponFeelConfig = require(ReplicatedStorage.Shared.Config.WeaponFeelConfig)
 
@@ -41,6 +42,7 @@ type PlayerBinding = {
 	characterAddedConnection: RBXScriptConnection,
 	characterRemovingConnection: RBXScriptConnection,
 	weaponAttributeConnection: RBXScriptConnection,
+	combatModeAttributeConnection: RBXScriptConnection,
 }
 
 type State = {
@@ -71,6 +73,8 @@ type State = {
 local WeaponPresentationController = {}
 
 local MAX_PRESENTED_SHOT_IDS = 128
+local PRIMARY_COMBAT_MODE_ATTRIBUTE = PrimaryCombatModeContracts.AttributeName
+local PrimaryCombatModeIds = PrimaryCombatModeContracts.ModeIds
 local MODEL_NAME = "WeaponPresentation"
 local VIEWMODEL_GRIP_CFRAME = CFrame.new(0.62, -0.72, -1.35) * CFrame.Angles(math.rad(-2), math.rad(90), math.rad(-4))
 
@@ -282,6 +286,9 @@ local function attachRig(player: Player, character: Model)
 	if not state.started or character.Parent == nil then
 		return
 	end
+	if player:GetAttribute(PRIMARY_COMBAT_MODE_ATTRIBUTE) == PrimaryCombatModeIds.Melee then
+		return
+	end
 	local weaponId = player:GetAttribute("LK_EquippedWeaponId")
 	local configuredId = if isKnownWeaponId(weaponId) then weaponId else FirearmConfig.BasicFirearm.WeaponId
 	if player == Players.LocalPlayer then
@@ -324,6 +331,7 @@ local function unbindPlayer(player: Player)
 		binding.characterAddedConnection:Disconnect()
 		binding.characterRemovingConnection:Disconnect()
 		binding.weaponAttributeConnection:Disconnect()
+		binding.combatModeAttributeConnection:Disconnect()
 		state.bindings[player] = nil
 	end
 	destroyRig(player)
@@ -345,10 +353,19 @@ local function bindPlayer(player: Player)
 			attachRig(player, currentCharacter)
 		end
 	end)
+	local combatModeAttributeConnection = player:GetAttributeChangedSignal(PRIMARY_COMBAT_MODE_ATTRIBUTE):Connect(function()
+		local currentCharacter = player.Character
+		if currentCharacter ~= nil then
+			attachRig(player, currentCharacter)
+		else
+			destroyRig(player)
+		end
+	end)
 	state.bindings[player] = {
 		characterAddedConnection = characterAddedConnection,
 		characterRemovingConnection = characterRemovingConnection,
 		weaponAttributeConnection = weaponAttributeConnection,
+		combatModeAttributeConnection = combatModeAttributeConnection,
 	}
 	local character = player.Character
 	if character ~= nil then
