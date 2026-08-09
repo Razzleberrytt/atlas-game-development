@@ -137,11 +137,20 @@ local Actions: { [string]: ActionDefinition } = {
 		frozenList("ButtonX"),
 		frozenList("PromptTap")
 	),
+	NumberedChoiceInput = action(
+		"NumberedChoiceInput",
+		"ChoiceInputCoordinator",
+		"SharedArbitratedInput",
+		frozenList("One", "Two", "Three", "KeypadOne", "KeypadTwo", "KeypadThree"),
+		frozenList(),
+		frozenList(),
+		frozenList()
+	),
 	UpgradeChoice = action(
 		"UpgradeChoice",
 		"HordeHUDController",
-		"RawInputAndGui",
-		frozenList("One", "Two", "Three", "KeypadOne", "KeypadTwo", "KeypadThree"),
+		"SharedChoiceDispatchAndGui",
+		frozenList(),
 		frozenList("MouseButton1"),
 		frozenList(),
 		frozenList("GuiButton")
@@ -149,8 +158,8 @@ local Actions: { [string]: ActionDefinition } = {
 	RelicChoice = action(
 		"RelicChoice",
 		"RunBuildHUDController",
-		"RawInputAndGui",
-		frozenList("One", "Two", "Three", "KeypadOne", "KeypadTwo", "KeypadThree"),
+		"SharedChoiceDispatchAndGui",
+		frozenList(),
 		frozenList("MouseButton1"),
 		frozenList(),
 		frozenList("GuiButton")
@@ -205,6 +214,7 @@ local ActionOrder = table.freeze({
 	"SquadPing",
 	"Revive",
 	"Interact",
+	"NumberedChoiceInput",
 	"UpgradeChoice",
 	"RelicChoice",
 	"OpenCharacter",
