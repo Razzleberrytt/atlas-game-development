@@ -129,7 +129,7 @@ This is now a first-class product lane under Master Roadmap Phase W.
 
 | ID | Status | Task | Deliverable / boundary |
 |---|---|---|---|
-| BA-030 | READY | Dungeon/expedition content contract. | Dungeon IDs, room/encounter sequence, elite/boss slots, reward refs, return path, difficulty metadata. |
+| BA-030 | DONE | Dungeon/expedition content contract. | [`docs/specifications/dungeon-expedition-content-contract.md`](../specifications/dungeon-expedition-content-contract.md) — adds `EncounterSlotId`/`EncounterIntensity`/`RewardSourceId` to the existing handcrafted room pool (`RoomAssemblyContracts`/`RoomAssemblyConfig`), reusing `EquipmentRewardContracts`'s Elite/Boss reward vocabulary and the existing lobby return-to-safety remote for the return path. No spawner/runtime wiring changed. |
 | BA-031 | READY | Portal destination/eligibility contract. | Destination, party/unlock constraints, denial reasons; no teleport authority invented. |
 | BA-032 | BLOCKED on BA-030 | First repeatable dungeon content data. | One short authored dungeon sequence using canonical combat/enemy systems. |
 | BA-033 | BLOCKED on BA-032 | Elite/boss reward-decision data. | References canonical loot/item/run-build owners. |
@@ -231,7 +231,6 @@ BA-021 NPC contracts
 BA-022 crafting contracts
 BA-023 gathering/resource-node model
 BA-024 vendor/catalog contracts
-BA-030 dungeon/expedition contract
 BA-031 portal eligibility contract
 BA-050 authored route data
 BA-052 landmark/discovery definitions
