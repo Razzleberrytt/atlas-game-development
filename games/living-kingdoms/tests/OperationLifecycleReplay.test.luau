@@ -60,6 +60,9 @@ local matchResultConfig = luau.load(fs.readFile("games/living-kingdoms/src/share
 local calls: { string } = {}
 local terminalListeners: { [number]: (causeId: string) -> () } = {}
 local nextListenerId = 0
+local primaryCombatModeResetCount = 0
+local operativeCombatResetCount = 0
+local survivalLootResetCount = 0
 
 local function owner(name: string)
 	return {
@@ -107,9 +110,12 @@ local TOKENS = {
 	EnemyDirectorService = {},
 	MatchResultService = {},
 	MissionDirectorService = {},
+	OperativeCombatRuntimeService = {},
 	OperativeLifeService = {},
+	PrimaryCombatModeService = {},
 	OperativeReviveSessionService = {},
 	SquadFailureService = {},
+	SurvivalLootService = {},
 }
 local modulesByToken = {
 	[TOKENS.MatchResultConfig] = matchResultConfig,
@@ -119,9 +125,24 @@ local modulesByToken = {
 	[TOKENS.EnemyDirectorService] = owner("EnemyDirector"),
 	[TOKENS.MatchResultService] = owner("ContributionRecord"),
 	[TOKENS.MissionDirectorService] = missionDirector,
+	[TOKENS.OperativeCombatRuntimeService] = {
+		resetForReplay = function()
+			operativeCombatResetCount += 1
+		end,
+	},
 	[TOKENS.OperativeLifeService] = operativeLife,
+	[TOKENS.PrimaryCombatModeService] = {
+		resetAllToMelee = function()
+			primaryCombatModeResetCount += 1
+		end,
+	},
 	[TOKENS.OperativeReviveSessionService] = owner("ReviveSessions"),
 	[TOKENS.SquadFailureService] = owner("SquadFailure"),
+	[TOKENS.SurvivalLootService] = {
+		resetForReplay = function()
+			survivalLootResetCount += 1
+		end,
+	},
 }
 
 local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/OperationLifecycleService.luau"), {
@@ -167,6 +188,9 @@ assertThat(service.readCompletedReplayCount() == 0, "no fresh-run reset has comp
 assertThat(service.prepareForLaunch(), "the initial deliberate launch must be allowed")
 assertThat(#calls == 0, "the initial launch must not tear down freshly booted owners")
 assertThat(service.readCompletedReplayCount() == 0, "the initial launch is not a replay reset")
+assertThat(primaryCombatModeResetCount == 0, "the initial launch must not reset primary combat mode")
+assertThat(operativeCombatResetCount == 0, "the initial launch must not reset firearm runtime state")
+assertThat(survivalLootResetCount == 0, "the initial launch must not reset survival loot")
 
 -- A terminal result now holds indefinitely at Resolved. No timer or automatic
 -- restart may execute the cleanup/start sequence.
@@ -180,6 +204,9 @@ assertThat(#calls == 0, "duplicate terminal notification must remain inert")
 assertThat(service.prepareForLaunch(), "a resolved operation must prepare for the next deliberate launch")
 assertThat(service.readReplayStateId() == "InProgress", "prepared fresh state must return to InProgress")
 assertThat(service.readCompletedReplayCount() == 1, "one deliberate replay reset must be recorded")
+assertThat(primaryCombatModeResetCount == 1, "fresh replay must restore melee primary combat mode exactly once")
+assertThat(operativeCombatResetCount == 1, "fresh replay must reset firearm runtime state exactly once")
+assertThat(survivalLootResetCount == 1, "fresh replay must rebuild survival loot exactly once")
 
 local stopCalls = {}
 local startCalls = {}
@@ -224,6 +251,9 @@ table.clear(calls)
 assertThat(service.prepareForLaunch(), "an already-fresh lifecycle must allow the launch")
 assertThat(#calls == 0, "an already-fresh lifecycle must not reset twice")
 assertThat(service.readCompletedReplayCount() == 1, "idempotent launch preparation must not increment reset count")
+assertThat(primaryCombatModeResetCount == 1, "idempotent launch preparation must not reset melee mode twice")
+assertThat(operativeCombatResetCount == 1, "idempotent launch preparation must not reset firearm state twice")
+assertThat(survivalLootResetCount == 1, "idempotent launch preparation must not rebuild survival loot twice")
 
 -- Teardown releases the terminal subscription and refuses future preparation.
 fireResolved()
@@ -256,6 +286,12 @@ assertThat(
 		and not contains(lifecycle, "OperativeLifeService.stop()")
 		and not contains(lifecycle, "OperativeLifeService.start()"),
 	"fresh-run reset must preserve the application-scoped life binding owner"
+)
+assertThat(
+	contains(lifecycle, "PrimaryCombatModeService.resetAllToMelee()")
+		and contains(lifecycle, "OperativeCombatRuntimeService.resetForReplay()")
+		and contains(lifecycle, "SurvivalLootService.resetForReplay()"),
+	"fresh-run replay must reset melee mode, firearm state, and survival loot"
 )
 
 assertThat(
