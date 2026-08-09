@@ -3,7 +3,7 @@
 --[[
 	AUD-0103 client-local hostile audio set.
 
-	Core hostile cues plus Screamer, Bloater, and Brute warnings are temporary
+	Core hostile cues plus horde-role and authored encounter warnings are temporary
 	derivations of the project's two Studio-verified Creator Store assets replayed
 	at shifted speeds. These values control cosmetic feedback only, reacting to
 	already-replicated server-authored presentation attributes.
@@ -12,11 +12,11 @@
 	bounded world-emitter pool so alerts, windups, strikes, impacts, deaths, and
 	special warnings carry directional information. Camera-distance volume scaling
 	and 3D rolloff both remain bounded; neither can establish behavior, damage,
-	health, death, or any consequential gameplay fact.
+	health, death, telegraph timing, or any consequential gameplay fact.
 ]]
 
 local EnemyAudioConfig = {
-	Version = "AUD-0103-v3-spatial-hostile-readability",
+	Version = "AUD-0103-v4-spatial-encounter-readability",
 
 	-- One bounded, reused Sound/emitter pool shared by every cue so a full
 	-- 24-enemy horde can never create unbounded presentation instances.
@@ -84,6 +84,24 @@ local EnemyAudioConfig = {
 		MinimumIntervalSeconds = 0.5,
 	}),
 
+	SpitterBloomWarning = table.freeze({
+		-- Slow metallic charge gives the Corrosive Bloom a directional warning
+		-- that remains distinct from the ordinary Stalker attack windup.
+		SoundId = "rbxassetid://7058441251",
+		Volume = 0.62,
+		PlaybackSpeed = 0.42,
+		MinimumIntervalSeconds = 0.65,
+	}),
+
+	ProgenitorSlamWarning = table.freeze({
+		-- Very low fire-derived thump warns of the boss Slam without implying
+		-- that impact has already committed.
+		SoundId = "rbxassetid://165946267",
+		Volume = 0.78,
+		PlaybackSpeed = 0.13,
+		MinimumIntervalSeconds = 0.7,
+	}),
+
 	Death = table.freeze({
 		SoundId = "rbxassetid://165946267",
 		Volume = 0.5,
@@ -113,7 +131,18 @@ assert(
 		and EnemyAudioConfig.SpatialRollOffMaxDistanceStuds <= EnemyAudioConfig.MaximumAudibleDistanceStuds,
 	"enemy spatial rolloff range must stay ordered and within the audible budget"
 )
-for _, cueName in { "Alert", "Windup", "Strike", "Hit", "ScreamerWarning", "BloaterWarning", "BruteWarning", "Death" } do
+for _, cueName in {
+	"Alert",
+	"Windup",
+	"Strike",
+	"Hit",
+	"ScreamerWarning",
+	"BloaterWarning",
+	"BruteWarning",
+	"SpitterBloomWarning",
+	"ProgenitorSlamWarning",
+	"Death",
+} do
 	local cue = (EnemyAudioConfig :: any)[cueName]
 	assert(type(cue) == "table", "enemy audio cue must exist: " .. cueName)
 	assert(
