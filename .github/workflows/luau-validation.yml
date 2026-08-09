@@ -31,7 +31,7 @@ on:
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -41,6 +41,22 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Patch current MVP roadmap status
+        if: github.head_ref == 'docs/mvp01-status-sync'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/patch_mvp01_roadmap_status_sync.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: sync MVP 0.1 melee and input status"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
 
       - name: Validate repository contract
         shell: bash
@@ -86,9 +102,6 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      # Formatting covers every Luau tree in the game, not just src. Fixtures
-      # and tooling drifted unchecked until 2026-08-08 because this step was
-      # scoped to src alone.
       - name: Check Luau formatting
         shell: bash
         run: |
