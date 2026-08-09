@@ -30,6 +30,14 @@ local function onStrikeIntent(player: Player, requestId: unknown, aimDirection: 
 		return
 	end
 	local result = MeleeCombatService.tryStrike(player, requestId, aimDirection)
+	if result.swingAccepted == true and result.strikeId ~= nil then
+		presentationRemote:FireAllClients({
+			kindId = MessageKindIds.SwingCommitted,
+			attackerUserId = player.UserId,
+			strikeId = result.strikeId,
+			serverTimestamp = result.serverTimestamp,
+		})
+	end
 	if
 		result.accepted ~= true
 		or result.strikeId == nil
