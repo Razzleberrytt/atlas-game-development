@@ -44,8 +44,8 @@ local mission = fs.readFile("games/living-kingdoms/src/client/Controllers/Missio
 -- The horde network carries only presentation state. Upgrade selection lives on
 -- ProgressionNetwork (created in code), so no ChooseUpgrade remote may exist in
 -- the static project tree at all.
-assertThat(contains(project, '\"HordeNetwork\"'), "project mapping is missing the horde network")
-assertThat(contains(project, '\"State\"'), "project mapping is missing the horde state remote")
+assertThat(contains(project, '"HordeNetwork"'), "project mapping is missing the horde network")
+assertThat(contains(project, '"State"'), "project mapping is missing the horde state remote")
 assertThat(not contains(project, "ChooseUpgrade"), "the only upgrade remote must be the runtime ProgressionNetwork one")
 
 for _, required in
