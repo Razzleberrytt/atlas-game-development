@@ -7,6 +7,11 @@
 	player-facing first-run goals around existing canonical surfaces/services and
 	prepared MVP content. It never fires prompts, mutates gameplay, starts a run,
 	grants a reward, returns a player, or restarts an operation.
+
+	The implementation-state labels track current source truth. The First Descent
+	combat path and boss Run Relic decision are now consumed by their existing
+	authoritative runtime owners; the outdoor route and optional discovery remain
+	prepared data awaiting an approved runtime consumer.
 ]]
 
 local HubPreparationConfig = require(script.Parent.HubPreparationConfig)
@@ -74,7 +79,7 @@ end
 local discovery = FirstOutdoorDiscoveryConfig.Discoveries[1]
 
 local FirstSessionOnboardingConfig = {
-	Version = "BA-060-v1",
+	Version = "BA-060-v2-runtime-sync",
 	SequenceId = "onboarding.first-session.mvp-0.1",
 	RuntimeConsumptionActive = false,
 	ImplementationStateIds = ImplementationStateIds,
@@ -157,24 +162,24 @@ local FirstSessionOnboardingConfig = {
 			7,
 			StepKindIds.Dungeon,
 			"Enter the First Descent, survive the room sequence, elite gate, boss, and terminal.",
-			ImplementationStateIds.PreparedData,
+			ImplementationStateIds.RuntimeExisting,
 			false,
-			"PreparedExpeditionContentIntegrationBoundary",
+			"ExpeditionServerBootstrap",
 			FirstDungeonContentConfig.SequenceId,
 			nil,
-			"BA-032 supplies deterministic content data; runtime integration remains separately gated."
+			"The deterministic First Descent room plan, authored enemy composition, elite, and boss now run through the existing expedition and enemy-director authorities."
 		),
 		step(
 			"make-run-reward-choice",
 			8,
 			StepKindIds.Reward,
 			"Make a meaningful two-choice Run Relic decision earned from the operation.",
-			ImplementationStateIds.PreparedIntegration,
+			ImplementationStateIds.RuntimeExisting,
 			false,
 			"RunBuildService",
 			FirstDungeonRewardDecisionConfig.SequenceId,
 			"SubmitRelicChoice",
-			"BA-033 reward mapping is dormant and the boss milestone source remains planned."
+			"The authored boss milestone now offers the canonical server-owned two-choice Run Relic reward without creating a parallel grant path."
 		),
 		step(
 			"read-operation-result",
@@ -205,12 +210,12 @@ local FirstSessionOnboardingConfig = {
 			11,
 			StepKindIds.Upgrade,
 			"Confirm the earned build choice and understand how the next run can play differently.",
-			ImplementationStateIds.PreparedIntegration,
+			ImplementationStateIds.RuntimeExisting,
 			false,
 			"RunBuildService",
 			"run-build.relic-choice",
 			"SubmitRelicChoice",
-			"The choice authority exists, but BA-060 does not create or reroll reward offers."
+			"RunBuildService owns offer legality, choice submission, and the resulting operation-bound relic state."
 		),
 		step(
 			"deliberately-start-next-run",
@@ -227,12 +232,12 @@ local FirstSessionOnboardingConfig = {
 	}),
 }
 
-assert(FirstSessionOnboardingConfig.RuntimeConsumptionActive == false, "BA-060 onboarding data must remain dormant")
+assert(FirstSessionOnboardingConfig.RuntimeConsumptionActive == false, "BA-060 remains dormant orchestration data")
 assert(FirstOutdoorRouteConfig.RuntimeConsumptionActive == false, "BA-060 cannot activate the BA-050 route")
 assert(FirstOutdoorDiscoveryConfig.RuntimeConsumptionActive == false, "BA-060 cannot activate BA-052 discovery data")
 assert(
-	FirstDungeonRewardDecisionConfig.RuntimeConsumptionEnabled == false,
-	"BA-060 cannot activate BA-033 reward-decision consumption"
+	FirstDungeonRewardDecisionConfig.RuntimeConsumptionEnabled == true,
+	"BA-060 must track the live authored First Descent boss reward decision"
 )
 
 local validImplementationStates = {}
