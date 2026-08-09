@@ -49,7 +49,7 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/We
 	injectGlobals = true,
 })()
 
-assertThat(config.Version == "HROI-0123-v1-weapon-identity-feel", "weapon feel version drifted")
+assertThat(config.Version == "MVP-0.1-v2-responsive-gunfeel", "weapon feel version drifted")
 assertThat(config.get(weaponIds.BasicFirearm) ~= nil, "legacy firearm requires a compatibility profile")
 for _, weaponId in selectableWeaponIds do
 	local profile = config.get(weaponId)
@@ -59,6 +59,7 @@ for _, weaponId in selectableWeaponIds do
 	assertThat(profile.CasingLength > 0 and profile.CasingDiameter > 0, "casing dimensions must be positive")
 	assertThat(profile.TracerWidth > 0, "tracer width must be positive")
 	assertThat(profile.ImpactDiameter > 0, "impact size must be positive")
+	assertThat(profile.CameraKickDegrees > 0, "every firearm requires readable camera response")
 	assertThat(
 		profile.AudioPitchMaximumMultiplier >= profile.AudioPitchMinimumMultiplier,
 		"audio pitch must be ordered"
@@ -93,6 +94,8 @@ for _, token in
 		"profile.ReloadPlaybackSpeedMultiplier",
 		"profile.ShotBackSeconds",
 		"profile.ShotReturnSeconds",
+		"profile.CameraKickDegrees",
+		"state.recoilPitchDegrees",
 		"gripKickOffset(profile)",
 		"magazineOutOffset(profile)",
 	}

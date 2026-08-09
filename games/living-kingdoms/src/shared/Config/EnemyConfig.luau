@@ -11,28 +11,29 @@ local EnemyContracts = require(script.Parent.Parent.Combat.EnemyContracts)
 local WorldFoundationConfig = require(script.Parent.WorldFoundationConfig)
 
 local EnemyConfig = {
-	Version = "HORDE-VS-001-v5-readable-opening",
+	Version = "MVP-0.1-v6-purposeful-stalker-pressure",
 	Walker = table.freeze({
 		ArchetypeId = EnemyContracts.EnemyArchetypeIds.ExclusionWalker,
-		DisplayName = "Blackwater Infected Wolf",
+		DisplayName = "Exclusion Stalker",
 		MaximumHealth = 68,
-		PursuitSpeedStudsPerSecond = 13.5,
-		RoamSpeedStudsPerSecond = 8.5,
-		DetectionRadiusStuds = 110,
-		PursuitDropRadiusStuds = 145,
+		PursuitSpeedStudsPerSecond = 16.5,
+		RoamSpeedStudsPerSecond = 5.5,
+		DetectionRadiusStuds = 135,
+		PursuitDropRadiusStuds = 170,
 		AttackRangeStuds = 7,
 		AttackDamage = 20,
 		AttackWindupSeconds = 0.7,
 		AttackCooldownSeconds = 2.1,
-		RoamWanderRadiusStuds = 24,
-		RoamRetargetIntervalSeconds = 4,
+		RoamWanderRadiusStuds = 12,
+		RoamRetargetIntervalSeconds = 6,
 	}),
 	Navigation = table.freeze({
-		PursuitRepathIntervalSeconds = 0.65,
+		PursuitRepathIntervalSeconds = 0.45,
 		AgentRadiusStuds = 2.5,
 		AgentHeightStuds = 4,
 		WaypointSpacingStuds = 5,
 		PackFlankOffsetStuds = 4.5,
+		FlankActivationDistanceStuds = 38,
 	}),
 	FairSpawn = table.freeze({
 		MinimumOperativeDistanceStuds = 64,
@@ -40,8 +41,8 @@ local EnemyConfig = {
 		MaximumDeferredSpawns = 20,
 	}),
 	Population = table.freeze({
-		MaximumConcurrentPerOperative = 10,
-		AbsoluteMaximumConcurrent = 40,
+		MaximumConcurrentPerOperative = 6,
+		AbsoluteMaximumConcurrent = 24,
 	}),
 	Pressure = table.freeze({
 		RoamingByEscalationLevel = table.freeze({

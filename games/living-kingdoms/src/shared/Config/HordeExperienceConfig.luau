@@ -41,7 +41,7 @@ local HordeExperienceConfig = {
 	Roles = table.freeze({
 		Basic = table.freeze({
 			Id = "horde.role.infected",
-			DisplayName = "Infected Wolf",
+			DisplayName = "Exclusion Stalker",
 			Weight = 48,
 			Xp = 20,
 			SpeedFloor = 12,
@@ -51,7 +51,7 @@ local HordeExperienceConfig = {
 		}),
 		Runner = table.freeze({
 			Id = "horde.role.runner",
-			DisplayName = "Rabid Wolf",
+			DisplayName = "Rushing Stalker",
 			Weight = 22,
 			Xp = 20,
 			SpeedFloor = 19,
@@ -61,7 +61,7 @@ local HordeExperienceConfig = {
 		}),
 		Crawler = table.freeze({
 			Id = "horde.role.crawler",
-			DisplayName = "Stalking Wolf",
+			DisplayName = "Low Stalker",
 			Weight = 13,
 			Xp = 20,
 			SpeedFloor = 16,

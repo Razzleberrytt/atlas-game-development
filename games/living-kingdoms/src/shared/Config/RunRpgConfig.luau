@@ -330,6 +330,7 @@ local RelicCatalog = table.freeze({
 	table.freeze({
 		relicId = RelicIds.BloodBattery,
 		displayName = "BLOOD BATTERY",
+		description = "Every 8 confirmed kills restore 6 health.",
 		triggerId = TriggerIds.ConfirmedKill,
 		compatibilityId = CompatibilityIds.Any,
 		modifierCategoryIds = table.freeze({ ModifierIds.Healing }),
@@ -342,6 +343,7 @@ local RelicCatalog = table.freeze({
 	table.freeze({
 		relicId = RelicIds.GraveMomentum,
 		displayName = "GRAVE MOMENTUM",
+		description = "Your kill-chain window lasts 1.5 seconds longer.",
 		triggerId = TriggerIds.KillChainActive,
 		compatibilityId = CompatibilityIds.Any,
 		modifierCategoryIds = table.freeze({ ModifierIds.KillChainWindow }),
@@ -354,6 +356,7 @@ local RelicCatalog = table.freeze({
 	table.freeze({
 		relicId = RelicIds.ChoirBreaker,
 		displayName = "CHOIR BREAKER",
+		description = "Deal 30% more damage to enemies charging a special attack.",
 		triggerId = TriggerIds.EnemySpecialWindup,
 		compatibilityId = CompatibilityIds.Any,
 		modifierCategoryIds = table.freeze({ ModifierIds.SpecialEnemyDamage }),
@@ -366,6 +369,7 @@ local RelicCatalog = table.freeze({
 	table.freeze({
 		relicId = RelicIds.LastLight,
 		displayName = "LAST LIGHT",
+		description = "Deal 25% more damage while reserve ammunition is critically low.",
 		triggerId = TriggerIds.LowReserveAmmunition,
 		compatibilityId = CompatibilityIds.Any,
 		modifierCategoryIds = table.freeze({ ModifierIds.Damage }),
@@ -378,6 +382,7 @@ local RelicCatalog = table.freeze({
 	table.freeze({
 		relicId = RelicIds.EmergencyChamber,
 		displayName = "EMERGENCY CHAMBER",
+		description = "Reload 25% faster while at 35% health or less.",
 		triggerId = TriggerIds.ReloadAccepted,
 		compatibilityId = CompatibilityIds.Any,
 		modifierCategoryIds = table.freeze({ ModifierIds.ReloadDuration }),
@@ -390,6 +395,7 @@ local RelicCatalog = table.freeze({
 	table.freeze({
 		relicId = RelicIds.SalvagersMark,
 		displayName = "SALVAGER'S MARK",
+		description = "Every ammunition pickup grants 4 additional rounds.",
 		triggerId = TriggerIds.AmmunitionLootResolved,
 		compatibilityId = CompatibilityIds.Any,
 		modifierCategoryIds = table.freeze({ ModifierIds.Loot }),
@@ -402,6 +408,7 @@ local RelicCatalog = table.freeze({
 	table.freeze({
 		relicId = RelicIds.ExecutionProtocol,
 		displayName = "EXECUTION PROTOCOL",
+		description = "Deal 40% more damage to enemies below 30% health.",
 		triggerId = TriggerIds.EnemyBelowHealthThreshold,
 		compatibilityId = CompatibilityIds.Any,
 		modifierCategoryIds = table.freeze({ ModifierIds.Damage }),
@@ -414,6 +421,7 @@ local RelicCatalog = table.freeze({
 	table.freeze({
 		relicId = RelicIds.BreachDoctrine,
 		displayName = "BREACH DOCTRINE",
+		description = "Shotgun cone-cleave damage gains 40% power.",
 		triggerId = TriggerIds.ShotgunSecondaryImpact,
 		compatibilityId = CompatibilityIds.Shotgun,
 		modifierCategoryIds = table.freeze({ ModifierIds.PatternDamage }),
@@ -426,6 +434,7 @@ local RelicCatalog = table.freeze({
 	table.freeze({
 		relicId = RelicIds.LongwatchDoctrine,
 		displayName = "LONGWATCH DOCTRINE",
+		description = "Sniper pierce gains 35% damage and special enemies take 25% more.",
 		triggerId = TriggerIds.SniperSecondaryImpact,
 		compatibilityId = CompatibilityIds.Sniper,
 		modifierCategoryIds = table.freeze({ ModifierIds.PatternDamage, ModifierIds.SpecialEnemyDamage }),
@@ -438,6 +447,7 @@ local RelicCatalog = table.freeze({
 	table.freeze({
 		relicId = RelicIds.SuppressionEngine,
 		displayName = "SUPPRESSION ENGINE",
+		description = "After 6 automatic shots, fire faster and deal 20% more damage.",
 		triggerId = TriggerIds.SustainedAutomaticFire,
 		compatibilityId = CompatibilityIds.Automatic,
 		modifierCategoryIds = table.freeze({ ModifierIds.Cadence, ModifierIds.Damage }),
@@ -450,6 +460,7 @@ local RelicCatalog = table.freeze({
 	table.freeze({
 		relicId = RelicIds.GuardianSignal,
 		displayName = "GUARDIAN SIGNAL",
+		description = "Revives grant both operatives temporary armor for 12 seconds.",
 		triggerId = TriggerIds.TeammateRevived,
 		compatibilityId = CompatibilityIds.Cooperative,
 		modifierCategoryIds = table.freeze({ ModifierIds.TemporaryArmor }),
@@ -462,6 +473,7 @@ local RelicCatalog = table.freeze({
 	table.freeze({
 		relicId = RelicIds.SecondWind,
 		displayName = "SECOND WIND",
+		description = "Once per expedition, lethal damage leaves you alive at 20 health.",
 		triggerId = TriggerIds.IncomingIncapacitation,
 		compatibilityId = CompatibilityIds.Any,
 		modifierCategoryIds = table.freeze({ ModifierIds.Healing }),
@@ -760,6 +772,10 @@ for _, definition in RelicCatalog do
 	seenRelicIds[definition.relicId] = true
 	assert(RunRpgContracts.isKnownRelicId(definition.relicId), "relic catalog contains an unknown ID")
 	assert(definition.displayName ~= "", "relics require display names")
+	assert(
+		type(definition.description) == "string" and definition.description ~= "",
+		"relics require player-facing rules"
+	)
 	assert(definition.maximumStacks == 1, "initial relics must remain non-stackable")
 	assert(definition.slotCost == 1, "initial relics must consume one slot")
 	assert(isNonnegativeInteger(definition.counterThreshold), "relic counter thresholds must be whole")

@@ -62,6 +62,10 @@ type State = {
 	reloadGeneration: number,
 	lastLoadedRounds: number?,
 	isReloading: boolean,
+	recoilPitchDegrees: number,
+	recoilYawDegrees: number,
+	recoilFovDegrees: number,
+	recoilRecoveryDegreesPerSecond: number,
 }
 
 local WeaponPresentationController = {}
@@ -89,6 +93,10 @@ local state: State = {
 	reloadGeneration = 0,
 	lastLoadedRounds = nil,
 	isReloading = false,
+	recoilPitchDegrees = 0,
+	recoilYawDegrees = 0,
+	recoilFovDegrees = 0,
+	recoilRecoveryDegreesPerSecond = 12,
 }
 
 local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
@@ -434,6 +442,12 @@ local function playShot(
 		return
 	end
 	local profile = profileForRig(rig)
+	local lastByte = string.byte(shotId, #shotId) or 0
+	local yawSign = if lastByte % 2 == 0 then -1 else 1
+	state.recoilPitchDegrees = math.min(5.5, state.recoilPitchDegrees + profile.CameraKickDegrees)
+	state.recoilYawDegrees = math.clamp(state.recoilYawDegrees + profile.CameraYawDegrees * yawSign, -1.25, 1.25)
+	state.recoilFovDegrees = math.min(2.5, state.recoilFovDegrees + profile.CameraFovKickDegrees)
+	state.recoilRecoveryDegreesPerSecond = profile.CameraRecoveryDegreesPerSecond
 	state.shotGeneration += 1
 	local generation = state.shotGeneration
 	playMotorTween(
@@ -676,7 +690,7 @@ function WeaponPresentationController.start()
 	state.playerAddedConnection = Players.PlayerAdded:Connect(bindPlayer)
 	state.playerRemovingConnection = Players.PlayerRemoving:Connect(unbindPlayer)
 	state.presentationConnection = presentationRemote.OnClientEvent:Connect(onPresentationMessage)
-	state.viewmodelRenderConnection = RunService.RenderStepped:Connect(function()
+	state.viewmodelRenderConnection = RunService.RenderStepped:Connect(function(deltaTime)
 		local anchor = state.viewmodelAnchor
 		local camera = Workspace.CurrentCamera
 		if anchor == nil or camera == nil then
@@ -690,6 +704,18 @@ function WeaponPresentationController.start()
 			localRigValue.model.Parent = camera
 		end
 		anchor.CFrame = camera.CFrame
+		if state.recoilPitchDegrees > 0 or math.abs(state.recoilYawDegrees) > 0.001 then
+			camera.CFrame *= CFrame.Angles(math.rad(-state.recoilPitchDegrees), math.rad(state.recoilYawDegrees), 0)
+		end
+		camera.FieldOfView += state.recoilFovDegrees
+		local recovery = state.recoilRecoveryDegreesPerSecond * math.min(deltaTime, 0.05)
+		state.recoilPitchDegrees = math.max(0, state.recoilPitchDegrees - recovery)
+		if state.recoilYawDegrees > 0 then
+			state.recoilYawDegrees = math.max(0, state.recoilYawDegrees - recovery * 0.45)
+		else
+			state.recoilYawDegrees = math.min(0, state.recoilYawDegrees + recovery * 0.45)
+		end
+		state.recoilFovDegrees = math.max(0, state.recoilFovDegrees - recovery * 0.7)
 	end)
 end
 
@@ -726,6 +752,9 @@ function WeaponPresentationController.stop()
 	table.clear(state.baseGripCFrames)
 	state.lastLoadedRounds = nil
 	state.isReloading = false
+	state.recoilPitchDegrees = 0
+	state.recoilYawDegrees = 0
+	state.recoilFovDegrees = 0
 end
 
 function WeaponPresentationController.destroy()

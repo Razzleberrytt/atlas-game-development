@@ -100,7 +100,7 @@ local function capFor(operativeCount: number): number
 		config.Population.MaximumConcurrentPerOperative * math.max(1, operativeCount)
 	)
 end
-assert(capFor(1) == 10 and capFor(2) == 20 and capFor(4) == 40, "representative 1/2/4 predator caps changed")
+assert(capFor(1) == 6 and capFor(2) == 12 and capFor(4) == 24, "representative 1/2/4 stalker caps changed")
 
 -- Roaming cadence covers every escalation level, tightens monotonically, and
 -- remains bounded by the authored ten-enemy burst maximum.

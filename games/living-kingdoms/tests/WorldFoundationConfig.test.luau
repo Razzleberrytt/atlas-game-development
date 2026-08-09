@@ -8,7 +8,7 @@ local config = luau.load(source, {
 	injectGlobals = true,
 })()
 
-assert(config.Version == "P5-0102-v2-immersive-expanse", "world version changed")
+assert(config.Version == "MVP-0.1-v3-living-dawn", "world version changed")
 assert(config.PlayableHalfExtentStuds == 640, "immersive expanse must retain its authored extent")
 assert(config.Seed == 1847, "deterministic seed changed")
 assert(#config.Landmarks == 8, "required landmark count changed")
@@ -49,11 +49,17 @@ assert(
 	"immersive expanse exceeded the authored tree budget"
 )
 assert(config.Lighting.FogStart < config.Lighting.FogEnd, "fog bounds must be ordered")
-assert(config.Lighting.ClockTime >= 3, "night presentation must retain enough pre-dawn ambient light")
-assert(config.Lighting.Brightness >= 2.2, "world lighting must preserve terrain silhouettes")
-assert(config.Lighting.ExposureCompensation >= 0.2, "dark materials must remain readable during combat")
-assert(config.Lighting.FogStart >= 75, "near-route fog should preserve FPS readability")
-assert(config.Lighting.FogEnd >= 450, "major landmarks need a useful reveal distance")
+assert(config.Vegetation.FernClusterCount >= 36, "near-camera fern detail is too sparse")
+assert(config.Vegetation.WildflowerClusterCount >= 20, "the operation needs bounded color accents")
+assert(config.Vegetation.MushroomClusterCount >= 16, "forest-floor identity is too sparse")
+assert(
+	config.Lighting.ClockTime >= 7 and config.Lighting.ClockTime <= 9,
+	"safe arrival must begin in warm morning light"
+)
+assert(config.Lighting.Brightness >= 2.5, "world lighting must preserve terrain and enemy silhouettes")
+assert(config.Lighting.ExposureCompensation >= 0, "world lighting must not crush dark materials")
+assert(config.Lighting.FogStart >= 110, "near-route fog should preserve exploration readability")
+assert(config.Lighting.FogEnd >= 600, "major landmarks need a useful reveal distance")
 assert(
 	config.InsertionPosition.x == -224 and config.InsertionPosition.z == -208,
 	"insertion must remain at the ranger station"
@@ -105,5 +111,7 @@ end
 assert(string.find(worldSource, "ROUTE_CORRIDORS", 1, true) ~= nil, "route-aware vegetation clearance is missing")
 assert(string.find(worldSource, "buildEvacuationStory", 1, true) ~= nil, "evacuation storytelling pass is missing")
 assert(string.find(worldSource, "buildImmersiveExpanse", 1, true) ~= nil, "immersive outer-region pass is missing")
+assert(string.find(worldSource, "buildLivingGroundDetail", 1, true) ~= nil, "living ground-detail pass is missing")
+assert(string.find(worldSource, "grade.Saturation = 0.16", 1, true) ~= nil, "warm color grade is missing")
 
 print("WorldFoundationConfig fixtures passed")

@@ -17,25 +17,31 @@ local Config = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)
 local WorldFoundationService = {}
 
 local COLORS = table.freeze({
-	soil = Color3.fromRGB(55, 58, 46),
-	forestFloor = Color3.fromRGB(48, 60, 44),
-	road = Color3.fromRGB(79, 71, 59),
-	trail = Color3.fromRGB(92, 79, 60),
-	rock = Color3.fromRGB(76, 79, 76),
-	rockDark = Color3.fromRGB(56, 61, 59),
-	trunk = Color3.fromRGB(66, 49, 36),
-	pine = Color3.fromRGB(29, 58, 42),
-	pineDark = Color3.fromRGB(22, 45, 34),
-	hardwood = Color3.fromRGB(48, 70, 42),
-	wood = Color3.fromRGB(89, 68, 48),
-	structure = Color3.fromRGB(73, 81, 76),
+	soil = Color3.fromRGB(85, 69, 45),
+	forestFloor = Color3.fromRGB(57, 82, 43),
+	road = Color3.fromRGB(105, 83, 56),
+	trail = Color3.fromRGB(126, 96, 57),
+	rock = Color3.fromRGB(101, 108, 101),
+	rockDark = Color3.fromRGB(67, 76, 70),
+	trunk = Color3.fromRGB(82, 54, 34),
+	pine = Color3.fromRGB(35, 88, 53),
+	pineDark = Color3.fromRGB(24, 65, 42),
+	hardwood = Color3.fromRGB(68, 105, 45),
+	wood = Color3.fromRGB(121, 82, 47),
+	structure = Color3.fromRGB(89, 103, 91),
 	military = Color3.fromRGB(67, 72, 58),
-	water = Color3.fromRGB(47, 77, 83),
+	water = Color3.fromRGB(43, 112, 126),
 	emergency = Color3.fromRGB(184, 41, 29),
 	tape = Color3.fromRGB(225, 187, 51),
 	utility = Color3.fromRGB(139, 118, 70),
 	medical = Color3.fromRGB(183, 194, 181),
 	mud = Color3.fromRGB(48, 40, 32),
+	fern = Color3.fromRGB(55, 126, 55),
+	fernLight = Color3.fromRGB(91, 157, 62),
+	wildflowerGold = Color3.fromRGB(255, 196, 62),
+	wildflowerBlue = Color3.fromRGB(96, 150, 255),
+	mushroomCap = Color3.fromRGB(225, 94, 66),
+	leafLitter = Color3.fromRGB(151, 87, 38),
 })
 
 local started = false
@@ -1850,18 +1856,89 @@ local function buildVegetation(parent: Folder)
 	end
 end
 
+-- A bounded ground-detail layer gives the forest a near-camera identity. These
+-- clusters are visual only, deterministic, non-colliding, and kept separate
+-- from route and landmark geometry so they can be replaced by authored assets.
+local function buildLivingGroundDetail(parent: Folder)
+	local detail = makeFolder("LivingGroundDetail", parent)
+	local random = Random.new(Config.Seed + 903)
+	for clusterIndex = 1, Config.Vegetation.FernClusterCount do
+		local origin = randomOpenPosition(random)
+		for frondIndex = 1, 3 do
+			local angle = frondIndex * 2.094 + random:NextNumber(-0.35, 0.35)
+			local frond = makePart(
+				detail,
+				"FernFrond",
+				Vector3.new(0.22, random:NextNumber(1.8, 3.4), random:NextNumber(0.9, 1.5)),
+				CFrame.new(origin + Vector3.new(math.cos(angle) * 0.7, 1.15, math.sin(angle) * 0.7))
+					* CFrame.Angles(math.rad(-18), angle, math.rad(math.cos(angle) * 24)),
+				if clusterIndex % 4 == 0 then COLORS.fernLight else COLORS.fern,
+				Enum.Material.Grass,
+				false
+			)
+			frond:SetAttribute("GroundDetailCluster", clusterIndex)
+		end
+	end
+	for clusterIndex = 1, Config.Vegetation.WildflowerClusterCount do
+		local origin = randomOpenPosition(random)
+		for bloomIndex = 1, 4 do
+			local angle = bloomIndex * 1.57 + random:NextNumber(-0.5, 0.5)
+			local bloom = makePart(
+				detail,
+				"WildflowerBloom",
+				Vector3.new(0.42, 0.42, 0.42),
+				CFrame.new(
+					origin + Vector3.new(math.cos(angle) * 1.1, random:NextNumber(0.45, 0.9), math.sin(angle) * 1.1)
+				),
+				if clusterIndex % 2 == 0 then COLORS.wildflowerGold else COLORS.wildflowerBlue,
+				Enum.Material.SmoothPlastic,
+				false
+			)
+			bloom.Shape = Enum.PartType.Ball
+		end
+	end
+	for _clusterIndex = 1, Config.Vegetation.MushroomClusterCount do
+		local origin = randomOpenPosition(random)
+		for _mushroomIndex = 1, 3 do
+			local offset = Vector3.new(random:NextNumber(-1.4, 1.4), 0, random:NextNumber(-1.4, 1.4))
+			local cap = makePart(
+				detail,
+				"MushroomCap",
+				Vector3.new(0.55, 0.28, 0.55),
+				CFrame.new(origin + offset + Vector3.new(0, 0.38, 0)),
+				COLORS.mushroomCap,
+				Enum.Material.SmoothPlastic,
+				false
+			)
+			cap.Shape = Enum.PartType.Ball
+		end
+	end
+	for patchIndex = 1, 36 do
+		local position = randomOpenPosition(random)
+		makePart(
+			detail,
+			"LeafLitterPatch",
+			Vector3.new(random:NextNumber(2.5, 5), 0.06, random:NextNumber(2.5, 5)),
+			CFrame.new(position + Vector3.new(0, 0.04, 0)) * CFrame.Angles(0, random:NextNumber(0, math.pi), 0),
+			if patchIndex % 3 == 0 then COLORS.wildflowerGold else COLORS.leafLitter,
+			Enum.Material.LeafyGrass,
+			false
+		)
+	end
+end
+
 local function configureLighting()
 	Lighting.ClockTime = Config.Lighting.ClockTime
 	Lighting.GeographicLatitude = Config.Lighting.GeographicLatitude
 	Lighting.Brightness = Config.Lighting.Brightness
 	Lighting.ExposureCompensation = Config.Lighting.ExposureCompensation
-	Lighting.Ambient = Color3.fromRGB(35, 44, 56)
-	Lighting.OutdoorAmbient = Color3.fromRGB(48, 59, 71)
-	Lighting.EnvironmentDiffuseScale = 0.48
-	Lighting.EnvironmentSpecularScale = 0.4
+	Lighting.Ambient = Color3.fromRGB(91, 85, 71)
+	Lighting.OutdoorAmbient = Color3.fromRGB(132, 126, 104)
+	Lighting.EnvironmentDiffuseScale = 0.7
+	Lighting.EnvironmentSpecularScale = 0.5
 	Lighting.GlobalShadows = true
 	Lighting.ShadowSoftness = 0.38
-	Lighting.FogColor = Color3.fromRGB(36, 48, 57)
+	Lighting.FogColor = Color3.fromRGB(151, 178, 172)
 	Lighting.FogStart = Config.Lighting.FogStart
 	Lighting.FogEnd = Config.Lighting.FogEnd
 
@@ -1880,29 +1957,29 @@ local function configureLighting()
 	end
 	local atmosphere = Instance.new("Atmosphere")
 	atmosphere.Name = "LivingKingdomsAtmosphere"
-	atmosphere.Color = Color3.fromRGB(94, 118, 133)
-	atmosphere.Decay = Color3.fromRGB(25, 35, 44)
-	atmosphere.Density = 0.28
+	atmosphere.Color = Color3.fromRGB(196, 216, 205)
+	atmosphere.Decay = Color3.fromRGB(82, 106, 95)
+	atmosphere.Density = 0.22
 	atmosphere.Offset = 0.05
-	atmosphere.Glare = 0.015
-	atmosphere.Haze = 1.55
+	atmosphere.Glare = 0.08
+	atmosphere.Haze = 1.05
 	atmosphere.Parent = Lighting
 	local grade = Instance.new("ColorCorrectionEffect")
 	grade.Name = "LivingKingdomsColorGrade"
-	grade.Brightness = -0.025
-	grade.Contrast = 0.14
-	grade.Saturation = -0.18
-	grade.TintColor = Color3.fromRGB(184, 205, 216)
+	grade.Brightness = 0.015
+	grade.Contrast = 0.08
+	grade.Saturation = 0.16
+	grade.TintColor = Color3.fromRGB(255, 238, 208)
 	grade.Parent = Lighting
 	local bloom = Instance.new("BloomEffect")
 	bloom.Name = "LivingKingdomsBloom"
-	bloom.Intensity = 0.42
-	bloom.Size = 30
-	bloom.Threshold = 0.92
+	bloom.Intensity = 0.22
+	bloom.Size = 24
+	bloom.Threshold = 1.25
 	bloom.Parent = Lighting
 	local sunRays = Instance.new("SunRaysEffect")
 	sunRays.Name = "LivingKingdomsSunRays"
-	sunRays.Intensity = 0.015
+	sunRays.Intensity = 0.055
 	sunRays.Spread = 0.55
 	sunRays.Parent = Lighting
 	local existingClouds = Workspace.Terrain:FindFirstChild("LivingKingdomsClouds")
@@ -1911,9 +1988,9 @@ local function configureLighting()
 	end
 	local clouds = Instance.new("Clouds")
 	clouds.Name = "LivingKingdomsClouds"
-	clouds.Cover = 0.72
-	clouds.Density = 0.68
-	clouds.Color = Color3.fromRGB(57, 66, 74)
+	clouds.Cover = 0.42
+	clouds.Density = 0.48
+	clouds.Color = Color3.fromRGB(232, 225, 205)
 	clouds.Parent = Workspace.Terrain
 end
 
@@ -1944,6 +2021,7 @@ function WorldFoundationService.start()
 	buildExtraction(landmarks)
 	buildEvacuationStory(worldRoot)
 	buildVegetation(worldRoot)
+	buildLivingGroundDetail(worldRoot)
 	local generatedSpawn = worldRoot:FindFirstChild("SquadInsertion", true)
 	assert(generatedSpawn ~= nil and generatedSpawn:IsA("SpawnLocation"), "world insertion spawn was not generated")
 	insertionSpawn = generatedSpawn

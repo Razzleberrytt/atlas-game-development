@@ -141,6 +141,9 @@ assertThat(
 	contains(controller, "RELIC REQUEST REJECTED: "),
 	"a rejected request must be explained rather than silently dropped"
 )
+assertThat(contains(controller, "definition.description"), "relic choices must explain their implemented effect")
+assertThat(contains(controller, "Enum.KeyCode.One"), "relic choices must support keyboard selection")
+assertThat(contains(controller, "LK_InputModalOpen"), "relic choices must release the first-person cursor")
 
 -- Exactly one connection per surface, and teardown releases them.
 assertThat(count(controller, "OnClientEvent:Connect") == 1, "the HUD must use one disclosure connection")

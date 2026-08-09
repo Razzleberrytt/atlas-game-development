@@ -505,8 +505,12 @@ local function setOpen(open: boolean, tabName: string?)
 	if modal == nil then
 		return
 	end
+	if open and not modal.Visible and player:GetAttribute("LK_InputModalOpen") == true then
+		return
+	end
 	modal.Visible = open
 	UserInputService.MouseIconEnabled = open
+	player:SetAttribute("LK_InputModalOpen", if open then true else nil)
 	if open then
 		selectTab(tabName or "Character")
 	end
@@ -546,7 +550,6 @@ local function createPresentation()
 	created.ResetOnSpawn = false
 	created.IgnoreGuiInset = true
 	created.DisplayOrder = 70
-	topButton(created, "K   SKILLS", -284, "Skills")
 	topButton(created, "C   CHARACTER", -148, "Character")
 	topButton(created, "I   INVENTORY", -12, "Inventory")
 
@@ -595,13 +598,9 @@ local function createPresentation()
 	invTab.AnchorPoint = Vector2.new(0, 0)
 	invTab.Position = UDim2.fromOffset(407, 11)
 	invTab.Size = UDim2.fromOffset(125, 36)
-	local skillTab = topButton(window, "SKILLS", -12, "Skills")
-	skillTab.AnchorPoint = Vector2.new(0, 0)
-	skillTab.Position = UDim2.fromOffset(539, 11)
-	skillTab.Size = UDim2.fromOffset(125, 36)
 	characterTab = charTab
 	inventoryTab = invTab
-	skillsTab = skillTab
+	skillsTab = nil
 
 	local charPanel = Instance.new("Frame")
 	charPanel.Name = "CharacterPanel"
@@ -722,8 +721,6 @@ function Controller.start()
 				toggleTab("Character")
 			elseif input.KeyCode == Enum.KeyCode.I then
 				toggleTab("Inventory")
-			elseif input.KeyCode == Enum.KeyCode.K then
-				toggleTab("Skills")
 			elseif input.KeyCode == Enum.KeyCode.Escape and modal ~= nil and modal.Visible then
 				setOpen(false)
 			end
@@ -778,6 +775,7 @@ end
 
 function Controller.stop()
 	started = false
+	player:SetAttribute("LK_InputModalOpen", nil)
 	for _, connection in connections do
 		connection:Disconnect()
 	end
