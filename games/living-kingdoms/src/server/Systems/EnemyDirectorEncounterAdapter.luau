@@ -4,6 +4,12 @@
 	VS-0110 narrow server-only adapter around the existing EnemyDirectorService.
 	It exposes no remotes and never owns combat truth. Authored wave completion is
 	based on the exact spawned entity IDs, not a fragile global population count.
+
+	Typed authored definitions are forwarded into the director's existing
+	spawnEnemy authority so special archetypes and canonical horde roles retain
+	their real mechanics. The existing spawnAuthoredWave entry point is still used
+	with an empty definition list to preserve authored-pressure/recovery pacing
+	without creating duplicate enemies.
 ]]
 
 export type EncounterContext = {
@@ -16,9 +22,23 @@ export type EncounterContext = {
 	Seed: number,
 }
 
-export type WaveDefinition = { id: string, name: string, x: number, y: number, z: number }
+export type WaveDefinition = {
+	id: string,
+	name: string,
+	x: number,
+	y: number,
+	z: number,
+	archetypeId: string,
+	hordeRoleId: string?,
+}
+export type SpawnResult = {
+	didSpawn: boolean,
+	wasDeferred: boolean,
+	rejectionReasonId: string?,
+}
 export type Director = {
-	spawnAuthoredWave: (waveIndex: number, definitions: { WaveDefinition }) -> number,
+	spawnAuthoredWave: (waveIndex: number, definitions: { any }) -> number,
+	spawnEnemy: (request: any) -> SpawnResult,
 	spawnBoss: (position: { x: number, y: number, z: number }, floodlightsRestored: boolean) -> boolean,
 	readEnemyCombatFacts: () -> { { entityId: string, isAlive: boolean } },
 	readBossState: () -> { exists: boolean, isAlive: boolean, isDefeated: boolean },
@@ -67,6 +87,30 @@ local function copyContext(context: EncounterContext): EncounterContext
 	})
 end
 
+local function startTypedWave(state: Internal, waveIndex: number, wave: { WaveDefinition }): boolean
+	-- Preserve the director's existing authored-wave escalation/recovery side
+	-- effects, but do not let that legacy helper mint generic walkers for typed
+	-- First Descent definitions.
+	state.Director.spawnAuthoredWave(waveIndex, {})
+
+	local accepted = 0
+	for _, enemy in wave do
+		local spawnResult = state.Director.spawnEnemy({
+			entityId = enemy.id,
+			archetypeId = enemy.archetypeId,
+			spawnSourceId = "AuthoredWave",
+			displayName = enemy.name,
+			position = { x = enemy.x, y = enemy.y, z = enemy.z },
+			isHordePulse = enemy.hordeRoleId ~= nil,
+			hordeRoleId = enemy.hordeRoleId,
+		})
+		if spawnResult.didSpawn or spawnResult.wasDeferred then
+			accepted += 1
+		end
+	end
+	return accepted > 0
+end
+
 local function startEncounter(state: Internal, context: EncounterContext): boolean
 	if state.Destroyed or state.ActiveContext ~= nil then
 		return false
@@ -86,12 +130,18 @@ local function startEncounter(state: Internal, context: EncounterContext): boole
 			return false
 		end
 		for _, enemy in wave do
-			if type(enemy.id) ~= "string" or enemy.id == "" or tracked[enemy.id] then
+			if
+				type(enemy.id) ~= "string"
+				or enemy.id == ""
+				or tracked[enemy.id]
+				or type(enemy.archetypeId) ~= "string"
+				or enemy.archetypeId == ""
+			then
 				return false
 			end
 			tracked[enemy.id] = true
 		end
-		if state.Director.spawnAuthoredWave(waveIndex, wave) <= 0 then
+		if not startTypedWave(state, waveIndex, wave) then
 			return false
 		end
 	elseif definition.Kind == "Boss" then
