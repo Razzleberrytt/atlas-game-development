@@ -956,12 +956,19 @@ function OperativeCombatRuntimeService.equipFoundWeapon(player: Player, weaponId
 	playerState.generation += 1
 	playerState.operativeState.combatStateId = CombatContracts.OperativeCombatStateIds.Ready
 	playerState.operativeState.equippedWeaponId = weaponId
-	playerState.weaponState = createWeaponState(weaponId, 0)
+	local nextWeaponState = createWeaponState(weaponId, 0)
 	if swap.Accepted then
-		playerState.weaponState.ammunition.loadedRounds = swap.LoadedRounds
-		playerState.weaponState.ammunition.reserveRounds = swap.ReserveRounds
+		-- RunMagazineCapacityResolver returns an immutable ammunition snapshot.
+		-- Replace that snapshot atomically instead of mutating its readonly fields.
+		nextWeaponState.ammunition = {
+			weaponId = weaponId,
+			loadedRounds = swap.LoadedRounds,
+			reserveRounds = swap.ReserveRounds,
+			magazineCapacity = definition.MagazineCapacity,
+		}
 	end
-	playerState.weaponState.readinessStateId = if playerState.weaponState.ammunition.loadedRounds == 0
+	playerState.weaponState = nextWeaponState
+	playerState.weaponState.readinessStateId = if nextWeaponState.ammunition.loadedRounds == 0
 		then CombatContracts.WeaponReadinessStateIds.Empty
 		else CombatContracts.WeaponReadinessStateIds.Ready
 	playerState.selectedTargetEntityId = nil
