@@ -36,7 +36,10 @@ local expectedKeyboardTokens = {
 local seenKeyboardTokens = {}
 for _, collision in canonical.Collisions do
 	assert(collision.FamilyId == families.Keyboard, "canonical gamepad direct bindings must remain collision-free")
-	assert(expectedKeyboardTokens[collision.BindingToken] == true, `unexpected canonical collision: {collision.BindingToken}`)
+	assert(
+		expectedKeyboardTokens[collision.BindingToken] == true,
+		`unexpected canonical collision: {collision.BindingToken}`
+	)
 	assert(not seenKeyboardTokens[collision.BindingToken], "canonical collision tokens must be unique")
 	seenKeyboardTokens[collision.BindingToken] = true
 	assert(#collision.ActionIds == 2)
