@@ -220,7 +220,10 @@ local function validateQuestReferences(graph: CrossDomainGraph, issues: { Valida
 			if rewardIds[reward.RewardRefId] ~= true then
 				addIssue(issues, Validator.IssueCodes.UnknownRewardRef, "Quest", quest.QuestId, reward.RewardRefId)
 			end
-			if reward.RewardAuthorityOwnerId ~= nil and rewardAuthorityOwnerIds[reward.RewardAuthorityOwnerId] ~= true then
+			if
+				reward.RewardAuthorityOwnerId ~= nil
+				and rewardAuthorityOwnerIds[reward.RewardAuthorityOwnerId] ~= true
+			then
 				addIssue(
 					issues,
 					Validator.IssueCodes.UnknownRewardAuthorityOwner,
@@ -374,13 +377,7 @@ local function validateVendorReferences(graph: CrossDomainGraph, issues: { Valid
 		for _, catalogRefId in vendor.CatalogRefIds do
 			local catalog = catalogsById[catalogRefId]
 			if catalog == nil then
-				addIssue(
-					issues,
-					Validator.IssueCodes.UnknownVendorCatalogRef,
-					"Vendor",
-					vendor.VendorId,
-					catalogRefId
-				)
+				addIssue(issues, Validator.IssueCodes.UnknownVendorCatalogRef, "Vendor", vendor.VendorId, catalogRefId)
 			elseif vendor.RuntimeEnabled and not catalog.RuntimeEnabled then
 				addIssue(
 					issues,
@@ -396,7 +393,13 @@ local function validateVendorReferences(graph: CrossDomainGraph, issues: { Valid
 	for _, catalog in graph.Catalogs do
 		for _, entry in catalog.Entries do
 			if itemIds[entry.ItemRefId] ~= true then
-				addIssue(issues, Validator.IssueCodes.UnknownItemRef, "VendorCatalog", catalog.CatalogId, entry.ItemRefId)
+				addIssue(
+					issues,
+					Validator.IssueCodes.UnknownItemRef,
+					"VendorCatalog",
+					catalog.CatalogId,
+					entry.ItemRefId
+				)
 			end
 			if currencyIds[entry.Price.CurrencyRefId] ~= true then
 				addIssue(
