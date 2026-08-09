@@ -36,7 +36,10 @@ for _, actionId in config.ActionOrder do
 	assert(definition ~= nil, `missing action definition: {actionId}`)
 	assert(definition.ActionId == actionId, `definition ID must match map key: {actionId}`)
 	assert(type(definition.OwnerId) == "string" and definition.OwnerId ~= "", `missing owner for {actionId}`)
-	assert(type(definition.MechanismId) == "string" and definition.MechanismId ~= "", `missing mechanism for {actionId}`)
+	assert(
+		type(definition.MechanismId) == "string" and definition.MechanismId ~= "",
+		`missing mechanism for {actionId}`
+	)
 	assert(type(definition.KeyboardKeyCodeNames) == "table")
 	assert(type(definition.MouseInputTypeNames) == "table")
 	assert(type(definition.GamepadKeyCodeNames) == "table")
@@ -118,18 +121,20 @@ assert(contains(rpgMenu, "Enum.KeyCode.Escape"))
 local hubPreparation = fs.readFile(CLIENT .. "HubPreparationController.luau")
 assert(contains(hubPreparation, "Enum.KeyCode.Escape"))
 
-for _, token in {
-	"GetService",
-	"BindAction",
-	"InputBegan",
-	"FireServer",
-	"InvokeServer",
-	"RemoteEvent",
-	"DataStore",
-	"Instance.new",
-	"SetAsync",
-	"UpdateAsync",
-} do
+for _, token in
+	{
+		"GetService",
+		"BindAction",
+		"InputBegan",
+		"FireServer",
+		"InvokeServer",
+		"RemoteEvent",
+		"DataStore",
+		"Instance.new",
+		"SetAsync",
+		"UpdateAsync",
+	}
+do
 	assert(not contains(source, token), `shared action map must stay configuration-only: {token}`)
 end
 
