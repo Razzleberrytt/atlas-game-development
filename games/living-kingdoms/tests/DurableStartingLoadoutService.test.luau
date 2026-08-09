@@ -118,4 +118,6 @@ reset({
 assert(service.applyForPlayer(player).ReasonId == "NoEquippedDurableWeapon", "non-weapon slots cannot drive combat")
 assert(#equippedWeaponIds == 0)
 
-print("DurableStartingLoadoutService: primary preference, sidearm fallback, authored WeaponId, and fail-closed state passed")
+print(
+	"DurableStartingLoadoutService: primary preference, sidearm fallback, authored WeaponId, and fail-closed state passed"
+)
