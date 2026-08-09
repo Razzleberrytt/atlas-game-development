@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
+local MeleePresentationContracts = require(ReplicatedStorage.Shared.Combat.MeleePresentationContracts)
 local PrimaryCombatModeContracts = require(ReplicatedStorage.Shared.Combat.PrimaryCombatModeContracts)
 local MeleeCombatConfig = require(ReplicatedStorage.Shared.Config.MeleeCombatConfig)
 
@@ -21,11 +22,16 @@ local ModeIds = PrimaryCombatModeContracts.ModeIds
 local MODEL_NAME = "MeleePresentation"
 local FIRST_PERSON_MODEL_NAME = "FirstPersonMelee"
 local SWING_DURATION_SECONDS = math.min(0.5, MeleeCombatConfig.OpeningWeapon.CadenceSeconds * 0.8)
+local HIT_FLASH_DURATION_SECONDS = 0.12
+local BLADE_IDLE_COLOR = Color3.fromRGB(116, 123, 122)
+local BLADE_HIT_COLOR = Color3.fromRGB(225, 238, 220)
+local BLADE_KILL_COLOR = Color3.fromRGB(255, 219, 132)
 
 local started = false
 local playerAddedConnection: RBXScriptConnection? = nil
 local playerRemovingConnection: RBXScriptConnection? = nil
 local renderConnection: RBXScriptConnection? = nil
+local presentationConnection: RBXScriptConnection? = nil
 local modeConnections: { [Player]: RBXScriptConnection } = {}
 local characterConnections: { [Player]: RBXScriptConnection } = {}
 local remoteModels: { [Player]: Model } = {}
@@ -33,6 +39,10 @@ local localModel: Model? = nil
 local localHandle: BasePart? = nil
 local localBlade: BasePart? = nil
 local localSwingStartedAtClock: number? = nil
+local localHitConfirmedAtClock: number? = nil
+local localHitWasKill = false
+local meleeNetwork = ReplicatedStorage:WaitForChild("MeleeNetwork")
+local presentationRemote = meleeNetwork:WaitForChild("Presentation") :: RemoteEvent
 
 local function makePart(name: string, size: Vector3, color: Color3, material: Enum.Material): Part
 	local part = Instance.new("Part")
@@ -57,7 +67,7 @@ local function createHatchetModel(name: string, anchored: boolean): (Model, Part
 	local handle = makePart("Handle", Vector3.new(0.42, 3.7, 0.42), Color3.fromRGB(91, 58, 35), Enum.Material.Wood)
 	handle.Anchored = anchored
 	handle.Parent = model
-	local blade = makePart("Blade", Vector3.new(1.8, 1.35, 0.28), Color3.fromRGB(116, 123, 122), Enum.Material.Metal)
+	local blade = makePart("Blade", Vector3.new(1.8, 1.35, 0.28), BLADE_IDLE_COLOR, Enum.Material.Metal)
 	blade.Anchored = anchored
 	blade.Parent = model
 	model.PrimaryPart = handle
@@ -93,6 +103,8 @@ local function destroyLocalModel()
 	localHandle = nil
 	localBlade = nil
 	localSwingStartedAtClock = nil
+	localHitConfirmedAtClock = nil
+	localHitWasKill = false
 end
 
 local function createLocalModel()
@@ -201,6 +213,32 @@ local function localSwingAmount(nowClock: number): number
 	return math.sin(math.clamp(progress, 0, 1) * math.pi)
 end
 
+local function applyLocalHitFlash(blade: BasePart, nowClock: number)
+	local confirmedAt = localHitConfirmedAtClock
+	if confirmedAt ~= nil and nowClock - confirmedAt <= HIT_FLASH_DURATION_SECONDS then
+		blade.Material = Enum.Material.Neon
+		blade.Color = if localHitWasKill then BLADE_KILL_COLOR else BLADE_HIT_COLOR
+		return
+	end
+	localHitConfirmedAtClock = nil
+	localHitWasKill = false
+	blade.Material = Enum.Material.Metal
+	blade.Color = BLADE_IDLE_COLOR
+end
+
+local function onPresentation(message: unknown)
+	if not MeleePresentationContracts.validateHitConfirmedMessage(message) then
+		return
+	end
+	local player = Players.LocalPlayer
+	if player == nil or player:GetAttribute(AttributeName) ~= ModeIds.Melee then
+		return
+	end
+	local confirmed = message :: MeleePresentationContracts.HitConfirmedMessage
+	localHitConfirmedAtClock = os.clock()
+	localHitWasKill = confirmed.becameDead
+end
+
 function Controller.playLocalSwing()
 	local player = Players.LocalPlayer
 	if not started or player == nil or player:GetAttribute(AttributeName) ~= ModeIds.Melee then
@@ -222,6 +260,7 @@ function Controller.start()
 	end
 	playerAddedConnection = Players.PlayerAdded:Connect(bindPlayer)
 	playerRemovingConnection = Players.PlayerRemoving:Connect(unbindPlayer)
+	presentationConnection = presentationRemote.OnClientEvent:Connect(onPresentation)
 	renderConnection = RunService.RenderStepped:Connect(function()
 		local player = Players.LocalPlayer
 		if player == nil or player:GetAttribute(AttributeName) ~= ModeIds.Melee then
@@ -240,7 +279,8 @@ function Controller.start()
 			return
 		end
 
-		local swing = localSwingAmount(os.clock())
+		local nowClock = os.clock()
+		local swing = localSwingAmount(nowClock)
 		local x = 0.72 - 0.16 * swing
 		local y = -0.78 + 0.1 * swing
 		local z = -1.25 - 0.24 * swing
@@ -251,6 +291,7 @@ function Controller.start()
 			* CFrame.new(x, y, z)
 			* CFrame.Angles(math.rad(pitchDegrees), math.rad(yawDegrees), math.rad(rollDegrees))
 		blade.CFrame = handle.CFrame * CFrame.new(0.72, 1.25, 0)
+		applyLocalHitFlash(blade, nowClock)
 	end)
 end
 
@@ -270,6 +311,10 @@ function Controller.stop()
 	if renderConnection ~= nil then
 		renderConnection:Disconnect()
 		renderConnection = nil
+	end
+	if presentationConnection ~= nil then
+		presentationConnection:Disconnect()
+		presentationConnection = nil
 	end
 	local players = {}
 	for player in modeConnections do
