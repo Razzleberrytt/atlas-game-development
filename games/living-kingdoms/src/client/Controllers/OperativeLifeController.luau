@@ -6,8 +6,9 @@
 	it never reports progress, distance, health, completion, or authority facts.
 
 	Input is a ContextActionService hold binding, so the same handler serves the
-	keyboard (E) and an auto-created touch button — a mobile squad can rescue a
-	downed teammate without a keyboard.
+	keyboard (V) and an auto-created touch button — a mobile squad can rescue a
+	downed teammate without a keyboard. V stays distinct from the engine-default
+	E interaction key used by ProximityPrompt.
 ]]
 
 local ContextActionService = game:GetService("ContextActionService")
@@ -92,7 +93,7 @@ function Controller.start()
 	end
 	started = true
 	-- `true` creates the mobile touch button. Held: Begin on press, End on release.
-	ContextActionService:BindAction(ACTION_NAME, onReviveAction, true, Enum.KeyCode.E)
+	ContextActionService:BindAction(ACTION_NAME, onReviveAction, true, Enum.KeyCode.V)
 	ContextActionService:SetTitle(ACTION_NAME, "Revive")
 end
 

@@ -174,7 +174,7 @@ local function setBinding(shouldBind: boolean)
 	end
 	isBound = shouldBind
 	if shouldBind then
-		ContextActionService:BindAction(ACTION_NAME, onBraceInput, true, Enum.KeyCode.Q, Enum.KeyCode.ButtonX)
+		ContextActionService:BindAction(ACTION_NAME, onBraceInput, true, Enum.KeyCode.Q, Enum.KeyCode.ButtonB)
 		ContextActionService:SetTitle(ACTION_NAME, "ACTION")
 	else
 		ContextActionService:UnbindAction(ACTION_NAME)
@@ -404,7 +404,7 @@ local function createPresentation()
 	label.Size = UDim2.new(1, -26, 0, 24)
 	label.BackgroundTransparency = 1
 	label.Font = Enum.Font.GothamBold
-	label.Text = "BRACE READY  •  Q / GAMEPAD X"
+	label.Text = "BRACE READY  •  Q / GAMEPAD B"
 	label.TextColor3 = Color3.fromRGB(247, 222, 174)
 	label.TextSize = 12
 	label.TextXAlignment = Enum.TextXAlignment.Left

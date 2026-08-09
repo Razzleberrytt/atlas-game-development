@@ -112,12 +112,12 @@ assertThat(
 	"the keyboard handler must route through the same shared reload path"
 )
 
--- Revive is core co-op and was keyboard-only (E). It now binds through
--- ContextActionService with a touch button, so a mobile squad can rescue a
--- downed teammate, while keeping the exact server intent shape.
+-- Revive is core co-op. It binds keyboard V plus an auto-created touch button
+-- through one ContextActionService action, keeping E free for world prompts while
+-- preserving the exact server intent shape.
 assertThat(
-	contains(life, "ContextActionService:BindAction(ACTION_NAME, onReviveAction, true, Enum.KeyCode.E)"),
-	"revive must bind keyboard E and an auto-created touch button through one action"
+	contains(life, "ContextActionService:BindAction(ACTION_NAME, onReviveAction, true, Enum.KeyCode.V)"),
+	"revive must bind keyboard V and an auto-created touch button through one action"
 )
 assertThat(
 	contains(life, "inputState == Enum.UserInputState.Begin") and contains(life, "Enum.UserInputState.End"),
@@ -128,7 +128,7 @@ assertThat(
 	"the client revive intent shape must be unchanged"
 )
 assertThat(
-	not contains(life, "UserInputService.InputBegan") and not contains(life, "input.KeyCode ~= Enum.KeyCode.E"),
+	not contains(life, "UserInputService.InputBegan") and not contains(life, "input.KeyCode ~= Enum.KeyCode.V"),
 	"the keyboard-only revive path must be replaced, not duplicated"
 )
 assertThat(
