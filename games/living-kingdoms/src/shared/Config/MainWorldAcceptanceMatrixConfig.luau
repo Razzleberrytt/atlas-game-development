@@ -11,6 +11,10 @@
 	`NotRun`: nothing here asserts that the Main World has been captured,
 	measured, or accepted, and nothing here activates geometry, streaming,
 	lighting, audio, placement, or any Main World runtime.
+
+	Recorded outcomes never live in this file. A Studio run produces a separate
+	`RunRecord`, and `evaluateRun` decides it against these definitions, so the
+	contract that describes acceptance can never also claim to have passed it.
 ]]
 
 local MainWorldRepresentationConfig = require(script.Parent.MainWorldRepresentationConfig)
@@ -253,14 +257,21 @@ local CaptureModes = table.freeze({
 	table.freeze({ id = "capture.gameplay_full", qualityTierId = "Full", aspect = "desktop-16x9" }),
 	table.freeze({ id = "capture.gameplay_reduced", qualityTierId = "Reduced", aspect = "desktop-16x9" }),
 	table.freeze({ id = "capture.gameplay_minimum", qualityTierId = "MinimumReadable", aspect = "desktop-16x9" }),
-	table.freeze({
-		id = "capture.mobile_minimum",
-		qualityTierId = "MinimumReadable",
-		aspect = "mobile-portrait-and-landscape",
-	}),
+	-- Portrait and landscape are separate modes on purpose. One "mobile" mode
+	-- would let a single image satisfy a capture requirement that is meant to
+	-- expose orientation-specific composition and safe-area failures.
+	table.freeze({ id = "capture.mobile_portrait", qualityTierId = "MinimumReadable", aspect = "mobile-portrait" }),
+	table.freeze({ id = "capture.mobile_landscape", qualityTierId = "MinimumReadable", aspect = "mobile-landscape" }),
 })
 
-local RecognitionDistancesStuds = table.freeze({ near = 32, mid = 128, far = 512 })
+-- BA-010 requires near/mid/far landmark review but names no distances. These
+-- three are invented here, so they carry the same authoring-target provenance
+-- as any other unmeasured starting line in this file.
+local RecognitionDistances = table.freeze({
+	unit = "studs",
+	provenance = ThresholdProvenance.Ba014AuthoringTarget,
+	studs = table.freeze({ near = 32, mid = 128, far = 512 }),
+})
 
 local EvidenceArtifacts = table.freeze({
 	FixedCameraCaptureSet = "fixed-camera-capture-set",
@@ -422,7 +433,7 @@ local checks: { Check } = {
 		classification = Classifications.Threshold,
 		thresholdKeys = table.freeze({ "CharacterReleaseBeforeRequiredContent" }),
 		qualityCeilingKeys = table.freeze({}),
-		captureModeIds = table.freeze({ "capture.gameplay_full", "capture.mobile_minimum" }),
+		captureModeIds = table.freeze({ "capture.gameplay_full", "capture.mobile_landscape" }),
 		deviceProfileIds = table.freeze({ "DesktopReference", "MobileMinimum" }),
 		evidenceArtifactIds = table.freeze({
 			EvidenceArtifacts.StreamingTransitionLog,
@@ -541,7 +552,8 @@ local checks: { Check } = {
 			"capture.gameplay_full",
 			"capture.gameplay_reduced",
 			"capture.gameplay_minimum",
-			"capture.mobile_minimum",
+			"capture.mobile_portrait",
+			"capture.mobile_landscape",
 		}),
 		deviceProfileIds = table.freeze({ "DesktopReference", "LowGraphicsDesktop", "MobileMinimum" }),
 		evidenceArtifactIds = table.freeze({ EvidenceArtifacts.FixedCameraCaptureSet }),
@@ -624,7 +636,8 @@ local checks: { Check } = {
 			"capture.gameplay_full",
 			"capture.gameplay_reduced",
 			"capture.gameplay_minimum",
-			"capture.mobile_minimum",
+			"capture.mobile_portrait",
+			"capture.mobile_landscape",
 		}),
 		deviceProfileIds = table.freeze({ "DesktopReference", "LowGraphicsDesktop", "MobileMinimum" }),
 		evidenceArtifactIds = table.freeze({ EvidenceArtifacts.FixedCameraCaptureSet }),
@@ -729,7 +742,7 @@ local checks: { Check } = {
 			"steadyStateAmbientBeds",
 			"steadyStateMusicBeds",
 		}),
-		captureModeIds = table.freeze({ "capture.gameplay_full", "capture.mobile_minimum" }),
+		captureModeIds = table.freeze({ "capture.gameplay_full", "capture.mobile_landscape" }),
 		deviceProfileIds = table.freeze({ "DesktopReference", "MobileMinimum" }),
 		evidenceArtifactIds = table.freeze({
 			EvidenceArtifacts.AudioSessionRecording,
@@ -766,7 +779,7 @@ local checks: { Check } = {
 		classification = Classifications.Binary,
 		thresholdKeys = table.freeze({}),
 		qualityCeilingKeys = table.freeze({}),
-		captureModeIds = table.freeze({ "capture.gameplay_full", "capture.mobile_minimum" }),
+		captureModeIds = table.freeze({ "capture.gameplay_full", "capture.mobile_landscape" }),
 		deviceProfileIds = table.freeze({ "DesktopReference", "MobileMinimum" }),
 		evidenceArtifactIds = table.freeze({
 			EvidenceArtifacts.AudioSessionRecording,
@@ -828,7 +841,7 @@ local checks: { Check } = {
 		classification = Classifications.Threshold,
 		thresholdKeys = table.freeze({ "PostWarmupStreamingHitchMs", "WarmupSeconds" }),
 		qualityCeilingKeys = table.freeze({}),
-		captureModeIds = table.freeze({ "capture.gameplay_full", "capture.mobile_minimum" }),
+		captureModeIds = table.freeze({ "capture.gameplay_full", "capture.mobile_landscape" }),
 		deviceProfileIds = table.freeze({ "DesktopReference", "MobileMinimum" }),
 		evidenceArtifactIds = table.freeze({
 			EvidenceArtifacts.FrameTimeSeries,
@@ -899,7 +912,7 @@ local checks: { Check } = {
 			"SteadyCaptureSeconds",
 		}),
 		qualityCeilingKeys = table.freeze({}),
-		captureModeIds = table.freeze({ "capture.mobile_minimum" }),
+		captureModeIds = table.freeze({ "capture.mobile_landscape" }),
 		deviceProfileIds = table.freeze({ "MobileMinimum" }),
 		evidenceArtifactIds = table.freeze({
 			EvidenceArtifacts.FrameTimeSeries,
@@ -953,7 +966,6 @@ local checks: { Check } = {
 local MainWorldAcceptanceMatrixConfig = {
 	Version = "BA-014-v1",
 	RuntimeEnabled = false,
-	MatrixExecuted = false,
 	EvidenceLevel = "E1",
 	ResultStatuses = ResultStatuses,
 	Categories = Categories,
@@ -965,7 +977,7 @@ local MainWorldAcceptanceMatrixConfig = {
 	DeviceProfiles = DeviceProfiles,
 	FixedCameras = FixedCameras,
 	CaptureModes = CaptureModes,
-	RecognitionDistancesStuds = RecognitionDistancesStuds,
+	RecognitionDistances = RecognitionDistances,
 	EvidenceArtifacts = EvidenceArtifacts,
 	Checks = table.freeze(checks),
 }
@@ -997,29 +1009,77 @@ function MainWorldAcceptanceMatrixConfig.blockingChecks(): { Check }
 	return matches
 end
 
--- A run is acceptable only when every blocking check recorded `Pass`. Anything
--- else — including `NotRun` and `Blocked` — leaves activation gated.
-function MainWorldAcceptanceMatrixConfig.isActivationAcceptable(): boolean
-	if not MainWorldAcceptanceMatrixConfig.MatrixExecuted then
-		return false
-	end
-	for _, check in checks do
-		if check.blocking and check.status ~= ResultStatuses.Pass then
-			return false
+-- Results live in a run record, never in this definition. The committed matrix
+-- stays frozen at `NotRun` so a recorded outcome can never be smuggled into the
+-- contract that describes it; a run is evaluated against the definition instead.
+export type RunRecord = {
+	identity: { [string]: string },
+	results: { [string]: string },
+}
+
+export type RunEvaluation = {
+	accepted: boolean,
+	reasons: { string },
+}
+
+-- A run is acceptable only when its identity is complete, every check has a
+-- recorded result, and every blocking check recorded `Pass`. Anything else —
+-- including `NotRun` and `Blocked` — leaves activation gated.
+function MainWorldAcceptanceMatrixConfig.evaluateRun(run: RunRecord): RunEvaluation
+	local reasons: { string } = {}
+
+	local identity = run.identity or {}
+	for _, field in RequiredRunIdentityFields do
+		local recorded = identity[field]
+		if recorded == nil or recorded == "" then
+			table.insert(reasons, `run identity is missing {field}`)
 		end
 	end
-	return true
+
+	local results = run.results or {}
+	for checkId in results do
+		if checksById[checkId] == nil then
+			table.insert(reasons, `result recorded for unknown check {checkId}`)
+		end
+	end
+
+	for _, check in checks do
+		local status = results[check.id]
+		if status == nil then
+			table.insert(reasons, `check {check.id} has no recorded result`)
+		elseif ResultStatuses[status] == nil then
+			table.insert(reasons, `check {check.id} recorded unknown status {status}`)
+		elseif check.blocking and status ~= ResultStatuses.Pass then
+			table.insert(reasons, `blocking check {check.id} recorded {status}`)
+		end
+	end
+
+	return {
+		accepted = #reasons == 0,
+		reasons = reasons,
+	}
+end
+
+-- Without a recorded run there is nothing to accept: the committed definition
+-- never authorizes activation by itself.
+function MainWorldAcceptanceMatrixConfig.isActivationAcceptable(run: RunRecord?): boolean
+	if run == nil then
+		return false
+	end
+	return MainWorldAcceptanceMatrixConfig.evaluateRun(run).accepted
 end
 
 -- Module-load invariants: this matrix may never ship carrying a result, and
 -- every reference it makes must resolve inside the same contract.
 assert(MainWorldAcceptanceMatrixConfig.RuntimeEnabled == false, "BA-014 defines acceptance; it activates nothing")
-assert(MainWorldAcceptanceMatrixConfig.MatrixExecuted == false, "BA-014 ships with no recorded run")
 assert(
 	MainWorldRepresentationConfig.RuntimeEnabled == false,
 	"BA-014 cannot be defined against an already-activated Main World"
 )
-assert(MainWorldAcceptanceMatrixConfig.isActivationAcceptable() == false, "an unrun matrix can never accept activation")
+assert(
+	MainWorldAcceptanceMatrixConfig.isActivationAcceptable() == false,
+	"the definition alone must never accept activation"
+)
 
 local captureModeIds: { [string]: boolean } = {}
 for _, mode in CaptureModes do

@@ -22,11 +22,18 @@ required evidence artifacts, locked in
 [`MainWorldAcceptanceMatrixConfig.luau`](../../games/living-kingdoms/src/shared/Config/MainWorldAcceptanceMatrixConfig.luau)
 and validated by `tests/MainWorldAcceptanceMatrixConfig.test.luau`.
 
-The matrix ships **unrun**. Every check carries `status = "NotRun"`,
-`MatrixExecuted = false`, and `isActivationAcceptable()` returns `false`. The
-committed table is frozen, so no consumer can flip a result in place. Nothing
-in BA-014 creates geometry, Terrain, streaming, lighting, audio, placement,
-prompts, networking, persistence or any Main World runtime.
+The matrix ships **unrun**. Every check carries `status = "NotRun"`, the
+committed table is frozen, and `isActivationAcceptable()` with no argument
+returns `false`. Nothing in BA-014 creates geometry, Terrain, streaming,
+lighting, audio, placement, prompts, networking, persistence or any Main World
+runtime.
+
+Recorded outcomes never live in the definition. A Studio run produces a separate
+`RunRecord` (`identity` plus `results` keyed by check ID), and `evaluateRun`
+decides it against these definitions, returning `accepted` plus a reason for
+every rejection. So the contract that describes acceptance can never also claim
+to have passed it, and the gate is still a real evaluator rather than a constant
+`false`.
 
 ## Why a config and not only a document
 
@@ -42,8 +49,8 @@ document cannot:
    covered by at least one check, all seven BA-010 composition beats have a
    fixed camera, and all three quality tiers have a capture mode.
 3. **An unrun matrix cannot be cited as acceptance.** The gate is a function,
-   not a claim in prose, and it returns `false` until a recorded run passes
-   every blocking check.
+   not a claim in prose. It rejects until a run record supplies a complete
+   identity, a result for every check, and `Pass` on every blocking check.
 
 ## Result vocabulary
 
@@ -97,7 +104,8 @@ invent coordinates.
 | `capture.gameplay_full` | Full | desktop 16×9 |
 | `capture.gameplay_reduced` | Reduced | desktop 16×9 |
 | `capture.gameplay_minimum` | MinimumReadable | desktop 16×9 |
-| `capture.mobile_minimum` | MinimumReadable | mobile portrait and landscape |
+| `capture.mobile_portrait` | MinimumReadable | mobile portrait |
+| `capture.mobile_landscape` | MinimumReadable | mobile landscape |
 
 | Device profile | Quality tier | Hardware identity |
 |---|---|---|
@@ -105,7 +113,17 @@ invent coordinates.
 | `LowGraphicsDesktop` | Reduced | recorded per run, never assumed |
 | `MobileMinimum` | MinimumReadable | recorded per run, never assumed |
 
-Landmark recognition is tested at 32, 128 and 512 studs.
+Portrait and landscape are separate capture modes on purpose. A single "mobile"
+mode would let one image satisfy a requirement meant to expose
+orientation-specific composition and safe-area failures, so the two
+orientation-sensitive checks —
+`mwam.readability.landmark_recognition_distance` and
+`mwam.visual.fixed_camera_capture_set` — require both.
+
+Landmark recognition is tested at 32, 128 and 512 studs. BA-010 requires
+near/mid/far review but names no distances, so those three values are invented
+here and carry `ba-014-authoring-target` provenance like any other unmeasured
+starting line.
 
 ## Thresholds and their provenance
 
@@ -130,11 +148,15 @@ visibly separate from starting lines invented here.
 | `WarmupSeconds` | 30 s | at least | **BA-014 authoring target** |
 | `SteadyCaptureSeconds` | 60 s | at least | **BA-014 authoring target** |
 
-The four `ba-014-authoring-target` values are unmeasured starting lines. The
-first recorded run is expected to revise them; they carry no more authority than
-that label gives them. BA-013's provisional values are likewise starting
-budgets, not device evidence — a failure lowers density or splits units rather
-than being excused.
+The four `ba-014-authoring-target` thresholds, plus the three recognition
+distances above, are unmeasured starting lines. The first recorded run is
+expected to revise them; they carry no more authority than that label gives
+them. `ReadableChannelsPerMajorDestination = 2` is *not* one of them — it is
+inherited from BA-010's navigation rules ("at least two readable channels among
+silhouette, path alignment, signage, light, audio and UI fallback").
+
+BA-013's provisional values are likewise starting budgets, not device evidence —
+a failure lowers density or splits units rather than being excused.
 
 The BA-013 visible-scene ceilings are carried forward verbatim, and the fixture
 asserts each lower tier only ever reduces cost:
@@ -242,8 +264,8 @@ source gate can observe.
   become a prerequisite for it.
 - It cannot be satisfied by CI. Every check requires Studio observation, and
   the repository gates can see none of them.
-- It cannot accept the four `ba-014-authoring-target` thresholds as validated.
-  They are starting lines awaiting their first measurement.
+- It cannot accept its `ba-014-authoring-target` values as validated. They are
+  starting lines awaiting their first measurement.
 
 ## Open dependency
 

@@ -43,7 +43,7 @@ local config = luau.load(fs.readFile(CONFIG_PATH), {
 -- Identity and hold state.
 assert(config.Version == "BA-014-v1")
 assert(config.RuntimeEnabled == false, "BA-014 activates nothing")
-assert(config.MatrixExecuted == false, "BA-014 must ship without a recorded run")
+assert(config.MatrixExecuted == nil, "run state must live in a run record, not in the definition")
 assert(config.EvidenceLevel == "E1", "defining acceptance does not raise the evidence level")
 assert(config.isActivationAcceptable() == false, "an unrun matrix cannot accept Main World activation")
 
@@ -80,7 +80,7 @@ assert(#blocking < #config.Checks, "record-only and refinement checks must remai
 
 -- The committed matrix is frozen, so no consumer can flip a result in place.
 local mutated = pcall(function()
-	config.MatrixExecuted = true
+	config.RuntimeEnabled = true
 end)
 assert(mutated == false, "the committed matrix must be read-only")
 mutated = pcall(function()
@@ -88,29 +88,68 @@ mutated = pcall(function()
 end)
 assert(mutated == false, "a recorded check result must be read-only")
 
--- Declaring a run executed must not by itself accept activation: the gate is
--- every blocking check passing. Reload the module with only that flag flipped.
-local executedSource = string.gsub(fs.readFile(CONFIG_PATH), "MatrixExecuted = false", "MatrixExecuted = true", 1)
-executedSource =
-	string.gsub(executedSource, "assert%(MainWorldAcceptanceMatrixConfig%.MatrixExecuted == false[^\n]+\n", "")
-local executedConfig = luau.load(executedSource, {
-	debugName = "MainWorldAcceptanceMatrixConfigExecutedProbe",
-	environment = {
-		script = { Parent = { MainWorldRepresentationConfig = REPRESENTATION_TOKEN } },
-		require = function(token: unknown)
-			if token == REPRESENTATION_TOKEN then
-				return representationConfig
-			end
-			error("unexpected MainWorldAcceptanceMatrixConfig dependency")
-		end,
-	},
-	injectGlobals = true,
-})()
-assert(executedConfig.MatrixExecuted == true, "the probe must actually flip the executed flag")
-assert(
-	executedConfig.isActivationAcceptable() == false,
-	"declaring a run executed cannot accept a matrix whose blocking checks are unrun"
-)
+-- The evaluator decides recorded runs without mutating the definition.
+local function completeIdentity(): { [string]: string }
+	local identity = {}
+	for _, field in config.RequiredRunIdentityFields do
+		identity[field] = "recorded"
+	end
+	return identity
+end
+
+local function resultsWhereEveryCheck(status: string): { [string]: string }
+	local results = {}
+	for _, check in config.Checks do
+		results[check.id] = status
+	end
+	return results
+end
+
+local passingRun = { identity = completeIdentity(), results = resultsWhereEveryCheck(config.ResultStatuses.Pass) }
+assert(config.evaluateRun(passingRun).accepted == true, "a complete passing run must be acceptable")
+assert(config.isActivationAcceptable(passingRun) == true, "the gate must accept a complete passing run")
+assert(config.Checks[1].status == config.ResultStatuses.NotRun, "evaluating a run must not record a result")
+
+-- One blocking failure, one blocked transport, and one unrun check each reject.
+for _, rejectedStatus in { config.ResultStatuses.Fail, config.ResultStatuses.Blocked, config.ResultStatuses.NotRun } do
+	local run = { identity = completeIdentity(), results = resultsWhereEveryCheck(config.ResultStatuses.Pass) }
+	run.results[blocking[1].id] = rejectedStatus
+	local evaluation = config.evaluateRun(run)
+	assert(evaluation.accepted == false, `a blocking check recorded {rejectedStatus} must reject the run`)
+	assert(#evaluation.reasons == 1, "the evaluator must name exactly the failing check")
+end
+
+-- A non-blocking check may record anything without rejecting the run.
+local nonBlocking
+for _, check in config.Checks do
+	if not check.blocking then
+		nonBlocking = check
+		break
+	end
+end
+assert(nonBlocking ~= nil, "the matrix must retain non-blocking checks")
+local recordOnlyRun = { identity = completeIdentity(), results = resultsWhereEveryCheck(config.ResultStatuses.Pass) }
+recordOnlyRun.results[nonBlocking.id] = config.ResultStatuses.Fail
+assert(config.evaluateRun(recordOnlyRun).accepted == true, "a non-blocking result must not gate activation")
+
+-- Incomplete identity, missing results and unknown checks all reject.
+local missingIdentity = { identity = completeIdentity(), results = resultsWhereEveryCheck(config.ResultStatuses.Pass) }
+missingIdentity.identity.placeArtifactSha256 = nil
+assert(config.evaluateRun(missingIdentity).accepted == false, "an incomplete run identity must reject the run")
+
+local missingResult = { identity = completeIdentity(), results = resultsWhereEveryCheck(config.ResultStatuses.Pass) }
+missingResult.results[blocking[1].id] = nil
+assert(config.evaluateRun(missingResult).accepted == false, "a check with no recorded result must reject the run")
+
+local unknownCheck = { identity = completeIdentity(), results = resultsWhereEveryCheck(config.ResultStatuses.Pass) }
+unknownCheck.results["mwam.not.a.check"] = config.ResultStatuses.Pass
+assert(config.evaluateRun(unknownCheck).accepted == false, "a result for an unknown check must reject the run")
+
+local badStatus = { identity = completeIdentity(), results = resultsWhereEveryCheck(config.ResultStatuses.Pass) }
+badStatus.results[blocking[1].id] = "LooksFine"
+assert(config.evaluateRun(badStatus).accepted == false, "an unknown status must reject the run")
+
+assert(config.isActivationAcceptable() == false, "the committed definition alone never accepts activation")
 
 -- Threshold provenance keeps inherited numbers separate from invented ones.
 local provenanceSeen = {}
@@ -179,13 +218,48 @@ for _, beat in expectedBeats do
 end
 
 local tiersCaptured = {}
+local aspectsCaptured = {}
 for _, mode in config.CaptureModes do
 	tiersCaptured[mode.qualityTierId] = true
+	local pair = `{mode.qualityTierId}/{mode.aspect}`
+	assert(aspectsCaptured[pair] == nil, `two capture modes share {pair}`)
+	aspectsCaptured[pair] = mode.id
+	aspectsCaptured[mode.aspect] = aspectsCaptured[mode.aspect] or mode.id
 end
 assert(
 	tiersCaptured.Full and tiersCaptured.Reduced and tiersCaptured.MinimumReadable,
 	"every quality tier needs a capture mode"
 )
+
+-- Mobile orientations stay separate modes so one image cannot satisfy both.
+assert(aspectsCaptured["mobile-portrait"], "mobile portrait needs its own capture mode")
+assert(aspectsCaptured["mobile-landscape"], "mobile landscape needs its own capture mode")
+for _, mode in config.CaptureModes do
+	assert(
+		string.find(mode.aspect, "-and-", 1, true) == nil,
+		`capture mode {mode.id} conflates two aspects into one artifact`
+	)
+end
+
+local orientationSensitive =
+	{ "mwam.readability.landmark_recognition_distance", "mwam.visual.fixed_camera_capture_set" }
+for _, checkId in orientationSensitive do
+	local modes = {}
+	for _, modeId in config.ChecksById[checkId].captureModeIds do
+		modes[modeId] = true
+	end
+	assert(
+		modes["capture.mobile_portrait"] and modes["capture.mobile_landscape"],
+		`{checkId} must capture both mobile orientations`
+	)
+end
+
+-- Invented recognition distances carry the same provenance label as thresholds.
+assert(config.RecognitionDistances.provenance == "ba-014-authoring-target")
+assert(config.RecognitionDistances.unit == "studs")
+assert(config.RecognitionDistances.studs.near == 32)
+assert(config.RecognitionDistances.studs.mid == 128)
+assert(config.RecognitionDistances.studs.far == 512)
 
 -- Run identity must be recorded before any result counts as evidence.
 local identityFields = {}
