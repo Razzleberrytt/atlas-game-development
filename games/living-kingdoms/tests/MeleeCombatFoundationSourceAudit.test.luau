@@ -17,10 +17,7 @@ assert(contains(config, "DamagePerHit = 34"), "melee damage must remain config-o
 assert(contains(config, "RangeStuds = 8"), "melee range must remain close and config-owned")
 
 assert(contains(resolver, "function Resolver.selectTarget"), "melee target choice must live in a pure resolver")
-assert(
-	not contains(resolver, 'game:GetService("Workspace")'),
-	"pure melee resolver cannot acquire Workspace authority"
-)
+assert(not contains(resolver, 'game:GetService("Workspace")'), "pure melee resolver cannot acquire Workspace authority")
 assert(not contains(resolver, "Workspace:Raycast"), "pure melee resolver cannot inspect Workspace geometry")
 assert(not contains(resolver, "RemoteEvent"), "pure melee resolver cannot own networking")
 assert(not contains(resolver, "Ammunition"), "pure melee resolver cannot inherit firearm ammunition state")
