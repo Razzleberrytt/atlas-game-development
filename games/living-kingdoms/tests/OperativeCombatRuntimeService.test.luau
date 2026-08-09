@@ -25,6 +25,10 @@ local enemyContracts = loadSimple("games/living-kingdoms/src/shared/Combat/Enemy
 local worldConfig =
 	loadSimple("games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "WorldFoundationConfig")
 local combatContracts = loadSimple("games/living-kingdoms/src/shared/Combat/CombatContracts.luau", "CombatContracts")
+local primaryCombatModeContracts = loadSimple(
+	"games/living-kingdoms/src/shared/Combat/PrimaryCombatModeContracts.luau",
+	"PrimaryCombatModeContracts"
+)
 local scarcityContracts = loadSimple(
 	"games/living-kingdoms/src/shared/Combat/AmmunitionScarcityContracts.luau",
 	"AmmunitionScarcityContracts"
@@ -34,6 +38,7 @@ local ENEMY_CONTRACTS_TOKEN = {}
 local WORLD_TOKEN = {}
 local ENEMY_CONFIG_TOKEN = {}
 local COMBAT_CONTRACTS_TOKEN = {}
+local PRIMARY_COMBAT_MODE_CONTRACTS_TOKEN = {}
 local SCARCITY_CONTRACTS_TOKEN = {}
 local FIREARM_CONFIG_TOKEN = {}
 local HORDE_CONFIG_TOKEN = {}
@@ -122,6 +127,7 @@ sharedReplicatedStorage = {
 	Shared = {
 		Combat = {
 			CombatContracts = COMBAT_CONTRACTS_TOKEN,
+			PrimaryCombatModeContracts = PRIMARY_COMBAT_MODE_CONTRACTS_TOKEN,
 			AmmunitionScarcityContracts = SCARCITY_CONTRACTS_TOKEN,
 			EnemyContracts = ENEMY_CONTRACTS_TOKEN,
 		},
@@ -441,6 +447,7 @@ local DAMAGE_TOKEN = {}
 local DIRECTOR_TOKEN = {}
 local HIT_TOKEN = {}
 local LIFE_TOKEN = {}
+local PRIMARY_COMBAT_MODE_SERVICE_TOKEN = {}
 local MATCH_RESULT_TOKEN = {}
 -- The P10-0104 contribution ledger is inert authority: these fixtures only need
 -- to prove the owner records through it, never that recording changes gameplay.
@@ -466,6 +473,16 @@ local swapResolver = loadSimple(
 )
 local configuredEngineerInspector = nil
 local configuredEngineerCommitter = nil
+local primaryCombatModeByPlayer = {}
+local primaryCombatModeService = table.freeze({
+	readMode = function(player)
+		return primaryCombatModeByPlayer[player] or primaryCombatModeContracts.ModeIds.Firearm
+	end,
+	setMode = function(player, modeId)
+		primaryCombatModeByPlayer[player] = modeId
+		return true
+	end,
+})
 
 local scheduled = {}
 local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau"), {
@@ -492,6 +509,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				EnemyDirectorService = DIRECTOR_TOKEN,
 				FirearmHitResolver = HIT_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
+				PrimaryCombatModeService = PRIMARY_COMBAT_MODE_SERVICE_TOKEN,
 				MatchResultService = MATCH_RESULT_TOKEN,
 				RelicModifierService = RELIC_TOKEN,
 				ReloadResolver = RELOAD_TOKEN,
@@ -504,6 +522,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 		require = function(token)
 			if token == COMBAT_CONTRACTS_TOKEN then
 				return combatContracts
+			elseif token == PRIMARY_COMBAT_MODE_CONTRACTS_TOKEN then
+				return primaryCombatModeContracts
 			elseif token == SCARCITY_CONTRACTS_TOKEN then
 				return scarcityContracts
 			elseif token == ENEMY_CONFIG_TOKEN then
@@ -534,6 +554,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return hitResolver
 			elseif token == LIFE_TOKEN then
 				return lifeService
+			elseif token == PRIMARY_COMBAT_MODE_SERVICE_TOKEN then
+				return primaryCombatModeService
 			elseif token == MATCH_RESULT_TOKEN then
 				return matchResultService
 			elseif token == RELIC_TOKEN then
@@ -618,6 +640,7 @@ local function reset(players: { any })
 	table.clear(restrictionCalls)
 	table.clear(scheduled)
 	table.clear(combatAllowedByPlayer)
+	table.clear(primaryCombatModeByPlayer)
 	table.clear(currentPlayers)
 	enemyFactReadCount = 0
 	raycastParamsCreated = 0
