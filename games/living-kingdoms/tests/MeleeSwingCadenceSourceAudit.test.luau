@@ -27,7 +27,10 @@ assert(cadenceCheck < positionCheck, "cadence must reject rapid repeat swings be
 assert(positionCheck < consumeCadence, "missing-character requests must not consume a swing")
 assert(consumeCadence < readEnemyFacts, "a valid swing must consume cadence before target selection")
 assert(consumeRequest < readEnemyFacts, "a valid swing request ID must be consumed even when no target is found")
-assert(readEnemyFacts < resolveTarget and resolveTarget < commitHealth, "target/damage authority order must remain intact")
+assert(
+	readEnemyFacts < resolveTarget and resolveTarget < commitHealth,
+	"target/damage authority order must remain intact"
+)
 
 assert(
 	string.find(source, "return rejected(selection.rejectionReasonId or Reasons.NoTarget", 1, true) ~= nil,
