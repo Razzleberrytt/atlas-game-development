@@ -22,12 +22,24 @@ assert(not contains(resolver, "RemoteEvent"), "pure melee resolver cannot own ne
 assert(not contains(resolver, "Ammunition"), "pure melee resolver cannot inherit firearm ammunition state")
 assert(not contains(resolver, "Reload"), "pure melee resolver cannot inherit firearm reload state")
 
-assert(contains(service, "OperativeLifeService.isCombatAllowed(player)"), "melee must revalidate server life eligibility")
-assert(contains(service, "EnemyDirectorService.readEnemyCombatFacts()"), "melee must derive targets from server enemy facts")
+assert(
+	contains(service, "OperativeLifeService.isCombatAllowed(player)"),
+	"melee must revalidate server life eligibility"
+)
+assert(
+	contains(service, "EnemyDirectorService.readEnemyCombatFacts()"),
+	"melee must derive targets from server enemy facts"
+)
 assert(contains(service, "MeleeStrikeResolver.selectTarget"), "melee service must reuse the canonical resolver")
 assert(contains(service, "Workspace:Raycast"), "melee must reject strikes through blocking geometry")
-assert(contains(service, "EnemyDirectorService.readHealthState"), "melee must read the revisioned enemy health boundary")
-assert(contains(service, "EnemyDirectorService.commitHealthState"), "melee must commit through canonical enemy health/death ownership")
+assert(
+	contains(service, "EnemyDirectorService.readHealthState"),
+	"melee must read the revisioned enemy health boundary"
+)
+assert(
+	contains(service, "EnemyDirectorService.commitHealthState"),
+	"melee must commit through canonical enemy health/death ownership"
+)
 assert(contains(service, "MatchResultService.recordDamageDealt"), "committed melee damage must count in match results")
 assert(contains(service, "MatchResultService.recordKills"), "committed melee kills must count in match results")
 assert(not contains(service, "FireIntent"), "melee cannot reuse the firearm intent remote")
