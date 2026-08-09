@@ -66,14 +66,17 @@ assert(actions.Revive.KeyboardKeyCodeNames[1] == "V")
 assert(actions.Revive.GamepadKeyCodeNames[1] == "DPadDown")
 assert(actions.Interact.KeyboardKeyCodeNames[1] == "E")
 assert(actions.Interact.GamepadKeyCodeNames[1] == "ButtonX")
+assert(actions.CloseRPGModal.KeyboardKeyCodeNames[1] == "Escape")
+assert(actions.CloseHubUI.MechanismId == "GuiOnly")
+assert(#actions.CloseHubUI.KeyboardKeyCodeNames == 0)
+assert(actions.CloseHubUI.TouchBindingIds[1] == "GuiButton")
 
 assert(actions.ClassAction.GamepadKeyCodeNames[1] ~= actions.Interact.GamepadKeyCodeNames[1])
 assert(actions.Revive.KeyboardKeyCodeNames[1] ~= actions.Interact.KeyboardKeyCodeNames[1])
 assert(actions.Revive.GamepadKeyCodeNames[1] ~= actions.Interact.GamepadKeyCodeNames[1])
 
--- Lock the new registry to the already-accepted runtime source. This stage does
--- not migrate listeners; later isolated increments can replace these literals
--- with lookups without changing the canonical values.
+-- Lock the registry to the already-accepted runtime source. Later isolated
+-- increments can replace core literals with lookups without changing values.
 local weapon = fs.readFile(CLIENT .. "WeaponController.luau")
 assert(contains(weapon, "Enum.UserInputType.MouseButton1"))
 assert(contains(weapon, "Enum.KeyCode.R"))
@@ -119,7 +122,9 @@ assert(contains(rpgMenu, "Enum.KeyCode.C"))
 assert(contains(rpgMenu, "Enum.KeyCode.I"))
 assert(contains(rpgMenu, "Enum.KeyCode.Escape"))
 local hubPreparation = fs.readFile(CLIENT .. "HubPreparationController.luau")
-assert(contains(hubPreparation, "Enum.KeyCode.Escape"))
+assert(not contains(hubPreparation, "Enum.KeyCode.Escape"))
+assert(not contains(hubPreparation, "UserInputService"))
+assert(contains(hubPreparation, "button.Activated:Connect(closeHubUi)"))
 
 for _, token in
 	{
@@ -138,4 +143,4 @@ do
 	assert(not contains(source, token), `shared action map must stay configuration-only: {token}`)
 end
 
-print("BA-062 InputActionMapConfig: seventeen semantic actions, collision-safe bindings, and runtime parity passed")
+print("BA-062 InputActionMapConfig: seventeen actions, collision-safe bindings, and exclusive Escape ownership passed")
