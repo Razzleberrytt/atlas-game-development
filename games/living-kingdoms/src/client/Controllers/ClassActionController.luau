@@ -68,7 +68,7 @@ local function nearestInjuredOperativeId(): string?
 	local nearestId, nearestDistance = nil, math.huge
 	for _, player in Players:GetPlayers() do
 		local currentHealth = player:GetAttribute("LK_P3_CurrentHealth")
-		local maximumHealth = player:GetAttribute("LK_P3_MaxHealth")
+		local maximumHealth = player:GetAttribute("LK_P3_MaximumHealth")
 		local operativeEntityId = player:GetAttribute("LK_P3_OperativeEntityId")
 		local position = rootPosition(player)
 		if
