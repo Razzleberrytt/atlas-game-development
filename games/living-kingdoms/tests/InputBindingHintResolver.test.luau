@@ -64,18 +64,20 @@ local invalidAction = resolver.resolve({}, families.KeyboardPointer)
 assert(invalidAction.ResolutionId == ids.InvalidAction)
 assert(invalidAction.BindingToken == nil)
 
-for _, token in {
-	"GetService",
-	"InputBegan",
-	"BindAction",
-	"FireServer",
-	"InvokeServer",
-	"RemoteEvent",
-	"Instance.new",
-	"DataStore",
-	"SetAsync",
-	"UpdateAsync",
-} do
+for _, token in
+	{
+		"GetService",
+		"InputBegan",
+		"BindAction",
+		"FireServer",
+		"InvokeServer",
+		"RemoteEvent",
+		"Instance.new",
+		"DataStore",
+		"SetAsync",
+		"UpdateAsync",
+	}
+do
 	assert(string.find(resolverSource, token, 1, true) == nil, `hint resolver must remain pure: {token}`)
 end
 
