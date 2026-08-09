@@ -1,7 +1,7 @@
 --!strict
 
--- BA-062 direct-binding collision fixture. The canonical action map should have
--- no gamepad key-code collisions and exactly the known C4 keyboard overlaps.
+-- BA-062 direct-binding collision fixture. After C4, the canonical action map
+-- must have zero duplicate direct keyboard/gamepad key-code claims.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
@@ -23,32 +23,7 @@ local errors = analyzer.ErrorIds
 local canonical = analyzer.analyze(actionMap.ActionOrder, actionMap.Actions)
 assert(canonical.Valid == true)
 assert(canonical.ErrorId == nil)
-assert(#canonical.Collisions == 6, "the only canonical direct-key overlap must be C4's six number keys")
-
-local expectedKeyboardTokens = {
-	One = true,
-	Two = true,
-	Three = true,
-	KeypadOne = true,
-	KeypadTwo = true,
-	KeypadThree = true,
-}
-local seenKeyboardTokens = {}
-for _, collision in canonical.Collisions do
-	assert(collision.FamilyId == families.Keyboard, "canonical gamepad direct bindings must remain collision-free")
-	assert(
-		expectedKeyboardTokens[collision.BindingToken] == true,
-		`unexpected canonical collision: {collision.BindingToken}`
-	)
-	assert(not seenKeyboardTokens[collision.BindingToken], "canonical collision tokens must be unique")
-	seenKeyboardTokens[collision.BindingToken] = true
-	assert(#collision.ActionIds == 2)
-	assert(collision.ActionIds[1] == "RelicChoice")
-	assert(collision.ActionIds[2] == "UpgradeChoice")
-end
-for token in expectedKeyboardTokens do
-	assert(seenKeyboardTokens[token] == true, `missing expected C4 collision: {token}`)
-end
+assert(#canonical.Collisions == 0, "canonical direct keyboard/gamepad bindings must remain collision-free")
 
 local syntheticActions = {
 	Alpha = {
@@ -67,6 +42,22 @@ assert(synthetic.Collisions[1].FamilyId == families.Gamepad)
 assert(synthetic.Collisions[1].BindingToken == "ButtonX")
 assert(synthetic.Collisions[1].ActionIds[1] == "Alpha")
 assert(synthetic.Collisions[1].ActionIds[2] == "Beta")
+
+local syntheticKeyboardActions = {
+	Alpha = {
+		KeyboardKeyCodeNames = { "One" },
+		GamepadKeyCodeNames = {},
+	},
+	Beta = {
+		KeyboardKeyCodeNames = { "One" },
+		GamepadKeyCodeNames = {},
+	},
+}
+local syntheticKeyboard = analyzer.analyze({ "Alpha", "Beta" }, syntheticKeyboardActions)
+assert(syntheticKeyboard.Valid == true)
+assert(#syntheticKeyboard.Collisions == 1)
+assert(syntheticKeyboard.Collisions[1].FamilyId == families.Keyboard)
+assert(syntheticKeyboard.Collisions[1].BindingToken == "One")
 
 local duplicateOrder = analyzer.analyze({ "Alpha", "Alpha" }, syntheticActions)
 assert(duplicateOrder.Valid == false)
@@ -100,4 +91,4 @@ do
 	assert(string.find(analyzerSource, token, 1, true) == nil, `collision analyzer must remain pure: {token}`)
 end
 
-print("BA-062 InputBindingCollisionAnalyzer: only C4 keyboard collisions remain; gamepad keys are collision-free")
+print("BA-062 InputBindingCollisionAnalyzer: canonical direct keyboard/gamepad bindings are collision-free")
