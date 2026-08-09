@@ -165,11 +165,16 @@ Do **not** block MVP 0.1 on broad crafting, a full economy, a huge skill tree, m
 - [x] Standard pressure uses fewer, faster Exclusion Stalkers with direct long-range pursuit and introduces the ranged Blight Spitter earlier instead of filling the route with repeated roaming wolves.
 - [x] The operation has a warm, saturated morning baseline plus bounded fern, wildflower, mushroom and leaf-litter detail. The existing night-corruption owner remains intact but is held behind its explicit runtime flag until daytime Studio acceptance.
 - [x] Server-confirmed firearm presentation now adds weapon-specific camera/FOV response while preserving server ownership of shots, cadence, ammunition, targeting and damage.
-- [ ] A real safe-arrival/preparation beat must prevent hostile pressure from starting before deliberate expedition launch.
+- [x] Mission/horde pressure now stays dormant until the player deliberately launches an expedition from the Forward Operations Hub; `MissionDirectorService`/`HordeExperienceService` still `start()` unconditionally at boot (preserving every existing boot-order and replay-restart invariant), but their pressure-producing paths wait for `armPressure()`, released only by the existing lobby launch flow. Source-audited by `tests/SafeArrivalLaunchBoundarySourceAudit.test.luau`; a fresh literal-keypress Studio reconfirmation on this exact corrected build is still open (see the evidence note below).
 - [ ] The exact build still needs a first-person Studio pass for upgrade input, firearm response, Stalker/Spitter pressure, biome composition, elite → terminal encounter → return → upgrade → replay, and representative performance.
 
 Exact-build evidence for the completed interaction/HUD slice is recorded in
 [`../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md`](../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md).
+The safe-arrival launch boundary (PR #252) was accepted on source/fixture
+evidence only per `../roadmap/MVP-BUILD-THROUGH-TESTING-POLICY.md` — it is an
+ordinary implementation increment, not a client/server trust-boundary change —
+and has not yet had a dedicated Studio keypress-level rerun; that remains part
+of the consolidated MVP 0.1 integration pass below.
 The 2026-08-09 first-run repair attempt is intentionally recorded as `INVALID`
 because the exact Studio window did not register with the enabled bridge:
 [`../production/evidence/2026-08-09-mvp01-first-run-repair-studio-bridge-blocked.md`](../production/evidence/2026-08-09-mvp01-first-run-repair-studio-bridge-blocked.md).
