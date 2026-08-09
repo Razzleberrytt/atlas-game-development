@@ -8,7 +8,10 @@ local function contains(needle: string): boolean
 	return string.find(source, needle, 1, true) ~= nil
 end
 
-assert(contains('ReplicatedStorage:WaitForChild("InventoryNetwork")'), "RPG menu must consume the owner inventory network")
+assert(
+	contains('ReplicatedStorage:WaitForChild("InventoryNetwork")'),
+	"RPG menu must consume the owner inventory network"
+)
 assert(contains('inventoryNetwork:WaitForChild("ReadOwnInventory")'), "RPG menu must read the sanitized owner snapshot")
 assert(contains('inventoryNetwork:WaitForChild("EquipOwnedItem")'), "RPG menu must use the owner-only equip intent")
 assert(contains("latestDurableInventory"), "RPG menu must retain the latest sanitized durable snapshot")
@@ -23,9 +26,14 @@ assert(
 	contains("inventoryEquipOwnedItem:InvokeServer(instanceId)"),
 	"client equip request must submit only the owned instance id"
 )
-assert(not contains("inventoryEquipOwnedItem:InvokeServer(instanceId,"), "equip request must not append slot or item stats")
+assert(
+	not contains("inventoryEquipOwnedItem:InvokeServer(instanceId,"),
+	"equip request must not append slot or item stats"
+)
 assert(not contains("inventoryEquipOwnedItem:InvokeServer(item.Slot"), "client must not author the equipment slot")
 assert(not contains("inventoryEquipOwnedItem:InvokeServer(item.WeaponId"), "client must not author a combat WeaponId")
 assert(contains('created.Name = "RPGMenu"'), "durable inventory must reuse the existing RPG menu surface")
 
-print("DurableInventoryRPGMenuSourceAudit: sanitized durable gear, existing menu, and device-neutral owner-only equip passed")
+print(
+	"DurableInventoryRPGMenuSourceAudit: sanitized durable gear, existing menu, and device-neutral owner-only equip passed"
+)

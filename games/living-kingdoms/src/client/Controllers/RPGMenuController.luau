@@ -13,11 +13,15 @@ local Controller = {}
 local player = Players.LocalPlayer
 local survivalNetwork = ReplicatedStorage:WaitForChild("SurvivalNetwork")
 local progressionNetwork = ReplicatedStorage:WaitForChild("ProgressionNetwork")
+local inventoryNetwork = ReplicatedStorage:WaitForChild("InventoryNetwork")
 local survivalStateRemote = survivalNetwork:WaitForChild("State") :: RemoteEvent
 local survivalReadState = survivalNetwork:WaitForChild("ReadState") :: RemoteFunction
 local progressionStateRemote = progressionNetwork:WaitForChild("State") :: RemoteEvent
 local progressionReadState = progressionNetwork:WaitForChild("ReadState") :: RemoteFunction
 local progressionChooseUpgrade = progressionNetwork:WaitForChild("ChooseUpgrade") :: RemoteEvent
+local inventoryStateRemote = inventoryNetwork:WaitForChild("State") :: RemoteEvent
+local inventoryReadOwn = inventoryNetwork:WaitForChild("ReadOwnInventory") :: RemoteFunction
+local inventoryEquipOwnedItem = inventoryNetwork:WaitForChild("EquipOwnedItem") :: RemoteFunction
 
 local started = false
 local connections: { RBXScriptConnection } = {}
@@ -38,6 +42,7 @@ local skillsTab: TextButton? = nil
 local selectedTab = "Character"
 local latestSurvival: any = nil
 local latestProgression: any = nil
+local latestDurableInventory: any = nil
 
 local COLORS = table.freeze({
 	background = Color3.fromRGB(9, 12, 14),
@@ -124,6 +129,27 @@ local function equippedWeaponName(): string
 	return if definition ~= nil then definition.DisplayName else weaponId
 end
 
+local function durableEquippedItem(slotId: string): any
+	if type(latestDurableInventory) ~= "table" or type(latestDurableInventory.Items) ~= "table" then
+		return nil
+	end
+	for _, item in latestDurableInventory.Items do
+		if type(item) == "table" and item.Slot == slotId and item.Equipped == true then
+			return item
+		end
+	end
+	return nil
+end
+
+local function durableItemLabel(item: any): string
+	if type(item) ~= "table" then
+		return "Empty"
+	end
+	local name = if type(item.DisplayName) == "string" then item.DisplayName else "Gear"
+	local power = tonumber(item.Power)
+	return if power ~= nil then string.format("%s  P%d", name, power) else name
+end
+
 local function rebuildViewport()
 	local frame = viewport
 	local character = player.Character
@@ -193,12 +219,22 @@ local function rebuildEquipment()
 	clearGenerated(equipment)
 	local weaponId = player:GetAttribute("LK_EquippedWeaponId")
 	local isSidearm = weaponId == FirearmConfig.ServicePistol.WeaponId
+	local primary = durableEquippedItem("Primary")
+	local secondary = durableEquippedItem("Secondary")
+	local armor = durableEquippedItem("Armor")
+	local relic = durableEquippedItem("Relic")
+	local primaryValue = if primary ~= nil
+		then durableItemLabel(primary)
+		else if isSidearm then "Empty" else equippedWeaponName()
+	local secondaryValue = if secondary ~= nil
+		then durableItemLabel(secondary)
+		else if isSidearm then equippedWeaponName() else "Empty"
 	equipmentSlot(equipment, "Head", "Empty", UDim2.fromOffset(8, 20))
-	equipmentSlot(equipment, "Chest", "Empty", UDim2.fromOffset(8, 94))
-	equipmentSlot(equipment, "Primary", if isSidearm then "Empty" else equippedWeaponName(), UDim2.new(1, -140, 0, 20))
-	equipmentSlot(equipment, "Sidearm", if isSidearm then equippedWeaponName() else "Empty", UDim2.new(1, -140, 0, 94))
+	equipmentSlot(equipment, "Chest", durableItemLabel(armor), UDim2.fromOffset(8, 94))
+	equipmentSlot(equipment, "Primary", primaryValue, UDim2.new(1, -140, 0, 20))
+	equipmentSlot(equipment, "Sidearm", secondaryValue, UDim2.new(1, -140, 0, 94))
 	equipmentSlot(equipment, "Melee", "Empty", UDim2.fromOffset(8, 168))
-	equipmentSlot(equipment, "Relic", "Empty", UDim2.new(1, -140, 0, 168))
+	equipmentSlot(equipment, "Relic", durableItemLabel(relic), UDim2.new(1, -140, 0, 168))
 end
 
 local function statRow(parent: Instance, order: number, name: string, value: string, color: Color3?)
@@ -281,6 +317,64 @@ local function inventorySlot(
 	count.TextXAlignment = Enum.TextXAlignment.Right
 end
 
+local function durableInventorySlot(parent: Instance, order: number, item: any)
+	local slot = Instance.new("TextButton")
+	slot.Name = "Durable_" .. tostring(item.InstanceId)
+	slot.Size = UDim2.fromOffset(112, 104)
+	slot.BackgroundColor3 = COLORS.slot
+	slot.BorderSizePixel = 0
+	slot.LayoutOrder = order
+	slot.AutoButtonColor = item.Equipped ~= true
+	slot.Active = item.Equipped ~= true
+	slot.Text = ""
+	slot.Parent = parent
+	local border = if item.Rarity == "Rare"
+		then Color3.fromRGB(94, 142, 255)
+		else if item.Rarity == "Uncommon" then COLORS.gold else Color3.fromRGB(111, 151, 112)
+	decorate(slot, border)
+	local iconText = if item.Slot == "Primary" or item.Slot == "Secondary"
+		then "⌁"
+		else if item.Slot == "Armor" then "▣" else "✦"
+	local itemIcon = label(slot, iconText, UDim2.fromOffset(8, 4), UDim2.new(1, -16, 0, 31), 23)
+	itemIcon.TextXAlignment = Enum.TextXAlignment.Center
+	itemIcon.TextColor3 = border
+	local itemName = label(slot, tostring(item.DisplayName), UDim2.fromOffset(6, 35), UDim2.new(1, -12, 0, 30), 10)
+	itemName.TextXAlignment = Enum.TextXAlignment.Center
+	itemName.TextWrapped = true
+	local meta = label(
+		slot,
+		string.format("%s • P%d", tostring(item.Rarity), tonumber(item.Power) or 0),
+		UDim2.fromOffset(6, 65),
+		UDim2.new(1, -12, 0, 16),
+		9
+	)
+	meta.TextXAlignment = Enum.TextXAlignment.Center
+	meta.TextColor3 = COLORS.muted
+	local status = label(
+		slot,
+		if item.Equipped == true then "EQUIPPED" else "EQUIP",
+		UDim2.fromOffset(6, 82),
+		UDim2.new(1, -12, 0, 16),
+		10
+	)
+	status.TextXAlignment = Enum.TextXAlignment.Center
+	status.TextColor3 = if item.Equipped == true then COLORS.green else COLORS.gold
+	if item.Equipped ~= true and type(item.InstanceId) == "string" then
+		local instanceId = item.InstanceId
+		slot.Activated:Connect(function()
+			slot.Active = false
+			task.spawn(function()
+				local ok, outcome = pcall(function()
+					return inventoryEquipOwnedItem:InvokeServer(instanceId)
+				end)
+				if not ok or type(outcome) ~= "table" or outcome.Accepted ~= true then
+					slot.Active = true
+				end
+			end)
+		end)
+	end
+end
+
 local function rebuildInventory()
 	local grid = inventoryGrid
 	if grid == nil then
@@ -291,10 +385,21 @@ local function rebuildInventory()
 	local packCapacity = if type(latestSurvival) == "table"
 		then tonumber(latestSurvival.inventoryCapacity) or 30
 		else 30
+	local durableItems = if type(latestDurableInventory) == "table"
+			and type(latestDurableInventory.Items) == "table"
+		then latestDurableInventory.Items
+		else {}
 	if inventoryTitle ~= nil then
-		inventoryTitle.Text = string.format("BACKPACK   %d / %d   //   24-SLOT FIELD PACK", packUsed, packCapacity)
+		inventoryTitle.Text =
+			string.format("DURABLE GEAR   %d   //   FIELD PACK   %d / %d", #durableItems, packUsed, packCapacity)
 	end
 	local order = 0
+	for _, item in durableItems do
+		if type(item) == "table" and type(item.InstanceId) == "string" then
+			order += 1
+			durableInventorySlot(grid, order, item)
+		end
+	end
 	if type(latestSurvival) == "table" and type(latestSurvival.inventoryItems) == "table" then
 		for _, item in latestSurvival.inventoryItems do
 			if type(item) == "table" and (tonumber(item.quantity) or 0) > 0 then
@@ -313,7 +418,7 @@ local function rebuildInventory()
 	local weaponName = equippedWeaponName()
 	if weaponName ~= "Empty" then
 		order += 1
-		inventorySlot(grid, order, "⌁", weaponName, 1, "Rare")
+		inventorySlot(grid, order, "⌁", "RUN: " .. weaponName, 1, "Rare")
 	end
 	for index = order + 1, 24 do
 		local empty = Instance.new("Frame")
@@ -326,7 +431,7 @@ local function rebuildInventory()
 		empty.Parent = grid
 		decorate(empty, Color3.fromRGB(54, 63, 61))
 	end
-	grid.CanvasSize = UDim2.fromOffset(0, math.ceil(24 / 5) * 116)
+	grid.CanvasSize = UDim2.fromOffset(0, math.ceil(math.max(24, order) / 5) * 116)
 end
 
 local function upgradeStacks(): { [string]: number }
@@ -776,6 +881,16 @@ function Controller.start()
 	)
 	table.insert(
 		connections,
+		inventoryStateRemote.OnClientEvent:Connect(function(result)
+			if type(result) == "table" and result.Accepted == true and type(result.Snapshot) == "table" then
+				latestDurableInventory = result.Snapshot
+				rebuildEquipment()
+				rebuildInventory()
+			end
+		end)
+	)
+	table.insert(
+		connections,
 		progressionStateRemote.OnClientEvent:Connect(function(snapshot)
 			latestProgression = snapshot
 			if characterPanel ~= nil and characterPanel.Visible then
@@ -794,6 +909,17 @@ function Controller.start()
 	table.insert(connections, player:GetAttributeChangedSignal("LK_EquippedWeaponId"):Connect(rebuildEquipment))
 	table.insert(connections, player:GetAttributeChangedSignal("LK_P3_CurrentHealth"):Connect(rebuildStats))
 	table.insert(connections, player:GetAttributeChangedSignal("LK_P3_MaximumHealth"):Connect(rebuildStats))
+	local inventoryOk, inventoryResult = pcall(function()
+		return inventoryReadOwn:InvokeServer()
+	end)
+	if
+		inventoryOk
+		and type(inventoryResult) == "table"
+		and inventoryResult.Accepted == true
+		and type(inventoryResult.Snapshot) == "table"
+	then
+		latestDurableInventory = inventoryResult.Snapshot
+	end
 	local survivalOk, survivalSnapshot = pcall(function()
 		return survivalReadState:InvokeServer()
 	end)
@@ -839,6 +965,7 @@ function Controller.stop()
 	selectedTab = "Character"
 	latestSurvival = nil
 	latestProgression = nil
+	latestDurableInventory = nil
 end
 
 return table.freeze(Controller)
