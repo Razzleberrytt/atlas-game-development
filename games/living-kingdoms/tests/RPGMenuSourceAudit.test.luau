@@ -11,8 +11,11 @@ end
 local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/RPGMenuController.luau")
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 
-check(string.find(controller, '"C   CHARACTER"', 1, true), "character button must always be available")
-check(string.find(controller, '"I   INVENTORY"', 1, true), "inventory button must always be available")
+check(string.find(controller, 'topButton(created, "CHARACTER"', 1, true), "character button must always be available")
+check(string.find(controller, 'topButton(created, "INVENTORY"', 1, true), "inventory button must always be available")
+check(string.find(controller, 'shortcut .. "   CHARACTER"', 1, true), "character keyboard hint must remain available")
+check(string.find(controller, 'shortcut .. "   INVENTORY"', 1, true), "inventory keyboard hint must remain available")
+check(string.find(controller, "LastInputTypeChanged", 1, true), "launcher labels must adapt to the active input family")
 check(string.find(controller, 'view.Name = "CharacterBody"', 1, true), "character screen requires a body preview")
 check(string.find(controller, 'equipmentSlot(equipment, "Head"', 1, true), "paper doll requires a head slot")
 check(string.find(controller, 'equipmentSlot(equipment, "Chest"', 1, true), "paper doll requires a chest slot")
@@ -30,4 +33,4 @@ check(string.find(controller, "survivalReadState:InvokeServer()", 1, true), "inv
 check(string.find(controller, "progressionReadState:InvokeServer()", 1, true), "stats must request their initial state")
 check(string.find(bootstrap, "RPGMenuController.start()", 1, true), "RPG menu must bootstrap")
 
-print("RPGMenuSourceAudit: buttons, paper doll, equipment, inventory, live stats, and bootstrap passed")
+print("RPGMenuSourceAudit: adaptive launchers, paper doll, equipment, inventory, live stats, and bootstrap passed")
