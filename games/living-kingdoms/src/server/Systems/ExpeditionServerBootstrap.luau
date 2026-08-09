@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ExpeditionConfig = require(ReplicatedStorage.Shared.Config.ExpeditionConfig)
 local FirstDungeonContentConfig = require(ReplicatedStorage.Shared.Config.FirstDungeonContentConfig)
+local FirstOutdoorEncounterBeatConfig = require(ReplicatedStorage.Shared.Config.FirstOutdoorEncounterBeatConfig)
 local HordeExperienceConfig = require(ReplicatedStorage.Shared.Config.HordeExperienceConfig)
 local SpecialEnemyConfig = require(ReplicatedStorage.Shared.Config.SpecialEnemyConfig)
 local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)
@@ -106,6 +107,66 @@ local function buildAuthoredWave(context: any, roomId: string, anchor: any): { a
 	return definitions
 end
 
+local function buildOutdoorApproachSequence(context: any): any
+	assert(
+		FirstOutdoorEncounterBeatConfig.RuntimeConsumptionActive == true,
+		"authored outdoor approach combat must be runtime-enabled"
+	)
+	assert(
+		FirstOutdoorEncounterBeatConfig.RuntimeConsumptionScopeId == "ApproachCombatSequenceOnly",
+		"outdoor encounter runtime scope must remain combat-only"
+	)
+
+	-- BA-050 route geometry remains held, so the live combat sequence intentionally
+	-- uses the existing Approach combat anchor rather than inventing landmark
+	-- coordinates or a second traversal authority.
+	local anchor = { x = 0, y = 4, z = 24 }
+	local stages = {}
+	local stageOrdinal = 0
+	local enemyOrdinal = 0
+	local previousBeatRecoverySeconds = 0
+
+	for beatIndex, beat in FirstOutdoorEncounterBeatConfig.Beats do
+		for waveIndex, authoredWave in beat.Waves do
+			stageOrdinal += 1
+			local definitions = {}
+			for _, unit in authoredWave.Units do
+				for _ = 1, unit.Count do
+					enemyOrdinal += 1
+					local xOffset, zOffset = deterministicOffset(context.Seed, enemyOrdinal + stageOrdinal * 7)
+					table.insert(definitions, {
+						id = string.format("%s:approach:%d:%d", context.Token, stageOrdinal, enemyOrdinal),
+						name = displayNameForUnit(unit),
+						x = anchor.x + xOffset,
+						y = anchor.y,
+						z = anchor.z + zOffset,
+						archetypeId = unit.ArchetypeId,
+						hordeRoleId = unit.HordeRoleId,
+					})
+				end
+			end
+
+			local delayAfterPreviousSeconds = authoredWave.DelayAfterPreviousSeconds
+			if waveIndex == 1 and beatIndex > 1 then
+				delayAfterPreviousSeconds = previousBeatRecoverySeconds
+			end
+			table.insert(stages, {
+				WaveIndex = stageOrdinal,
+				DelayAfterPreviousSeconds = delayAfterPreviousSeconds,
+				Wave = definitions,
+			})
+		end
+		previousBeatRecoverySeconds = beat.PostClearRecoverySeconds
+	end
+
+	assert(#stages >= 1, "authored outdoor approach requires at least one live wave stage")
+	return {
+		Kind = "WaveSequence",
+		Waves = stages,
+		CompletionDelaySeconds = previousBeatRecoverySeconds,
+	}
+end
+
 local function buildEncounterResolver(rawPlan: any): (any) -> any
 	local layout = RoomPlacementPlanner.plan(rawPlan)
 	local placementByRoomId = {}
@@ -126,21 +187,7 @@ local function buildEncounterResolver(rawPlan: any): (any) -> any
 
 	return function(context: any): any
 		if context.PhaseId == "Approach" then
-			local anchor = { x = 0, y = 4, z = 24 }
-			local wave = {}
-			for ordinal = 1, 2 do
-				local xOffset, zOffset = deterministicOffset(context.Seed, ordinal)
-				table.insert(wave, {
-					id = string.format("%s:enemy:%d", context.Token, ordinal),
-					name = HordeExperienceConfig.Roles.Basic.DisplayName,
-					x = anchor.x + xOffset,
-					y = anchor.y,
-					z = anchor.z + zOffset,
-					archetypeId = EnemyContracts.EnemyArchetypeIds.ExclusionWalker,
-					hordeRoleId = HordeExperienceConfig.Roles.Basic.Id,
-				})
-			end
-			return { Kind = "Wave", WaveIndex = 1, Wave = wave }
+			return buildOutdoorApproachSequence(context)
 		end
 
 		local placement = placementFor(context)
@@ -239,7 +286,7 @@ function Bootstrap:step(nowUnix: number)
 	local active = state.Coordinator:getActiveContext()
 	if active ~= nil then
 		local adapter = if active.RoomRoleId == "Traversal" then state.TraversalAdapter else state.CombatAdapter
-		local completed, token = adapter:pollCompletion()
+		local completed, token = adapter:pollCompletion(nowUnix)
 		if completed and token ~= nil then
 			local completion = state.Coordinator:completeActive(token, nowUnix)
 			adapter.cancel(active, "EncounterCompleted")
