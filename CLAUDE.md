@@ -98,11 +98,13 @@ These produce no error at authoring time and no failing fixture, but silently di
 
 ## Studio evidence discipline
 
-Every fixture, StyLua, Selene, and the Rojo build passed green on `main` while the game was visibly broken in Studio (2026-08-08 — traps 4, 5 and 6 above were all live simultaneously, and no gate could see any of them). The gates are source audits and mocked units: they cannot observe bootstrap ordering, instance identity across a lifecycle, or the renderer.
+Every fixture, StyLua, Selene, and the Rojo build can be green while the game is visibly broken in Studio. Source/static gates cannot observe bootstrap ordering, instance identity across a lifecycle, device behavior, or the renderer.
 
 For any "it looks broken" report, play the build and probe the live datamodel before reading source: `get_console_output`, then `#PlayerGui:GetChildren()` (expect ~22, not 1 — the fastest client-health probe), then the relevant Workspace folder. Some symptoms are machine-local Studio settings that do not live in the repo at all (`settings().Rendering.EnableFRM = false` causes wire-like outlines; `settings().Physics.AreOwnersShown` adds network-ownership adorns).
 
-Never claim runtime, multiplayer, performance, or visual acceptance from CI. The evidence ladder is `E0 design → E1 source/static → E2 Studio init → E3 single-player → E4 multiplayer → E5 device/perf → E6 outside-player fun → E7 live telemetry`, and the project is at **E1**. Studio-only claims need a fresh evidence packet (`docs/production/V2.7-EVIDENCE-PACKET-TEMPLATE.md`) with exact build/commit/place identity — never edit an older packet to fit a later result.
+Never claim runtime, multiplayer, performance, device, or visual acceptance from CI. The evidence ladder is `E0 design → E1 source/static → E2 Studio init → E3 single-player → E4 multiplayer → E5 device/perf → E6 outside-player fun → E7 live telemetry`. Read the current accepted evidence level from the current roadmap/evidence packet; do not hard-code it from this companion file. Studio-only claims need a fresh evidence packet (`docs/production/V2.7-EVIDENCE-PACKET-TEMPLATE.md`) with exact build/commit/place identity — never edit an older packet to fit a later result.
+
+A source implementation can still be complete while Studio evidence is open. Label that state **BUILT — VERIFICATION PENDING** and continue dependency-safe work unless a concrete safety/evidence dependency makes further work unsafe or misleading.
 
 ## Assets
 
@@ -110,8 +112,16 @@ Never claim runtime, multiplayer, performance, or visual acceptance from CI. The
 
 ## Roadmap authority
 
-`docs/roadmap/MASTER-ROADMAP.md` (v2.8) describes the full destination; `docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md` controls what is actually executable now (tickets 331–360). A phase being documented is not authorization to build it. When runtime evidence is blocked, `docs/roadmap/AGENT-BUILD-AHEAD-QUEUE.md` is the separate preparation lane — take only tasks marked `READY`, title the PR `[BUILD-AHEAD]`, and keep runtime wiring out of it.
+Use the roadmap layers for different jobs:
 
-Never trust a status line in a doc without running the gates yourself; the current blocker and PR gate state live in root `README.md` under "Current active runtime gate" and go stale in every other document first.
+- `docs/roadmap/MVP-BUILD-THROUGH-TESTING-POLICY.md` controls execution cadence and status meaning. General roadmap locks are retired; use **BUILT — VERIFICATION PENDING** versus **VERIFIED**, and use **BLOCKED** only for a concrete named reason.
+- `docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md` supplies the preferred player-facing milestone sequence and highest-ROI visible target.
+- `docs/roadmap/MASTER-ROADMAP.md` describes the complete destination and requirement inventory.
+- `docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md` protects current runtime safety/stabilization boundaries where downstream work genuinely depends on them.
+- `docs/roadmap/AGENT-BUILD-AHEAD-QUEUE.md` is prepared-work and dependency context, not a permission list. Historical `READY`, `PREPARED`, or `[L]` labels do not by themselves prohibit useful dependency-safe implementation.
+
+Later-phase work may be implemented when it directly advances the current playable milestone, removes a real dependency, establishes a needed canonical interface, or is a small isolated high-value improvement. Avoid broad speculative expansion with no near-term payoff.
+
+Never trust a status line in a stale doc blindly. Re-fetch current `main`, check overlapping open PRs, reconcile status against the current Build-Through policy, and preserve actual evidence truth.
 
 Generated `.rbxl`/`.rbxlx`/sourcemap files are gitignored build output, not source — do not edit them, and do not replace `src/` from an imported place.
