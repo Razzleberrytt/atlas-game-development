@@ -28,11 +28,16 @@ assert(
 	contains(modeService, "Players.PlayerAdded:Connect(ensurePlayer)"),
 	"server must initialize combat mode for joins"
 )
-assert(contains(modeService, "ModeIds.Firearm"), "current default must remain firearm until opening migration")
+assert(contains(modeService, "setAttribute(player, ModeIds.Melee)"), "fresh operatives must now default to melee")
+assert(
+	contains(modeService, "return ModeIds.Melee"),
+	"missing/early combat-mode reads must fail closed to the melee opening"
+)
 assert(
 	contains(modeService, "function Service.setMode"),
-	"trusted server systems need the later melee/firearm handoff seam"
+	"trusted server systems need the melee/firearm handoff seam"
 )
+assert(contains(modeService, "function Service.resetAllToMelee"), "deliberate replay needs an explicit melee reset seam")
 assert(not contains(modeService, "RemoteEvent"), "clients cannot choose their primary combat mode")
 
 assert(
@@ -73,6 +78,8 @@ assert(
 	"melee touch action must have a truthful label"
 )
 assert(contains(router, "strikeIntent:FireServer"), "client melee routing must send only intent")
+assert(contains(router, 'localPlayer:SetAttribute("LK_HUD_WeaponName", weapon.ShortName)'), "melee HUD must identify the Field Hatchet")
+assert(contains(router, 'localPlayer:SetAttribute("LK_HUD_LoadedRounds", nil)'), "melee HUD cannot show hidden firearm ammo")
 assert(contains(router, "WeaponController.start()"), "firearm input must restore when server mode returns to firearm")
 assert(not contains(router, "FireIntent"), "mode router cannot become a second firearm intent owner")
 assert(not contains(router, "ReloadIntent"), "mode router cannot create a second reload owner")
@@ -92,8 +99,12 @@ assert(
 	"mode router must start after the firearm controller so initial melee mode can safely take ownership"
 )
 assert(
+	contains(clientBootstrap, "WeaponPresentationController.start()\nMeleePresentationController.start()"),
+	"melee presentation must reconcile after firearm presentation starts"
+)
+assert(
 	contains(meleeService, "EnemyDirectorService.commitHealthState"),
 	"melee intent must terminate at canonical enemy health ownership"
 )
 
-print("PrimaryAttackModeSourceAudit: mutually exclusive mouse/R2/touch firearm-melee routing passed")
+print("PrimaryAttackModeSourceAudit: secure melee-first mouse/R2/touch routing passed")
