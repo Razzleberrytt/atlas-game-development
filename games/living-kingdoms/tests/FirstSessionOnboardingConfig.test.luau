@@ -3,7 +3,7 @@
 -- BA-060 onboarding fixture: pin the intended first-session player journey to
 -- existing owner boundaries and prepared MVP content without creating a tutorial
 -- runtime. The fixture also prevents implementation-state labels from drifting
--- behind already-live First Descent and Run Relic integrations.
+-- behind already-live outdoor, First Descent, and Run Relic integrations.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
@@ -26,7 +26,7 @@ local routeConfig = {
 	RuntimeConsumptionActive = false,
 }
 local discoveryConfig = {
-	RuntimeConsumptionActive = false,
+	RuntimeConsumptionActive = true,
 	Discoveries = {
 		{ Id = "discovery.first-descent.lookout-cache" },
 	},
@@ -79,7 +79,7 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Fi
 	injectGlobals = true,
 })()
 
-assert(config.Version == "BA-060-v2-runtime-sync")
+assert(config.Version == "BA-060-v3-outdoor-discovery-sync")
 assert(config.SequenceId == "onboarding.first-session.mvp-0.1")
 assert(config.RuntimeConsumptionActive == false)
 assert(#config.Steps == 12, "first-session sequence should remain a compact twelve-step journey")
@@ -119,9 +119,15 @@ assert(byId["open-expedition-terminal"].ActionId == "OpenExpedition")
 
 assert(byId["traverse-first-outdoor-route"].ReferenceId == routeConfig.RouteId)
 assert(byId["traverse-first-outdoor-route"].ImplementationStateId == config.ImplementationStateIds.PreparedData)
+assert(
+	string.find(byId["traverse-first-outdoor-route"].IntegrationNote, "BA-051 authored Approach combat is live", 1, true)
+		~= nil,
+	"route note must distinguish live combat from held imported traversal"
+)
 assert(byId["discover-lookout-cache"].ReferenceId == discoveryConfig.Discoveries[1].Id)
 assert(byId["discover-lookout-cache"].Optional == true)
-assert(byId["discover-lookout-cache"].ImplementationStateId == config.ImplementationStateIds.PreparedData)
+assert(byId["discover-lookout-cache"].ImplementationStateId == config.ImplementationStateIds.RuntimeExisting)
+assert(byId["discover-lookout-cache"].OwnershipBoundaryId == "FirstOutdoorDiscoveryService")
 
 assert(byId["complete-first-descent"].ReferenceId == dungeonConfig.SequenceId)
 assert(byId["complete-first-descent"].ImplementationStateId == config.ImplementationStateIds.RuntimeExisting)
@@ -156,4 +162,4 @@ assert(
 	"BA-060 must not import the runtime lifecycle owner"
 )
 
-print("BA-060 FirstSessionOnboardingConfig runtime-sync fixture passed")
+print("BA-060 FirstSessionOnboardingConfig outdoor-discovery sync fixture passed")
