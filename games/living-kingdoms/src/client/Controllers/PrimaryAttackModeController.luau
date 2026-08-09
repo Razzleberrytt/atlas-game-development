@@ -16,6 +16,7 @@ local Workspace = game:GetService("Workspace")
 
 local PrimaryCombatModeContracts = require(ReplicatedStorage.Shared.Combat.PrimaryCombatModeContracts)
 local MeleeCombatConfig = require(ReplicatedStorage.Shared.Config.MeleeCombatConfig)
+local MeleePresentationController = require(script.Parent.MeleePresentationController)
 local WeaponController = require(script.Parent.WeaponController)
 
 local Controller = {}
@@ -27,6 +28,7 @@ local FIRE_ACTION_NAME = "LK_Fire"
 local started = false
 local meleeBound = false
 local requestSequence = 0
+local lastLocalSwingClock = -math.huge
 local modeConnection: RBXScriptConnection? = nil
 local mouseConnection: RBXScriptConnection? = nil
 local meleeNetwork = ReplicatedStorage:WaitForChild("MeleeNetwork")
@@ -49,6 +51,17 @@ local function requestStrike()
 	if direction == nil then
 		return
 	end
+
+	-- This local cadence is presentation/traffic prediction only. The server-owned
+	-- MeleeCombatService remains authoritative and independently enforces the same
+	-- configured cadence for every valid swing attempt.
+	local nowClock = os.clock()
+	if nowClock - lastLocalSwingClock < MeleeCombatConfig.OpeningWeapon.CadenceSeconds then
+		return
+	end
+	lastLocalSwingClock = nowClock
+	MeleePresentationController.playLocalSwing()
+
 	requestSequence += 1
 	strikeIntent:FireServer("melee:" .. tostring(localPlayer.UserId) .. ":" .. tostring(requestSequence), direction)
 end
@@ -92,6 +105,7 @@ local function bindMelee()
 	-- WeaponController owns mouse/R2/touch firearm intent. Stop it first so the
 	-- same physical press cannot reach both authoritative combat paths.
 	WeaponController.stop()
+	lastLocalSwingClock = -math.huge
 	presentMeleeHud()
 	ContextActionService:BindAction(FIRE_ACTION_NAME, onMeleeAction, true, Enum.KeyCode.ButtonR2)
 	ContextActionService:SetTitle(FIRE_ACTION_NAME, "Attack")
@@ -109,6 +123,7 @@ local function unbindMelee()
 		mouseConnection = nil
 	end
 	meleeBound = false
+	lastLocalSwingClock = -math.huge
 	WeaponController.start()
 end
 
@@ -127,6 +142,7 @@ function Controller.start()
 	end
 	started = true
 	requestSequence = 0
+	lastLocalSwingClock = -math.huge
 	modeConnection = localPlayer:GetAttributeChangedSignal(AttributeName):Connect(reconcileMode)
 	reconcileMode()
 end
