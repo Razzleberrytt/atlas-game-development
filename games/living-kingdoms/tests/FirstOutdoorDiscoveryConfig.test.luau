@@ -59,20 +59,27 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Fi
 	injectGlobals = true,
 })()
 
-assert(config.Version == "BA-052-v1")
-assert(config.RuntimeConsumptionActive == false)
+assert(config.Version == "BA-052-v2-runtime-live")
+assert(config.RuntimeConsumptionActive == true)
+assert(config.RuntimeConsumptionScopeId == "LookoutCacheInteractionOnly")
+assert(routeConfig.RuntimeConsumptionActive == false, "BA-052 cannot activate the imported BA-050 route")
 assert(#config.Discoveries == 1)
 
 local discovery = config.Discoveries[1]
 assert(discovery.Id == "discovery.first-descent.lookout-cache")
+assert(discovery.Version == "1.1.0")
 assert(discovery.RouteId == routeConfig.RouteId)
 assert(discovery.DiscoverySlotId == routeConfig.DiscoverySlotIds.LookoutTower)
 assert(discovery.AnchorWorldContentId == "landmark.lookout_tower")
+assert(discovery.AnchorLandmarkId == "LookoutTower")
 assert(discovery.StreamingIdentityId == "streaming.discovery.first-descent.lookout-cache")
 assert(discovery.GameplayMeaningId == "OptionalVantageCache")
 assert(discovery.PresentationIntentId == "ReadableOptionalDetour")
 assert(discovery.Optional == true)
 assert(discovery.RewardSourceId == runRpgContracts.RewardSourceIds.AuthoredContainer)
+assert(discovery.Interaction.ActionText == "Search")
+assert(discovery.Interaction.HoldDurationSeconds == 0.75)
+assert(discovery.Interaction.MaximumDistanceStuds == 10)
 assert(config.ById[discovery.Id] == discovery)
 
 local source = fs.readFile("games/living-kingdoms/src/shared/Config/FirstOutdoorDiscoveryConfig.luau")
@@ -80,4 +87,4 @@ assert(string.find(source, "Workspace/", 1, true) == nil, "discovery definition 
 assert(string.find(source, "DataStore", 1, true) == nil, "discovery definition cannot own persistence")
 assert(string.find(source, "FireServer", 1, true) == nil, "discovery definition cannot own networking")
 
-print("BA-052 FirstOutdoorDiscoveryConfig fixture passed")
+print("BA-052 FirstOutdoorDiscoveryConfig live fixture passed")
