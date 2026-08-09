@@ -21,6 +21,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
+local ChoiceInputCoordinator = require(script.Parent.ChoiceInputCoordinator)
 local InterfaceTheme = require(script.Parent.Parent.UI.InterfaceTheme)
 
 local RunBuildHUDController = {}
@@ -32,6 +33,7 @@ local CHOICE_COUNT = RunRpgConfig.Limits.relicChoiceCountPerReward
 local started = false
 local stateConnection: RBXScriptConnection? = nil
 local buttonConnections: { RBXScriptConnection } = {}
+local unregisterChoiceInput: (() -> ())? = nil
 local screenGui: ScreenGui? = nil
 local slotButtons: { TextButton } = {}
 local choiceButtons: { TextButton } = {}
@@ -442,6 +444,16 @@ function RunBuildHUDController.start()
 	table.clear(buttonConnections)
 	createGui()
 
+	unregisterChoiceInput = ChoiceInputCoordinator.register("RelicChoice", function()
+		return choiceInputActive
+	end, function(selectionIndex)
+		if pendingReplacementRelicId ~= nil then
+			submitReplacement(selectionIndex)
+		else
+			submitChoice(selectionIndex)
+		end
+	end)
+
 	for choiceIndex, button in choiceButtons do
 		table.insert(
 			buttonConnections,
@@ -458,27 +470,6 @@ function RunBuildHUDController.start()
 			end)
 		)
 	end
-	table.insert(
-		buttonConnections,
-		UserInputService.InputBegan:Connect(function(input, gameProcessed)
-			if gameProcessed or not choiceInputActive then
-				return
-			end
-			local selectionIndex = if input.KeyCode == Enum.KeyCode.One
-					or input.KeyCode == Enum.KeyCode.KeypadOne
-				then 1
-				elseif input.KeyCode == Enum.KeyCode.Two or input.KeyCode == Enum.KeyCode.KeypadTwo then 2
-				elseif input.KeyCode == Enum.KeyCode.Three or input.KeyCode == Enum.KeyCode.KeypadThree then 3
-				else nil
-			if selectionIndex ~= nil then
-				if pendingReplacementRelicId ~= nil then
-					submitReplacement(selectionIndex)
-				else
-					submitChoice(selectionIndex)
-				end
-			end
-		end)
-	)
 
 	stateConnection = stateRemote.OnClientEvent:Connect(applySnapshot)
 	local didRead, initialSnapshot = pcall(function()
@@ -495,6 +486,10 @@ function RunBuildHUDController.stop()
 	end
 	started = false
 	setChoiceInputActive(false)
+	if unregisterChoiceInput ~= nil then
+		unregisterChoiceInput()
+		unregisterChoiceInput = nil
+	end
 	if stateConnection ~= nil then
 		stateConnection:Disconnect()
 		stateConnection = nil
