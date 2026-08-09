@@ -26,26 +26,41 @@ for _, keyName in { "One", "Two", "Three", "KeypadOne", "KeypadTwo", "KeypadThre
 	assert(contains(coordinator, `Enum.KeyCode.{keyName}`), `missing numbered key mapping: {keyName}`)
 end
 assert(contains(coordinator, "gameProcessedEvent"), "processed input must be ignored")
-assert(contains(coordinator, "ChoiceInputConflictResolver.resolve(activeOwnerIds())"), "routing must use fail-closed resolver")
+assert(
+	contains(coordinator, "ChoiceInputConflictResolver.resolve(activeOwnerIds())"),
+	"routing must use fail-closed resolver"
+)
 assert(contains(coordinator, "resolution.DispatchAllowed ~= true"), "non-dispatch resolutions must stop routing")
 assert(contains(coordinator, "resolution.OwnerId"), "accepted resolution must identify one owner")
-assert(contains(coordinator, "registration.dispatchChoice(choiceIndex)"), "accepted input must dispatch through registration")
+assert(
+	contains(coordinator, "registration.dispatchChoice(choiceIndex)"),
+	"accepted input must dispatch through registration"
+)
 assert(contains(coordinator, "inputConnection:Disconnect()"), "the shared listener must disconnect when unused")
 
 assert(contains(hordeHud, 'ChoiceInputCoordinator.register("UpgradeChoice"'))
 assert(contains(hordeHud, "return upgradeInputActive"))
 assert(contains(hordeHud, "submitUpgradeChoice"), "upgrade semantics must stay in HordeHUDController")
-assert(contains(hordeHud, "progressionChooseUpgradeRemote:FireServer(upgradeId)"), "upgrade remote path must remain unchanged")
+assert(
+	contains(hordeHud, "progressionChooseUpgradeRemote:FireServer(upgradeId)"),
+	"upgrade remote path must remain unchanged"
+)
 
 assert(contains(runBuildHud, 'ChoiceInputCoordinator.register("RelicChoice"'))
 assert(contains(runBuildHud, "return choiceInputActive"))
-assert(contains(runBuildHud, "submitChoice(selectionIndex)"), "relic choice semantics must stay in RunBuildHUDController")
+assert(
+	contains(runBuildHud, "submitChoice(selectionIndex)"),
+	"relic choice semantics must stay in RunBuildHUDController"
+)
 assert(contains(runBuildHud, "submitReplacement(selectionIndex)"), "replacement number selection must stay supported")
 assert(contains(runBuildHud, "submitChoiceRemote:FireServer"), "relic choice remote path must remain unchanged")
 assert(contains(runBuildHud, "submitReplacementRemote:FireServer"), "replacement remote path must remain unchanged")
 
 for _, source in { hordeHud, runBuildHud } do
-	assert(not contains(source, "UserInputService.InputBegan:Connect"), "HUDs must not retain duplicate numbered listeners")
+	assert(
+		not contains(source, "UserInputService.InputBegan:Connect"),
+		"HUDs must not retain duplicate numbered listeners"
+	)
 	assert(not contains(source, "Enum.KeyCode.One"), "HUDs must not directly detect numbered keys")
 	assert(contains(source, "unregisterChoiceInput()"), "HUD registration must be released on teardown")
 	assert(contains(source, ".Activated:Connect"), "GUI click/tap activation must remain available")
