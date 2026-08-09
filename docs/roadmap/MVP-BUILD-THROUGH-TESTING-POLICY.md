@@ -1,184 +1,157 @@
-# Atlas — Build-Through + Milestone Verification Policy
+# Atlas — Continuous Build-Through + Deferred Verification Policy
 
 **Status:** CURRENT EXECUTION-CADENCE AND ROADMAP-STATUS AUTHORITY  
 **Adopted:** 2026-08-08  
-**Updated:** 2026-08-09  
+**Revised:** 2026-08-09  
 **Scope:** Implementation cadence, roadmap status meaning, and manual Roblox Studio testing during development of the playable game.  
-**Supersedes for execution:** any interpretation of `PLAYABLE-MVP-PATCH-EXECUTION.md`, `MASTER-ROADMAP.md`, `AGENT-BUILD-AHEAD-QUEUE.md`, or agent instructions that treats an ordinary future-phase lock, intermediate ticket, patch fragment, or unverified implementation as a reason development must stop.  
-**Does not supersede:** current runtime safety gates, server-authority/security requirements, data-loss protections, accepted evidence truth, explicit architecture decisions, or validation that can be performed automatically.
+**Supersedes for execution:** any roadmap, patch, queue, checklist, STOP/PLAY/FIX wording, future-phase lock, verification gate, or agent instruction that treats ordinary missing manual/Studio/device/play evidence as a reason source development must stop.  
+**Does not supersede:** server-authority/security requirements, data-loss protections, known runtime failures, accepted evidence truth, explicit architecture decisions, irreversible persistence/migration safeguards, or automated validation failures.
 
 ## Decision
 
-Atlas will use a **build-through-first, milestone-verification-second** workflow.
+Atlas uses a **continuous-build, deferred-verification** workflow.
 
-The roadmap is a development guide, not a permission system. Agents should keep implementing useful dependency-safe work, keep the current game buildable/playable, and verify coherent milestones instead of repeatedly stopping for roadmap locks or tiny manual-test gates.
-
-The target workflow is:
+The roadmap is a priority system and destination map, not a permission system. Agents should continue implementing and merging useful dependency-safe source work for as long as eligible work exists. Manual Studio/device/play evidence is tracked separately and does not ordinarily gate the next source patch.
 
 ```text
-choose highest-ROI useful work
+choose highest-ROI eligible source task
 → implement a small diagnosable increment
-→ run automated/static validation
-→ mark its real status honestly
-→ continue through the coherent milestone
-→ run the milestone Studio/playtest pass
-→ fix integration/gameplay defects
-→ replay until the milestone is verified
-→ continue building
+→ run applicable automated/static validation
+→ merge when successful
+→ record BUILT — VERIFICATION PENDING when engine/manual evidence remains
+→ continue to the next coherent task or patch
+→ run grouped Studio/device/play evidence when available
+→ convert reproducible failures into immediate FIX tasks
+→ promote passing work to VERIFIED
 ```
 
-The intent is to remove self-imposed bureaucracy without removing engineering discipline.
+## Lock retirement rule
 
-## Roadmap status model
+**General execution locks are retired.**
 
-New and actively maintained roadmap entries should use these meanings:
+Older language such as `[L]`, `LOCKED`, `hard gate`, `STOP`, `THEN EXPAND`, `may not begin`, `blocked until play evidence`, or similar scheduling language must not prevent ordinary dependency-safe source development merely because a prior milestone has not yet been manually verified.
 
-- **NOT STARTED** — no meaningful implementation exists yet.
-- **BUILDING** — implementation is actively in progress or only partially complete.
-- **BUILT — VERIFICATION PENDING** — the implementation exists and applicable automated/static checks pass, but required Studio, device, integration, or human evidence has not been completed yet.
-- **VERIFIED** — the intended behavior has passed its applicable acceptance evidence.
-- **DEFERRED** — intentionally lower priority for now; it may still be implemented when it becomes high ROI or directly supports the current milestone.
-- **BLOCKED** — work genuinely cannot proceed safely or correctly because of a named dependency, safety issue, broken owner/interface, or required evidence boundary.
-- **HISTORICAL** — retained for provenance but not current execution authority.
+Interpret ordinary phase-order locks as **priority guidance / DEFERRED verification order**, not permission barriers.
 
-Agents must not blur **BUILT — VERIFICATION PENDING** into either **NOT STARTED** or **VERIFIED**. This is the key distinction that allows implementation to keep moving without pretending untested work is finished.
+Do not add new manual-verification locks.
 
-## Lock migration rule
+A task may be **BLOCKED** only when a concrete technical or safety condition makes implementation unsafe or invalid. The blocker must be named.
 
-General roadmap locks are retired as an execution concept.
+Valid blockers include:
 
-When an older document uses `[L]`, `LOCKED`, `held`, or similar scheduling language for an ordinary future phase, interpret it as **DEFERRED**, not as a prohibition on implementation.
+- a known server-authority/security defect that downstream work would depend on;
+- durable player data can be corrupted, duplicated, blanked, or irreversibly migrated;
+- a required canonical owner/interface is missing or known broken and cannot yet be safely defined;
+- a known lifecycle/state-delivery failure makes dependent implementation incorrect;
+- an irreversible persistence/security cutover requires runtime proof before further dependent activation;
+- applicable automated validation is failing and invalidates the work;
+- a real runtime test has already exposed a reproducible failure that invalidates downstream assumptions.
 
-Do not add new `[L]` statuses merely to preserve phase order.
+**Not valid by itself:** “Studio/device/manual verification has not been run yet.”
 
-A task becomes **BLOCKED** only when the blocking reason is concrete and named. Examples include:
+## Status model
 
-- implementing it would violate server authority or a security boundary;
-- durable player data could be corrupted or irreversibly migrated;
-- a canonical owner/interface it must depend on is currently broken or undefined;
-- the implementation would necessarily destroy a known-good rollback point;
-- required engine/runtime behavior cannot be bounded safely without earlier evidence.
+- **NOT STARTED** — no meaningful implementation exists.
+- **BUILDING** — implementation is active or partial.
+- **BUILT — VERIFICATION PENDING** — source implementation exists and applicable automated/static checks pass, while manual/engine/device/integration evidence is still outstanding.
+- **VERIFIED** — applicable acceptance evidence has passed.
+- **DEFERRED** — lower priority, not prohibited.
+- **BLOCKED — <concrete reason>** — implementation cannot safely/correctly proceed for a named technical reason.
+- **HISTORICAL** — provenance only.
 
-Milestone order still defines what should be **verified and promoted first**. It does not normally forbid agents from implementing useful work ahead of that verification point.
+Source-complete work remains built even when manual evidence is pending. Pending evidence does not become proof, but it also does not freeze development.
+
+## Patch progression rule
+
+Patch boundaries are **organizational milestones, not source locks**.
+
+When a patch's coherent source scope is built and automated validation is green, agents may proceed to the next patch while the earlier patch remains **BUILT — VERIFICATION PENDING**.
+
+If later manual evidence finds a concrete defect, that defect immediately preempts new expansion and becomes the highest-priority FIX until the invalid assumption is repaired.
+
+This creates two simultaneous lanes:
+
+```text
+SOURCE LANE: 0.2 → 0.3 → 0.4 → ... continuously when safe
+EVIDENCE LANE: grouped Studio/device/play passes → VERIFIED promotions / concrete FIXes
+```
+
+The evidence lane can lag the source lane. Status labels must make that lag explicit.
 
 ## Implementation freedom with scope discipline
 
-Agents may implement work from later roadmap areas when it is dependency-safe and one of the following is true:
+Agents may continue to later roadmap areas when prior source work is coherent and doing so is dependency-safe. Prefer, in order:
 
-- it directly advances the current playable milestone;
-- it removes a known blocker or expensive future dependency;
-- it creates a reusable canonical owner/interface needed by near-term work;
-- it is a small isolated improvement with clear value and low integration risk.
+1. current/next patch player value;
+2. known blocker removal;
+3. reusable canonical owners/interfaces;
+4. data-driven conversion that reduces future implementation cost;
+5. focused regression/tooling improvements that protect imminent work.
 
-This is not permission for unlimited speculative breadth. Prefer work that produces visible playable progress or reduces a real dependency. Large unrelated systems can remain **DEFERRED** until their value becomes concrete.
+Removing locks is not permission for giant speculative breadth. Broad unrelated systems remain lower priority unless they remove a real dependency or become the current roadmap target.
 
-## What no longer blocks implementation
+## Manual evidence policy
 
-The following are **not** normal stop conditions:
+Manual Studio/device/play testing remains valuable for facts source validation cannot establish: game feel, actual device input, streaming, Terrain/world composition, live timing, audio/visual readability, multiplayer timing, memory/performance, and publishing behavior.
 
-- completion of a single roadmap task;
-- completion of one implementation ticket;
-- a small player-facing increment that is only part of a larger milestone;
-- a code merge that passes applicable automated/static validation but still needs milestone-level Studio evidence;
-- a documentation/specification milestone;
-- an intermediate version label;
-- an older roadmap entry marked `[L]` solely because it belongs to a future phase;
-- work that is **BUILT — VERIFICATION PENDING**, provided its unresolved evidence does not make continued development unsafe or misleading.
+However, these checks are normally **evidence obligations**, not permission gates.
 
-An agent may record `BUILT — VERIFICATION PENDING` and continue with the next useful dependency-safe task.
+When evidence can be run:
 
-## What remains required during build-through
+- passing results promote applicable work to **VERIFIED**;
+- reproducible failures become immediate FIX tasks;
+- incomplete/unavailable evidence leaves work **BUILT — VERIFICATION PENDING** while source development continues.
 
-For every implementation change, agents must still run all applicable non-manual checks available in their environment, including as relevant:
+Early runtime evidence is mandatory only when continuing would knowingly risk irreversible data/security damage or depend on an engine fact that cannot be bounded safely by source/tests.
 
-- repository/layout validators;
-- roadmap-authority validation;
-- StyLua formatting checks;
-- Selene linting when the API dump/environment permits it;
+## Automated validation remains mandatory
+
+For every implementation change, run all applicable non-manual checks available in the environment, including as relevant:
+
+- repository/layout and roadmap-authority validators;
+- efficiency-construct validation;
+- StyLua/Selene;
 - Lune/unit/regression tests;
-- Rojo build validation;
-- reference/content validators;
+- Rojo builds;
+- content/reference/schema validators;
 - server-authority/security tests;
-- deterministic/seeded tests where applicable;
-- migration/schema validation where applicable.
+- deterministic/seeded tests;
+- migration/persistence validation.
 
-Known deterministic failures must be fixed or explicitly bounded before continuing. Build-through is not permission to stack known breakage.
-
-## Milestone manual gates
-
-Manual Studio testing should happen at **coherent player-facing milestones**, not after every small implementation increment.
-
-For MVP 0.1, the normal consolidated acceptance pass should exercise the representative loop:
-
-```text
-spawn / arrive
-→ safe preparation
-→ deliberate expedition launch
-→ explore
-→ fight
-→ loot/reward decision
-→ elite
-→ boss / terminal encounter
-→ result
-→ return to safety
-→ bank/apply upgrade
-→ start another run
-```
-
-A milestone is **VERIFIED** only after the required evidence passes. Until then, completed implementation remains **BUILT — VERIFICATION PENDING**.
-
-After MVP 0.1, keep the same rhythm:
-
-```text
-build coherent layer
-→ automated/regression validation
-→ integrate the layer completely
-→ manual milestone playtest
-→ debug/replay
-→ mark verified
-→ continue
-```
-
-A patch number by itself does not force an immediate human test if the work is still part of the same coherent integration milestone.
-
-## Exceptions — manual/runtime evidence may still be mandatory earlier
-
-Do not defer manual/runtime evidence when an unfinished change could create an unacceptable hidden risk that automated validation cannot reasonably bound. Examples include:
-
-1. **Data-loss or irreversible persistence risk** — migrations, valuable-state writes, destructive reconciliation, or anything that could corrupt durable player data.
-2. **Security/authority boundary changes** — consequential client/server trust changes that require runtime proof beyond tests.
-3. **Current v2.7 rollout safety gates** — where the controlling runtime stabilization documents explicitly require exact-build Studio/runtime evidence before a migration or activation may safely proceed.
-4. **Engine-only behavior** — streaming, replication timing, reset/respawn lifecycle, multiplayer timing, device behavior, asset permissions, Terrain/visual composition, or similar behavior that cannot be truthfully validated from source/static tests when later work depends on the result being correct.
-5. **A known blocker that makes further work unsafe or misleading** — for example, a broken canonical owner or state-delivery path that later work would necessarily build on incorrectly.
-
-These exceptions should be narrow. Agents should not convert ordinary uncertainty into a manual handoff or artificial roadmap lock by default.
+Known deterministic failures must be fixed or concretely bounded. Continuous build-through does not permit stacking known automated breakage.
 
 ## Agent task-selection rule
 
-When asked to `continue`, `implement the next roadmap task`, or equivalent:
+When asked to continue or implement the roadmap:
 
-1. inspect current `main` and overlapping open work;
-2. preserve current security, data-safety, canonical-ownership, and active v2.7 runtime-safety requirements;
-3. identify the current playable milestone and its most valuable missing capability;
-4. choose the highest-ROI dependency-safe task that advances that milestone or removes a real dependency;
-5. later-phase work is allowed when it directly helps, but avoid broad speculative expansion with no near-term payoff;
-6. run applicable automated/static validation;
-7. mark the work **BUILT — VERIFICATION PENDING** when implementation is complete but milestone/manual evidence remains;
-8. continue implementing unless a concrete **BLOCKED** condition applies;
-9. at a coherent milestone boundary, stop expansion long enough to run the consolidated Studio/debug/replay pass;
-10. mark the milestone **VERIFIED** only after its required evidence passes.
+1. fetch current `main`;
+2. inspect open PRs for overlap;
+3. identify the highest-ROI current/next roadmap capability;
+4. check for a **known concrete** safety/authority/data/lifecycle failure;
+5. fix such a failure first when present;
+6. otherwise implement the smallest coherent source increment;
+7. run applicable automated validation;
+8. merge successful work;
+9. mark manual/engine evidence pending rather than stopping;
+10. proceed to the next task or patch;
+11. repeat until roadmap work is exhausted or a real named blocker makes further implementation unsafe/impossible.
 
-## Rationale
+Do not stop merely because a Studio pass, playtest, device pass, patch exit question, or experiential acceptance question remains unanswered.
 
-The previous lock-heavy and STOP / PLAY / FIX interpretations optimized for isolation, but they also created too many artificial handoffs and made the roadmap compete with development momentum.
+## Relationship to older STOP / PLAY / FIX language
 
-The new model separates two questions that should never have been conflated:
+STOP / PLAY / FIX remains useful as a **debugging response after an actual failure is known**, not as an automatic phase lock.
 
-1. **Has this been built?**
-2. **Has this been verified?**
+Correct interpretation:
 
-That distinction lets Atlas keep moving quickly while preserving truthful evidence. Some integration bugs may accumulate before a milestone pass, but automated regression checks, small commits, canonical ownership rules, rollback discipline, and narrow early-test exceptions keep that risk bounded.
+```text
+no known failure + source validation green → KEEP BUILDING
+manual evidence pending → TRACK PENDING, KEEP BUILDING
+real reproducible failure discovered → STOP DEPENDENT EXPANSION, FIX, THEN CONTINUE
+```
+
+Any older roadmap text that says the next patch “must not begin” solely because the previous patch lacks manual evidence is superseded by this policy.
 
 ## Success condition
 
-This policy is working when agents can keep adding and implementing useful game work without fighting roadmap locks, while every item still has an honest state and player-facing milestones receive real test/debug/replay evidence before being called verified.
+This policy is working when agents can continuously implement, validate, merge, and compound progress across the roadmap without artificial manual-testing handoffs, while runtime truth remains honest through BUILT — VERIFICATION PENDING / VERIFIED separation and genuine safety failures still preempt expansion.
