@@ -27,7 +27,8 @@ for _, keyName in { "One", "Two", "Three", "KeypadOne", "KeypadTwo", "KeypadThre
 end
 assert(contains(coordinator, "gameProcessedEvent"), "processed input must be ignored")
 assert(contains(coordinator, "ChoiceInputConflictResolver.resolve(activeOwnerIds())"), "routing must use fail-closed resolver")
-assert(contains(coordinator, "resolution.Dispatch ~= true"), "non-dispatch resolutions must stop routing")
+assert(contains(coordinator, "resolution.DispatchAllowed ~= true"), "non-dispatch resolutions must stop routing")
+assert(contains(coordinator, "resolution.OwnerId"), "accepted resolution must identify one owner")
 assert(contains(coordinator, "registration.dispatchChoice(choiceIndex)"), "accepted input must dispatch through registration")
 assert(contains(coordinator, "inputConnection:Disconnect()"), "the shared listener must disconnect when unused")
 
