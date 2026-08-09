@@ -56,8 +56,9 @@ assert(
 	"melee presentation must subscribe to the server-only result channel"
 )
 assert(
-	string.find(presentation, "localHitConfirmedAtClock = os.clock()", 1, true) ~= nil,
-	"confirmed hit feedback must be bounded locally"
+	string.find(presentation, "local nowClock = os.clock()", 1, true) ~= nil
+		and string.find(presentation, "localHitConfirmedAtClock = nowClock", 1, true) ~= nil,
+	"confirmed hit feedback must capture and retain a bounded local presentation timestamp"
 )
 assert(
 	string.find(presentation, "blade.Material = Enum.Material.Neon", 1, true) ~= nil,
