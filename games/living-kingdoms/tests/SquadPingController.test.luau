@@ -1,6 +1,7 @@
 --!strict
 
--- LK-0407 client input, visual accessibility, reconciliation, and scope audit.
+-- LK-0407 client input, visual accessibility, reconciliation, scope, and
+-- BA-062 device-adaptive binding-hint audit.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 local roblox = require("@lune/roblox")
@@ -92,4 +93,32 @@ assert(not string.find(source, "Target", 1, true))
 assert(not string.find(source, "Discovery", 1, true))
 assert(string.find(source, "clearMarkers", 1, true) and string.find(source, "Controller.stop", 1, true))
 
-print("SquadPingController: LK-0407 input, visual accessibility, reconciliation, and cleanup passed")
+-- BA-062 presentation adoption: the visible hint consumes the shared semantic
+-- action map plus the pure observed-device and direct-binding hint resolvers.
+assert(string.find(source, "Shared.Config.InputActionMapConfig", 1, true), "ping hint must use canonical action map")
+assert(string.find(source, "Shared.Input.InputDeviceFamilyResolver", 1, true), "ping hint must use device-family resolver")
+assert(string.find(source, "Shared.Input.InputBindingHintResolver", 1, true), "ping hint must use binding-hint resolver")
+assert(string.find(source, 'InputActionMapConfig.get("SquadPing")', 1, true), "hint must resolve the SquadPing action")
+assert(string.find(source, "InputDeviceFamilyResolver.resolve(inputType.Name)", 1, true), "input family must come from observed input")
+assert(string.find(source, "InputBindingHintResolver.resolve(action, familyId)", 1, true), "display token must come from shared resolver")
+assert(string.find(source, "UserInputService:GetLastInputType()", 1, true), "initial hint must use current observed input")
+assert(
+	string.find(source, "UserInputService.LastInputTypeChanged:Connect(updateReadyStatus)", 1, true),
+	"hint must update when the observed input family changes"
+)
+assert(string.find(source, 'MouseButton3 = "MMB"', 1, true), "desktop middle-mouse token must stay readable")
+assert(string.find(source, 'DPadUp = "↑"', 1, true), "gamepad D-pad token must stay readable")
+assert(string.find(source, 'return "PING READY"', 1, true), "touch/unknown presentation needs a neutral truthful fallback")
+assert(
+	not string.find(source, 'setStatus("PING  •  G / MMB / ↑")', 1, true),
+	"the visible hint must not advertise every device binding at once"
+)
+
+-- Hint adoption must not change actual binding or authority paths.
+assert(string.find(source, "Enum.KeyCode[SquadPingConfig.KeyboardKeyCodeName]", 1, true), "keyboard binding changed")
+assert(string.find(source, "Enum.KeyCode[SquadPingConfig.GamepadKeyCodeName]", 1, true), "gamepad binding changed")
+assert(string.find(source, "Enum.UserInputType.MouseButton3", 1, true), "mouse binding changed")
+assert(string.find(source, 'ContextActionService:SetTitle(ACTION_NAME, "◇ Ping")', 1, true), "touch action title changed")
+assert(string.find(source, "intentRemote:FireServer({", 1, true), "existing ping intent path must remain")
+
+print("SquadPingController: input, accessible presentation, adaptive hint, reconciliation, and cleanup passed")
