@@ -204,12 +204,21 @@ assert(
 	contains(choiceCoordinator, "ChoiceInputConflictResolver.resolve(activeOwnerIds())"),
 	"coordinator must use the fail-closed conflict resolver"
 )
-assert(contains(hordeHud, 'ChoiceInputCoordinator.register("UpgradeChoice"'), "upgrade HUD must register with coordinator")
-assert(contains(runBuildHud, 'ChoiceInputCoordinator.register("RelicChoice"'), "relic HUD must register with coordinator")
+assert(
+	contains(hordeHud, 'ChoiceInputCoordinator.register("UpgradeChoice"'),
+	"upgrade HUD must register with coordinator"
+)
+assert(
+	contains(runBuildHud, 'ChoiceInputCoordinator.register("RelicChoice"'),
+	"relic HUD must register with coordinator"
+)
 assert(contains(hordeHud, "return upgradeInputActive"), "upgrade registration must expose its local active state")
 assert(contains(runBuildHud, "return choiceInputActive"), "relic registration must expose its local active state")
 for _, source in { hordeHud, runBuildHud } do
-	assert(not contains(source, "UserInputService.InputBegan:Connect"), "choice HUDs must not keep raw number listeners")
+	assert(
+		not contains(source, "UserInputService.InputBegan:Connect"),
+		"choice HUDs must not keep raw number listeners"
+	)
 	assert(not contains(source, "Enum.KeyCode.One"), "choice HUDs must not directly own number keys")
 	assert(contains(source, "unregisterChoiceInput()"), "choice registration must release on teardown")
 end
