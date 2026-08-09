@@ -269,8 +269,9 @@ assert(service:getSnapshot().PhaseId == "Rewards", "boss advances into Rewards")
 -- plan that builds the physical rooms. This prevents fixed-Z encounter drift.
 for waveOrdinal = 2, #spawnedWaves do
 	local spawned = spawnedWaves[waveOrdinal]
-	local placement =
-		if spawned.WaveIndex == 90 then layout.Placements[#layout.Placements - 1] else layout.Placements[spawned.WaveIndex]
+	local placement = if spawned.WaveIndex == 90
+		then layout.Placements[#layout.Placements - 1]
+		else layout.Placements[spawned.WaveIndex]
 	assert(placement ~= nil, "every non-approach wave must map to a room placement")
 	for _, definition in spawned.Definitions do
 		assert(math.abs(definition.x - placement.Center.x) <= 18, "enemy X must stay inside its room footprint")
