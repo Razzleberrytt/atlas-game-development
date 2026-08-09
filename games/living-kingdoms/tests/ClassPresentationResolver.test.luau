@@ -84,10 +84,16 @@ idle.cooldownEndServerTimestamp = nil
 idle.statusReasonId = nil
 local classActionBinding = actionMap.Actions.ClassAction
 assertThat(classActionBinding.KeyboardKeyCodeNames[1] == "Q", "canonical class action keyboard binding must remain Q")
-assertThat(classActionBinding.GamepadKeyCodeNames[1] == "ButtonB", "canonical class action gamepad binding must remain ButtonB")
+assertThat(
+	classActionBinding.GamepadKeyCodeNames[1] == "ButtonB",
+	"canonical class action gamepad binding must remain ButtonB"
+)
 local idleStatus = resolver.ownerStatus(contracts.ClassIds.CombatSpecialist, idle, 17)
 assertThat(idleStatus == "BRACE READY  •  Q / GAMEPAD B", "ready hint must match the remapped class-action controls")
-assertThat(not string.find(idleStatus, "GAMEPAD X", 1, true), "ready hint must not regress to the world-prompt gamepad key")
+assertThat(
+	not string.find(idleStatus, "GAMEPAD X", 1, true),
+	"ready hint must not regress to the world-prompt gamepad key"
+)
 
 for _, reasonId in contracts.ClassActionRejectionReasonIds do
 	local label = resolver.rejectionLabel(reasonId)
@@ -111,4 +117,6 @@ for _, forbidden in { "game:GetService", "Instance.new", "RemoteEvent", "FireSer
 end
 assertThat(not string.find(source, "GAMEPAD X", 1, true), "class presentation copy must not advertise the prompt key")
 
-print("ClassPresentationResolver: redundant identity, resources, timing, remapped ready hint, cues, and failure copy passed")
+print(
+	"ClassPresentationResolver: redundant identity, resources, timing, remapped ready hint, cues, and failure copy passed"
+)
