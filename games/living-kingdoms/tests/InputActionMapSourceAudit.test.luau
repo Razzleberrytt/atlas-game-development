@@ -7,9 +7,8 @@
 	`docs/specifications/input-action-map-audit.md` to the source they were read
 	from, so the audit cannot silently rot.
 
-	It deliberately asserts remaining gaps as well as guarantees. BA-062's first
-	increment closes M1 in source; the second closes C1/C2 by moving Revive and
-	the class-action gamepad binding off the engine-default prompt keys.
+	BA-062 closes M1, C1/C2 and now M2/M3 in isolated source increments while
+	keeping the later shared-action-map work separate.
 ]]
 
 local fs = require("@lune/fs")
@@ -46,10 +45,9 @@ local hordeHud = read(CLIENT .. "HordeHUDController.luau")
 local runBuildHud = read(CLIENT .. "RunBuildHUDController.luau")
 local audit = read(AUDIT_PATH)
 
--- M1 remediation: mouse remains supported, while WeaponController now owns one
+-- M1 remediation: mouse remains supported, while WeaponController owns one
 -- device-neutral ContextActionService surface for gamepad R2 and a generated
--- touch button. Every device still converges on the same setFiring/FireIntent
--- path rather than creating a second combat authority.
+-- touch button. Every device converges on the same setFiring/FireIntent path.
 assert(contains(weapon, "Enum.UserInputType.MouseButton1"), "mouse firing must remain available")
 assert(contains(weapon, 'game:GetService("ContextActionService")'), "fire must use ContextActionService")
 assert(contains(weapon, 'FIRE_ACTION_NAME = "LK_Fire"'), "fire action must have one stable semantic action name")
@@ -94,31 +92,59 @@ do
 end
 assert(fireIntentOwners == 1, "exactly one client controller may own the fire intent remote")
 
--- M2: reload and sprint are raw keyboard handlers plus a touch-only binding.
-assert(contains(weapon, "Enum.KeyCode.R"), "reload is still expected on R")
-assert(contains(survivor, "Enum.KeyCode.LeftShift"), "sprint is still expected on LeftShift")
+-- M2 remediation: keyboard and touch paths remain intact while gamepad reload
+-- and sprint are added at their existing owners. The new CAS actions explicitly
+-- do not create touch buttons, so MobileControlsController remains the touch owner.
+assert(contains(weapon, "Enum.KeyCode.R"), "reload must remain available on R")
+assert(contains(survivor, "Enum.KeyCode.LeftShift"), "sprint must remain available on LeftShift")
 assert(contains(mobile, "RELOAD_ACTION") and contains(mobile, "SPRINT_ACTION"), "touch reload and sprint expected")
 assert(
 	contains(mobile, "UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled"),
-	"MobileControlsController is still expected to start only on touch-without-keyboard devices"
+	"MobileControlsController must remain touch-without-keyboard only"
+)
+assert(not contains(mobile, "Enum.KeyCode."), "touch controls must not become a competing gamepad owner")
+assert(contains(weapon, 'RELOAD_ACTION_NAME = "LK_Reload"'), "reload needs one stable gamepad action name")
+assert(
+	contains(weapon, "ContextActionService:BindAction(RELOAD_ACTION_NAME, onReloadAction, false, Enum.KeyCode.ButtonR1)"),
+	"gamepad reload must bind R1 without generating a second touch button"
+)
+assert(contains(weapon, "WeaponController.requestReload()"), "gamepad reload must reuse the one reload request path")
+assert(
+	contains(weapon, "ContextActionService:UnbindAction(RELOAD_ACTION_NAME)"),
+	"gamepad reload must unbind on teardown"
+)
+assert(contains(survivor, 'SPRINT_ACTION_NAME = "LK_Sprint"'), "sprint needs one stable gamepad action name")
+assert(
+	contains(survivor, "ContextActionService:BindAction(SPRINT_ACTION_NAME, onSprintAction, false, Enum.KeyCode.ButtonL3)"),
+	"gamepad sprint must bind left-stick click without generating a second touch button"
 )
 assert(
-	not contains(mobile, "Enum.KeyCode."),
-	"M2 is stale: MobileControlsController now registers key codes — update the BA-061 audit"
+	contains(survivor, "SurvivorController.setSprinting(true)")
+		and contains(survivor, "SurvivorController.setSprinting(false)"),
+	"gamepad sprint must reuse the shared sprint state path"
+)
+assert(
+	contains(survivor, "ContextActionService:UnbindAction(SPRINT_ACTION_NAME)"),
+	"gamepad sprint must unbind on teardown"
 )
 
--- M3 remains open: revive uses V plus a generated touch button, with no gamepad key yet.
-assert(contains(operativeLife, "Enum.KeyCode.V"), "revive must move to V after C1 remediation")
+-- M3 remediation: revive keeps V plus its generated touch button and adds
+-- D-pad Down to the same hold action. E and ButtonX remain reserved for prompts.
+assert(contains(operativeLife, "Enum.KeyCode.V"), "revive must remain on V")
+assert(contains(operativeLife, "Enum.KeyCode.DPadDown"), "revive must add D-pad Down")
 assert(not contains(operativeLife, "Enum.KeyCode.E"), "revive must not claim the prompt keyboard key")
+assert(not contains(operativeLife, "Enum.KeyCode.ButtonX"), "revive must not claim the prompt gamepad key")
 assert(
-	not contains(operativeLife, "Enum.KeyCode.Button") and not contains(operativeLife, "Enum.KeyCode.DPad"),
-	"M3 is stale: revive now has a gamepad binding — update the BA-061 audit"
+	contains(
+		operativeLife,
+		"ContextActionService:BindAction(ACTION_NAME, onReviveAction, true, Enum.KeyCode.V, Enum.KeyCode.DPadDown)"
+	),
+	"keyboard, gamepad and generated touch revive must share one hold action"
 )
 assert(contains(operativeLife, "BindAction(ACTION_NAME, onReviveAction, true"), "revive keeps its touch button")
 
--- C1 remediation: world prompts keep E while Revive moves to V. Passing the
--- revive action remains safe because it no longer shares the prompt key.
-assert(contains(operativeLife, "Enum.ContextActionResult.Pass"), "revive may keep passing its distinct key through")
+-- C1 remediation: world prompts keep E while Revive stays on V.
+assert(contains(operativeLife, "Enum.ContextActionResult.Pass"), "revive may keep passing its distinct inputs through")
 local survivalLoot = read(SERVER .. "SurvivalLootService.luau")
 assert(contains(survivalLoot, "prompt.KeyboardKeyCode = Enum.KeyCode.E"), "loot prompts must remain on E")
 for _, path in
@@ -136,7 +162,7 @@ do
 	)
 end
 
--- C2 remediation: class action keeps Q on keyboard but moves gamepad to B,
+-- C2 remediation: class action keeps Q on keyboard but uses B on gamepad,
 -- leaving engine-default ButtonX available to ProximityPrompt.
 assert(
 	contains(classAction, "Enum.KeyCode.Q, Enum.KeyCode.ButtonB"),
@@ -145,7 +171,16 @@ assert(
 assert(not contains(classAction, "Enum.KeyCode.ButtonX"), "class action must not claim the prompt gamepad key")
 assert(contains(classAction, "Q / GAMEPAD B"), "class-action HUD hint must match the remapped gamepad button")
 
--- C3: two independent Escape listeners exist, in two controllers.
+-- The new M2/M3 keys are distinct from the previously audited gameplay keys.
+for _, source in { classAction, flashlight, squadPing, operativeLife } do
+	assert(not contains(source, "Enum.KeyCode.ButtonR1"), "R1 reload must have one gameplay owner")
+	assert(not contains(source, "Enum.KeyCode.ButtonL3"), "L3 sprint must have one gameplay owner")
+end
+for _, source in { weapon, survivor, classAction, flashlight, squadPing } do
+	assert(not contains(source, "Enum.KeyCode.DPadDown"), "D-pad Down revive must have one gameplay owner")
+end
+
+-- C3: two independent Escape listeners remain.
 assert(contains(rpgMenu, "Enum.KeyCode.Escape"), "the RPG modal still closes on Escape")
 assert(contains(hubPreparation, "Enum.KeyCode.Escape"), "the hub UI still closes on Escape")
 
@@ -156,8 +191,7 @@ for _, source in { hordeHud, runBuildHud } do
 	assert(contains(source, "Enum.KeyCode.One") and contains(source, "Enum.KeyCode.KeypadOne"), "1-3 still claimed")
 end
 
--- Both choice surfaces keep gamepad selection focus: this is the one place
--- device-neutral input is handled deliberately, and it must not regress.
+-- Both choice surfaces keep gamepad selection focus.
 for _, source in { hordeHud, runBuildHud } do
 	assert(contains(source, "GuiService.SelectedObject"), "choice surfaces must keep gamepad selection focus")
 end
@@ -170,8 +204,8 @@ local squadPingConfig = read(SHARED .. "SquadPingConfig.luau")
 assert(contains(flashlightConfig, 'KeyboardKeyCodeName = "F"') and contains(flashlightConfig, "ButtonY"))
 assert(contains(squadPingConfig, 'KeyboardKeyCodeName = "G"') and contains(squadPingConfig, "DPadUp"))
 
--- Exactly two actions are config-driven; these BA-062 remediations intentionally
--- fix concrete conflicts without prematurely building the later shared action map.
+-- Exactly two actions remain config-driven; BA-062 fixes concrete coverage and
+-- conflicts without prematurely building the later shared action map.
 local configDrivenActions = 0
 for _, source in { flashlight, squadPing, weapon, survivor, operativeLife, classAction, rpgMenu, hubPreparation } do
 	if contains(source, "KeyboardKeyCodeName") then
@@ -187,6 +221,8 @@ assert(
 assert(contains(audit, "**Roadmap ticket:** BA-061"), "the audit must identify its originating ticket")
 assert(contains(audit, "E1"), "the audit must state its evidence level")
 assert(contains(audit, "M1 — Firing device coverage — source-remediated"), "the audit must record M1 remediation")
+assert(contains(audit, "M2 — Reload and sprint gamepad coverage — source-remediated"), "the audit must record M2")
+assert(contains(audit, "M3 — Revive gamepad coverage — source-remediated"), "the audit must record M3")
 assert(
 	contains(audit, "C1 — `E` / Revive prompt collision — source-remediated"),
 	"the audit must record C1 remediation"
@@ -196,8 +232,8 @@ assert(
 	"the audit must record C2 remediation"
 )
 assert(not contains(audit, "rbxassetid://"), "an input audit invents no asset IDs")
-for _, finding in { "M2", "M3", "M4", "M5", "C3", "C4" } do
+for _, finding in { "M4", "M5", "C3", "C4" } do
 	assert(contains(audit, finding), `the audit must retain finding {finding}`)
 end
 
-print("BA-061/062 InputActionMapSourceAudit: M1 and C1/C2 remediated; remaining gaps locked")
+print("BA-061/062 InputActionMapSourceAudit: M1-M3 and C1/C2 remediated; remaining gaps locked")
