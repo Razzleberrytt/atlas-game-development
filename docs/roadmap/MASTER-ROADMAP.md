@@ -65,7 +65,7 @@ Runtime evidence refresh after adoption:
 - **BA-011 closed at E1**: the Main World source representation/placement strategy is complete in [`../specifications/main-world-source-representation-strategy.md`](../specifications/main-world-source-representation-strategy.md), locked by `MainWorldRepresentationConfig` (merged via PR #242); see the refreshed W1 status below;
 - **BA-012 closed at E1**: the canonical Hub interaction registry (preparation/board/vendor/NPC/crafting/gathering/portal/social anchors and owner/dependency boundaries) is complete in [`../specifications/canonical-hub-interaction-registry.md`](../specifications/canonical-hub-interaction-registry.md) (merged via PR #243); no runtime activation;
 - root `CLAUDE.md` was added as a companion mechanical/architecture reference alongside this operating contract; it does not change roadmap authority or task selection;
-- accepted evidence level is E2, PR #222 remains blocked behind consolidation/R2 dependencies, and the combined-world preservation counts remain unchanged; the R1 re-pin requirement is closed by the runtime-evidence refresh above;
+- accepted evidence level is E2, single-listener consolidation is accepted, and the R2 keyed-readiness primitive is now dependency-safe preparation; runtime activation and delayed-ready evidence remain separate gates;
 - the Main World environment production plan is complete at E1 through BA-013; the next assigned Track 1 task is **BA-014 — Main World acceptance matrix**, per [`AGENT-BUILD-AHEAD-QUEUE.md`](AGENT-BUILD-AHEAD-QUEUE.md).
 
 ## Current program state
@@ -75,7 +75,7 @@ Runtime evidence refresh after adoption:
 | Repository/tooling foundation | [x] | GitHub-first source, Rojo, validation, CI, reproducible builds and agent workflow exist. |
 | Combined-game preservation | [x] | Studio source/hierarchy recovery is repaired; preserved legacy services remain inert. |
 | Product authority reconciliation | [x] | Current Atlas product authority exists; older Living Kingdoms charter is explicitly historical. |
-| v2.7 runtime rollout | [~] | **Primary runtime lane.** R1 and exact-build single-listener consolidation are accepted; R2 remains the next runtime dependency. |
+| v2.7 runtime rollout | [~] | **Primary runtime lane.** R1 and exact-build single-listener consolidation are accepted; the R2 keyed-readiness primitive is source-prepared and dormant, with activation/evidence next. |
 | Controlled build-ahead | [~] | Pure contracts, data, audits, reconstruction and dormant seams may continue without activating future runtime scope. |
 | Main World / environment preparation | [~] | Forward Operations Hub is live as a bridge; authored overworld reconstruction is held; full overworld lifecycle is not active. |
 | E2–E4 integrated evidence | [~] | E2 Studio initialization accepted; E3/E4 integrated and multiplayer evidence remain blocked by later runtime gates. |
@@ -152,10 +152,10 @@ R1 acceptance is complete on the exact identity recorded in
 [`../production/evidence/2026-08-08-r1-playable-replay-loop.md`](../production/evidence/2026-08-08-r1-playable-replay-loop.md).
 The next dependency-safe runtime sequence is:
 
-1. rebase and revalidate PR #221's single-listener consolidation against current `main`;
-2. capture its declared listener/presentation evidence without removing the R1 rollback checkpoint;
-3. keep PR #222's R2 publisher blocked until consolidation is accepted;
-4. then execute R2 delayed-ready/current-state delivery evidence before R3 semantic suppression.
+1. merge the dormant, transport-agnostic R2 keyed-readiness primitive after rebasing it onto accepted consolidation source;
+2. add `ClientReady` delivery wiring as a separate controlled change behind `EnableReadyGatedStatePublisher`;
+3. capture delayed-ready/current-state reconstruction evidence without removing the R1 rollback checkpoint;
+4. only after R2 acceptance, begin R3 semantic change-token suppression.
 
 ### R exit gate
 
@@ -739,7 +739,7 @@ Two lanes remain valid:
 
 ### Human/Studio runtime lane
 
-**Rebase/revalidate the prepared PR #221 single-listener consolidation and capture its declared listener/presentation evidence.** R1 is now accepted; consolidation is the next dependency before the R2 ready-gated publisher may activate.
+**Activate and evidence R2 ready-gated current-state delivery as one controlled stage change after the dormant keyed-readiness primitive merges.** Delayed readiness must reconstruct current state without queue warnings before R3 suppression or the MVP 0.1 safe-arrival runtime boundary may broaden the active lifecycle.
 
 ### Agent build-ahead lane
 

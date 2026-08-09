@@ -61,7 +61,7 @@ Do not report E3–E5 without their required evidence.
 
 R1 containment is accepted on the pinned artifact: zero queue/discard warnings, zero enabled broad Highlight targets, and a clean initialization/replay boundary. The flat blue/yellow/green editor view encountered during validation was traced to hidden local Studio physics-visualization flags rather than gameplay Highlight presentation.
 
-Remaining runtime blockers are the known extra compatibility listeners, R2 delayed-ready/current-state delivery, R3 semantic suppression, centralized presentation ownership, and the reset/respawn/late-join/multiplayer/streaming matrices. Preserve the R1 checkpoint while closing them in dependency order.
+Single-listener consolidation is accepted. Remaining runtime blockers are R2 delayed-ready/current-state delivery, R3 semantic suppression, centralized presentation ownership, and the reset/respawn/late-join/multiplayer/streaming matrices. The transport-agnostic R2 keyed-readiness primitive is source-prepared behind a disabled flag; preserve the R1 checkpoint and activate it only as a separate controlled stage change.
 
 ## 6. Runtime state law
 
