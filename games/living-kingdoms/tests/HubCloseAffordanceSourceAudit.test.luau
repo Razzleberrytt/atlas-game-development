@@ -27,7 +27,10 @@ assert(contains(controller, "button.Selectable = true"), "close affordance must 
 assert(contains(controller, "button.Activated:Connect(closeHubUi)"), "all GUI activation paths must reuse closeHubUi")
 assert(contains(controller, "setCloseAffordanceVisible(true)"), "opening a hub screen must reveal the close control")
 assert(contains(controller, "setCloseAffordanceVisible(false)"), "closing hub screens must hide the close control")
-assert(not contains(controller, "UserInputService"), "hub routed panels must not keep an independent raw close listener")
+assert(
+	not contains(controller, "UserInputService"),
+	"hub routed panels must not keep an independent raw close listener"
+)
 assert(not contains(controller, "Enum.KeyCode.Escape"), "Escape must not remain claimed by the hub router")
 assert(not contains(controller, "Enum.KeyCode.ButtonB"), "hub close must not steal the class-action gamepad key")
 assert(not contains(controller, "Enum.KeyCode.ButtonX"), "hub close must not steal the world-interaction gamepad key")
