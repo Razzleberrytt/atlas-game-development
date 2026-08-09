@@ -42,13 +42,11 @@ local worldConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Conf
 	injectGlobals = true,
 })()
 
-local recoveredPathConfig = luau.load(
-	fs.readFile("games/living-kingdoms/src/shared/Config/RecoveredWorldPathConfig.luau"),
-	{
+local recoveredPathConfig =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RecoveredWorldPathConfig.luau"), {
 		debugName = "RecoveredWorldPathConfig",
 		injectGlobals = true,
-	}
-)()
+	})()
 
 local roomContracts =
 	luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/RoomAssemblyContracts.luau"), {
@@ -207,7 +205,10 @@ assert(route.Steps[1].Kind == route.StepKinds.Entrance, "first route step must r
 assert(route.Steps[1].WorldContentId == "landmark.ranger_station")
 assert(handoff ~= nil, "first outdoor route requires one First Descent handoff")
 assert(handoff == route.Steps[#route.Steps], "First Descent handoff must remain the final route step")
-assert(handoff.DungeonSequenceId == firstDungeon.SequenceId, "outdoor route must hand off to the canonical dungeon sequence")
+assert(
+	handoff.DungeonSequenceId == firstDungeon.SequenceId,
+	"outdoor route must hand off to the canonical dungeon sequence"
+)
 assert(handoff.DungeonEntryRoomId == "descent-entry", "outdoor route must enter First Descent at descent-entry")
 assert(handoff.WorldContentId == nil, "dungeon handoff must not borrow the launch portal's world-content identity")
 
