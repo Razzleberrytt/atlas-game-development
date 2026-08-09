@@ -3,8 +3,10 @@
 --[[
 	Client-only presentation for the server-owned melee mode. The local operative
 	gets a simple first-person Field Hatchet viewmodel; remote melee operatives get
-	a lightweight hand-attached hatchet. This controller owns no strike, damage,
-	targeting, inventory, or combat-mode authority.
+	a lightweight hand-attached hatchet. Presentation also follows the existing
+	replicated operative life state so incapacitated/dead characters do not appear
+	combat-ready. This controller owns no strike, damage, targeting, inventory,
+	life-state, or combat-mode authority.
 ]]
 
 local Players = game:GetService("Players")
@@ -15,10 +17,13 @@ local Workspace = game:GetService("Workspace")
 local MeleePresentationContracts = require(ReplicatedStorage.Shared.Combat.MeleePresentationContracts)
 local PrimaryCombatModeContracts = require(ReplicatedStorage.Shared.Combat.PrimaryCombatModeContracts)
 local MeleeCombatConfig = require(ReplicatedStorage.Shared.Config.MeleeCombatConfig)
+local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.OperativeLifeContracts)
 
 local Controller = {}
 local AttributeName = PrimaryCombatModeContracts.AttributeName
 local ModeIds = PrimaryCombatModeContracts.ModeIds
+local LifeStateIds = OperativeLifeContracts.OperativeLifeStateIds
+local LIFE_STATE_ATTRIBUTE = "LK_P3_LifeState"
 local MODEL_NAME = "MeleePresentation"
 local FIRST_PERSON_MODEL_NAME = "FirstPersonMelee"
 local SWING_DURATION_SECONDS = math.min(0.5, MeleeCombatConfig.OpeningWeapon.CadenceSeconds * 0.8)
@@ -33,6 +38,7 @@ local playerRemovingConnection: RBXScriptConnection? = nil
 local renderConnection: RBXScriptConnection? = nil
 local presentationConnection: RBXScriptConnection? = nil
 local modeConnections: { [Player]: RBXScriptConnection } = {}
+local lifeStateConnections: { [Player]: RBXScriptConnection } = {}
 local characterConnections: { [Player]: RBXScriptConnection } = {}
 local remoteModels: { [Player]: Model } = {}
 local localModel: Model? = nil
@@ -43,6 +49,11 @@ local localHitConfirmedAtClock: number? = nil
 local localHitWasKill = false
 local meleeNetwork = ReplicatedStorage:WaitForChild("MeleeNetwork")
 local presentationRemote = meleeNetwork:WaitForChild("Presentation") :: RemoteEvent
+
+local function shouldPresentMelee(player: Player): boolean
+	return player:GetAttribute(AttributeName) == ModeIds.Melee
+		and player:GetAttribute(LIFE_STATE_ATTRIBUTE) == LifeStateIds.Alive
+end
 
 local function makePart(name: string, size: Vector3, color: Color3, material: Enum.Material): Part
 	local part = Instance.new("Part")
@@ -109,8 +120,9 @@ end
 
 local function createLocalModel()
 	destroyLocalModel()
+	local player = Players.LocalPlayer
 	local camera = Workspace.CurrentCamera
-	if camera == nil then
+	if player == nil or camera == nil or not shouldPresentMelee(player) then
 		return
 	end
 	local model, handle, blade = createHatchetModel(FIRST_PERSON_MODEL_NAME, true)
@@ -122,6 +134,9 @@ end
 
 local function createRemoteModel(player: Player, character: Model)
 	destroyRemoteModel(player)
+	if not shouldPresentMelee(player) then
+		return
+	end
 	local hand = resolveRightHand(character)
 	if hand == nil then
 		return
@@ -146,9 +161,9 @@ local function createRemoteModel(player: Player, character: Model)
 end
 
 local function reconcilePlayer(player: Player)
-	local isMelee = player:GetAttribute(AttributeName) == ModeIds.Melee
+	local shouldPresent = shouldPresentMelee(player)
 	if player == Players.LocalPlayer then
-		if isMelee then
+		if shouldPresent then
 			if localModel == nil or localModel.Parent ~= Workspace.CurrentCamera then
 				createLocalModel()
 			end
@@ -157,7 +172,7 @@ local function reconcilePlayer(player: Player)
 		end
 		return
 	end
-	if not isMelee then
+	if not shouldPresent then
 		destroyRemoteModel(player)
 		return
 	end
@@ -172,6 +187,11 @@ local function unbindPlayer(player: Player)
 	if modeConnection ~= nil then
 		modeConnection:Disconnect()
 		modeConnections[player] = nil
+	end
+	local lifeStateConnection = lifeStateConnections[player]
+	if lifeStateConnection ~= nil then
+		lifeStateConnection:Disconnect()
+		lifeStateConnections[player] = nil
 	end
 	local characterConnection = characterConnections[player]
 	if characterConnection ~= nil then
@@ -192,8 +212,11 @@ local function bindPlayer(player: Player)
 	modeConnections[player] = player:GetAttributeChangedSignal(AttributeName):Connect(function()
 		reconcilePlayer(player)
 	end)
+	lifeStateConnections[player] = player:GetAttributeChangedSignal(LIFE_STATE_ATTRIBUTE):Connect(function()
+		reconcilePlayer(player)
+	end)
 	characterConnections[player] = player.CharacterAdded:Connect(function(character)
-		if player ~= Players.LocalPlayer and player:GetAttribute(AttributeName) == ModeIds.Melee then
+		if player ~= Players.LocalPlayer and shouldPresentMelee(player) then
 			task.defer(createRemoteModel, player, character)
 		end
 	end)
@@ -231,7 +254,7 @@ local function onPresentation(message: unknown)
 		return
 	end
 	local player = Players.LocalPlayer
-	if player == nil or player:GetAttribute(AttributeName) ~= ModeIds.Melee then
+	if player == nil or not shouldPresentMelee(player) then
 		return
 	end
 	local confirmed = message :: MeleePresentationContracts.HitConfirmedMessage
@@ -241,7 +264,7 @@ end
 
 function Controller.playLocalSwing()
 	local player = Players.LocalPlayer
-	if not started or player == nil or player:GetAttribute(AttributeName) ~= ModeIds.Melee then
+	if not started or player == nil or not shouldPresentMelee(player) then
 		return
 	end
 	if localModel == nil or localModel.Parent ~= Workspace.CurrentCamera then
@@ -263,7 +286,7 @@ function Controller.start()
 	presentationConnection = presentationRemote.OnClientEvent:Connect(onPresentation)
 	renderConnection = RunService.RenderStepped:Connect(function()
 		local player = Players.LocalPlayer
-		if player == nil or player:GetAttribute(AttributeName) ~= ModeIds.Melee then
+		if player == nil or not shouldPresentMelee(player) then
 			return
 		end
 		local camera = Workspace.CurrentCamera
