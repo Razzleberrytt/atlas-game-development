@@ -8,16 +8,23 @@ Living Kingdoms is developed repository-first. Coding agents should be able to i
 
 Before selecting implementation work, read:
 
-1. `../../docs/roadmap/MASTER-ROADMAP.md`
-2. `../../docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md`
-3. `../../docs/roadmap/PRODUCTION-CORE-V2.7.md`
-4. `../../docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md`
-5. `../../docs/roadmap/AGENT-BUILD-AHEAD-QUEUE.md` when the user/maintainer wants useful work to continue while a Studio-only v2.7 runtime gate is still pending.
-6. `../../docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md` when the change touches player-facing replicated or presentation state.
+1. `../../docs/bible/00-current-product-authority.md`
+2. `../../docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md`
+3. `../../docs/roadmap/MVP-BUILD-THROUGH-TESTING-POLICY.md`
+4. `../../docs/roadmap/MASTER-ROADMAP.md`
+5. `../../docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md`
+6. `../../docs/roadmap/PRODUCTION-CORE-V2.7.md`
+7. `../../docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md`
+8. `../../docs/roadmap/AGENT-BUILD-AHEAD-QUEUE.md` when the user/maintainer wants useful work to continue while a Studio-only v2.7 runtime gate is still pending.
+9. `../../docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md` when the change touches player-facing replicated or presentation state.
 
 Blueprint v2.7 is the active **runtime** execution authority. Historical v1.9/v2.0/v2.3 queues are provenance, not task selection. Accepted runtime evidence and current Roblox platform behavior outrank authored roadmap prose.
 
 The active runtime queue is Tickets 331–360. Do not skip its stop conditions to activate persistence, broad visual expansion, networking cutovers, or deferred gameplay integration.
+
+For MVP 0.1 manual-testing cadence, `MVP-BUILD-THROUGH-TESTING-POLICY.md` controls. Do not require a human Studio playtest after every intermediate implementation task, merge, patch fragment, or version label. Run all applicable automated/static validation, keep changes diagnosable and reversible, and continue through dependency-safe MVP 0.1 work until the First Complete Run is code-complete. Then stop expansion for the consolidated exact-build Studio playtest/debug/replay gate before Patch 0.2 becomes the normal focus.
+
+Earlier Studio/runtime evidence is still mandatory when a narrow exception applies: an active v2.7 evidence gate, data-loss or persistence risk, consequential security/authority changes, engine-only behavior that later work cannot safely depend on without runtime proof, or a known blocker that makes further implementation unsafe or misleading.
 
 The controlled build-ahead queue is a separate preparation lane. It allows agents to prepare migration manifests, pure contracts, content schemas, validation tooling, tests, and isolated/dormant gameplay branches while runtime evidence is pending. It does **not** authorize early runtime activation or false evidence promotion.
 
@@ -124,6 +131,7 @@ Run from repository root:
 python scripts/validate_living_kingdoms_layout.py
 python scripts/verify_studio_import_package.py
 python scripts/validate_migration_manifests.py
+python scripts/validate_roadmap_authority.py
 
 stylua --check \
   games/living-kingdoms/src \
@@ -146,6 +154,8 @@ check there. Extending Selene to `tests` and `tools` is unfinished work; do it
 from an environment that can actually run it.
 
 Do not delete or loosen an existing test because a new implementation fails it unless the underlying documented requirement has intentionally changed.
+
+During MVP 0.1 build-through, passing applicable automated/static validation allows the next dependency-safe MVP task to continue when no narrow early-runtime exception applies. Static tests do not prove Studio behavior; record unresolved Studio-only checks as deferred to the consolidated MVP integration pass rather than forcing a routine human handoff.
 
 ## Working with a newer Roblox place
 
@@ -182,15 +192,17 @@ Flag these clearly rather than pretending they were validated by CI:
 - performance and memory;
 - publishing configuration.
 
+For ordinary MVP 0.1 implementation increments, the existence of a Studio-only check does not by itself create a hard manual gate. Defer it to the consolidated MVP 0.1 integration pass unless the build-through policy's early-runtime exception applies.
+
 ## Agent completion checklist
 
-- [ ] Read the active roadmap documents and, when applicable, the build-ahead queue.
+- [ ] Read the active roadmap documents, the MVP build-through testing policy, and, when applicable, the build-ahead queue.
 - [ ] Re-fetched current `main` and checked for overlapping open PRs.
 - [ ] Preserved client/server authority boundaries.
 - [ ] Kept preparatory work separate from gated runtime activation.
 - [ ] Added or updated focused tests.
-- [ ] Ran layout, formatting, lint, fixture, and Rojo build checks.
-- [ ] Documented any Studio-only validation.
+- [ ] Ran layout, formatting, lint, fixture, roadmap-authority, and Rojo build checks as applicable.
+- [ ] Documented Studio-only validation as completed, required early, or deferred to the consolidated MVP pass.
 - [ ] Avoided committing generated place files or secrets.
 - [ ] Updated the applicable roadmap/build-ahead task status when appropriate.
-- [ ] Summarized changed behavior and remaining risks.
+- [ ] Summarized changed behavior, current build-through/manual-gate status, and remaining risks.
