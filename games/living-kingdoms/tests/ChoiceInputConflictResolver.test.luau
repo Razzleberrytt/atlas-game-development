@@ -44,28 +44,32 @@ assert(reverseOverlap.ResolutionId == ids.Conflict)
 assert(reverseOverlap.ActiveOwnerIds[1] == overlap.ActiveOwnerIds[1])
 assert(reverseOverlap.ActiveOwnerIds[2] == overlap.ActiveOwnerIds[2])
 
-for _, invalid in {
-	{ "" },
-	{ "RunRelic", "RunRelic" },
-} do
+for _, invalid in
+	{
+		{ "" },
+		{ "RunRelic", "RunRelic" },
+	}
+do
 	local result = resolver.resolve(invalid)
 	assert(result.ResolutionId == ids.InvalidInput)
 	assert(result.DispatchAllowed == false)
 	assert(result.OwnerId == nil)
 end
 
-for _, token in {
-	"GetService",
-	"InputBegan",
-	"BindAction",
-	"FireServer",
-	"InvokeServer",
-	"RemoteEvent",
-	"Instance.new",
-	"DataStore",
-	"SetAsync",
-	"UpdateAsync",
-} do
+for _, token in
+	{
+		"GetService",
+		"InputBegan",
+		"BindAction",
+		"FireServer",
+		"InvokeServer",
+		"RemoteEvent",
+		"Instance.new",
+		"DataStore",
+		"SetAsync",
+		"UpdateAsync",
+	}
+do
 	assert(string.find(source, token, 1, true) == nil, `resolver must remain pure: {token}`)
 end
 
