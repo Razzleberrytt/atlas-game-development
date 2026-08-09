@@ -30,11 +30,12 @@ local hordeHud = fs.readFile("games/living-kingdoms/src/client/Controllers/Horde
 local massacre = fs.readFile("games/living-kingdoms/src/client/Controllers/MassacreCrescendoController.luau")
 local enemyImpact = fs.readFile("games/living-kingdoms/src/client/Controllers/EnemyImpactPresentationController.luau")
 local routeGuide = fs.readFile("games/living-kingdoms/src/client/Controllers/RouteGuidePresentationController.luau")
-local landmarkAccent = fs.readFile("games/living-kingdoms/src/client/Controllers/LandmarkAccentPresentationController.luau")
+local landmarkAccent =
+	fs.readFile("games/living-kingdoms/src/client/Controllers/LandmarkAccentPresentationController.luau")
 
 -- Static RemoteEvent mapping and the confirmed canonical producer.
-assertThat(contains(project, '"HordeNetwork"'), "Rojo mapping must retain HordeNetwork")
-assertThat(contains(project, '"State"'), "Rojo mapping must retain HordeNetwork.State")
+assertThat(contains(project, '\"HordeNetwork\"'), "Rojo mapping must retain HordeNetwork")
+assertThat(contains(project, '\"State\"'), "Rojo mapping must retain HordeNetwork.State")
 assertThat(
 	contains(hordeRuntime, 'local stateRemote = network:WaitForChild("State") :: RemoteEvent'),
 	"HordeExperienceService must identify the legacy State remote explicitly"
@@ -59,13 +60,21 @@ assertThat(
 -- HordeStateEarlyListener, with domain controllers subscribing to its local
 -- application bridge. This branch is not runtime-accepted merely because the
 -- source shape is prepared.
-assertThat(contains(earlyListener, "stateRemote.OnClientEvent:Connect(onState)"), "bridge must remain the physical State listener")
-assertThat(contains(earlyListener, "function HordeStateEarlyListener.subscribe"), "bridge must expose local subscriptions")
+assertThat(
+	contains(earlyListener, "stateRemote.OnClientEvent:Connect(onState)"),
+	"bridge must remain the physical State listener"
+)
+assertThat(
+	contains(earlyListener, "function HordeStateEarlyListener.subscribe"),
+	"bridge must expose local subscriptions"
+)
 assertThat(contains(clientBootstrap, "HordeStateEarlyListener.start()"), "bridge must start from client bootstrap")
-for _, listener in {
-	{ name = "HordeHUDController", source = hordeHud },
-	{ name = "MassacreCrescendoController", source = massacre },
-} do
+for _, listener in
+	{
+		{ name = "HordeHUDController", source = hordeHud },
+		{ name = "MassacreCrescendoController", source = massacre },
+	}
+do
 	assertThat(
 		contains(listener.source, "HordeStateEarlyListener"),
 		listener.name .. " must consume horde state through the application bridge"
@@ -74,8 +83,14 @@ for _, listener in {
 		contains(listener.source, "HordeStateEarlyListener.subscribe(onState)"),
 		listener.name .. " must subscribe its existing state handler through the bridge"
 	)
-	assertThat(not contains(listener.source, "stateRemote.OnClientEvent:Connect"), listener.name .. " must not bind State directly")
-	assertThat(not contains(listener.source, 'WaitForChild("HordeNetwork")'), listener.name .. " must not own HordeNetwork transport")
+	assertThat(
+		not contains(listener.source, "stateRemote.OnClientEvent:Connect"),
+		listener.name .. " must not bind State directly"
+	)
+	assertThat(
+		not contains(listener.source, 'WaitForChild("HordeNetwork")'),
+		listener.name .. " must not own HordeNetwork transport"
+	)
 	assertThat(
 		contains(clientBootstrap, listener.name .. ".start()"),
 		listener.name .. " must remain visible in application bootstrap inventory"
@@ -89,14 +104,20 @@ assertThat(
 	"enemy impact feedback must remain explicitly inventoried as a Highlight owner"
 )
 assertThat(contains(enemyImpact, "highlight.Adornee = model"), "enemy impact Highlight must target one enemy model")
-assertThat(not contains(enemyImpact, "highlight.Adornee = Workspace"), "enemy impact Highlight must never target Workspace")
+assertThat(
+	not contains(enemyImpact, "highlight.Adornee = Workspace"),
+	"enemy impact Highlight must never target Workspace"
+)
 assertThat(
 	contains(hordeRuntime, 'created.Name = "HordeRoleHighlight"'),
 	"horde role Highlight reference must remain inventoried"
 )
 assertThat(contains(hordeRuntime, "created.Adornee = record.model"), "horde role Highlight must target one enemy model")
 assertThat(contains(hordeRuntime, "created.FillTransparency = 1"), "persistent role Highlight fill must stay invisible")
-assertThat(contains(hordeRuntime, "created.OutlineTransparency = 1"), "persistent role Highlight outline must stay invisible")
+assertThat(
+	contains(hordeRuntime, "created.OutlineTransparency = 1"),
+	"persistent role Highlight outline must stay invisible"
+)
 
 -- Canonical route and landmark presentation currently use bounded geometry,
 -- not Highlights. A broad route/landmark Highlight seen in Studio therefore
