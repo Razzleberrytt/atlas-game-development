@@ -364,9 +364,10 @@ admission/scene ceilings, Terrain workflow, streaming rules and BA-014 targets.
 It changes no current environment and makes no Studio-quality or performance
 claim.
 
-The next assigned **Main World Track 1** task is **BA-014 — Main World
-acceptance matrix**. It is not the next global implementation task while Gate 0
-is active. When the build-ahead lane is appropriate, BA-014 must turn these
-planning targets and BA-010's checklist into repeatable captures with named
-builds, place identity, hardware, counters and pass/fail results; it cannot
-promote the Main World runtime by itself or block the smaller MVP 0.1 bridge.
+**BA-014 — Main World acceptance matrix** is now complete at E1 in
+[`main-world-acceptance-matrix.md`](main-world-acceptance-matrix.md). It carries
+the performance targets and visible-scene ceilings above forward verbatim, marks
+its own four invented values as `ba-014-authoring-target`, and turns BA-010's
+checklist into 31 checks with named builds, place identity, hardware, counters
+and pass/fail results. It ships unrun, and it neither promotes the Main World
+runtime nor blocks the smaller MVP 0.1 bridge.

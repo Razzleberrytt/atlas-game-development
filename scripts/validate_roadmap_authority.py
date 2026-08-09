@@ -50,6 +50,8 @@ AUTHORITY_FILES = (
     ROOT / "docs" / "specifications" / "main-world-environment-audit.md",
     ROOT / "docs" / "specifications" / "main-world-source-representation-strategy.md",
     ROOT / "docs" / "specifications" / "canonical-hub-interaction-registry.md",
+    ROOT / "docs" / "specifications" / "main-world-environment-production-plan.md",
+    ROOT / "docs" / "specifications" / "main-world-acceptance-matrix.md",
 )
 
 # The roadmap index is the single place allowed to point at historical
