@@ -25,10 +25,8 @@ local enemyContracts = loadSimple("games/living-kingdoms/src/shared/Combat/Enemy
 local worldConfig =
 	loadSimple("games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "WorldFoundationConfig")
 local combatContracts = loadSimple("games/living-kingdoms/src/shared/Combat/CombatContracts.luau", "CombatContracts")
-local primaryCombatModeContracts = loadSimple(
-	"games/living-kingdoms/src/shared/Combat/PrimaryCombatModeContracts.luau",
-	"PrimaryCombatModeContracts"
-)
+local primaryCombatModeContracts =
+	loadSimple("games/living-kingdoms/src/shared/Combat/PrimaryCombatModeContracts.luau", "PrimaryCombatModeContracts")
 local scarcityContracts = loadSimple(
 	"games/living-kingdoms/src/shared/Combat/AmmunitionScarcityContracts.luau",
 	"AmmunitionScarcityContracts"
