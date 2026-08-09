@@ -52,7 +52,7 @@ local function step(
 	playerGoal: string,
 	implementationStateId: string,
 	optional: boolean,
-	canonicalOwnerId: string,
+	ownershipBoundaryId: string,
 	referenceId: string?,
 	actionId: string?,
 	integrationNote: string?
@@ -64,7 +64,7 @@ local function step(
 		PlayerGoal = playerGoal,
 		ImplementationStateId = implementationStateId,
 		Optional = optional,
-		CanonicalOwnerId = canonicalOwnerId,
+		OwnershipBoundaryId = ownershipBoundaryId,
 		ReferenceId = referenceId,
 		ActionId = actionId,
 		IntegrationNote = integrationNote,
@@ -99,10 +99,10 @@ local FirstSessionOnboardingConfig = {
 			"Inspect the specialist station and understand that operative choice lives here.",
 			ImplementationStateIds.RuntimeExisting,
 			false,
-			"ExistingClassAuthority",
+			"ClassService",
 			hubStationContentId("OpenClass"),
 			"OpenClass",
-			"BA-060 sequences the existing station; it does not claim class mutation ownership."
+			"BA-060 sequences the existing station; ClassService retains class mutation ownership."
 		),
 		step(
 			"choose-loadout",
@@ -111,10 +111,10 @@ local FirstSessionOnboardingConfig = {
 			"Inspect the armory and leave preparation with a readable weapon choice.",
 			ImplementationStateIds.RuntimeExisting,
 			false,
-			"ExistingWeaponAuthority",
+			"WeaponLoadoutService",
 			hubStationContentId("OpenWeapon"),
 			"OpenWeapon",
-			"BA-060 sequences the existing station; it does not claim loadout mutation ownership."
+			"BA-060 sequences the existing station; WeaponLoadoutService retains loadout mutation ownership."
 		),
 		step(
 			"open-expedition-terminal",
@@ -135,7 +135,7 @@ local FirstSessionOnboardingConfig = {
 			"Follow the readable outdoor approach and learn escalating encounter pressure.",
 			ImplementationStateIds.PreparedData,
 			false,
-			"FutureRouteIntegration",
+			"PreparedRouteIntegrationBoundary",
 			FirstOutdoorRouteConfig.RouteId,
 			nil,
 			"BA-050/051 content is authored but remains dormant until an approved runtime consumer exists."
@@ -147,7 +147,7 @@ local FirstSessionOnboardingConfig = {
 			"Notice that exploration can reveal an optional cache without blocking the main route.",
 			ImplementationStateIds.PreparedData,
 			true,
-			"FutureDiscoveryIntegration",
+			"PreparedDiscoveryIntegrationBoundary",
 			discovery.Id,
 			nil,
 			"The authored-container reward seam is planned; BA-060 does not activate it."
@@ -159,7 +159,7 @@ local FirstSessionOnboardingConfig = {
 			"Enter the First Descent, survive the room sequence, elite gate, boss, and terminal.",
 			ImplementationStateIds.PreparedData,
 			false,
-			"ExistingExpeditionAuthorities",
+			"PreparedExpeditionContentIntegrationBoundary",
 			FirstDungeonContentConfig.SequenceId,
 			nil,
 			"BA-032 supplies deterministic content data; runtime integration remains separately gated."
@@ -257,7 +257,7 @@ for index, onboardingStep in FirstSessionOnboardingConfig.Steps do
 		"unknown first-session implementation state"
 	)
 	assert(#onboardingStep.PlayerGoal > 0, "first-session onboarding steps require a player-facing goal")
-	assert(#onboardingStep.CanonicalOwnerId > 0, "first-session onboarding steps require an ownership boundary")
+	assert(#onboardingStep.OwnershipBoundaryId > 0, "first-session onboarding steps require an ownership boundary")
 	if onboardingStep.Optional then
 		optionalCount += 1
 	end
