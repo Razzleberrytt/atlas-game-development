@@ -12,13 +12,11 @@ local function assert(condition: unknown, message: string?)
 	end
 end
 
-local roomContracts = luau.load(
-	fs.readFile("games/living-kingdoms/src/shared/Expeditions/RoomAssemblyContracts.luau"),
-	{
+local roomContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/RoomAssemblyContracts.luau"), {
 		debugName = "RoomAssemblyContracts",
 		injectGlobals = true,
-	}
-)()
+	})()
 
 local enemyContracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Combat/EnemyContracts.luau"), {
 	debugName = "EnemyContracts",
@@ -114,7 +112,10 @@ local expectedRoomSequence = {
 }
 
 assert(content.DefinitionId == roomConfig.DefinitionId, "dungeon content must reuse the canonical room definition ID")
-assert(content.DefinitionVersion == roomConfig.DefinitionVersion, "dungeon content must pin the canonical room definition version")
+assert(
+	content.DefinitionVersion == roomConfig.DefinitionVersion,
+	"dungeon content must pin the canonical room definition version"
+)
 assert(content.Repeatable == true, "the first authored dungeon must remain repeatable")
 assert(content.CanonicalSeed == 202, "changing the canonical seed requires an explicit content-version decision")
 assert(#content.RoomSequence == #expectedRoomSequence, "the first authored dungeon length changed unexpectedly")
@@ -138,11 +139,17 @@ assert(collapsed.Waves[1].Units[1].ArchetypeId == enemyContracts.EnemyArchetypeI
 assert(collapsed.Waves[1].Units[1].HordeRoleId == hordeConfig.Roles.Basic.Id)
 
 local barracks = content.Encounters["warden-barracks"]
-assert(barracks.EncounterSlotId == roomContracts.EncounterSlotIds.StandardSquad, "barracks must remain a standard squad")
+assert(
+	barracks.EncounterSlotId == roomContracts.EncounterSlotIds.StandardSquad,
+	"barracks must remain a standard squad"
+)
 assert(barracks.Waves[1].Units[2].HordeRoleId == hordeConfig.Roles.Runner.Id, "barracks must introduce runner pressure")
 
 local sanctum = content.Encounters["broken-sanctum"]
-assert(sanctum.Waves[1].Units[1].HordeRoleId == hordeConfig.Roles.Crawler.Id, "sanctum must preserve low-profile pressure")
+assert(
+	sanctum.Waves[1].Units[1].HordeRoleId == hordeConfig.Roles.Crawler.Id,
+	"sanctum must preserve low-profile pressure"
+)
 
 local archive = content.Encounters["sunken-archive"]
 local archiveHasSpitter = false
@@ -155,7 +162,10 @@ assert(archiveHasSpitter, "the second combat room must introduce the canonical B
 
 local elite = content.Encounters["warden-threshold"]
 assert(elite.EncounterSlotId == roomContracts.EncounterSlotIds.EliteGuard, "threshold must remain the elite slot")
-assert(elite.RewardSourceId == roomContracts.RoomRewardSourceIds.Elite, "elite slot must preserve the canonical reward ref")
+assert(
+	elite.RewardSourceId == roomContracts.RoomRewardSourceIds.Elite,
+	"elite slot must preserve the canonical reward ref"
+)
 local eliteHasBrute = false
 for _, authoredUnit in elite.Waves[1].Units do
 	if authoredUnit.HordeRoleId == hordeConfig.Roles.Brute.Id then
@@ -166,9 +176,15 @@ assert(eliteHasBrute, "the elite guard must include the canonical Brute role")
 
 local boss = content.Encounters["keeper-core"]
 assert(boss.EncounterSlotId == roomContracts.EncounterSlotIds.BossEncounter, "keeper core must remain the boss slot")
-assert(boss.RewardSourceId == roomContracts.RoomRewardSourceIds.Boss, "boss slot must preserve the canonical reward ref")
+assert(
+	boss.RewardSourceId == roomContracts.RoomRewardSourceIds.Boss,
+	"boss slot must preserve the canonical reward ref"
+)
 assert(#boss.Waves == 1 and #boss.Waves[1].Units == 1, "boss room must author one canonical boss spawn")
-assert(boss.Waves[1].Units[1].ArchetypeId == enemyContracts.EnemyArchetypeIds.Progenitor, "keeper core must use The Progenitor")
+assert(
+	boss.Waves[1].Units[1].ArchetypeId == enemyContracts.EnemyArchetypeIds.Progenitor,
+	"keeper core must use The Progenitor"
+)
 assert(boss.Waves[1].Units[1].Count == 1, "the first dungeon must not duplicate the boss")
 
 print("BA-032 FirstDungeonContentConfig fixture passed")
