@@ -70,12 +70,18 @@ assert(#sends == 3)
 -- A new readiness cycle may buffer again and flush only its newest current fact.
 publisher:markNotReady(playerA)
 assert(publisher:isReady(playerA) == false)
-assert(publisher:publish(playerA, "MissionNetwork.State", "round.phase", "Holdout", { phase = "Holdout" }) == "buffered")
-assert(publisher:publish(playerA, "MissionNetwork.State", "round.phase", "Resolved", { phase = "Resolved" }) == "buffered")
+assert(
+	publisher:publish(playerA, "MissionNetwork.State", "round.phase", "Holdout", { phase = "Holdout" }) == "buffered"
+)
+assert(
+	publisher:publish(playerA, "MissionNetwork.State", "round.phase", "Resolved", { phase = "Resolved" }) == "buffered"
+)
 assert(publisher:readPendingCount(playerA) == 1)
 assert(publisher:markReady(playerA) == 1)
 assert(#sends == 4)
 assert(sends[4].remoteId == "MissionNetwork.State")
 assert(sends[4].payload.phase == "Resolved")
 
-print("ReadyGatedStatePublisher: keyed latest retention, readiness flush, isolation, counters, and R2/R3 boundary passed")
+print(
+	"ReadyGatedStatePublisher: keyed latest retention, readiness flush, isolation, counters, and R2/R3 boundary passed"
+)

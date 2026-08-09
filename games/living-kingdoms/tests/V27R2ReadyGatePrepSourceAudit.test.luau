@@ -28,17 +28,19 @@ assertThat(
 	"R2 publisher must remain disabled until prerequisite runtime evidence is accepted"
 )
 
-for _, required in {
-	"owner + remoteId + semanticKey",
-	"SuppressedUnchanged",
-	"SuppressedBeforeReady",
-	"BufferedLatest",
-	"function ReadyGatedStatePublisher.publish",
-	"function ReadyGatedStatePublisher.markReady",
-	"function ReadyGatedStatePublisher.remove",
-	"remotePending[semanticKey] =",
-	"self._pending[owner] = nil",
-} do
+for _, required in
+	{
+		"owner + remoteId + semanticKey",
+		"SuppressedUnchanged",
+		"SuppressedBeforeReady",
+		"BufferedLatest",
+		"function ReadyGatedStatePublisher.publish",
+		"function ReadyGatedStatePublisher.markReady",
+		"function ReadyGatedStatePublisher.remove",
+		"remotePending[semanticKey] =",
+		"self._pending[owner] = nil",
+	}
+do
 	assertThat(contains(publisher, required), "R2 preparation publisher is missing invariant: " .. required)
 end
 
@@ -58,13 +60,12 @@ assertThat(
 	not contains(serverBootstrap, "ReadyGatedStatePublisher"),
 	"dormant R2 preparation must not be started from server bootstrap yet"
 )
-assertThat(
-	not contains(clientBootstrap, "ClientReady"),
-	"dormant R2 preparation must not emit a readiness signal yet"
-)
+assertThat(not contains(clientBootstrap, "ClientReady"), "dormant R2 preparation must not emit a readiness signal yet")
 assertThat(
 	not contains(project, '"ClientReady"'),
 	"dormant R2 preparation must not add an active ClientReady remote yet"
 )
 
-print("V27R2ReadyGatePrepSourceAudit: keyed readiness primitive prepared, R3 suppression absent, and active R2 wiring remains disabled")
+print(
+	"V27R2ReadyGatePrepSourceAudit: keyed readiness primitive prepared, R3 suppression absent, and active R2 wiring remains disabled"
+)
