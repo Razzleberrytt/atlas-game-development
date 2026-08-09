@@ -67,9 +67,7 @@ local function rejected(reasonId: string, serverTimestamp: number): MeleeContrac
 end
 
 local function validRequestId(requestId: unknown): boolean
-	return type(requestId) == "string"
-		and requestId ~= ""
-		and #requestId <= MeleeCombatConfig.MaximumRequestIdLength
+	return type(requestId) == "string" and requestId ~= "" and #requestId <= MeleeCombatConfig.MaximumRequestIdLength
 end
 
 local function validAimDirection(aimDirection: unknown): boolean
@@ -180,12 +178,8 @@ function Service.tryStrike(player: Player, requestId: unknown, aimDirection: unk
 		currentHealth = math.max(0, previousHealth - Weapon.DamagePerHit),
 		processedShotIds = table.clone(healthRead.healthState.processedShotIds),
 	}
-	local committed, committedDamage = EnemyDirectorService.commitHealthState(
-		fact.entityId,
-		healthRead.revision,
-		healthStateAfter,
-		serverTimestamp
-	)
+	local committed, committedDamage =
+		EnemyDirectorService.commitHealthState(fact.entityId, healthRead.revision, healthStateAfter, serverTimestamp)
 	if not committed or type(committedDamage) ~= "number" or committedDamage <= 0 then
 		return rejected(Reasons.CommitRejected, serverTimestamp)
 	end
