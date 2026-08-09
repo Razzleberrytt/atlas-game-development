@@ -12,12 +12,18 @@ local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/Env
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 
 check(string.find(controller, "HROI-ENV-001", 1, true) ~= nil, "missing bounded environment mood identity")
-check(string.find(controller, 'WaitForChild("HordeNetwork")', 1, true) ~= nil, "mood must use disclosed horde state")
 check(
-	string.find(controller, 'WaitForChild("State")', 1, true) ~= nil,
-	"mood must subscribe to the canonical state remote"
+	string.find(controller, "HordeStateEarlyListener.subscribe(onHordeState)", 1, true) ~= nil,
+	"mood must subscribe to disclosed horde state through the application bridge"
 )
-check(string.find(controller, "stateRemote.OnClientEvent:Connect(onHordeState)", 1, true) ~= nil)
+check(
+	string.find(controller, 'WaitForChild("HordeNetwork")', 1, true) == nil,
+	"mood must not own HordeNetwork transport"
+)
+check(
+	string.find(controller, "OnClientEvent:Connect", 1, true) == nil,
+	"mood must own no physical RemoteEvent listener"
+)
 check(
 	string.find(controller, "snapshot.revision <= lastThreatRevision", 1, true) ~= nil,
 	"stale snapshots must be ignored"
@@ -45,7 +51,7 @@ check(
 check(string.find(controller, "UPDATE_INTERVAL_SECONDS = 0.1", 1, true) ~= nil, "ambience must retain the 10 Hz budget")
 
 local _, connectionCount = string.gsub(controller, ":Connect%(", "")
-check(connectionCount == 2, "ambience must use exactly one heartbeat and one disclosed-state connection")
+check(connectionCount == 1, "ambience must use exactly one heartbeat connection")
 check(string.find(controller, "FireServer", 1, true) == nil, "environment presentation must not send client requests")
 check(string.find(controller, "InvokeServer", 1, true) == nil, "environment presentation must not invoke server state")
 check(string.find(controller, "RemoteFunction", 1, true) == nil, "environment presentation requires no new query route")

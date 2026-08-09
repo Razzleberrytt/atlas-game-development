@@ -22,7 +22,7 @@ Read first:
 - Repository: `Razzleberrytt/atlas-game-development`
 - Game path: `games/living-kingdoms`
 - Checkpoint used for this refresh: `60229a32ec1f7db3b87a68e5f81ddf8115e665f1`
-- Refreshed in place at `944c684520c2ebaf6cf821a8a94a21a33588dc4f` (2026-08-08): BA-010, BA-011 and BA-012 closed via PRs #241/#242/#243, BA-013 closed via PR #250, `CLAUDE.md` added, BA-074 closed with `scripts/validate_roadmap_authority.py`. The task table below reflects current status; re-fetch `main` before starting any task regardless — this queue is being actively worked by more than one agent in parallel (see "Parallel assignment" below).
+- Refreshed in place at `944c684520c2ebaf6cf821a8a94a21a33588dc4f` (2026-08-08): BA-010, BA-011 and BA-012 closed via PR #241/#242/#243, `CLAUDE.md` added, BA-074 closed with `scripts/validate_roadmap_authority.py`. The task table below reflects current status; re-fetch `main` before starting any task regardless — this queue is being actively worked by more than one agent in parallel (see "Parallel assignment" below).
 - Evidence: **E2** (pinned-artifact Studio initialization/R1; later integrated matrices remain open)
 - Studio import preservation is **repaired**: 28/28 Studio-only sources and 1,775/1,775 Workspace identity/hierarchy rows are preserved.
 - Property-backed authored-world recovery is now available; older documents that cite only 122 recoverable Workspace rows are historical damage-state evidence, not current truth.
