@@ -1,7 +1,7 @@
 --!strict
 
 -- BA-033 fixture: the first dungeon's elite/boss reward beats must point at the
--- canonical run-build reward vocabulary without activating a new reward owner
+-- canonical run-build reward vocabulary without creating a second reward owner
 -- or opting into the unresolved persistent-equipment path.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
@@ -133,13 +133,13 @@ local decisions =
 		injectGlobals = true,
 	})()
 
-assert(decisions.Version == "BA-033-v1")
+assert(decisions.Version == "BA-033-v2-boss-live")
 assert(decisions.SequenceId == firstDungeonContent.SequenceId, "reward data must follow the BA-032 dungeon identity")
 assert(decisions.SequenceVersion == firstDungeonContent.SequenceVersion)
 assert(decisions.RewardKind == "RunRelicChoice", "BA-033 must author run-build decisions, not persistent gear")
 assert(decisions.ChoiceCount == runRpgConfig.Limits.relicChoiceCountPerReward)
 assert(decisions.ChoiceCount == 2, "the canonical Run Relic reward remains a two-choice decision")
-assert(decisions.RuntimeConsumptionEnabled == false, "BA-033 must remain data-only")
+assert(decisions.RuntimeConsumptionEnabled == true, "BA-033 must disclose the live boss reward handoff")
 assert(decisions.PersistentEquipmentEligible == false, "BA-043 still owns the persistent-equipment authority decision")
 assert(#decisions.OrderedDecisions == 2, "the first dungeon must contain exactly the elite and boss decision beats")
 
@@ -149,7 +149,7 @@ assert(elite.RoomId == "warden-threshold")
 assert(elite.RoomRewardSourceId == roomContracts.RoomRewardSourceIds.Elite)
 assert(elite.RunRewardSourceId == runRpgContracts.RewardSourceIds.EliteKill)
 assert(elite.SourceImplementationStateId == runRpgContracts.ImplementationStateIds.Implemented)
-assert(elite.RuntimeConsumptionEnabled == false)
+assert(elite.RuntimeConsumptionEnabled == false, "the authored elite room must not double-pay generic elite rewards")
 assert(elite.PersistentEquipmentEligible == false)
 assert(decisions.DecisionByRoomId[elite.RoomId] == elite)
 
@@ -158,8 +158,8 @@ assert(boss.DecisionId == "first-descent.boss-relic-choice")
 assert(boss.RoomId == "keeper-core")
 assert(boss.RoomRewardSourceId == roomContracts.RoomRewardSourceIds.Boss)
 assert(boss.RunRewardSourceId == runRpgContracts.RewardSourceIds.BossMilestone)
-assert(boss.SourceImplementationStateId == runRpgContracts.ImplementationStateIds.Planned)
-assert(boss.RuntimeConsumptionEnabled == false, "boss reward wiring is not authorized by BA-033")
+assert(boss.SourceImplementationStateId == runRpgContracts.ImplementationStateIds.Implemented)
+assert(boss.RuntimeConsumptionEnabled == true, "boss reward wiring must stay enabled for First Descent")
 assert(boss.PersistentEquipmentEligible == false)
 assert(decisions.DecisionByRoomId[boss.RoomId] == boss)
 
@@ -172,4 +172,4 @@ assert(
 	"boss reward decision drifted away from BA-032 room content"
 )
 
-print("BA-033 FirstDungeonRewardDecisionConfig fixture passed")
+print("BA-033 FirstDungeonRewardDecisionConfig: boss Run Relic decision live")
