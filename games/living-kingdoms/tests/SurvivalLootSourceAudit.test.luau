@@ -32,35 +32,33 @@ do
 end
 assert(string.find(bootstrap, "SurvivalLootService.start()", 1, true) ~= nil, "survival loot must bootstrap")
 assert(
-	string.find(bootstrap, 'collectItem.Name = "CollectItem"', 1, true) ~= nil,
-	"loot requires an explicit take-item remote"
+	string.find(bootstrap, 'collectItem.Name = "CollectItem"', 1, true) == nil,
+	"world-owned E collection must not retain the click-only item remote"
 )
 assert(string.find(server, "pendingLoot", 1, true) ~= nil, "opening a chest must stage loot before collection")
-assert(string.find(server, "collectPendingLoot", 1, true) ~= nil, "server must own explicit item collection")
+assert(string.find(server, "collectChestLoot", 1, true) ~= nil, "server must own E-triggered chest collection")
 assert(
-	string.find(server, "collectItemRemote.OnServerEvent:Connect(collectPendingLoot)", 1, true) ~= nil,
-	"tappable loot requests must terminate at the server-owned collection path"
+	string.find(server, "collectItemRemote", 1, true) == nil,
+	"survival loot must not accept click-authored item identity"
 )
 assert(
 	string.find(server, "not isNear(player, item.worldPosition", 1, true) ~= nil,
-	"the server must reject remote loot collection outside the chest radius"
-)
-assert(string.find(client, "HOME FIRE", 1, true) ~= nil, "survival HUD must disclose home-fire fuel")
-assert(string.find(client, "PACK", 1, true) ~= nil, "survival HUD must disclose inventory capacity")
-assert(string.find(client, "CHEST LOOT", 1, true) ~= nil, "opened loot requires a visible RPG loot panel")
-assert(
-	string.find(client, "card.Activated:Connect", 1, true) ~= nil,
-	"every loot card must support mouse and touch activation"
+	"the server must reject loot collection outside the chest radius"
 )
 assert(
-	string.find(client, "collectItemRemote:FireServer(item.itemId)", 1, true) ~= nil,
-	"loot cards may request only item identity"
+	string.find(server, "prompt.KeyboardKeyCode = Enum.KeyCode.E", 1, true) ~= nil,
+	"every survival world interaction must expose keyboard E"
 )
-assert(string.find(client, "BACKPACK", 1, true) ~= nil, "collected resources require a visible backpack surface")
-assert(string.find(client, '"MELEE", "EMPTY SLOT"', 1, true) ~= nil, "inventory must reserve a readable melee slot")
 assert(
-	string.find(client, "SEARCH THE NEAREST SUPPLY CHEST", 1, true) ~= nil,
-	"survival HUD must guide the opening loop"
+	string.find(server, "collectChestLoot(player, chestId, position)", 1, true) ~= nil,
+	"the chest E prompt must collect its server-staged loot"
 )
+assert(
+	string.find(client, 'toast.Name = "ContextToast"', 1, true) ~= nil,
+	"survival feedback must use one contextual toast"
+)
+assert(string.find(client, "TextButton", 1, true) == nil, "survival HUD must not require clickable loot cards")
+assert(string.find(client, "CHEST LOOT", 1, true) == nil, "large chest overlay must remain removed")
+assert(string.find(client, "BACKPACK", 1, true) == nil, "always-on backpack overlay must remain removed")
 
-print("SurvivalLootSourceAudit: campfire, chests, wood, weapons, ammo, and large pack passed")
+print("SurvivalLootSourceAudit: server-owned E looting and contextual survival feedback passed")

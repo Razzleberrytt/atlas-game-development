@@ -189,6 +189,7 @@ assertThat(
 assertThat(not contains(hud, "streakLabel"), "the unified HUD must not retain a duplicate streak presentation owner")
 assertThat(not contains(hud, "MASSACRE x%d"), "the legacy static streak label must stay removed")
 assertThat(not contains(hud, "CHOOSE YOUR MUTATION"), "player-facing upgrades must use the Field Upgrade vocabulary")
+assertThat(contains(hud, "threatPanel.Visible = false"), "wave-style threat chrome must stay hidden by default")
 
 for _, required in
 	{

@@ -13,7 +13,6 @@ local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local Service = {}
 local network = ReplicatedStorage:WaitForChild("SurvivalNetwork")
 local stateRemote = network:WaitForChild("State") :: RemoteEvent
-local collectItemRemote = network:WaitForChild("CollectItem") :: RemoteEvent
 local readState = network:WaitForChild("ReadState") :: RemoteFunction
 
 type PendingLoot = {
@@ -42,7 +41,6 @@ local worldFolder: Folder? = nil
 local fireLight: PointLight? = nil
 local fireCore: BasePart? = nil
 local heartbeatConnection: RBXScriptConnection? = nil
-local collectItemConnection: RBXScriptConnection? = nil
 local accumulated = 0
 local reachedStableFire = false
 local reachedMaximumFire = false
@@ -144,22 +142,21 @@ end
 local publish: (player: Player, eventText: string?) -> ()
 local isNear: (player: Player, position: Vector3, maximumDistance: number) -> boolean
 
-local function collectPendingLoot(player: Player, itemId: unknown)
+local function tryCollectPendingLoot(player: Player, itemId: unknown): (boolean, string?)
 	if type(itemId) ~= "string" or #itemId > 96 then
-		return
+		return false, nil
 	end
 	local state = playerState(player)
 	local item = state.pendingLoot[itemId]
 	if item == nil or not isNear(player, item.worldPosition, Config.ChestInteractionDistanceStuds + 2) then
-		return
+		return false, nil
 	end
 
 	local eventText: string
 	if item.kindId == "wood" then
 		local room = Config.InventoryCapacity - state.wood
 		if room <= 0 then
-			publish(player, "BACKPACK FULL — make room before taking the firewood")
-			return
+			return false, "BACKPACK FULL — firewood remains in the chest"
 		end
 		local collected = math.min(room, item.quantity)
 		state.wood += collected
@@ -171,8 +168,7 @@ local function collectPendingLoot(player: Player, itemId: unknown)
 	elseif item.kindId == "ammunition" then
 		local granted = OperativeCombatRuntimeService.grantFoundAmmunition(player, item.quantity)
 		if granted <= 0 then
-			publish(player, "AMMUNITION FULL — leave it in the chest for now")
-			return
+			return false, "AMMUNITION FULL — rounds remain in the chest"
 		end
 		item.quantity -= granted
 		eventText = string.format("PISTOL AMMO ADDED  +%d", granted)
@@ -181,17 +177,71 @@ local function collectPendingLoot(player: Player, itemId: unknown)
 		end
 	elseif item.kindId == "weapon" and item.weaponId ~= nil then
 		if not OperativeCombatRuntimeService.equipFoundWeapon(player, item.weaponId) then
-			publish(player, "WEAPON CANNOT BE EQUIPPED RIGHT NOW")
-			return
+			return false, "WEAPON CANNOT BE EQUIPPED RIGHT NOW"
 		end
 		state.foundWeapon = true
 		state.pendingLoot[itemId] = nil
 		eventText = item.displayName .. " EQUIPPED"
 	else
-		return
+		return false, nil
 	end
 	state.revision += 1
-	publish(player, eventText)
+	return true, eventText
+end
+
+local function collectChestLoot(player: Player, chestId: string, worldPosition: Vector3): number
+	if not isNear(player, worldPosition, Config.ChestInteractionDistanceStuds + 2) then
+		return 0
+	end
+	local state = playerState(player)
+	local itemIds = {}
+	for itemId, item in state.pendingLoot do
+		if item.chestId == chestId then
+			table.insert(itemIds, itemId)
+		end
+	end
+	table.sort(itemIds)
+
+	local collectedCount = 0
+	local mostImportantEvent: string? = nil
+	local firstFailure: string? = nil
+	for _, itemId in itemIds do
+		local didCollect, eventText = tryCollectPendingLoot(player, itemId)
+		if didCollect then
+			collectedCount += 1
+			if
+				eventText ~= nil and (mostImportantEvent == nil or string.find(eventText, "EQUIPPED", 1, true) ~= nil)
+			then
+				mostImportantEvent = eventText
+			end
+		elseif firstFailure == nil then
+			firstFailure = eventText
+		end
+	end
+
+	if collectedCount > 0 then
+		publish(
+			player,
+			mostImportantEvent
+				or string.format(
+					"LOOT COLLECTED  //  %d ITEM%s",
+					collectedCount,
+					if collectedCount == 1 then "" else "S"
+				)
+		)
+	elseif firstFailure ~= nil then
+		publish(player, firstFailure)
+	end
+	return collectedCount
+end
+
+local function hasPendingLootForChest(state: PlayerState, chestId: string): boolean
+	for _, item in state.pendingLoot do
+		if item.chestId == chestId then
+			return true
+		end
+	end
+	return false
 end
 
 publish = function(player: Player, eventText: string?)
@@ -385,62 +435,76 @@ local function createChest(parent: Instance, index: number, position: Vector3)
 	beaconLabel.Parent = beacon
 	local prompt = addPrompt(lid, "Open Chest", "SUPPLY CHEST")
 	local opened = false
+	local lootOwner: Player? = nil
 	prompt.Triggered:Connect(function(player)
-		if opened or not isNear(player, position, Config.ChestInteractionDistanceStuds + 2) then
+		if not isNear(player, position, Config.ChestInteractionDistanceStuds + 2) then
 			return
 		end
-		opened = true
-		prompt.Enabled = false
-		highlight.Enabled = false
-		beacon.Enabled = false
-		lid.CFrame = lid.CFrame * CFrame.new(0, 1.1, 1) * CFrame.Angles(math.rad(-32), 0, 0)
+		if opened and lootOwner ~= player then
+			publish(player, "CHEST ALREADY CLAIMED BY ANOTHER EXPLORER")
+			return
+		end
 		local state = playerState(player)
-		state.openedChests += 1
-		local woodAmount = Config.ChestWoodMinimum
-			+ (index * 5 % (Config.ChestWoodMaximum - Config.ChestWoodMinimum + 1))
-		local rounds = Config.AmmoRoundsMinimum
-			+ (index * 3 % (Config.AmmoRoundsMaximum - Config.AmmoRoundsMinimum + 1))
-		local roll = (index * 37 + player.UserId) % 100
-		local shouldFindWeapon = not state.foundWeapon
-			and not hasPendingWeapon(state)
-			and (state.openedChests >= Config.GuaranteedWeaponByOpenedChest or roll < Config.ChestWeaponChancePercent)
 		local chestId = "chest." .. tostring(index)
-		stageLoot(state, {
-			itemId = chestId .. ".wood",
-			kindId = "wood",
-			displayName = "Dry Firewood",
-			quantity = woodAmount,
-			rarityId = "Common",
-			chestId = chestId,
-			worldPosition = position,
-			weaponId = nil,
-		})
-		stageLoot(state, {
-			itemId = chestId .. ".ammunition",
-			kindId = "ammunition",
-			displayName = "Pistol Ammunition",
-			quantity = rounds,
-			rarityId = "Uncommon",
-			chestId = chestId,
-			worldPosition = position,
-			weaponId = nil,
-		})
-		if shouldFindWeapon then
-			local weapons = Config.DiscoverableWeaponIds
-			local weaponId = weapons[(index % #weapons) + 1]
+		if not opened then
+			opened = true
+			lootOwner = player
+			highlight.Enabled = false
+			beacon.Enabled = false
+			lid.CFrame = lid.CFrame * CFrame.new(0, 1.1, 1) * CFrame.Angles(math.rad(-32), 0, 0)
+			state.openedChests += 1
+			local woodAmount = Config.ChestWoodMinimum
+				+ (index * 5 % (Config.ChestWoodMaximum - Config.ChestWoodMinimum + 1))
+			local rounds = Config.AmmoRoundsMinimum
+				+ (index * 3 % (Config.AmmoRoundsMaximum - Config.AmmoRoundsMinimum + 1))
+			local roll = (index * 37 + player.UserId) % 100
+			local shouldFindWeapon = not state.foundWeapon
+				and not hasPendingWeapon(state)
+				and (
+					state.openedChests >= Config.GuaranteedWeaponByOpenedChest
+					or roll < Config.ChestWeaponChancePercent
+				)
 			stageLoot(state, {
-				itemId = chestId .. ".weapon",
-				kindId = "weapon",
-				displayName = (FirearmConfig.get(weaponId) :: any).DisplayName,
-				quantity = 1,
-				rarityId = "Rare",
+				itemId = chestId .. ".wood",
+				kindId = "wood",
+				displayName = "Dry Firewood",
+				quantity = woodAmount,
+				rarityId = "Common",
 				chestId = chestId,
 				worldPosition = position,
-				weaponId = weaponId,
+				weaponId = nil,
 			})
+			stageLoot(state, {
+				itemId = chestId .. ".ammunition",
+				kindId = "ammunition",
+				displayName = "Pistol Ammunition",
+				quantity = rounds,
+				rarityId = "Uncommon",
+				chestId = chestId,
+				worldPosition = position,
+				weaponId = nil,
+			})
+			if shouldFindWeapon then
+				local weapons = Config.DiscoverableWeaponIds
+				local weaponId = weapons[(index % #weapons) + 1]
+				stageLoot(state, {
+					itemId = chestId .. ".weapon",
+					kindId = "weapon",
+					displayName = (FirearmConfig.get(weaponId) :: any).DisplayName,
+					quantity = 1,
+					rarityId = "Rare",
+					chestId = chestId,
+					worldPosition = position,
+					weaponId = weaponId,
+				})
+			end
+			state.revision += 1
 		end
-		state.revision += 1
-		publish(player, "CHEST OPENED — tap each item to take it")
+
+		collectChestLoot(player, chestId, position)
+		local hasRemaining = hasPendingLootForChest(state, chestId)
+		prompt.Enabled = hasRemaining
+		prompt.ActionText = "Take Remaining"
 	end)
 end
 
@@ -501,7 +565,6 @@ function Service.start()
 	readState.OnServerInvoke = function(player)
 		return snapshot(player, nil)
 	end
-	collectItemConnection = collectItemRemote.OnServerEvent:Connect(collectPendingLoot)
 	for _, player in Players:GetPlayers() do
 		publish(player, "Find wood and keep the home fire alive.")
 	end
@@ -533,10 +596,6 @@ function Service.stop()
 	if heartbeatConnection ~= nil then
 		heartbeatConnection:Disconnect()
 		heartbeatConnection = nil
-	end
-	if collectItemConnection ~= nil then
-		collectItemConnection:Disconnect()
-		collectItemConnection = nil
 	end
 	readState.OnServerInvoke = nil
 	if worldFolder ~= nil then
