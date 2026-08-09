@@ -11,8 +11,8 @@
 	    behaviour, threat, a non-rewarding massacre streak, and the event feed.
 	  * HordeHUDController is the only combat HUD and routes upgrade selection
 	    exclusively through ProgressionNetwork.ChooseUpgrade.
-	  * MassacreCrescendoController is the sole presentation owner for the
-	    non-rewarding streak disclosed by HordeExperienceService.
+	  * MassacreCrescendoController remains dormant; the disliked kill-chain
+	    popup/stinger is not bootstrapped.
 ]]
 
 local fs = require("@lune/fs")
@@ -35,6 +35,7 @@ local serverBootstrap = fs.readFile("games/living-kingdoms/src/server/init.serve
 local clientBootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 local hud = fs.readFile("games/living-kingdoms/src/client/Controllers/HordeHUDController.luau")
 local crescendo = fs.readFile("games/living-kingdoms/src/client/Controllers/MassacreCrescendoController.luau")
+local ambience = fs.readFile("games/living-kingdoms/src/client/Controllers/EnvironmentAmbienceController.luau")
 local crescendoConfig = fs.readFile("games/living-kingdoms/src/shared/Config/MassacreCrescendoConfig.luau")
 local effects = fs.readFile("games/living-kingdoms/src/client/Controllers/HordeEffectsController.luau")
 local weapon = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponController.luau")
@@ -143,7 +144,6 @@ for _, required in
 		"HordeHUDController.start()",
 		"CriticalConditionController.start()",
 		"ConfirmedHitMarkerController.start()",
-		"MassacreCrescendoController.start()",
 	}
 do
 	assertThat(
@@ -152,17 +152,24 @@ do
 	)
 end
 assertThat(
+	not contains(clientBootstrap, "MassacreCrescendoController"),
+	"the disabled kill-chain popup/stinger must not be required or started"
+)
+assertThat(
 	not contains(clientBootstrap, "RunProgressionHUDController.start()"),
 	"the standalone progression HUD must not run alongside the unified combat HUD"
 )
 
 -- The unified HUD renders progression from ProgressionNetwork and submits one
--- offered upgrade ID only through ProgressionNetwork.ChooseUpgrade.
+-- offered upgrade ID only through ProgressionNetwork.ChooseUpgrade. Horde state
+-- is delivered through the application bridge rather than a second physical
+-- HordeNetwork.State listener.
 for _, required in
 	{
 		"progressionChooseUpgradeRemote:FireServer(upgradeId)",
 		"progressionReadStateRemote:InvokeServer()",
 		"progressionStateRemote.OnClientEvent",
+		"HordeStateEarlyListener.subscribe(onState)",
 		"pendingChoices",
 		"choice.statPreview",
 		"snapshot.runStats",
@@ -175,6 +182,10 @@ for _, required in
 do
 	assertThat(contains(hud, required), "unified HUD is missing " .. required)
 end
+assertThat(
+	not contains(hud, "stateRemote.OnClientEvent:Connect"),
+	"unified HUD must not own a direct Horde State listener"
+)
 assertThat(not contains(hud, "streakLabel"), "the unified HUD must not retain a duplicate streak presentation owner")
 assertThat(not contains(hud, "MASSACRE x%d"), "the legacy static streak label must stay removed")
 assertThat(not contains(hud, "CHOOSE YOUR MUTATION"), "player-facing upgrades must use the Field Upgrade vocabulary")
@@ -183,12 +194,24 @@ for _, required in
 	{
 		"streakExpiresServerTimestamp",
 		"MassacreCrescendoConfig.tierForStreak",
-		"HordeNetwork",
+		"HordeStateEarlyListener.subscribe(onState)",
 		"RenderStepped:Connect",
 	}
 do
 	assertThat(contains(crescendo, required), "dedicated streak presentation is missing " .. required)
 end
+assertThat(
+	not contains(crescendo, "stateRemote.OnClientEvent:Connect"),
+	"dedicated streak presentation must not own a direct Horde State listener"
+)
+assertThat(
+	contains(ambience, "HordeStateEarlyListener.subscribe(onHordeState)"),
+	"environment ambience must consume horde threat through the application bridge"
+)
+assertThat(
+	not contains(ambience, 'WaitForChild("HordeNetwork")'),
+	"environment ambience must not own HordeNetwork transport"
+)
 for _, required in { "KILL CHAIN", "SLAUGHTER", "MASSACRE", "ANNIHILATION", "APOCALYPSE" } do
 	assertThat(contains(crescendoConfig, required), "streak crescendo config is missing tier " .. required)
 end
@@ -239,5 +262,5 @@ assertThat(not contains(life, "TemporaryP3Validation"), "old temporary life over
 assertThat(not contains(mission, "TemporaryMissionUI"), "old temporary mission overlay must be removed")
 
 print(
-	"Horde vertical slice single-source-of-truth ownership, pacing bounds, unified HUD, and streak presentation audit passed"
+	"Horde vertical slice single-source-of-truth ownership, pacing bounds, unified HUD, bridge transport, and streak presentation audit passed"
 )

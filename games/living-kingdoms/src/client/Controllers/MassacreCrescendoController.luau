@@ -2,7 +2,7 @@
 
 --[[
 	Client-only crescendo for the server-authored, non-rewarding horde streak.
-	One existing horde-state disclosure connection and one frame connection drive
+	One application-bridge horde-state subscription and one frame connection drive
 	a fixed UI, one fixed stinger Sound, and no per-kill Instances, tasks, tweens,
 	or gameplay requests. The controller cannot establish kills, rewards, damage,
 	cadence, ammunition, health, movement, or targeting.
@@ -15,10 +15,10 @@ local SoundService = game:GetService("SoundService")
 local Workspace = game:GetService("Workspace")
 
 local MassacreCrescendoConfig = require(ReplicatedStorage.Shared.Config.MassacreCrescendoConfig)
+local HordeStateEarlyListener = require(script.Parent.Parent.State.HordeStateEarlyListener)
 
 local Controller = {}
 local localPlayer = Players.LocalPlayer
-local stateRemote = ReplicatedStorage:WaitForChild("HordeNetwork"):WaitForChild("State") :: RemoteEvent
 
 local started = false
 local stateConnection: RBXScriptConnection? = nil
@@ -292,7 +292,7 @@ function Controller.start()
 	end
 	started = true
 	createPresentation()
-	stateConnection = stateRemote.OnClientEvent:Connect(onState)
+	stateConnection = HordeStateEarlyListener.subscribe(onState)
 	renderConnection = RunService.RenderStepped:Connect(updatePresentation)
 end
 

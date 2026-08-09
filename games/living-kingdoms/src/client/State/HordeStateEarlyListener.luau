@@ -9,8 +9,8 @@
 	and retains the latest server-authored snapshot so startup publishes cannot
 	accumulate in Roblox's unhandled RemoteEvent invocation queue.
 
-	Domain controllers may migrate to subscribe() over time. Until then, their
-	existing direct listeners can coexist during the controlled rollout.
+	All domain controllers consume this state through subscribe(). This module is
+	the only owner of the physical HordeNetwork.State RemoteEvent connection.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -21,12 +21,21 @@ local HordeStateEarlyListener = {}
 
 local started = false
 local stateConnection: RBXScriptConnection? = nil
+local activeListenerCount = 0
 local latestSnapshot: any = nil
 local receivedCount = 0
 local invalidMessageCount = 0
 local diagnosticNetwork: Instance? = nil
 local snapshotSignal = Instance.new("BindableEvent")
 snapshotSignal.Name = "HordeStateEarlyListenerSignal"
+
+local function readActiveListenerCount(): number
+	local connection = stateConnection
+	if connection == nil or not connection.Connected then
+		return 0
+	end
+	return activeListenerCount
+end
 
 local function writeDiagnostics()
 	if not RuntimeRolloutConfig.EnableRuntimeCounters then
@@ -36,7 +45,9 @@ local function writeDiagnostics()
 	if network == nil then
 		return
 	end
-	network:SetAttribute("V27_EarlyStateListenerBound", started and stateConnection ~= nil)
+	local listenerCount = readActiveListenerCount()
+	network:SetAttribute("V27_EarlyStateListenerBound", listenerCount == 1)
+	network:SetAttribute("V27_EarlyStateListenerCount", listenerCount)
 	network:SetAttribute("V27_StateMessagesReceived", receivedCount)
 	network:SetAttribute("V27_StateInvalidMessages", invalidMessageCount)
 	local snapshot = latestSnapshot
@@ -62,7 +73,6 @@ function HordeStateEarlyListener.start()
 	if started then
 		return
 	end
-	started = true
 
 	local network = ReplicatedStorage:WaitForChild("HordeNetwork")
 	diagnosticNetwork = network
@@ -72,11 +82,17 @@ function HordeStateEarlyListener.start()
 	-- Bind synchronously before the rest of the application controller graph is
 	-- required or started. This is the R1 compatibility listener.
 	stateConnection = stateRemote.OnClientEvent:Connect(onState)
+	activeListenerCount += 1
+	started = true
 	writeDiagnostics()
 end
 
 function HordeStateEarlyListener.readLatest(): any
 	return latestSnapshot
+end
+
+function HordeStateEarlyListener.getActiveListenerCount(): number
+	return readActiveListenerCount()
 end
 
 function HordeStateEarlyListener.subscribe(callback: (any) -> ()): RBXScriptConnection
@@ -97,7 +113,9 @@ function HordeStateEarlyListener.stop()
 	if stateConnection ~= nil then
 		stateConnection:Disconnect()
 		stateConnection = nil
+		activeListenerCount -= 1
 	end
+	assert(activeListenerCount == 0, "Horde state listener count must return to zero on stop")
 	latestSnapshot = nil
 	writeDiagnostics()
 	diagnosticNetwork = nil

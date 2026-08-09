@@ -13,10 +13,10 @@ local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
+local HordeStateEarlyListener = require(script.Parent.Parent.State.HordeStateEarlyListener)
+
 local Controller = {}
 local localPlayer = Players.LocalPlayer
-local network = ReplicatedStorage:WaitForChild("HordeNetwork")
-local stateRemote = network:WaitForChild("State") :: RemoteEvent
 
 -- Progression is owned by RunProgressionService. The combat HUD only renders its
 -- published snapshot and submits one offered upgrade ID back to it.
@@ -823,7 +823,7 @@ function Controller.start()
 		StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
 	end)
 	createPresentation()
-	table.insert(connections, stateRemote.OnClientEvent:Connect(onState))
+	table.insert(connections, HordeStateEarlyListener.subscribe(onState))
 	table.insert(connections, progressionStateRemote.OnClientEvent:Connect(onProgressionState))
 	table.insert(connections, RunService.RenderStepped:Connect(updateFrame))
 

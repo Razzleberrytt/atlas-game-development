@@ -37,12 +37,17 @@ assert(contains(server, "state.streak >= 2"), "expiry disclosure must be absent 
 assert(not contains(server, "MassacreCrescendoConfig"), "server must not depend on client presentation config")
 
 assert(contains(controller, "streakExpiresServerTimestamp"))
-assert(contains(controller, "HordeNetwork"))
+assert(contains(controller, "HordeStateEarlyListener.subscribe(onState)"))
+assert(not contains(controller, 'WaitForChild("HordeNetwork")'), "crescendo must not own HordeNetwork transport")
 assert(contains(controller, "tierForStreak"))
 assert(contains(controller, "StingerMinimumIntervalSeconds"))
 assert(contains(controller, "GroupTransparency"))
 assert(contains(controller, "Workspace:GetServerTimeNow()"))
-assert(count(controller, "OnClientEvent:Connect") == 1, "crescendo must use one disclosure connection")
+assert(count(controller, "OnClientEvent:Connect") == 0, "crescendo must own zero physical RemoteEvent listeners")
+assert(
+	count(controller, "HordeStateEarlyListener.subscribe(onState)") == 1,
+	"crescendo must use one application-bridge subscription"
+)
 assert(count(controller, "RenderStepped:Connect") == 1, "crescendo must use one frame connection")
 assert(count(controller, 'Instance.new("Sound")') == 1, "crescendo must construct one fixed stinger")
 assert(count(controller, 'Instance.new("ScreenGui")') == 1, "crescendo must construct one fixed screen surface")
@@ -80,7 +85,7 @@ assert(contains(config, "No tier grants XP, loot, health"), "non-rewarding bound
 
 assert(not contains(hud, "MASSACRE x%d"), "legacy static streak label must be removed")
 assert(not contains(hud, "streakLabel"), "the unified HUD must not retain a duplicate streak owner")
-assert(contains(bootstrap, "MassacreCrescendoController"))
-assert(count(bootstrap, "MassacreCrescendoController.start()") == 1)
+assert(not contains(bootstrap, "MassacreCrescendoController"), "kill-chain presentation must remain disabled")
+assert(count(bootstrap, "MassacreCrescendoController.start()") == 0)
 
-print("MassacreCrescendoSourceAudit: authoritative expiry, fixed presentation, verified audio, and zero rewards passed")
+print("MassacreCrescendoSourceAudit: dormant bridge-only controller retained and kill-chain presentation disabled")
