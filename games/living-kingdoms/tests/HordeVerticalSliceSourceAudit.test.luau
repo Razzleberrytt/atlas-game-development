@@ -11,8 +11,8 @@
 	    behaviour, threat, a non-rewarding massacre streak, and the event feed.
 	  * HordeHUDController is the only combat HUD and routes upgrade selection
 	    exclusively through ProgressionNetwork.ChooseUpgrade.
-	  * MassacreCrescendoController is the sole presentation owner for the
-	    non-rewarding streak disclosed by HordeExperienceService.
+	  * MassacreCrescendoController remains dormant; the disliked kill-chain
+	    popup/stinger is not bootstrapped.
 ]]
 
 local fs = require("@lune/fs")
@@ -144,7 +144,6 @@ for _, required in
 		"HordeHUDController.start()",
 		"CriticalConditionController.start()",
 		"ConfirmedHitMarkerController.start()",
-		"MassacreCrescendoController.start()",
 	}
 do
 	assertThat(
@@ -152,6 +151,10 @@ do
 		"client bootstrap is missing composed presentation owner " .. required
 	)
 end
+assertThat(
+	not contains(clientBootstrap, "MassacreCrescendoController"),
+	"the disabled kill-chain popup/stinger must not be required or started"
+)
 assertThat(
 	not contains(clientBootstrap, "RunProgressionHUDController.start()"),
 	"the standalone progression HUD must not run alongside the unified combat HUD"

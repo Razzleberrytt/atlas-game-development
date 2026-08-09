@@ -85,9 +85,7 @@ assert(contains(config, "No tier grants XP, loot, health"), "non-rewarding bound
 
 assert(not contains(hud, "MASSACRE x%d"), "legacy static streak label must be removed")
 assert(not contains(hud, "streakLabel"), "the unified HUD must not retain a duplicate streak owner")
-assert(contains(bootstrap, "MassacreCrescendoController"))
-assert(count(bootstrap, "MassacreCrescendoController.start()") == 1)
+assert(not contains(bootstrap, "MassacreCrescendoController"), "kill-chain presentation must remain disabled")
+assert(count(bootstrap, "MassacreCrescendoController.start()") == 0)
 
-print(
-	"MassacreCrescendoSourceAudit: authoritative expiry, bridge transport, fixed presentation, verified audio, and zero rewards passed"
-)
+print("MassacreCrescendoSourceAudit: dormant bridge-only controller retained and kill-chain presentation disabled")

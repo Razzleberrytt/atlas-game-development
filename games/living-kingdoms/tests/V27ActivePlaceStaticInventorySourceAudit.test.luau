@@ -127,9 +127,9 @@ assertThat(
 assertThat(contains(clientBootstrap, "HordeStateEarlyListener.start()"), "bridge must start from client bootstrap")
 for _, listener in
 	{
-		{ name = "HordeHUDController", source = hordeHud, callback = "onState" },
-		{ name = "MassacreCrescendoController", source = massacre, callback = "onState" },
-		{ name = "EnvironmentAmbienceController", source = ambience, callback = "onHordeState" },
+		{ name = "HordeHUDController", source = hordeHud, callback = "onState", active = true },
+		{ name = "MassacreCrescendoController", source = massacre, callback = "onState", active = false },
+		{ name = "EnvironmentAmbienceController", source = ambience, callback = "onHordeState", active = true },
 	}
 do
 	assertThat(
@@ -152,10 +152,17 @@ do
 		count(listener.source, "HordeStateEarlyListener.subscribe(" .. listener.callback .. ")") == 1,
 		listener.name .. " must own exactly one bridge subscription call site"
 	)
-	assertThat(
-		contains(clientBootstrap, listener.name .. ".start()"),
-		listener.name .. " must remain visible in application bootstrap inventory"
-	)
+	if listener.active then
+		assertThat(
+			contains(clientBootstrap, listener.name .. ".start()"),
+			listener.name .. " must remain visible in application bootstrap inventory"
+		)
+	else
+		assertThat(
+			not contains(clientBootstrap, listener.name),
+			listener.name .. " must remain disabled at application bootstrap"
+		)
+	end
 end
 
 local earlyListenerPath = "games/living-kingdoms/src/client/State/HordeStateEarlyListener.luau"
