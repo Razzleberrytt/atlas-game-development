@@ -45,7 +45,10 @@ assert(Config.OpeningRecoveryByOpenedChest == 1, "the melee opening must not dep
 assert(Config.ChestWeaponChancePercent >= 15, "weapon bonuses must be realistically discoverable")
 assert(Config.GuaranteedWeaponByOpenedChest <= 4, "early exploration must guarantee a weapon opportunity")
 for _, weaponId in Config.DiscoverableWeaponIds do
-	assert(weaponId ~= Config.OpeningRecoveryWeaponId, "opening pistol must remain separate from stronger weapon upgrades")
+	assert(
+		weaponId ~= Config.OpeningRecoveryWeaponId,
+		"opening pistol must remain separate from stronger weapon upgrades"
+	)
 end
 
 return table.freeze(Config)

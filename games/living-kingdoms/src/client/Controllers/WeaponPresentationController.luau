@@ -353,14 +353,16 @@ local function bindPlayer(player: Player)
 			attachRig(player, currentCharacter)
 		end
 	end)
-	local combatModeAttributeConnection = player:GetAttributeChangedSignal(PRIMARY_COMBAT_MODE_ATTRIBUTE):Connect(function()
-		local currentCharacter = player.Character
-		if currentCharacter ~= nil then
-			attachRig(player, currentCharacter)
-		else
-			destroyRig(player)
-		end
-	end)
+	local combatModeAttributeConnection = player
+		:GetAttributeChangedSignal(PRIMARY_COMBAT_MODE_ATTRIBUTE)
+		:Connect(function()
+			local currentCharacter = player.Character
+			if currentCharacter ~= nil then
+				attachRig(player, currentCharacter)
+			else
+				destroyRig(player)
+			end
+		end)
 	state.bindings[player] = {
 		characterAddedConnection = characterAddedConnection,
 		characterRemovingConnection = characterRemovingConnection,

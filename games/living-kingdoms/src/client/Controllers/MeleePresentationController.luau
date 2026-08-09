@@ -64,7 +64,9 @@ end
 
 local function resolveRightHand(character: Model): BasePart?
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	local preferredName = if humanoid ~= nil and humanoid.RigType == Enum.HumanoidRigType.R6 then "Right Arm" else "RightHand"
+	local preferredName = if humanoid ~= nil and humanoid.RigType == Enum.HumanoidRigType.R6
+		then "Right Arm"
+		else "RightHand"
 	local hand = character:FindFirstChild(preferredName)
 	if hand ~= nil and hand:IsA("BasePart") then
 		return hand
