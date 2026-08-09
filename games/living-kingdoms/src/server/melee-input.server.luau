@@ -17,13 +17,15 @@ local function ensureMeleeNetwork()
 		network = existingNetwork
 	end
 
-	local existingIntent = network:FindFirstChild("StrikeIntent")
-	if existingIntent == nil then
-		local intent = Instance.new("RemoteEvent")
-		intent.Name = "StrikeIntent"
-		intent.Parent = network
-	else
-		assert(existingIntent:IsA("RemoteEvent"), "MeleeNetwork.StrikeIntent must be a RemoteEvent")
+	for _, remoteName in { "StrikeIntent", "Presentation" } do
+		local existingRemote = network:FindFirstChild(remoteName)
+		if existingRemote == nil then
+			local remote = Instance.new("RemoteEvent")
+			remote.Name = remoteName
+			remote.Parent = network
+		else
+			assert(existingRemote:IsA("RemoteEvent"), "MeleeNetwork." .. remoteName .. " must be a RemoteEvent")
+		end
 	end
 end
 
