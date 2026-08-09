@@ -7,7 +7,7 @@
 -- enable streaming, or start an authored-overworld runtime.
 
 local Config = {
-	Version = "BA-011-v1",
+	Version = "BA-011-v2-arrival-contract-link",
 	SourceHold = true,
 	RuntimeEnabled = false,
 	PlaceBoundary = table.freeze({
@@ -88,8 +88,12 @@ local Config = {
 		Arrival = table.freeze({
 			contentId = "spawn.main_world.arrival",
 			sourcePath = "Workspace/SpawnLocation",
+			coordinateSpaceId = "authored-overworld",
+			sourceContractModule = "RecoveredSpawnLocationConfig",
+			sourceContractVersion = "BA-005-SPAWN-LOCATION-v1",
 			position = table.freeze({ x = 0.0, y = 7.0, z = 30.0 }),
 			positionEvidence = "reextracted-property-evidence",
+			propertyEvidenceStatus = "complete-selected-instance",
 			status = "evidence-backed-held",
 		}),
 		Return = table.freeze({
