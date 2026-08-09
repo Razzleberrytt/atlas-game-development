@@ -138,7 +138,13 @@ local userInputService = {
 	end,
 }
 local contextActionService = {
-	BindAction = function(_self: unknown, name: string, callback: (...any) -> any, createTouchButton: boolean, ...: any)
+	BindAction = function(
+		_self: unknown,
+		name: string,
+		callback: (...any) -> any,
+		createTouchButton: boolean,
+		...: any
+	)
 		boundActions[name] = {
 			callback = callback,
 			createTouchButton = createTouchButton,
@@ -453,4 +459,6 @@ assert(#reloadRequests == 2, "destroyed controller retained input")
 assert(boundActions.LK_Fire == nil, "destroyed controller retained fire action")
 assert(activeHighlight() == nil, "destroyed controller retained presentation")
 
-print("WeaponController: device-neutral fire, reload input, HUD bridge, disclosure, ammunition, and lifecycle checks passed")
+print(
+	"WeaponController: device-neutral fire, reload input, HUD bridge, disclosure, ammunition, and lifecycle checks passed"
+)
