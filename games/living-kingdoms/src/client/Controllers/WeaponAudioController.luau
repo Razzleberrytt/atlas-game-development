@@ -3,17 +3,17 @@
 --[[
 	Client-local firearm audio. This controller listens to authoritative combat
 	presentation and reuses a bounded Sound set: a round-robin fire pool plus
-	single reload, empty-click, and handling Sounds. Per-weapon profiles change
-	only volume and playback speed so the roster reads differently without
-	widening combat authority or creating per-shot instances. The empty click
-	reacts to the server's personal ammunition disclosure reaching zero loaded
-	rounds; the handling cue reacts to reload completion; an interrupted reload
-	stops its own reload sound.
+	single reload, empty-click, and handling Sounds. Local weapon audio stays 2D
+	for immediate first-person punch, while remote accepted shots are emitted from
+	bounded invisible world emitters at the server-disclosed shooter's position so
+	co-op gunfire carries directional information. Per-weapon profiles change only
+	presentation volume and playback speed; no combat authority lives here.
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
+local Workspace = game:GetService("Workspace")
 
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmAudioConfig = require(ReplicatedStorage.Shared.Config.FirearmAudioConfig)
@@ -39,7 +39,9 @@ local localPlayer = Players.LocalPlayer
 local started = false
 local connection: RBXScriptConnection? = nil
 local soundHolder: Folder? = nil
+local emitterHolder: Folder? = nil
 local firePool: { Sound } = {}
+local fireEmitters: { Part } = {}
 local fireCursor = 0
 local reloadSound: Sound? = nil
 local emptySound: Sound? = nil
@@ -59,13 +61,37 @@ local function isWholeNonnegative(value: unknown): boolean
 	return type(value) == "number" and value == value and value >= 0 and value % 1 == 0
 end
 
+local function operativeEntityIdForPlayer(player: Player): string
+	return "operative.player:" .. tostring(player.UserId)
+end
+
 local function isLocalOperative(operativeEntityId: string): boolean
-	return operativeEntityId == "operative.player:" .. tostring(localPlayer.UserId)
+	return operativeEntityId == operativeEntityIdForPlayer(localPlayer)
+end
+
+local function playerForOperativeEntityId(operativeEntityId: string): Player?
+	for _, player in Players:GetPlayers() do
+		if operativeEntityIdForPlayer(player) == operativeEntityId then
+			return player
+		end
+	end
+	return nil
+end
+
+local function remoteFirePosition(operativeEntityId: string): Vector3?
+	local player = playerForOperativeEntityId(operativeEntityId)
+	local character = if player == nil then nil else player.Character
+	local root = if character == nil then nil else character:FindFirstChild("HumanoidRootPart")
+	return if root ~= nil and root:IsA("BasePart") then root.Position else nil
 end
 
 local function createPresentation()
 	local holder = Instance.new("Folder")
 	holder.Name = "LivingKingdomsFirearmAudio"
+
+	local emitters = Instance.new("Folder")
+	emitters.Name = "LivingKingdomsRemoteFireEmitters"
+	emitters.Parent = Workspace
 
 	for index = 1, FirearmAudioConfig.FirePoolSize do
 		local sound = Instance.new("Sound")
@@ -73,8 +99,24 @@ local function createPresentation()
 		sound.SoundId = FirearmAudioConfig.Fire.SoundId
 		sound.Volume = FirearmAudioConfig.Fire.LocalVolume
 		sound.RollOffMode = Enum.RollOffMode.Inverse
+		sound.RollOffMinDistance = FirearmAudioConfig.Fire.RemoteRollOffMinDistanceStuds
+		sound.RollOffMaxDistance = FirearmAudioConfig.Fire.RemoteRollOffMaxDistanceStuds
+		sound.EmitterSize = FirearmAudioConfig.Fire.RemoteEmitterSizeStuds
 		sound.Parent = holder
 		table.insert(firePool, sound)
+
+		local emitter = Instance.new("Part")
+		emitter.Name = "FireEmitter" .. tostring(index)
+		emitter.Size = Vector3.new(0.1, 0.1, 0.1)
+		emitter.Transparency = 1
+		emitter.Anchored = true
+		emitter.CanCollide = false
+		emitter.CanTouch = false
+		emitter.CanQuery = false
+		emitter.CastShadow = false
+		emitter.CFrame = CFrame.new(0, -1000, 0)
+		emitter.Parent = emitters
+		table.insert(fireEmitters, emitter)
 	end
 
 	local reload = Instance.new("Sound")
@@ -100,9 +142,10 @@ local function createPresentation()
 
 	holder.Parent = SoundService
 	soundHolder = holder
+	emitterHolder = emitters
 end
 
-local function playFire(isLocal: boolean, weaponId: string)
+local function playFire(isLocal: boolean, weaponId: string, operativeEntityId: string)
 	if #firePool == 0 then
 		return
 	end
@@ -112,12 +155,24 @@ local function playFire(isLocal: boolean, weaponId: string)
 	end
 	fireCursor = (fireCursor % #firePool) + 1
 	local sound = firePool[fireCursor]
+	local emitter = fireEmitters[fireCursor]
+	local holder = soundHolder
 	local fire = FirearmAudioConfig.Fire
 	local baseVolume = if isLocal then fire.LocalVolume else fire.RemoteVolume
 	sound.Volume = math.clamp(baseVolume * profile.AudioVolumeMultiplier, 0, 2)
 	local minimumSpeed = fire.MinPlaybackSpeed * profile.AudioPitchMinimumMultiplier
 	local maximumSpeed = fire.MaxPlaybackSpeed * profile.AudioPitchMaximumMultiplier
 	sound.PlaybackSpeed = minimumSpeed + math.random() * (maximumSpeed - minimumSpeed)
+
+	local position = if isLocal then nil else remoteFirePosition(operativeEntityId)
+	if position ~= nil and emitter ~= nil then
+		emitter.Position = position
+		sound.Parent = emitter
+	elseif holder ~= nil then
+		-- Fail soft to the existing non-positional presentation if the remote
+		-- character has already despawned by the time its accepted shot arrives.
+		sound.Parent = holder
+	end
 	sound.TimePosition = 0
 	sound:Play()
 end
@@ -208,7 +263,7 @@ local function onPresentationMessage(message: unknown)
 	local isLocal = isLocalOperative(payload.operativeEntityId)
 	if kindId == CombatContracts.PresentationMessageKindIds.ShotFired then
 		if isNonEmptyString(payload.shotId) then
-			playFire(isLocal, payload.weaponId)
+			playFire(isLocal, payload.weaponId, payload.operativeEntityId)
 		end
 	elseif kindId == CombatContracts.PresentationMessageKindIds.ReloadStarted then
 		playReload(isLocal, payload.weaponId, payload.operativeEntityId)
@@ -242,7 +297,12 @@ function Controller.stop()
 		soundHolder:Destroy()
 		soundHolder = nil
 	end
+	if emitterHolder ~= nil then
+		emitterHolder:Destroy()
+		emitterHolder = nil
+	end
 	table.clear(firePool)
+	table.clear(fireEmitters)
 	fireCursor = 0
 	reloadSound = nil
 	emptySound = nil
