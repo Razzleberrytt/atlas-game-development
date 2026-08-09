@@ -72,11 +72,8 @@ local function disconnectHeartbeat()
 end
 
 local function offerBossReward(previousSnapshot: any?, currentSnapshot: any?)
-	local rewardEvent = ExpeditionBossRewardTransitionResolver.resolve(
-		previousSnapshot,
-		currentSnapshot,
-		BossRewardDecision
-	)
+	local rewardEvent =
+		ExpeditionBossRewardTransitionResolver.resolve(previousSnapshot, currentSnapshot, BossRewardDecision)
 	if rewardEvent ~= nil then
 		RunBuildService.offerRelicRewardToParticipants(rewardEvent.EventId, rewardEvent.SourceId)
 	end
