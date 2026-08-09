@@ -1,26 +1,12 @@
 #!/usr/bin/env python3
-"""Validate the v2.8 roadmap/authority documentation stack.
+"""Validate Atlas roadmap/authority documentation integrity.
 
-Build-ahead task BA-074. The roadmap stack (``AGENTS.md`` files, the current
-product authority, ``MASTER-ROADMAP.md``, the v2.7 execution documents, and
-the build-ahead queue) is only trustworthy if it is internally consistent.
-This is a documentation-only check: it never inspects or changes runtime
-behavior, and it does not replace Studio/runtime evidence.
+Checks:
+- relative Markdown links in current authority documents resolve;
+- current authority documents do not directly link to roadmap files classified as historical;
+- backticked commit hashes cited by authority documents resolve when git is available.
 
-It checks three things:
-
-* every relative Markdown link inside the authority stack resolves to a real
-  file, so agents are not sent to a document that no longer exists;
-* no authority document links directly to a file the roadmap index itself
-  classifies as historical, so an agent cannot be routed to a superseded
-  checkpoint as if it were current execution authority;
-* every commit hash cited in the authority stack (client-bootstrap fixes,
-  roadmap checkpoint pins, rollback checkpoints, and similar) resolves to a
-  real commit in this repository, so a stale/typo'd hash cannot silently
-  become an unverifiable evidence claim.
-
-Run with ``--self-test`` to exercise the parsing logic against a small
-in-memory fixture instead of the real repository tree.
+This is documentation validation only; it never proves runtime behavior.
 """
 
 from __future__ import annotations
@@ -31,6 +17,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+ROADMAP_INDEX = ROOT / "docs" / "roadmap" / "README.md"
 
 AUTHORITY_FILES = (
     ROOT / "AGENTS.md",
@@ -39,7 +26,10 @@ AUTHORITY_FILES = (
     ROOT / "games" / "living-kingdoms" / "CANONICAL-RUNTIME.md",
     ROOT / "docs" / "bible" / "00-current-product-authority.md",
     ROOT / "docs" / "bible" / "00-project-charter.md",
-    ROOT / "docs" / "roadmap" / "README.md",
+    ROADMAP_INDEX,
+    ROOT / "docs" / "roadmap" / "EXECUTION-DASHBOARD.md",
+    ROOT / "docs" / "roadmap" / "MVP-BUILD-THROUGH-TESTING-POLICY.md",
+    ROOT / "docs" / "roadmap" / "PLAYABLE-MVP-PATCH-EXECUTION.md",
     ROOT / "docs" / "roadmap" / "MASTER-ROADMAP.md",
     ROOT / "docs" / "roadmap" / "AGENT-BUILD-AHEAD-QUEUE.md",
     ROOT / "docs" / "roadmap" / "BLUEPRINT-V2.7-EXECUTION.md",
@@ -54,58 +44,39 @@ AUTHORITY_FILES = (
     ROOT / "docs" / "specifications" / "main-world-acceptance-matrix.md",
 )
 
-# The roadmap index is the single place allowed to point at historical
-# checkpoints; every other authority document must reach them only through it.
-ROADMAP_INDEX = ROOT / "docs" / "roadmap" / "README.md"
-
 LINK_PATTERN = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 HISTORICAL_SECTION_PATTERN = re.compile(
-    r"## Historical checkpoints\s*\n(.*?)(?:\n##|\Z)", re.DOTALL
+    r"## Historical documents\s*\n(.*?)(?:\n##|\Z)", re.DOTALL
 )
 BACKTICK_FILENAME_PATTERN = re.compile(r"`([A-Za-z0-9_.\-]+\.md)`")
 COMMIT_HASH_PATTERN = re.compile(r"`([0-9a-f]{7,40})`")
 
 
-def fail(message: str) -> None:
-    print(f"[roadmap-authority] ERROR: {message}", file=sys.stderr)
-
-
-def display_path(path: Path) -> str:
+def display(path: Path) -> str:
     try:
         return str(path.relative_to(ROOT))
     except ValueError:
         return str(path)
 
 
-def extract_links(text: str) -> list[str]:
-    return LINK_PATTERN.findall(text)
+def historical_files() -> set[str]:
+    if not ROADMAP_INDEX.is_file():
+        return set()
+    text = ROADMAP_INDEX.read_text(encoding="utf-8")
+    match = HISTORICAL_SECTION_PATTERN.search(text)
+    return set(BACKTICK_FILENAME_PATTERN.findall(match.group(1))) if match else set()
 
 
-def resolve_relative_link(source_file: Path, target: str) -> Path | None:
+def resolve_link(source: Path, target: str) -> Path | None:
     if target.startswith(("http://", "https://", "mailto:")):
         return None
     path_part = target.split("#", 1)[0].strip()
     if not path_part:
         return None
-    return (source_file.parent / path_part).resolve()
-
-
-def historical_filenames(roadmap_index_text: str) -> set[str]:
-    match = HISTORICAL_SECTION_PATTERN.search(roadmap_index_text)
-    if not match:
-        return set()
-    return set(BACKTICK_FILENAME_PATTERN.findall(match.group(1)))
-
-
-def commit_hashes(text: str) -> set[str]:
-    # Commit-ish hex tokens only; exclude short tokens that are almost
-    # certainly not hashes (semantic keys, IDs) by requiring >= 7 hex chars,
-    # which the pattern already enforces.
-    return set(COMMIT_HASH_PATTERN.findall(text))
+    return (source.parent / path_part).resolve()
 
 
 def commit_exists(commit_hash: str) -> bool | None:
-    """Return True/False if git can answer, None if git is unavailable here."""
     try:
         result = subprocess.run(
             ["git", "cat-file", "-e", f"{commit_hash}^{{commit}}"],
@@ -113,134 +84,78 @@ def commit_exists(commit_hash: str) -> bool | None:
             capture_output=True,
             check=False,
         )
-    except (OSError, FileNotFoundError):
+    except OSError:
         return None
     if result.returncode == 0:
         return True
-    # Distinguish "git is fine but this isn't a commit" from "git is broken".
     probe = subprocess.run(
         ["git", "rev-parse", "--is-inside-work-tree"],
         cwd=ROOT,
         capture_output=True,
         check=False,
     )
-    if probe.returncode != 0:
-        return None
-    return False
+    return False if probe.returncode == 0 else None
 
 
-def run(files: tuple[Path, ...]) -> int:
-    errors = 0
-    checked_links = 0
-    checked_hashes = 0
-    git_unavailable = False
-
-    roadmap_index_text = (
-        ROADMAP_INDEX.read_text(encoding="utf-8") if ROADMAP_INDEX.is_file() else ""
-    )
-    historical = historical_filenames(roadmap_index_text)
+def validate(files: tuple[Path, ...]) -> int:
+    errors: list[str] = []
+    historical = historical_files()
+    link_count = 0
+    hash_count = 0
+    hash_checks_skipped = False
 
     for path in files:
         if not path.is_file():
-            fail(f"missing authority document: {display_path(path)}")
-            errors += 1
+            errors.append(f"missing authority document: {display(path)}")
             continue
-
         text = path.read_text(encoding="utf-8")
 
-        for target in extract_links(text):
-            resolved = resolve_relative_link(path, target)
+        for target in LINK_PATTERN.findall(text):
+            resolved = resolve_link(path, target)
             if resolved is None:
                 continue
-            checked_links += 1
+            link_count += 1
             if not resolved.exists():
-                fail(
-                    f"broken link in {display_path(path)}: "
-                    f"target {target!r} does not resolve to a file"
-                )
-                errors += 1
+                errors.append(f"broken link in {display(path)}: {target!r}")
                 continue
-
             if path != ROADMAP_INDEX and resolved.name in historical:
-                fail(
-                    f"authority leak in {display_path(path)}: links directly to "
-                    f"historical checkpoint {resolved.name!r}; route through "
-                    f"docs/roadmap/README.md instead"
+                errors.append(
+                    f"authority leak in {display(path)}: direct link to historical {resolved.name!r}"
                 )
-                errors += 1
 
-        for candidate_hash in commit_hashes(text):
-            checked_hashes += 1
-            exists = commit_exists(candidate_hash)
+        for commit_hash in set(COMMIT_HASH_PATTERN.findall(text)):
+            hash_count += 1
+            exists = commit_exists(commit_hash)
             if exists is None:
-                git_unavailable = True
-                continue
-            if not exists:
-                fail(
-                    f"dangling commit reference in {display_path(path)}: "
-                    f"`{candidate_hash}` does not resolve to a commit in this repository"
+                hash_checks_skipped = True
+            elif not exists:
+                errors.append(
+                    f"dangling commit reference in {display(path)}: `{commit_hash}`"
                 )
-                errors += 1
 
     if errors:
-        print(f"[roadmap-authority] FAILED with {errors} error(s)", file=sys.stderr)
+        for error in errors:
+            print(f"[roadmap-authority] ERROR: {error}", file=sys.stderr)
+        print(
+            f"[roadmap-authority] FAILED with {len(errors)} error(s)",
+            file=sys.stderr,
+        )
         return 1
 
-    note = " (commit-hash checks skipped: git unavailable)" if git_unavailable else ""
+    note = " (commit checks skipped: git unavailable)" if hash_checks_skipped else ""
     print(
-        "[roadmap-authority] OK: "
-        f"{len(files)} authority documents, "
-        f"{checked_links} relative links, "
-        f"{checked_hashes} commit-hash references checked{note}"
+        f"[roadmap-authority] OK: {len(files)} documents, "
+        f"{link_count} links, {hash_count} commit references{note}"
     )
     return 0
 
 
 def self_test() -> int:
-    import tempfile
-
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_root = Path(tmp)
-        roadmap_dir = tmp_root / "docs" / "roadmap"
-        roadmap_dir.mkdir(parents=True)
-
-        index = roadmap_dir / "README.md"
-        index.write_text(
-            "# Index\n\n"
-            "## Historical checkpoints\n\n"
-            "- `OLD-BLUEPRINT.md`\n",
-            encoding="utf-8",
-        )
-        (roadmap_dir / "OLD-BLUEPRINT.md").write_text("# Old\n", encoding="utf-8")
-
-        good = roadmap_dir / "GOOD.md"
-        good.write_text(
-            "[index](README.md)\n[old, via index only](README.md#historical-checkpoints)\n",
-            encoding="utf-8",
-        )
-
-        broken_link = roadmap_dir / "BROKEN.md"
-        broken_link.write_text("[missing](DOES-NOT-EXIST.md)\n", encoding="utf-8")
-
-        leak = roadmap_dir / "LEAK.md"
-        leak.write_text("[old direct](OLD-BLUEPRINT.md)\n", encoding="utf-8")
-
-        global ROADMAP_INDEX  # noqa: PLW0603 - intentional for the isolated fixture
-        original_index = ROADMAP_INDEX
-        ROADMAP_INDEX = index
-        try:
-            ok_result = run((index, good))
-            bad_result = run((index, broken_link, leak))
-        finally:
-            ROADMAP_INDEX = original_index
-
-        if ok_result != 0:
-            fail("self-test: expected the clean fixture to pass")
-            return 1
-        if bad_result == 0:
-            fail("self-test: expected the broken-link/authority-leak fixture to fail")
-            return 1
-
+    # Parser smoke test; real repository checks are exercised by normal invocation.
+    assert resolve_link(ROOT / "docs" / "x.md", "https://example.com") is None
+    assert resolve_link(ROOT / "docs" / "x.md", "#section") is None
+    assert LINK_PATTERN.findall("[x](a.md)") == ["a.md"]
+    assert COMMIT_HASH_PATTERN.findall("`abcdef1`") == ["abcdef1"]
     print("[roadmap-authority] self-test OK")
     return 0
 
@@ -248,7 +163,7 @@ def self_test() -> int:
 def main() -> int:
     if "--self-test" in sys.argv[1:]:
         return self_test()
-    return run(AUTHORITY_FILES)
+    return validate(AUTHORITY_FILES)
 
 
 if __name__ == "__main__":

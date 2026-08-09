@@ -1,95 +1,58 @@
 # Summary
 
-<!-- What changed, and why? Keep the scope to one coherent result. -->
+<!-- One coherent result: what changed and why? -->
 
-## Active roadmap authority
+## Execution context
 
-- Authority: `docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md`
-- Ticket: `331–360`, another explicitly authorized task, or `N/A` for non-roadmap maintenance
-- Rollout stage: `R0` / `R1` / `R2` / `R3` / `R4` / `R5` / `N/A`
-- Evidence level before: `E0`–`E7`
-- Evidence level after: `E0`–`E7` (do not promote without accepted evidence)
-- Stop condition touched, if any:
+- Current patch/capability:
+- Dashboard item: `NOW` / `NEXT` / maintenance / blocker fix
+- Risk tier: `R0` / `R1` / `R2` / `R3`
+- Validation profile: `docs` / `fast` / `full`
+- Status after merge: `BUILDING` / `BUILT — VERIFICATION PENDING` / `VERIFIED` / other
 
-## Scope boundaries
+## Scope / ownership
 
-<!-- What was intentionally not changed? Which later feature/persistence/content work remains blocked? -->
+- Player-facing behavior changed:
+- Server/client/shared authority touched:
+- Persistence/value/security boundary touched: yes / no
+- Lifecycle/remotes/presentation migration touched: yes / no
+- Intentionally out of scope:
 
-## Runtime ownership / migration
-
-Complete this section when the change touches replicated current state, client presentation, lifecycle, or active-place reconciliation.
-
-- Mechanical owner:
-- Replication owner/path:
-- Presentation owner:
-- Lifecycle scope: `Application` / `Character` / `Operation` / `N/A`
-- Semantic key(s):
-- Change token/revision source:
-- Legacy producer/consumer ledger row(s):
-- Feature flag(s):
-- Expected counter change:
-- Rollback trigger:
-- Known-good rollback commit/build:
+<!-- If migration/rollback work is touched, include owner, cutover-ledger rows, flags, rollback trigger and known-good checkpoint here. -->
 
 ## Validation
 
-- [ ] Repository layout validation passes
-- [ ] StyLua passes
-- [ ] Selene passes
-- [ ] Focused/new Lune fixtures pass
-- [ ] Full applicable fixture sweep passes
-- [ ] Rojo build passes
-- [ ] Roblox Studio validation is reported accurately
-- [ ] No new unexplained Living Kingdoms console errors or warnings
-- [ ] Client/server authority boundaries remain intact
-- [ ] Connection/network/presentation-object debt does not increase silently
-
-### Exact commands and results
-
 ```text
-Add commands, exit codes, and outcomes here.
+python scripts/validate.py <docs|fast|full>
+Result:
 ```
 
-## Studio / runtime evidence
+- [ ] focused/new regression coverage added or updated when behavior changed
+- [ ] required validation profile passes
+- [ ] client/server authority boundaries remain intact
+- [ ] no test/security check was weakened merely to pass CI
 
-Do not replace a Studio-only gate with source inference.
+## Studio / device evidence
 
-- Evidence packet: `docs/production/evidence/...` or `Not run`
-- Build/commit identity:
-- Place/source identity:
-- Test environment and client count:
-- Baseline used (`B0`–`B6` where applicable):
-- Queue/discard warnings observed:
-- State attempts/sends before → after:
-- Managed connections before → after:
-- Highlight leases / broad-target violations before → after:
-- Reset/respawn/late-join/streaming checks performed:
-- Screenshots/video/profile captures:
+- Evidence: `Not required` / `Pending milestone pass` / `Required before downstream work` / link to packet
+- Exact build/place/run identity, when evidence was captured:
+- Known unverified engine/device/player claims:
 
-### Manual test checklist
+Do not promote source/static results to VERIFIED when the claim requires Studio/runtime evidence.
 
-- [ ]
+## Rollback / compatibility
 
-## Rollback and compatibility
+- Rollback through Git history or named flag/config exists: yes / no / N/A
+- Compatibility/feature flag owner + removal gate, if applicable:
 
-- [ ] A rollback path exists through normal Git history or a named rollout flag/configuration
-- [ ] Compatibility code was not removed without accepted replacement evidence
-- [ ] Any removed compatibility ledger row has a retained rollback checkpoint
-- [ ] Feature flags added by this change have an owner and removal gate
+## Roadmap impact
 
-## Documentation
-
-- [ ] Roadmap/cutover ledger status is accurate
-- [ ] Specifications updated if behavior changed
-- [ ] Architecture or decision records updated if boundaries changed
-- [ ] Evidence packet added for completed runtime gates
-- [ ] Known limitations or technical debt recorded
-
-## Known limitations / unverified claims
-
-<!-- State none, or list each unverified runtime/device/player claim explicitly. -->
+- [ ] dashboard/roadmap status changed only if NOW/NEXT, blocker, meaningful progress, or acceptance truth changed
+- Next highest-ROI task:
 
 ## Definition of Done
 
-- [ ] The change satisfies `docs/production/DEFINITION-OF-DONE.md`
-- [ ] The PR does not claim a higher evidence level than the attached evidence proves
+- [ ] change is the smallest coherent result for this PR
+- [ ] no duplicate overlapping open PR was created
+- [ ] generated build artifacts/secrets are not committed
+- [ ] evidence/status claims are truthful
