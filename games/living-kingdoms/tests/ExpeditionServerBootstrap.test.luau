@@ -1,8 +1,9 @@
 --!strict
 
 -- VS-0110 composition-root fixture: the bootstrap drives the authoritative
--- runtime, deterministic room plan, and encounter coordinator through one full
--- expedition without exposing a client path.
+-- runtime, deterministic room plan, room-local encounter placement, and
+-- encounter coordinator through one full expedition without exposing a client
+-- path.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
@@ -24,6 +25,7 @@ end
 -- module can only ever see the dependencies the Rojo tree actually gives it.
 local expeditionContracts = loadModule("shared/Expeditions/ExpeditionContracts.luau", "ExpeditionContracts")
 local roomAssemblyContracts = loadModule("shared/Expeditions/RoomAssemblyContracts.luau", "RoomAssemblyContracts")
+local roomPlacementPlanner = loadModule("shared/Expeditions/RoomPlacementPlanner.luau", "RoomPlacementPlanner")
 
 local EXPEDITION_CONTRACTS_TOKEN = {}
 local expeditionConfig = loadModule("shared/Config/ExpeditionConfig.luau", "ExpeditionConfig", {
@@ -94,6 +96,7 @@ local directorAdapter = loadModule("server/Systems/EnemyDirectorEncounterAdapter
 
 local BOOTSTRAP_CONFIG_TOKEN = {}
 local BOOTSTRAP_CONTRACTS_TOKEN = {}
+local BOOTSTRAP_PLANNER_TOKEN = {}
 local BOOTSTRAP_ASSEMBLER_TOKEN = {}
 local BOOTSTRAP_RUNTIME_TOKEN = {}
 local BOOTSTRAP_COORDINATOR_TOKEN = {}
@@ -115,6 +118,7 @@ local Bootstrap = loadModule("server/Systems/ExpeditionServerBootstrap.luau", "E
 					Config = { ExpeditionConfig = BOOTSTRAP_CONFIG_TOKEN },
 					Expeditions = {
 						ExpeditionContracts = BOOTSTRAP_CONTRACTS_TOKEN,
+						RoomPlacementPlanner = BOOTSTRAP_PLANNER_TOKEN,
 						RoomSequenceAssembler = BOOTSTRAP_ASSEMBLER_TOKEN,
 					},
 				},
@@ -127,6 +131,9 @@ local Bootstrap = loadModule("server/Systems/ExpeditionServerBootstrap.luau", "E
 		end
 		if token == BOOTSTRAP_CONTRACTS_TOKEN then
 			return expeditionContracts
+		end
+		if token == BOOTSTRAP_PLANNER_TOKEN then
+			return roomPlacementPlanner
 		end
 		if token == BOOTSTRAP_ASSEMBLER_TOKEN then
 			return roomSequenceAssembler
@@ -146,15 +153,19 @@ local Bootstrap = loadModule("server/Systems/ExpeditionServerBootstrap.luau", "E
 
 local alive: { [string]: boolean } = {}
 local bossState = { exists = false, isAlive = false, isDefeated = false }
+local spawnedWaves = {}
+local bossPosition: any = nil
 
 local director = {
-	spawnAuthoredWave = function(_waveIndex: number, definitions: { any }): number
+	spawnAuthoredWave = function(waveIndex: number, definitions: { any }): number
+		table.insert(spawnedWaves, { WaveIndex = waveIndex, Definitions = definitions })
 		for _, definition in definitions do
 			alive[definition.id] = true
 		end
 		return #definitions
 	end,
-	spawnBoss = function(_position: any, _floodlightsRestored: boolean): boolean
+	spawnBoss = function(position: any, _floodlightsRestored: boolean): boolean
+		bossPosition = position
 		bossState = { exists = true, isAlive = true, isDefeated = false }
 		return true
 	end,
@@ -182,6 +193,8 @@ local service = Bootstrap.new(director, {
 
 local plan = service:getRoomPlan()
 assert(plan ~= nil and plan.Seed == 321 and #plan.Nodes >= 6, "bootstrap must expose the deterministic room plan")
+local layout = roomPlacementPlanner.plan(plan)
+assert(#layout.Placements == #plan.Nodes, "fixture layout must match the assembled room plan")
 assert(service:getSnapshot().PhaseId == "Preparation", "a new expedition starts in Preparation")
 
 -- Preparation has no encounter and advances immediately.
@@ -208,6 +221,11 @@ end
 
 local startedApproach, startedApproachReason = step()
 assert(startedApproach == true and startedApproachReason == "EncounterStarted", "approach encounter should start")
+assert(#spawnedWaves == 1, "approach must produce exactly one first wave")
+for _, definition in spawnedWaves[1].Definitions do
+	assert(math.abs(definition.x) <= 18, "approach enemy X offsets must stay bounded")
+	assert(definition.z >= 0 and definition.z <= 48, "approach enemies must stay in the intended arrival band")
+end
 local _, pendingApproachReason = step()
 assert(pendingApproachReason == "EncounterInProgress", "a live encounter blocks phase advance")
 killTrackedEnemies()
@@ -247,6 +265,23 @@ local bossDone = step()
 assert(bossDone == true, "boss completes once defeated")
 assert(service:getSnapshot().PhaseId == "Rewards", "boss advances into Rewards")
 
+-- Every dungeon/elite wave is now anchored to the same deterministic placement
+-- plan that builds the physical rooms. This prevents fixed-Z encounter drift.
+for waveOrdinal = 2, #spawnedWaves do
+	local spawned = spawnedWaves[waveOrdinal]
+	local placement =
+		if spawned.WaveIndex == 90 then layout.Placements[#layout.Placements - 1] else layout.Placements[spawned.WaveIndex]
+	assert(placement ~= nil, "every non-approach wave must map to a room placement")
+	for _, definition in spawned.Definitions do
+		assert(math.abs(definition.x - placement.Center.x) <= 18, "enemy X must stay inside its room footprint")
+		assert(math.abs(definition.z - placement.Center.z) <= 24, "enemy Z must stay inside its room footprint")
+	end
+end
+local bossPlacement = layout.Placements[#layout.Placements]
+assert(bossPosition ~= nil, "boss spawn position must be captured")
+assert(bossPosition.x == bossPlacement.Center.x, "boss X must use the boss-room center")
+assert(bossPosition.z == bossPlacement.Center.z, "boss Z must use the boss-room center")
+
 -- Rewards carries no encounter, so it advances straight into the terminal
 -- Results phase, which then finalizes the run exactly once.
 local rewardsAdvanced, rewardsReason = step()
@@ -266,4 +301,4 @@ service:destroy()
 assert(service:getSnapshot() == nil, "a destroyed bootstrap discloses no snapshot")
 assert(service:step(600).ReasonId == "BootstrapDestroyed", "a destroyed bootstrap rejects further steps")
 
-print("ExpeditionServerBootstrap fixture passed")
+print("ExpeditionServerBootstrap: deterministic room-local encounter placement and full run passed")
