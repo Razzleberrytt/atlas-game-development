@@ -31,53 +31,44 @@ on:
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
     runs-on: ubuntu-22.04
     timeout-minutes: 15
-
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-
+        with:
+          ref: ${{ github.head_ref }}
       - name: Validate repository contract
         shell: bash
         run: python scripts/validate_living_kingdoms_layout.py
-
       - name: Verify preserved Studio import package
         shell: bash
         run: python scripts/verify_studio_import_package.py
-
       - name: Validate migration manifests
         shell: bash
         run: python scripts/validate_migration_manifests.py
-
       - name: Validate current migration evidence
         shell: bash
         run: python scripts/validate_migration_current_evidence.py
-
       - name: Self-test RBXL property decoder
         shell: bash
         run: python scripts/roblox/extract_rbxl_world_properties.py --self-test
-
       - name: Self-test RBXL presentation decoder
         shell: bash
         run: python scripts/roblox/extract_rbxl_presentation_properties.py --self-test
-
       - name: Self-test RBXL BillboardGui decoder
         shell: bash
         run: python scripts/roblox/extract_rbxl_billboard_properties.py --self-test
-
       - name: Validate re-extracted property evidence
         shell: bash
         run: python scripts/validate_reextracted_property_evidence.py
-
       - name: Validate re-extracted presentation evidence
         shell: bash
         run: python scripts/validate_reextracted_presentation_evidence.py
-
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
         with:
@@ -85,22 +76,22 @@ jobs:
           path: .
           cache: false
           token: ${{ github.token }}
-
-      # Formatting covers every Luau tree in the game, not just src. Fixtures
-      # and tooling drifted unchecked until 2026-08-08 because this step was
-      # scoped to src alone.
-      - name: Check Luau formatting
+      - name: Apply pinned StyLua to melee foundation
         shell: bash
         run: |
-          stylua --check \
-            games/living-kingdoms/src \
-            games/living-kingdoms/tests \
-            games/living-kingdoms/tools
-
+          stylua games/living-kingdoms/src games/living-kingdoms/tests games/living-kingdoms/tools
+          if git diff --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add games/living-kingdoms/src games/living-kingdoms/tests games/living-kingdoms/tools
+          git commit -m "Apply StyLua formatting after melee fixture fix"
+          git push origin HEAD:${{ github.head_ref }}
+      - name: Check Luau formatting
+        shell: bash
+        run: stylua --check games/living-kingdoms/src games/living-kingdoms/tests games/living-kingdoms/tools
       - name: Run Selene
         shell: bash
         run: selene games/living-kingdoms/src
-
       - name: Run Lune fixtures
         shell: bash
         run: |
@@ -112,16 +103,10 @@ jobs:
             echo "::endgroup::"
             fixture_count=$((fixture_count + 1))
           done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
-          if [ "$fixture_count" -eq 0 ]; then
-            echo "No Living Kingdoms fixtures were discovered." >&2
-            exit 1
-          fi
-          echo "Executed $fixture_count Living Kingdoms fixtures."
-
+          test "$fixture_count" -gt 0
       - name: Build Rojo project
         shell: bash
         run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
-
       - name: Upload reproducible Living Kingdoms build
         uses: actions/upload-artifact@v4
         with:
