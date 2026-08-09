@@ -8,8 +8,8 @@
 	from, so the audit cannot silently rot.
 
 	It deliberately asserts remaining gaps as well as guarantees. BA-062's first
-	increment closes M1 in source; later BA-062 increments are still expected to
-	make their matching assertions fail until the audit and fixture move together.
+	increment closes M1 in source; the second closes C1/C2 by moving Revive and
+	the class-action gamepad binding off the engine-default prompt keys.
 ]]
 
 local fs = require("@lune/fs")
@@ -107,18 +107,20 @@ assert(
 	"M2 is stale: MobileControlsController now registers key codes — update the BA-061 audit"
 )
 
--- M3: revive binds E with no gamepad key, but does create a touch button.
-assert(contains(operativeLife, "Enum.KeyCode.E"), "revive is still expected on E")
+-- M3 remains open: revive uses V plus a generated touch button, with no gamepad key yet.
+assert(contains(operativeLife, "Enum.KeyCode.V"), "revive must move to V after C1 remediation")
+assert(not contains(operativeLife, "Enum.KeyCode.E"), "revive must not claim the prompt keyboard key")
 assert(
 	not contains(operativeLife, "Enum.KeyCode.Button") and not contains(operativeLife, "Enum.KeyCode.DPad"),
 	"M3 is stale: revive now has a gamepad binding — update the BA-061 audit"
 )
 assert(contains(operativeLife, "BindAction(ACTION_NAME, onReviveAction, true"), "revive keeps its touch button")
 
--- C1: revive shares E with every ProximityPrompt, and does not sink the input.
-assert(contains(operativeLife, "Enum.ContextActionResult.Pass"), "revive must keep passing the input through")
+-- C1 remediation: world prompts keep E while Revive moves to V. Passing the
+-- revive action remains safe because it no longer shares the prompt key.
+assert(contains(operativeLife, "Enum.ContextActionResult.Pass"), "revive may keep passing its distinct key through")
 local survivalLoot = read(SERVER .. "SurvivalLootService.luau")
-assert(contains(survivalLoot, "prompt.KeyboardKeyCode = Enum.KeyCode.E"), "loot prompts are still expected on E")
+assert(contains(survivalLoot, "prompt.KeyboardKeyCode = Enum.KeyCode.E"), "loot prompts must remain on E")
 for _, path in
 	{
 		SERVER .. "RecoveryLootService.luau",
@@ -134,11 +136,14 @@ do
 	)
 end
 
--- C2: the class action claims ButtonX, the engine's default prompt gamepad key.
+-- C2 remediation: class action keeps Q on keyboard but moves gamepad to B,
+-- leaving engine-default ButtonX available to ProximityPrompt.
 assert(
-	contains(classAction, "Enum.KeyCode.Q, Enum.KeyCode.ButtonX"),
-	"the class action is still expected on Q and ButtonX"
+	contains(classAction, "Enum.KeyCode.Q, Enum.KeyCode.ButtonB"),
+	"the class action must use Q and ButtonB after C2 remediation"
 )
+assert(not contains(classAction, "Enum.KeyCode.ButtonX"), "class action must not claim the prompt gamepad key")
+assert(contains(classAction, "Q / GAMEPAD B"), "class-action HUD hint must match the remapped gamepad button")
 
 -- C3: two independent Escape listeners exist, in two controllers.
 assert(contains(rpgMenu, "Enum.KeyCode.Escape"), "the RPG modal still closes on Escape")
@@ -165,8 +170,8 @@ local squadPingConfig = read(SHARED .. "SquadPingConfig.luau")
 assert(contains(flashlightConfig, 'KeyboardKeyCodeName = "F"') and contains(flashlightConfig, "ButtonY"))
 assert(contains(squadPingConfig, 'KeyboardKeyCodeName = "G"') and contains(squadPingConfig, "DPadUp"))
 
--- Exactly two actions are config-driven; BA-062 M1 intentionally fixes device
--- coverage without prematurely building the later shared action-map increment.
+-- Exactly two actions are config-driven; these BA-062 remediations intentionally
+-- fix concrete conflicts without prematurely building the later shared action map.
 local configDrivenActions = 0
 for _, source in { flashlight, squadPing, weapon, survivor, operativeLife, classAction, rpgMenu, hubPreparation } do
 	if contains(source, "KeyboardKeyCodeName") then
@@ -178,14 +183,15 @@ assert(
 	"the structural finding assumes exactly two config-driven actions — update the BA-061 audit"
 )
 
--- The audit stays honest about its own scope and records M1 as remediated while
--- retaining every remaining finding for later isolated BA-062 increments.
+-- The audit stays honest about its own scope and remediation ledger.
 assert(contains(audit, "**Roadmap ticket:** BA-061"), "the audit must identify its originating ticket")
 assert(contains(audit, "E1"), "the audit must state its evidence level")
 assert(contains(audit, "M1 — Firing device coverage — source-remediated"), "the audit must record M1 remediation")
+assert(contains(audit, "C1 — `E` / Revive prompt collision — source-remediated"), "the audit must record C1 remediation")
+assert(contains(audit, "C2 — `ButtonX` / class-action prompt collision — source-remediated"), "the audit must record C2 remediation")
 assert(not contains(audit, "rbxassetid://"), "an input audit invents no asset IDs")
-for _, finding in { "M2", "M3", "M4", "M5", "C1", "C2", "C3", "C4" } do
+for _, finding in { "M2", "M3", "M4", "M5", "C3", "C4" } do
 	assert(contains(audit, finding), `the audit must retain finding {finding}`)
 end
 
-print("BA-061/062 InputActionMapSourceAudit: M1 remediated; remaining gaps and conflicts locked")
+print("BA-061/062 InputActionMapSourceAudit: M1 and C1/C2 remediated; remaining gaps locked")
