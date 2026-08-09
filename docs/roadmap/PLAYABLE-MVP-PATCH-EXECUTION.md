@@ -131,7 +131,9 @@ Minimum target content:
 - basic 1–4 player support only to the extent required by current co-op foundations and evidence gates;
 - at least one optional discovery/secret or equivalent curiosity reward.
 
-The opening power curve should begin with a humble melee-capable path and make firearms feel discovered or earned. Because the current canonical combat owner is firearm-specific, this requires a focused server-authoritative migration with tests and Studio evidence; do not fake it by assigning firearm ammunition/state contracts to a melee item.
+The opening power curve should begin with a humble melee-capable path and make firearms feel discovered or earned. Do not fake it by assigning firearm ammunition/state contracts to a melee item.
+
+**Opening implementation status (2026-08-09): BUILT — VERIFICATION PENDING.** Fresh operatives now begin in a server-owned `Melee` primary-combat mode with a distinct Field Hatchet contract, damage path, mouse/R2/touch primary-attack routing, truthful HUD state and first/third-person presentation. Firearm evaluation, fire and reload are rejected server-side while melee. Each operative's first personally opened survival chest stages the humble Service Pistol recovery through the existing found-weapon authority; successful recovery switches the server-owned mode to `Firearm`, while the stronger shotgun/SMG/LMG/sniper discovery pool remains available afterward. Deliberate replay resets combat mode, hidden firearm runtime state and survival loot so the opening can repeat cleanly. Automated repository validation is green; consolidated Studio/device evidence is still required before this opening is `VERIFIED`.
 
 Use a reproducible server-owned run seed immediately where it helps identity and debugging. MVP 0.1 needs only one readable variation seam; broad modular route/encounter generation remains Patch 0.6 scope.
 
@@ -167,16 +169,8 @@ Do **not** block MVP 0.1 on broad crafting, a full economy, a huge skill tree, m
 - [x] Server-confirmed firearm presentation now adds weapon-specific camera/FOV response while preserving server ownership of shots, cadence, ammunition, targeting and damage.
 - [x] Mission/horde pressure now stays dormant until the player deliberately launches an expedition from the Forward Operations Hub; `MissionDirectorService`/`HordeExperienceService` still `start()` unconditionally at boot (preserving every existing boot-order and replay-restart invariant), but their pressure-producing paths wait for `armPressure()`, released only by the existing lobby launch flow. Source-audited by `tests/SafeArrivalLaunchBoundarySourceAudit.test.luau`; a fresh literal-keypress Studio reconfirmation on this exact corrected build is still open (see the evidence note below).
 - [ ] The exact build still needs a first-person Studio pass for upgrade input, firearm response, Stalker/Spitter pressure, biome composition, elite → terminal encounter → return → upgrade → replay, and representative performance.
-- [ ] **Device parity is broken for combat.** BA-061's action-map audit
-  ([`../specifications/input-action-map-audit.md`](../specifications/input-action-map-audit.md))
-  found firing bound to `MouseButton1` alone: gamepad and touch players can
-  move, reload, sprint, ping, use the flashlight and collect loot, but cannot
-  attack. Reload, sprint and revive also lack gamepad bindings, and `E`
-  (revive) and `ButtonX` (class action) both collide with the engine's
-  `ProximityPrompt` defaults. This is a source-level finding at E1; no device
-  was tested. It blocks an affirmative answer to the keyboard/controller/touch
-  acceptance question below and should be fixed before the Studio pass, so that
-  pass can evaluate all three input paths rather than one.
+- [x] BA-061/BA-062 source remediation is implemented for the audited combat/input gaps: primary attack is device-neutral across mouse, gamepad R2 and generated touch; reload, sprint and revive have controller paths; and the audited `E` / `ButtonX` prompt collisions were removed. This is **BUILT — VERIFICATION PENDING** at the device-evidence layer: no keyboard/controller/touch hardware pass is claimed yet.
+- [x] The humble melee → earned-firearm opening is implemented without masquerading as firearm state: Field Hatchet combat has its own server-authoritative contract/target/damage path, fresh players start in melee mode, forged firearm fire/reload is rejected while melee, the first personal survival chest recovers the Service Pistol through the existing found-weapon owner, stronger firearm discoveries remain available, and deliberate replay restores the melee opening. This is **BUILT — VERIFICATION PENDING** pending the consolidated Studio/device pass.
 
 Exact-build evidence for the completed interaction/HUD slice is recorded in
 [`../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md`](../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md).
@@ -189,10 +183,7 @@ The 2026-08-09 first-run repair attempt is intentionally recorded as `INVALID`
 because the exact Studio window did not register with the enabled bridge:
 [`../production/evidence/2026-08-09-mvp01-first-run-repair-studio-bridge-blocked.md`](../production/evidence/2026-08-09-mvp01-first-run-repair-studio-bridge-blocked.md).
 
-**Next highest-ROI MVP 0.1 task:** give firing a device-neutral binding so
-controller and touch players can fight at all (BA-062, first remediation item
-only; client-side intent origin, server keeps combat authority), then run the
-exact-build STOP / PLAY / FIX pass. Fix any choice-input, first-contact, gunfeel, silhouette, biome-readability or frame-budget failure before expanding day/night, skill-tree breadth or additional RPG systems.
+**Next highest-ROI MVP 0.1 task:** re-audit current `main` after the melee-opening merge and choose the highest-ROI remaining **source-verifiable** gap in the representative spawn → preparation → launch → explore → fight → loot/reward → elite → boss → result → return → upgrade → replay loop. Do not redo BA-062 or the melee/firearm-opening migration merely because their manual evidence remains pending. Under `MVP-BUILD-THROUGH-TESTING-POLICY.md`, continue dependency-safe implementation while keeping those slices marked **BUILT — VERIFICATION PENDING**. The consolidated exact-build Studio/device STOP / PLAY / FIX pass remains required before MVP 0.1 or its device/melee behavior can be promoted to **VERIFIED**; fix any choice-input, first-contact, gunfeel, silhouette, biome-readability or frame-budget failure found there before calling the milestone accepted.
 
 # Patch 0.2 — Combat Feel + Readability
 
