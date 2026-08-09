@@ -33,6 +33,7 @@ end
 
 local service = fs.readFile("games/living-kingdoms/src/server/Systems/RunBuildService.luau")
 local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/RunBuildHUDController.luau")
+local choiceCoordinator = fs.readFile("games/living-kingdoms/src/client/Controllers/ChoiceInputCoordinator.luau")
 local bootstrapServer = fs.readFile("games/living-kingdoms/src/server/init.server.luau")
 local bootstrapClient = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 
@@ -142,7 +143,13 @@ assertThat(
 	"a rejected request must be explained rather than silently dropped"
 )
 assertThat(contains(controller, "definition.description"), "relic choices must explain their implemented effect")
-assertThat(contains(controller, "Enum.KeyCode.One"), "relic choices must support keyboard selection")
+assertThat(
+	contains(controller, 'ChoiceInputCoordinator.register("RelicChoice"')
+		and contains(choiceCoordinator, "Enum.KeyCode.One")
+		and contains(choiceCoordinator, "Enum.KeyCode.Two")
+		and contains(choiceCoordinator, "Enum.KeyCode.Three"),
+	"relic choices must support keyboard selection through the shared numbered-input owner"
+)
 assertThat(contains(controller, "LK_InputModalOpen"), "relic choices must release the first-person cursor")
 
 -- Exactly one connection per surface, and teardown releases them.

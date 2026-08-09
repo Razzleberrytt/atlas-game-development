@@ -25,7 +25,7 @@ local source = fs.readFile(PATH)
 local config = luau.load(source, { debugName = "InputActionMapConfig", injectGlobals = true })()
 
 assert(config.Version == 1)
-assert(#config.ActionOrder == 17, "the canonical map must cover all seventeen audited semantic actions")
+assert(#config.ActionOrder == 18, "the canonical map must cover seventeen audited actions plus shared numbered input")
 
 local seen = {}
 for _, actionId in config.ActionOrder do
@@ -71,6 +71,27 @@ assert(actions.CloseHubUI.MechanismId == "GuiOnly")
 assert(#actions.CloseHubUI.KeyboardKeyCodeNames == 0)
 assert(actions.CloseHubUI.TouchBindingIds[1] == "GuiButton")
 
+local numberedChoice = actions.NumberedChoiceInput
+assert(numberedChoice.OwnerId == "ChoiceInputCoordinator")
+assert(numberedChoice.MechanismId == "SharedArbitratedInput")
+assert(#numberedChoice.KeyboardKeyCodeNames == 6)
+assert(numberedChoice.KeyboardKeyCodeNames[1] == "One")
+assert(numberedChoice.KeyboardKeyCodeNames[2] == "Two")
+assert(numberedChoice.KeyboardKeyCodeNames[3] == "Three")
+assert(numberedChoice.KeyboardKeyCodeNames[4] == "KeypadOne")
+assert(numberedChoice.KeyboardKeyCodeNames[5] == "KeypadTwo")
+assert(numberedChoice.KeyboardKeyCodeNames[6] == "KeypadThree")
+assert(#numberedChoice.GamepadKeyCodeNames == 0)
+assert(#numberedChoice.TouchBindingIds == 0)
+
+for _, actionId in { "UpgradeChoice", "RelicChoice" } do
+	local choice = actions[actionId]
+	assert(choice.MechanismId == "SharedChoiceDispatchAndGui")
+	assert(#choice.KeyboardKeyCodeNames == 0, `{actionId} must not directly claim numbered keys`)
+	assert(choice.MouseInputTypeNames[1] == "MouseButton1")
+	assert(choice.TouchBindingIds[1] == "GuiButton")
+end
+
 assert(actions.ClassAction.GamepadKeyCodeNames[1] ~= actions.Interact.GamepadKeyCodeNames[1])
 assert(actions.Revive.KeyboardKeyCodeNames[1] ~= actions.Interact.KeyboardKeyCodeNames[1])
 assert(actions.Revive.GamepadKeyCodeNames[1] ~= actions.Interact.GamepadKeyCodeNames[1])
@@ -108,13 +129,19 @@ assert(not contains(revive, "Enum.KeyCode.ButtonX"))
 local worldPrompt = fs.readFile(SERVER .. "SurvivalLootService.luau")
 assert(contains(worldPrompt, "prompt.KeyboardKeyCode = Enum.KeyCode.E"))
 
+local choiceCoordinator = fs.readFile(CLIENT .. "ChoiceInputCoordinator.luau")
+assert(contains(choiceCoordinator, "Enum.KeyCode.One"))
+assert(contains(choiceCoordinator, "Enum.KeyCode.Two"))
+assert(contains(choiceCoordinator, "Enum.KeyCode.Three"))
+assert(contains(choiceCoordinator, "Enum.KeyCode.KeypadOne"))
+assert(contains(choiceCoordinator, "Enum.KeyCode.KeypadTwo"))
+assert(contains(choiceCoordinator, "Enum.KeyCode.KeypadThree"))
+
 local hordeHud = fs.readFile(CLIENT .. "HordeHUDController.luau")
 local runBuildHud = fs.readFile(CLIENT .. "RunBuildHUDController.luau")
 for _, hud in { hordeHud, runBuildHud } do
-	assert(contains(hud, "Enum.KeyCode.One"))
-	assert(contains(hud, "Enum.KeyCode.Two"))
-	assert(contains(hud, "Enum.KeyCode.Three"))
-	assert(contains(hud, "Enum.KeyCode.KeypadOne"))
+	assert(not contains(hud, "Enum.KeyCode.One"), "choice HUDs must not directly own number-key detection")
+	assert(not contains(hud, "Enum.KeyCode.KeypadOne"), "choice HUDs must not directly own keypad detection")
 end
 
 local rpgMenu = fs.readFile(CLIENT .. "RPGMenuController.luau")
@@ -143,4 +170,4 @@ do
 	assert(not contains(source, token), `shared action map must stay configuration-only: {token}`)
 end
 
-print("BA-062 InputActionMapConfig: seventeen actions, collision-safe bindings, and exclusive Escape ownership passed")
+print("BA-062 InputActionMapConfig: eighteen entries, one numbered-input owner, collision-safe bindings passed")

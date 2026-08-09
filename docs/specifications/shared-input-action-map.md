@@ -1,25 +1,20 @@
 # Shared input action-map foundation
 
-**Roadmap ticket:** BA-062
-
-**Evidence level:** E1 source/static only
-
-**Runtime scope:** behavior-preserving input configuration centralization
+**Roadmap ticket:** BA-062  
+**Evidence level:** E1 source/static only  
+**Runtime scope:** canonical input inventory plus isolated C4 numbered-input ownership
 
 ## Decision
 
-`InputActionMapConfig` is the canonical descriptive registry for the seventeen
-semantic player actions identified by BA-061. It records stable action IDs,
-current owner IDs, current binding mechanism, and per-device binding tokens.
+`InputActionMapConfig` is the canonical descriptive registry for the seventeen semantic player actions identified by BA-061. BA-062 C4 adds one infrastructure entry, `NumberedChoiceInput`, so the registry now contains **eighteen entries** without adding a new gameplay verb.
 
-The map does not listen for input, dispatch actions, own UI, mutate gameplay
-state, send network requests, or replace existing action owners. Controllers
-continue to own their current behavior; this increment only moves already-agreed
-binding values toward one shared configuration surface.
+The map records action IDs, current owner IDs, binding mechanisms, and per-device binding tokens. It does not itself listen for input, mutate gameplay state, send network requests, or replace gameplay owners.
 
-## Covered actions
+`ChoiceInputCoordinator` is the one intentional runtime consumer introduced for C4. It owns only direct keyboard detection for `1/2/3` and keypad equivalents. Upgrade and Relic HUDs continue to own their choice semantics, GUI activation, and existing network calls.
 
-The map covers:
+## Covered entries
+
+The original semantic actions remain:
 
 1. Move
 2. Jump
@@ -39,8 +34,9 @@ The map covers:
 16. CloseRPGModal
 17. CloseHubUI
 
-Engine-owned movement/camera/prompt entries are descriptive. GUI choice/menu
-entries are also descriptive until their isolated BA-062 remediation steps.
+The remediation infrastructure entry is:
+
+18. `NumberedChoiceInput` — the single direct keyboard owner for choice indices 1–3.
 
 ## Core binding snapshot
 
@@ -54,49 +50,52 @@ entries are also descriptive until their isolated BA-062 remediation steps.
 | SquadPing | G / MouseButton3 | DPadUp | generated action button |
 | Revive | V | DPadDown | generated action button |
 | Interact | E | ButtonX | prompt tap |
+| NumberedChoiceInput | 1–3 / Keypad 1–3 | — | — |
+| UpgradeChoice | GUI click | selection focus | GUI tap |
+| RelicChoice | GUI click | selection focus | GUI tap |
+| CloseRPGModal | Escape / GUI click | selection focus | GUI tap |
+| CloseHubUI | GUI click | selection focus | GUI tap |
 
-These values intentionally preserve the BA-062 collision and device-coverage
-remediations already merged. The map does not introduce new bindings.
+The map therefore no longer represents UpgradeChoice and RelicChoice as duplicate direct keyboard owners. Their number shortcuts arrive through the coordinator.
 
-## Adoption boundary
+## C4 arbitration boundary
 
-This increment may migrate already-remediated gameplay input owners to read their
-binding values from `InputActionMapConfig` while preserving their existing
-handlers and action names. Existing flashlight/ping tuning configs may proxy their
-binding fields to the shared map for compatibility.
+`ChoiceInputCoordinator` registers the two choice owners by stable IDs:
 
-The unresolved UI paths remain behaviorally unchanged in this increment:
+- `UpgradeChoice`
+- `RelicChoice`
 
-- `CloseRPGModal` and `CloseHubUI` still share Escape until C3 is remediated;
-- `UpgradeChoice` and `RelicChoice` still share 1/2/3 until C4 is remediated;
-- hub close remains without a direct gamepad/touch binding until M4;
-- character/inventory shortcut labels remain keyboard-oriented until M5.
+Each registration supplies only an `isActive` predicate and an existing choice callback. On a numbered key press, the coordinator asks `ChoiceInputConflictResolver` which owner, if any, may receive the index.
 
-Their current bindings are represented in the map now so those later changes can
-be made against one inventory instead of rediscovering the surface.
+- zero active owners → no dispatch;
+- exactly one active owner → dispatch to that owner;
+- multiple active owners → fail closed, no dispatch.
+
+No priority between Upgrade and Relic is invented. GUI `Activated` paths remain unchanged.
 
 ## Authority boundary
 
-`InputActionMapConfig` must remain configuration-only. It must not:
+`InputActionMapConfig` remains configuration-only. It must not:
 
 - call `ContextActionService` or `UserInputService`;
 - create Instances or GUI;
 - send remotes;
-- alter movement, combat, revive, class-action, prompt, inventory, reward, or
-  persistence authority;
-- arbitrate C3/C4 before their dedicated remediation increments;
+- alter combat, movement, revive, class-action, prompt, progression, relic, inventory, or persistence authority;
 - claim real-device acceptance.
+
+`ChoiceInputCoordinator` is client-input-only. It must not send remotes, own reward legality, alter offers, choose relic/upgrade IDs, or mutate gameplay state.
 
 ## Validation
 
 Source/static acceptance requires:
 
-- exactly seventeen unique semantic action definitions;
-- the previously accepted core bindings remain unchanged;
-- Revive/ClassAction remain distinct from world prompt keys;
-- migrated controllers continue routing input to their existing owner methods;
-- unresolved UI bindings remain represented without behavioral changes;
-- full Stylua, Selene, Lune and Rojo validation passes.
+- exactly eighteen unique registry entries: seventeen audited semantics plus `NumberedChoiceInput` infrastructure;
+- the accepted gameplay bindings remain unchanged;
+- Revive/ClassAction stay distinct from world prompt keys;
+- one numbered keyboard owner represents all six 1–3/keypad tokens;
+- UpgradeChoice and RelicChoice contain no direct number-key claims;
+- the direct-binding collision analyzer reports zero keyboard/gamepad collisions;
+- the two HUDs retain their existing GUI/network authority and unregister from the coordinator on teardown;
+- full Stylua, Selene, Lune, and Rojo validation passes.
 
-Real controller/touch/keyboard behavior remains for the consolidated Studio/device
-pass.
+Real controller/touch/keyboard behavior remains for the consolidated Studio/device pass.
