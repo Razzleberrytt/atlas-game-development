@@ -167,6 +167,16 @@ Do **not** block MVP 0.1 on broad crafting, a full economy, a huge skill tree, m
 - [x] Server-confirmed firearm presentation now adds weapon-specific camera/FOV response while preserving server ownership of shots, cadence, ammunition, targeting and damage.
 - [x] Mission/horde pressure now stays dormant until the player deliberately launches an expedition from the Forward Operations Hub; `MissionDirectorService`/`HordeExperienceService` still `start()` unconditionally at boot (preserving every existing boot-order and replay-restart invariant), but their pressure-producing paths wait for `armPressure()`, released only by the existing lobby launch flow. Source-audited by `tests/SafeArrivalLaunchBoundarySourceAudit.test.luau`; a fresh literal-keypress Studio reconfirmation on this exact corrected build is still open (see the evidence note below).
 - [ ] The exact build still needs a first-person Studio pass for upgrade input, firearm response, Stalker/Spitter pressure, biome composition, elite → terminal encounter → return → upgrade → replay, and representative performance.
+- [ ] **Device parity is broken for combat.** BA-061's action-map audit
+  ([`../specifications/input-action-map-audit.md`](../specifications/input-action-map-audit.md))
+  found firing bound to `MouseButton1` alone: gamepad and touch players can
+  move, reload, sprint, ping, use the flashlight and collect loot, but cannot
+  attack. Reload, sprint and revive also lack gamepad bindings, and `E`
+  (revive) and `ButtonX` (class action) both collide with the engine's
+  `ProximityPrompt` defaults. This is a source-level finding at E1; no device
+  was tested. It blocks an affirmative answer to the keyboard/controller/touch
+  acceptance question below and should be fixed before the Studio pass, so that
+  pass can evaluate all three input paths rather than one.
 
 Exact-build evidence for the completed interaction/HUD slice is recorded in
 [`../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md`](../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md).
@@ -179,7 +189,10 @@ The 2026-08-09 first-run repair attempt is intentionally recorded as `INVALID`
 because the exact Studio window did not register with the enabled bridge:
 [`../production/evidence/2026-08-09-mvp01-first-run-repair-studio-bridge-blocked.md`](../production/evidence/2026-08-09-mvp01-first-run-repair-studio-bridge-blocked.md).
 
-**Next highest-ROI MVP 0.1 task:** finish the smallest server-authoritative safe-arrival / deliberate-launch boundary, then run the exact-build STOP / PLAY / FIX pass. Fix any choice-input, first-contact, gunfeel, silhouette, biome-readability or frame-budget failure before expanding day/night, skill-tree breadth or additional RPG systems.
+**Next highest-ROI MVP 0.1 task:** give firing a device-neutral binding so
+controller and touch players can fight at all (BA-062, first remediation item
+only; client-side intent origin, server keeps combat authority), then run the
+exact-build STOP / PLAY / FIX pass. Fix any choice-input, first-contact, gunfeel, silhouette, biome-readability or frame-budget failure before expanding day/night, skill-tree breadth or additional RPG systems.
 
 # Patch 0.2 — Combat Feel + Readability
 

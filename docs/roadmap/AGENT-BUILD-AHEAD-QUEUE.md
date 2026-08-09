@@ -159,8 +159,8 @@ This is now a first-class product lane under Master Roadmap Phase W.
 | ID | Status | Task | Deliverable / boundary |
 |---|---|---|---|
 | BA-060 | DONE | First-session onboarding sequence. | [`docs/specifications/first-session-onboarding-sequence.md`](../specifications/first-session-onboarding-sequence.md) — pins the 12-step safe arrival → preparation → deliberate launch → route/discovery → First Descent → Run Relic decision → result → safe return → build understanding → deliberate replay journey. Runtime-existing, prepared-data, prepared-integration, and blocked-lifecycle states remain explicit; final replay is blocked on the current `OperationLifecycleService` auto-replay behavior rather than being changed sideways. |
-| BA-061 | READY | PC/mobile/controller action-map audit. | Existing/missing/conflicting semantic actions + accessibility considerations. |
-| BA-062 | BLOCKED on BA-061 | Input abstraction improvements. | Client-only semantic mapping; no gameplay authority change. |
+| BA-061 | DONE | PC/mobile/controller action-map audit. | [`docs/specifications/input-action-map-audit.md`](../specifications/input-action-map-audit.md) — inventories 17 semantic actions across 10 controllers and finds the action surface is not device-neutral. **Firing is `MouseButton1`-only, so gamepad and touch players cannot attack**; reload, sprint and revive lack gamepad bindings; `E` (revive) and `ButtonX` (class action) both collide with the engine's `ProximityPrompt` defaults; two `Escape` listeners and two number-key claims are uncoordinated. Records accessibility considerations and the structural absence of any shared action map. Locked by `tests/InputActionMapSourceAudit.test.luau`. E1 source audit only — no device was tested and no binding changed. |
+| BA-062 | READY | Input abstraction improvements. | Unblocked by BA-061, which records a recommended remediation order: device-neutral fire binding first, then the `E`/`ButtonX` collisions, then missing gamepad bindings, then a shared action map. Client-only semantic mapping; no gameplay authority change, and the server keeps sole ownership of shots, cadence, ammunition, targeting and damage. |
 | BA-063 | READY | UI information architecture. | Main World/expedition/loot/progression screen-state matrix and ownership boundaries. |
 
 ## P7 — integration planning and anti-regression
@@ -200,17 +200,26 @@ Gate 0 runtime stabilization and the smallest MVP 0.1 enablers outrank this
 queue. Use the task below only when the runtime/evidence lane cannot proceed or
 build-ahead work is explicitly requested.
 
-**BA-061 — PC/mobile/controller action-map audit.**
+**BA-062 — device-neutral fire binding (first item only).**
+
+BA-061 found that firing is bound to `MouseButton1` alone, so gamepad and touch
+players can move, reload, sprint, ping and loot but cannot attack. That is an
+MVP 0.1 device-parity defect, not future breadth, and it outranks the rest of
+this queue.
 
 Why now:
 
-- Main World Track 1 is complete as a preparation sequence: BA-010 → BA-011 → BA-012 → BA-013 → BA-014 all landed, and the next Main World step is measurement, which needs the Studio lane rather than this queue;
-- the remaining MVP 0.1 checkpoint item is a first-person Studio pass covering upgrade input, firearm response and the elite → terminal → return → replay path, and its input half is the part build-ahead work can prepare;
-- MVP 0.1 already accepted a native `E`/controller/touch loot prompt and contextual keyboard/cursor/selection-focus reward input, so the semantic action surface exists but has never been audited as a whole;
-- BA-061 is a client-side audit of existing/missing/conflicting semantic actions plus accessibility considerations, so it activates nothing and cannot collide with the gated runtime lane;
-- it unblocks BA-062, and its findings feed Patch 0.2 combat feel directly.
+- MVP 0.1's acceptance questions explicitly ask whether keyboard, controller and touch players can play the loop; today two of the three cannot fight;
+- the fix is client-only intent origin — move fire to `ContextActionService` with a gamepad trigger and a touch button while keeping `MouseButton1` — and the server keeps sole ownership of shots, cadence, ammunition, targeting and damage;
+- it is small, testable and directly reduces what the pending Studio pass has to re-diagnose.
 
-Keep it an audit. Do not change input handling, add an abstraction layer or touch gameplay authority under this ticket.
+Take only the first remediation item under BA-062, then re-evaluate. The `E`
+and `ButtonX` prompt collisions and the shared action map are separate
+increments; do not fold them into the same change, and do not solve the
+collisions by sinking input, which would break world interaction.
+
+Main World Track 1 is complete as a preparation sequence (BA-010 → BA-014) and
+its next step is measurement in the human/Studio lane, not this queue.
 
 ### Parallel assignment — concurrent agents (2026-08-08)
 
@@ -224,7 +233,7 @@ Both tracks still obey every build-ahead law below, in particular: fetch current
 
 ### Other safe parallel candidates
 
-Both named tracks are now complete, so these are the remaining safe candidates (after checking for overlap with open PRs). `BA-020 → BA-024` form one dependency chain that ends in BA-025's cross-domain validation, and are the natural second lane beside BA-061:
+Both named tracks are now complete, so these are the remaining safe candidates (after checking for overlap with open PRs). `BA-020 → BA-024` form one dependency chain that ends in BA-025's cross-domain validation, and are the natural second lane beside the BA-062 input work:
 
 ```text
 BA-020 quest contracts
@@ -234,6 +243,8 @@ BA-023 gathering/resource-node model
 BA-024 vendor/catalog contracts
 BA-063 UI information architecture
 ```
+
+BA-063's screen-state matrix should consume BA-061's action inventory rather than re-deriving it.
 
 ### Human/Studio lane
 
