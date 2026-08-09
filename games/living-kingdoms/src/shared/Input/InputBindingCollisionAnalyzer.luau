@@ -57,11 +57,7 @@ local function addBinding(bucket: TokenOwners, bindingToken: string, actionId: s
 	owners[actionId] = true
 end
 
-local function collectBindings(
-	bucket: TokenOwners,
-	bindingList: unknown,
-	actionId: string
-): string?
+local function collectBindings(bucket: TokenOwners, bindingList: unknown, actionId: string): string?
 	if type(bindingList) ~= "table" then
 		return ErrorIds.InvalidBindingList
 	end
@@ -75,11 +71,7 @@ local function collectBindings(
 	return nil
 end
 
-local function appendCollisions(
-	collisions: { Collision },
-	familyId: string,
-	bucket: TokenOwners
-)
+local function appendCollisions(collisions: { Collision }, familyId: string, bucket: TokenOwners)
 	for bindingToken, ownerSet in bucket do
 		local actionIds = {}
 		for actionId in ownerSet do
@@ -87,11 +79,14 @@ local function appendCollisions(
 		end
 		if #actionIds > 1 then
 			table.sort(actionIds)
-			table.insert(collisions, table.freeze({
-				FamilyId = familyId,
-				BindingToken = bindingToken,
-				ActionIds = table.freeze(actionIds),
-			}))
+			table.insert(
+				collisions,
+				table.freeze({
+					FamilyId = familyId,
+					BindingToken = bindingToken,
+					ActionIds = table.freeze(actionIds),
+				})
+			)
 		end
 	end
 end
