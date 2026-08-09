@@ -10,6 +10,11 @@
 	their real mechanics. The existing spawnAuthoredWave entry point is still used
 	with an empty definition list to preserve authored-pressure/recovery pacing
 	without creating duplicate enemies.
+
+	A bounded WaveSequence definition may chain several typed authored waves under
+	one encounter token. The caller supplies server-owned timestamps to
+	pollCompletion so inter-wave and post-clear recovery windows stay deterministic
+	without creating a second timer or combat authority.
 ]]
 
 export type EncounterContext = {
@@ -31,6 +36,11 @@ export type WaveDefinition = {
 	archetypeId: string,
 	hordeRoleId: string?,
 }
+export type WaveStage = {
+	WaveIndex: number,
+	DelayAfterPreviousSeconds: number,
+	Wave: { WaveDefinition },
+}
 export type SpawnResult = {
 	didSpawn: boolean,
 	wasDeferred: boolean,
@@ -45,9 +55,11 @@ export type Director = {
 	endOperationPressure: () -> (),
 }
 export type EncounterDefinition = {
-	Kind: "Wave" | "Boss",
+	Kind: "Wave" | "WaveSequence" | "Boss",
 	WaveIndex: number?,
 	Wave: { WaveDefinition }?,
+	Waves: { WaveStage }?,
+	CompletionDelaySeconds: number?,
 	BossPosition: { x: number, y: number, z: number }?,
 	FloodlightsRestored: boolean?,
 }
@@ -55,7 +67,7 @@ export type DefinitionResolver = (context: EncounterContext) -> EncounterDefinit
 export type Adapter = {
 	start: (context: EncounterContext) -> boolean,
 	cancel: (context: EncounterContext, reasonId: string) -> (),
-	pollCompletion: (self: Adapter) -> (boolean, string?),
+	pollCompletion: (self: Adapter, nowUnix: number?) -> (boolean, string?),
 	getActiveToken: (self: Adapter) -> string?,
 	destroy: (self: Adapter) -> (),
 }
@@ -64,10 +76,15 @@ type Internal = {
 	Director: Director,
 	ResolveDefinition: DefinitionResolver,
 	ActiveContext: EncounterContext?,
-	ActiveKind: ("Wave" | "Boss")?,
+	ActiveKind: ("Wave" | "WaveSequence" | "Boss")?,
 	TrackedEntityIds: { [string]: boolean },
 	SawTrackedEntity: boolean,
 	SawBoss: boolean,
+	SequenceStages: { WaveStage }?,
+	SequenceStageIndex: number,
+	SequenceCompletionDelaySeconds: number,
+	NextSequenceStageEligibleAtUnix: number?,
+	SequenceCompletionEligibleAtUnix: number?,
 	CompletionReported: boolean,
 	Destroyed: boolean,
 }
@@ -111,6 +128,49 @@ local function startTypedWave(state: Internal, waveIndex: number, wave: { WaveDe
 	return accepted > 0
 end
 
+local function validateWave(waveIndex: unknown, wave: unknown, knownIds: { [string]: boolean }): boolean
+	if type(waveIndex) ~= "number" or waveIndex % 1 ~= 0 or type(wave) ~= "table" or #wave == 0 then
+		return false
+	end
+	for _, enemy in wave do
+		if
+			type(enemy.id) ~= "string"
+			or enemy.id == ""
+			or knownIds[enemy.id]
+			or type(enemy.archetypeId) ~= "string"
+			or enemy.archetypeId == ""
+		then
+			return false
+		end
+		knownIds[enemy.id] = true
+	end
+	return true
+end
+
+local function beginWave(state: Internal, waveIndex: number, wave: { WaveDefinition }): boolean
+	local tracked = {}
+	for _, enemy in wave do
+		tracked[enemy.id] = true
+	end
+	if not startTypedWave(state, waveIndex, wave) then
+		return false
+	end
+	state.TrackedEntityIds = tracked
+	state.SawTrackedEntity = false
+	return true
+end
+
+local function trackedWaveCleared(state: Internal): boolean
+	local aliveTracked = 0
+	for _, fact in state.Director.readEnemyCombatFacts() do
+		if state.TrackedEntityIds[fact.entityId] and fact.isAlive then
+			state.SawTrackedEntity = true
+			aliveTracked += 1
+		end
+	end
+	return state.SawTrackedEntity and aliveTracked == 0
+end
+
 local function startEncounter(state: Internal, context: EncounterContext): boolean
 	if state.Destroyed or state.ActiveContext ~= nil then
 		return false
@@ -123,27 +183,42 @@ local function startEncounter(state: Internal, context: EncounterContext): boole
 		return false
 	end
 
-	local tracked = {}
+	local knownIds = {}
 	if definition.Kind == "Wave" then
 		local waveIndex, wave = definition.WaveIndex, definition.Wave
-		if type(waveIndex) ~= "number" or waveIndex % 1 ~= 0 or type(wave) ~= "table" or #wave == 0 then
+		if not validateWave(waveIndex, wave, knownIds) then
 			return false
 		end
-		for _, enemy in wave do
-			if
-				type(enemy.id) ~= "string"
-				or enemy.id == ""
-				or tracked[enemy.id]
-				or type(enemy.archetypeId) ~= "string"
-				or enemy.archetypeId == ""
-			then
+		if not beginWave(state, waveIndex :: number, wave :: { WaveDefinition }) then
+			return false
+		end
+	elseif definition.Kind == "WaveSequence" then
+		local stages = definition.Waves
+		local completionDelaySeconds = definition.CompletionDelaySeconds or 0
+		if type(stages) ~= "table" or #stages == 0 then
+			return false
+		end
+		if type(completionDelaySeconds) ~= "number" or completionDelaySeconds < 0 then
+			return false
+		end
+		for index, stage in stages do
+			if type(stage) ~= "table" or type(stage.DelayAfterPreviousSeconds) ~= "number" then
 				return false
 			end
-			tracked[enemy.id] = true
+			if stage.DelayAfterPreviousSeconds < 0 or (index == 1 and stage.DelayAfterPreviousSeconds ~= 0) then
+				return false
+			end
+			if not validateWave(stage.WaveIndex, stage.Wave, knownIds) then
+				return false
+			end
 		end
-		if not startTypedWave(state, waveIndex, wave) then
+		local firstStage = stages[1]
+		if not beginWave(state, firstStage.WaveIndex, firstStage.Wave) then
 			return false
 		end
+		state.SequenceStages = stages
+		state.SequenceStageIndex = 1
+		state.SequenceCompletionDelaySeconds = completionDelaySeconds
 	elseif definition.Kind == "Boss" then
 		local position = definition.BossPosition
 		if type(position) ~= "table" then
@@ -158,14 +233,54 @@ local function startEncounter(state: Internal, context: EncounterContext): boole
 
 	state.ActiveContext = copyContext(context)
 	state.ActiveKind = definition.Kind
-	state.TrackedEntityIds = tracked
-	state.SawTrackedEntity = false
 	state.SawBoss = false
+	state.NextSequenceStageEligibleAtUnix = nil
+	state.SequenceCompletionEligibleAtUnix = nil
 	state.CompletionReported = false
 	return true
 end
 
-function Adapter:pollCompletion(): (boolean, string?)
+local function pollWaveSequence(state: Internal, nowUnix: number?): (boolean, string?)
+	local stages = state.SequenceStages
+	if stages == nil or #stages == 0 or state.SequenceStageIndex < 1 or state.SequenceStageIndex > #stages then
+		return false, "InvalidWaveSequenceState"
+	end
+	if not trackedWaveCleared(state) then
+		return false, "EncounterInProgress"
+	end
+	if type(nowUnix) ~= "number" or nowUnix < 0 then
+		return false, "SequenceClockRequired"
+	end
+
+	local nextStageIndex = state.SequenceStageIndex + 1
+	if nextStageIndex <= #stages then
+		local nextStage = stages[nextStageIndex]
+		if state.NextSequenceStageEligibleAtUnix == nil then
+			state.NextSequenceStageEligibleAtUnix = nowUnix + nextStage.DelayAfterPreviousSeconds
+		end
+		if nowUnix < state.NextSequenceStageEligibleAtUnix then
+			return false, "SequenceRecovery"
+		end
+		if not beginWave(state, nextStage.WaveIndex, nextStage.Wave) then
+			return false, "SequenceWaveStartRejected"
+		end
+		state.SequenceStageIndex = nextStageIndex
+		state.NextSequenceStageEligibleAtUnix = nil
+		return false, "SequenceWaveStarted"
+	end
+
+	if state.SequenceCompletionDelaySeconds > 0 then
+		if state.SequenceCompletionEligibleAtUnix == nil then
+			state.SequenceCompletionEligibleAtUnix = nowUnix + state.SequenceCompletionDelaySeconds
+		end
+		if nowUnix < state.SequenceCompletionEligibleAtUnix then
+			return false, "SequenceRecovery"
+		end
+	end
+	return true, state.ActiveContext and state.ActiveContext.Token or nil
+end
+
+function Adapter:pollCompletion(nowUnix: number?): (boolean, string?)
 	local state: Internal = self :: any
 	if state.Destroyed then
 		return false, "AdapterDestroyed"
@@ -178,25 +293,33 @@ function Adapter:pollCompletion(): (boolean, string?)
 	end
 
 	local completed = false
+	local token: string? = nil
 	if state.ActiveKind == "Wave" then
-		local aliveTracked = 0
-		for _, fact in state.Director.readEnemyCombatFacts() do
-			if state.TrackedEntityIds[fact.entityId] and fact.isAlive then
-				state.SawTrackedEntity = true
-				aliveTracked += 1
-			end
+		completed = trackedWaveCleared(state)
+		if completed then
+			token = state.ActiveContext.Token
 		end
-		completed = state.SawTrackedEntity and aliveTracked == 0
+	elseif state.ActiveKind == "WaveSequence" then
+		local sequenceCompleted, sequenceResult = pollWaveSequence(state, nowUnix)
+		if sequenceCompleted then
+			completed = true
+			token = sequenceResult
+		else
+			return false, sequenceResult
+		end
 	else
 		local boss = state.Director.readBossState()
 		state.SawBoss = state.SawBoss or boss.exists
 		completed = state.SawBoss and boss.isDefeated and not boss.isAlive
+		if completed then
+			token = state.ActiveContext.Token
+		end
 	end
 	if not completed then
 		return false, "EncounterInProgress"
 	end
 	state.CompletionReported = true
-	return true, state.ActiveContext.Token
+	return true, token
 end
 
 function Adapter:getActiveToken(): string?
@@ -204,15 +327,26 @@ function Adapter:getActiveToken(): string?
 	return if not state.Destroyed and state.ActiveContext then state.ActiveContext.Token else nil
 end
 
+local function clearEncounterState(state: Internal)
+	state.ActiveContext = nil
+	state.ActiveKind = nil
+	table.clear(state.TrackedEntityIds)
+	state.SawTrackedEntity = false
+	state.SawBoss = false
+	state.SequenceStages = nil
+	state.SequenceStageIndex = 0
+	state.SequenceCompletionDelaySeconds = 0
+	state.NextSequenceStageEligibleAtUnix = nil
+	state.SequenceCompletionEligibleAtUnix = nil
+	state.CompletionReported = false
+end
+
 local function cancelEncounter(state: Internal, context: EncounterContext, _reasonId: string)
 	if state.Destroyed or state.ActiveContext == nil or context.Token ~= state.ActiveContext.Token then
 		return
 	end
 	state.Director.endOperationPressure()
-	state.ActiveContext = nil
-	state.ActiveKind = nil
-	table.clear(state.TrackedEntityIds)
-	state.CompletionReported = false
+	clearEncounterState(state)
 end
 
 --[[
@@ -233,6 +367,11 @@ function Adapter.new(director: Director, resolveDefinition: DefinitionResolver):
 			TrackedEntityIds = {},
 			SawTrackedEntity = false,
 			SawBoss = false,
+			SequenceStages = nil,
+			SequenceStageIndex = 0,
+			SequenceCompletionDelaySeconds = 0,
+			NextSequenceStageEligibleAtUnix = nil,
+			SequenceCompletionEligibleAtUnix = nil,
 			CompletionReported = false,
 			Destroyed = false,
 		} :: Internal,
@@ -259,10 +398,7 @@ function Adapter:destroy()
 	if state.ActiveContext ~= nil then
 		state.Director.endOperationPressure()
 	end
-	state.ActiveContext = nil
-	state.ActiveKind = nil
-	table.clear(state.TrackedEntityIds)
-	state.CompletionReported = false
+	clearEncounterState(state)
 end
 
 return table.freeze(Adapter)

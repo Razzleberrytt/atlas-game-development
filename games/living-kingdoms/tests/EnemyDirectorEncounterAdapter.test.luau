@@ -50,6 +50,44 @@ local adapter = Adapter.new(director, function(encounterContext: any): any
 	if encounterContext.PhaseId == "Boss" then
 		return { Kind = "Boss", BossPosition = { x = 0, y = 4, z = 80 }, FloodlightsRestored = true }
 	end
+	if encounterContext.PhaseId == "Approach" then
+		return {
+			Kind = "WaveSequence",
+			CompletionDelaySeconds = 3,
+			Waves = {
+				{
+					WaveIndex = 11,
+					DelayAfterPreviousSeconds = 0,
+					Wave = {
+						{
+							id = encounterContext.Token .. ":approach:1",
+							name = "Exclusion Stalker",
+							x = 0,
+							y = 4,
+							z = 16,
+							archetypeId = "enemy.exclusion_walker",
+							hordeRoleId = "horde.role.infected",
+						},
+					},
+				},
+				{
+					WaveIndex = 12,
+					DelayAfterPreviousSeconds = 5,
+					Wave = {
+						{
+							id = encounterContext.Token .. ":approach:2",
+							name = "Blight Spitter",
+							x = 8,
+							y = 4,
+							z = 24,
+							archetypeId = "enemy.blight_spitter",
+							hordeRoleId = nil,
+						},
+					},
+				},
+			},
+		}
+	end
 	return {
 		Kind = "Wave",
 		WaveIndex = encounterContext.RoomIndex or 1,
@@ -105,6 +143,31 @@ assert(adapter:getActiveToken() == "wave-token")
 adapter.cancel(context("wave-token", "Dungeon"), "CoordinatorAdvanced")
 assert(adapter:getActiveToken() == nil and stoodDown == 1)
 
+liveFacts = {}
+assert(adapter.start(context("sequence-token", "Approach")) == true)
+assert(pressureWaveIndexes[#pressureWaveIndexes] == 11, "sequence must start its first authored pressure stage")
+assert(spawnRequests[#spawnRequests].entityId == "sequence-token:approach:1")
+local sequencePending, sequencePendingReason = adapter:pollCompletion(100)
+assert(sequencePending == false and sequencePendingReason == "EncounterInProgress")
+liveFacts = { { entityId = "unrelated-enemy", isAlive = true } }
+local recoveryStarted, recoveryStartedReason = adapter:pollCompletion(101)
+assert(recoveryStarted == false and recoveryStartedReason == "SequenceRecovery")
+assert(adapter:pollCompletion(105) == false, "sequence cannot spawn the next stage before its recovery window")
+local nextStageStarted, nextStageReason = adapter:pollCompletion(106)
+assert(nextStageStarted == false and nextStageReason == "SequenceWaveStarted")
+assert(pressureWaveIndexes[#pressureWaveIndexes] == 12, "sequence must preserve the next authored pressure index")
+assert(spawnRequests[#spawnRequests].entityId == "sequence-token:approach:2")
+local secondStagePending, secondStagePendingReason = adapter:pollCompletion(107)
+assert(secondStagePending == false and secondStagePendingReason == "EncounterInProgress")
+liveFacts = { { entityId = "unrelated-enemy", isAlive = true } }
+local completionRecovery, completionRecoveryReason = adapter:pollCompletion(108)
+assert(completionRecovery == false and completionRecoveryReason == "SequenceRecovery")
+assert(adapter:pollCompletion(110) == false, "sequence completion must preserve the final recovery window")
+local sequenceDone, sequenceToken = adapter:pollCompletion(111)
+assert(sequenceDone == true and sequenceToken == "sequence-token")
+adapter.cancel(context("sequence-token", "Approach"), "CoordinatorAdvanced")
+assert(adapter:getActiveToken() == nil and stoodDown == 2)
+
 assert(adapter.start(context("boss-token", "Boss")) == true)
 local bossPending = adapter:pollCompletion()
 assert(bossPending == false)
@@ -113,8 +176,8 @@ local bossDone, bossToken = adapter:pollCompletion()
 assert(bossDone == true and bossToken == "boss-token")
 
 adapter:destroy()
-assert(stoodDown == 2 and adapter:getActiveToken() == nil)
+assert(stoodDown == 3 and adapter:getActiveToken() == nil)
 local afterDestroy, afterDestroyReason = adapter:pollCompletion()
 assert(afterDestroy == false and afterDestroyReason == "AdapterDestroyed")
 
-print("EnemyDirectorEncounterAdapter: typed authored archetype/role forwarding passed")
+print("EnemyDirectorEncounterAdapter: typed waves, sequences, and boss completion passed")
