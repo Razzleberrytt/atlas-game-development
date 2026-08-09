@@ -1,16 +1,16 @@
 --!strict
 
 --[[
-	AUD-0103 client-local hostile audio. One frame connection reads the existing
-	replicated presentation attributes and plays bounded spatial cues for alert,
-	attack windup, committed strike, confirmed hit, death, and horde-special
-	warnings through one small reused Sound/emitter pool with global throttles.
+	AUD-0103 client-local hostile audio. One frame connection reads existing
+	replicated presentation attributes and plays bounded spatial cues for ordinary
+	hostile actions, horde-role specials, Blight Spitter Corrosive Bloom, and the
+	Progenitor Slam through one small reused Sound/emitter pool.
 
 	The controller creates no remote, predicts nothing, reads no Humanoid health,
-	and cannot move enemies, apply damage, establish death, or disclose anything
-	the replicated enemy models do not already carry. Two folder lifecycle
-	connections and one frame connection serve every tracked enemy; there are zero
-	per-enemy connections, zero per-enemy Sounds, and zero delayed tasks.
+	and cannot move enemies, apply damage, establish death, or establish telegraph
+	timing. Two folder lifecycle connections and one frame connection serve every
+	tracked enemy; there are zero per-enemy connections, zero per-enemy Sounds,
+	and zero delayed tasks.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,6 +20,7 @@ local Workspace = game:GetService("Workspace")
 local EnemyAudioConfig = require(ReplicatedStorage.Shared.Config.EnemyAudioConfig)
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local HordeSpecialTelegraphConfig = require(ReplicatedStorage.Shared.Config.HordeSpecialTelegraphConfig)
+local SpecialEncounterTelegraphConfig = require(ReplicatedStorage.Shared.Config.SpecialEncounterTelegraphConfig)
 local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 
@@ -64,7 +65,14 @@ type Record = {
 	wasDead: boolean,
 }
 
+type EncounterRecord = {
+	root: BasePart,
+	kind: SpecialEncounterTelegraphConfig.DiscTelegraphKind,
+	lastSequence: number,
+}
+
 local records: { [Model]: Record } = {}
+local encounterRecords: { [Model]: EncounterRecord } = {}
 local trackedCount = 0
 
 local function readNumberAttribute(model: Model, attributeName: string): number?
@@ -77,11 +85,17 @@ local function readStringAttribute(model: Model, attributeName: string): string?
 	return if type(value) == "string" then value else nil
 end
 
+local function isRelevantEnemyModel(model: Model): boolean
+	local archetypeId = model:GetAttribute("EnemyArchetypeId")
+	return archetypeId == EnemyConfig.Walker.ArchetypeId
+		or SpecialEncounterTelegraphConfig.discKindForArchetypeId(archetypeId) ~= nil
+end
+
 local function findEnemyModel(instance: Instance): Model?
 	local folder = enemyFolder
 	local current: Instance? = instance
 	while current ~= nil and current ~= folder do
-		if current:IsA("Model") and current:GetAttribute("EnemyArchetypeId") == EnemyConfig.Walker.ArchetypeId then
+		if current:IsA("Model") and isRelevantEnemyModel(current) then
 			return current
 		end
 		current = current.Parent
@@ -143,11 +157,11 @@ local function distanceVolumeScale(root: BasePart): number
 			/ (EnemyAudioConfig.MaximumAudibleDistanceStuds - EnemyAudioConfig.FullVolumeDistanceStuds)
 end
 
-local function playCue(cueName: string, cue: CueDefinition, record: Record)
+local function playCue(cueName: string, cue: CueDefinition, root: BasePart)
 	if #soundPool == 0 then
 		return
 	end
-	local scale = distanceVolumeScale(record.root)
+	local scale = distanceVolumeScale(root)
 	if scale <= 0 then
 		return
 	end
@@ -163,7 +177,7 @@ local function playCue(cueName: string, cue: CueDefinition, record: Record)
 	if emitter == nil then
 		return
 	end
-	emitter.Position = record.root.Position
+	emitter.Position = root.Position
 	sound.SoundId = cue.SoundId
 	sound.Volume = math.clamp(cue.Volume * scale, 0, 1)
 	sound.PlaybackSpeed = cue.PlaybackSpeed
@@ -171,17 +185,8 @@ local function playCue(cueName: string, cue: CueDefinition, record: Record)
 	sound:Play()
 end
 
-local function trackModel(model: Model)
-	if
-		records[model] ~= nil
-		or trackedCount >= EnemyAudioConfig.MaximumTrackedEnemyModels
-		or model:GetAttribute("EnemyArchetypeId") ~= EnemyConfig.Walker.ArchetypeId
-	then
-		return
-	end
-
-	local root = model:FindFirstChild("HumanoidRootPart")
-	if root == nil or not root:IsA("BasePart") then
+local function trackWalker(model: Model, root: BasePart)
+	if model:GetAttribute("EnemyArchetypeId") ~= EnemyConfig.Walker.ArchetypeId or records[model] ~= nil then
 		return
 	end
 	local behaviorStateId = readStringAttribute(model, PresentationAttributeNames.BehaviorStateId)
@@ -209,15 +214,53 @@ local function trackModel(model: Model)
 		lastSpecialSequence = specialSequence,
 		wasDead = lifeStateId == PresentationLifeStateIds.Dead,
 	}
-	trackedCount += 1
+end
+
+local function trackEncounterTelegraph(model: Model, root: BasePart)
+	if encounterRecords[model] ~= nil then
+		return
+	end
+	local kind = SpecialEncounterTelegraphConfig.discKindForArchetypeId(model:GetAttribute("EnemyArchetypeId"))
+	if kind == nil then
+		return
+	end
+	local sequence = readNumberAttribute(model, kind.SequenceAttribute)
+	if sequence == nil then
+		return
+	end
+	encounterRecords[model] = {
+		root = root,
+		kind = kind,
+		lastSequence = sequence,
+	}
+end
+
+local function trackModel(model: Model)
+	if trackedCount >= EnemyAudioConfig.MaximumTrackedEnemyModels or not isRelevantEnemyModel(model) then
+		return
+	end
+	if records[model] ~= nil or encounterRecords[model] ~= nil then
+		return
+	end
+	local root = model:FindFirstChild("HumanoidRootPart")
+	if root == nil or not root:IsA("BasePart") then
+		return
+	end
+
+	trackWalker(model, root)
+	trackEncounterTelegraph(model, root)
+	if records[model] ~= nil or encounterRecords[model] ~= nil then
+		trackedCount += 1
+	end
 end
 
 local function untrackModel(model: Model)
-	if records[model] == nil then
-		return
-	end
+	local wasTracked = records[model] ~= nil or encounterRecords[model] ~= nil
 	records[model] = nil
-	trackedCount = math.max(0, trackedCount - 1)
+	encounterRecords[model] = nil
+	if wasTracked then
+		trackedCount = math.max(0, trackedCount - 1)
+	end
 end
 
 local function updateRecord(model: Model, record: Record)
@@ -247,27 +290,27 @@ local function updateRecord(model: Model, record: Record)
 		)
 
 	if becameDead then
-		playCue("Death", EnemyAudioConfig.Death, record)
+		playCue("Death", EnemyAudioConfig.Death, record.root)
 	elseif not isDead then
 		if attackSequence > record.lastAttackSequence then
-			playCue("Strike", EnemyAudioConfig.Strike, record)
+			playCue("Strike", EnemyAudioConfig.Strike, record.root)
 		elseif windupSequence > record.lastWindupSequence then
-			playCue("Windup", EnemyAudioConfig.Windup, record)
+			playCue("Windup", EnemyAudioConfig.Windup, record.root)
 		elseif becamePursuing then
-			playCue("Alert", EnemyAudioConfig.Alert, record)
+			playCue("Alert", EnemyAudioConfig.Alert, record.root)
 		end
 		if hitSequence > record.lastHitSequence then
-			playCue("Hit", EnemyAudioConfig.Hit, record)
+			playCue("Hit", EnemyAudioConfig.Hit, record.root)
 		end
 	end
 
 	if specialSequence > record.lastSpecialSequence then
 		if specialKindId == SpecialKindIds.ScreamerReinforcement then
-			playCue("ScreamerWarning", EnemyAudioConfig.ScreamerWarning, record)
+			playCue("ScreamerWarning", EnemyAudioConfig.ScreamerWarning, record.root)
 		elseif specialKindId == SpecialKindIds.BloaterDeathBurst then
-			playCue("BloaterWarning", EnemyAudioConfig.BloaterWarning, record)
+			playCue("BloaterWarning", EnemyAudioConfig.BloaterWarning, record.root)
 		elseif specialKindId == SpecialKindIds.BruteSecondPhase then
-			playCue("BruteWarning", EnemyAudioConfig.BruteWarning, record)
+			playCue("BruteWarning", EnemyAudioConfig.BruteWarning, record.root)
 		end
 	end
 
@@ -277,6 +320,19 @@ local function updateRecord(model: Model, record: Record)
 	record.lastHitSequence = hitSequence
 	record.lastSpecialSequence = specialSequence
 	record.wasDead = isDead
+end
+
+local function updateEncounterRecord(model: Model, record: EncounterRecord)
+	local sequence = readNumberAttribute(model, record.kind.SequenceAttribute)
+	if sequence == nil or sequence <= record.lastSequence then
+		return
+	end
+	record.lastSequence = sequence
+	if record.kind.Id == SpecialEncounterTelegraphConfig.Bloom.Id then
+		playCue("SpitterBloomWarning", EnemyAudioConfig.SpitterBloomWarning, record.root)
+	elseif record.kind.Id == SpecialEncounterTelegraphConfig.Slam.Id then
+		playCue("ProgenitorSlamWarning", EnemyAudioConfig.ProgenitorSlamWarning, record.root)
+	end
 end
 
 function EnemyAudioController.start()
@@ -315,6 +371,13 @@ function EnemyAudioController.start()
 				updateRecord(model, record)
 			end
 		end
+		for model, record in encounterRecords do
+			if model.Parent == nil or record.root.Parent == nil then
+				table.insert(staleModels, model)
+			else
+				updateEncounterRecord(model, record)
+			end
+		end
 		for _, model in staleModels do
 			untrackModel(model)
 		end
@@ -351,6 +414,7 @@ function EnemyAudioController.stop()
 	poolCursor = 0
 	table.clear(lastCuePlayClock)
 	table.clear(records)
+	table.clear(encounterRecords)
 	trackedCount = 0
 	enemyFolder = nil
 end
