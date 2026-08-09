@@ -5,8 +5,9 @@
 
 	This module is intentionally pure and dormant. It defines quest IDs,
 	prerequisites, objective progress references, reward references, state IDs,
-	and legal state transitions. It does not create a QuestService, bind remotes,
-	read/write persistence, grant rewards, or activate the recovered operation board.
+	and legal state transitions. It does not create a live quest runtime owner,
+	bind remotes, read/write persistence, grant rewards, or activate the recovered
+	operation board.
 ]]
 
 local Contracts = {}
