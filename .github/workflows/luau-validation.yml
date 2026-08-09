@@ -31,7 +31,7 @@ on:
       - ".github/workflows/luau-validation.yml"
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate:
@@ -41,24 +41,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          fetch-depth: 0
-
-      - name: Apply roadmap truth sync
-        if: github.head_ref == 'roadmap/sync-after-mvp01-replay-loop'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python scripts/patch_roadmap_truth_after_mvp01.py
-          python scripts/validate_roadmap_authority.py
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md docs/roadmap/AGENT-BUILD-AHEAD-QUEUE.md
-          if ! git diff --cached --quiet; then
-            git commit -m "[ROADMAP] Sync after MVP 0.1 durable replay loop"
-            git push origin HEAD:${{ github.head_ref }}
-          fi
 
       - name: Validate repository contract
         shell: bash
