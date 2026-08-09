@@ -188,7 +188,7 @@ local UpgradeCatalog = table.freeze({
 	}),
 	table.freeze({
 		upgradeId = UpgradeIds.EchoChamber,
-		familyId = UpgradeFamilyIds.Firepower,
+		familyId = UpgradeFamilyIds.AmmunitionReload,
 		displayName = "AMMO SAVER",
 		implementationStateId = ImplementationStateIds.Implemented,
 	}),
@@ -500,7 +500,10 @@ local RewardSourceCatalog = table.freeze({
 		implementationStateId = ImplementationStateIds.Planned,
 	}),
 	table.freeze({ sourceId = RewardSourceIds.HordeClear, implementationStateId = ImplementationStateIds.Implemented }),
-	table.freeze({ sourceId = RewardSourceIds.BossMilestone, implementationStateId = ImplementationStateIds.Implemented }),
+	table.freeze({
+		sourceId = RewardSourceIds.BossMilestone,
+		implementationStateId = ImplementationStateIds.Implemented,
+	}),
 })
 
 local Config = {
