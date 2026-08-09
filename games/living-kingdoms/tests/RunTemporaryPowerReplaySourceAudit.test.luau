@@ -35,7 +35,10 @@ for _, temporaryState in
 		"table.clear(processedFieldIntelRewardIds)",
 	}
 do
-	assert(contains(resetSource, temporaryState), "run progression reset is missing temporary state: " .. temporaryState)
+	assert(
+		contains(resetSource, temporaryState),
+		"run progression reset is missing temporary state: " .. temporaryState
+	)
 end
 assert(
 	contains(resetSource, "syncCombatModifierAttributes()") and contains(resetSource, "publishAll()"),
