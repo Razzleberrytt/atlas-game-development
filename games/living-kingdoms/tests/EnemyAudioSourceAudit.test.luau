@@ -29,9 +29,7 @@ local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/Ene
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 local visualConfig = fs.readFile("games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau")
 
-for _, cueName in
-	{ "Alert", "Windup", "Strike", "Hit", "ScreamerWarning", "BloaterWarning", "BruteWarning", "Death" }
-do
+for _, cueName in { "Alert", "Windup", "Strike", "Hit", "ScreamerWarning", "BloaterWarning", "BruteWarning", "Death" } do
 	local cue = config[cueName]
 	assertThat(type(cue) == "table", "hostile audio must define the cue: " .. cueName)
 	assertThat(
