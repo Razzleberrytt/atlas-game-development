@@ -106,9 +106,10 @@ local function validateDialogueReference(value: unknown): boolean
 	return hasOnlyKeys(reference, {
 		DialogueRefId = true,
 		EntryNodeRefId = true,
-	})
-		and isNonEmptyBoundedString(reference.DialogueRefId, 128)
-		and isNonEmptyBoundedString(reference.EntryNodeRefId, 128)
+	}) and isNonEmptyBoundedString(reference.DialogueRefId, 128) and isNonEmptyBoundedString(
+		reference.EntryNodeRefId,
+		128
+	)
 end
 
 local function validateCapability(value: unknown): boolean
@@ -174,7 +175,11 @@ function Contracts.validateNPCDefinition(value: unknown): boolean
 		end
 		dialogueIds[reference.DialogueRefId] = true
 	end
-	if type(definition.Capabilities) ~= "table" or not isDenseArray(definition.Capabilities) or #definition.Capabilities < 1 then
+	if
+		type(definition.Capabilities) ~= "table"
+		or not isDenseArray(definition.Capabilities)
+		or #definition.Capabilities < 1
+	then
 		return false
 	end
 	local capabilityIds = {}
