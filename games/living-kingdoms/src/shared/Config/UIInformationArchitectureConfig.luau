@@ -199,7 +199,13 @@ local UIInformationArchitectureConfig = {
 			SurfaceKindIds.AmbientHUD,
 			"LivingKingdomsHordeHUD",
 			"HordeHUDController",
-			authorities("MissionDirectorService", "HordeExperienceService", "OperativeCombatRuntimeService", "OperativeLifeService", "RunProgressionService"),
+			authorities(
+				"MissionDirectorService",
+				"HordeExperienceService",
+				"OperativeCombatRuntimeService",
+				"OperativeLifeService",
+				"RunProgressionService"
+			),
 			InputPolicyIds.Ambient,
 			VisibilityRuleIds.ActiveRunOnly,
 			false,
@@ -268,8 +274,14 @@ local UIInformationArchitectureConfig = {
 	}),
 }
 
-assert(UIInformationArchitectureConfig.RuntimeConsumptionActive == false, "BA-063 architecture data must remain dormant")
-assert(UIInformationArchitectureConfig.InputArchitecture.SharedModalCoordinatorImplemented == false, "BA-063 must not claim a runtime coordinator")
+assert(
+	UIInformationArchitectureConfig.RuntimeConsumptionActive == false,
+	"BA-063 architecture data must remain dormant"
+)
+assert(
+	UIInformationArchitectureConfig.InputArchitecture.SharedModalCoordinatorImplemented == false,
+	"BA-063 must not claim a runtime coordinator"
+)
 
 local validContexts = {}
 for _, id in ContextIds do
