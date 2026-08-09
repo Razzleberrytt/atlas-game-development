@@ -14,7 +14,13 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Ma
 	injectGlobals = true,
 })()
 
-check(config.Version == "BA-011-v1")
+local recoveredArrival =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RecoveredSpawnLocationConfig.luau"), {
+		debugName = "RecoveredSpawnLocationConfig",
+		injectGlobals = true,
+	})()
+
+check(config.Version == "BA-011-v2-arrival-contract-link")
 check(config.SourceHold == true)
 check(config.RuntimeEnabled == false)
 check(config.PlaceBoundary.Strategy == "dedicated-main-world-place")
@@ -23,9 +29,22 @@ check(config.PlaceBoundary.MainWorldPlaceIdStatus == "unassigned")
 check(config.Root.Name == "LivingKingdomsMainWorld")
 check(config.Root.MayDescendFromOperationRoot == false)
 check(config.Anchors.Arrival.contentId == "spawn.main_world.arrival")
-check(config.Anchors.Arrival.position.x == 0.0)
-check(config.Anchors.Arrival.position.y == 7.0)
-check(config.Anchors.Arrival.position.z == 30.0)
+check(config.Anchors.Arrival.sourcePath == "Workspace/SpawnLocation")
+check(config.Anchors.Arrival.coordinateSpaceId == "authored-overworld")
+check(config.Anchors.Arrival.sourceContractModule == "RecoveredSpawnLocationConfig")
+check(config.Anchors.Arrival.sourceContractVersion == recoveredArrival.Version)
+check(config.Anchors.Arrival.contentId == recoveredArrival.SourceContentId)
+check(config.Anchors.Arrival.sourcePath == recoveredArrival.SourcePath)
+check(config.Anchors.Arrival.coordinateSpaceId == recoveredArrival.CoordinateSpaceId)
+check(config.Anchors.Arrival.position.x == recoveredArrival.Spawn.position.x)
+check(config.Anchors.Arrival.position.y == recoveredArrival.Spawn.position.y)
+check(config.Anchors.Arrival.position.z == recoveredArrival.Spawn.position.z)
+check(config.Anchors.Arrival.propertyEvidenceStatus == "complete-selected-instance")
+check(config.Anchors.Arrival.status == "evidence-backed-held")
+check(recoveredArrival.SourceHold == true)
+check(recoveredArrival.RuntimeEnabled == false)
+check(recoveredArrival.Ownership.PlayerMovementAuthority == false)
+check(recoveredArrival.Ownership.TeleportAuthority == false)
 check(config.Anchors.Return.contentId == "spawn.main_world.return")
 check(config.Anchors.Return.positionStatus == "unassigned-pending-return-flow-composition")
 check(config.Rules.PreserveAuthoredCoordinatesOneToOne == true)
