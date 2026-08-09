@@ -15,6 +15,7 @@ local GuiService = game:GetService("GuiService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
+local ChoiceInputCoordinator = require(script.Parent.ChoiceInputCoordinator)
 local HordeStateEarlyListener = require(script.Parent.Parent.State.HordeStateEarlyListener)
 
 local Controller = {}
@@ -29,6 +30,7 @@ local progressionChooseUpgradeRemote = progressionNetwork:WaitForChild("ChooseUp
 
 local started = false
 local connections: { RBXScriptConnection } = {}
+local unregisterChoiceInput: (() -> ())? = nil
 local screenGui: ScreenGui? = nil
 local lastRevision = -1
 local lastProgressionRevision = -1
@@ -895,25 +897,12 @@ function Controller.start()
 		StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
 	end)
 	createPresentation()
+	unregisterChoiceInput = ChoiceInputCoordinator.register("UpgradeChoice", function()
+		return upgradeInputActive
+	end, submitUpgradeChoice)
 	table.insert(connections, HordeStateEarlyListener.subscribe(onState))
 	table.insert(connections, progressionStateRemote.OnClientEvent:Connect(onProgressionState))
 	table.insert(connections, RunService.RenderStepped:Connect(updateFrame))
-	table.insert(
-		connections,
-		UserInputService.InputBegan:Connect(function(input, gameProcessed)
-			if gameProcessed or not upgradeInputActive then
-				return
-			end
-			local choiceIndex = if input.KeyCode == Enum.KeyCode.One or input.KeyCode == Enum.KeyCode.KeypadOne
-				then 1
-				elseif input.KeyCode == Enum.KeyCode.Two or input.KeyCode == Enum.KeyCode.KeypadTwo then 2
-				elseif input.KeyCode == Enum.KeyCode.Three or input.KeyCode == Enum.KeyCode.KeypadThree then 3
-				else nil
-			if choiceIndex ~= nil then
-				submitUpgradeChoice(choiceIndex)
-			end
-		end)
-	)
 
 	-- Recover the current progression snapshot for late joins so the XP bar and
 	-- any pending upgrade offer render immediately.
@@ -930,6 +919,10 @@ function Controller.stop()
 		return
 	end
 	started = false
+	if unregisterChoiceInput ~= nil then
+		unregisterChoiceInput()
+		unregisterChoiceInput = nil
+	end
 	for _, connection in connections do
 		connection:Disconnect()
 	end
