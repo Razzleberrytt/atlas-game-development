@@ -1,84 +1,119 @@
-name: Luau validation
+name: Atlas validation
 
 on:
   pull_request:
     paths:
       - "AGENTS.md"
-      - ".gitignore"
+      - "README.md"
+      - ".github/**"
       - "games/living-kingdoms/**"
       - "docs/**"
-      - "scripts/validate_*.py"
-      - "scripts/verify_studio_import_package.py"
-      - "scripts/roblox/**"
+      - "scripts/**"
       - "rokit.toml"
       - "stylua.toml"
       - "selene.toml"
-      - ".github/workflows/luau-validation.yml"
   push:
     branches:
       - main
     paths:
       - "AGENTS.md"
-      - ".gitignore"
+      - "README.md"
+      - ".github/**"
       - "games/living-kingdoms/**"
       - "docs/**"
-      - "scripts/validate_*.py"
-      - "scripts/verify_studio_import_package.py"
-      - "scripts/roblox/**"
+      - "scripts/**"
       - "rokit.toml"
       - "stylua.toml"
       - "selene.toml"
-      - ".github/workflows/luau-validation.yml"
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Validation profile
+        required: true
+        default: full
+        type: choice
+        options:
+          - docs
+          - fast
+          - full
 
 permissions:
   contents: read
 
 jobs:
-  validate:
+  classify:
     runs-on: ubuntu-22.04
-    timeout-minutes: 15
-
+    outputs:
+      profile: ${{ steps.profile.outputs.profile }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Validate repository contract
+      - name: Select validation profile
+        id: profile
         shell: bash
-        run: python scripts/validate_living_kingdoms_layout.py
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          BEFORE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+          MANUAL_PROFILE: ${{ inputs.profile }}
+        run: |
+          set -euo pipefail
 
-      - name: Verify preserved Studio import package
-        shell: bash
-        run: python scripts/verify_studio_import_package.py
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            profile="${MANUAL_PROFILE:-full}"
+            echo "profile=$profile" >> "$GITHUB_OUTPUT"
+            echo "Manual validation profile: $profile"
+            exit 0
+          fi
 
-      - name: Validate migration manifests
-        shell: bash
-        run: python scripts/validate_migration_manifests.py
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            git fetch --no-tags origin "$BASE_REF"
+            changed_files="$(git diff --name-only "origin/$BASE_REF...HEAD")"
+          else
+            if [[ -n "${BEFORE_SHA:-}" && ! "$BEFORE_SHA" =~ ^0+$ ]]; then
+              changed_files="$(git diff --name-only "$BEFORE_SHA...$CURRENT_SHA")"
+            else
+              changed_files="$(git show --pretty='' --name-only "$CURRENT_SHA")"
+            fi
+          fi
 
-      - name: Validate current migration evidence
-        shell: bash
-        run: python scripts/validate_migration_current_evidence.py
+          echo "Changed files:"
+          printf '%s\n' "$changed_files"
 
-      - name: Self-test RBXL property decoder
-        shell: bash
-        run: python scripts/roblox/extract_rbxl_world_properties.py --self-test
+          profile="docs"
+          while IFS= read -r path; do
+            [[ -z "$path" ]] && continue
+            if [[ "$path" == *.md ]]; then
+              continue
+            fi
+            profile="full"
+            break
+          done <<< "$changed_files"
 
-      - name: Self-test RBXL presentation decoder
-        shell: bash
-        run: python scripts/roblox/extract_rbxl_presentation_properties.py --self-test
+          # Empty/ambiguous diffs should never silently skip real validation.
+          if [[ -z "$changed_files" ]]; then
+            profile="full"
+          fi
 
-      - name: Self-test RBXL BillboardGui decoder
-        shell: bash
-        run: python scripts/roblox/extract_rbxl_billboard_properties.py --self-test
+          echo "profile=$profile" >> "$GITHUB_OUTPUT"
+          echo "Selected validation profile: $profile"
 
-      - name: Validate re-extracted property evidence
-        shell: bash
-        run: python scripts/validate_reextracted_property_evidence.py
-
-      - name: Validate re-extracted presentation evidence
-        shell: bash
-        run: python scripts/validate_reextracted_presentation_evidence.py
+  validate:
+    needs: classify
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install pinned Rokit tools
+        if: needs.classify.outputs.profile != 'docs'
         uses: CompeyDev/setup-rokit@v0.1.2
         with:
           version: v1.2.0
@@ -86,43 +121,12 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      # Formatting covers every Luau tree in the game, not just src. Fixtures
-      # and tooling drifted unchecked until 2026-08-08 because this step was
-      # scoped to src alone.
-      - name: Check Luau formatting
+      - name: Validate repository
         shell: bash
-        run: |
-          stylua --check \
-            games/living-kingdoms/src \
-            games/living-kingdoms/tests \
-            games/living-kingdoms/tools
-
-      - name: Run Selene
-        shell: bash
-        run: selene games/living-kingdoms/src
-
-      - name: Run Lune fixtures
-        shell: bash
-        run: |
-          set -euo pipefail
-          fixture_count=0
-          while IFS= read -r -d '' fixture; do
-            echo "::group::Lune fixture: $fixture"
-            lune run "$fixture"
-            echo "::endgroup::"
-            fixture_count=$((fixture_count + 1))
-          done < <(find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z)
-          if [ "$fixture_count" -eq 0 ]; then
-            echo "No Living Kingdoms fixtures were discovered." >&2
-            exit 1
-          fi
-          echo "Executed $fixture_count Living Kingdoms fixtures."
-
-      - name: Build Rojo project
-        shell: bash
-        run: rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
+        run: python scripts/validate.py "${{ needs.classify.outputs.profile }}"
 
       - name: Upload reproducible Living Kingdoms build
+        if: needs.classify.outputs.profile != 'docs'
         uses: actions/upload-artifact@v4
         with:
           name: living-kingdoms-rbxlx-${{ github.sha }}
