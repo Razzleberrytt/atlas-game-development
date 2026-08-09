@@ -66,7 +66,7 @@ Runtime evidence refresh after adoption:
 - **BA-012 closed at E1**: the canonical Hub interaction registry (preparation/board/vendor/NPC/crafting/gathering/portal/social anchors and owner/dependency boundaries) is complete in [`../specifications/canonical-hub-interaction-registry.md`](../specifications/canonical-hub-interaction-registry.md) (merged via PR #243); no runtime activation;
 - root `CLAUDE.md` was added as a companion mechanical/architecture reference alongside this operating contract; it does not change roadmap authority or task selection;
 - accepted evidence level is E2, single-listener consolidation is accepted, and the R2 keyed-readiness primitive is now dependency-safe preparation; runtime activation and delayed-ready evidence remain separate gates;
-- the Main World environment production plan is complete at E1 through BA-013; the next assigned Track 1 task is **BA-014 — Main World acceptance matrix**, per [`AGENT-BUILD-AHEAD-QUEUE.md`](AGENT-BUILD-AHEAD-QUEUE.md).
+- **BA-014 closed at E1**: the Main World acceptance matrix — 31 named Studio checks with fixed cameras, capture modes, device profiles, evidence artifacts and provenance-labelled thresholds — is complete in [`../specifications/main-world-acceptance-matrix.md`](../specifications/main-world-acceptance-matrix.md), locked by `MainWorldAcceptanceMatrixConfig`. It ships unrun and accepts nothing; Main World Track 1 (BA-010 → BA-014) is complete as a preparation sequence and its next step is measurement in the human/Studio lane, per [`AGENT-BUILD-AHEAD-QUEUE.md`](AGENT-BUILD-AHEAD-QUEUE.md).
 
 ## Current program state
 
@@ -241,7 +241,12 @@ runtime. BA-012 has since completed the canonical Hub interaction registry, and
 BA-013 defines the held environment kits, quality tiers, production ceilings,
 Terrain workflow and streaming/performance targets in
 [`../specifications/main-world-environment-production-plan.md`](../specifications/main-world-environment-production-plan.md).
-The next dependency-safe Main World task is BA-014 — acceptance matrix.
+BA-014 has since turned that checklist and those targets into the repeatable
+acceptance matrix in
+[`../specifications/main-world-acceptance-matrix.md`](../specifications/main-world-acceptance-matrix.md),
+which ships unrun. The next dependency-safe Main World step is executing that
+matrix, which requires a working Studio evidence transport rather than further
+build-ahead preparation.
 
 Define a readable loop:
 

@@ -244,7 +244,7 @@ Create a fresh evidence packet or BA-014 acceptance artifact with exact commit/b
 1. **BA-011 — Main World source representation/placement strategy (complete at E1).** The dedicated place/project boundary, reviewable representations, Terrain ownership, streaming groups and spawn/return anchors are defined in [`main-world-source-representation-strategy.md`](main-world-source-representation-strategy.md).
 2. **BA-012 — Canonical Hub interaction registry.** Define stable anchors and canonical owners for preparation, quest/operation board, vendors, NPCs, crafting/gathering seams, portal and social surfaces.
 3. **BA-013 — Environment production plan.** Define terrain/structure/prop/foliage/material/lighting/VFX/audio kits, variation budgets, LOD, streaming and quality tiers.
-4. **BA-014 — Main World acceptance matrix.** Turn the checklist above into measurable thresholds and repeatable Studio captures.
+4. **BA-014 — Main World acceptance matrix (complete at E1).** The checklist above is now 31 measurable checks with fixed cameras, capture modes, device profiles and provenance-labelled thresholds in [`main-world-acceptance-matrix.md`](main-world-acceptance-matrix.md). It ships unrun; executing it needs a working Studio evidence transport.
 5. Continue BA-005 reconstruction only for coherent groups selected by this composition plan; do not activate the authored overworld until the runtime and lifecycle gates permit it.
 
 ## Completion boundary

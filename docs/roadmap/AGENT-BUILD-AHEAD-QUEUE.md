@@ -111,7 +111,7 @@ This is now a first-class product lane under Master Roadmap Phase W.
 | BA-011 | DONE | Main World source representation/placement strategy. | Dedicated held Main World place/project boundary, source/model/Terrain ownership, streaming groups and arrival/return anchor policy are defined in `docs/specifications/main-world-source-representation-strategy.md` and locked by `MainWorldRepresentationConfig`. No runtime activation. |
 | BA-012 | DONE | Canonical Hub interaction registry. | Stable preparation/board/vendor/NPC/crafting/gathering/portal/social anchors and owner/dependency boundaries are defined in `docs/specifications/canonical-hub-interaction-registry.md`; no runtime activation. |
 | BA-013 | DONE | Environment production plan. | [`docs/specifications/main-world-environment-production-plan.md`](../specifications/main-world-environment-production-plan.md) defines evidence-bounded terrain/route/structure/prop/foliage/material/lighting/VFX/audio kits, provisional asset and visible-scene ceilings, Full/Reduced/Minimum-readable behavior, Terrain manifests, semantic streaming units and measured BA-014 performance targets. E1 plan only; no geometry or runtime activation. |
-| BA-014 | READY | Main World acceptance matrix. | Studio checklist for orientation, navigation, landmark recognition, service finding, return flow, visual quality and measured performance. |
+| BA-014 | DONE | Main World acceptance matrix. | [`docs/specifications/main-world-acceptance-matrix.md`](../specifications/main-world-acceptance-matrix.md) plus `MainWorldAcceptanceMatrixConfig` — 31 named checks across arrival/flow, navigation, landmark readability, visual environment, audio, streaming/lifecycle and performance, each with capture modes, device profiles, evidence artifacts and either a provenance-labelled threshold or a BA-013 tier ceiling. Ships unrun (`MatrixExecuted = false`, every check `NotRun`, frozen table, `isActivationAcceptable()` false). Running it is blocked on the Studio evidence transport, not on this queue. |
 
 ## P2 — quest, NPC, crafting, gathering, vendor/economy domains
 
@@ -200,21 +200,23 @@ Gate 0 runtime stabilization and the smallest MVP 0.1 enablers outrank this
 queue. Use the task below only when the runtime/evidence lane cannot proceed or
 build-ahead work is explicitly requested.
 
-**BA-014 — Main World acceptance matrix.**
+**BA-061 — PC/mobile/controller action-map audit.**
 
 Why now:
 
-- BA-010 classified the live bridge and recovered authored content;
-- BA-011 fixed the dedicated place/project, source/model/Terrain ownership, streaming-group and arrival/return boundaries;
-- BA-012 assigns stable interaction anchors, existing owners and explicit blocked ownership seams;
-- BA-013 now defines environment kits, quality reductions, provisional budgets and measurement targets without activating held content;
-- BA-014 can turn those targets into a repeatable Studio/camera/traversal/streaming/performance acceptance matrix while the Main World remains held.
+- Main World Track 1 is complete as a preparation sequence: BA-010 → BA-011 → BA-012 → BA-013 → BA-014 all landed, and the next Main World step is measurement, which needs the Studio lane rather than this queue;
+- the remaining MVP 0.1 checkpoint item is a first-person Studio pass covering upgrade input, firearm response and the elite → terminal → return → replay path, and its input half is the part build-ahead work can prepare;
+- MVP 0.1 already accepted a native `E`/controller/touch loot prompt and contextual keyboard/cursor/selection-focus reward input, so the semantic action surface exists but has never been audited as a whole;
+- BA-061 is a client-side audit of existing/missing/conflicting semantic actions plus accessibility considerations, so it activates nothing and cannot collide with the gated runtime lane;
+- it unblocks BA-062, and its findings feed Patch 0.2 combat feel directly.
+
+Keep it an audit. Do not change input handling, add an abstraction layer or touch gameplay authority under this ticket.
 
 ### Parallel assignment — concurrent agents (2026-08-08)
 
 More than one agent is working this queue at the same time. BA-010 → BA-011 → BA-012 landed back to back through PRs #241/#242/#243, so anyone continuing that thread should keep going rather than collide with a second agent starting the same ticket. Two file-disjoint tracks are named here so both can run simultaneously without inspecting each other's branch first:
 
-**Track 1 — Main World / Hub lane (continue in sequence).** `BA-013 (done) → BA-014`. Touches `docs/specifications/`, `src/shared/Config/`, `src/shared/World/`, and matching `tests/` for environment/acceptance content only. The agent continuing this thread should complete BA-014 rather than switch lanes.
+**Track 1 — Main World / Hub lane (complete).** `BA-010 → BA-011 → BA-012 → BA-013 → BA-014` all landed. The lane's next step is executing the BA-014 matrix, which requires a working Studio evidence transport and belongs to the human/Studio lane below. Do not re-open Track 1 as build-ahead work; take a P2/P6 candidate instead.
 
 **Track 2 — combat/RPG depth audits (P4; complete).** `BA-040 → BA-042 → BA-044`. The three E1 gap-matrix audits are merged; BA-041 and BA-043 remain blocked on their recorded product decisions.
 
@@ -222,7 +224,7 @@ Both tracks still obey every build-ahead law below, in particular: fetch current
 
 ### Other safe parallel candidates
 
-Once Track 1 and Track 2 are both claimed, or if either track turns out to already be in progress on `main`, these remain safe (after checking for overlap with open PRs):
+Both named tracks are now complete, so these are the remaining safe candidates (after checking for overlap with open PRs). `BA-020 → BA-024` form one dependency chain that ends in BA-025's cross-domain validation, and are the natural second lane beside BA-061:
 
 ```text
 BA-020 quest contracts
@@ -230,7 +232,6 @@ BA-021 NPC contracts
 BA-022 crafting contracts
 BA-023 gathering/resource-node model
 BA-024 vendor/catalog contracts
-BA-061 action-map audit
 BA-063 UI information architecture
 ```
 
