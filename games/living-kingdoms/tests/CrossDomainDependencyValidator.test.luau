@@ -150,8 +150,17 @@ unknownRefsGraph.Catalogs[1].Entries[1].Price.CurrencyRefId = "currency.fixture.
 
 local unknownRefs = Validator.validate(unknownRefsGraph)
 assert(unknownRefs.Valid == false)
-assert(hasIssue(unknownRefs, Validator.IssueCodes.UnknownQuestPrerequisite, "quest.fixture.intro", "quest.fixture.missing"))
-assert(hasIssue(unknownRefs, Validator.IssueCodes.UnknownProgressSourceRef, "quest.fixture.intro", "progress.fixture.missing"))
+assert(
+	hasIssue(unknownRefs, Validator.IssueCodes.UnknownQuestPrerequisite, "quest.fixture.intro", "quest.fixture.missing")
+)
+assert(
+	hasIssue(
+		unknownRefs,
+		Validator.IssueCodes.UnknownProgressSourceRef,
+		"quest.fixture.intro",
+		"progress.fixture.missing"
+	)
+)
 assert(hasIssue(unknownRefs, Validator.IssueCodes.UnknownRewardRef, "quest.fixture.intro", "reward.fixture.missing"))
 assert(
 	hasIssue(
@@ -167,11 +176,29 @@ assert(hasIssue(unknownRefs, Validator.IssueCodes.UnknownStationRef, "recipe.fix
 assert(hasIssue(unknownRefs, Validator.IssueCodes.UnknownUnlockRef, "recipe.fixture.tool", "unlock.fixture.missing"))
 assert(hasIssue(unknownRefs, Validator.IssueCodes.UnknownResourceRef, "node.fixture.ore", "resource.fixture.missing"))
 assert(hasIssue(unknownRefs, Validator.IssueCodes.UnknownToolRef, "node.fixture.ore", "tool.fixture.missing"))
-assert(hasIssue(unknownRefs, Validator.IssueCodes.UnknownRespawnPolicyRef, "node.fixture.ore", "respawn.fixture.missing"))
+assert(
+	hasIssue(unknownRefs, Validator.IssueCodes.UnknownRespawnPolicyRef, "node.fixture.ore", "respawn.fixture.missing")
+)
 assert(hasIssue(unknownRefs, Validator.IssueCodes.UnknownRewardRef, "node.fixture.ore", "reward.fixture.missing-node"))
-assert(hasIssue(unknownRefs, Validator.IssueCodes.UnknownVendorCatalogRef, "vendor.fixture.general", "catalog.fixture.missing"))
-assert(hasIssue(unknownRefs, Validator.IssueCodes.UnknownItemRef, "catalog.fixture.general", "item.fixture.missing-vendor"))
-assert(hasIssue(unknownRefs, Validator.IssueCodes.UnknownCurrencyRef, "catalog.fixture.general", "currency.fixture.missing"))
+assert(
+	hasIssue(
+		unknownRefs,
+		Validator.IssueCodes.UnknownVendorCatalogRef,
+		"vendor.fixture.general",
+		"catalog.fixture.missing"
+	)
+)
+assert(
+	hasIssue(unknownRefs, Validator.IssueCodes.UnknownItemRef, "catalog.fixture.general", "item.fixture.missing-vendor")
+)
+assert(
+	hasIssue(
+		unknownRefs,
+		Validator.IssueCodes.UnknownCurrencyRef,
+		"catalog.fixture.general",
+		"currency.fixture.missing"
+	)
+)
 
 local cycleGraph = makeValidGraph()
 cycleGraph.Quests[1].PrerequisiteQuestIds = { "quest.fixture.followup" }
