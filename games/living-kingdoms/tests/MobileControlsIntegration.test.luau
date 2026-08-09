@@ -79,7 +79,10 @@ assertThat(
 )
 assertThat(contains(survivor, "Enum.KeyCode.LeftShift"), "desktop sprint must use the conventional shift key")
 assertThat(
-	contains(survivor, "ContextActionService:BindAction(SPRINT_ACTION_NAME, onSprintAction, false, Enum.KeyCode.ButtonL3)"),
+	contains(
+		survivor,
+		"ContextActionService:BindAction(SPRINT_ACTION_NAME, onSprintAction, false, Enum.KeyCode.ButtonL3)"
+	),
 	"gamepad sprint must reuse the survivor owner without creating a touch button"
 )
 assertThat(
@@ -95,7 +98,10 @@ assertThat(
 	"reload must be a ContextAction touch button so Roblox arranges it with the cluster"
 )
 assertThat(
-	contains(weapon, "ContextActionService:BindAction(RELOAD_ACTION_NAME, onReloadAction, false, Enum.KeyCode.ButtonR1)"),
+	contains(
+		weapon,
+		"ContextActionService:BindAction(RELOAD_ACTION_NAME, onReloadAction, false, Enum.KeyCode.ButtonR1)"
+	),
 	"gamepad reload must reuse the weapon owner without creating a touch button"
 )
 assertThat(
@@ -110,7 +116,10 @@ assertThat(
 	not contains(mobile, "ReloadButton") and not contains(mobile, ".Activated:Connect"),
 	"the hand-placed corner reload button must be gone"
 )
-assertThat(contains(mobile, "WeaponController.requestReload()"), "the touch reload button must call the shared reload path")
+assertThat(
+	contains(mobile, "WeaponController.requestReload()"),
+	"the touch reload button must call the shared reload path"
+)
 assertThat(
 	contains(weapon, "function WeaponController.requestReload(): boolean"),
 	"the weapon controller must expose one reload path"
