@@ -185,8 +185,8 @@ local Actions: { [string]: ActionDefinition } = {
 	CloseHubUI = action(
 		"CloseHubUI",
 		"HubPreparationController",
-		"RawInputAndGui",
-		frozenList("Escape"),
+		"GuiOnly",
+		frozenList(),
 		frozenList("MouseButton1"),
 		frozenList(),
 		frozenList("GuiButton")

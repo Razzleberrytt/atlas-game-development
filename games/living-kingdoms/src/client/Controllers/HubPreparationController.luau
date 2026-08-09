@@ -6,7 +6,6 @@
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local UserInputService = game:GetService("UserInputService")
 
 local Controller = {}
 local player = Players.LocalPlayer
@@ -144,15 +143,6 @@ function Controller.start()
 				return
 			end
 			openAction(actionId)
-		end)
-	)
-
-	table.insert(
-		connections,
-		UserInputService.InputBegan:Connect(function(input, gameProcessed)
-			if not gameProcessed and input.KeyCode == Enum.KeyCode.Escape then
-				closeHubUi()
-			end
 		end)
 	)
 end
