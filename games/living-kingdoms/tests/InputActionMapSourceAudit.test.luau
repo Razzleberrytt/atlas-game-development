@@ -7,7 +7,7 @@
 	`docs/specifications/input-action-map-audit.md` to the source they were read
 	from, so the audit cannot silently rot.
 
-	BA-062 closes M1-M3 and C1/C2 in isolated source increments, has now landed
+	BA-062 closes M1-M5 and C1-C3 in isolated source increments, has landed
 	the shared action-map foundation, and is continuing the remaining UI cleanup.
 ]]
 
@@ -186,9 +186,12 @@ for _, source in { weapon, survivor, classAction, flashlight, squadPing } do
 	assert(not contains(source, "Enum.KeyCode.DPadDown"), "D-pad Down revive must have one gameplay owner")
 end
 
--- C3: two independent Escape listeners remain.
-assert(contains(rpgMenu, "Enum.KeyCode.Escape"), "the RPG modal still closes on Escape")
-assert(contains(hubPreparation, "Enum.KeyCode.Escape"), "the hub UI still closes on Escape")
+-- C3 remediation: Escape belongs only to the exclusive RPG modal. Hub-routed
+-- preparation panels close through the explicit device-neutral CLOSE button.
+assert(contains(rpgMenu, "Enum.KeyCode.Escape"), "the exclusive RPG modal must keep Escape")
+assert(not contains(hubPreparation, "Enum.KeyCode.Escape"), "the hub router must release Escape ownership")
+assert(not contains(hubPreparation, "UserInputService"), "the hub router must not keep a raw close listener")
+assert(contains(hubPreparation, "button.Activated:Connect(closeHubUi)"), "hub close must use its GUI affordance")
 
 -- C4: two HUDs claim 1/2/3, each guarded only by its own local flag.
 assert(contains(hordeHud, "upgradeInputActive"), "the upgrade HUD still guards its own number keys")
@@ -239,4 +242,4 @@ for _, finding in { "M4", "M5", "C3", "C4" } do
 	assert(contains(audit, finding), `the audit must retain finding {finding}`)
 end
 
-print("BA-061/062 InputActionMapSourceAudit: M1-M3/C1-C2 remediated; shared map present; remaining UI gaps locked")
+print("BA-061/062 InputActionMapSourceAudit: M1-M5/C1-C3 remediated; C4 remains locked")
