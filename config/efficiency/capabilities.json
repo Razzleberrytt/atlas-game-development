@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "project": "living-kingdoms",
+  "updated": "2026-08-09",
+  "capabilities": [
+    {
+      "id": "combat-authority",
+      "name": "Server-owned combat authority",
+      "owner": "server",
+      "status": "mature",
+      "extension_points": ["games/living-kingdoms/src/server/Domain", "games/living-kingdoms/src/server/Systems"],
+      "consumers": ["melee", "firearms", "enemy-combat", "boss-combat"],
+      "tests_glob": "games/living-kingdoms/tests/**/*.test.luau",
+      "data_driven": false,
+      "notes": "Extend existing authority; presentation may vary client-side but consequences remain server-owned."
+    },
+    {
+      "id": "expedition-lifecycle",
+      "name": "Expedition lifecycle and replay loop",
+      "owner": "server",
+      "status": "mature",
+      "extension_points": ["games/living-kingdoms/src/server/expedition-live.server.luau", "games/living-kingdoms/src/server/ExpeditionFoundationBootstrap.server.luau"],
+      "consumers": ["mission-state", "replay", "results", "return-to-hub"],
+      "tests_glob": "games/living-kingdoms/tests/**/*.test.luau",
+      "data_driven": false,
+      "notes": "Lifecycle changes require ownership/cleanup scrutiny."
+    },
+    {
+      "id": "reward-results",
+      "name": "Reward and result resolution",
+      "owner": "server",
+      "status": "active",
+      "extension_points": ["games/living-kingdoms/src/server/expedition-reward-results.server.luau"],
+      "consumers": ["loot", "banking", "debrief"],
+      "tests_glob": "games/living-kingdoms/tests/**/*.test.luau",
+      "data_driven": true,
+      "notes": "Prefer item/reward definitions over bespoke reward scripts as Patch 0.3 expands."
+    },
+    {
+      "id": "hub-interactions",
+      "name": "Canonical hub interaction registry",
+      "owner": "server/shared-contract",
+      "status": "prepared",
+      "extension_points": ["games/living-kingdoms/src/server/hub-preparation.server.luau", "docs/specifications/canonical-hub-interaction-registry.md"],
+      "consumers": ["preparation", "vendors", "crafting", "portals", "npc-interactions"],
+      "tests_glob": "games/living-kingdoms/tests/**/*.test.luau",
+      "data_driven": true,
+      "notes": "Stable IDs and registries are preferred for Main World growth."
+    },
+    {
+      "id": "networking",
+      "name": "Networking and replicated state delivery",
+      "owner": "server",
+      "status": "mature",
+      "extension_points": ["games/living-kingdoms/src/server/Networking"],
+      "consumers": ["combat-presentation", "mission-state", "inventory", "co-op"],
+      "tests_glob": "games/living-kingdoms/tests/**/*.test.luau",
+      "data_driven": false,
+      "notes": "Do not introduce parallel authoritative delivery paths."
+    },
+    {
+      "id": "content-validation",
+      "name": "Repository and content validation",
+      "owner": "tooling",
+      "status": "mature",
+      "extension_points": ["scripts/validate.py", "scripts/validate_living_kingdoms_layout.py"],
+      "consumers": ["all-source-changes", "ci", "agents"],
+      "tests_glob": "scripts/*.py",
+      "data_driven": true,
+      "notes": "New deterministic invariants should be added to validation rather than left as prose when practical."
+    }
+  ]
+}
