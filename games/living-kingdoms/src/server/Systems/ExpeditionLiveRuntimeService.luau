@@ -198,6 +198,28 @@ function Service.readRoomPlan(): any
 	return activeBootstrap:getRoomPlan()
 end
 
+-- Server-only BA-052 integration seam. The caller must prove which active run
+-- and phase it observed before this owner mutates the existing expedition fact.
+-- No client can call this directly, and the underlying runtime still rejects a
+-- duplicate or terminal-run discovery.
+function Service.markSecretDiscovered(expectedRunId: string, expectedPhaseId: string): boolean
+	if type(expectedRunId) ~= "string" or expectedRunId == "" then
+		return false
+	end
+	if type(expectedPhaseId) ~= "string" or expectedPhaseId == "" then
+		return false
+	end
+	local bootstrap = activeBootstrap
+	if bootstrap == nil then
+		return false
+	end
+	local snapshot = bootstrap:getSnapshot()
+	if snapshot == nil or snapshot.RunId ~= expectedRunId or snapshot.PhaseId ~= expectedPhaseId then
+		return false
+	end
+	return bootstrap.Runtime:markSecretDiscovered()
+end
+
 function Service.stop()
 	if not started then
 		return
