@@ -44,7 +44,10 @@ assert(contains(controller, "StingerMinimumIntervalSeconds"))
 assert(contains(controller, "GroupTransparency"))
 assert(contains(controller, "Workspace:GetServerTimeNow()"))
 assert(count(controller, "OnClientEvent:Connect") == 0, "crescendo must own zero physical RemoteEvent listeners")
-assert(count(controller, "HordeStateEarlyListener.subscribe(onState)") == 1, "crescendo must use one application-bridge subscription")
+assert(
+	count(controller, "HordeStateEarlyListener.subscribe(onState)") == 1,
+	"crescendo must use one application-bridge subscription"
+)
 assert(count(controller, "RenderStepped:Connect") == 1, "crescendo must use one frame connection")
 assert(count(controller, 'Instance.new("Sound")') == 1, "crescendo must construct one fixed stinger")
 assert(count(controller, 'Instance.new("ScreenGui")') == 1, "crescendo must construct one fixed screen surface")
@@ -85,4 +88,6 @@ assert(not contains(hud, "streakLabel"), "the unified HUD must not retain a dupl
 assert(contains(bootstrap, "MassacreCrescendoController"))
 assert(count(bootstrap, "MassacreCrescendoController.start()") == 1)
 
-print("MassacreCrescendoSourceAudit: authoritative expiry, bridge transport, fixed presentation, verified audio, and zero rewards passed")
+print(
+	"MassacreCrescendoSourceAudit: authoritative expiry, bridge transport, fixed presentation, verified audio, and zero rewards passed"
+)
