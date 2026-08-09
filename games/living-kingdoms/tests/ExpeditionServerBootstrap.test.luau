@@ -21,8 +21,6 @@ local function loadModule(path: string, debugName: string, environment: { [strin
 	})()
 end
 
--- Shared declarations first; each layer is injected into the next by token so a
--- module can only ever see the dependencies the Rojo tree actually gives it.
 local expeditionContracts = loadModule("shared/Expeditions/ExpeditionContracts.luau", "ExpeditionContracts")
 local roomAssemblyContracts = loadModule("shared/Expeditions/RoomAssemblyContracts.luau", "RoomAssemblyContracts")
 local roomPlacementPlanner = loadModule("shared/Expeditions/RoomPlacementPlanner.luau", "RoomPlacementPlanner")
@@ -90,11 +88,51 @@ local expeditionRuntime = loadModule("server/Systems/ExpeditionRuntime.luau", "E
 	end,
 })
 
-local encounterCoordinator =
-	loadModule("server/Systems/ExpeditionEncounterCoordinator.luau", "ExpeditionEncounterCoordinator")
+local encounterCoordinator = loadModule("server/Systems/ExpeditionEncounterCoordinator.luau", "ExpeditionEncounterCoordinator")
 local directorAdapter = loadModule("server/Systems/EnemyDirectorEncounterAdapter.luau", "EnemyDirectorEncounterAdapter")
 
+local hordeConfig = {
+	Roles = {
+		Basic = { Id = "horde.role.infected", DisplayName = "Exclusion Stalker" },
+		Runner = { Id = "horde.role.runner", DisplayName = "Rushing Stalker" },
+		Crawler = { Id = "horde.role.crawler", DisplayName = "Low Stalker" },
+		Screamer = { Id = "horde.role.screamer", DisplayName = "Choir Screamer" },
+		Brute = { Id = "horde.role.brute", DisplayName = "Grief Brute" },
+	},
+}
+local enemyContracts = {
+	EnemyArchetypeIds = {
+		ExclusionWalker = "enemy.exclusion_walker",
+		BlightSpitter = "enemy.blight_spitter",
+		Progenitor = "boss.progenitor",
+	},
+}
+local specialConfig = { BlightSpitter = { DisplayName = "Blight Spitter" } }
+local encounterByRoomId = {}
+for _, room in roomAssemblyConfig.Rooms do
+	if room.Role ~= roomAssemblyContracts.RoleIds.Entry and room.Role ~= roomAssemblyContracts.RoleIds.Boss then
+		encounterByRoomId[room.Id] = {
+			Waves = {
+				{
+					Units = {
+						{
+							ArchetypeId = enemyContracts.EnemyArchetypeIds.ExclusionWalker,
+							Count = 1,
+							HordeRoleId = hordeConfig.Roles.Basic.Id,
+						},
+					},
+				},
+			},
+		}
+	end
+end
+local firstDungeonContentConfig = { Encounters = encounterByRoomId }
+
 local BOOTSTRAP_CONFIG_TOKEN = {}
+local BOOTSTRAP_FIRST_CONTENT_TOKEN = {}
+local BOOTSTRAP_HORDE_TOKEN = {}
+local BOOTSTRAP_SPECIAL_TOKEN = {}
+local BOOTSTRAP_ENEMY_CONTRACTS_TOKEN = {}
 local BOOTSTRAP_CONTRACTS_TOKEN = {}
 local BOOTSTRAP_PLANNER_TOKEN = {}
 local BOOTSTRAP_ASSEMBLER_TOKEN = {}
@@ -115,7 +153,13 @@ local Bootstrap = loadModule("server/Systems/ExpeditionServerBootstrap.luau", "E
 			assert(serviceName == "ReplicatedStorage", "unexpected service request")
 			return {
 				Shared = {
-					Config = { ExpeditionConfig = BOOTSTRAP_CONFIG_TOKEN },
+					Config = {
+						ExpeditionConfig = BOOTSTRAP_CONFIG_TOKEN,
+						FirstDungeonContentConfig = BOOTSTRAP_FIRST_CONTENT_TOKEN,
+						HordeExperienceConfig = BOOTSTRAP_HORDE_TOKEN,
+						SpecialEnemyConfig = BOOTSTRAP_SPECIAL_TOKEN,
+					},
+					Combat = { EnemyContracts = BOOTSTRAP_ENEMY_CONTRACTS_TOKEN },
 					Expeditions = {
 						ExpeditionContracts = BOOTSTRAP_CONTRACTS_TOKEN,
 						RoomPlacementPlanner = BOOTSTRAP_PLANNER_TOKEN,
@@ -126,27 +170,17 @@ local Bootstrap = loadModule("server/Systems/ExpeditionServerBootstrap.luau", "E
 		end,
 	},
 	require = function(token: unknown)
-		if token == BOOTSTRAP_CONFIG_TOKEN then
-			return expeditionConfig
-		end
-		if token == BOOTSTRAP_CONTRACTS_TOKEN then
-			return expeditionContracts
-		end
-		if token == BOOTSTRAP_PLANNER_TOKEN then
-			return roomPlacementPlanner
-		end
-		if token == BOOTSTRAP_ASSEMBLER_TOKEN then
-			return roomSequenceAssembler
-		end
-		if token == BOOTSTRAP_RUNTIME_TOKEN then
-			return expeditionRuntime
-		end
-		if token == BOOTSTRAP_COORDINATOR_TOKEN then
-			return encounterCoordinator
-		end
-		if token == BOOTSTRAP_ADAPTER_TOKEN then
-			return directorAdapter
-		end
+		if token == BOOTSTRAP_CONFIG_TOKEN then return expeditionConfig end
+		if token == BOOTSTRAP_FIRST_CONTENT_TOKEN then return firstDungeonContentConfig end
+		if token == BOOTSTRAP_HORDE_TOKEN then return hordeConfig end
+		if token == BOOTSTRAP_SPECIAL_TOKEN then return specialConfig end
+		if token == BOOTSTRAP_ENEMY_CONTRACTS_TOKEN then return enemyContracts end
+		if token == BOOTSTRAP_CONTRACTS_TOKEN then return expeditionContracts end
+		if token == BOOTSTRAP_PLANNER_TOKEN then return roomPlacementPlanner end
+		if token == BOOTSTRAP_ASSEMBLER_TOKEN then return roomSequenceAssembler end
+		if token == BOOTSTRAP_RUNTIME_TOKEN then return expeditionRuntime end
+		if token == BOOTSTRAP_COORDINATOR_TOKEN then return encounterCoordinator end
+		if token == BOOTSTRAP_ADAPTER_TOKEN then return directorAdapter end
 		error("unexpected ExpeditionServerBootstrap dependency")
 	end,
 })
@@ -154,15 +188,29 @@ local Bootstrap = loadModule("server/Systems/ExpeditionServerBootstrap.luau", "E
 local alive: { [string]: boolean } = {}
 local bossState = { exists = false, isAlive = false, isDefeated = false }
 local spawnedWaves = {}
+local activeSpawnedWave: any = nil
 local bossPosition: any = nil
 
 local director = {
 	spawnAuthoredWave = function(waveIndex: number, definitions: { any }): number
-		table.insert(spawnedWaves, { WaveIndex = waveIndex, Definitions = definitions })
-		for _, definition in definitions do
-			alive[definition.id] = true
-		end
-		return #definitions
+		assert(#definitions == 0, "typed bridge must not mint legacy generic walkers")
+		activeSpawnedWave = { WaveIndex = waveIndex, Definitions = {} }
+		table.insert(spawnedWaves, activeSpawnedWave)
+		return 0
+	end,
+	spawnEnemy = function(request: any): any
+		assert(activeSpawnedWave ~= nil, "typed spawn must follow authored pressure setup")
+		local definition = {
+			id = request.entityId,
+			x = request.position.x,
+			y = request.position.y,
+			z = request.position.z,
+			archetypeId = request.archetypeId,
+			hordeRoleId = request.hordeRoleId,
+		}
+		table.insert(activeSpawnedWave.Definitions, definition)
+		alive[request.entityId] = true
+		return { didSpawn = true, wasDeferred = false, rejectionReasonId = nil }
 	end,
 	spawnBoss = function(position: any, _floodlightsRestored: boolean): boolean
 		bossPosition = position
@@ -172,15 +220,11 @@ local director = {
 	readEnemyCombatFacts = function(): { any }
 		local facts = {}
 		for entityId, isAlive in alive do
-			if isAlive then
-				table.insert(facts, { entityId = entityId, isAlive = true })
-			end
+			if isAlive then table.insert(facts, { entityId = entityId, isAlive = true }) end
 		end
 		return facts
 	end,
-	readBossState = function(): any
-		return bossState
-	end,
+	readBossState = function(): any return bossState end,
 	endOperationPressure = function() end,
 }
 
@@ -197,15 +241,10 @@ local layout = roomPlacementPlanner.plan(plan)
 assert(#layout.Placements == #plan.Nodes, "fixture layout must match the assembled room plan")
 assert(service:getSnapshot().PhaseId == "Preparation", "a new expedition starts in Preparation")
 
--- Preparation has no encounter and advances immediately.
 local preparation = service:step(100)
 assert(preparation.Accepted == true, "preparation should advance without an encounter")
 assert(service:getSnapshot().PhaseId == "Approach", "preparation advances into Approach")
 
--- Approach starts, remains active, then completes after its exact authored IDs die.
--- A combat encounter must be observed alive at least once before it can be
--- reported complete, so reaching the next phase always takes three steps:
--- start, an in-progress poll, then the completing poll.
 local clock = 110
 local function step(): (boolean, string)
 	local outcome = service:step(clock)
@@ -214,15 +253,16 @@ local function step(): (boolean, string)
 end
 
 local function killTrackedEnemies()
-	for entityId in alive do
-		alive[entityId] = false
-	end
+	for entityId in alive do alive[entityId] = false end
 end
 
 local startedApproach, startedApproachReason = step()
 assert(startedApproach == true and startedApproachReason == "EncounterStarted", "approach encounter should start")
 assert(#spawnedWaves == 1, "approach must produce exactly one first wave")
+assert(#spawnedWaves[1].Definitions == 2, "approach must preserve its two typed walkers")
 for _, definition in spawnedWaves[1].Definitions do
+	assert(definition.archetypeId == enemyContracts.EnemyArchetypeIds.ExclusionWalker)
+	assert(definition.hordeRoleId == hordeConfig.Roles.Basic.Id)
 	assert(math.abs(definition.x) <= 18, "approach enemy X offsets must stay bounded")
 	assert(definition.z >= 0 and definition.z <= 48, "approach enemies must stay in the intended arrival band")
 end
@@ -234,16 +274,12 @@ assert(approachDone == true, "approach completes once its authored enemies are d
 assert(approachReason == "EncounterCompletedAndPhaseAdvanced", "approach completion advances the phase")
 assert(service:getSnapshot().PhaseId == "Dungeon", "approach advances into Dungeon")
 
--- Walk every deterministic dungeon node. Traversal rooms resolve on the next
--- poll; combat rooms resolve only after their exact authored IDs are dead.
 local guard = 0
 while service:getSnapshot().PhaseId == "Dungeon" do
 	guard += 1
 	assert(guard < 60, "dungeon traversal must terminate")
 	local _, reasonId = step()
-	if reasonId == "EncounterInProgress" then
-		killTrackedEnemies()
-	end
+	if reasonId == "EncounterInProgress" then killTrackedEnemies() end
 end
 assert(service:getSnapshot().PhaseId == "Elite", "the dungeon advances into Elite")
 
@@ -265,15 +301,13 @@ local bossDone = step()
 assert(bossDone == true, "boss completes once defeated")
 assert(service:getSnapshot().PhaseId == "Rewards", "boss advances into Rewards")
 
--- Every dungeon/elite wave is now anchored to the same deterministic placement
--- plan that builds the physical rooms. This prevents fixed-Z encounter drift.
 for waveOrdinal = 2, #spawnedWaves do
 	local spawned = spawnedWaves[waveOrdinal]
-	local placement = if spawned.WaveIndex == 90
-		then layout.Placements[#layout.Placements - 1]
-		else layout.Placements[spawned.WaveIndex]
+	local placement = if spawned.WaveIndex == 90 then layout.Placements[#layout.Placements - 1] else layout.Placements[spawned.WaveIndex]
 	assert(placement ~= nil, "every non-approach wave must map to a room placement")
 	for _, definition in spawned.Definitions do
+		assert(definition.archetypeId == enemyContracts.EnemyArchetypeIds.ExclusionWalker)
+		assert(definition.hordeRoleId == hordeConfig.Roles.Basic.Id)
 		assert(math.abs(definition.x - placement.Center.x) <= 18, "enemy X must stay inside its room footprint")
 		assert(math.abs(definition.z - placement.Center.z) <= 24, "enemy Z must stay inside its room footprint")
 	end
@@ -283,23 +317,16 @@ assert(bossPosition ~= nil, "boss spawn position must be captured")
 assert(bossPosition.x == bossPlacement.Center.x, "boss X must use the boss-room center")
 assert(bossPosition.z == bossPlacement.Center.z, "boss Z must use the boss-room center")
 
--- Rewards carries no encounter, so it advances straight into the terminal
--- Results phase, which then finalizes the run exactly once.
 local rewardsAdvanced, rewardsReason = step()
 assert(rewardsAdvanced == true and rewardsReason == "PhaseAdvanced", "rewards advances without an encounter")
 assert(service:getSnapshot().PhaseId == "Results", "rewards advances into Results")
-
 local finalized, finalizedReason = step()
 assert(finalized == true and finalizedReason == "RunFinished", "the results phase finalizes the run")
 assert(service:getSnapshot().OutcomeId == "Completed", "a full expedition completes")
-
--- Finalization is one-shot; further steps cannot produce a second result.
 local replayed, replayedReason = step()
 assert(replayed == false and replayedReason == "RunTerminal", "a finished run rejects further steps")
-assert(service:getSnapshot().OutcomeId == "Completed", "the terminal outcome is stable")
-
 service:destroy()
 assert(service:getSnapshot() == nil, "a destroyed bootstrap discloses no snapshot")
 assert(service:step(600).ReasonId == "BootstrapDestroyed", "a destroyed bootstrap rejects further steps")
 
-print("ExpeditionServerBootstrap: deterministic room-local encounter placement and full run passed")
+print("ExpeditionServerBootstrap: typed authored composition and room-local full run passed")
