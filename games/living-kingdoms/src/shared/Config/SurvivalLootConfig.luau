@@ -1,7 +1,5 @@
 --!strict
 
-local FirearmConfig = require(script.Parent.FirearmConfig)
-
 local Config = {
 	Version = "SURVIVAL-LOOT-v3-melee-opening-recovery",
 	InventoryCapacity = 30,
@@ -13,9 +11,10 @@ local Config = {
 	AmmoRoundsMinimum = 4,
 	AmmoRoundsMaximum = 10,
 	-- A fresh melee operative recovers the humble Service Pistol from their first
-	-- personally opened chest. Stronger firearms remain in the separate upgrade
-	-- pool below and retain their existing random/pity discovery cadence.
-	OpeningRecoveryWeaponId = FirearmConfig.DefaultSelectableWeaponId,
+	-- personally opened chest. This is the canonical stable weapon ID; runtime
+	-- ownership still resolves it through FirearmConfig before equipping. Stronger
+	-- firearms remain in the separate upgrade pool below.
+	OpeningRecoveryWeaponId = "weapon.service-pistol",
 	OpeningRecoveryByOpenedChest = 1,
 	ChestWeaponChancePercent = 22,
 	GuaranteedWeaponByOpenedChest = 3,
@@ -40,7 +39,7 @@ local Config = {
 }
 
 assert(Config.InventoryCapacity >= 24, "survival inventory must be generous by default")
-assert(FirearmConfig.get(Config.OpeningRecoveryWeaponId) ~= nil, "opening recovered firearm must exist")
+assert(Config.OpeningRecoveryWeaponId == "weapon.service-pistol", "opening recovery ID must remain the humble sidearm")
 assert(Config.OpeningRecoveryByOpenedChest == 1, "the melee opening must not depend on random firearm luck")
 assert(Config.ChestWeaponChancePercent >= 15, "weapon bonuses must be realistically discoverable")
 assert(Config.GuaranteedWeaponByOpenedChest <= 4, "early exploration must guarantee a weapon opportunity")
