@@ -69,24 +69,16 @@ local active = context(
 )
 assert(Contracts.resolveQuestState(definition, active) == Contracts.StateIds.Active)
 
-local ready = context(
-	{ ["quest.onboarding.field-ready"] = true },
-	{ ["quest.operation.first-descent"] = true },
-	{
-		["objective.complete.first-expedition"] = 4,
-		["objective.discover.lookout-cache"] = 1,
-	}
-)
+local ready = context({ ["quest.onboarding.field-ready"] = true }, { ["quest.operation.first-descent"] = true }, {
+	["objective.complete.first-expedition"] = 4,
+	["objective.discover.lookout-cache"] = 1,
+})
 assert(Contracts.resolveQuestState(definition, ready) == Contracts.StateIds.ReadyToTurnIn)
 
-local completed = context(
-	{
-		["quest.onboarding.field-ready"] = true,
-		["quest.operation.first-descent"] = true,
-	},
-	{},
-	{}
-)
+local completed = context({
+	["quest.onboarding.field-ready"] = true,
+	["quest.operation.first-descent"] = true,
+}, {}, {})
 assert(Contracts.resolveQuestState(definition, completed) == Contracts.StateIds.Completed)
 
 -- Completion state is deterministic and outranks stale accepted/progress data.
