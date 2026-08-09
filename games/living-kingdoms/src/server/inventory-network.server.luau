@@ -1,19 +1,21 @@
 --!strict
 
 --[[
-	Blueprint v2.0 queue item 1 — the owner-only inventory read boundary.
+	Blueprint v2.0 owner-only inventory network plus the live persistence lifecycle.
 
-	This is the only path by which inventory state reaches a client. The owner is
-	always `player.UserId` taken from the invocation itself; no argument can name
-	an inventory. A client that supplies an identity is rejected outright rather
-	than silently ignored, so probing another player's inventory is observable as
-	a rejection instead of quietly returning the caller's own data.
+	Inventory identity is always derived from the invoking Player. This script also
+	owns the application-scoped lease lifecycle required by InventoryLiveService:
+	load/acquire on join, periodic renewal while connected, release on leave, and
+	final release on shutdown. A snapshot is only pushed after a successful load.
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local InventoryLiveService = require(script.Parent.Systems.InventoryLiveService)
+
+local LEASE_RENEW_INTERVAL_SECONDS = 30
 
 local existing = ReplicatedStorage:FindFirstChild("InventoryNetwork")
 if existing ~= nil then
@@ -40,12 +42,44 @@ local state = Instance.new("RemoteEvent")
 state.Name = "State"
 state.Parent = network
 
+local loadedPlayerIds: { [number]: boolean } = {}
+local renewalAccumulatorSeconds = 0
+
 local function rejected(reasonId: string): any
 	return table.freeze({ Accepted = false, ReasonId = reasonId, Snapshot = nil })
 end
 
 local function readFor(player: Player): any
 	return InventoryLiveService.readOwnedSnapshot(player.UserId, player.UserId)
+end
+
+-- Pushes the owner their own snapshot. Every send is addressed to exactly one
+-- player and built from that player's identity, so one inventory can never fan
+-- out to another player.
+local function pushTo(player: Player)
+	state:FireClient(player, readFor(player))
+end
+
+local function loadPlayer(player: Player)
+	local loaded = InventoryLiveService.loadPlayer(player.UserId, os.time())
+	if loaded.Accepted ~= true then
+		warn(string.format("[InventoryNetwork] inventory load rejected for %d: %s", player.UserId, loaded.ReasonId))
+		return
+	end
+	if player.Parent ~= Players then
+		InventoryLiveService.releasePlayer(player.UserId)
+		return
+	end
+	loadedPlayerIds[player.UserId] = true
+	pushTo(player)
+end
+
+local function releasePlayer(player: Player)
+	loadedPlayerIds[player.UserId] = nil
+	local released = InventoryLiveService.releasePlayer(player.UserId)
+	if released.Accepted ~= true and released.ReasonId ~= "LeaseNotOwned" then
+		warn(string.format("[InventoryNetwork] inventory lease release rejected for %d: %s", player.UserId, released.ReasonId))
+	end
 end
 
 readOwnInventory.OnServerInvoke = function(player: Player, requestedOwnerId: any): any
@@ -85,7 +119,7 @@ dismantleOwnedItem.OnServerInvoke = function(player: Player, instanceId: any, tr
 	local outcome =
 		InventoryLiveService.dismantleOwnedItem(player.UserId, player.UserId, instanceId, transactionId, os.time())
 	if outcome.Accepted == true then
-		state:FireClient(player, readFor(player))
+		pushTo(player)
 	end
 	return table.freeze({
 		Accepted = outcome.Accepted == true,
@@ -94,18 +128,38 @@ dismantleOwnedItem.OnServerInvoke = function(player: Player, instanceId: any, tr
 	})
 end
 
---[[
-	Pushes the owner their own snapshot. Every send is addressed to exactly one
-	player and built from that player's identity, so a broadcast helper that
-	could fan one inventory out to the server deliberately does not exist.
-]]
-local function pushTo(player: Player)
-	state:FireClient(player, readFor(player))
-end
+local playerAddedConnection = Players.PlayerAdded:Connect(function(player)
+	task.spawn(loadPlayer, player)
+end)
+local playerRemovingConnection = Players.PlayerRemoving:Connect(releasePlayer)
 
-Players.PlayerAdded:Connect(pushTo)
 for _, player in Players:GetPlayers() do
-	pushTo(player)
+	task.spawn(loadPlayer, player)
 end
 
-print("[Living Kingdoms] Inventory network mounted")
+local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
+	renewalAccumulatorSeconds += deltaTime
+	if renewalAccumulatorSeconds < LEASE_RENEW_INTERVAL_SECONDS then
+		return
+	end
+	renewalAccumulatorSeconds = 0
+	local nowUnix = os.time()
+	for _, player in Players:GetPlayers() do
+		if loadedPlayerIds[player.UserId] then
+			local renewed = InventoryLiveService.renewPlayer(player.UserId, nowUnix)
+			if renewed.Accepted ~= true then
+				warn(string.format("[InventoryNetwork] inventory lease renewal rejected for %d: %s", player.UserId, renewed.ReasonId))
+			end
+		end
+	end
+end)
+
+game:BindToClose(function()
+	heartbeatConnection:Disconnect()
+	playerAddedConnection:Disconnect()
+	playerRemovingConnection:Disconnect()
+	table.clear(loadedPlayerIds)
+	InventoryLiveService.destroy()
+end)
+
+print("[Living Kingdoms] Inventory network and lease lifecycle mounted")
