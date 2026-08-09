@@ -150,8 +150,8 @@ This is now a first-class product lane under Master Roadmap Phase W.
 
 | ID | Status | Task | Deliverable / boundary |
 |---|---|---|---|
-| BA-050 | READY | First authored outdoor route as data. | Route/landmark/encounter/discovery/entrance/exit sequence. |
-| BA-051 | BLOCKED on BA-050 | Encounter-beat definitions. | Mixed groups, pacing, elite placement, recovery assumptions. |
+| BA-050 | DONE | First authored outdoor route as data. | [`docs/specifications/first-authored-outdoor-route.md`](../specifications/first-authored-outdoor-route.md) — orders the eight active Ranger Station → Extraction Clearing landmarks, exposes three route-local BA-051 encounter slots plus one optional BA-052 discovery slot, and hands off to First Descent at `descent-entry`. `RuntimeConsumptionActive = false`; recovered 189-Part WorldPath geometry remains held and the expedition launch terminal is not reused as dungeon-transition authority. |
+| BA-051 | READY | Encounter-beat definitions. | Mixed groups, pacing, elite placement, recovery assumptions. |
 | BA-052 | READY | Landmark/discovery definitions. | Stable discovery IDs, gameplay meaning, presentation intent, reward refs, streaming-safe identity. |
 
 ## P6 — onboarding, input and UI preparation
@@ -230,7 +230,7 @@ BA-021 NPC contracts
 BA-022 crafting contracts
 BA-023 gathering/resource-node model
 BA-024 vendor/catalog contracts
-BA-050 authored route data
+BA-051 encounter-beat definitions
 BA-052 landmark/discovery definitions
 BA-060 onboarding sequence
 BA-061 action-map audit
