@@ -1,305 +1,171 @@
 # PC / mobile / controller action-map audit
 
-**Roadmap ticket:** BA-061
+**Roadmap ticket:** BA-061  
+**Lane:** controlled build-ahead, P6 onboarding/input/UI preparation  
+**Status:** audit complete; BA-062 M1-M5 and C1-C4 source-remediated  
+**Evidence level:** E1 source/static only — consolidated Studio/device acceptance remains open
 
-**Lane:** controlled build-ahead, P6 onboarding/input/UI preparation
+## Current decision
 
-**Status:** audit complete; BA-062 M1-M3 and C1/C2 source remediations applied, remaining findings open
+BA-061 originally found seventeen semantic player actions distributed across client controllers, engine controls, and world prompts. BA-062 has now closed the identified source-level device gaps and direct input conflicts without moving server gameplay authority.
 
-**Evidence level:** E1 source/static only — no Studio device testing was performed
+The canonical descriptive registry is `InputActionMapConfig`. It contains the original seventeen semantic actions plus one remediation infrastructure entry, `NumberedChoiceInput`, for eighteen total entries. `NumberedChoiceInput` is not a new gameplay verb: it represents the single direct keyboard owner for the existing Upgrade and Relic choice shortcuts.
 
-**Playable-patch mapping:** MVP 0.1 device-parity input; remaining remediation belongs to BA-062 and Patch 0.2
+Current source-level outcomes:
 
-**Runtime behavior:** BA-062 changes only client input origins/bindings; server combat, movement, revive, class-action and prompt authority are unchanged
+- Fire preserves mouse input and adds `ButtonR2` plus a generated touch action.
+- Reload preserves `R` and touch while adding `ButtonR1`.
+- Sprint preserves `LeftShift` and touch while adding `ButtonL3`.
+- Revive uses `V`, `DPadDown`, and generated touch, leaving world interaction on `E` / `ButtonX`.
+- Class action uses `Q` / `ButtonB`, leaving world interaction on `ButtonX`.
+- Hub preparation has an explicit selectable/tappable **CLOSE** affordance and no raw Escape listener.
+- Character/Inventory launcher labels no longer advertise keyboard shortcuts on touch/gamepad input families.
+- Escape belongs to the RPG modal close path rather than two independent UI owners.
+- Upgrade and Relic number shortcuts are detected by one `ChoiceInputCoordinator`; if both surfaces report active, dispatch fails closed and neither receives the number press.
+- Direct keyboard/gamepad claims in the canonical map are now collision-free.
 
-## Decision
-
-Atlas's semantic action surface is still **not fully centralized or device-adaptive**. Seventeen
-player actions remain distributed across ten client controllers with no shared action
-map, and the split between `ContextActionService` and raw
-`UserInputService.InputBegan` still makes the whole surface difficult to inspect from
-one place.
-
-BA-062's first isolated remediation closed the critical M1 source gap: firing
-keeps `MouseButton1` and adds `ButtonR2` plus a generated touch **Fire** button
-through `ContextActionService`. All three input origins converge on the same
-`WeaponController.setFiring` hold state and the existing `FireIntent` remote.
-
-BA-062's second isolated remediation closed the two hard prompt-key conflicts.
-Revive moved from keyboard `E` to `V`, leaving contextual world interaction on
-`E`. The class action kept keyboard `Q` but moved gamepad from `ButtonX` to
-`ButtonB`, leaving contextual world interaction on `ButtonX`. The class-action
-HUD hint moved with the binding.
-
-BA-062's third isolated remediation closes the remaining M2/M3 gamepad coverage
-gaps for the core playable loop:
-
-- reload keeps keyboard `R` and the existing mobile reload button while adding
-  gamepad `ButtonR1` at `WeaponController`;
-- sprint keeps keyboard `LeftShift` and the existing mobile sprint button while
-  adding gamepad `ButtonL3` at `SurvivorController`;
-- revive keeps keyboard `V` and its generated touch button while adding gamepad
-  `DPadDown` to the same revive hold action.
-
-Reload and sprint gamepad bindings use `createTouchButton = false`, so they do
-not duplicate the touch actions already owned by `MobileControlsController`.
-All new inputs feed the existing owner methods rather than creating new gameplay
-authority.
-
-C3/C4, the shared-action-map gap, device-adaptive labels, close affordances and
-accessibility/rebinding work remain open. Device behavior is not accepted until
-a later Studio/device pass verifies these source changes on actual controller
-and touch surfaces.
+None of those source results constitutes real-device acceptance.
 
 ## Method and limits
 
-Every finding below is read from source in `games/living-kingdoms/src/client`
-and `games/living-kingdoms/src/server/Systems`, and is locked by
-`tests/InputActionMapSourceAudit.test.luau`.
+The audit is locked by `games/living-kingdoms/tests/InputActionMapSourceAudit.test.luau` plus focused BA-062 fixtures. Source inspection can prove ownership, binding values, listener count, teardown, and unchanged remote paths. It cannot prove ergonomics, Roblox place-level behavior outside this source tree, touch reachability, gamepad navigation quality, or simultaneous-input feel.
 
-This remains **E1** evidence. No device was tested. Specifically unverified:
+Still unverified in Studio/device testing:
 
-- whether the generated Fire touch button is reachable, correctly sized or
-  non-overlapping on a real phone;
-- whether holding/releasing `ButtonR2` produces the intended feel on a real
-  controller;
-- whether `ButtonR1` reload is comfortable and does not conflict with any
-  Studio/place-level controller behavior outside this source tree;
-- whether `ButtonL3` sprint feels reliable during simultaneous movement/look;
-- whether `DPadDown` revive is comfortable and discoverable during co-op play;
-- whether `V` is a comfortable/discoverable keyboard Revive binding in actual
-  first-person play;
-- whether `ButtonB` is a comfortable/discoverable class-action binding on a
-  real controller;
-- whether gamepad UI navigation actually reaches every button;
-- any latency, comfort or discoverability judgement.
+- generated touch button size, placement, and overlap;
+- controller feel for R2 fire, R1 reload, L3 sprint, D-pad Down revive, B class action, and D-pad Up ping;
+- discoverability of V revive and the remapped controller actions;
+- gamepad selection reachability for every GUI button;
+- input-family transitions for device-adaptive labels;
+- latency, comfort, simultaneous aim/fire/sprint behavior, and multiplayer choice-modal timing.
 
-Those belong to the consolidated Studio/device pass.
+## Current action inventory
 
-## Binding mechanisms in use
+`—` means there is no direct shortcut on that device. GUI navigation can still make a surface reachable without implying a direct gamepad key.
 
-| Mechanism | Device reach | Used by |
-|---|---|---|
-| `ContextActionService:BindAction(..., true/false, keys...)` | keyboard/gamepad and optionally generated touch buttons | fire, reload gamepad, sprint gamepad, class action, flashlight, ping, revive, and mobile action surfaces |
-| Raw `UserInputService.InputBegan/InputEnded` | keyboard and mouse | legacy/direct keyboard and mouse paths retained where already authoritative |
-| Engine `ProximityPrompt` | keyboard `E`, gamepad `ButtonX`, touch tap | contextual world interaction |
-| Roblox `PlayerModule` | full native coverage | move, jump, camera |
-| GUI `Activated` + `GuiService.SelectedObject` | pointer, touch, gamepad selection focus | choice surfaces and menu buttons |
-
-The third `BindAction` argument (`createTouchButton`) remains `true` where a
-generated touch control is intended, such as Fire and Revive. The new reload and
-sprint gamepad bindings explicitly use `false` because their existing touch
-buttons remain in `MobileControlsController`.
-
-## Action inventory
-
-`—` means the action has no direct binding on that device.
-
-| Semantic action | Owner | Keyboard | Mouse | Gamepad | Touch | Mechanism |
+| Semantic action / input | Owner | Keyboard | Mouse | Gamepad | Touch | Mechanism |
 |---|---|---|---|---|---|---|
 | Move | Roblox `PlayerModule` | WASD | — | left stick | thumbstick | engine |
 | Jump | Roblox `PlayerModule` | Space | — | ButtonA | button | engine |
 | Camera look | `PlayerModule` + `CameraController` | — | mouse | right stick | drag | engine |
-| **Fire weapon** | `WeaponController` | — | MouseButton1 | **ButtonR2** | **Fire button** | raw UIS + CAS |
-| Reload | `WeaponController`, `MobileControlsController` | R | — | **ButtonR1** | button | raw UIS + owner CAS + touch CAS |
-| Sprint | `SurvivorController`, `MobileControlsController` | LeftShift | — | **ButtonL3** | button | raw UIS + owner CAS + touch CAS |
-| Class action (Brace) | `ClassActionController` | Q | — | **ButtonB** | button | CAS |
-| Flashlight | `PersonalFlashlightController` | F | — | ButtonY | button | CAS (config-driven) |
-| Squad ping | `SquadPingController` | G | MouseButton3 | DPadUp | button | CAS (config-driven) |
-| Revive ally | `OperativeLifeController` | **V** | — | **DPadDown** | button | CAS |
-| Interact / collect | server `ProximityPrompt`s | E | — | ButtonX | tap prompt | engine |
-| Upgrade choice 1–3 | `HordeHUDController` | 1–3, Keypad 1–3 | click | selection focus | tap | raw UIS + GUI |
-| Relic choice 1–3 | `RunBuildHUDController` | 1–3, Keypad 1–3 | click | selection focus | tap | raw UIS + GUI |
-| Open Character panel | `RPGMenuController` | C | click | UI navigation | tap | raw UIS + GUI |
-| Open Inventory panel | `RPGMenuController` | I | click | UI navigation | tap | raw UIS + GUI |
+| Fire weapon | `WeaponController` | — | MouseButton1 | ButtonR2 | generated Fire | raw UIS + CAS |
+| Reload | `WeaponController` + mobile surface | R | — | ButtonR1 | button | raw UIS + owner CAS + touch CAS |
+| Sprint | `SurvivorController` + mobile surface | LeftShift | — | ButtonL3 | button | raw UIS + owner CAS + touch CAS |
+| Class action | `ClassActionController` | Q | — | ButtonB | generated action | CAS |
+| Flashlight | `PersonalFlashlightController` | F | — | ButtonY | generated action | CAS/config |
+| Squad ping | `SquadPingController` | G | MouseButton3 | DPadUp | generated action | CAS/config |
+| Revive ally | `OperativeLifeController` | V | — | DPadDown | generated action | CAS |
+| Interact / collect | world `ProximityPrompt`s | E | — | ButtonX | prompt tap | engine prompt |
+| Numbered choice input | `ChoiceInputCoordinator` | 1–3, Keypad 1–3 | — | — | — | shared fail-closed input |
+| Upgrade choice | `HordeHUDController` | via coordinator | click | selection focus | tap | shared dispatch + GUI |
+| Relic choice | `RunBuildHUDController` | via coordinator | click | selection focus | tap | shared dispatch + GUI |
+| Open Character | `RPGMenuController` | C | click | UI navigation | tap | raw UIS + GUI |
+| Open Inventory | `RPGMenuController` | I | click | UI navigation | tap | raw UIS + GUI |
 | Close RPG modal | `RPGMenuController` | Escape | click | UI navigation | tap | raw UIS + GUI |
-| Close hub UI | `HubPreparationController` | Escape | — | **—** | **—** | raw UIS |
+| Close hub UI | `HubPreparationController` | — | click | UI navigation | tap | GUI only |
 
-Only two actions are config-driven: `PersonalFlashlightConfig` and
-`SquadPingConfig` expose keyboard and gamepad key names. The other fifteen still
-hardcode bindings inside controllers. The current BA-062 increments intentionally
-do not jump ahead to the later shared-action-map increment.
+## Binding mechanisms
+
+- `ContextActionService` owns the remediated direct gamepad/generated-touch gameplay actions.
+- Raw `UserInputService` remains for already-authoritative keyboard/mouse paths and the one shared numbered-choice listener.
+- `ProximityPrompt` owns contextual world interaction on `E` / `ButtonX` / prompt tap.
+- Roblox `PlayerModule` owns native movement, jump, and camera control.
+- GUI `Activated` plus selection focus remains the pointer/touch/gamepad-navigation route for choice and menu surfaces.
+- `ChoiceInputCoordinator` owns only direct 1/2/3 detection; it does not own upgrade/relic semantics or network mutation.
 
 ## Missing bindings / remediation ledger
 
 ### M1 — Firing device coverage — source-remediated by BA-062
 
-Before BA-062, `WeaponController` sent fire intent only from `MouseButton1`,
-leaving gamepad and touch unable to attack.
-
-The first BA-062 increment keeps that mouse path and adds a single
-`ContextActionService` action named `LK_Fire`, registered with
-`createTouchButton = true` and `Enum.KeyCode.ButtonR2`. Begin, End and Cancel
-feed the same `setFiring` helper used by mouse input; that helper remains the one
-local hold-state transition and still calls the existing `FireIntent` remote.
+`WeaponController` preserves `MouseButton1` and adds `ButtonR2` plus generated touch through the same fire hold state and existing intent path.
 
 **Source status:** remediated.  
-**Runtime/device status:** unverified until the consolidated controller/touch
-Studio pass.
+**Runtime/device status:** unverified.
 
 ### M2 — Reload and sprint gamepad coverage — source-remediated by BA-062
 
-Before the third BA-062 increment, reload and sprint were keyboard paths (`R`,
-`LeftShift`) plus touch buttons supplied separately by `MobileControlsController`.
-A controller player had neither path.
-
-The remediation adds two owner-local gamepad actions:
-
-- `LK_Reload` binds `ButtonR1` in `WeaponController` with
-  `createTouchButton = false` and calls the existing `requestReload()` path;
-- `LK_Sprint` binds `ButtonL3` in `SurvivorController` with
-  `createTouchButton = false` and calls the existing `setSprinting()` path on
-  Begin/End/Cancel.
-
-The keyboard paths remain intact. `MobileControlsController` remains the touch
-surface and does not register gamepad key codes. Both gamepad actions unbind on
-controller teardown.
+Reload adds `ButtonR1` at the existing weapon owner; Sprint adds `ButtonL3` at the existing movement/sprint owner. Both reuse existing owner functions and avoid creating duplicate touch controls.
 
 **Source status:** remediated.  
-**Runtime/device status:** unverified until the consolidated controller Studio
-pass.
+**Runtime/device status:** unverified.
 
 ### M3 — Revive gamepad coverage — source-remediated by BA-062
 
-Before the third BA-062 increment, `OperativeLifeController` bound keyboard `V`
-and generated a touch button but had no controller key.
-
-The remediation adds `Enum.KeyCode.DPadDown` to the same `LK_Revive` CAS action.
-Keyboard, controller and touch therefore share the same target selection and
-Begin/End hold intent. `E` and `ButtonX` stay free for contextual world prompts.
+Revive uses `V` + `DPadDown` + generated touch on the same Begin/End hold path.
 
 **Source status:** remediated.  
-**Runtime/device status:** unverified until the consolidated controller/touch
-Studio pass.
+**Runtime/device status:** unverified.
 
-### M4 — Hub UI close is keyboard-only
+### M4 — Hub UI close affordance — source-remediated by BA-062
 
-`HubPreparationController` closes only on `Escape` from a raw
-`UserInputService` listener. `Escape` is reserved by the Roblox client for its
-own menu on every platform, and there is no gamepad or touch close affordance in
-this controller.
+`HubPreparationController` exposes an explicit **CLOSE** GUI button whenever a routed preparation screen is open. The button is selectable for gamepad navigation and activates the existing `closeHubUi()` path. The hub router no longer owns Escape.
 
-### M5 — Panel shortcuts are keyboard-only, and their labels assume keyboard
+**Source status:** remediated.  
+**Runtime/device status:** unverified.
 
-`C` and `I` have no gamepad or touch shortcut equivalent. The panels themselves
-are reachable through on-screen buttons and gamepad UI navigation, but their
-labels still present keyboard-specific shortcuts.
+### M5 — Device-adaptive launcher labels — source-remediated by BA-062
+
+Character/Inventory launch buttons retain `C` / `I` hints for keyboard/pointer presentation and use neutral `CHARACTER` / `INVENTORY` labels for touch/gamepad presentation. No fake direct controller shortcut was invented.
+
+**Source status:** remediated.  
+**Runtime/device status:** unverified.
 
 ## Conflicts
 
 ### C1 — `E` / Revive prompt collision — source-remediated by BA-062
 
-Before the second BA-062 increment, `OperativeLifeController` bound `E` while
-world interactions also used `E` through `ProximityPrompt`.
-
-The remediation moves Revive to keyboard `V`. World interaction remains on `E`;
-no prompt key is changed. Revive targeting, Begin/End intent shape, hold duration
-and server authority are unchanged.
-
-**Source status:** remediated.  
-**Runtime/device status:** unverified until the consolidated keyboard/touch
-Studio pass.
+Revive moved to `V`; contextual world prompts retain `E`.
 
 ### C2 — `ButtonX` / class-action prompt collision — source-remediated by BA-062
 
-Before the second BA-062 increment, `ClassActionController` bound
-`Enum.KeyCode.ButtonX` while the engine's default `ProximityPrompt` gamepad key
-was also `ButtonX`.
+Class action moved to `ButtonB`; contextual world prompts retain `ButtonX`.
 
-The remediation keeps class action keyboard `Q` and generated touch behavior but
-moves the gamepad binding to `Enum.KeyCode.ButtonB`. World interaction remains
-on `ButtonX`. The matching HUD hint is updated to `Q / GAMEPAD B`.
+### C3 — duplicate Escape listeners — source-remediated by BA-062
+
+The RPG modal remains the raw Escape UI owner. Hub preparation closes through its explicit GUI affordance, so a single Escape press no longer independently invokes both UI owners.
+
+### C4 — Number keys 1–3 — source-remediated by BA-062
+
+Before remediation, `HordeHUDController` and `RunBuildHUDController` each owned separate raw listeners for `One`/`Two`/`Three` and keypad equivalents.
+
+Now `ChoiceInputCoordinator` owns the single raw numbered listener. The two HUDs register:
+
+- their existing local active-state predicate; and
+- a callback into their existing submit function(s).
+
+The coordinator gathers active owners and calls `ChoiceInputConflictResolver`. Exactly one active owner may receive the choice index. Zero active owners do nothing. Multiple active owners fail closed and dispatch nothing; no hidden priority is invented.
+
+Mouse/touch GUI `Activated` behavior, gamepad selection focus, upgrade submission, relic choice submission, and relic replacement submission remain in their existing HUD owners. The coordinator contains no remote calls.
 
 **Source status:** remediated.  
-**Runtime/device status:** unverified until the consolidated controller Studio
-pass.
+**Runtime/device status:** unverified, including real overlap timing.
 
-### C3 — Two independent `Escape` listeners
+## Shared action-map state
 
-`RPGMenuController` and `HubPreparationController` each open their own
-`UserInputService.InputBegan` connection for `Escape` and neither knows about
-the other. One press runs both handlers. Today each is guarded by its own
-visibility check, but nothing coordinates them and `Escape` is reserved by the
-Roblox client regardless.
+`InputActionMapConfig` is now the canonical descriptive inventory. The original seventeen semantic actions remain represented, and the C4 remediation adds `NumberedChoiceInput` as an infrastructure entry so direct number keys have one truthful owner.
 
-### C4 — Number keys 1–3 are claimed by two HUDs
+The direct-binding collision analyzer now requires **zero** duplicate keyboard/gamepad key-code claims in the canonical map. Pointer/touch GUI activation tokens remain intentionally excluded because generic click/tap activation is not a unique global shortcut.
 
-`HordeHUDController` and `RunBuildHUDController` each own independent `1/2/3`
-and `Keypad1-3` listeners. Each is guarded by its own local active flag, but
-neither consults the other. Current pacing prevents overlap rather than a shared
-input owner.
+The source-drift guard separately checks the remediated live gameplay bindings against the map so stale documentation cannot silently reintroduce the old `E` / `ButtonX` findings.
 
-## Accessibility considerations
+## Accessibility considerations still open
 
-None of the following broad options are implemented by the current BA-062
-remediations. They remain considerations for later BA-062/Patch 0.2 work.
+BA-062 source remediation does not implement broad accessibility customization. Remaining product decisions include:
 
 | Consideration | Current state |
 |---|---|
-| Rebinding | No action can be rebound. Fifteen of seventeen remain hardcoded; two are config constants that are not player-facing. |
-| Hold vs. toggle | Sprint, fire and revive are hold-only. No toggle alternative. |
-| Hold duration | Revive's hold length is not adjustable. |
-| One-handed / reduced-mobility play | Simultaneous hold-sprint plus hold-fire plus aim has no alternative. |
-| Keyboard-only play | Firing still requires a mouse button; there is no keyboard fire. |
-| Pointer-free play | Cursor is locked to centre except while the input-modal attribute is set. |
-| Input labelling | Prompt and button labels are not globally device-adaptive. |
-| Choice surfaces | Upgrade and relic choices support cursor, keyboard and gamepad selection focus. |
-| Device detection | `MobileControlsController` still adapts via `TouchEnabled and not KeyboardEnabled`; owner-local gamepad bindings no longer depend on that controller. |
-
-## Structural finding
-
-There is still no shared action map. Ten controllers own their own bindings, so:
-
-- the full action surface cannot be listed, diffed or validated from one place;
-- a new controller can silently claim a key another controller already uses;
-- rebinding and device-adaptive labelling have nowhere to live;
-- remaining UI-close and number-key conflicts are still coordinated only by
-  local controller state.
-
-`PersonalFlashlightConfig` and `SquadPingConfig` still show the config-driven
-shape the other fifteen actions lack.
-
-## Recommended remediation order
-
-BA-062 remains an umbrella of isolated, merge-after-each increments. Do not
-bundle later items together merely because they share this ticket.
-
-1. **M1 — device-neutral firing:** source-remediated. Confirm on controller and
-   touch during the consolidated Studio pass.
-2. **C1/C2 — prompt-key collisions:** source-remediated. Revive is `V`, class
-   action is `Q` / `ButtonB`, contextual prompts retain `E` / `ButtonX` / touch.
-3. **M2/M3 — core gamepad coverage:** source-remediated. Reload is `ButtonR1`,
-   sprint is `ButtonL3`, revive is `DPadDown`.
-4. **Introduce a shared action map** covering all seventeen actions, following
-   the two existing configs, so future rebinding and device-adaptive labels have
-   one source of truth.
-5. **M4/M5 — device-neutral close affordance and device-adaptive labels.**
-6. Resolve C3/C4 through the shared action/input-modal surface rather than adding
-   more independent listeners.
-
-Accessibility options such as rebinding, hold/toggle and hold duration should
-follow the action map rather than precede it.
+| Rebinding | No player-facing rebinding UI. |
+| Hold vs. toggle | Sprint, fire, and revive remain hold-oriented. |
+| Hold duration | Revive hold duration is not player-adjustable. |
+| One-handed / reduced-mobility play | No alternate simultaneous aim/fire/sprint scheme. |
+| Keyboard-only play | Fire still requires a pointer button. |
+| Global device-adaptive hints | Foundations exist, but not every HUD/prompt consumes them yet. |
+| Device switching | Source resolver exists; real switching behavior remains unverified. |
 
 ## Completion boundary
 
-BA-061 remains complete at E1. BA-062's completed source increments change only
-client input origins/bindings and one matching class-action hint. Server
-ownership of shots, cadence, ammunition, targeting, damage, movement truth,
-revive truth, class-action truth and world-interaction consequences is unchanged.
+BA-061 remains complete at E1. BA-062's identified M1-M5 and C1-C4 source findings are now remediated, while consolidated Studio/device acceptance remains outstanding.
 
-The Studio/device pass remains outstanding. Source/static acceptance now proves
-only that:
+Source/static acceptance proves ownership and wiring only. It does **not** promote these changes to E2 device evidence, does not validate comfort or placement, and does not change server authority for combat, movement, revive, class actions, prompts, progression choices, relic choices, or persistence.
 
-- firing is exposed to mouse, `ButtonR2` and touch;
-- reload is exposed to keyboard `R`, gamepad `ButtonR1` and the existing touch
-  action through one reload owner;
-- sprint is exposed to keyboard `LeftShift`, gamepad `ButtonL3` and the existing
-  touch action through one sprint state path;
-- revive is exposed to keyboard `V`, gamepad `DPadDown` and touch through one
-  hold action;
-- Revive does not claim `E`, class action does not claim `ButtonX`, and world
-  prompts retain their contextual keys.
-
-BA-062 should continue one isolated remediation at a time, with the shared
-action-map foundation next unless the MVP STOP / PLAY / FIX gate is intentionally
-entered first.
+The next BA-062 work should therefore be either a deliberately scoped accessibility/device-label adoption increment or the consolidated Studio/device acceptance pass, depending on the active MVP gate.
