@@ -26,7 +26,7 @@ local Reasons = MeleeContracts.RejectionReasonIds
 local Weapon = MeleeCombatConfig.OpeningWeapon
 
 type PlayerState = {
-	lastCommittedStrikeServerTimestamp: number,
+	lastAcceptedSwingServerTimestamp: number,
 	processedRequestIds: { [string]: boolean },
 	processedRequestOrder: { string },
 }
@@ -45,7 +45,7 @@ local function stateFor(player: Player): PlayerState
 		return existing
 	end
 	local created = {
-		lastCommittedStrikeServerTimestamp = -math.huge,
+		lastAcceptedSwingServerTimestamp = -math.huge,
 		processedRequestIds = {},
 		processedRequestOrder = {},
 	}
@@ -139,7 +139,7 @@ function Service.tryStrike(player: Player, requestId: unknown, aimDirection: unk
 	if state.processedRequestIds[requestIdString] then
 		return rejected(Reasons.DuplicateRequest, serverTimestamp)
 	end
-	if serverTimestamp - state.lastCommittedStrikeServerTimestamp < Weapon.CadenceSeconds then
+	if serverTimestamp - state.lastAcceptedSwingServerTimestamp < Weapon.CadenceSeconds then
 		return rejected(Reasons.CadenceBlocked, serverTimestamp)
 	end
 
@@ -147,6 +147,14 @@ function Service.tryStrike(player: Player, requestId: unknown, aimDirection: unk
 	if origin == nil then
 		return rejected(Reasons.CombatNotAllowed, serverTimestamp)
 	end
+
+	-- A valid, combat-eligible swing consumes cadence and its request ID whether it
+	-- hits, misses, is occluded, or loses an enemy-health race. Otherwise a client
+	-- can spam empty swings for free and bypass the intended attack cadence the
+	-- instant a target enters the cone.
+	state.lastAcceptedSwingServerTimestamp = serverTimestamp
+	recordRequest(state, requestIdString)
+
 	local facts = EnemyDirectorService.readEnemyCombatFacts()
 	local candidates = {}
 	for _, fact in facts do
@@ -184,8 +192,6 @@ function Service.tryStrike(player: Player, requestId: unknown, aimDirection: unk
 		return rejected(Reasons.CommitRejected, serverTimestamp)
 	end
 
-	state.lastCommittedStrikeServerTimestamp = serverTimestamp
-	recordRequest(state, requestIdString)
 	local operativeEntityId = "operative.player:" .. tostring(player.UserId)
 	MatchResultService.recordDamageDealt(operativeEntityId, committedDamage)
 	if EnemyDirectorService.isBossEntity(fact.entityId) then
