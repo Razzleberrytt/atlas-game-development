@@ -6,20 +6,27 @@ local meleeContracts = fs.readFile("games/living-kingdoms/src/shared/Combat/Mele
 local meleeService = fs.readFile("games/living-kingdoms/src/server/Systems/MeleeCombatService.luau")
 local intentService = fs.readFile("games/living-kingdoms/src/server/Systems/MeleeIntentService.luau")
 local presentationContracts = fs.readFile("games/living-kingdoms/src/shared/Combat/MeleePresentationContracts.luau")
-local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/RemoteMeleeSwingPresentationController.luau")
+local controller =
+	fs.readFile("games/living-kingdoms/src/client/Controllers/RemoteMeleeSwingPresentationController.luau")
 local mount = fs.readFile("games/living-kingdoms/src/client/remote-melee-swing.client.luau")
 
 local function contains(source: string, needle: string): boolean
 	return string.find(source, needle, 1, true) ~= nil
 end
 
-assert(contains(meleeContracts, "swingAccepted: boolean"), "melee result must distinguish cadence-accepted swings from damage hits")
+assert(
+	contains(meleeContracts, "swingAccepted: boolean"),
+	"melee result must distinguish cadence-accepted swings from damage hits"
+)
 assert(
 	contains(meleeService, "state.lastAcceptedSwingServerTimestamp = serverTimestamp"),
 	"server swing cadence must remain the authoritative acceptance seam"
 )
 assert(
-	contains(meleeService, "return rejected(selection.rejectionReasonId or Reasons.NoTarget, serverTimestamp, true, strikeId)"),
+	contains(
+		meleeService,
+		"return rejected(selection.rejectionReasonId or Reasons.NoTarget, serverTimestamp, true, strikeId)"
+	),
 	"authoritative misses must still disclose that a cadence-valid swing occurred"
 )
 assert(
@@ -53,14 +60,23 @@ assert(
 	contains(controller, "MeleePresentationContracts.validateSwingCommittedMessage(message)"),
 	"remote presentation must reject malformed swing messages"
 )
-assert(contains(controller, "player ~= Players.LocalPlayer"), "local predicted swing must not be double-animated by server broadcast")
+assert(
+	contains(controller, "player ~= Players.LocalPlayer"),
+	"local predicted swing must not be double-animated by server broadcast"
+)
 assert(
 	contains(controller, "player:GetAttribute(AttributeName) == ModeIds.Melee")
 		and contains(controller, "player:GetAttribute(LIFE_STATE_ATTRIBUTE) == LifeStateIds.Alive"),
 	"remote swing presentation must fail closed unless the observer sees an Alive melee operative"
 )
-assert(contains(controller, 'character:FindFirstChild("MeleeGrip", true)'), "remote animation must reuse the existing third-person hatchet grip")
-assert(contains(controller, "grip.Transform = CFrame.Angles"), "remote swing should animate presentation through Motor6D.Transform")
+assert(
+	contains(controller, 'character:FindFirstChild("MeleeGrip", true)'),
+	"remote animation must reuse the existing third-person hatchet grip"
+)
+assert(
+	contains(controller, "grip.Transform = CFrame.Angles"),
+	"remote swing should animate presentation through Motor6D.Transform"
+)
 assert(contains(controller, "grip.Transform = CFrame.identity"), "remote swing transform must return to neutral")
 assert(not contains(controller, "FireServer"), "remote presentation cannot send combat intent")
 assert(not contains(controller, "EnemyDirector"), "remote presentation cannot own targets or damage")
