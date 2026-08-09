@@ -78,7 +78,13 @@ local function releasePlayer(player: Player)
 	loadedPlayerIds[player.UserId] = nil
 	local released = InventoryLiveService.releasePlayer(player.UserId)
 	if released.Accepted ~= true and released.ReasonId ~= "LeaseNotOwned" then
-		warn(string.format("[InventoryNetwork] inventory lease release rejected for %d: %s", player.UserId, released.ReasonId))
+		warn(
+			string.format(
+				"[InventoryNetwork] inventory lease release rejected for %d: %s",
+				player.UserId,
+				released.ReasonId
+			)
+		)
 	end
 end
 
@@ -148,7 +154,13 @@ local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
 		if loadedPlayerIds[player.UserId] then
 			local renewed = InventoryLiveService.renewPlayer(player.UserId, nowUnix)
 			if renewed.Accepted ~= true then
-				warn(string.format("[InventoryNetwork] inventory lease renewal rejected for %d: %s", player.UserId, renewed.ReasonId))
+				warn(
+					string.format(
+						"[InventoryNetwork] inventory lease renewal rejected for %d: %s",
+						player.UserId,
+						renewed.ReasonId
+					)
+				)
 			end
 		end
 	end
