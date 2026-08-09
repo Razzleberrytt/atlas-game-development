@@ -242,7 +242,10 @@ assertThat(
 		and contains(lifecycle, "for _, ownerId in MatchResultConfig.ReplayStartOrder do"),
 	"fresh-run reset must remain configuration-driven"
 )
-assertThat(contains(lifecycle, "function OperationLifecycleService.prepareForLaunch()"), "lifecycle must expose launch preparation")
+assertThat(
+	contains(lifecycle, "function OperationLifecycleService.prepareForLaunch()"),
+	"lifecycle must expose launch preparation"
+)
 assertThat(not contains(lifecycle, "task.delay("), "terminal resolution must not schedule an automatic replay")
 assertThat(not contains(lifecycle, "task.cancel("), "deliberate replay requires no replay timer cancellation")
 for _, forbidden in { "OnServerEvent", "FireServer", "InvokeServer", "RemoteEvent", "RemoteFunction" } do
