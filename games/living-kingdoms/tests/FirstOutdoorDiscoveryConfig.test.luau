@@ -59,8 +59,10 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Fi
 	injectGlobals = true,
 })()
 
-assert(config.Version == "BA-052-v1")
-assert(config.RuntimeConsumptionActive == false)
+assert(config.Version == "BA-052-v2-live-lookout-cache")
+assert(config.RuntimeConsumptionActive == true)
+assert(config.RuntimeConsumptionScopeId == "ApproachLookoutCacheOnly")
+assert(routeConfig.RuntimeConsumptionActive == false, "BA-050 imported route must remain held")
 assert(#config.Discoveries == 1)
 
 local discovery = config.Discoveries[1]
@@ -68,11 +70,15 @@ assert(discovery.Id == "discovery.first-descent.lookout-cache")
 assert(discovery.RouteId == routeConfig.RouteId)
 assert(discovery.DiscoverySlotId == routeConfig.DiscoverySlotIds.LookoutTower)
 assert(discovery.AnchorWorldContentId == "landmark.lookout_tower")
+assert(discovery.RuntimeLandmarkId == "LookoutTower")
 assert(discovery.StreamingIdentityId == "streaming.discovery.first-descent.lookout-cache")
 assert(discovery.GameplayMeaningId == "OptionalVantageCache")
 assert(discovery.PresentationIntentId == "ReadableOptionalDetour")
 assert(discovery.Optional == true)
 assert(discovery.RewardSourceId == runRpgContracts.RewardSourceIds.AuthoredContainer)
+assert(discovery.Interaction.MaximumDistanceStuds == 10)
+assert(discovery.Interaction.HoldDurationSeconds == 0.65)
+assert(discovery.Interaction.SurfaceOffsetStuds == 1.25)
 assert(config.ById[discovery.Id] == discovery)
 
 local source = fs.readFile("games/living-kingdoms/src/shared/Config/FirstOutdoorDiscoveryConfig.luau")
