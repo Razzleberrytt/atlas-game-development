@@ -118,17 +118,7 @@ local FirstOutdoorRouteConfig = {
 		),
 		step("creek-crossing", 8, StepKinds.Landmark, "landmark.creek_crossing", nil, nil, false, nil, nil),
 		step("rocky-overlook", 9, StepKinds.Landmark, "landmark.rocky_overlook", nil, nil, false, nil, nil),
-		step(
-			"military-roadblock",
-			10,
-			StepKinds.Landmark,
-			"landmark.military_roadblock",
-			nil,
-			nil,
-			false,
-			nil,
-			nil
-		),
+		step("military-roadblock", 10, StepKinds.Landmark, "landmark.military_roadblock", nil, nil, false, nil, nil),
 		step(
 			"military-roadblock-encounter-slot",
 			11,
@@ -140,17 +130,7 @@ local FirstOutdoorRouteConfig = {
 			nil,
 			nil
 		),
-		step(
-			"extraction-clearing",
-			12,
-			StepKinds.Landmark,
-			"landmark.extraction_clearing",
-			nil,
-			nil,
-			false,
-			nil,
-			nil
-		),
+		step("extraction-clearing", 12, StepKinds.Landmark, "landmark.extraction_clearing", nil, nil, false, nil, nil),
 		step(
 			"first-descent-handoff",
 			13,
@@ -176,7 +156,10 @@ assert(
 )
 
 local routeDescriptor = WorldContentConfig.ById[FirstOutdoorRouteConfig.WorldPathContentId]
-assert(routeDescriptor ~= nil and routeDescriptor.kind == "route", "outdoor route must reference canonical route content")
+assert(
+	routeDescriptor ~= nil and routeDescriptor.kind == "route",
+	"outdoor route must reference canonical route content"
+)
 assert(routeDescriptor.active == false, "held route identity must not be promoted by BA-050")
 
 local validStepKinds = {
