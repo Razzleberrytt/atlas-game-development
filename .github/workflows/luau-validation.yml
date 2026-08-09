@@ -44,24 +44,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
 
-      - name: Apply melee opening branch patch
-        if: github.head_ref == 'mvp-01/melee-opening-firearm-recovery'
-        shell: bash
-        run: |
-          set -euo pipefail
-          python scripts/patch_melee_opening_branch.py
-          if ! git diff --quiet; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add \
-              games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau \
-              games/living-kingdoms/src/server/Systems/SurvivalLootService.luau \
-              games/living-kingdoms/src/client/Controllers/WeaponPresentationController.luau \
-              games/living-kingdoms/src/server/Systems/OperationLifecycleService.luau
-            git commit -m "[MVP 0.1] Apply melee opening authority gates"
-            git push origin HEAD:${{ github.head_ref }}
-          fi
-
       - name: Validate repository contract
         shell: bash
         run: python scripts/validate_living_kingdoms_layout.py
