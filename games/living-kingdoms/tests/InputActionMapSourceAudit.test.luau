@@ -7,8 +7,8 @@
 	`docs/specifications/input-action-map-audit.md` to the source they were read
 	from, so the audit cannot silently rot.
 
-	BA-062 closes M1-M5 and C1-C3 in isolated source increments, has landed
-	the shared action-map foundation, and is continuing the remaining UI cleanup.
+	BA-062 closes M1-M5 and C1-C4 in isolated source increments and has landed
+	the shared action-map and fail-closed numbered-choice coordination foundations.
 ]]
 
 local fs = require("@lune/fs")
@@ -41,6 +41,7 @@ local flashlight = read(CLIENT .. "PersonalFlashlightController.luau")
 local squadPing = read(CLIENT .. "SquadPingController.luau")
 local rpgMenu = read(CLIENT .. "RPGMenuController.luau")
 local hubPreparation = read(CLIENT .. "HubPreparationController.luau")
+local choiceCoordinator = read(CLIENT .. "ChoiceInputCoordinator.luau")
 local hordeHud = read(CLIENT .. "HordeHUDController.luau")
 local runBuildHud = read(CLIENT .. "RunBuildHUDController.luau")
 local audit = read(AUDIT_PATH)
@@ -193,16 +194,30 @@ assert(not contains(hubPreparation, "Enum.KeyCode.Escape"), "the hub router must
 assert(not contains(hubPreparation, "UserInputService"), "the hub router must not keep a raw close listener")
 assert(contains(hubPreparation, "button.Activated:Connect(closeHubUi)"), "hub close must use its GUI affordance")
 
--- C4: two HUDs claim 1/2/3, each guarded only by its own local flag.
-assert(contains(hordeHud, "upgradeInputActive"), "the upgrade HUD still guards its own number keys")
-assert(contains(runBuildHud, "choiceInputActive"), "the relic HUD still guards its own number keys")
+-- C4 remediation: one coordinator owns direct 1/2/3 detection. Each HUD
+-- registers only its local active predicate plus its existing submit callback.
+assert(contains(choiceCoordinator, "UserInputService.InputBegan:Connect(onInputBegan)"), "C4 needs one input listener")
+for _, keyName in { "One", "Two", "Three", "KeypadOne", "KeypadTwo", "KeypadThree" } do
+	assert(contains(choiceCoordinator, `Enum.KeyCode.{keyName}`), `coordinator must map {keyName}`)
+end
+assert(
+	contains(choiceCoordinator, "ChoiceInputConflictResolver.resolve(activeOwnerIds())"),
+	"coordinator must use the fail-closed conflict resolver"
+)
+assert(contains(hordeHud, 'ChoiceInputCoordinator.register("UpgradeChoice"'), "upgrade HUD must register with coordinator")
+assert(contains(runBuildHud, 'ChoiceInputCoordinator.register("RelicChoice"'), "relic HUD must register with coordinator")
+assert(contains(hordeHud, "return upgradeInputActive"), "upgrade registration must expose its local active state")
+assert(contains(runBuildHud, "return choiceInputActive"), "relic registration must expose its local active state")
 for _, source in { hordeHud, runBuildHud } do
-	assert(contains(source, "Enum.KeyCode.One") and contains(source, "Enum.KeyCode.KeypadOne"), "1-3 still claimed")
+	assert(not contains(source, "UserInputService.InputBegan:Connect"), "choice HUDs must not keep raw number listeners")
+	assert(not contains(source, "Enum.KeyCode.One"), "choice HUDs must not directly own number keys")
+	assert(contains(source, "unregisterChoiceInput()"), "choice registration must release on teardown")
 end
 
--- Both choice surfaces keep gamepad selection focus.
+-- Both choice surfaces keep gamepad selection focus and GUI activation.
 for _, source in { hordeHud, runBuildHud } do
 	assert(contains(source, "GuiService.SelectedObject"), "choice surfaces must keep gamepad selection focus")
+	assert(contains(source, ".Activated:Connect"), "choice surfaces must keep GUI activation")
 end
 
 -- Fully covered actions: keyboard plus gamepad plus a generated touch button.
@@ -213,9 +228,10 @@ local squadPingConfig = read(SHARED .. "SquadPingConfig.luau")
 assert(contains(flashlightConfig, 'KeyboardKeyCodeName = "F"') and contains(flashlightConfig, "ButtonY"))
 assert(contains(squadPingConfig, 'KeyboardKeyCodeName = "G"') and contains(squadPingConfig, "DPadUp"))
 
--- The shared map foundation now exists and is the canonical descriptive registry.
+-- The shared map foundation now exists and models the single numbered-input owner.
 local sharedActionMap = read(SHARED .. "InputActionMapConfig.luau")
 assert(contains(sharedActionMap, "ActionOrder"), "the shared semantic action registry must exist")
+assert(contains(sharedActionMap, '"NumberedChoiceInput"'), "the map must include the C4 shared input owner")
 assert(contains(sharedActionMap, '"OpenCharacter"'), "the map must include Character")
 assert(contains(sharedActionMap, '"OpenInventory"'), "the map must include Inventory")
 assert(
@@ -226,20 +242,10 @@ assert(
 -- The audit stays honest about its own scope and remediation ledger.
 assert(contains(audit, "**Roadmap ticket:** BA-061"), "the audit must identify its originating ticket")
 assert(contains(audit, "E1"), "the audit must state its evidence level")
-assert(contains(audit, "M1 — Firing device coverage — source-remediated"), "the audit must record M1 remediation")
-assert(contains(audit, "M2 — Reload and sprint gamepad coverage — source-remediated"), "the audit must record M2")
-assert(contains(audit, "M3 — Revive gamepad coverage — source-remediated"), "the audit must record M3")
-assert(
-	contains(audit, "C1 — `E` / Revive prompt collision — source-remediated"),
-	"the audit must record C1 remediation"
-)
-assert(
-	contains(audit, "C2 — `ButtonX` / class-action prompt collision — source-remediated"),
-	"the audit must record C2 remediation"
-)
-assert(not contains(audit, "rbxassetid://"), "an input audit invents no asset IDs")
-for _, finding in { "M4", "M5", "C3", "C4" } do
+for _, finding in { "M1", "M2", "M3", "M4", "M5", "C1", "C2", "C3", "C4" } do
 	assert(contains(audit, finding), `the audit must retain finding {finding}`)
 end
+assert(contains(audit, "C4 — Number keys 1–3 — source-remediated"), "the audit must record C4 remediation")
+assert(not contains(audit, "rbxassetid://"), "an input audit invents no asset IDs")
 
-print("BA-061/062 InputActionMapSourceAudit: M1-M5/C1-C3 remediated; C4 remains locked")
+print("BA-061/062 InputActionMapSourceAudit: M1-M5 and C1-C4 are source-remediated; device acceptance remains open")
