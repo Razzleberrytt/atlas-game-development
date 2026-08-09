@@ -21,7 +21,10 @@ local configSource = fs.readFile("games/living-kingdoms/src/shared/Config/InputA
 local config = luau.load(configSource, { debugName = "InputActionMapConfig", injectGlobals = true })()
 
 assert(contains(controller, "Shared.Config.InputActionMapConfig"), "RPG menu labels must read the shared action map")
-assert(contains(controller, "UserInputService:GetLastInputType()"), "initial launcher labels must reflect the active input family")
+assert(
+	contains(controller, "UserInputService:GetLastInputType()"),
+	"initial launcher labels must reflect the active input family"
+)
 assert(
 	contains(controller, "UserInputService.LastInputTypeChanged:Connect(updateLauncherLabels)"),
 	"launcher labels must update when the active input family changes"
