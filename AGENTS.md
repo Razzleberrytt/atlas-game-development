@@ -15,6 +15,7 @@ Then load specialist documents **only when the task touches them**:
 |---|---|
 | Product identity / design conflict | `docs/bible/00-current-product-authority.md` |
 | Patch scope / exit criteria | `docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md` |
+| Implementation cadence / verification gating | `docs/roadmap/MVP-BUILD-THROUGH-TESTING-POLICY.md` |
 | Long-range requirement lookup | `docs/roadmap/MASTER-ROADMAP.md` |
 | Repeated implementation friction / reusable-system decision / leverage tie-break | `docs/roadmap/DEVELOPMENT-FLYWHEEL.md`, `docs/production/ENGINEERING-EFFICIENCY-OPS.md` |
 | Runtime safety, current-state delivery, lifecycle, remotes, rollback | `docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md`, `docs/roadmap/PRODUCTION-CORE-V2.7.md`, and when applicable `docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md` |
@@ -30,20 +31,22 @@ Accepted runtime evidence and current Roblox platform behavior outrank roadmap p
 
 ## Task-selection rule
 
-When asked to continue or implement the next roadmap task:
+When asked to continue or implement the roadmap:
 
 1. fetch current `main`;
 2. inspect open PRs for overlap;
 3. read the dashboard NOW/NEXT/LATER queue;
-4. if a concrete runtime, authority, lifecycle, data-safety, or milestone failure exists, fix it first;
-5. otherwise take NOW, or NEXT only when NOW is externally blocked and the work does not overlap;
+4. if a **known concrete** runtime, authority, lifecycle, security, data-safety, or automated-validation failure makes downstream work unsafe/incorrect, fix it first;
+5. otherwise take NOW and continue through coherent source milestones even when prior Studio/device/play evidence is pending;
 6. implement the smallest coherent player-facing or dependency-removing increment;
-7. when similarly valuable dependency-safe implementations exist, prefer the one that reduces future implementation cost through reuse, data/configuration, regression protection, tooling, or clearer agent execution; use `DEVELOPMENT-FLYWHEEL.md` when that choice is non-obvious;
+7. when similarly valuable dependency-safe implementations exist, prefer the one that reduces future implementation cost through reuse, data/configuration, regression protection, tooling, or clearer agent execution;
 8. validate according to the risk tier below;
-9. merge successful dependency-safe work without inventing a manual-test stop after every small change;
-10. update roadmap status only when meaningful task/progress/blocker truth changes.
+9. merge successful dependency-safe work;
+10. record **BUILT — VERIFICATION PENDING** when manual/engine evidence remains;
+11. continue to the next source task/patch instead of creating a manual-test lock;
+12. stop only when roadmap work is exhausted or a real named blocker makes further implementation unsafe/impossible.
 
-Do not duplicate work already present in an open PR. Do not use leverage as an excuse for speculative frameworks or for bypassing an active dependency/safety gate.
+Do not duplicate work already present in an open PR. Pending ordinary Studio/device/play-feel evidence is not, by itself, a source-development blocker.
 
 ## Status vocabulary
 
@@ -57,7 +60,7 @@ Use only:
 - **BLOCKED — <concrete reason>**
 - **HISTORICAL**
 
-Source-complete work does not become unfinished merely because Studio verification is pending. It also does not become VERIFIED without the required evidence.
+Source-complete work does not become unfinished merely because Studio verification is pending. It also does not become VERIFIED without the required evidence. `BLOCKED` requires a concrete technical/safety reason; missing ordinary manual verification alone is not sufficient.
 
 ## Change-risk tiers
 
@@ -66,9 +69,9 @@ Classify the change before implementation. Use the lowest tier that truthfully c
 | Tier | Typical scope | Minimum repository validation | Runtime evidence expectation |
 |---|---|---|---|
 | **R0** | docs, roadmap prose, comments, non-runtime metadata | `python scripts/validate.py docs` | none unless the claim itself is runtime evidence |
-| **R1** | presentation, pure resolvers, configuration, tooling, isolated low-consequence logic | `python scripts/validate.py fast` | milestone-grouped Studio verification when behavior is engine/player-facing |
-| **R2** | gameplay authority, remotes, combat, mission lifecycle, inventory/progression behavior | `python scripts/validate.py full` | milestone Studio/device evidence; earlier only if downstream safety depends on it |
-| **R3** | persistence/value, migrations, security/trust boundaries, rollback-critical runtime cutovers | `python scripts/validate.py full` plus focused targeted checks | targeted runtime evidence before unsafe downstream dependency is allowed |
+| **R1** | presentation, pure resolvers, configuration, tooling, isolated low-consequence logic | `python scripts/validate.py fast` | grouped Studio verification later when behavior is engine/player-facing |
+| **R2** | gameplay authority, remotes, combat, mission lifecycle, inventory/progression behavior | `python scripts/validate.py full` | grouped milestone evidence; earlier only if downstream safety genuinely depends on it |
+| **R3** | persistence/value, migrations, security/trust boundaries, rollback-critical runtime cutovers | `python scripts/validate.py full` plus focused targeted checks | targeted runtime evidence only when required before an unsafe/irreversible dependent step |
 
 CI deliberately treats non-doc source changes conservatively and runs the full profile. Local/agent work may use `fast` for R1 iteration, then `full` when the PR risk requires it.
 
@@ -108,7 +111,7 @@ The capability registry is `config/efficiency/capabilities.json`. Update it when
 
 When two roadmap candidates are otherwise similarly valid, use `python scripts/efficiency.py score ...` to make the leverage tie-break explicit. Player value and dependency removal remain weighted above leverage.
 
-Player value, dependency order, server authority, and evidence gates remain primary. Never build abstraction for abstraction's sake.
+Never build abstraction for abstraction's sake.
 
 ## Change discipline
 
@@ -118,15 +121,16 @@ Player value, dependency order, server authority, and evidence gates remain prim
 - Keep client, server, and shared responsibilities separated.
 - Add focused tests for gameplay-rule changes and integration/source audits for wiring/security boundaries.
 - Do not weaken tests or security checks just to make CI pass.
-- Compatibility/feature flags require an owner, rollback trigger, evidence gate, and removal condition.
+- Compatibility/feature flags require an owner, rollback trigger, evidence obligation, and removal condition.
 - Do not commit credentials, cookies, tokens, local Studio settings, or generated build artifacts.
-- For routine safe PRs, enable auto-merge when available after required checks are configured; merged same-repository branches are cleaned automatically by workflow.
 
 ## Studio boundary
 
 Routine code development belongs in GitHub/local tooling. Studio remains required for engine-only behavior, actual play feel, terrain/world composition, animations/assets, device emulation, performance/memory/network profiling, streaming, live timing, audio/lighting review, and publishing.
 
-A Studio-only check is normally recorded as **BUILT — VERIFICATION PENDING** and grouped into the next coherent milestone pass. Earlier evidence is mandatory for R3 changes, active safety gates, known runtime failures, or engine-only facts that later work cannot safely assume.
+A Studio-only check is normally recorded as **BUILT — VERIFICATION PENDING** and grouped into a later coherent evidence pass. It does **not** stop ordinary source development. Earlier evidence is mandatory only for known runtime failures or narrow irreversible/security/data-risk steps whose downstream safety cannot be bounded without it.
+
+If a later Studio/device pass exposes a reproducible failure, that concrete failure immediately preempts expansion and becomes the next FIX.
 
 ## Completion report
 
@@ -137,7 +141,7 @@ Report only the useful execution facts:
 - files/behavior changed;
 - validation run and exact result;
 - authority/data/lifecycle boundaries touched;
-- leverage outcome when applicable (reuse, data conversion, regression defense, tooling, capability-registry update, or intentionally none);
+- leverage outcome when applicable;
 - status: BUILDING / BUILT — VERIFICATION PENDING / VERIFIED / etc.;
 - Studio/device evidence still pending, if any;
 - concrete blocker, if any;
