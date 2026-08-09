@@ -1,9 +1,9 @@
 --!strict
 
 -- VS-0110 composition-root fixture: the bootstrap drives the authoritative
--- runtime, deterministic room plan, room-local encounter placement, and
--- encounter coordinator through one full expedition without exposing a client
--- path.
+-- runtime, authored outdoor Approach combat, deterministic room plan, room-local
+-- encounter placement, and coordinator through one full expedition without
+-- exposing a client completion path.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
@@ -109,6 +109,90 @@ local enemyContracts = {
 	},
 }
 local specialConfig = { BlightSpitter = { DisplayName = "Blight Spitter" } }
+local firstOutdoorEncounterBeatConfig = {
+	RuntimeConsumptionActive = true,
+	RuntimeConsumptionScopeId = "ApproachCombatSequenceOnly",
+	Beats = {
+		{
+			Id = "logging-road-contact",
+			PostClearRecoverySeconds = 8,
+			Waves = {
+				{
+					DelayAfterPreviousSeconds = 0,
+					Units = {
+						{
+							ArchetypeId = enemyContracts.EnemyArchetypeIds.ExclusionWalker,
+							Count = 2,
+							HordeRoleId = hordeConfig.Roles.Basic.Id,
+						},
+					},
+				},
+			},
+		},
+		{
+			Id = "campground-crossfire",
+			PostClearRecoverySeconds = 10,
+			Waves = {
+				{
+					DelayAfterPreviousSeconds = 0,
+					Units = {
+						{
+							ArchetypeId = enemyContracts.EnemyArchetypeIds.ExclusionWalker,
+							Count = 1,
+							HordeRoleId = hordeConfig.Roles.Basic.Id,
+						},
+						{
+							ArchetypeId = enemyContracts.EnemyArchetypeIds.ExclusionWalker,
+							Count = 1,
+							HordeRoleId = hordeConfig.Roles.Runner.Id,
+						},
+						{
+							ArchetypeId = enemyContracts.EnemyArchetypeIds.ExclusionWalker,
+							Count = 1,
+							HordeRoleId = hordeConfig.Roles.Crawler.Id,
+						},
+					},
+				},
+			},
+		},
+		{
+			Id = "military-roadblock-gate",
+			PostClearRecoverySeconds = 15,
+			Waves = {
+				{
+					DelayAfterPreviousSeconds = 0,
+					Units = {
+						{
+							ArchetypeId = enemyContracts.EnemyArchetypeIds.ExclusionWalker,
+							Count = 1,
+							HordeRoleId = hordeConfig.Roles.Basic.Id,
+						},
+						{
+							ArchetypeId = enemyContracts.EnemyArchetypeIds.ExclusionWalker,
+							Count = 1,
+							HordeRoleId = hordeConfig.Roles.Runner.Id,
+						},
+					},
+				},
+				{
+					DelayAfterPreviousSeconds = 5,
+					Units = {
+						{
+							ArchetypeId = enemyContracts.EnemyArchetypeIds.ExclusionWalker,
+							Count = 1,
+							HordeRoleId = hordeConfig.Roles.Basic.Id,
+						},
+						{
+							ArchetypeId = enemyContracts.EnemyArchetypeIds.BlightSpitter,
+							Count = 1,
+							HordeRoleId = nil,
+						},
+					},
+				},
+			},
+		},
+	},
+}
 local encounterByRoomId = {}
 for _, room in roomAssemblyConfig.Rooms do
 	if room.Role ~= roomAssemblyContracts.RoleIds.Entry and room.Role ~= roomAssemblyContracts.RoleIds.Boss then
@@ -131,6 +215,7 @@ local firstDungeonContentConfig = { Encounters = encounterByRoomId }
 
 local BOOTSTRAP_CONFIG_TOKEN = {}
 local BOOTSTRAP_FIRST_CONTENT_TOKEN = {}
+local BOOTSTRAP_FIRST_OUTDOOR_BEATS_TOKEN = {}
 local BOOTSTRAP_HORDE_TOKEN = {}
 local BOOTSTRAP_SPECIAL_TOKEN = {}
 local BOOTSTRAP_ENEMY_CONTRACTS_TOKEN = {}
@@ -157,6 +242,7 @@ local Bootstrap = loadModule("server/Systems/ExpeditionServerBootstrap.luau", "E
 					Config = {
 						ExpeditionConfig = BOOTSTRAP_CONFIG_TOKEN,
 						FirstDungeonContentConfig = BOOTSTRAP_FIRST_CONTENT_TOKEN,
+						FirstOutdoorEncounterBeatConfig = BOOTSTRAP_FIRST_OUTDOOR_BEATS_TOKEN,
 						HordeExperienceConfig = BOOTSTRAP_HORDE_TOKEN,
 						SpecialEnemyConfig = BOOTSTRAP_SPECIAL_TOKEN,
 					},
@@ -176,6 +262,9 @@ local Bootstrap = loadModule("server/Systems/ExpeditionServerBootstrap.luau", "E
 		end
 		if token == BOOTSTRAP_FIRST_CONTENT_TOKEN then
 			return firstDungeonContentConfig
+		end
+		if token == BOOTSTRAP_FIRST_OUTDOOR_BEATS_TOKEN then
+			return firstOutdoorEncounterBeatConfig
 		end
 		if token == BOOTSTRAP_HORDE_TOKEN then
 			return hordeConfig
@@ -285,21 +374,90 @@ local function killTrackedEnemies()
 	end
 end
 
+local function assertApproachPlacement(wave: any)
+	for _, definition in wave.Definitions do
+		assert(math.abs(definition.x) <= 18, "approach enemy X offsets must stay bounded")
+		assert(definition.z >= 0 and definition.z <= 48, "approach enemies must stay in the existing arrival band")
+	end
+end
+
 local startedApproach, startedApproachReason = step()
 assert(startedApproach == true and startedApproachReason == "EncounterStarted", "approach encounter should start")
-assert(#spawnedWaves == 1, "approach must produce exactly one first wave")
-assert(#spawnedWaves[1].Definitions == 2, "approach must preserve its two typed walkers")
+assert(#spawnedWaves == 1, "approach must start with the logging-road contact")
+assert(#spawnedWaves[1].Definitions == 2, "logging-road contact must spawn two basic walkers")
 for _, definition in spawnedWaves[1].Definitions do
 	assert(definition.archetypeId == enemyContracts.EnemyArchetypeIds.ExclusionWalker)
 	assert(definition.hordeRoleId == hordeConfig.Roles.Basic.Id)
-	assert(math.abs(definition.x) <= 18, "approach enemy X offsets must stay bounded")
-	assert(definition.z >= 0 and definition.z <= 48, "approach enemies must stay in the intended arrival band")
 end
-local _, pendingApproachReason = step()
-assert(pendingApproachReason == "EncounterInProgress", "a live encounter blocks phase advance")
+assertApproachPlacement(spawnedWaves[1])
+
+local _, loggingPendingReason = step()
+assert(loggingPendingReason == "EncounterInProgress", "logging-road enemies must be observed alive before completion")
 killTrackedEnemies()
+local _, loggingRecoveryReason = step()
+assert(loggingRecoveryReason == "EncounterInProgress", "logging-road clear must preserve its recovery window")
+local _, campgroundStartReason = step()
+assert(campgroundStartReason == "EncounterInProgress", "campground stage remains under the same Approach encounter token")
+assert(#spawnedWaves == 2, "campground wave should start after the authored eight-second breather")
+assert(#spawnedWaves[2].Definitions == 3, "campground must spawn the authored three-enemy mixed wave")
+local campgroundRoles = {}
+for _, definition in spawnedWaves[2].Definitions do
+	assert(definition.archetypeId == enemyContracts.EnemyArchetypeIds.ExclusionWalker)
+	campgroundRoles[definition.hordeRoleId] = true
+end
+assert(campgroundRoles[hordeConfig.Roles.Basic.Id] == true)
+assert(campgroundRoles[hordeConfig.Roles.Runner.Id] == true)
+assert(campgroundRoles[hordeConfig.Roles.Crawler.Id] == true)
+assertApproachPlacement(spawnedWaves[2])
+
+local _, campgroundPendingReason = step()
+assert(campgroundPendingReason == "EncounterInProgress")
+killTrackedEnemies()
+local _, campgroundRecoveryReason = step()
+assert(campgroundRecoveryReason == "EncounterInProgress", "campground clear must preserve its recovery window")
+local _, roadblockStartReason = step()
+assert(roadblockStartReason == "EncounterInProgress")
+assert(#spawnedWaves == 3, "roadblock opening stage should start after the authored ten-second breather")
+assert(#spawnedWaves[3].Definitions == 2, "roadblock opening must remain a two-walker pressure stage")
+local roadblockOpeningRoles = {}
+for _, definition in spawnedWaves[3].Definitions do
+	assert(definition.archetypeId == enemyContracts.EnemyArchetypeIds.ExclusionWalker)
+	roadblockOpeningRoles[definition.hordeRoleId] = true
+end
+assert(roadblockOpeningRoles[hordeConfig.Roles.Basic.Id] == true)
+assert(roadblockOpeningRoles[hordeConfig.Roles.Runner.Id] == true)
+assertApproachPlacement(spawnedWaves[3])
+
+local _, roadblockPendingReason = step()
+assert(roadblockPendingReason == "EncounterInProgress")
+killTrackedEnemies()
+local _, roadblockFollowupRecoveryReason = step()
+assert(roadblockFollowupRecoveryReason == "EncounterInProgress", "roadblock follow-up must wait its authored delay")
+local _, roadblockFollowupStartReason = step()
+assert(roadblockFollowupStartReason == "EncounterInProgress")
+assert(#spawnedWaves == 4, "roadblock follow-up should start after its authored five-second delay")
+assert(#spawnedWaves[4].Definitions == 2, "roadblock follow-up must remain a two-enemy wave")
+local roadblockHasBasic = false
+local roadblockHasSpitter = false
+for _, definition in spawnedWaves[4].Definitions do
+	if definition.archetypeId == enemyContracts.EnemyArchetypeIds.ExclusionWalker then
+		roadblockHasBasic = definition.hordeRoleId == hordeConfig.Roles.Basic.Id
+	elseif definition.archetypeId == enemyContracts.EnemyArchetypeIds.BlightSpitter then
+		roadblockHasSpitter = definition.hordeRoleId == nil
+	end
+end
+assert(roadblockHasBasic and roadblockHasSpitter, "roadblock follow-up must introduce the canonical ranged special")
+assertApproachPlacement(spawnedWaves[4])
+
+local _, roadblockFollowupPendingReason = step()
+assert(roadblockFollowupPendingReason == "EncounterInProgress")
+killTrackedEnemies()
+local _, finalRecoveryStartReason = step()
+assert(finalRecoveryStartReason == "EncounterInProgress", "roadblock clear must begin the pre-dungeon reset")
+local _, finalRecoveryPendingReason = step()
+assert(finalRecoveryPendingReason == "EncounterInProgress", "pre-dungeon reset must last through the authored window")
 local approachDone, approachReason = step()
-assert(approachDone == true, "approach completes once its authored enemies are dead")
+assert(approachDone == true, "approach completes after all four authored stages and final recovery")
 assert(approachReason == "EncounterCompletedAndPhaseAdvanced", "approach completion advances the phase")
 assert(service:getSnapshot().PhaseId == "Dungeon", "approach advances into Dungeon")
 
@@ -332,12 +490,12 @@ local bossDone = step()
 assert(bossDone == true, "boss completes once defeated")
 assert(service:getSnapshot().PhaseId == "Rewards", "boss advances into Rewards")
 
-for waveOrdinal = 2, #spawnedWaves do
+for waveOrdinal = 5, #spawnedWaves do
 	local spawned = spawnedWaves[waveOrdinal]
 	local placement = if spawned.WaveIndex == 90
 		then layout.Placements[#layout.Placements - 1]
 		else layout.Placements[spawned.WaveIndex]
-	assert(placement ~= nil, "every non-approach wave must map to a room placement")
+	assert(placement ~= nil, "every dungeon/elite wave must map to a room placement")
 	for _, definition in spawned.Definitions do
 		assert(definition.archetypeId == enemyContracts.EnemyArchetypeIds.ExclusionWalker)
 		assert(definition.hordeRoleId == hordeConfig.Roles.Basic.Id)
@@ -362,4 +520,4 @@ service:destroy()
 assert(service:getSnapshot() == nil, "a destroyed bootstrap discloses no snapshot")
 assert(service:step(600).ReasonId == "BootstrapDestroyed", "a destroyed bootstrap rejects further steps")
 
-print("ExpeditionServerBootstrap: typed authored composition and room-local full run passed")
+print("ExpeditionServerBootstrap: authored Approach sequence and room-local full run passed")
