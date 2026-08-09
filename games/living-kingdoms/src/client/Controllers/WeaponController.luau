@@ -34,6 +34,7 @@ end
 local REQUEST_COOLDOWN_SECONDS = 0.5
 local COMBAT_ENTITY_ID_ATTRIBUTE = "CombatEntityId"
 local FIRE_ACTION_NAME = "LK_Fire"
+local RELOAD_ACTION_NAME = "LK_Reload"
 local localPlayer = Players.LocalPlayer
 
 local HUD_ATTRIBUTES = {
@@ -324,8 +325,8 @@ local function onPresentationMessage(message: unknown)
 end
 
 --[[
-	The one client reload path, cooldown-guarded. Both the keyboard (R) and the
-	mobile reload button call it, so there is a single request surface and one
+	The one client reload path, cooldown-guarded. Keyboard R, gamepad R1 and the
+	mobile reload button all call it, so there is a single request surface and one
 	cooldown. Returns whether the intent was sent.
 ]]
 function WeaponController.requestReload(): boolean
@@ -357,6 +358,17 @@ local function onFireAction(_actionName: string, inputState: Enum.UserInputState
 		return Enum.ContextActionResult.Sink
 	end
 	return Enum.ContextActionResult.Pass
+end
+
+local function onReloadAction(_actionName: string, inputState: Enum.UserInputState): Enum.ContextActionResult
+	if not state.started or state.destroyed or inputState ~= Enum.UserInputState.Begin then
+		return Enum.ContextActionResult.Pass
+	end
+	if UserInputService:GetFocusedTextBox() ~= nil then
+		return Enum.ContextActionResult.Pass
+	end
+	WeaponController.requestReload()
+	return Enum.ContextActionResult.Sink
 end
 
 local function onInputBegan(input: InputObject, gameProcessedEvent: boolean)
@@ -398,6 +410,7 @@ function WeaponController.start()
 	createCrosshair()
 	ContextActionService:BindAction(FIRE_ACTION_NAME, onFireAction, true, Enum.KeyCode.ButtonR2)
 	ContextActionService:SetTitle(FIRE_ACTION_NAME, "Fire")
+	ContextActionService:BindAction(RELOAD_ACTION_NAME, onReloadAction, false, Enum.KeyCode.ButtonR1)
 	state.inputBeganConnection = UserInputService.InputBegan:Connect(onInputBegan)
 	state.inputEndedConnection = UserInputService.InputEnded:Connect(onInputEnded)
 	state.renderConnection = RunService.RenderStepped:Connect(function()
@@ -413,6 +426,7 @@ function WeaponController.stop()
 		return
 	end
 	ContextActionService:UnbindAction(FIRE_ACTION_NAME)
+	ContextActionService:UnbindAction(RELOAD_ACTION_NAME)
 	if state.inputBeganConnection ~= nil then
 		state.inputBeganConnection:Disconnect()
 		state.inputBeganConnection = nil

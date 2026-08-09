@@ -6,9 +6,8 @@
 	it never reports progress, distance, health, completion, or authority facts.
 
 	Input is a ContextActionService hold binding, so the same handler serves the
-	keyboard (V) and an auto-created touch button — a mobile squad can rescue a
-	downed teammate without a keyboard. V stays distinct from the engine-default
-	E interaction key used by ProximityPrompt.
+	keyboard (V), gamepad D-pad Down, and an auto-created touch button. V stays
+	distinct from the engine-default E interaction key used by ProximityPrompt.
 ]]
 
 local ContextActionService = game:GetService("ContextActionService")
@@ -77,7 +76,7 @@ local function endReviveHold()
 end
 
 -- Begin the hold on press, end it on release; the server owns the hold duration
--- and every other revive fact. Pass so nothing else bound to the key is blocked.
+-- and every other revive fact. Pass so unrelated input layers are not blocked.
 local function onReviveAction(_actionName: string, inputState: Enum.UserInputState): Enum.ContextActionResult
 	if inputState == Enum.UserInputState.Begin then
 		beginReviveHold()
@@ -93,7 +92,7 @@ function Controller.start()
 	end
 	started = true
 	-- `true` creates the mobile touch button. Held: Begin on press, End on release.
-	ContextActionService:BindAction(ACTION_NAME, onReviveAction, true, Enum.KeyCode.V)
+	ContextActionService:BindAction(ACTION_NAME, onReviveAction, true, Enum.KeyCode.V, Enum.KeyCode.DPadDown)
 	ContextActionService:SetTitle(ACTION_NAME, "Revive")
 end
 

@@ -7,6 +7,7 @@
 	first person. This controller never writes a root transform or injects movement.
 ]]
 
+local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
@@ -44,6 +45,7 @@ local state: LifecycleState = {
 local sprinting = false
 
 local PLAYER_MODULE_WAIT_SECONDS = 10
+local SPRINT_ACTION_NAME = "LK_Sprint"
 
 local function applyMovementSpeed()
 	local localPlayer = state.localPlayer
@@ -57,6 +59,21 @@ end
 function SurvivorController.setSprinting(enabled: boolean)
 	sprinting = enabled
 	applyMovementSpeed()
+end
+
+local function onSprintAction(_actionName: string, inputState: Enum.UserInputState): Enum.ContextActionResult
+	if not state.started or state.destroyed then
+		return Enum.ContextActionResult.Pass
+	end
+	if inputState == Enum.UserInputState.Begin then
+		SurvivorController.setSprinting(true)
+		return Enum.ContextActionResult.Sink
+	end
+	if inputState == Enum.UserInputState.End or inputState == Enum.UserInputState.Cancel then
+		SurvivorController.setSprinting(false)
+		return Enum.ContextActionResult.Sink
+	end
+	return Enum.ContextActionResult.Pass
 end
 
 local function configureCharacter(character: Model)
@@ -150,6 +167,7 @@ function SurvivorController.start()
 
 	CameraController.setKeyboardPanningEnabled(false)
 	CameraController.setSurvivorFollowEnabled(true)
+	ContextActionService:BindAction(SPRINT_ACTION_NAME, onSprintAction, false, Enum.KeyCode.ButtonL3)
 	state.characterAddedConnection = localPlayer.CharacterAdded:Connect(configureCharacter)
 	state.inputBeganConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
 		if not gameProcessed and input.KeyCode == Enum.KeyCode.LeftShift then
@@ -175,6 +193,7 @@ function SurvivorController.stop()
 		return
 	end
 
+	ContextActionService:UnbindAction(SPRINT_ACTION_NAME)
 	local connection = state.characterAddedConnection
 	if connection ~= nil then
 		connection:Disconnect()
