@@ -524,6 +524,9 @@ local function reset()
 	beginOperationCalls = 0
 	now = 0
 	service.start()
+	-- The mission clock now stays dormant until a deliberate expedition launch;
+	-- this fixture exercises the phase machine itself, so arm it immediately.
+	service.armPressure()
 end
 
 -- Drive `count` one-second objective-presence samples, advancing the clock.

@@ -758,6 +758,9 @@ end
 -- success stand-down.
 enemyDirector.start()
 mission.start()
+-- The mission clock now stays dormant until a deliberate expedition launch;
+-- this fixture exercises the full pressure/wave/holdout flow, so arm it here.
+mission.armPressure()
 local alpha, alphaRoot = addOperative("operative.player:1", 1, -224, -208)
 local _bravo, bravoRoot = addOperative("operative.player:2", 2, -224, -200)
 playersSignal:Fire(alpha)
