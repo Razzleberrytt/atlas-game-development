@@ -19,7 +19,12 @@ assert(string.find(source, 'action == "SetReady"', 1, true) ~= nil, "ready actio
 assert(string.find(source, "player.UserId", 1, true) ~= nil, "requests must use invoking player identity")
 assert(string.find(source, "startExpedition", 1, true) ~= nil, "authoritative launch should call live runtime")
 assert(string.find(source, "consumeLaunch", 1, true) ~= nil, "launch should be consumed exactly once")
-assert(string.find(source, "Seed =", 1, true) == nil, "clients must not supply expedition seeds through lobby")
+assert(
+	string.find(source, "Seed = FirstDungeonContentConfig.CanonicalSeed", 1, true) ~= nil,
+	"the server may select the pinned canonical MVP seed"
+)
+assert(string.find(source, "payload.Seed", 1, true) == nil, "clients must not supply expedition seeds through lobby")
+assert(string.find(source, '["Seed"]', 1, true) == nil, "clients must not supply expedition seed fields through lobby")
 assert(string.find(source, "RunId =", 1, true) == nil, "clients must not supply run IDs through lobby")
 
 print("ExpeditionLobbyNetworkBoundary.test.luau passed")
