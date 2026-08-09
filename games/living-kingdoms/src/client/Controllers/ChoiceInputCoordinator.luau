@@ -47,8 +47,8 @@ local function onInputBegan(input: InputObject, gameProcessedEvent: boolean)
 		return
 	end
 	local resolution = ChoiceInputConflictResolver.resolve(activeOwnerIds())
-	local ownerId = resolution.ActiveOwnerId
-	if resolution.Dispatch ~= true or ownerId == nil then
+	local ownerId = resolution.OwnerId
+	if resolution.DispatchAllowed ~= true or ownerId == nil then
 		return
 	end
 	local registration = registrations[ownerId]
