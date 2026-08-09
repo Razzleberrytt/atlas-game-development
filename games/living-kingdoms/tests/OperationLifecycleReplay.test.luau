@@ -1,9 +1,8 @@
 --!strict
 
--- P10-0105 deterministic cleanup and replay. The lifecycle owner executes the
--- documented stop and start orders against each system's existing lifecycle,
--- exactly once per owner, and a replayed operation is a fresh run rather than a
--- resume.
+-- P10-0105 deterministic cleanup for deliberate replay. A terminal result holds
+-- at Resolved until the server-owned lobby consumes a fresh launch; only then
+-- does this owner execute the configured cleanup/start sequence.
 
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
@@ -58,7 +57,6 @@ local matchResultConfig = luau.load(fs.readFile("games/living-kingdoms/src/share
 	injectGlobals = true,
 })()
 
--- Every owner is a recorder: the fixture proves the sequence, not each system.
 local calls: { string } = {}
 local terminalListeners: { [number]: (causeId: string) -> () } = {}
 local nextListenerId = 0
@@ -126,7 +124,6 @@ local modulesByToken = {
 	[TOKENS.SquadFailureService] = owner("SquadFailure"),
 }
 
-local scheduled: { { delaySeconds: number, callback: () -> () } } = {}
 local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/OperationLifecycleService.luau"), {
 	debugName = "OperationLifecycleService",
 	environment = {
@@ -147,14 +144,6 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 			assertThat(module ~= nil, "unexpected OperationLifecycleService dependency")
 			return module
 		end,
-		task = {
-			delay = function(delaySeconds: number, callback: () -> ())
-				local handle = { delaySeconds = delaySeconds, callback = callback }
-				table.insert(scheduled, handle)
-				return handle
-			end,
-			cancel = function() end,
-		},
 	},
 	injectGlobals = true,
 })()
@@ -165,35 +154,33 @@ local function fireResolved()
 	end
 end
 
--- A stopped owner ignores everything.
+-- A stopped owner cannot prepare a launch.
 fireResolved()
 assertThat(#calls == 0, "a stopped lifecycle owner must not act")
-assertThat(not service.replayNow(), "a stopped lifecycle owner must refuse a replay")
+assertThat(not service.prepareForLaunch(), "a stopped lifecycle owner must reject launch preparation")
 
 service.start()
-assertThat(service.readReplayStateId() == "InProgress", "a running operation is in progress")
-assertThat(service.readCompletedReplayCount() == 0, "no replay has completed yet")
+assertThat(service.readReplayStateId() == "InProgress", "a fresh server starts in the in-progress lifecycle state")
+assertThat(service.readCompletedReplayCount() == 0, "no fresh-run reset has completed yet")
 
--- Resolution schedules the debrief window rather than restarting immediately.
+-- The first deliberate launch is already fresh; lifecycle preparation is a no-op.
+assertThat(service.prepareForLaunch(), "the initial deliberate launch must be allowed")
+assertThat(#calls == 0, "the initial launch must not tear down freshly booted owners")
+assertThat(service.readCompletedReplayCount() == 0, "the initial launch is not a replay reset")
+
+-- A terminal result now holds indefinitely at Resolved. No timer or automatic
+-- restart may execute the cleanup/start sequence.
 fireResolved()
-assertThat(service.readReplayStateId() == "Resolved", "resolution moves the operation to Resolved")
-assertThat(#calls == 0, "the squad must read the debrief before anything restarts")
-assertThat(#scheduled == 1, "resolution must schedule exactly one replay")
-assertThat(
-	scheduled[1].delaySeconds == matchResultConfig.ReplayDebriefSeconds,
-	"the debrief window must come from the shared configured value"
-)
-
--- A second terminal notification cannot schedule a second replay.
+assertThat(service.readReplayStateId() == "Resolved", "terminal resolution must hold at Resolved")
+assertThat(#calls == 0, "resolution alone must never restart operation owners")
 fireResolved()
-assertThat(#scheduled == 1, "a resolved operation must not schedule another replay")
+assertThat(#calls == 0, "duplicate terminal notification must remain inert")
 
-scheduled[1].callback()
-assertThat(service.readReplayStateId() == "InProgress", "a replayed operation is in progress again")
-assertThat(service.readCompletedReplayCount() == 1, "the replay completed")
+-- The next deliberate lobby launch prepares exactly one fresh operation.
+assertThat(service.prepareForLaunch(), "a resolved operation must prepare for the next deliberate launch")
+assertThat(service.readReplayStateId() == "InProgress", "prepared fresh state must return to InProgress")
+assertThat(service.readCompletedReplayCount() == 1, "one deliberate replay reset must be recorded")
 
--- The stop order runs first, in the documented order, exactly once per owner;
--- then the start order, likewise.
 local stopCalls = {}
 local startCalls = {}
 for _, call in calls do
@@ -204,67 +191,48 @@ for _, call in calls do
 		table.insert(startCalls, name)
 	end
 end
+
 local expectedStops = {}
 for _, ownerId in matchResultConfig.CleanupStopOrder do
 	if ownerId ~= "OperativeLife" then
 		table.insert(expectedStops, ownerId)
 	end
 end
-assertThat(#stopCalls == #expectedStops, "every operation-scoped cleanup owner must be stopped exactly once")
+assertThat(#stopCalls == #expectedStops, "every operation-scoped cleanup owner must stop exactly once")
 for index, ownerId in expectedStops do
-	assertThat(stopCalls[index] == ownerId, "the stop order must follow the documented sequence at " .. tostring(index))
+	assertThat(stopCalls[index] == ownerId, "cleanup order must match configuration at " .. tostring(index))
 end
-assertThat(not table.find(calls, "OperativeLife.stop"), "replay must preserve application-scoped life subscribers")
-assertThat(not table.find(calls, "OperativeLife.start"), "replay must not rebuild application-scoped life bindings")
-assertThat(
-	table.find(calls, "OperativeLife.resetForReplay") ~= nil,
-	"replay must reset operation life state through the existing application owner"
-)
--- The objective runtime releases at its documented place, before the director
--- tears the rest of itself down last.
-assertThat(
-	(table.find(stopCalls, "Objectives") :: number) < (table.find(stopCalls, "MissionDirector") :: number),
-	"objectives must stand down before the director tears itself down"
-)
-assertThat(stopCalls[1] == "EnemyDirector", "enemies and pressure stand down first")
-assertThat(stopCalls[#stopCalls] == "MissionDirector", "the mission director tears itself down last")
+assertThat(not table.find(calls, "OperativeLife.stop"), "fresh-run reset must preserve application life subscribers")
+assertThat(not table.find(calls, "OperativeLife.start"), "fresh-run reset must not rebuild application life bindings")
+assertThat(table.find(calls, "OperativeLife.resetForReplay") ~= nil, "operation life state must reset for a fresh run")
+assertThat(stopCalls[1] == "EnemyDirector", "enemy pressure must stand down first")
+assertThat(stopCalls[#stopCalls] == "MissionDirector", "the mission director must tear down last")
 
--- The objective runtime returns with the director that owns it, so it is not a
--- separate start; every other owner starts exactly once, in order.
 local expectedStarts = {}
 for _, ownerId in matchResultConfig.ReplayStartOrder do
 	if ownerId ~= "Objectives" then
 		table.insert(expectedStarts, ownerId)
 	end
 end
-assertThat(#startCalls == #expectedStarts, "every owner must restart exactly once")
+assertThat(#startCalls == #expectedStarts, "every restart owner must start exactly once")
 for index, ownerId in expectedStarts do
-	assertThat(
-		startCalls[index] == ownerId,
-		"the start order must follow the documented sequence at " .. tostring(index)
-	)
+	assertThat(startCalls[index] == ownerId, "restart order must match configuration at " .. tostring(index))
 end
-assertThat(
-	(table.find(startCalls, "OperativeLife") :: number) < (table.find(startCalls, "MissionDirector") :: number),
-	"the life and roster owners must be running before the mission restarts"
-)
 
--- The immediate server-only replay runs the same sequence.
+-- Preparing again while already fresh is idempotent and does not rerun cleanup.
 table.clear(calls)
-assertThat(service.replayNow(), "a running lifecycle owner performs an immediate replay")
-assertThat(service.readCompletedReplayCount() == 2, "the immediate replay completed")
-assertThat(#calls > 0, "the immediate replay must run the same documented sequence")
+assertThat(service.prepareForLaunch(), "an already-fresh lifecycle must allow the launch")
+assertThat(#calls == 0, "an already-fresh lifecycle must not reset twice")
+assertThat(service.readCompletedReplayCount() == 1, "idempotent launch preparation must not increment reset count")
 
--- A scheduled replay cannot fire after teardown.
+-- Teardown releases the terminal subscription and refuses future preparation.
 fireResolved()
-local pending = scheduled[#scheduled]
+assertThat(service.readReplayStateId() == "Resolved", "second terminal result must also hold")
 service.stop()
-pending.callback()
-assertThat(service.readCompletedReplayCount() == 0, "teardown must release the pending replay")
-assertThat(service.readReplayStateId() == "InProgress", "teardown resets the replay state")
+assertThat(service.readCompletedReplayCount() == 0, "service teardown resets diagnostic count")
+assertThat(service.readReplayStateId() == "InProgress", "service teardown resets lifecycle state")
+assertThat(not service.prepareForLaunch(), "stopped lifecycle must refuse future launch preparation")
 
--- Source audits: cleanup order lives in shared configuration, the owner holds no
--- gameplay state, and replay is server-driven.
 local lifecycle = fs.readFile("games/living-kingdoms/src/server/Systems/OperationLifecycleService.luau")
 local mission = fs.readFile("games/living-kingdoms/src/server/Systems/MissionDirectorService.luau")
 local bootstrap = fs.readFile("games/living-kingdoms/src/server/init.server.luau")
@@ -272,38 +240,30 @@ local bootstrap = fs.readFile("games/living-kingdoms/src/server/init.server.luau
 assertThat(
 	contains(lifecycle, "for _, ownerId in MatchResultConfig.CleanupStopOrder do")
 		and contains(lifecycle, "for _, ownerId in MatchResultConfig.ReplayStartOrder do"),
-	"the sequence must be driven by shared configuration, not hand-written here"
+	"fresh-run reset must remain configuration-driven"
 )
+assertThat(
+	contains(lifecycle, "function OperationLifecycleService.prepareForLaunch()"),
+	"lifecycle must expose launch preparation"
+)
+assertThat(not contains(lifecycle, "task.delay("), "terminal resolution must not schedule an automatic replay")
+assertThat(not contains(lifecycle, "task.cancel("), "deliberate replay requires no replay timer cancellation")
 for _, forbidden in { "OnServerEvent", "FireServer", "InvokeServer", "RemoteEvent", "RemoteFunction" } do
-	assertThat(not contains(lifecycle, forbidden), "replay must be server-driven: " .. forbidden)
+	assertThat(not contains(lifecycle, forbidden), "lifecycle preparation must remain server-only: " .. forbidden)
 end
-assertThat(
-	contains(lifecycle, "task.delay(MatchResultConfig.ReplayDebriefSeconds"),
-	"the lifecycle owner must own exactly one configured replay timer"
-)
-assertThat(
-	contains(lifecycle, "cancelScheduledReplay()") and contains(lifecycle, "terminalConnection:Disconnect()"),
-	"teardown must release the timer and the subscription"
-)
 assertThat(
 	contains(lifecycle, "OperativeLifeService.resetForReplay()")
 		and not contains(lifecycle, "OperativeLifeService.stop()")
 		and not contains(lifecycle, "OperativeLifeService.start()"),
-	"replay must reset life state without tearing down application-scoped bindings"
+	"fresh-run reset must preserve the application-scoped life binding owner"
 )
 
--- A replayed operation is a fresh run, never a resume.
 assertThat(
 	contains(mission, 'operationId = string.format("%s:run-%d", MissionConfig.OperationId, operationRunIndex)'),
-	"every start must mint a fresh per-run operation identity"
+	"every mission start must mint a fresh per-run operation identity"
 )
-assertThat(contains(mission, "operationRunIndex += 1"), "the run index must advance so a replay is a distinct result")
-assertThat(
-	not contains(mission, "operationId = MissionConfig.OperationId,"),
-	"the published and recorded identity must be the per-run one"
-)
-assertThat(contains(bootstrap, "OperationLifecycleService.start()"), "the lifecycle owner must be bootstrapped")
+assertThat(contains(mission, "operationRunIndex += 1"), "the run index must advance for each fresh operation")
+assertThat(not contains(mission, "operationId = MissionConfig.OperationId,"), "published identity must remain per-run")
+assertThat(contains(bootstrap, "OperationLifecycleService.start()"), "the lifecycle owner must remain bootstrapped")
 
-print(
-	"OperationLifecycleReplay: configuration-driven stop/start order, one replay timer, and fresh run identity passed"
-)
+print("OperationLifecycleReplay: resolved hold, deliberate preparation, cleanup order, and fresh identity passed")

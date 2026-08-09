@@ -12,6 +12,7 @@ local ExpeditionConfig = require(ReplicatedStorage.Shared.Config.ExpeditionConfi
 local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.ExpeditionContracts)
 local ExpeditionLobbyService = require(Systems.ExpeditionLobbyService)
 local ExpeditionLiveRuntimeService = require(Systems.ExpeditionLiveRuntimeService)
+local OperationLifecycleService = require(Systems.OperationLifecycleService)
 local MissionDirectorService = require(Systems.MissionDirectorService)
 local HordeExperienceService = require(Systems.HordeExperienceService)
 
@@ -92,10 +93,22 @@ local function attemptLaunch()
 	if snapshot == nil or not snapshot.LaunchPending then
 		return
 	end
+	if ExpeditionLiveRuntimeService.readSnapshot() ~= nil then
+		return
+	end
 	launchInFlight = true
 
 	local consumed = lobby:consumeLaunch()
 	if consumed.Accepted ~= true then
+		launchInFlight = false
+		broadcast()
+		return
+	end
+
+	-- The lifecycle owner never chooses to replay. It only prepares a fresh run
+	-- after this lobby has consumed a deliberate ready-state launch.
+	if not OperationLifecycleService.prepareForLaunch() then
+		warn("[ExpeditionLobby] lifecycle preparation rejected")
 		launchInFlight = false
 		broadcast()
 		return
@@ -149,6 +162,9 @@ request.OnServerInvoke = function(player: Player, action: any, payload: any): an
 	elseif action == "Leave" then
 		result = lobby:leave(player.UserId)
 	elseif action == "SetReady" then
+		if ExpeditionLiveRuntimeService.readSnapshot() ~= nil then
+			return response(false, "ExpeditionActive")
+		end
 		local ready = if type(payload) == "table" then payload.Ready else nil
 		result = lobby:setReady(player.UserId, ready)
 	elseif action == "ReturnToLobby" then

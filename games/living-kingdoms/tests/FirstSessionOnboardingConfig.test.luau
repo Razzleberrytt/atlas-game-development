@@ -2,7 +2,8 @@
 
 -- BA-060 onboarding fixture: pin the intended first-session player journey to
 -- existing owner boundaries and dormant prepared MVP content without creating a
--- tutorial runtime or hiding the deliberate-replay lifecycle blocker.
+-- tutorial runtime. Deliberate replay now returns through preparation and the
+-- canonical lobby launch path instead of a server-driven restart.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
@@ -101,7 +102,7 @@ for index, onboardingStep in config.Steps do
 end
 
 assert(optionalCount == 1, "Lookout Cache must remain the only optional first-session beat")
-assert(blockedCount == 1, "deliberate replay must remain the one explicit lifecycle blocker")
+assert(blockedCount == 0, "deliberate replay lifecycle should be source-remediated")
 assert(config.Steps[1].KindId == config.StepKindIds.Arrival)
 assert(config.Steps[#config.Steps].KindId == config.StepKindIds.Replay)
 
@@ -132,11 +133,12 @@ assert(byId["apply-earned-build-choice"].ActionId == "SubmitRelicChoice")
 
 local replay = byId["deliberately-start-next-run"]
 assert(replay == config.Steps[#config.Steps], "deliberate replay must stay last")
-assert(replay.OwnershipBoundaryId == "OperationLifecycleService")
-assert(replay.ImplementationStateId == config.ImplementationStateIds.BlockedLifecycle)
+assert(replay.OwnershipBoundaryId == "ExpeditionLobbyService")
+assert(replay.ImplementationStateId == config.ImplementationStateIds.RuntimeExisting)
+assert(replay.ActionId == "OpenExpedition")
 assert(
-	string.find(replay.IntegrationNote, "auto-replays", 1, true) ~= nil,
-	"the current auto-replay mismatch must remain explicit"
+	string.find(replay.IntegrationNote, "Fresh lobby readiness is required", 1, true) ~= nil,
+	"the deliberate next-run requirement must remain explicit"
 )
 
 local source = fs.readFile("games/living-kingdoms/src/shared/Config/FirstSessionOnboardingConfig.luau")
@@ -146,7 +148,7 @@ assert(string.find(source, "FireServer", 1, true) == nil, "BA-060 cannot fire on
 assert(string.find(source, "RemoteEvent", 1, true) == nil, "BA-060 cannot create onboarding networking")
 assert(
 	string.find(source, "require(script.Parent.Parent.Server.Systems.OperationLifecycleService", 1, true) == nil,
-	"BA-060 must not import the blocked lifecycle owner"
+	"BA-060 must not import the runtime lifecycle owner"
 )
 
-print("BA-060 FirstSessionOnboardingConfig fixture passed")
+print("BA-060 FirstSessionOnboardingConfig deliberate replay fixture passed")
