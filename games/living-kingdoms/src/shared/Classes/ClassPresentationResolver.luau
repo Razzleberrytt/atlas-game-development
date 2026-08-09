@@ -136,7 +136,7 @@ function Resolver.ownerStatus(
 		end
 		return string.format("%s RECHARGING  •  READY IN %.1fs", actionName, remaining)
 	end
-	return actionName .. " READY  •  Q / GAMEPAD X"
+	return actionName .. " READY  •  Q / GAMEPAD B"
 end
 
 function Resolver.squadActionCue(member: ClassContracts.ClassSquadMemberPresentationSnapshot): string?
