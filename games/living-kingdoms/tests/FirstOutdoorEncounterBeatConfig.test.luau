@@ -1,8 +1,8 @@
 --!strict
 
 -- BA-051 encounter-beat fixture: pin the three BA-050 encounter slots to a
--- readable escalating composition while keeping spawning, recovery, and elite
--- assignment as dormant authoring intent rather than new runtime authority.
+-- readable escalating combat sequence while keeping BA-050 route geometry and
+-- traversal dormant under their existing hold.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
@@ -103,11 +103,12 @@ local beats = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Fir
 	injectGlobals = true,
 })()
 
-assert(beats.Version == "BA-051-v1", "encounter-beat fixture version changed unexpectedly")
+assert(beats.Version == "BA-051-v2-approach-live", "encounter-beat fixture version changed unexpectedly")
 assert(beats.RouteId == routeConfig.RouteId, "encounter beats must remain pinned to the BA-050 route")
 assert(beats.RouteVersion == routeConfig.RouteVersion, "encounter beats must remain pinned to the BA-050 route version")
-assert(beats.RuntimeConsumptionActive == false, "BA-051 must remain data-only")
-assert(routeConfig.RuntimeConsumptionActive == false, "BA-051 cannot activate its route dependency")
+assert(beats.RuntimeConsumptionActive == true, "BA-051 approach combat sequence should be live")
+assert(beats.RuntimeConsumptionScopeId == "ApproachCombatSequenceOnly", "BA-051 live scope must stay combat-only")
+assert(routeConfig.RuntimeConsumptionActive == false, "BA-051 cannot activate its route-geometry dependency")
 assert(#beats.Beats == 3, "the first outdoor approach must keep exactly three encounter beats")
 
 local loggingRoad = beats.Beats[1]
@@ -181,4 +182,4 @@ assert(
 	"BA-051 must not smuggle reward authority into route pacing"
 )
 
-print("BA-051 FirstOutdoorEncounterBeatConfig fixture passed")
+print("BA-051 FirstOutdoorEncounterBeatConfig live approach-combat fixture passed")
