@@ -50,6 +50,10 @@ jobs:
         shell: bash
         run: python scripts/verify_studio_import_package.py
 
+      - name: Diagnostic BA-005 resource authoring evidence
+        shell: bash
+        run: python scripts/diagnose_ba005_resource_authoring.py
+
       - name: Validate migration manifests
         shell: bash
         run: python scripts/validate_migration_manifests.py
