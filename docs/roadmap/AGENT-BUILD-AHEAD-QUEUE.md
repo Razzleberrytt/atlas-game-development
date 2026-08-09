@@ -130,7 +130,7 @@ This is now a first-class product lane under Master Roadmap Phase W.
 | ID | Status | Task | Deliverable / boundary |
 |---|---|---|---|
 | BA-030 | DONE | Dungeon/expedition content contract. | [`docs/specifications/dungeon-expedition-content-contract.md`](../specifications/dungeon-expedition-content-contract.md) — adds `EncounterSlotId`/`EncounterIntensity`/`RewardSourceId` to the existing handcrafted room pool (`RoomAssemblyContracts`/`RoomAssemblyConfig`), reusing `EquipmentRewardContracts`'s Elite/Boss reward vocabulary and the existing lobby return-to-safety remote for the return path. No spawner/runtime wiring changed. |
-| BA-031 | READY | Portal destination/eligibility contract. | Destination, party/unlock constraints, denial reasons; no teleport authority invented. |
+| BA-031 | DONE | Portal destination/eligibility contract. | `src/shared/World/PortalDestinationContracts.luau` (destination ref, party/unlock constraints, denial-reason enum, pure `evaluateEligibility` resolver) plus the one authored `PortalDestinationConfig.luau` definition for `portal.expedition.primary`, tracking `ExpeditionConfig.Definitions.FirstExpedition`'s party bounds. `RuntimeEnabled = false`; no consumer calls it yet and no teleport/network authority was added. |
 | BA-032 | BLOCKED on BA-030 | First repeatable dungeon content data. | One short authored dungeon sequence using canonical combat/enemy systems. |
 | BA-033 | BLOCKED on BA-032 | Elite/boss reward-decision data. | References canonical loot/item/run-build owners. |
 | BA-034 | IN PROGRESS via PR #239 | Held pre-launch operation-selection contract. | Inspect PR #239 before any work. Do not duplicate it; no runtime activation until accepted. |
