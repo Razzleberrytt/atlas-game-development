@@ -13,6 +13,10 @@ local contracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Classe
 	debugName = "ClassContracts",
 	injectGlobals = true,
 })()
+local actionMap = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/InputActionMapConfig.luau"), {
+	debugName = "InputActionMapConfig",
+	injectGlobals = true,
+})()
 local CONTRACTS_TOKEN = {}
 local resolver = luau.load(fs.readFile("games/living-kingdoms/src/shared/Classes/ClassPresentationResolver.luau"), {
 	debugName = "ClassPresentationResolver",
@@ -70,6 +74,27 @@ assertThat(
 	"cooldown must preserve a concise interruption reason and remaining time"
 )
 
+local idle = table.clone(active)
+idle.actionStateId = contracts.ClassActionStateIds.Idle
+idle.actionId = nil
+idle.targetOperativeEntityId = nil
+idle.startedAtServerTimestamp = nil
+idle.completionServerTimestamp = nil
+idle.cooldownEndServerTimestamp = nil
+idle.statusReasonId = nil
+local classActionBinding = actionMap.Actions.ClassAction
+assertThat(classActionBinding.KeyboardKeyCodeNames[1] == "Q", "canonical class action keyboard binding must remain Q")
+assertThat(
+	classActionBinding.GamepadKeyCodeNames[1] == "ButtonB",
+	"canonical class action gamepad binding must remain ButtonB"
+)
+local idleStatus = resolver.ownerStatus(contracts.ClassIds.CombatSpecialist, idle, 17)
+assertThat(idleStatus == "BRACE READY  •  Q / GAMEPAD B", "ready hint must match the remapped class-action controls")
+assertThat(
+	not string.find(idleStatus, "GAMEPAD X", 1, true),
+	"ready hint must not regress to the world-prompt gamepad key"
+)
+
 for _, reasonId in contracts.ClassActionRejectionReasonIds do
 	local label = resolver.rejectionLabel(reasonId)
 	assertThat(label ~= nil and label ~= "", "every server rejection needs concise feedback")
@@ -90,5 +115,8 @@ local source = fs.readFile("games/living-kingdoms/src/shared/Classes/ClassPresen
 for _, forbidden in { "game:GetService", "Instance.new", "RemoteEvent", "FireServer", "Workspace" } do
 	assertThat(not string.find(source, forbidden, 1, true), "pure presentation resolver must not contain " .. forbidden)
 end
+assertThat(not string.find(source, "GAMEPAD X", 1, true), "class presentation copy must not advertise the prompt key")
 
-print("ClassPresentationResolver: redundant identity, resources, timing, cues, and failure copy passed")
+print(
+	"ClassPresentationResolver: redundant identity, resources, timing, remapped ready hint, cues, and failure copy passed"
+)
