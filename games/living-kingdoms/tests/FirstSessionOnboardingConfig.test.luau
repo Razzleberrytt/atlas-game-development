@@ -1,9 +1,9 @@
 --!strict
 
 -- BA-060 onboarding fixture: pin the intended first-session player journey to
--- existing owner boundaries and dormant prepared MVP content without creating a
--- tutorial runtime. Deliberate replay now returns through preparation and the
--- canonical lobby launch path instead of a server-driven restart.
+-- existing owner boundaries and prepared MVP content without creating a tutorial
+-- runtime. The fixture also prevents implementation-state labels from drifting
+-- behind already-live First Descent and Run Relic integrations.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
@@ -36,7 +36,7 @@ local dungeonConfig = {
 }
 local rewardDecisionConfig = {
 	SequenceId = "first-descent-reward-decisions",
-	RuntimeConsumptionEnabled = false,
+	RuntimeConsumptionEnabled = true,
 }
 
 local HUB_TOKEN = {}
@@ -79,7 +79,7 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Fi
 	injectGlobals = true,
 })()
 
-assert(config.Version == "BA-060-v1")
+assert(config.Version == "BA-060-v2-runtime-sync")
 assert(config.SequenceId == "onboarding.first-session.mvp-0.1")
 assert(config.RuntimeConsumptionActive == false)
 assert(#config.Steps == 12, "first-session sequence should remain a compact twelve-step journey")
@@ -121,15 +121,20 @@ assert(byId["traverse-first-outdoor-route"].ReferenceId == routeConfig.RouteId)
 assert(byId["traverse-first-outdoor-route"].ImplementationStateId == config.ImplementationStateIds.PreparedData)
 assert(byId["discover-lookout-cache"].ReferenceId == discoveryConfig.Discoveries[1].Id)
 assert(byId["discover-lookout-cache"].Optional == true)
+assert(byId["discover-lookout-cache"].ImplementationStateId == config.ImplementationStateIds.PreparedData)
+
 assert(byId["complete-first-descent"].ReferenceId == dungeonConfig.SequenceId)
+assert(byId["complete-first-descent"].ImplementationStateId == config.ImplementationStateIds.RuntimeExisting)
+assert(byId["complete-first-descent"].OwnershipBoundaryId == "ExpeditionServerBootstrap")
 assert(byId["make-run-reward-choice"].ReferenceId == rewardDecisionConfig.SequenceId)
 assert(byId["make-run-reward-choice"].OwnershipBoundaryId == "RunBuildService")
-assert(byId["make-run-reward-choice"].ImplementationStateId == config.ImplementationStateIds.PreparedIntegration)
+assert(byId["make-run-reward-choice"].ImplementationStateId == config.ImplementationStateIds.RuntimeExisting)
 
 assert(byId["read-operation-result"].OwnershipBoundaryId == "ExpeditionResultService")
 assert(byId["return-to-preparation"].ActionId == "ReturnToLobby")
 assert(byId["apply-earned-build-choice"].OwnershipBoundaryId == "RunBuildService")
 assert(byId["apply-earned-build-choice"].ActionId == "SubmitRelicChoice")
+assert(byId["apply-earned-build-choice"].ImplementationStateId == config.ImplementationStateIds.RuntimeExisting)
 
 local replay = byId["deliberately-start-next-run"]
 assert(replay == config.Steps[#config.Steps], "deliberate replay must stay last")
@@ -151,4 +156,4 @@ assert(
 	"BA-060 must not import the runtime lifecycle owner"
 )
 
-print("BA-060 FirstSessionOnboardingConfig deliberate replay fixture passed")
+print("BA-060 FirstSessionOnboardingConfig runtime-sync fixture passed")
