@@ -217,12 +217,12 @@ local FirstSessionOnboardingConfig = {
 			12,
 			StepKindIds.Replay,
 			"Choose to start another run from safety rather than being auto-restarted.",
-			ImplementationStateIds.BlockedLifecycle,
+			ImplementationStateIds.RuntimeExisting,
 			false,
-			"OperationLifecycleService",
+			"ExpeditionLobbyService",
 			hubStationContentId("OpenExpedition"),
 			"OpenExpedition",
-			"BLOCKED: current OperationLifecycleService auto-replays after debrief; reconcile that owner before onboarding integration."
+			"The resolved run stays held until return. Fresh lobby readiness is required; the lifecycle owner only prepares clean run state after that deliberate launch is consumed."
 		),
 	}),
 }
@@ -268,7 +268,7 @@ for index, onboardingStep in FirstSessionOnboardingConfig.Steps do
 end
 
 assert(optionalCount == 1, "the first session must keep exactly one optional discovery beat")
-assert(blockedLifecycleCount == 1, "the first session must expose the unresolved deliberate-replay lifecycle blocker")
+assert(blockedLifecycleCount == 0, "the deliberate-replay lifecycle blocker is source-remediated")
 assert(
 	FirstSessionOnboardingConfig.Steps[1].KindId == StepKindIds.Arrival
 		and FirstSessionOnboardingConfig.Steps[#FirstSessionOnboardingConfig.Steps].KindId == StepKindIds.Replay,
