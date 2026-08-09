@@ -11,6 +11,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
+local GuiService = game:GetService("GuiService")
+local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local HordeStateEarlyListener = require(script.Parent.Parent.State.HordeStateEarlyListener)
@@ -36,6 +38,9 @@ local lastSelectionSequence = -1
 local lastCorruptionSequence = -1
 local eventVisibleUntil = 0
 local upgradeButtons: { TextButton } = {}
+local upgradeChoiceIds: { [number]: string } = {}
+local upgradeInputActive = false
+local mouseIconWasEnabled = false
 
 local objectiveLabel: TextLabel? = nil
 local radioLabel: TextLabel? = nil
@@ -63,6 +68,8 @@ local hasUpgradeChoices = false
 local lastObservedLevel = -1
 local levelCelebration: Frame? = nil
 local levelCelebrationText: TextLabel? = nil
+local controlsHint: TextLabel? = nil
+local controlsHintVisibleUntil = 0
 
 local COLORS = table.freeze({
 	panel = Color3.fromRGB(12, 15, 18),
@@ -335,6 +342,43 @@ local function clearUpgradeButtons()
 		button:Destroy()
 	end
 	table.clear(upgradeButtons)
+	table.clear(upgradeChoiceIds)
+end
+
+local function relicChoiceIsVisible(): boolean
+	local playerGui = localPlayer:FindFirstChildOfClass("PlayerGui")
+	local runBuildHud = if playerGui == nil then nil else playerGui:FindFirstChild("LK_RunBuildHUD")
+	local relicReward = if runBuildHud == nil then nil else runBuildHud:FindFirstChild("RelicReward")
+	return relicReward ~= nil and relicReward:IsA("GuiObject") and relicReward.Visible
+end
+
+local function setUpgradeInputActive(active: boolean)
+	if active == upgradeInputActive then
+		return
+	end
+	upgradeInputActive = active
+	if active then
+		mouseIconWasEnabled = UserInputService.MouseIconEnabled
+		localPlayer:SetAttribute("LK_InputModalOpen", true)
+		UserInputService.MouseIconEnabled = true
+		GuiService.SelectedObject = upgradeButtons[1]
+	elseif not relicChoiceIsVisible() then
+		localPlayer:SetAttribute("LK_InputModalOpen", nil)
+		UserInputService.MouseIconEnabled = mouseIconWasEnabled
+		if GuiService.SelectedObject ~= nil and table.find(upgradeButtons, GuiService.SelectedObject) ~= nil then
+			GuiService.SelectedObject = nil
+		end
+	end
+end
+
+local function submitUpgradeChoice(choiceIndex: number)
+	local upgradeId = upgradeChoiceIds[choiceIndex]
+	local button = upgradeButtons[choiceIndex]
+	if not upgradeInputActive or upgradeId == nil or button == nil or not button.Active then
+		return
+	end
+	button.Active = false
+	progressionChooseUpgradeRemote:FireServer(upgradeId)
 end
 
 local function renderUpgradeChoices(choices: { any })
@@ -347,11 +391,12 @@ local function renderUpgradeChoices(choices: { any })
 	if #choices == 0 then
 		hasUpgradeChoices = false
 		overlay.Visible = false
+		setUpgradeInputActive(false)
 		return
 	end
 	hasUpgradeChoices = true
 	if upgradeTitle ~= nil then
-		upgradeTitle.Text = "LEVEL UP!  //  CHOOSE ONE POWER  //  K OPENS SKILL TREES"
+		upgradeTitle.Text = "LEVEL UP  //  CHOOSE ONE RUN UPGRADE  //  PRESS 1, 2, OR 3"
 	end
 	for index, choice in choices do
 		if type(choice) ~= "table" or type(choice.id) ~= "string" then
@@ -371,23 +416,26 @@ local function renderUpgradeChoices(choices: { any })
 		button.RichText = true
 		local statPreview = if type(choice.statPreview) == "string" then choice.statPreview else "RUN POWER INCREASE"
 		button.Text = string.format(
-			'<b>%s</b>   <font color="#C7A85F">[%d/%d]</font>\n<font color="#F2C65D">%s</font>\n<font color="#C5CBC5">%s</font>\n<font color="#FFFFFF"><b>TAP / CLICK TO CHOOSE</b></font>',
+			'<b>[%d]  %s</b>   <font color="#C7A85F">[%d/%d]</font>\n<font color="#F2C65D">%s</font>\n<font color="#C5CBC5">%s</font>\n<font color="#FFFFFF"><b>PRESS %d OR CLICK</b></font>',
+			index,
 			string.upper(tostring(choice.name or choice.id)),
 			tonumber(choice.stacks) or 0,
 			tonumber(choice.maximumStacks) or 1,
 			statPreview,
-			tostring(choice.description or "")
+			tostring(choice.description or ""),
+			index
 		)
 		button.Parent = container
 		addCorner(button, 7)
 		addStroke(button, 0.35, 1)
 		local upgradeId = choice.id
+		upgradeChoiceIds[index] = upgradeId
 		button.Activated:Connect(function()
-			button.Active = false
-			progressionChooseUpgradeRemote:FireServer(upgradeId)
+			submitUpgradeChoice(index)
 		end)
 		table.insert(upgradeButtons, button)
 	end
+	setUpgradeInputActive(true)
 end
 
 local showEvent: (text: string, color: Color3) -> ()
@@ -538,6 +586,26 @@ local function createPresentation()
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 50
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+	local hint = createLabel(
+		gui,
+		"FirstRunControls",
+		UDim2.new(0.5, -270, 0, 72),
+		UDim2.fromOffset(540, 34),
+		14,
+		Enum.Font.GothamBold,
+		Enum.TextXAlignment.Center
+	)
+	hint.BackgroundColor3 = Color3.fromRGB(9, 16, 14)
+	hint.BackgroundTransparency = 0.2
+	hint.BorderSizePixel = 0
+	hint.Text = "MOVE  WASD  •  INTERACT / PICK UP  E  •  RELOAD  R  •  FLASHLIGHT  F"
+	hint.TextColor3 = Color3.fromRGB(245, 229, 181)
+	hint.Visible = true
+	addCorner(hint, 8)
+	addStroke(hint, 0.55, 1)
+	controlsHint = hint
+	controlsHintVisibleUntil = Workspace:GetServerTimeNow() + 12
 
 	local objectivePanel =
 		createPanel(gui, "ObjectivePanel", UDim2.new(0.5, 0, 0, 12), UDim2.fromOffset(480, 50), Vector2.new(0.5, 0))
@@ -803,11 +871,12 @@ local function updateFrame()
 	updateSquadPresentation()
 	local overlay = upgradeOverlay
 	if overlay ~= nil then
-		local playerGui = localPlayer:FindFirstChildOfClass("PlayerGui")
-		local runBuildHud = if playerGui == nil then nil else playerGui:FindFirstChild("LK_RunBuildHUD")
-		local relicReward = if runBuildHud == nil then nil else runBuildHud:FindFirstChild("RelicReward")
-		local relicChoiceVisible = relicReward ~= nil and relicReward:IsA("GuiObject") and relicReward.Visible
+		local relicChoiceVisible = relicChoiceIsVisible()
 		overlay.Visible = hasUpgradeChoices and not relicChoiceVisible
+		setUpgradeInputActive(overlay.Visible)
+	end
+	if controlsHint ~= nil and controlsHint.Visible and serverTimestamp > controlsHintVisibleUntil then
+		controlsHint.Visible = false
 	end
 	if eventLabel ~= nil and eventLabel.Visible and serverTimestamp > eventVisibleUntil then
 		eventLabel.Visible = false
@@ -829,6 +898,22 @@ function Controller.start()
 	table.insert(connections, HordeStateEarlyListener.subscribe(onState))
 	table.insert(connections, progressionStateRemote.OnClientEvent:Connect(onProgressionState))
 	table.insert(connections, RunService.RenderStepped:Connect(updateFrame))
+	table.insert(
+		connections,
+		UserInputService.InputBegan:Connect(function(input, gameProcessed)
+			if gameProcessed or not upgradeInputActive then
+				return
+			end
+			local choiceIndex = if input.KeyCode == Enum.KeyCode.One or input.KeyCode == Enum.KeyCode.KeypadOne
+				then 1
+				elseif input.KeyCode == Enum.KeyCode.Two or input.KeyCode == Enum.KeyCode.KeypadTwo then 2
+				elseif input.KeyCode == Enum.KeyCode.Three or input.KeyCode == Enum.KeyCode.KeypadThree then 3
+				else nil
+			if choiceIndex ~= nil then
+				submitUpgradeChoice(choiceIndex)
+			end
+		end)
+	)
 
 	-- Recover the current progression snapshot for late joins so the XP bar and
 	-- any pending upgrade offer render immediately.
@@ -849,6 +934,7 @@ function Controller.stop()
 		connection:Disconnect()
 	end
 	table.clear(connections)
+	setUpgradeInputActive(false)
 	clearUpgradeButtons()
 	if screenGui ~= nil then
 		screenGui:Destroy()
@@ -872,6 +958,8 @@ function Controller.stop()
 	levelCelebrationText = nil
 	runStatsPrimaryLabel = nil
 	runStatsSecondaryLabel = nil
+	controlsHint = nil
+	controlsHintVisibleUntil = 0
 end
 
 return Controller

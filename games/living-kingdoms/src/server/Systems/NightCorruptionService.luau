@@ -19,8 +19,8 @@ local heartbeatConnection: RBXScriptConnection? = nil
 local function evaluateAt(serverTimestamp: number)
 	local elapsed = math.max(0, serverTimestamp - startedAt)
 	local dayNumber = math.floor(elapsed / Config.CycleSeconds) + 1
-	local cycleElapsed = elapsed % Config.CycleSeconds
-	local isNight = cycleElapsed >= Config.DaylightSeconds
+	local cycleElapsed = if Config.RuntimeEnabled then elapsed % Config.CycleSeconds else 0
+	local isNight = Config.RuntimeEnabled and cycleElapsed >= Config.DaylightSeconds
 	local tier = 0
 	local intensity = 0
 	if isNight then
@@ -59,10 +59,10 @@ local function evaluateAt(serverTimestamp: number)
 	else
 		local daylightProgress = cycleElapsed / Config.DaylightSeconds
 		Lighting.ClockTime = Config.DayClockTime + daylightProgress * (Config.NightStartClockTime - Config.DayClockTime)
-		Lighting.Brightness = 2.5
-		Lighting.ExposureCompensation = 0.3
-		Lighting.FogEnd = 485
-		Lighting.Ambient = Color3.fromRGB(52, 58, 61)
+		Lighting.Brightness = 2.65
+		Lighting.ExposureCompensation = 0.12
+		Lighting.FogEnd = 620
+		Lighting.Ambient = Color3.fromRGB(91, 85, 71)
 	end
 end
 

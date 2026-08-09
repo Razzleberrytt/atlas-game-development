@@ -154,20 +154,27 @@ Do **not** block MVP 0.1 on broad crafting, a full economy, a huge skill tree, m
 
 **Primary product signal:** a tester voluntarily chooses to start another run.
 
-## MVP 0.1 implementation checkpoint — 2026-08-08
+## MVP 0.1 implementation checkpoint — 2026-08-09
 
 **Status: [~] ACTIVE — the complete run is not yet accepted.**
 
 - [x] Supply-chest loot uses one native `E` / controller / touch prompt and keeps every loot consequence server-owned.
 - [x] The click-only item remote, chest-card overlay, always-on survival/backpack surfaces and wave-style threat strip are removed from ordinary play.
 - [x] Discovered-weapon equip replaces the immutable ammunition snapshot without changing combat authority.
+- [x] Contextual run-upgrade and relic rewards support cursor, keyboard and selection-focus input; the premature persistent skill-tree entry point is paused while its authoritative topology remains intact.
+- [x] Standard pressure uses fewer, faster Exclusion Stalkers with direct long-range pursuit and introduces the ranged Blight Spitter earlier instead of filling the route with repeated roaming wolves.
+- [x] The operation has a warm, saturated morning baseline plus bounded fern, wildflower, mushroom and leaf-litter detail. The existing night-corruption owner remains intact but is held behind its explicit runtime flag until daytime Studio acceptance.
+- [x] Server-confirmed firearm presentation now adds weapon-specific camera/FOV response while preserving server ownership of shots, cadence, ammunition, targeting and damage.
 - [ ] A real safe-arrival/preparation beat must prevent hostile pressure from starting before deliberate expedition launch.
-- [ ] The complete elite → terminal encounter → return → upgrade → replay loop still requires exact-build Studio acceptance.
+- [ ] The exact build still needs a first-person Studio pass for upgrade input, firearm response, Stalker/Spitter pressure, biome composition, elite → terminal encounter → return → upgrade → replay, and representative performance.
 
 Exact-build evidence for the completed interaction/HUD slice is recorded in
 [`../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md`](../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md).
+The 2026-08-09 first-run repair attempt is intentionally recorded as `INVALID`
+because the exact Studio window did not register with the enabled bridge:
+[`../production/evidence/2026-08-09-mvp01-first-run-repair-studio-bridge-blocked.md`](../production/evidence/2026-08-09-mvp01-first-run-repair-studio-bridge-blocked.md).
 
-**Next highest-ROI MVP 0.1 task:** add the smallest server-authoritative safe-arrival and deliberate launch boundary that defers mission/enemy pressure until the player starts the expedition. Reuse the Forward Operations Hub, canonical expedition lobby/runtime and the held operation-selection contract; do not create another mission, lobby or enemy owner.
+**Next highest-ROI MVP 0.1 task:** finish the smallest server-authoritative safe-arrival / deliberate-launch boundary, then run the exact-build STOP / PLAY / FIX pass. Fix any choice-input, first-contact, gunfeel, silhouette, biome-readability or frame-budget failure before expanding day/night, skill-tree breadth or additional RPG systems.
 
 # Patch 0.2 — Combat Feel + Readability
 

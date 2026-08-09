@@ -121,7 +121,9 @@ Future portal gameplay still delegates to:
 
 The live hub shell does **not** claim to be the reconstructed legacy HubTown.
 
-It removes preparation-screen clutter by making existing specialist, armory, and expedition lobby surfaces available through physical Ranger Station stations. The existing `C` / `I` / `K` RPG menu remains the character/inventory/skills owner.
+It removes preparation-screen clutter by making existing specialist, armory, and expedition lobby surfaces available through physical Ranger Station stations. `C` and `I` remain the character and inventory surfaces. The premature persistent `K` skill-tree entry point is paused for MVP 0.1; level-up choices remain server-authored and are selected contextually with `1` / `2` / `3`, gamepad GUI focus, touch, or a temporarily released desktop cursor.
+
+The environment currently holds `NightCorruptionConfig.RuntimeEnabled = false` at the warm morning baseline. `NightCorruptionService` remains the sole cycle/pressure owner and continues publishing tier-zero state. The flag owner is the MVP 0.1 environment baseline; removal requires daytime-biome visual and combat-readability acceptance in Studio.
 
 ## Merge rule
 

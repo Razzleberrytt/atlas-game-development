@@ -60,6 +60,7 @@ assertThat(contains(runBuildHud, "UDim2.fromOffset(430, 300)"), "relic choices m
 assertThat(contains(runBuildHud, "Enum.FillDirection.Vertical"), "relic choices must stack without crossing the HUD")
 assertThat(contains(camera, "LockFirstPerson"), "combat must use the authored first-person camera policy")
 assertThat(contains(camera, "MouseBehavior.LockCenter"), "FPS mouse-look must keep the desktop cursor centered")
+assertThat(contains(camera, "LK_InputModalOpen"), "blocking choices must temporarily release the FPS cursor")
 assertThat(contains(camera, "FIRST_PERSON_FIELD_OF_VIEW = 78"), "FPS field of view must remain readable")
 
 print("Combat presentation clutter and death-label lifecycle audit passed")

@@ -99,8 +99,13 @@ local function applyFirstPersonPolicy()
 	localPlayer.CameraMode = Enum.CameraMode.LockFirstPerson
 	localPlayer.CameraMinZoomDistance = FIRST_PERSON_ZOOM_DISTANCE
 	localPlayer.CameraMaxZoomDistance = FIRST_PERSON_ZOOM_DISTANCE
-	UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-	UserInputService.MouseIconEnabled = false
+	if localPlayer:GetAttribute("LK_InputModalOpen") == true then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+		UserInputService.MouseIconEnabled = true
+	else
+		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+		UserInputService.MouseIconEnabled = false
+	end
 	applyCameraSubject()
 end
 

@@ -1079,7 +1079,10 @@ local function attemptRoamingSpawns(operativeFacts: { EnemyOperativeFact }, serv
 		return 0
 	end
 	local spawned = 0
-	for _ = 1, cadence.SpawnCount do
+	local shouldSpawnSpitter = escalationLevel >= SpecialEnemyConfig.Spawn.IntroductionEscalationLevel
+		and activeSpitterCount < SpecialEnemyConfig.Spawn.MaximumConcurrent
+	local stalkerSpawnCount = cadence.SpawnCount - (if shouldSpawnSpitter then 1 else 0)
+	for _ = 1, stalkerSpawnCount do
 		local anchor = anchors[(nextSequence() % #anchors) + 1]
 		local request: EnemySpawnRequest = {
 			entityId = "enemy.roam:" .. tostring(nextSequence()) .. ":" .. tostring(serverTimestamp),
@@ -1094,14 +1097,9 @@ local function attemptRoamingSpawns(operativeFacts: { EnemyOperativeFact }, serv
 			spawned += 1
 		end
 	end
-	-- Introduce the Blight Spitter once escalation reaches the authored level,
-	-- maintaining a low concurrent count within the existing population budget.
-	-- Spawns ride the same fair-spawn validation and roaming cadence as walkers;
-	-- no separate scheduler.
-	if
-		escalationLevel >= SpecialEnemyConfig.Spawn.IntroductionEscalationLevel
-		and activeSpitterCount < SpecialEnemyConfig.Spawn.MaximumConcurrent
-	then
+	-- One Spitter replaces one Stalker inside the authored cadence count. Mixed
+	-- pressure therefore adds a tactical problem without restoring crowd clutter.
+	if shouldSpawnSpitter then
 		local anchor = anchors[(nextSequence() % #anchors) + 1]
 		local spitterRequest: EnemySpawnRequest = {
 			entityId = "enemy.spitter:" .. tostring(nextSequence()) .. ":" .. tostring(serverTimestamp),
@@ -1387,7 +1385,7 @@ local function applyBossBehavior(
 	return 0
 end
 
-local function moveWolfToward(entry: EnemyEntry, targetPosition: Vector3, serverTimestamp: number)
+local function moveStalkerToward(entry: EnemyEntry, targetPosition: Vector3, serverTimestamp: number)
 	if serverTimestamp < entry.nextPursuitRepathServerTimestamp then
 		return
 	end
@@ -1395,12 +1393,15 @@ local function moveWolfToward(entry: EnemyEntry, targetPosition: Vector3, server
 
 	local destination = targetPosition
 	local toTarget = Vector3.new(targetPosition.X - entry.root.Position.X, 0, targetPosition.Z - entry.root.Position.Z)
-	if toTarget.Magnitude > EnemyConfig.Walker.AttackRangeStuds * 1.5 then
+	if
+		toTarget.Magnitude > EnemyConfig.Walker.AttackRangeStuds * 1.5
+		and toTarget.Magnitude <= EnemyConfig.Navigation.FlankActivationDistanceStuds
+	then
 		local perpendicular = Vector3.new(-toTarget.Z, 0, toTarget.X).Unit
 		destination += perpendicular * EnemyConfig.Navigation.PackFlankOffsetStuds * entry.pursuitFlankSign
 	end
 
-	-- Production uses a short, periodically refreshed path so wolves flow around
+	-- Production uses a short, periodically refreshed path so stalkers flow around
 	-- trees and structures. Lightweight fixtures deliberately fall back to the
 	-- same bounded Humanoid destination without needing a pathfinding mock.
 	local pathService = PathfindingService :: any
@@ -1477,7 +1478,11 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 			* entry.effectiveMovementSpeedMultiplier
 		for _, fact in operativeFacts do
 			if fact.operativeEntityId == targetId then
-				moveWolfToward(entry, Vector3.new(fact.position.x, fact.position.y, fact.position.z), serverTimestamp)
+				moveStalkerToward(
+					entry,
+					Vector3.new(fact.position.x, fact.position.y, fact.position.z),
+					serverTimestamp
+				)
 				break
 			end
 		end

@@ -16,6 +16,8 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local GuiService = game:GetService("GuiService")
+local UserInputService = game:GetService("UserInputService")
 
 local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
@@ -47,6 +49,8 @@ local awaitingReplacement = false
 local lastRelicSlots: any = nil
 local lastRevision = -1
 local requestSequence = 0
+local choiceInputActive = false
+local mouseIconWasEnabled = false
 
 local runBuildNetwork = ReplicatedStorage:WaitForChild("RunBuildNetwork")
 local stateRemote = runBuildNetwork:WaitForChild("State") :: RemoteEvent
@@ -55,8 +59,10 @@ local submitChoiceRemote = runBuildNetwork:WaitForChild("SubmitRelicChoice") :: 
 local submitReplacementRemote = runBuildNetwork:WaitForChild("SubmitRelicReplacement") :: RemoteEvent
 
 local relicDisplayNames: { [string]: string } = {}
+local relicDescriptions: { [string]: string } = {}
 for _, definition in RunRpgConfig.RelicCatalog do
 	relicDisplayNames[definition.relicId] = definition.displayName
+	relicDescriptions[definition.relicId] = definition.description
 end
 
 local function displayName(relicId: unknown): string
@@ -64,6 +70,36 @@ local function displayName(relicId: unknown): string
 		return "UNKNOWN RELIC"
 	end
 	return relicDisplayNames[relicId] or relicId
+end
+
+local function description(relicId: unknown): string
+	return if type(relicId) == "string" then relicDescriptions[relicId] or "Run modifier" else "Run modifier"
+end
+
+local function progressionChoiceIsVisible(): boolean
+	local playerGui = Players.LocalPlayer:FindFirstChildOfClass("PlayerGui")
+	local hordeHud = if playerGui == nil then nil else playerGui:FindFirstChild("LivingKingdomsHordeHUD")
+	local overlay = if hordeHud == nil then nil else hordeHud:FindFirstChild("UpgradeOverlay", true)
+	return overlay ~= nil and overlay:IsA("GuiObject") and overlay.Visible
+end
+
+local function setChoiceInputActive(active: boolean)
+	if active == choiceInputActive then
+		return
+	end
+	choiceInputActive = active
+	if active then
+		mouseIconWasEnabled = UserInputService.MouseIconEnabled
+		Players.LocalPlayer:SetAttribute("LK_InputModalOpen", true)
+		UserInputService.MouseIconEnabled = true
+		GuiService.SelectedObject = choiceButtons[1]
+	elseif not progressionChoiceIsVisible() then
+		Players.LocalPlayer:SetAttribute("LK_InputModalOpen", nil)
+		UserInputService.MouseIconEnabled = mouseIconWasEnabled
+		if GuiService.SelectedObject ~= nil and table.find(choiceButtons, GuiService.SelectedObject) ~= nil then
+			GuiService.SelectedObject = nil
+		end
+	end
 end
 
 local function isFiniteNumber(value: unknown): boolean
@@ -353,6 +389,7 @@ local function applySnapshot(snapshot: unknown)
 	if reward == nil or type(reward.offeredRelicIds) ~= "table" or not isFiniteNumber(reward.rewardSequence) then
 		activeRewardSequence = nil
 		panel.Visible = false
+		setChoiceInputActive(false)
 		for _, button in choiceButtons do
 			button.Visible = false
 		end
@@ -372,19 +409,20 @@ local function applySnapshot(snapshot: unknown)
 		end
 		visibleChoices += 1
 		choiceRelicIds[choiceIndex] = relicId
-		button.Text = displayName(relicId)
+		button.Text = string.format("[%d]  %s\n%s", choiceIndex, displayName(relicId), description(relicId))
 		button.Visible = true
 	end
 	if awaitingReplacement then
-		title.Text = "RELIC RECOVERED — SLOTS FULL"
+		title.Text = "RUN RELIC — SLOTS FULL"
 		subtitle.Text = if pendingReplacementRelicId == nil
 			then "Choose a relic, then choose the slot it replaces."
 			else string.format("Choose the slot to discard for %s.", displayName(pendingReplacementRelicId))
 	else
-		title.Text = "RELIC RECOVERED — CHOOSE ONE"
-		subtitle.Text = "The relic equips into your first empty slot."
+		title.Text = "RUN RELIC — CHOOSE ONE [1 / 2]"
+		subtitle.Text = "Temporary expedition power. Press 1 or 2, or click."
 	end
 	panel.Visible = visibleChoices > 0
+	setChoiceInputActive(panel.Visible)
 end
 
 function RunBuildHUDController.start()
@@ -420,6 +458,27 @@ function RunBuildHUDController.start()
 			end)
 		)
 	end
+	table.insert(
+		buttonConnections,
+		UserInputService.InputBegan:Connect(function(input, gameProcessed)
+			if gameProcessed or not choiceInputActive then
+				return
+			end
+			local selectionIndex = if input.KeyCode == Enum.KeyCode.One
+					or input.KeyCode == Enum.KeyCode.KeypadOne
+				then 1
+				elseif input.KeyCode == Enum.KeyCode.Two or input.KeyCode == Enum.KeyCode.KeypadTwo then 2
+				elseif input.KeyCode == Enum.KeyCode.Three or input.KeyCode == Enum.KeyCode.KeypadThree then 3
+				else nil
+			if selectionIndex ~= nil then
+				if pendingReplacementRelicId ~= nil then
+					submitReplacement(selectionIndex)
+				else
+					submitChoice(selectionIndex)
+				end
+			end
+		end)
+	)
 
 	stateConnection = stateRemote.OnClientEvent:Connect(applySnapshot)
 	local didRead, initialSnapshot = pcall(function()
@@ -435,6 +494,7 @@ function RunBuildHUDController.stop()
 		return
 	end
 	started = false
+	setChoiceInputActive(false)
 	if stateConnection ~= nil then
 		stateConnection:Disconnect()
 		stateConnection = nil

@@ -1023,9 +1023,9 @@ local resumeAt = service.readPressureState().nextRoamingSpawnServerTimestamp
 assert(resumeAt == now + level2.IntervalSeconds, "escalation must tighten the roaming interval")
 now = math.max(resumeAt, recoveryEnd)
 local resumed = service.evaluateAt(now)
--- The early operation remains predator-only; ranged specials enter only at
--- maximum escalation after players understand the infected-wolf threat.
-assert(resumed.spawnedCount == level2.SpawnCount, "roaming resumes after recovery with the bounded wolf pack")
+-- The earlier special replaces one Stalker inside the same bounded cadence;
+-- it must never add another body on top of the group budget.
+assert(resumed.spawnedCount == level2.SpawnCount, "mixed pressure must stay inside the authored group count")
 local spitterCount = 0
 for _, instance in createdInstances do
 	if
@@ -1036,7 +1036,7 @@ for _, instance in createdInstances do
 		spitterCount += 1
 	end
 end
-assert(spitterCount == 0, "early escalation must remain wolf-only")
+assert(spitterCount == 1, "early escalation must introduce one bounded ranged threat")
 
 -- Escalation level never regresses.
 service.spawnAuthoredWave(1, { { id = "enemy.wave1-late", name = "Wave Walker", x = 250, y = 3, z = -250 } })

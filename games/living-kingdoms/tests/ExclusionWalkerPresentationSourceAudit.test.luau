@@ -20,42 +20,36 @@ local roadmap = fs.readFile("docs/roadmap/VISUAL-PRODUCTION-TRACK.md")
 for _, componentName in
 	{
 		"TorsoCore",
-		"ShoulderMass",
-		"Neck",
+		"RibCage",
+		"ChestPlate",
 		"Head",
-		"Muzzle",
-		"EarLeft",
-		"EarRight",
-		"FangLeft",
-		"FangRight",
-		"IrradiatedEyeLeft",
-		"IrradiatedEyeRight",
-		"RottenNose",
-		"SplitLowerJaw",
-		"RadiationTumor",
+		"Sensor",
 		"DorsalSpine",
-		"FrontLegLeft",
-		"FrontLegRight",
-		"FrontPawLeft",
-		"FrontPawRight",
+		"ShoulderLeft",
+		"ShoulderRight",
+		"ForearmLeft",
+		"ForearmRight",
+		"ClawLeft",
+		"ClawRight",
+		"HipGuard",
 		"LegLeft",
 		"LegRight",
-		"RearPawLeft",
-		"RearPawRight",
-		"Tail",
-		"ExposedRib",
+		"FootLeft",
+		"FootRight",
+		"BackCanister",
+		"OpenChestWound",
 	}
 do
 	assertThat(
 		string.find(presenter, '"' .. componentName .. '"', 1, true) ~= nil,
-		"infected wolf runtime fallback missing component " .. componentName
+		"Exclusion Stalker runtime fallback missing component " .. componentName
 	)
 end
 
 for _, required in
 	{
 		'local PRESENTATION_MODEL_NAME = "ExclusionWalkerPresentation"',
-		'presentation:SetAttribute("VisualCandidateId", "blackwater-rad-wolf.v2")',
+		'presentation:SetAttribute("VisualCandidateId", "exclusion-stalker.procedural-v1")',
 		'presentation:SetAttribute("VisualStatus", "ProceduralFallback")',
 		'presentation:SetAttribute("GameplayFootprintId", "enemy.exclusion_walker")',
 		'attachment.Name = "AttackOrigin"',
@@ -71,12 +65,9 @@ do
 	assertThat(string.find(presenter, required, 1, true) ~= nil, "walker presenter missing: " .. required)
 end
 
-assertThat(
-	string.find(presenter, "COLORS.radiation", 1, true) ~= nil,
-	"wolf requires a readable radiation-horror accent"
-)
-assertThat(string.find(presenter, '"OpenChestWound"', 1, true) ~= nil, "wolf requires an exposed infected wound")
-assertThat(string.find(presenter, '"RadiationEyeGlow"', 1, true) ~= nil, "wolf eyes require a bounded horror glow")
+assertThat(string.find(presenter, "COLORS.radiation", 1, true) ~= nil, "stalker requires a readable corruption accent")
+assertThat(string.find(presenter, '"OpenChestWound"', 1, true) ~= nil, "stalker requires an exposed infected wound")
+assertThat(string.find(presenter, 'eyeGlow.Name = "EyeGlow"', 1, true) ~= nil, "stalker sensor requires bounded glow")
 
 local _, childAddedCount = string.gsub(presenter, "ChildAdded:Connect", "")
 assertThat(childAddedCount == 1, "walker presentation must use exactly one folder listener")
@@ -147,4 +138,4 @@ for _, forbidden in { "rbxassetid://", "requests.get", "urllib.request", "subpro
 	assertThat(not string.find(generator, forbidden, 1, true), "walker source must not fetch external content")
 end
 
-print("ExclusionWalkerPresentationSourceAudit: source, footprint, bootstrap, and authority checks passed")
+print("ExclusionWalkerPresentationSourceAudit: Stalker shell, footprint, bootstrap, and authority checks passed")

@@ -58,7 +58,7 @@ local SpecialEnemyConfig = {
 	Spawn = table.freeze({
 		-- Authored rarity, not a random crowd. The runtime introduces the Spitter
 		-- once escalation reaches the booster hold and holds a low concurrent count.
-		IntroductionEscalationLevel = 3,
+		IntroductionEscalationLevel = 1,
 		MaximumConcurrent = 2,
 	}),
 }

@@ -15,6 +15,10 @@ export type WeaponFeelProfile = {
 	GripKickBackStuds: number,
 	GripKickUpStuds: number,
 	GripKickDegrees: number,
+	CameraKickDegrees: number,
+	CameraYawDegrees: number,
+	CameraFovKickDegrees: number,
+	CameraRecoveryDegreesPerSecond: number,
 	ShotBackSeconds: number,
 	ShotReturnSeconds: number,
 	MagazineOutX: number,
@@ -57,6 +61,10 @@ local SupportLMG = profile({
 	GripKickBackStuds = 0.08,
 	GripKickUpStuds = 0.015,
 	GripKickDegrees = 1.4,
+	CameraKickDegrees = 0.75,
+	CameraYawDegrees = 0.18,
+	CameraFovKickDegrees = 0.45,
+	CameraRecoveryDegreesPerSecond = 12,
 	ShotBackSeconds = 0.045,
 	ShotReturnSeconds = 0.065,
 	MagazineOutX = 0.22,
@@ -95,6 +103,10 @@ local LegacyServiceFirearm = profile({
 	GripKickBackStuds = SupportLMG.GripKickBackStuds,
 	GripKickUpStuds = SupportLMG.GripKickUpStuds,
 	GripKickDegrees = SupportLMG.GripKickDegrees,
+	CameraKickDegrees = SupportLMG.CameraKickDegrees,
+	CameraYawDegrees = SupportLMG.CameraYawDegrees,
+	CameraFovKickDegrees = SupportLMG.CameraFovKickDegrees,
+	CameraRecoveryDegreesPerSecond = SupportLMG.CameraRecoveryDegreesPerSecond,
 	ShotBackSeconds = SupportLMG.ShotBackSeconds,
 	ShotReturnSeconds = SupportLMG.ShotReturnSeconds,
 	MagazineOutX = SupportLMG.MagazineOutX,
@@ -133,6 +145,10 @@ local BreachShotgun = profile({
 	GripKickBackStuds = 0.27,
 	GripKickUpStuds = 0.08,
 	GripKickDegrees = 5.5,
+	CameraKickDegrees = 2.6,
+	CameraYawDegrees = 0.45,
+	CameraFovKickDegrees = 1.4,
+	CameraRecoveryDegreesPerSecond = 9,
 	ShotBackSeconds = 0.075,
 	ShotReturnSeconds = 0.18,
 	MagazineOutX = 0.16,
@@ -171,6 +187,10 @@ local SniperRifle = profile({
 	GripKickBackStuds = 0.34,
 	GripKickUpStuds = 0.065,
 	GripKickDegrees = 6.5,
+	CameraKickDegrees = 3.4,
+	CameraYawDegrees = 0.3,
+	CameraFovKickDegrees = 1.8,
+	CameraRecoveryDegreesPerSecond = 7,
 	ShotBackSeconds = 0.09,
 	ShotReturnSeconds = 0.24,
 	MagazineOutX = 0.18,
@@ -209,6 +229,10 @@ local ServicePistol = profile({
 	GripKickBackStuds = 0.075,
 	GripKickUpStuds = 0.025,
 	GripKickDegrees = 2.8,
+	CameraKickDegrees = 1.2,
+	CameraYawDegrees = 0.25,
+	CameraFovKickDegrees = 0.7,
+	CameraRecoveryDegreesPerSecond = 14,
 	ShotBackSeconds = 0.035,
 	ShotReturnSeconds = 0.05,
 	MagazineOutX = 0.08,
@@ -247,6 +271,10 @@ local SubmachineGun = profile({
 	GripKickBackStuds = 0.05,
 	GripKickUpStuds = 0.01,
 	GripKickDegrees = 1.1,
+	CameraKickDegrees = 0.45,
+	CameraYawDegrees = 0.15,
+	CameraFovKickDegrees = 0.3,
+	CameraRecoveryDegreesPerSecond = 18,
 	ShotBackSeconds = 0.028,
 	ShotReturnSeconds = 0.04,
 	MagazineOutX = 0.14,
@@ -296,6 +324,13 @@ for weaponId, entry in DefinitionsById do
 	assert(entry.WeaponId == weaponId, "weapon feel profile identity must match its key")
 	assert(entry.BoltTravelStuds > 0 and entry.BoltTravelStuds <= 0.5, "bolt travel must stay presentation-bounded")
 	assert(entry.GripKickBackStuds >= 0 and entry.GripKickBackStuds <= 0.5, "grip kick must stay presentation-bounded")
+	assert(entry.CameraKickDegrees > 0 and entry.CameraKickDegrees <= 4, "camera kick must stay readable and bounded")
+	assert(entry.CameraYawDegrees >= 0 and entry.CameraYawDegrees <= 0.75, "camera yaw must stay presentation-bounded")
+	assert(entry.CameraFovKickDegrees >= 0 and entry.CameraFovKickDegrees <= 2, "camera FOV kick must stay bounded")
+	assert(
+		entry.CameraRecoveryDegreesPerSecond >= 6 and entry.CameraRecoveryDegreesPerSecond <= 20,
+		"camera recovery must remain responsive"
+	)
 	assert(entry.ShotBackSeconds >= 0.02 and entry.ShotBackSeconds <= 0.15, "shot back motion must stay bounded")
 	assert(entry.ShotReturnSeconds >= 0.03 and entry.ShotReturnSeconds <= 0.3, "shot return motion must stay bounded")
 	assert(
@@ -313,7 +348,7 @@ for _, weaponId in FirearmConfig.SelectableWeaponIds do
 end
 
 local Config = {
-	Version = "HROI-0123-v1-weapon-identity-feel",
+	Version = "MVP-0.1-v2-responsive-gunfeel",
 	Default = SupportLMG,
 	DefinitionsById = DefinitionsById,
 	get = get,

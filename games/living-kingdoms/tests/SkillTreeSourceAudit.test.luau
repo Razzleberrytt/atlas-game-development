@@ -35,12 +35,13 @@ for _, definition in config.UpgradeDefinitions do
 end
 check(roots == 3 and tierFour == 3, "each tree requires one root and one capstone")
 check(string.find(resolver, "hasPrerequisites", 1, true), "server offers must enforce the tree topology")
-check(string.find(menu, '"K   SKILLS"', 1, true), "a persistent Skills button is required")
-check(string.find(menu, 'toggleTab("Skills")', 1, true), "the Skills hotkey must open the tree")
+check(not string.find(menu, '"K   SKILLS"', 1, true), "the premature persistent Skills button must stay paused")
+check(not string.find(menu, 'toggleTab("Skills")', 1, true), "the premature Skills hotkey must stay paused")
 check(string.find(menu, "progressionChooseUpgrade:FireServer", 1, true), "available nodes must use validated choices")
 check(string.find(menu, '"AVAILABLE — CHOOSE"', 1, true), "available nodes require a readable state")
 check(string.find(menu, '"MASTERED"', 1, true), "max-rank nodes require a readable state")
 check(string.find(menu, '"REQUIRES "', 1, true), "locked nodes must explain prerequisites")
-check(string.find(hud, "K OPENS SKILL TREES", 1, true), "level-up feedback must teach players where the trees live")
+check(string.find(hud, "PRESS 1, 2, OR 3", 1, true), "contextual level-up choices require keyboard instructions")
+check(string.find(hud, "LK_InputModalOpen", 1, true), "contextual level-up choices must release the cursor")
 
-print("SkillTreeSourceAudit: three paths, topology, node states, server authority, and menu passed")
+print("SkillTreeSourceAudit: topology stays authoritative while premature tree navigation remains paused")

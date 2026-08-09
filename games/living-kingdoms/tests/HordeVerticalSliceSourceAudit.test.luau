@@ -51,8 +51,8 @@ assertThat(not contains(project, "ChooseUpgrade"), "the only upgrade remote must
 
 for _, required in
 	{
-		"MaximumConcurrentPerOperative = 10",
-		"AbsoluteMaximumConcurrent = 40",
+		"MaximumConcurrentPerOperative = 6",
+		"AbsoluteMaximumConcurrent = 24",
 		"EvaluationIntervalSeconds = 0.1",
 		"MaximumLineOfSightRaycastsPerEvaluation = 8",
 	}
@@ -173,7 +173,8 @@ for _, required in
 		"pendingChoices",
 		"choice.statPreview",
 		"snapshot.runStats",
-		"CHOOSE ONE POWER",
+		"CHOOSE ONE RUN UPGRADE",
+		"PRESS 1, 2, OR 3",
 		"LK_P3_CurrentHealth",
 		"LK_HUD_LoadedRounds",
 		"LK_HUD_Objective",

@@ -149,6 +149,7 @@ local relicById = {}
 for _, definition in config.RelicCatalog do
 	assertThat(relicById[definition.relicId] == nil, "relic catalog IDs must be unique")
 	relicById[definition.relicId] = definition
+	assertThat(type(definition.description) == "string" and definition.description ~= "", "relics need readable rules")
 	assertThat(definition.maximumStacks == 1, "initial relics must be non-stackable")
 	assertThat(definition.slotCost == 1, "initial relics must consume one slot")
 	assertThat(
