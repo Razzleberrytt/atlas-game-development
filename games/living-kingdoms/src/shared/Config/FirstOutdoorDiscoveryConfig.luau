@@ -49,6 +49,9 @@ assert(
 	Discovery.RewardSourceId == RunRpgContracts.RewardSourceIds.AuthoredContainer,
 	"optional discovery must use the canonical authored-container reward reference"
 )
-assert(Discovery.StreamingIdentityId ~= Discovery.AnchorWorldContentId, "discovery identity must not alias its landmark anchor")
+assert(
+	Discovery.StreamingIdentityId ~= Discovery.AnchorWorldContentId,
+	"discovery identity must not alias its landmark anchor"
+)
 
 return table.freeze(FirstOutdoorDiscoveryConfig)
