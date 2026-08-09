@@ -58,10 +58,19 @@ assert(
 	contains(weapon, "ContextActionService:BindAction(FIRE_ACTION_NAME, onFireAction, true, Enum.KeyCode.ButtonR2)"),
 	"fire must bind gamepad and generated touch input through one CAS action"
 )
-assert(contains(weapon, 'ContextActionService:SetTitle(FIRE_ACTION_NAME, "Fire")'), "touch fire button must be labelled")
+assert(
+	contains(weapon, 'ContextActionService:SetTitle(FIRE_ACTION_NAME, "Fire")'),
+	"touch fire button must be labelled"
+)
 assert(contains(weapon, "ContextActionService:UnbindAction(FIRE_ACTION_NAME)"), "fire action must unbind on stop")
-assert(contains(weapon, "local function setFiring(isFiring: boolean)"), "all fire origins must share one hold-state helper")
-assert(contains(weapon, "fireIntentRemote:FireServer(isFiring, direction)"), "fire still uses the existing intent remote")
+assert(
+	contains(weapon, "local function setFiring(isFiring: boolean)"),
+	"all fire origins must share one hold-state helper"
+)
+assert(
+	contains(weapon, "fireIntentRemote:FireServer(isFiring, direction)"),
+	"fire still uses the existing intent remote"
+)
 assert(
 	not contains(mobile, "FIRE_ACTION") and not contains(mobile, "onFireAction"),
 	"MobileControlsController must not become a second fire owner"
