@@ -78,7 +78,8 @@ end
 
 local signatures = {}
 for seed = 1, 128 do
-	local result = resolver.resolve(config, context("frontier-rifle", "Primary", "Rare", { "rifle", "precision" }, seed))
+	local result =
+		resolver.resolve(config, context("frontier-rifle", "Primary", "Rare", { "rifle", "precision" }, seed))
 	assertThat(result.Accepted, "valid seed must resolve")
 	signatures[result.Signature] = true
 end
@@ -88,7 +89,8 @@ for _ in signatures do
 end
 assertThat(distinctSignatures > 1, "distinct seeds must create bounded affix variation")
 
-local shotgun = resolver.resolve(config, context("breach-shotgun", "Primary", "Rare", { "shotgun", "close-range" }, 777))
+local shotgun =
+	resolver.resolve(config, context("breach-shotgun", "Primary", "Rare", { "shotgun", "close-range" }, 777))
 assertThat(shotgun.Accepted and #shotgun.Affixes == 2, "shotgun must have a sufficient compatible pool")
 for _, roll in shotgun.Affixes do
 	assertThat(roll.Id ~= "deadeye", "precision-only affix must not appear on shotgun")
