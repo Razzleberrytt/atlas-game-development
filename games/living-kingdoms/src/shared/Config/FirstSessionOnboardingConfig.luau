@@ -8,10 +8,10 @@
 	prepared MVP content. It never fires prompts, mutates gameplay, starts a run,
 	grants a reward, returns a player, or restarts an operation.
 
-	The implementation-state labels track current source truth. The First Descent
-	combat path and boss Run Relic decision are now consumed by their existing
-	authoritative runtime owners; the outdoor route and optional discovery remain
-	prepared data awaiting an approved runtime consumer.
+	The implementation-state labels track current source truth. Authored Approach
+	combat, the optional Lookout Cache, First Descent combat, and the boss Run
+	Relic decision are live through their existing authoritative runtime owners.
+	The BA-050 imported route geometry/traversal remains prepared and held.
 ]]
 
 local HubPreparationConfig = require(script.Parent.HubPreparationConfig)
@@ -79,7 +79,7 @@ end
 local discovery = FirstOutdoorDiscoveryConfig.Discoveries[1]
 
 local FirstSessionOnboardingConfig = {
-	Version = "BA-060-v2-runtime-sync",
+	Version = "BA-060-v3-outdoor-discovery-sync",
 	SequenceId = "onboarding.first-session.mvp-0.1",
 	RuntimeConsumptionActive = false,
 	ImplementationStateIds = ImplementationStateIds,
@@ -143,19 +143,19 @@ local FirstSessionOnboardingConfig = {
 			"PreparedRouteIntegrationBoundary",
 			FirstOutdoorRouteConfig.RouteId,
 			nil,
-			"BA-050/051 content is authored but remains dormant until an approved runtime consumer exists."
+			"BA-051 authored Approach combat is live, but BA-050 imported route geometry/traversal remains prepared and held."
 		),
 		step(
 			"discover-lookout-cache",
 			6,
 			StepKindIds.OptionalDiscovery,
 			"Notice that exploration can reveal an optional cache without blocking the main route.",
-			ImplementationStateIds.PreparedData,
+			ImplementationStateIds.RuntimeExisting,
 			true,
-			"PreparedDiscoveryIntegrationBoundary",
+			"FirstOutdoorDiscoveryService",
 			discovery.Id,
 			nil,
-			"The authored-container reward seam is planned; BA-060 does not activate it."
+			"The source-generated Lookout Cache now commits the existing per-run secret fact and uses the canonical authored-container RunBuild reward fan-out."
 		),
 		step(
 			"complete-first-descent",
@@ -233,8 +233,8 @@ local FirstSessionOnboardingConfig = {
 }
 
 assert(FirstSessionOnboardingConfig.RuntimeConsumptionActive == false, "BA-060 remains dormant orchestration data")
-assert(FirstOutdoorRouteConfig.RuntimeConsumptionActive == false, "BA-060 cannot activate the BA-050 route")
-assert(FirstOutdoorDiscoveryConfig.RuntimeConsumptionActive == false, "BA-060 cannot activate BA-052 discovery data")
+assert(FirstOutdoorRouteConfig.RuntimeConsumptionActive == false, "BA-060 cannot activate the BA-050 imported route")
+assert(FirstOutdoorDiscoveryConfig.RuntimeConsumptionActive == true, "BA-060 must track the live BA-052 Lookout Cache")
 assert(
 	FirstDungeonRewardDecisionConfig.RuntimeConsumptionEnabled == true,
 	"BA-060 must track the live authored First Descent boss reward decision"
