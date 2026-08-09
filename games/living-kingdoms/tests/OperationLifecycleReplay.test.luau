@@ -63,6 +63,8 @@ local nextListenerId = 0
 local primaryCombatModeResetCount = 0
 local operativeCombatResetCount = 0
 local survivalLootResetCount = 0
+local runBuildResetCount = 0
+local runProgressionResetCount = 0
 
 local function owner(name: string)
 	return {
@@ -113,6 +115,8 @@ local TOKENS = {
 	OperativeCombatRuntimeService = {},
 	OperativeLifeService = {},
 	PrimaryCombatModeService = {},
+	RunBuildService = {},
+	RunProgressionService = {},
 	OperativeReviveSessionService = {},
 	SquadFailureService = {},
 	SurvivalLootService = {},
@@ -134,6 +138,16 @@ local modulesByToken = {
 	[TOKENS.PrimaryCombatModeService] = {
 		resetAllToMelee = function()
 			primaryCombatModeResetCount += 1
+		end,
+	},
+	[TOKENS.RunBuildService] = {
+		resetOperation = function()
+			runBuildResetCount += 1
+		end,
+	},
+	[TOKENS.RunProgressionService] = {
+		resetOperation = function()
+			runProgressionResetCount += 1
 		end,
 	},
 	[TOKENS.OperativeReviveSessionService] = owner("ReviveSessions"),
@@ -191,6 +205,8 @@ assertThat(service.readCompletedReplayCount() == 0, "the initial launch is not a
 assertThat(primaryCombatModeResetCount == 0, "the initial launch must not reset primary combat mode")
 assertThat(operativeCombatResetCount == 0, "the initial launch must not reset firearm runtime state")
 assertThat(survivalLootResetCount == 0, "the initial launch must not reset survival loot")
+assertThat(runBuildResetCount == 0, "the initial launch must not reset temporary run build power")
+assertThat(runProgressionResetCount == 0, "the initial launch must not reset Field XP progression")
 
 -- A terminal result now holds indefinitely at Resolved. No timer or automatic
 -- restart may execute the cleanup/start sequence.
@@ -207,6 +223,8 @@ assertThat(service.readCompletedReplayCount() == 1, "one deliberate replay reset
 assertThat(primaryCombatModeResetCount == 1, "fresh replay must restore melee primary combat mode exactly once")
 assertThat(operativeCombatResetCount == 1, "fresh replay must reset firearm runtime state exactly once")
 assertThat(survivalLootResetCount == 1, "fresh replay must rebuild survival loot exactly once")
+assertThat(runBuildResetCount == 1, "fresh replay must clear temporary run build power exactly once")
+assertThat(runProgressionResetCount == 1, "fresh replay must clear Field XP progression exactly once")
 
 local stopCalls = {}
 local startCalls = {}
@@ -254,6 +272,8 @@ assertThat(service.readCompletedReplayCount() == 1, "idempotent launch preparati
 assertThat(primaryCombatModeResetCount == 1, "idempotent launch preparation must not reset melee mode twice")
 assertThat(operativeCombatResetCount == 1, "idempotent launch preparation must not reset firearm state twice")
 assertThat(survivalLootResetCount == 1, "idempotent launch preparation must not rebuild survival loot twice")
+assertThat(runBuildResetCount == 1, "idempotent launch preparation must not reset run build twice")
+assertThat(runProgressionResetCount == 1, "idempotent launch preparation must not reset run progression twice")
 
 -- Teardown releases the terminal subscription and refuses future preparation.
 fireResolved()
@@ -290,8 +310,10 @@ assertThat(
 assertThat(
 	contains(lifecycle, "PrimaryCombatModeService.resetAllToMelee()")
 		and contains(lifecycle, "OperativeCombatRuntimeService.resetForReplay()")
-		and contains(lifecycle, "SurvivalLootService.resetForReplay()"),
-	"fresh-run replay must reset melee mode, firearm state, and survival loot"
+		and contains(lifecycle, "SurvivalLootService.resetForReplay()")
+		and contains(lifecycle, "RunBuildService.resetOperation()")
+		and contains(lifecycle, "RunProgressionService.resetOperation()"),
+	"fresh-run replay must reset opening state and all temporary run power"
 )
 
 assertThat(

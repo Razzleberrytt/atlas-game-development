@@ -537,6 +537,39 @@ function RunProgressionService.readCombatModifiers(): RunUpgradeResolver.CombatM
 	return RunUpgradeResolver.deriveCombatModifiers(readUpgradeStacks())
 end
 
+function RunProgressionService.resetOperation(): boolean
+	if not started then
+		return false
+	end
+
+	-- Gameplay progression is operation-scoped, but revision/gain/selection
+	-- sequences are transport counters observed by a long-lived HUD. Keep those
+	-- counters monotonic so the client accepts the fresh-run snapshot and the
+	-- first gain/selection of the next run is still visible.
+	level = 1
+	xp = 0
+	totalXp = 0
+	squadKills = 0
+	eliteKillsSinceReward = 0
+	lastGainAmount = 0
+	levelsGainedLastAward = 0
+	accumulatedSeconds = 0
+	initialScanComplete = false
+	unclaimedUpgradeChoices = 0
+	offerSequence = 0
+	lastSelectedUpgradeId = ""
+	lastSelectedUpgradeName = ""
+	lastSelectedUpgradeStack = 0
+	table.clear(trackedLifeStates)
+	table.clear(pendingChoiceIds)
+	table.clear(lastUpgradeRequestTimestamps)
+	table.clear(processedFieldIntelRewardIds)
+	table.clear(fieldIntelRewardOrder)
+	syncCombatModifierAttributes()
+	publishAll()
+	return true
+end
+
 function RunProgressionService.start()
 	if started then
 		return
