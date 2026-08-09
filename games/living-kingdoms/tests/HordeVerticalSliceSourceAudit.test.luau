@@ -35,6 +35,7 @@ local serverBootstrap = fs.readFile("games/living-kingdoms/src/server/init.serve
 local clientBootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 local hud = fs.readFile("games/living-kingdoms/src/client/Controllers/HordeHUDController.luau")
 local crescendo = fs.readFile("games/living-kingdoms/src/client/Controllers/MassacreCrescendoController.luau")
+local ambience = fs.readFile("games/living-kingdoms/src/client/Controllers/EnvironmentAmbienceController.luau")
 local crescendoConfig = fs.readFile("games/living-kingdoms/src/shared/Config/MassacreCrescendoConfig.luau")
 local effects = fs.readFile("games/living-kingdoms/src/client/Controllers/HordeEffectsController.luau")
 local weapon = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponController.luau")
@@ -199,6 +200,14 @@ end
 assertThat(
 	not contains(crescendo, "stateRemote.OnClientEvent:Connect"),
 	"dedicated streak presentation must not own a direct Horde State listener"
+)
+assertThat(
+	contains(ambience, "HordeStateEarlyListener.subscribe(onHordeState)"),
+	"environment ambience must consume horde threat through the application bridge"
+)
+assertThat(
+	not contains(ambience, 'WaitForChild("HordeNetwork")'),
+	"environment ambience must not own HordeNetwork transport"
 )
 for _, required in { "KILL CHAIN", "SLAUGHTER", "MASSACRE", "ANNIHILATION", "APOCALYPSE" } do
 	assertThat(contains(crescendoConfig, required), "streak crescendo config is missing tier " .. required)

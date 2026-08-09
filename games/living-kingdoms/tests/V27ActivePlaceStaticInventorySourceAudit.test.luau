@@ -20,6 +20,31 @@ local function contains(source: string, token: string): boolean
 	return string.find(source, token, 1, true) ~= nil
 end
 
+local function count(source: string, token: string): number
+	local occurrences = 0
+	local startIndex = 1
+	while true do
+		local found = string.find(source, token, startIndex, true)
+		if found == nil then
+			return occurrences
+		end
+		occurrences += 1
+		startIndex = found + #token
+	end
+end
+
+local function luauFilesUnder(root: string, collected: { string }): { string }
+	for _, entry in fs.readDir(root) do
+		local path = root .. "/" .. entry
+		if fs.isDir(path) then
+			luauFilesUnder(path, collected)
+		elseif string.sub(entry, -5) == ".luau" then
+			table.insert(collected, path)
+		end
+	end
+	return collected
+end
+
 local project = fs.readFile("games/living-kingdoms/default.project.json")
 local hordeRuntime = fs.readFile("games/living-kingdoms/src/server/Systems/HordeExperienceService.luau")
 local hordeConfig = fs.readFile("games/living-kingdoms/src/shared/Config/HordeExperienceConfig.luau")
@@ -28,6 +53,7 @@ local clientBootstrap = fs.readFile("games/living-kingdoms/src/client/init.clien
 local earlyListener = fs.readFile("games/living-kingdoms/src/client/State/HordeStateEarlyListener.luau")
 local hordeHud = fs.readFile("games/living-kingdoms/src/client/Controllers/HordeHUDController.luau")
 local massacre = fs.readFile("games/living-kingdoms/src/client/Controllers/MassacreCrescendoController.luau")
+local ambience = fs.readFile("games/living-kingdoms/src/client/Controllers/EnvironmentAmbienceController.luau")
 local enemyImpact = fs.readFile("games/living-kingdoms/src/client/Controllers/EnemyImpactPresentationController.luau")
 local routeGuide = fs.readFile("games/living-kingdoms/src/client/Controllers/RouteGuidePresentationController.luau")
 local landmarkAccent =
@@ -68,11 +94,42 @@ assertThat(
 	contains(earlyListener, "function HordeStateEarlyListener.subscribe"),
 	"bridge must expose local subscriptions"
 )
+assertThat(
+	contains(earlyListener, "function HordeStateEarlyListener.getActiveListenerCount"),
+	"bridge must expose its real RemoteEvent listener count"
+)
+assertThat(
+	contains(earlyListener, "activeListenerCount += 1"),
+	"bridge must increment its counter only after connecting the RemoteEvent"
+)
+assertThat(
+	contains(earlyListener, "activeListenerCount -= 1"),
+	"bridge must decrement its counter when disconnecting the RemoteEvent"
+)
+assertThat(
+	contains(earlyListener, 'SetAttribute("V27_EarlyStateListenerCount", listenerCount)'),
+	"bridge must publish the listener count for Studio evidence"
+)
+assertThat(
+	count(earlyListener, "OnClientEvent:Connect") == 1,
+	"bridge must own exactly one physical RemoteEvent connection"
+)
+assertThat(contains(earlyListener, "if started then"), "bridge start must be idempotent")
+assertThat(contains(earlyListener, "if not started then"), "bridge stop must be idempotent")
+assertThat(
+	contains(earlyListener, "latestSnapshot = message"),
+	"bridge must retain the latest valid snapshot for replay"
+)
+assertThat(
+	contains(earlyListener, "task.defer(callback, snapshot)"),
+	"late bridge subscribers must receive the retained snapshot"
+)
 assertThat(contains(clientBootstrap, "HordeStateEarlyListener.start()"), "bridge must start from client bootstrap")
 for _, listener in
 	{
-		{ name = "HordeHUDController", source = hordeHud },
-		{ name = "MassacreCrescendoController", source = massacre },
+		{ name = "HordeHUDController", source = hordeHud, callback = "onState" },
+		{ name = "MassacreCrescendoController", source = massacre, callback = "onState" },
+		{ name = "EnvironmentAmbienceController", source = ambience, callback = "onHordeState" },
 	}
 do
 	assertThat(
@@ -80,7 +137,7 @@ do
 		listener.name .. " must consume horde state through the application bridge"
 	)
 	assertThat(
-		contains(listener.source, "HordeStateEarlyListener.subscribe(onState)"),
+		contains(listener.source, "HordeStateEarlyListener.subscribe(" .. listener.callback .. ")"),
 		listener.name .. " must subscribe its existing state handler through the bridge"
 	)
 	assertThat(
@@ -92,9 +149,26 @@ do
 		listener.name .. " must not own HordeNetwork transport"
 	)
 	assertThat(
+		count(listener.source, "HordeStateEarlyListener.subscribe(" .. listener.callback .. ")") == 1,
+		listener.name .. " must own exactly one bridge subscription call site"
+	)
+	assertThat(
 		contains(clientBootstrap, listener.name .. ".start()"),
 		listener.name .. " must remain visible in application bootstrap inventory"
 	)
+end
+
+local earlyListenerPath = "games/living-kingdoms/src/client/State/HordeStateEarlyListener.luau"
+for _, path in luauFilesUnder("games/living-kingdoms/src/client", {}) do
+	local source = fs.readFile(path)
+	if path == earlyListenerPath then
+		assertThat(contains(source, 'WaitForChild("HordeNetwork")'), "bridge must own HordeNetwork transport")
+	else
+		assertThat(
+			not contains(source, 'WaitForChild("HordeNetwork")'),
+			"only HordeStateEarlyListener may resolve HordeNetwork transport: " .. path
+		)
+	end
 end
 
 -- Known-good narrow Highlight references help distinguish canonical source from
