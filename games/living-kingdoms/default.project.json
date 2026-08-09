@@ -49,12 +49,6 @@
       "Shared": {
         "$className": "Folder",
         "$path": "src/shared"
-      },
-      "MeleeNetwork": {
-        "$className": "Folder",
-        "StrikeIntent": {
-          "$className": "RemoteEvent"
-        }
       }
     },
     "ServerScriptService": {
