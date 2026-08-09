@@ -26,7 +26,8 @@ assert(
 	"client must validate the safe presentation payload"
 )
 
-local authoritativeStrike = position(intent, "local result = MeleeCombatService.tryStrike(player, requestId, aimDirection)")
+local authoritativeStrike =
+	position(intent, "local result = MeleeCombatService.tryStrike(player, requestId, aimDirection)")
 local acceptedGate = position(intent, "result.accepted ~= true")
 local positiveDamageGate = position(intent, "result.damageAmount <= 0")
 local firePresentation = position(intent, "presentationRemote:FireClient(player")
@@ -66,8 +67,14 @@ assert(
 	string.find(presentation, "BLADE_KILL_COLOR", 1, true) ~= nil,
 	"confirmed killing blows may be visually distinguished without changing gameplay"
 )
-assert(string.find(presentation, "FireServer", 1, true) == nil, "presentation cannot send combat authority back to server")
+assert(
+	string.find(presentation, "FireServer", 1, true) == nil,
+	"presentation cannot send combat authority back to server"
+)
 assert(string.find(presentation, "commitHealthState", 1, true) == nil, "presentation cannot mutate enemy health")
-assert(string.find(presentation, "EnemyDirector", 1, true) == nil, "presentation cannot select or inspect authoritative targets")
+assert(
+	string.find(presentation, "EnemyDirector", 1, true) == nil,
+	"presentation cannot select or inspect authoritative targets"
+)
 
 print("MeleeHitConfirmationSourceAudit: server-committed hit feedback remains presentation-only")
