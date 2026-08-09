@@ -20,6 +20,7 @@ local AttributeName = PrimaryCombatModeContracts.AttributeName
 local ModeIds = PrimaryCombatModeContracts.ModeIds
 local MODEL_NAME = "MeleePresentation"
 local FIRST_PERSON_MODEL_NAME = "FirstPersonMelee"
+local SWING_DURATION_SECONDS = math.min(0.5, MeleeCombatConfig.OpeningWeapon.CadenceSeconds * 0.8)
 
 local started = false
 local playerAddedConnection: RBXScriptConnection? = nil
@@ -31,6 +32,7 @@ local remoteModels: { [Player]: Model } = {}
 local localModel: Model? = nil
 local localHandle: BasePart? = nil
 local localBlade: BasePart? = nil
+local localSwingStartedAtClock: number? = nil
 
 local function makePart(name: string, size: Vector3, color: Color3, material: Enum.Material): Part
 	local part = Instance.new("Part")
@@ -90,6 +92,7 @@ local function destroyLocalModel()
 	localModel = nil
 	localHandle = nil
 	localBlade = nil
+	localSwingStartedAtClock = nil
 end
 
 local function createLocalModel()
@@ -185,6 +188,30 @@ local function bindPlayer(player: Player)
 	reconcilePlayer(player)
 end
 
+local function localSwingAmount(nowClock: number): number
+	local startedAt = localSwingStartedAtClock
+	if startedAt == nil then
+		return 0
+	end
+	local progress = (nowClock - startedAt) / SWING_DURATION_SECONDS
+	if progress >= 1 then
+		localSwingStartedAtClock = nil
+		return 0
+	end
+	return math.sin(math.clamp(progress, 0, 1) * math.pi)
+end
+
+function Controller.playLocalSwing()
+	local player = Players.LocalPlayer
+	if not started or player == nil or player:GetAttribute(AttributeName) ~= ModeIds.Melee then
+		return
+	end
+	if localModel == nil or localModel.Parent ~= Workspace.CurrentCamera then
+		createLocalModel()
+	end
+	localSwingStartedAtClock = os.clock()
+end
+
 function Controller.start()
 	if started then
 		return
@@ -212,7 +239,17 @@ function Controller.start()
 		if handle == nil or blade == nil then
 			return
 		end
-		handle.CFrame = camera.CFrame * CFrame.new(0.72, -0.78, -1.25) * CFrame.Angles(math.rad(-8), 0, math.rad(-20))
+
+		local swing = localSwingAmount(os.clock())
+		local x = 0.72 - 0.16 * swing
+		local y = -0.78 + 0.1 * swing
+		local z = -1.25 - 0.24 * swing
+		local pitchDegrees = -8 + 58 * swing
+		local yawDegrees = -12 * swing
+		local rollDegrees = -20 - 52 * swing
+		handle.CFrame = camera.CFrame
+			* CFrame.new(x, y, z)
+			* CFrame.Angles(math.rad(pitchDegrees), math.rad(yawDegrees), math.rad(rollDegrees))
 		blade.CFrame = handle.CFrame * CFrame.new(0.72, 1.25, 0)
 	end)
 end
