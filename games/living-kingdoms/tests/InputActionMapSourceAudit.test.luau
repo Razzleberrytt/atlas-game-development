@@ -1,16 +1,15 @@
 --!strict
 
 --[[
-	BA-061 input action-map source audit.
+	BA-061 input action-map source audit, updated by BA-062 remediation.
 
 	This fixture locks the factual claims in
 	`docs/specifications/input-action-map-audit.md` to the source they were read
 	from, so the audit cannot silently rot.
 
-	It deliberately asserts gaps as well as guarantees. When BA-062 fixes one —
-	for example by giving firing a gamepad binding — the matching assertion here
-	is expected to fail. That failure means "the audit is now out of date",
-	not "the fix is wrong": update the audit and this fixture together.
+	It deliberately asserts remaining gaps as well as guarantees. BA-062's first
+	increment closes M1 in source; later BA-062 increments are still expected to
+	make their matching assertions fail until the audit and fixture move together.
 ]]
 
 local fs = require("@lune/fs")
@@ -47,24 +46,28 @@ local hordeHud = read(CLIENT .. "HordeHUDController.luau")
 local runBuildHud = read(CLIENT .. "RunBuildHUDController.luau")
 local audit = read(AUDIT_PATH)
 
--- M1: firing is mouse-only. No gamepad button, no touch button, no
--- ContextActionService binding anywhere in the fire path.
-assert(contains(weapon, "Enum.UserInputType.MouseButton1"), "firing is still expected to read MouseButton1")
+-- M1 remediation: mouse remains supported, while WeaponController now owns one
+-- device-neutral ContextActionService surface for gamepad R2 and a generated
+-- touch button. Every device still converges on the same setFiring/FireIntent
+-- path rather than creating a second combat authority.
+assert(contains(weapon, "Enum.UserInputType.MouseButton1"), "mouse firing must remain available")
+assert(contains(weapon, 'game:GetService("ContextActionService")'), "fire must use ContextActionService")
+assert(contains(weapon, 'FIRE_ACTION_NAME = "LK_Fire"'), "fire action must have one stable semantic action name")
+assert(contains(weapon, "Enum.KeyCode.ButtonR2"), "gamepad firing must use the right trigger")
 assert(
-	not contains(weapon, "ContextActionService"),
-	"M1 is stale: WeaponController now uses ContextActionService — update the BA-061 audit"
+	contains(weapon, "ContextActionService:BindAction(FIRE_ACTION_NAME, onFireAction, true, Enum.KeyCode.ButtonR2)"),
+	"fire must bind gamepad and generated touch input through one CAS action"
 )
+assert(contains(weapon, 'ContextActionService:SetTitle(FIRE_ACTION_NAME, "Fire")'), "touch fire button must be labelled")
+assert(contains(weapon, "ContextActionService:UnbindAction(FIRE_ACTION_NAME)"), "fire action must unbind on stop")
+assert(contains(weapon, "local function setFiring(isFiring: boolean)"), "all fire origins must share one hold-state helper")
+assert(contains(weapon, "fireIntentRemote:FireServer(isFiring, direction)"), "fire still uses the existing intent remote")
 assert(
-	not contains(weapon, "Enum.KeyCode.Button"),
-	"M1 is stale: WeaponController now binds a gamepad button — update the BA-061 audit"
-)
-assert(
-	not contains(mobile, "Fire") and not contains(mobile, "fire"),
-	"M1 is stale: MobileControlsController now touches the fire path — update the BA-061 audit"
+	not contains(mobile, "FIRE_ACTION") and not contains(mobile, "onFireAction"),
+	"MobileControlsController must not become a second fire owner"
 )
 
--- Only WeaponController may originate fire intent, so the audit's claim that no
--- other surface can start firing stays true.
+-- Only WeaponController may originate fire intent.
 local fireIntentOwners = 0
 for _, path in
 	{
@@ -153,7 +156,8 @@ local squadPingConfig = read(SHARED .. "SquadPingConfig.luau")
 assert(contains(flashlightConfig, 'KeyboardKeyCodeName = "F"') and contains(flashlightConfig, "ButtonY"))
 assert(contains(squadPingConfig, 'KeyboardKeyCodeName = "G"') and contains(squadPingConfig, "DPadUp"))
 
--- Exactly two actions are config-driven; the structural finding depends on it.
+-- Exactly two actions are config-driven; BA-062 M1 intentionally fixes device
+-- coverage without prematurely building the later shared action-map increment.
 local configDrivenActions = 0
 for _, source in { flashlight, squadPing, weapon, survivor, operativeLife, classAction, rpgMenu, hubPreparation } do
 	if contains(source, "KeyboardKeyCodeName") then
@@ -165,12 +169,14 @@ assert(
 	"the structural finding assumes exactly two config-driven actions — update the BA-061 audit"
 )
 
--- The audit stays honest about its own scope.
-assert(contains(audit, "**Roadmap ticket:** BA-061"), "the audit must identify its ticket")
+-- The audit stays honest about its own scope and records M1 as remediated while
+-- retaining every remaining finding for later isolated BA-062 increments.
+assert(contains(audit, "**Roadmap ticket:** BA-061"), "the audit must identify its originating ticket")
 assert(contains(audit, "E1"), "the audit must state its evidence level")
+assert(contains(audit, "M1 — Firing device coverage — source-remediated"), "the audit must record M1 remediation")
 assert(not contains(audit, "rbxassetid://"), "an input audit invents no asset IDs")
-for _, finding in { "M1", "M2", "M3", "M4", "M5", "C1", "C2", "C3", "C4" } do
+for _, finding in { "M2", "M3", "M4", "M5", "C1", "C2", "C3", "C4" } do
 	assert(contains(audit, finding), `the audit must retain finding {finding}`)
 end
 
-print("BA-061 InputActionMapSourceAudit: action inventory, missing bindings, and conflicts locked")
+print("BA-061/062 InputActionMapSourceAudit: M1 remediated; remaining gaps and conflicts locked")
