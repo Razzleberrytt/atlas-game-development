@@ -1,7 +1,9 @@
 --!strict
 
+local FirearmConfig = require(script.Parent.FirearmConfig)
+
 local Config = {
-	Version = "SURVIVAL-LOOT-v2-reward-loop",
+	Version = "SURVIVAL-LOOT-v3-melee-opening-recovery",
 	InventoryCapacity = 30,
 	ChestCount = 14,
 	ChestInteractionDistanceStuds = 10,
@@ -10,8 +12,11 @@ local Config = {
 	WoodPerBundleMaximum = 4,
 	AmmoRoundsMinimum = 4,
 	AmmoRoundsMaximum = 10,
-	-- Every chest contains useful supplies. This chance is only for the exciting
-	-- weapon bonus, with a pity guarantee so exploration cannot remain unrewarded.
+	-- A fresh melee operative recovers the humble Service Pistol from their first
+	-- personally opened chest. Stronger firearms remain in the separate upgrade
+	-- pool below and retain their existing random/pity discovery cadence.
+	OpeningRecoveryWeaponId = FirearmConfig.DefaultSelectableWeaponId,
+	OpeningRecoveryByOpenedChest = 1,
 	ChestWeaponChancePercent = 22,
 	GuaranteedWeaponByOpenedChest = 3,
 	ChestWoodMinimum = 2,
@@ -35,7 +40,12 @@ local Config = {
 }
 
 assert(Config.InventoryCapacity >= 24, "survival inventory must be generous by default")
+assert(FirearmConfig.get(Config.OpeningRecoveryWeaponId) ~= nil, "opening recovered firearm must exist")
+assert(Config.OpeningRecoveryByOpenedChest == 1, "the melee opening must not depend on random firearm luck")
 assert(Config.ChestWeaponChancePercent >= 15, "weapon bonuses must be realistically discoverable")
 assert(Config.GuaranteedWeaponByOpenedChest <= 4, "early exploration must guarantee a weapon opportunity")
+for _, weaponId in Config.DiscoverableWeaponIds do
+	assert(weaponId ~= Config.OpeningRecoveryWeaponId, "opening pistol must remain separate from stronger weapon upgrades")
+end
 
 return table.freeze(Config)
