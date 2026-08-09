@@ -86,9 +86,33 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
-      # Formatting covers every Luau tree in the game, not just src. Fixtures
-      # and tooling drifted unchecked until 2026-08-08 because this step was
-      # scoped to src alone.
+      # Temporary PR-only diagnostic: capture exact StyLua output so the stale
+      # prepared branch can be normalized to the current repository formatter.
+      - name: Capture exact StyLua formatter diff
+        shell: bash
+        run: |
+          stylua \
+            games/living-kingdoms/src/client/Controllers/HordeHUDController.luau \
+            games/living-kingdoms/src/client/Controllers/MassacreCrescendoController.luau \
+            games/living-kingdoms/tests/HordeVerticalSliceSourceAudit.test.luau \
+            games/living-kingdoms/tests/MassacreCrescendoSourceAudit.test.luau \
+            games/living-kingdoms/tests/V27ActivePlaceStaticInventorySourceAudit.test.luau
+          git diff -- \
+            games/living-kingdoms/src/client/Controllers/HordeHUDController.luau \
+            games/living-kingdoms/src/client/Controllers/MassacreCrescendoController.luau \
+            games/living-kingdoms/tests/HordeVerticalSliceSourceAudit.test.luau \
+            games/living-kingdoms/tests/MassacreCrescendoSourceAudit.test.luau \
+            games/living-kingdoms/tests/V27ActivePlaceStaticInventorySourceAudit.test.luau \
+            > /tmp/stylua-format.patch
+
+      - name: Upload StyLua formatter diff
+        uses: actions/upload-artifact@v4
+        with:
+          name: stylua-format-patch-${{ github.sha }}
+          path: /tmp/stylua-format.patch
+          if-no-files-found: error
+          retention-days: 1
+
       - name: Check Luau formatting
         shell: bash
         run: |
