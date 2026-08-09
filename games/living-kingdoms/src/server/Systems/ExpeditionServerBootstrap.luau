@@ -1,17 +1,12 @@
 --!strict
 
---[[
-	VS-0110 server-owned composition root for the first expedition.
-
-	This module composes the authoritative runtime, deterministic room plan,
-	encounter coordinator, and existing enemy director adapter. It exposes no
-	client remotes. Callers tick it from one bounded server loop and may read only
-	sanitized snapshots for presentation.
-]]
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ExpeditionConfig = require(ReplicatedStorage.Shared.Config.ExpeditionConfig)
+local FirstDungeonContentConfig = require(ReplicatedStorage.Shared.Config.FirstDungeonContentConfig)
+local HordeExperienceConfig = require(ReplicatedStorage.Shared.Config.HordeExperienceConfig)
+local SpecialEnemyConfig = require(ReplicatedStorage.Shared.Config.SpecialEnemyConfig)
+local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)
 local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.ExpeditionContracts)
 local RoomPlacementPlanner = require(ReplicatedStorage.Shared.Expeditions.RoomPlacementPlanner)
 local RoomSequenceAssembler = require(ReplicatedStorage.Shared.Expeditions.RoomSequenceAssembler)
@@ -49,6 +44,11 @@ type Internal = {
 local Bootstrap = {}
 Bootstrap.__index = Bootstrap
 
+local HordeRoleById = {}
+for _, role in HordeExperienceConfig.Roles do
+	HordeRoleById[role.Id] = role
+end
+
 local function result(accepted: boolean, reasonId: string)
 	return table.freeze({ Accepted = accepted, ReasonId = reasonId })
 end
@@ -56,14 +56,7 @@ end
 local function normalizedPlan(plan: any): any
 	local nodes = {}
 	for _, node in plan.Nodes do
-		table.insert(
-			nodes,
-			table.freeze({
-				Index = node.Index,
-				RoomId = node.RoomId,
-				RoleId = node.Role,
-			})
-		)
+		table.insert(nodes, table.freeze({ Index = node.Index, RoomId = node.RoomId, RoleId = node.Role }))
 	end
 	return table.freeze({ Seed = plan.Seed, Nodes = table.freeze(nodes) })
 end
@@ -75,6 +68,44 @@ local function deterministicOffset(seed: number, ordinal: number): (number, numb
 	return x, z
 end
 
+local function displayNameForUnit(unit: any): string
+	if unit.HordeRoleId ~= nil then
+		local role = HordeRoleById[unit.HordeRoleId]
+		if role ~= nil then
+			return role.DisplayName
+		end
+	end
+	if unit.ArchetypeId == EnemyContracts.EnemyArchetypeIds.BlightSpitter then
+		return SpecialEnemyConfig.BlightSpitter.DisplayName
+	end
+	return "Warden"
+end
+
+local function buildAuthoredWave(context: any, roomId: string, anchor: any): { any }?
+	local encounter = FirstDungeonContentConfig.Encounters[roomId]
+	if encounter == nil or #encounter.Waves ~= 1 then
+		return nil
+	end
+	local definitions = {}
+	local ordinal = 0
+	for _, unit in encounter.Waves[1].Units do
+		for _ = 1, unit.Count do
+			ordinal += 1
+			local xOffset, zOffset = deterministicOffset(context.Seed, ordinal + (context.RoomIndex or 0) * 5)
+			table.insert(definitions, {
+				id = string.format("%s:enemy:%d", context.Token, ordinal),
+				name = displayNameForUnit(unit),
+				x = anchor.x + xOffset,
+				y = anchor.y,
+				z = anchor.z + zOffset,
+				archetypeId = unit.ArchetypeId,
+				hordeRoleId = unit.HordeRoleId,
+			})
+		end
+	end
+	return definitions
+end
+
 local function buildEncounterResolver(rawPlan: any): (any) -> any
 	local layout = RoomPlacementPlanner.plan(rawPlan)
 	local placementByRoomId = {}
@@ -84,46 +115,50 @@ local function buildEncounterResolver(rawPlan: any): (any) -> any
 		placementByRoleId[placement.RoleId] = placement
 	end
 
-	local function anchorFor(context: any): any?
-		if context.PhaseId == "Approach" then
-			return { x = 0, y = 4, z = 24 }
-		end
-		local placement
+	local function placementFor(context: any): any?
 		if context.PhaseId == "Dungeon" and type(context.RoomId) == "string" then
-			placement = placementByRoomId[context.RoomId]
+			return placementByRoomId[context.RoomId]
 		elseif context.PhaseId == "Elite" or context.PhaseId == "Boss" then
-			placement = placementByRoleId[context.PhaseId]
+			return placementByRoleId[context.PhaseId]
 		end
-		if placement == nil then
-			return nil
-		end
-		return { x = placement.Center.x, y = 4, z = placement.Center.z }
+		return nil
 	end
 
 	return function(context: any): any
-		local anchor = anchorFor(context)
-		if anchor == nil then
-			return nil
-		end
-		if context.PhaseId == "Boss" then
-			return {
-				Kind = "Boss",
-				BossPosition = anchor,
-				FloodlightsRestored = true,
-			}
+		if context.PhaseId == "Approach" then
+			local anchor = { x = 0, y = 4, z = 24 }
+			local wave = {}
+			for ordinal = 1, 2 do
+				local xOffset, zOffset = deterministicOffset(context.Seed, ordinal)
+				table.insert(wave, {
+					id = string.format("%s:enemy:%d", context.Token, ordinal),
+					name = HordeExperienceConfig.Roles.Basic.DisplayName,
+					x = anchor.x + xOffset,
+					y = anchor.y,
+					z = anchor.z + zOffset,
+					archetypeId = EnemyContracts.EnemyArchetypeIds.ExclusionWalker,
+					hordeRoleId = HordeExperienceConfig.Roles.Basic.Id,
+				})
+			end
+			return { Kind = "Wave", WaveIndex = 1, Wave = wave }
 		end
 
-		local count = if context.PhaseId == "Elite" then 1 elseif context.PhaseId == "Approach" then 2 else 3
-		local wave = {}
-		for ordinal = 1, count do
-			local xOffset, zOffset = deterministicOffset(context.Seed, ordinal + (context.RoomIndex or 0) * 5)
-			table.insert(wave, {
-				id = string.format("%s:enemy:%d", context.Token, ordinal),
-				name = if context.PhaseId == "Elite" then "Warden Elite" else "Warden",
-				x = anchor.x + xOffset,
-				y = anchor.y,
-				z = anchor.z + zOffset,
-			})
+		local placement = placementFor(context)
+		if placement == nil then
+			return nil
+		end
+		local anchor = { x = placement.Center.x, y = 4, z = placement.Center.z }
+		if context.PhaseId == "Boss" then
+			return { Kind = "Boss", BossPosition = anchor, FloodlightsRestored = true }
+		end
+
+		local roomId = if context.PhaseId == "Dungeon" then context.RoomId else placement.RoomId
+		if type(roomId) ~= "string" then
+			return nil
+		end
+		local wave = buildAuthoredWave(context, roomId, anchor)
+		if wave == nil or #wave == 0 then
+			return nil
 		end
 		return {
 			Kind = "Wave",
@@ -137,21 +172,15 @@ local function passiveTraversalAdapter()
 	local activeToken: string? = nil
 	return {
 		start = function(context: any): boolean
-			if activeToken ~= nil then
-				return false
-			end
+			if activeToken ~= nil then return false end
 			activeToken = context.Token
 			return true
 		end,
 		cancel = function(context: any, _reasonId: string)
-			if activeToken == context.Token then
-				activeToken = nil
-			end
+			if activeToken == context.Token then activeToken = nil end
 		end,
 		pollCompletion = function(): (boolean, string?)
-			if activeToken == nil then
-				return false, "NoActiveEncounter"
-			end
+			if activeToken == nil then return false, "NoActiveEncounter" end
 			return true, activeToken
 		end,
 	}
@@ -164,7 +193,6 @@ function Bootstrap.new(director: EnemyDirector, parameters: StartParameters): Se
 	local plan = normalizedPlan(rawPlan)
 	local combatAdapter = EnemyDirectorEncounterAdapter.new(director, buildEncounterResolver(rawPlan))
 	local traversalAdapter = passiveTraversalAdapter()
-
 	local coordinator = ExpeditionEncounterCoordinator.new(runtime, plan, {
 		Approach = combatAdapter,
 		DungeonTraversal = traversalAdapter,
@@ -172,39 +200,18 @@ function Bootstrap.new(director: EnemyDirector, parameters: StartParameters): Se
 		Elite = combatAdapter,
 		Boss = combatAdapter,
 	})
-
-	return setmetatable(
-		{
-			Runtime = runtime,
-			Coordinator = coordinator,
-			CombatAdapter = combatAdapter,
-			TraversalAdapter = traversalAdapter,
-			RoomPlan = rawPlan,
-			Destroyed = false,
-		} :: Internal,
-		Bootstrap
-	) :: any
+	return setmetatable({ Runtime = runtime, Coordinator = coordinator, CombatAdapter = combatAdapter, TraversalAdapter = traversalAdapter, RoomPlan = rawPlan, Destroyed = false } :: Internal, Bootstrap) :: any
 end
 
 function Bootstrap:step(nowUnix: number)
 	local state: Internal = self :: any
-	if state.Destroyed then
-		return result(false, "BootstrapDestroyed")
-	end
-	if type(nowUnix) ~= "number" or nowUnix < 0 then
-		return result(false, "InvalidTimestamp")
-	end
-
+	if state.Destroyed then return result(false, "BootstrapDestroyed") end
+	if type(nowUnix) ~= "number" or nowUnix < 0 then return result(false, "InvalidTimestamp") end
 	local snapshot = state.Runtime:getSnapshot()
-	if
-		snapshot ~= nil
-		and snapshot.PhaseId == ExpeditionContracts.PhaseIds.Results
-		and snapshot.OutcomeId == ExpeditionContracts.OutcomeIds.InProgress
-	then
+	if snapshot ~= nil and snapshot.PhaseId == ExpeditionContracts.PhaseIds.Results and snapshot.OutcomeId == ExpeditionContracts.OutcomeIds.InProgress then
 		local finish = state.Runtime:finish(ExpeditionContracts.OutcomeIds.Completed, snapshot.PhaseId, nowUnix)
 		return result(finish.Accepted == true, finish.ReasonId)
 	end
-
 	local active = state.Coordinator:getActiveContext()
 	if active ~= nil then
 		local adapter = if active.RoomRoleId == "Traversal" then state.TraversalAdapter else state.CombatAdapter
@@ -212,47 +219,36 @@ function Bootstrap:step(nowUnix: number)
 		if completed and token ~= nil then
 			local completion = state.Coordinator:completeActive(token, nowUnix)
 			adapter.cancel(active, "EncounterCompleted")
-			if completion.Accepted ~= true then
-				return result(false, completion.ReasonId)
-			end
+			if completion.Accepted ~= true then return result(false, completion.ReasonId) end
 			return result(true, completion.ReasonId)
 		end
 		return result(false, "EncounterInProgress")
 	end
-
 	local sync = state.Coordinator:sync(nowUnix)
 	return result(sync.Accepted == true, sync.ReasonId)
 end
 
 function Bootstrap:getSnapshot(): ExpeditionSnapshot?
 	local state: Internal = self :: any
-	if state.Destroyed then
-		return nil
-	end
+	if state.Destroyed then return nil end
 	return state.Runtime:getSnapshot()
 end
 
 function Bootstrap:getRoomPlan(): any
 	local state: Internal = self :: any
-	if state.Destroyed then
-		return nil
-	end
+	if state.Destroyed then return nil end
 	return state.RoomPlan
 end
 
 function Bootstrap:getActiveEncounterContext(): any?
 	local state: Internal = self :: any
-	if state.Destroyed then
-		return nil
-	end
+	if state.Destroyed then return nil end
 	return state.Coordinator:getActiveContext()
 end
 
 function Bootstrap:destroy()
 	local state: Internal = self :: any
-	if state.Destroyed then
-		return
-	end
+	if state.Destroyed then return end
 	state.Destroyed = true
 	state.Coordinator:destroy()
 	state.CombatAdapter:destroy()
