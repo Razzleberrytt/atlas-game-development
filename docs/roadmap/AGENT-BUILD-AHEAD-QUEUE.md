@@ -21,7 +21,7 @@ Read first:
 
 - Repository: `Razzleberrytt/atlas-game-development`
 - Game path: `games/living-kingdoms`
-- Checkpoint used for this refresh: `60229a32ec1f7db3b87a68e5f81ddf8115e665f1`
+- Checkpoint used for this refresh: `b91941d7e4db3047759f37d887d7f86bf32d6fb1`
 - The task table below reflects current status; always re-fetch `main` and inspect open related PRs before starting work. **No READY task is reserved to Codex, Claude, or any other named agent.** While coding-agent quotas are constrained, work proceeds sequentially: finish and merge one task before claiming the next unless the user explicitly re-enables parallel execution.
 - Evidence: **E2** (pinned-artifact Studio initialization/R1; later integrated matrices remain open)
 - Studio import preservation is **repaired**: 28/28 Studio-only sources and 1,775/1,775 Workspace identity/hierarchy rows are preserved.
@@ -32,7 +32,8 @@ Read first:
 - PR #221 is merged with its exact-build single-listener evidence accepted at E2; later runtime matrices remain open.
 - PR #222 is merged as dormant R2 preparation only; `ClientReady` activation and R2 runtime evidence remain separate controlled work.
 - PR #239 is merged as the held pre-launch operation-selection contract; its runtime/network/launch handoff remains disabled.
-- PR #264 merged BA-061's PC/mobile/controller source audit. BA-062 remediation item 1 now source-remediates fire input with MouseButton1 + ButtonR2 + a generated touch Fire button through the existing `WeaponController`/`FireIntent` owner; real-device acceptance remains outstanding.
+- BA-020 through BA-025 are merged preparation; BA-026 remains separately blocked by the Master ECON gate.
+- BA-062's M1-M5 and C1-C4 source findings are remediated through the canonical action map, gamepad/touch coverage, prompt-key separation, UI close/label cleanup, and fail-closed numbered-choice coordination. Direct keyboard/gamepad claims are collision-free in source. PRs #286 and #287 add truthful Squad Ping and class-action presentation copy. **No real-device acceptance is claimed; consolidated Studio/device verification remains open.**
 
 ## Two-lane rule
 
@@ -119,13 +120,13 @@ This is now a first-class product lane under Master Roadmap Phase W.
 
 | ID | Status | Task | Deliverable / boundary |
 |---|---|---|---|
-| BA-020 | READY | Canonical quest contracts + deterministic quest-state resolver. | Stable IDs/prerequisites/transitions/reward refs; no bootstrap/client authority. |
-| BA-021 | READY | NPC definition/conversation/interaction contracts. | Stable IDs/roles/dialogue refs/capabilities; pure validation. |
-| BA-022 | READY | Crafting recipe model/resolver. | Recipe/ingredient/output refs and eligibility reasons; no inventory mutation path. |
-| BA-023 | READY | Gathering/resource-node model. | Resource/node/tool/respawn/reward refs; no live gathering authority. |
-| BA-024 | READY | Vendor/catalog/pricing contracts. | Vendor/catalog/currency/item refs; no purchase mutation path. |
-| BA-025 | BLOCKED on BA-020–024 | Cross-domain dependency validation. | Catch unknown IDs, cycles, impossible prerequisites and orphaned rewards. |
-| BA-026 | BLOCKED on BA-022–024 + Master ECON gate | Economy model/audit. | Define currencies, sources/sinks, value bands, salvage/overflow/idempotency and telemetry before broad activation. |
+| BA-020 | DONE | Canonical quest contracts + deterministic quest-state resolver. | Merged through PR #268 with stable IDs/prerequisites/transitions/reward refs; no bootstrap/client authority. |
+| BA-021 | DONE | NPC definition/conversation/interaction contracts. | Merged through PR #269 with stable IDs/roles/dialogue refs/capabilities and pure validation. |
+| BA-022 | DONE | Crafting recipe model/resolver. | Merged through PR #270 with recipe/ingredient/output refs and deterministic eligibility reasons; no inventory mutation path. |
+| BA-023 | DONE | Gathering/resource-node model. | Merged through PR #271 with resource/node/tool/respawn/reward refs; no live gathering authority. |
+| BA-024 | DONE | Vendor/catalog/pricing contracts. | Merged through PR #272 with vendor/catalog/currency/item refs; no purchase mutation path. |
+| BA-025 | DONE | Cross-domain dependency validation. | Merged through PR #273; validates BA-020–024 references, cycles, impossible prerequisites, and orphaned reward refs without runtime activation. |
+| BA-026 | BLOCKED on Master ECON gate | Economy model/audit. | BA-022–024 dependencies are prepared, but economy remains separately gated. Define currencies, sources/sinks, value bands, salvage/overflow/idempotency and telemetry only after Master ECON explicitly clears. |
 
 ## P3 — operation, dungeon, portal and pre-launch preparation
 
@@ -161,9 +162,9 @@ This is now a first-class product lane under Master Roadmap Phase W.
 | ID | Status | Task | Deliverable / boundary |
 |---|---|---|---|
 | BA-060 | DONE | First-session onboarding sequence. | [`docs/specifications/first-session-onboarding-sequence.md`](../specifications/first-session-onboarding-sequence.md) — pins the 12-step safe arrival → preparation → deliberate launch → route/discovery → First Descent → Run Relic decision → result → safe return → build understanding → deliberate replay journey. Runtime-existing, prepared-data, prepared-integration, and blocked-lifecycle states remain explicit; final replay is blocked on the current `OperationLifecycleService` auto-replay behavior rather than being changed sideways. |
-| BA-061 | DONE | PC/mobile/controller action-map audit. | [`docs/specifications/input-action-map-audit.md`](../specifications/input-action-map-audit.md) inventories 17 semantic actions across 10 controllers. M1's mouse-only fire gap is now source-remediated by BA-062 item 1; the audit still records missing gamepad bindings for reload/sprint/revive, `E`/`ButtonX` prompt collisions, duplicate `Escape` listeners, number-key overlap, accessibility gaps, and the absence of a shared action map. Device verification remains outstanding. |
-| BA-062 | IN PROGRESS | Input abstraction improvements. | Item 1 source-remediates firing by preserving `MouseButton1` and adding `ButtonR2` + generated touch Fire through the same `WeaponController`/`FireIntent` path. No device acceptance is claimed. Next isolated item: resolve C1/C2 (`E` revive and `ButtonX` class action vs. `ProximityPrompt`) without blindly sinking world interaction; later items remain gamepad coverage, shared action map, and UI close/label cleanup. |
-| BA-063 | READY | UI information architecture. | Main World/expedition/loot/progression screen-state matrix and ownership boundaries. |
+| BA-061 | DONE | PC/mobile/controller action-map audit. | [`docs/specifications/input-action-map-audit.md`](../specifications/input-action-map-audit.md) remains the source audit; BA-062 has remediated its M1-M5 and C1-C4 source findings. Device verification remains outstanding. |
+| BA-062 | PREPARED | Input abstraction improvements. | Source remediation is complete at E1: fire/reload/sprint/revive gamepad/touch coverage, prompt-key separation, shared action map, device-family/binding-hint foundations, device-neutral hub close, adaptive launcher/ping copy, single Escape owner, fail-closed numbered-choice coordination, zero canonical direct key collisions, and class-action ButtonB presentation alignment. Consolidated Studio/device acceptance remains open before runtime evidence promotion. |
+| BA-063 | DONE | UI information architecture. | PR #267 merged `UIInformationArchitectureConfig` plus its source/static specification and tests. Runtime behavior remains unchanged; the matrix is preparation for later UI work. |
 
 ## P7 — integration planning and anti-regression
 
@@ -197,27 +198,24 @@ Before starting, always re-fetch `main` and inspect any open overlapping PRs.
 
 ### Highest-ROI build-ahead task after current-patch work
 
-Playable MVP + Patch Execution v2.9 now controls global implementation order.
-Gate 0 runtime stabilization and the smallest MVP 0.1 enablers outrank this
-queue. Use the task below only when the runtime/evidence lane cannot proceed or
-build-ahead work is explicitly requested.
+Playable MVP + Patch Execution v2.9 controls global implementation order. Gate 0 runtime stabilization and the smallest MVP 0.1 enablers outrank this queue.
 
-**BA-062 — resolve the `E` / `ButtonX` prompt collisions (second isolated item).**
+BA-062 no longer has an unimplemented source finding. Its next meaningful step is consolidated Studio/device acceptance, which belongs to the human/runtime lane and must not be replaced by more source-only polish.
 
-BA-062 item 1 source-remediates the critical fire-device gap without changing
-server combat authority. The next source-level input risk is contextual-action
-collision: revive shares keyboard `E` with world prompts, and the class action
-shares gamepad `ButtonX` with the engine prompt default.
+When that runtime lane cannot proceed and build-ahead work is explicitly desired, the highest-value safe repository task is:
 
-Why next:
+**BA-005 — continue one coherent source-managed authored-overworld reconstruction group behind hold.**
 
-- both collisions can make one player action drive two independent intent paths;
-- they affect the same combat/world-interaction boundary identified by BA-061;
-- they should be resolved without blindly returning `Sink`, because swallowing the prompt input would break world interaction;
-- keep this as its own merge-before-next increment. Do not also add reload/sprint/revive gamepad coverage or build the shared action map in the same PR.
+Requirements for the next BA-005 increment:
 
-Main World Track 1 is complete as a preparation sequence (BA-010 → BA-014) and
-its next step is measurement in the human/Studio lane, not this queue.
+- refresh current property/presentation evidence before selecting the group;
+- choose one coherent HubTown/resource/world-structure group rather than broad geometry;
+- preserve the authored-overworld coordinate/lifecycle boundary from the modern operation forest;
+- keep all reconstructed content held/dormant;
+- do not boot recovered gameplay services or create a second authority;
+- add focused source/static evidence and merge before choosing another group.
+
+Main World Track 1 remains complete as a preparation sequence (BA-010 → BA-014). Its next step is measurement in the human/Studio lane, not additional speculative environment composition.
 
 ### Assignment policy — no reserved agent tasks (2026-08-09)
 
@@ -226,32 +224,31 @@ Coding-agent quotas are currently constrained. **No READY ticket is assigned or 
 Execution policy while this mode is active:
 
 1. re-fetch `main` and inspect open PRs;
-2. choose the highest-ROI READY task allowed by the active playable-patch authority;
+2. choose the highest-ROI allowed task under the active playable-patch authority;
 3. finish that task on an isolated branch/PR;
 4. run applicable CI/static validation;
 5. merge the completed task before starting another;
 6. repeat only after `main` is refreshed again.
 
-### Unassigned READY backlog
-
-These tickets are available but **not assigned to any agent**. The remaining BA-062 remediation still outranks them because it closes known MVP input risks.
+### Current build-ahead backlog
 
 ```text
-BA-020 quest contracts
-BA-021 NPC contracts
-BA-022 crafting contracts
-BA-023 gathering/resource-node model
-BA-024 vendor/catalog contracts
-BA-062 input abstraction improvements
-BA-063 UI information architecture
+BA-005 authored-overworld reconstruction continuation — IN PROGRESS / allowed behind hold
+BA-026 economy model/audit — BLOCKED on Master ECON gate
+BA-035 party/session ownership policy — BLOCKED on social/session ownership decision
+BA-041 Crawler behavior primitive — BLOCKED on scoped identity decision
+BA-043 item/affix generation — BLOCKED on equipment/run-build authority decision
+BA-073 vertical-slice integration plan — BLOCKED on prepared-domain + v2.7 runtime gates
 ```
 
-BA-063's screen-state matrix should consume BA-061's action inventory rather than re-deriving it.
+Do not resurrect completed BA-020–025, BA-062, or BA-063 work merely because an older queue snapshot listed it as READY.
 
 ### Human/Studio lane
 
 The highest-value human/runtime task remains:
 
 **produce a recorded CI artifact containing the client-bootstrap fix, re-pin a fresh v2.7 R1 evidence packet to that exact build/place identity, and rerun R1.**
+
+BA-062 also needs a consolidated keyboard/controller/touch acceptance pass before any source-only input work is promoted beyond E1.
 
 > Build ahead without building around the gate: reduce future uncertainty, but never convert preparation into an unearned runtime claim.
