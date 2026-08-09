@@ -16,6 +16,7 @@ Then load specialist documents **only when the task touches them**:
 | Product identity / design conflict | `docs/bible/00-current-product-authority.md` |
 | Patch scope / exit criteria | `docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md` |
 | Long-range requirement lookup | `docs/roadmap/MASTER-ROADMAP.md` |
+| Repeated implementation friction / reusable-system decision / leverage tie-break | `docs/roadmap/DEVELOPMENT-FLYWHEEL.md` |
 | Runtime safety, current-state delivery, lifecycle, remotes, rollback | `docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md`, `docs/roadmap/PRODUCTION-CORE-V2.7.md`, and when applicable `docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md` |
 | Replicated/presentation ownership migration | `docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md` and `docs/production/V2.7-CUTOVER-LEDGER.md` |
 | Evidence-bearing Studio run | `docs/production/V2.7-EVIDENCE-PACKET-TEMPLATE.md` |
@@ -37,11 +38,12 @@ When asked to continue or implement the next roadmap task:
 4. if a concrete runtime, authority, lifecycle, data-safety, or milestone failure exists, fix it first;
 5. otherwise take NOW, or NEXT only when NOW is externally blocked and the work does not overlap;
 6. implement the smallest coherent player-facing or dependency-removing increment;
-7. validate according to the risk tier below;
-8. merge successful dependency-safe work without inventing a manual-test stop after every small change;
-9. update roadmap status only when meaningful task/progress/blocker truth changes.
+7. when similarly valuable dependency-safe implementations exist, prefer the one that reduces future implementation cost through reuse, data/configuration, regression protection, tooling, or clearer agent execution; use `DEVELOPMENT-FLYWHEEL.md` when that choice is non-obvious;
+8. validate according to the risk tier below;
+9. merge successful dependency-safe work without inventing a manual-test stop after every small change;
+10. update roadmap status only when meaningful task/progress/blocker truth changes.
 
-Do not duplicate work already present in an open PR.
+Do not duplicate work already present in an open PR. Do not use leverage as an excuse for speculative frameworks or for bypassing an active dependency/safety gate.
 
 ## Status vocabulary
 
@@ -82,6 +84,19 @@ CI deliberately treats non-doc source changes conservatively and runs the full p
 - Do not create a second authoritative state or presentation path when extending or migrating an existing owner.
 - Prefer stable IDs, validated references, pure resolvers, reusable owners, and data/configuration over bespoke feature piles.
 
+## Compounding-development rule
+
+The repository should become easier to extend as it grows. When proportionate to the current task:
+
+- extend proven owners instead of cloning behavior;
+- after a repeated shape is understood, move future variants toward validated data/configuration;
+- turn meaningful bugs into focused regression defenses when practical;
+- automate deterministic repeated agent/developer friction;
+- keep ownership, extension points, validation commands, and exit signals discoverable;
+- run a bounded leverage pass when a pattern reaches roughly its third implementation, a failure class repeats, or a patch is about to scale content breadth.
+
+Player value, dependency order, server authority, and evidence gates remain primary. Never build abstraction for abstraction's sake.
+
 ## Change discipline
 
 - Keep one coherent result per PR when practical.
@@ -109,6 +124,7 @@ Report only the useful execution facts:
 - files/behavior changed;
 - validation run and exact result;
 - authority/data/lifecycle boundaries touched;
+- leverage outcome when applicable (reuse, data conversion, regression defense, tooling, or intentionally none);
 - status: BUILDING / BUILT — VERIFICATION PENDING / VERIFIED / etc.;
 - Studio/device evidence still pending, if any;
 - concrete blocker, if any;
