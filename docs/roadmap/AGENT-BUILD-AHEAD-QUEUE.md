@@ -1,4 +1,4 @@
-# Atlas — Agent Build-Ahead Queue v2.8
+# Atlas — Agent Build-Ahead Queue v2.9
 
 **Status:** ACTIVE PREPARATION LANE  
 **Refreshed:** 2026-08-09  
@@ -21,7 +21,7 @@ Read first:
 
 - Repository: `Razzleberrytt/atlas-game-development`
 - Game path: `games/living-kingdoms`
-- Checkpoint used for this refresh: `b91941d7e4db3047759f37d887d7f86bf32d6fb1`
+- Checkpoint used for this refresh: `51bad3f948985bb0530d83a7ed10e02b4a55b5d7` (PR #318 merged)
 - The task table below reflects current status; always re-fetch `main` and inspect open related PRs before starting work. **No READY task is reserved to Codex, Claude, or any other named agent.** While coding-agent quotas are constrained, work proceeds sequentially: finish and merge one task before claiming the next unless the user explicitly re-enables parallel execution.
 - Evidence: **E2** (pinned-artifact Studio initialization/R1; later integrated matrices remain open)
 - Studio import preservation is **repaired**: 28/28 Studio-only sources and 1,775/1,775 Workspace identity/hierarchy rows are preserved.
@@ -33,7 +33,8 @@ Read first:
 - PR #222 is merged as dormant R2 preparation only; `ClientReady` activation and R2 runtime evidence remain separate controlled work.
 - PR #239 is merged as the held pre-launch operation-selection contract; its runtime/network/launch handoff remains disabled.
 - BA-020 through BA-025 are merged preparation; BA-026 remains separately blocked by the Master ECON gate.
-- BA-062's M1-M5 and C1-C4 source findings are remediated through the canonical action map, gamepad/touch coverage, prompt-key separation, UI close/label cleanup, and fail-closed numbered-choice coordination. Direct keyboard/gamepad claims are collision-free in source. PRs #286 and #287 add truthful Squad Ping and class-action presentation copy. **No real-device acceptance is claimed; consolidated Studio/device verification remains open.**
+- BA-062's M1-M5 and C1-C4 source findings are remediated through the canonical action map, gamepad/touch coverage, prompt-key separation, UI close/label cleanup, and fail-closed numbered-choice coordination. Direct keyboard/gamepad claims are collision-free in source. PRs #286 and #287 add truthful Squad Ping and class-action presentation copy; the later primary-combat-mode path also routes Field Hatchet primary attack across mouse/R2/generated touch. **No real-device acceptance is claimed; consolidated Studio/device verification remains open.**
+- MVP 0.1 source implementation is now end-to-end built through PRs #293–#318: deliberate safe replay, canonical First Descent seed/composition and boss reward, authored Approach combat and Lookout Cache discovery, server-authoritative melee → earned-firearm opening, failure forfeiture, temporary-run reset, live durable-inventory leases, durable equip/start-loadout handoff, and existing-menu durable equipment interaction. The milestone remains **BUILT — VERIFICATION PENDING**, not VERIFIED.
 
 ## Two-lane rule
 
@@ -77,9 +78,10 @@ Allowed forms include:
 7. Keep authored overworld and operation-forest coordinate/lifecycle spaces separate.
 8. Runtime wiring must be separated from preparation.
 9. Source CI does not prove Studio behavior.
-10. Every source change needs focused tests and full applicable validation.
-11. Future phases in Master Roadmap v2.8 remain locked unless this queue explicitly marks a task READY.
-12. READY work is unassigned. Do not reserve tasks to Codex, Claude, or another named agent; while quota-limited sequential mode is active, finish and merge the current task before starting the next.
+10. An unrun consolidated Studio/device pass is not a source-work lock by itself: when Playable MVP authority marks the current milestone **BUILT — VERIFICATION PENDING** and no known runtime failure invalidates assumptions, dependency-safe next-patch source work may continue. Any actual runtime/device failure preempts that work and returns priority to FIX.
+11. Every source change needs focused tests and full applicable validation.
+12. Future phases in Master Roadmap v2.8 remain locked unless this queue or the higher-precedence Playable MVP authority explicitly makes them current/eligible.
+13. READY work is unassigned. Do not reserve tasks to Codex, Claude, or another named agent; while quota-limited sequential mode is active, finish and merge the current task before starting the next.
 
 ## Status values
 
@@ -134,8 +136,8 @@ This is now a first-class product lane under Master Roadmap Phase W.
 |---|---|---|---|
 | BA-030 | DONE | Dungeon/expedition content contract. | [`docs/specifications/dungeon-expedition-content-contract.md`](../specifications/dungeon-expedition-content-contract.md) — adds `EncounterSlotId`/`EncounterIntensity`/`RewardSourceId` to the existing handcrafted room pool (`RoomAssemblyContracts`/`RoomAssemblyConfig`), reusing `EquipmentRewardContracts`'s Elite/Boss reward vocabulary and the existing lobby return-to-safety remote for the return path. No spawner/runtime wiring changed. |
 | BA-031 | DONE | Portal destination/eligibility contract. | `src/shared/World/PortalDestinationContracts.luau` (destination ref, party/unlock constraints, denial-reason enum, pure `evaluateEligibility` resolver) plus the one authored `PortalDestinationConfig.luau` definition for `portal.expedition.primary`, tracking `ExpeditionConfig.Definitions.FirstExpedition`'s party bounds. `RuntimeEnabled = false`; no consumer calls it yet and no teleport/network authority was added. |
-| BA-032 | DONE | First repeatable dungeon content data. | [`docs/specifications/first-repeatable-dungeon-content.md`](../specifications/first-repeatable-dungeon-content.md) — pins canonical seed `202` for a seven-room First Descent and authors concrete basic/Runner/Crawler/Spitter/Brute/Screamer/Progenitor compositions against the existing room/enemy/horde contracts. Data-only; no runtime spawner wiring. |
-| BA-033 | DONE | Elite/boss reward-decision data. | [`docs/specifications/first-dungeon-reward-decisions.md`](../specifications/first-dungeon-reward-decisions.md) — maps the authored elite/boss room reward refs to canonical two-choice Run Relic decisions (`reward-source.elite-kill` / `reward-source.boss-milestone`) while keeping runtime consumption disabled and persistent equipment excluded pending BA-043. |
+| BA-032 | DONE | First repeatable dungeon content data. | [`docs/specifications/first-repeatable-dungeon-content.md`](../specifications/first-repeatable-dungeon-content.md) pins canonical seed `202` and the seven-room First Descent compositions. Later MVP 0.1 integration (PRs #294 and #296) now consumes that seed, room-local placement and authored enemy composition through the existing expedition/enemy authorities; the original data contract remains the content source. |
+| BA-033 | DONE | Elite/boss reward-decision data. | [`docs/specifications/first-dungeon-reward-decisions.md`](../specifications/first-dungeon-reward-decisions.md) remains the authored Run Relic decision source. Boss Run Relic consumption is now live through the existing run-build authority (PR #295). Persistent equipment was subsequently retained under its existing inventory owner and integrated into MVP replay through PRs #315/#317/#318; this row does not authorize Patch 0.3 affix breadth. |
 | BA-034 | DONE | Held pre-launch operation-selection contract. | PR #239 merged the held operation-selection contracts/config with runtime/network/launch handoff disabled; no party-leader policy was invented. |
 | BA-035 | BLOCKED on social/session ownership decision | Party/session ownership policy for operation selection. | Dedicated contract; do not invent a leader/host implicitly. |
 
@@ -145,23 +147,23 @@ This is now a first-class product lane under Master Roadmap Phase W.
 |---|---|---|---|
 | BA-040 | DONE | Enemy-archetype coverage audit. | [`docs/specifications/enemy-archetype-coverage-audit.md`](../specifications/enemy-archetype-coverage-audit.md) — direct config/runtime verification finds Runner speed, Screamer reinforcement, Bloater death burst, and Brute second phase mechanically coherent with their presentation; Crawler alone remains thin because its faster low posture promises stalking/ambush behavior the shared owner does not implement. Covers the walker, six horde roles, Spitter, Progenitor, and five elite affixes. No runtime activation. |
 | BA-041 | BLOCKED on scoped Crawler identity decision | Missing enemy configs/pure behavior primitives. | BA-040 found no broad missing-role implementation: Runner and Brute already have source-proven mechanics. Decide whether Crawler's faster low-profile identity is sufficient or whether one bounded canonical behavior is wanted before changing `HordeExperienceService` or enemy config. |
-| BA-042 | DONE | Loot/build-decision coverage audit. | [`docs/specifications/loot-build-decision-coverage-audit.md`](../specifications/loot-build-decision-coverage-audit.md) — finds a complete operation-bound run-build choice path beside an older mapped persistent equipment grant/persistence path whose rarity/Power model lacks a client equip/application loop and conflicts with the first RPG integration's exclusions. Records 12/17 Field Upgrades, 12/12 Run Relics, three configured relic sources, no independent temporary-resource choice layer, no player-item affixes/sets, and outstanding Studio evidence. No runtime activation. |
-| BA-043 | BLOCKED on explicit equipment/run-build authority decision | Deterministic item/affix generation rules. | Existing `EquipmentReward*` and inventory owners already define persistent rarity/Power rewards, while the first run-RPG integration excludes that shape and no player item-affix/set contract exists. Decide whether persistent equipment is retained, held, or migrated before adding a seedable affix resolver; never create a parallel loot/inventory/persistence owner. |
+| BA-042 | DONE | Loot/build-decision coverage audit. | [`docs/specifications/loot-build-decision-coverage-audit.md`](../specifications/loot-build-decision-coverage-audit.md) recorded the then-existing split between run-build choices and persistent equipment. That client equip/application gap is now closed by MVP 0.1: live inventory lease lifecycle (#315), server-owned durable equip/start-loadout handoff (#317), and sanitized existing-menu equip flow (#318). The audit remains useful provenance; player-item affixes/sets remain later Patch 0.3 breadth. |
+| BA-043 | BLOCKED until Patch 0.3 becomes current | Deterministic item/affix generation rules. | The authority decision is resolved: persistent equipment is retained under the existing `EquipmentReward*` / inventory owners and now has a real equip/application loop. Do **not** add affix/set breadth during MVP 0.1/Patch 0.2; when Patch 0.3 becomes current, extend the retained owner rather than creating a parallel loot/inventory/persistence path. |
 | BA-044 | DONE | Progression/skill mapping audit. | [`docs/specifications/progression-skill-mapping-audit.md`](../specifications/progression-skill-mapping-audit.md) — maps historical P11 into current Phase D/M authority, distinguishes run-only Field XP/upgrades from missing career XP/rank/unlock ownership, records the existing terminal-result and partial class-availability seams plus inventory-specific persistence infrastructure, and proposes one duplicate-safe match award → configured XP/rank → approved non-power unlock as the smallest useful future slice. E1 audit only; no Phase D/M activation. |
 
 ## P5 — authored route, exploration and discovery preparation
 
 | ID | Status | Task | Deliverable / boundary |
 |---|---|---|---|
-| BA-050 | DONE | First authored outdoor route as data. | [`docs/specifications/first-authored-outdoor-route.md`](../specifications/first-authored-outdoor-route.md) — orders the eight active Ranger Station → Extraction Clearing landmarks, exposes three route-local BA-051 encounter slots plus one optional BA-052 discovery slot, and hands off to First Descent at `descent-entry`. `RuntimeConsumptionActive = false`; recovered 189-Part WorldPath geometry remains held and the expedition launch terminal is not reused as dungeon-transition authority. |
-| BA-051 | DONE | Encounter-beat definitions. | [`docs/specifications/first-outdoor-encounter-beats.md`](../specifications/first-outdoor-encounter-beats.md) — binds the three BA-050 slots to a Basic orientation contact, a Basic/Runner/Crawler mixed group, and a two-wave Basic/Runner → Basic/Blight-Spitter roadblock. Duration/recovery values remain authoring targets, only the final roadblock carries late-route elite-resolver-candidate intent, and runtime consumption stays disabled. |
-| BA-052 | DONE | Landmark/discovery definitions. | [`docs/specifications/first-outdoor-discovery.md`](../specifications/first-outdoor-discovery.md) — defines the optional Lookout Cache with stable discovery/slot/landmark/streaming IDs, `OptionalVantageCache` gameplay meaning, `ReadableOptionalDetour` presentation intent, and canonical planned `reward-source.authored-container` reward reference. Data-only; no streaming, persistence, networking, presentation, or reward runtime ownership. |
+| BA-050 | DONE | First authored outdoor route as data. | [`docs/specifications/first-authored-outdoor-route.md`](../specifications/first-authored-outdoor-route.md) remains the authored route/slot source. Recovered 189-Part WorldPath geometry is still held, but later MVP 0.1 work consumes the related BA-051 Approach combat beats and BA-052 Lookout Cache without inventing unverified route geometry or reusing the launch terminal as dungeon-transition authority. |
+| BA-051 | DONE | Encounter-beat definitions. | [`docs/specifications/first-outdoor-encounter-beats.md`](../specifications/first-outdoor-encounter-beats.md) remains the authored Approach sequence source. PR #299 now consumes its logging-road, campground and two-stage roadblock combat through the existing expedition encounter/enemy authorities with authored recovery pacing; BA-050 imported route geometry remains held. |
+| BA-052 | DONE | Landmark/discovery definitions. | [`docs/specifications/first-outdoor-discovery.md`](../specifications/first-outdoor-discovery.md) remains the stable Lookout Cache definition. PR #300 activates the bounded Approach Lookout Cache claim through server-owned distance/run/phase/one-time validation and the existing RunBuild authored-container reward path; no client reward authority or account-persistence path was added. |
 
 ## P6 — onboarding, input and UI preparation
 
 | ID | Status | Task | Deliverable / boundary |
 |---|---|---|---|
-| BA-060 | DONE | First-session onboarding sequence. | [`docs/specifications/first-session-onboarding-sequence.md`](../specifications/first-session-onboarding-sequence.md) — pins the 12-step safe arrival → preparation → deliberate launch → route/discovery → First Descent → Run Relic decision → result → safe return → build understanding → deliberate replay journey. Runtime-existing, prepared-data, prepared-integration, and blocked-lifecycle states remain explicit; final replay is blocked on the current `OperationLifecycleService` auto-replay behavior rather than being changed sideways. |
+| BA-060 | DONE | First-session onboarding sequence. | [`docs/specifications/first-session-onboarding-sequence.md`](../specifications/first-session-onboarding-sequence.md) remains the 12-step first-session journey. The old auto-replay blocker is closed by PR #293: terminal result returns to safe preparation and a fresh run begins only after a new lobby-ready launch. PR #312 resets temporary run power, and PRs #315/#317/#318 make bank → equip → deliberate replay meaningful while preserving durable state. |
 | BA-061 | DONE | PC/mobile/controller action-map audit. | [`docs/specifications/input-action-map-audit.md`](../specifications/input-action-map-audit.md) remains the source audit; BA-062 has remediated its M1-M5 and C1-C4 source findings. Device verification remains outstanding. |
 | BA-062 | PREPARED | Input abstraction improvements. | Source remediation is complete at E1: fire/reload/sprint/revive gamepad/touch coverage, prompt-key separation, shared action map, device-family/binding-hint foundations, device-neutral hub close, adaptive launcher/ping copy, single Escape owner, fail-closed numbered-choice coordination, zero canonical direct key collisions, and class-action ButtonB presentation alignment. Consolidated Studio/device acceptance remains open before runtime evidence promotion. |
 | BA-063 | DONE | UI information architecture. | PR #267 merged `UIInformationArchitectureConfig` plus its source/static specification and tests. Runtime behavior remains unchanged; the matrix is preparation for later UI work. |
@@ -173,7 +175,7 @@ This is now a first-class product lane under Master Roadmap Phase W.
 | BA-070 | DONE | Combined-game integration dependency graph. | Existing graph/validation remains useful; refresh when dependencies materially change. |
 | BA-071 | DONE | Legacy-service resurrection audits. | Keep current and extend when new adapters appear. |
 | BA-072 | DONE | Content-ID/migration reference validator tooling. | Extend toward live Luau/content contracts as BA-025 lands. |
-| BA-073 | BLOCKED on relevant prepared domains + v2.7 gate | Vertical-slice integration plan. | Exact promotion order and Studio evidence requirements after runtime gates open. |
+| BA-073 | HISTORICAL | Vertical-slice integration plan. | Superseded for practical sequencing by `PLAYABLE-MVP-PATCH-EXECUTION.md` and the merged MVP 0.1 integration series. Remaining evidence promotion is governed by the playable roadmap, build-through policy and Blueprint v2.7 evidence authority rather than a new speculative integration plan. |
 | BA-074 | DONE | v2.8 roadmap/authority source audit. | `scripts/validate_roadmap_authority.py` checks the authority-stack documents for broken relative links, direct links to historical checkpoints (which must be reached only through `docs/roadmap/README.md`), and dangling commit-hash references; run it alongside the other repository validators. This audit pass also repaired stale checkpoint pins in `MASTER-ROADMAP.md` and this queue and added the explicit W1/BA-011 cross-reference. |
 
 # Tasks agents must NOT perform yet
@@ -196,26 +198,17 @@ Do not:
 
 Before starting, always re-fetch `main` and inspect any open overlapping PRs.
 
-### Highest-ROI build-ahead task after current-patch work
+### Highest-ROI work after current-patch refresh
 
-Playable MVP + Patch Execution v2.9 controls global implementation order. Gate 0 runtime stabilization and the smallest MVP 0.1 enablers outrank this queue.
+Playable MVP + Patch Execution v2.10 controls global implementation order. MVP 0.1's planned source loop is now **BUILT — VERIFICATION PENDING** through PR #318. The consolidated exact-build Studio/device pass remains the milestone acceptance task, but its being unrun does not freeze dependency-safe source work.
 
-BA-062 no longer has an unimplemented source finding. Its next meaningful step is consolidated Studio/device acceptance, which belongs to the human/runtime lane and must not be replaced by more source-only polish.
+While consolidated verification is pending and no known runtime failure invalidates the baseline, the highest-ROI repository lane is:
 
-When that runtime lane cannot proceed and build-ahead work is explicitly desired, the highest-value safe repository task is:
+**Patch 0.2 — Combat Feel + Readability.**
 
-**BA-005 — continue one coherent source-managed authored-overworld reconstruction group behind hold.**
+Before starting overlapping combat-presentation work, inspect open PR #316 (`[MVP 0.2] Show server-confirmed teammate melee swings`), refresh it against current `main`, remove any temporary branch scaffolding, and require normal CI before merge. Do not duplicate that slice in a new branch.
 
-Requirements for the next BA-005 increment:
-
-- refresh current property/presentation evidence before selecting the group;
-- choose one coherent HubTown/resource/world-structure group rather than broad geometry;
-- preserve the authored-overworld coordinate/lifecycle boundary from the modern operation forest;
-- keep all reconstructed content held/dormant;
-- do not boot recovered gameplay services or create a second authority;
-- add focused source/static evidence and merge before choosing another group.
-
-Main World Track 1 remains complete as a preparation sequence (BA-010 → BA-014). Its next step is measurement in the human/Studio lane, not additional speculative environment composition.
+If the user explicitly asks for non-runtime build-ahead preparation instead of current-patch work, BA-005 remains allowed behind hold as a lower-priority lane. Keep reconstructed authored-overworld content dormant, evidence-bounded and separate from the operation forest. Main World Track 1 remains complete as preparation (BA-010 → BA-014); its next meaningful step is Studio measurement, not speculative composition.
 
 ### Assignment policy — no reserved agent tasks (2026-08-09)
 
@@ -233,22 +226,21 @@ Execution policy while this mode is active:
 ### Current build-ahead backlog
 
 ```text
-BA-005 authored-overworld reconstruction continuation — IN PROGRESS / allowed behind hold
+Patch 0.2 Combat Feel + Readability — CURRENT SOURCE-SAFE LANE; inspect open PR #316 before overlapping work
+BA-005 authored-overworld reconstruction continuation — IN PROGRESS / allowed behind hold when build-ahead is explicitly desired
 BA-026 economy model/audit — BLOCKED on Master ECON gate
 BA-035 party/session ownership policy — BLOCKED on social/session ownership decision
 BA-041 Crawler behavior primitive — BLOCKED on scoped identity decision
-BA-043 item/affix generation — BLOCKED on equipment/run-build authority decision
-BA-073 vertical-slice integration plan — BLOCKED on prepared-domain + v2.7 runtime gates
+BA-043 item/affix generation — BLOCKED until Patch 0.3 becomes current
+BA-073 vertical-slice integration plan — HISTORICAL / superseded by playable-patch sequencing
 ```
 
 Do not resurrect completed BA-020–025, BA-062, or BA-063 work merely because an older queue snapshot listed it as READY.
 
 ### Human/Studio lane
 
-The highest-value human/runtime task remains:
+The highest-value playable human/runtime task is now the **consolidated exact-build MVP 0.1 Studio/device pass**: complete the representative first run, return/bank/equip/replay loop, keyboard/controller/touch checks, and representative performance on one pinned build. Any failure becomes an immediate MVP 0.1 FIX.
 
-**produce a recorded CI artifact containing the client-bootstrap fix, re-pin a fresh v2.7 R1 evidence packet to that exact build/place identity, and rerun R1.**
-
-BA-062 also needs a consolidated keyboard/controller/touch acceptance pass before any source-only input work is promoted beyond E1.
+Blueprint v2.7 R1/runtime-matrix evidence remains a separate controlling evidence obligation where that authority still requires refresh; do not treat Patch 0.2 source progress as evidence promotion. BA-062 likewise remains **BUILT/PREPARED — DEVICE VERIFICATION PENDING** until the consolidated pass records real device behavior.
 
 > Build ahead without building around the gate: reduce future uncertainty, but never convert preparation into an unearned runtime claim.
