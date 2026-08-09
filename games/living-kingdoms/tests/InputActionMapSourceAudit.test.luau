@@ -105,7 +105,10 @@ assert(
 assert(not contains(mobile, "Enum.KeyCode."), "touch controls must not become a competing gamepad owner")
 assert(contains(weapon, 'RELOAD_ACTION_NAME = "LK_Reload"'), "reload needs one stable gamepad action name")
 assert(
-	contains(weapon, "ContextActionService:BindAction(RELOAD_ACTION_NAME, onReloadAction, false, Enum.KeyCode.ButtonR1)"),
+	contains(
+		weapon,
+		"ContextActionService:BindAction(RELOAD_ACTION_NAME, onReloadAction, false, Enum.KeyCode.ButtonR1)"
+	),
 	"gamepad reload must bind R1 without generating a second touch button"
 )
 assert(contains(weapon, "WeaponController.requestReload()"), "gamepad reload must reuse the one reload request path")
@@ -115,7 +118,10 @@ assert(
 )
 assert(contains(survivor, 'SPRINT_ACTION_NAME = "LK_Sprint"'), "sprint needs one stable gamepad action name")
 assert(
-	contains(survivor, "ContextActionService:BindAction(SPRINT_ACTION_NAME, onSprintAction, false, Enum.KeyCode.ButtonL3)"),
+	contains(
+		survivor,
+		"ContextActionService:BindAction(SPRINT_ACTION_NAME, onSprintAction, false, Enum.KeyCode.ButtonL3)"
+	),
 	"gamepad sprint must bind left-stick click without generating a second touch button"
 )
 assert(
