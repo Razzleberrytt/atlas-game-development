@@ -1,7 +1,8 @@
-# Atlas — Playable MVP + Patch Execution v2.9
+# Atlas — Playable MVP + Patch Execution v2.10
 
 **Status:** CURRENT EXECUTION-SEQUENCING AUTHORITY  
 **Adopted:** 2026-08-08  
+**Refreshed:** 2026-08-09  
 **Scope:** Product implementation order after and around the active v2.7 runtime stabilization gate.  
 **Supersedes for sequencing:** any older roadmap interpretation that would build broad future systems before the next playable checkpoint.  
 **Does not supersede:** accepted runtime evidence, current Roblox platform behavior, Blueprint v2.7 runtime safety/rollout requirements, canonical ownership/security rules, or explicit architecture decisions.
@@ -50,6 +51,8 @@ Every playable milestone and upgrade patch ends at a hard gate:
 5. **THEN EXPAND** — only after the patch exit gate is satisfied does the next patch become runtime-eligible.
 
 Static validation remains required, but static validation does not replace Studio/runtime evidence for playable claims.
+
+**Build-through clarification:** an unrun consolidated Studio/device pass is not, by itself, a source-development stop. When the current milestone is source-complete and marked **BUILT — VERIFICATION PENDING**, agents may continue dependency-safe work into the next patch under `MVP-BUILD-THROUGH-TESTING-POLICY.md`. A known runtime failure, broken authority boundary, or evidence result that invalidates current assumptions *does* preempt later-patch work and returns priority to FIX.
 
 ## Patch design rules
 
@@ -158,7 +161,7 @@ Do **not** block MVP 0.1 on broad crafting, a full economy, a huge skill tree, m
 
 ## MVP 0.1 implementation checkpoint — 2026-08-09
 
-**Status: [~] ACTIVE — the complete run is not yet accepted.**
+**Status: [~] BUILT — CONSOLIDATED VERIFICATION PENDING.** The planned MVP 0.1 source loop is now end-to-end implemented; the milestone is not promoted to VERIFIED/accepted until the consolidated exact-build Studio/device pass succeeds.
 
 - [x] Supply-chest loot uses one native `E` / controller / touch prompt and keeps every loot consequence server-owned.
 - [x] The click-only item remote, chest-card overlay, always-on survival/backpack surfaces and wave-style threat strip are removed from ordinary play.
@@ -171,6 +174,11 @@ Do **not** block MVP 0.1 on broad crafting, a full economy, a huge skill tree, m
 - [ ] The exact build still needs a first-person Studio pass for upgrade input, firearm response, Stalker/Spitter pressure, biome composition, elite → terminal encounter → return → upgrade → replay, and representative performance.
 - [x] BA-061/BA-062 source remediation is implemented for the audited combat/input gaps: primary attack is device-neutral across mouse, gamepad R2 and generated touch; reload, sprint and revive have controller paths; and the audited `E` / `ButtonX` prompt collisions were removed. This is **BUILT — VERIFICATION PENDING** at the device-evidence layer: no keyboard/controller/touch hardware pass is claimed yet.
 - [x] The humble melee → earned-firearm opening is implemented without masquerading as firearm state: Field Hatchet combat has its own server-authoritative contract/target/damage path, fresh players start in melee mode, forged firearm fire/reload is rejected while melee, the first personal survival chest recovers the Service Pistol through the existing found-weapon owner, stronger firearm discoveries remain available, and deliberate replay restores the melee opening. This is **BUILT — VERIFICATION PENDING** pending the consolidated Studio/device pass.
+- [x] Failed and abandoned expeditions now forfeit claimed-but-unbanked equipment; only server-derived `Completed` outcomes distribute/persist expedition equipment, and the debrief labels forfeited versus banked gear truthfully.
+- [x] Deliberate replay clears temporary run power — Run Relics, upgrade stacks, Field XP/level, pending choices, run-only stats, combat modifiers, opening loot and firearm runtime — while preserving durable inventory/discoveries and monotonic client transport counters.
+- [x] Durable inventory now has a live session lifecycle for full-length runs: load/acquire on join, renewal inside the lease window, release on leave and final release on shutdown.
+- [x] Banked equipment is no longer inert: the owner can equip an owned durable item under the existing inventory authority, and the next deliberate launch resolves its authored equipment definition to the trusted combat `WeaponId` after fresh-run reset and before pressure arms.
+- [x] The existing RPG menu now consumes the sanitized durable inventory snapshot, shows equipped Primary/Secondary/Armor/Relic gear plus rarity/power, and uses device-neutral `Activated` input to submit only the owned `InstanceId`; server-pushed inventory state remains the truth after equip.
 
 Exact-build evidence for the completed interaction/HUD slice is recorded in
 [`../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md`](../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md).
@@ -183,9 +191,11 @@ The 2026-08-09 first-run repair attempt is intentionally recorded as `INVALID`
 because the exact Studio window did not register with the enabled bridge:
 [`../production/evidence/2026-08-09-mvp01-first-run-repair-studio-bridge-blocked.md`](../production/evidence/2026-08-09-mvp01-first-run-repair-studio-bridge-blocked.md).
 
-**Next highest-ROI MVP 0.1 task:** re-audit current `main` after the melee-opening merge and choose the highest-ROI remaining **source-verifiable** gap in the representative spawn → preparation → launch → explore → fight → loot/reward → elite → boss → result → return → upgrade → replay loop. Do not redo BA-062 or the melee/firearm-opening migration merely because their manual evidence remains pending. Under `MVP-BUILD-THROUGH-TESTING-POLICY.md`, continue dependency-safe implementation while keeping those slices marked **BUILT — VERIFICATION PENDING**. The consolidated exact-build Studio/device STOP / PLAY / FIX pass remains required before MVP 0.1 or its device/melee behavior can be promoted to **VERIFIED**; fix any choice-input, first-contact, gunfeel, silhouette, biome-readability or frame-budget failure found there before calling the milestone accepted.
+**Next highest-ROI MVP 0.1 task:** there is no known missing source feature required to complete the planned MVP 0.1 loop. The next milestone task is the **consolidated exact-build Studio/device STOP / PLAY / FIX pass** across spawn → preparation → launch → explore → fight → loot/reward → elite → boss → result → return → bank/equip → replay, including keyboard/controller/touch and representative performance. Until that pass can run, `MVP-BUILD-THROUGH-TESTING-POLICY.md` authorizes dependency-safe **Patch 0.2 Combat Feel + Readability** source work; do not invent new MVP 0.1 scope merely because verification is pending. As of this refresh, PR #316 is the existing overlapping Patch 0.2 melee-presentation branch and must be inspected/rebased/validated before starting duplicate work. Any actual Studio/device failure found in the consolidated pass immediately preempts Patch 0.2 and becomes the highest-priority MVP 0.1 FIX.
 
 # Patch 0.2 — Combat Feel + Readability
+
+**Current source-safe upgrade lane while MVP 0.1 awaits consolidated verification.** Do not interpret this as MVP 0.1 being VERIFIED; build-through work remains subordinate to any real failure discovered by the pending exact-build pass.
 
 **Goal:** make the already-playable loop satisfying to control and understand.
 
