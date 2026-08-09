@@ -18,7 +18,10 @@ local Config = {
 	MaximumProcessedRequestIdsPerOperative = 64,
 }
 
-assert(Config.OpeningWeapon.DamagePerHit > 0 and Config.OpeningWeapon.DamagePerHit <= 100, "melee damage must be bounded")
+assert(
+	Config.OpeningWeapon.DamagePerHit > 0 and Config.OpeningWeapon.DamagePerHit <= 100,
+	"melee damage must be bounded"
+)
 assert(Config.OpeningWeapon.RangeStuds >= 4 and Config.OpeningWeapon.RangeStuds <= 12, "melee range must remain close")
 assert(
 	Config.OpeningWeapon.CadenceSeconds >= 0.3 and Config.OpeningWeapon.CadenceSeconds <= 1.5,
