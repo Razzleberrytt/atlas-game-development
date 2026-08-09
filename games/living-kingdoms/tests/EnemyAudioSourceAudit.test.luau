@@ -29,7 +29,18 @@ local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/Ene
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 local visualConfig = fs.readFile("games/living-kingdoms/src/shared/Config/VisualAssetConfig.luau")
 
-for _, cueName in { "Alert", "Windup", "Strike", "Hit", "ScreamerWarning", "BloaterWarning", "BruteWarning", "Death" } do
+for _, cueName in {
+	"Alert",
+	"Windup",
+	"Strike",
+	"Hit",
+	"ScreamerWarning",
+	"BloaterWarning",
+	"BruteWarning",
+	"SpitterBloomWarning",
+	"ProgenitorSlamWarning",
+	"Death",
+} do
 	local cue = config[cueName]
 	assertThat(type(cue) == "table", "hostile audio must define the cue: " .. cueName)
 	assertThat(
@@ -79,11 +90,27 @@ assertThat(
 )
 assertThat(
 	contains(controller, "SpecialAttributeNames.Sequence"),
-	"special warning audio must read the server-authored telegraph sequence"
+	"horde-special warning audio must read the server-authored telegraph sequence"
 )
 assertThat(contains(controller, "SpecialKindIds.ScreamerReinforcement"), "Screamer warnings must retain audio")
 assertThat(contains(controller, "SpecialKindIds.BloaterDeathBurst"), "Bloater warnings must retain audio")
 assertThat(contains(controller, "SpecialKindIds.BruteSecondPhase"), "Brute warnings must retain audio")
+assertThat(
+	contains(controller, "SpecialEncounterTelegraphConfig.discKindForArchetypeId"),
+	"Spitter and boss warning audio must use the shared server/client encounter telegraph contract"
+)
+assertThat(
+	contains(controller, "readNumberAttribute(model, record.kind.SequenceAttribute)"),
+	"encounter warning audio must advance only from the replicated authoritative telegraph sequence"
+)
+assertThat(
+	contains(controller, 'playCue("SpitterBloomWarning", EnemyAudioConfig.SpitterBloomWarning, record.root)'),
+	"Corrosive Bloom must receive directional warning audio"
+)
+assertThat(
+	contains(controller, 'playCue("ProgenitorSlamWarning", EnemyAudioConfig.ProgenitorSlamWarning, record.root)'),
+	"Progenitor Slam must receive directional warning audio"
+)
 assertThat(contains(controller, "BehaviorStateIds.Pursuing"), "the alert cue must key on entering pursuit")
 assertThat(contains(controller, "PresentationLifeStateIds.Dead"), "the death cue must key on replicated death")
 assertThat(contains(controller, "MinimumIntervalSeconds"), "hostile audio must honor the per-cue throttle")
@@ -92,14 +119,14 @@ assertThat(
 	contains(controller, "MaximumAudibleDistanceStuds"),
 	"hostile audio must fall silent beyond the bounded distance"
 )
-assertThat(contains(controller, "EnemyConfig.Walker.ArchetypeId"), "hostile audio must gate on the walker archetype")
+assertThat(contains(controller, "EnemyConfig.Walker.ArchetypeId"), "ordinary hostile audio must retain walker gating")
 assertThat(
 	contains(controller, "trackedCount >= EnemyAudioConfig.MaximumTrackedEnemyModels"),
-	"hostile audio tracking must stay bounded"
+	"hostile and encounter audio tracking must stay bounded"
 )
 
 assertThat(contains(controller, "local emitterPool: { Part } = {}"), "hostile audio must use a bounded emitter pool")
-assertThat(contains(controller, "emitter.Position = record.root.Position"), "each cue must originate at its enemy")
+assertThat(contains(controller, "emitter.Position = root.Position"), "each cue must originate at its enemy")
 assertThat(contains(controller, "sound.Parent = emitter"), "hostile cues must use spatial sound parenting")
 assertThat(contains(controller, "Enum.RollOffMode.Inverse"), "hostile cues must use bounded spatial rolloff")
 assertThat(
@@ -141,4 +168,4 @@ assertThat(
 	"visual asset registry must attribute hostile audio to its owner"
 )
 
-print("EnemyAudioSourceAudit: bounded spatial hostile cues, special warnings, deferred authority, and bootstrap passed")
+print("EnemyAudioSourceAudit: bounded spatial hostile and encounter warning cues remain presentation-only")
