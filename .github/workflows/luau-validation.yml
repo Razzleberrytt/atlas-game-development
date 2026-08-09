@@ -106,6 +106,23 @@ jobs:
           cache: false
           token: ${{ github.token }}
 
+      - name: Format melee opening branch files
+        if: github.head_ref == 'mvp-01/melee-opening-firearm-recovery'
+        shell: bash
+        run: |
+          set -euo pipefail
+          stylua \
+            games/living-kingdoms/src \
+            games/living-kingdoms/tests \
+            games/living-kingdoms/tools
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add games/living-kingdoms
+            git commit -m "chore: format melee opening implementation"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
+
       # Formatting covers every Luau tree in the game, not just src. Fixtures
       # and tooling drifted unchecked until 2026-08-08 because this step was
       # scoped to src alone.
