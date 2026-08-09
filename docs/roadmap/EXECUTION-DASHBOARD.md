@@ -1,10 +1,10 @@
-# Atlas — Execution Dashboard v1.1
+# Atlas — Execution Dashboard v1.2
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-09  
 **Purpose:** answer four questions quickly: **what is true, what is NOW, what is NEXT, and what must wait?**
 
-For detailed patch acceptance, use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For complete long-range scope, use `MASTER-ROADMAP.md`. Do not duplicate those documents here.
+For detailed patch acceptance, use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For complete long-range scope, use `MASTER-ROADMAP.md`. For repeated-friction/reuse decisions, use `DEVELOPMENT-FLYWHEEL.md`. Do not duplicate those documents here.
 
 ## 1. Current truth
 
@@ -12,6 +12,7 @@ For detailed patch acceptance, use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For comple
 - **Known required MVP 0.1 source gaps:** none currently identified.
 - **Human/Studio P0 lane:** one consolidated exact-build MVP 0.1 play/device/performance pass.
 - **Agent/source lane:** **Patch 0.2 — Combat Feel + Readability**.
+- **Engineering leverage policy:** active; comparable dependency-safe tasks favor reusable/data-driven/testable/toolable implementations without delaying player value for speculative abstraction.
 - **Estimated path to 1.0:** ~30% planning estimate only; status/evidence labels are authoritative.
 
 Current playable loop:
@@ -38,6 +39,8 @@ After #316 is resolved and no MVP 0.1 runtime failure has appeared:
 1. improve **local melee impact + enemy reaction quality**;
 2. then improve **firearm differentiation / recoil / FOV / audio / VFX readability**;
 3. then **enemy telegraphs / elite / boss readability**.
+
+Within those increments, prefer extending reusable presentation/reaction contracts so later weapons and enemies become cheaper to add, but do not stop Patch 0.2 for a speculative framework.
 
 ### LATER
 
@@ -107,21 +110,21 @@ Percentages are rough planning indicators, not acceptance evidence.
 | Release-candidate hardening | ~5% | mostly future |
 | **Estimated path to 1.0** | **~30%** | planning estimate only |
 
-Do not optimize for percentage movement. Optimize for the next patch exit condition.
+Do not optimize for percentage movement. Optimize for the next patch exit condition and, when choices are otherwise comparable, future marginal implementation cost.
 
 ## 5. Patch path and exit signal
 
-| Patch | Goal | Exit signal |
-|---|---|---|
-| **0.2 Combat Feel** | make the existing run satisfying/readable | fighting itself is substantially more enjoyable |
-| **0.3 Loot + Builds** | create build-driven replay motivation | player wants another run for a different/better build |
-| **0.4 RPG Progression** | create durable anticipation | progression adds anticipation without invalidating current play |
-| **0.5 Main World** | create a memorable readable home | world creates curiosity while next action stays clear |
-| **0.6 Systemic Replayability** | multiply variety from reusable systems | same content kit produces meaningfully different readable runs |
-| **0.7 Persistence Hardening** | make valuable state trustworthy | progress survives realistic lifecycle/failure scenarios |
-| **0.8 Co-op/Social** | make co-op easier and more valuable | group play is clearer/funner without authority regressions |
-| **0.9 Content/Pipeline** | scale proven systems efficiently | breadth is mostly data/reusable-owner driven |
-| **RC 1.0** | production readiness | full production checklist passes without hiding a weak core loop |
+| Patch | Goal | Exit signal | Compounding target |
+|---|---|---|---|
+| **0.2 Combat Feel** | make the existing run satisfying/readable | fighting itself is substantially more enjoyable | reusable feedback/reaction contracts |
+| **0.3 Loot + Builds** | create build-driven replay motivation | player wants another run for a different/better build | validated item/affix/reward data |
+| **0.4 RPG Progression** | create durable anticipation | progression adds anticipation without invalidating current play | reuse stat/effect/reward owners |
+| **0.5 Main World** | create a memorable readable home | world creates curiosity while next action stays clear | stable IDs, registries, composition data |
+| **0.6 Systemic Replayability** | multiply variety from reusable systems | same content kit produces meaningfully different readable runs | encounter/modifier/route/event combinatorics |
+| **0.7 Persistence Hardening** | make valuable state trustworthy | progress survives realistic lifecycle/failure scenarios | lifecycle/migration regression defenses |
+| **0.8 Co-op/Social** | make co-op easier and more valuable | group play is clearer/funner without authority regressions | multiplayer coverage over existing owners |
+| **0.9 Content/Pipeline** | scale proven systems efficiently | breadth is mostly data/reusable-owner driven | cash in accumulated tooling and schemas |
+| **RC 1.0** | production readiness | full production checklist passes without hiding a weak core loop | accumulated tests/audits reduce hardening cost |
 
 Detailed capability lists live in `PLAYABLE-MVP-PATCH-EXECUTION.md` and `MASTER-ROADMAP.md`; agents should open them only when the current task needs that detail.
 
@@ -153,10 +156,11 @@ When asked to continue:
 6. otherwise take NOW;
 7. take NEXT only if NOW is resolved or externally blocked and the work does not overlap;
 8. select the smallest coherent increment that advances the current patch exit signal;
-9. classify risk using root `AGENTS.md`;
-10. run the matching `python scripts/validate.py <profile>` locally/through CI;
-11. merge successful dependency-safe work;
-12. update this dashboard only when NOW/NEXT, blocker, status, or meaningful progress changes.
+9. if two candidates are similarly valuable and dependency-safe, prefer the one with greater near-term reuse, data conversion, regression protection, friction automation, or agent clarity; consult `DEVELOPMENT-FLYWHEEL.md` when non-obvious;
+10. classify risk using root `AGENTS.md`;
+11. run the matching `python scripts/validate.py <profile>` locally/through CI;
+12. merge successful dependency-safe work;
+13. update this dashboard only when NOW/NEXT, blocker, status, or meaningful progress changes.
 
 ## 8. Immediate stop conditions
 
@@ -176,4 +180,6 @@ Stop expansion and fix when any of these is true:
 
 Until the current loop earns expansion, avoid broad speculative work such as giant extra regions, PvP, raids, housing, auction houses, mounts/vehicles, dozens of classes, item-count growth for its own sake, large monetization catalogs, or seasons/battle passes.
 
-> **One dashboard, one NOW task, low WIP, automatic validation, coherent milestone testing.**
+Leverage work follows the same scope rule: no giant refactor, framework, generator, or abstraction without identified near-term consumers and a bounded payoff.
+
+> **One dashboard, one NOW task, low WIP, automatic validation, coherent milestone testing — and each patch should make the next patch cheaper when practical.**
