@@ -43,8 +43,12 @@ assert(
 	"swing arc must ease out and return instead of permanently offsetting the viewmodel"
 )
 assert(
-	string.find(presentation, "local swing = localSwingAmount(os.clock())", 1, true) ~= nil,
-	"render loop must consume the predicted swing phase"
+	string.find(presentation, "local nowClock = os.clock()", 1, true) ~= nil,
+	"render loop must sample one monotonic frame clock for melee presentation"
+)
+assert(
+	string.find(presentation, "local swing = localSwingAmount(nowClock)", 1, true) ~= nil,
+	"render loop must consume the predicted swing phase using the shared frame clock"
 )
 assert(
 	string.find(presentation, "SWING_DURATION_SECONDS", 1, true) ~= nil,

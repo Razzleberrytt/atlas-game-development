@@ -3,19 +3,24 @@
 -- Narrow client-to-server bridge for the already-authoritative melee service.
 -- The client supplies only a bounded request id and aim direction. Primary mode
 -- is read from the server-owned player attribute before the strike is evaluated.
+-- Only already-committed successful damage is disclosed back to the attacker as
+-- presentation; rejected/missed swings remain silent and grant no client state.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local MeleePresentationContracts = require(ReplicatedStorage.Shared.Combat.MeleePresentationContracts)
 local PrimaryCombatModeContracts = require(ReplicatedStorage.Shared.Combat.PrimaryCombatModeContracts)
 local MeleeCombatService = require(script.Parent.MeleeCombatService)
 local PrimaryCombatModeService = require(script.Parent.PrimaryCombatModeService)
 
 local Service = {}
 local ModeIds = PrimaryCombatModeContracts.ModeIds
+local MessageKindIds = MeleePresentationContracts.MessageKindIds
 
 local started = false
 local intentConnection: RBXScriptConnection? = nil
 local meleeNetwork = ReplicatedStorage:WaitForChild("MeleeNetwork")
 local strikeIntent = meleeNetwork:WaitForChild("StrikeIntent") :: RemoteEvent
+local presentationRemote = meleeNetwork:WaitForChild("Presentation") :: RemoteEvent
 
 local function onStrikeIntent(player: Player, requestId: unknown, aimDirection: unknown, ...: unknown)
 	if select("#", ...) ~= 0 or type(requestId) ~= "string" or typeof(aimDirection) ~= "Vector3" then
@@ -24,7 +29,23 @@ local function onStrikeIntent(player: Player, requestId: unknown, aimDirection: 
 	if PrimaryCombatModeService.readMode(player) ~= ModeIds.Melee then
 		return
 	end
-	MeleeCombatService.tryStrike(player, requestId, aimDirection)
+	local result = MeleeCombatService.tryStrike(player, requestId, aimDirection)
+	if
+		result.accepted ~= true
+		or result.strikeId == nil
+		or result.targetEntityId == nil
+		or result.damageAmount <= 0
+	then
+		return
+	end
+	presentationRemote:FireClient(player, {
+		kindId = MessageKindIds.HitConfirmed,
+		strikeId = result.strikeId,
+		targetEntityId = result.targetEntityId,
+		damageAmount = result.damageAmount,
+		becameDead = result.becameDead,
+		serverTimestamp = result.serverTimestamp,
+	})
 end
 
 function Service.start()
