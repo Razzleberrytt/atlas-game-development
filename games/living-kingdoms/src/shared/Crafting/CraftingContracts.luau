@@ -131,7 +131,9 @@ function Contracts.validateRecipeDefinition(value: unknown): boolean
 	if not isNonEmptyBoundedString(definition.RecipeId, 96) or not isNonEmptyBoundedString(definition.Version, 24) then
 		return false
 	end
-	if not validateItemReferenceList(definition.IngredientRefs) or not validateItemReferenceList(definition.OutputRefs) then
+	if
+		not validateItemReferenceList(definition.IngredientRefs) or not validateItemReferenceList(definition.OutputRefs)
+	then
 		return false
 	end
 	if definition.RequiredStationRefId ~= nil and not isNonEmptyBoundedString(definition.RequiredStationRefId, 128) then
