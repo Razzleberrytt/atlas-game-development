@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Systems = script.Parent.Systems
 local ExpeditionConfig = require(ReplicatedStorage.Shared.Config.ExpeditionConfig)
+local FirstDungeonContentConfig = require(ReplicatedStorage.Shared.Config.FirstDungeonContentConfig)
 local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.ExpeditionContracts)
 local ExpeditionLobbyService = require(Systems.ExpeditionLobbyService)
 local ExpeditionLiveRuntimeService = require(Systems.ExpeditionLiveRuntimeService)
@@ -119,7 +120,13 @@ local function attemptLaunch()
 	MissionDirectorService.armPressure()
 	HordeExperienceService.armPressure()
 
-	local launch = ExpeditionLiveRuntimeService.startExpedition({ PartySize = consumed.Snapshot.MemberCount })
+	-- MVP 0.1 deliberately runs the authored First Descent seed so the complete
+	-- route is reproducible during build-through and the consolidated Studio pass.
+	-- The live runtime remains seed-capable; broader variation stays a later patch.
+	local launch = ExpeditionLiveRuntimeService.startExpedition({
+		PartySize = consumed.Snapshot.MemberCount,
+		Seed = FirstDungeonContentConfig.CanonicalSeed,
+	})
 	if launch.Accepted ~= true then
 		warn("[ExpeditionLobby] launch rejected:", launch.ReasonId)
 	end
