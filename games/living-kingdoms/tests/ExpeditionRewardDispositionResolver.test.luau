@@ -8,9 +8,8 @@ local contracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Expedi
 	debugName = "ExpeditionContracts",
 	injectGlobals = true,
 })()
-local resolver = luau.load(
-	fs.readFile("games/living-kingdoms/src/shared/Expeditions/ExpeditionRewardDispositionResolver.luau"),
-	{
+local resolver =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/ExpeditionRewardDispositionResolver.luau"), {
 		debugName = "ExpeditionRewardDispositionResolver",
 		environment = {
 			script = { Parent = { ExpeditionContracts = EXPEDITION_TOKEN } },
@@ -20,8 +19,7 @@ local resolver = luau.load(
 			end,
 		},
 		injectGlobals = true,
-	}
-)()
+	})()
 
 local ids = resolver.RewardDispositionIds
 assert(resolver.resolve(contracts.OutcomeIds.InProgress) == ids.Pending, "active run rewards must remain pending")
