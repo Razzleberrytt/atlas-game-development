@@ -88,7 +88,8 @@ local expeditionRuntime = loadModule("server/Systems/ExpeditionRuntime.luau", "E
 	end,
 })
 
-local encounterCoordinator = loadModule("server/Systems/ExpeditionEncounterCoordinator.luau", "ExpeditionEncounterCoordinator")
+local encounterCoordinator =
+	loadModule("server/Systems/ExpeditionEncounterCoordinator.luau", "ExpeditionEncounterCoordinator")
 local directorAdapter = loadModule("server/Systems/EnemyDirectorEncounterAdapter.luau", "EnemyDirectorEncounterAdapter")
 
 local hordeConfig = {
@@ -170,17 +171,39 @@ local Bootstrap = loadModule("server/Systems/ExpeditionServerBootstrap.luau", "E
 		end,
 	},
 	require = function(token: unknown)
-		if token == BOOTSTRAP_CONFIG_TOKEN then return expeditionConfig end
-		if token == BOOTSTRAP_FIRST_CONTENT_TOKEN then return firstDungeonContentConfig end
-		if token == BOOTSTRAP_HORDE_TOKEN then return hordeConfig end
-		if token == BOOTSTRAP_SPECIAL_TOKEN then return specialConfig end
-		if token == BOOTSTRAP_ENEMY_CONTRACTS_TOKEN then return enemyContracts end
-		if token == BOOTSTRAP_CONTRACTS_TOKEN then return expeditionContracts end
-		if token == BOOTSTRAP_PLANNER_TOKEN then return roomPlacementPlanner end
-		if token == BOOTSTRAP_ASSEMBLER_TOKEN then return roomSequenceAssembler end
-		if token == BOOTSTRAP_RUNTIME_TOKEN then return expeditionRuntime end
-		if token == BOOTSTRAP_COORDINATOR_TOKEN then return encounterCoordinator end
-		if token == BOOTSTRAP_ADAPTER_TOKEN then return directorAdapter end
+		if token == BOOTSTRAP_CONFIG_TOKEN then
+			return expeditionConfig
+		end
+		if token == BOOTSTRAP_FIRST_CONTENT_TOKEN then
+			return firstDungeonContentConfig
+		end
+		if token == BOOTSTRAP_HORDE_TOKEN then
+			return hordeConfig
+		end
+		if token == BOOTSTRAP_SPECIAL_TOKEN then
+			return specialConfig
+		end
+		if token == BOOTSTRAP_ENEMY_CONTRACTS_TOKEN then
+			return enemyContracts
+		end
+		if token == BOOTSTRAP_CONTRACTS_TOKEN then
+			return expeditionContracts
+		end
+		if token == BOOTSTRAP_PLANNER_TOKEN then
+			return roomPlacementPlanner
+		end
+		if token == BOOTSTRAP_ASSEMBLER_TOKEN then
+			return roomSequenceAssembler
+		end
+		if token == BOOTSTRAP_RUNTIME_TOKEN then
+			return expeditionRuntime
+		end
+		if token == BOOTSTRAP_COORDINATOR_TOKEN then
+			return encounterCoordinator
+		end
+		if token == BOOTSTRAP_ADAPTER_TOKEN then
+			return directorAdapter
+		end
 		error("unexpected ExpeditionServerBootstrap dependency")
 	end,
 })
@@ -220,11 +243,15 @@ local director = {
 	readEnemyCombatFacts = function(): { any }
 		local facts = {}
 		for entityId, isAlive in alive do
-			if isAlive then table.insert(facts, { entityId = entityId, isAlive = true }) end
+			if isAlive then
+				table.insert(facts, { entityId = entityId, isAlive = true })
+			end
 		end
 		return facts
 	end,
-	readBossState = function(): any return bossState end,
+	readBossState = function(): any
+		return bossState
+	end,
 	endOperationPressure = function() end,
 }
 
@@ -253,7 +280,9 @@ local function step(): (boolean, string)
 end
 
 local function killTrackedEnemies()
-	for entityId in alive do alive[entityId] = false end
+	for entityId in alive do
+		alive[entityId] = false
+	end
 end
 
 local startedApproach, startedApproachReason = step()
@@ -279,7 +308,9 @@ while service:getSnapshot().PhaseId == "Dungeon" do
 	guard += 1
 	assert(guard < 60, "dungeon traversal must terminate")
 	local _, reasonId = step()
-	if reasonId == "EncounterInProgress" then killTrackedEnemies() end
+	if reasonId == "EncounterInProgress" then
+		killTrackedEnemies()
+	end
 end
 assert(service:getSnapshot().PhaseId == "Elite", "the dungeon advances into Elite")
 
@@ -303,7 +334,9 @@ assert(service:getSnapshot().PhaseId == "Rewards", "boss advances into Rewards")
 
 for waveOrdinal = 2, #spawnedWaves do
 	local spawned = spawnedWaves[waveOrdinal]
-	local placement = if spawned.WaveIndex == 90 then layout.Placements[#layout.Placements - 1] else layout.Placements[spawned.WaveIndex]
+	local placement = if spawned.WaveIndex == 90
+		then layout.Placements[#layout.Placements - 1]
+		else layout.Placements[spawned.WaveIndex]
 	assert(placement ~= nil, "every non-approach wave must map to a room placement")
 	for _, definition in spawned.Definitions do
 		assert(definition.archetypeId == enemyContracts.EnemyArchetypeIds.ExclusionWalker)
