@@ -9,7 +9,10 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
+local InputActionMapConfig = require(ReplicatedStorage.Shared.Config.InputActionMapConfig)
 local SquadPingConfig = require(ReplicatedStorage.Shared.Config.SquadPingConfig)
+local InputBindingHintResolver = require(ReplicatedStorage.Shared.Input.InputBindingHintResolver)
+local InputDeviceFamilyResolver = require(ReplicatedStorage.Shared.Input.InputDeviceFamilyResolver)
 local SquadPingContracts = require(ReplicatedStorage.Shared.Navigation.SquadPingContracts)
 
 local ACTION_NAME = "LK0407SquadPing"
@@ -31,6 +34,12 @@ local started = false
 local authoritativeRevision = 0
 local statusGui: ScreenGui? = nil
 local statusLabel: TextLabel? = nil
+local readyStatusText = "PING READY"
+
+local DISPLAY_TOKENS = table.freeze({
+	MouseButton3 = "MMB",
+	DPadUp = "↑",
+})
 
 local function isAlive(): boolean
 	return localPlayer:GetAttribute("LK_P3_LifeState") == "Alive"
@@ -120,6 +129,49 @@ local function setStatus(text: string)
 	end
 end
 
+local function displayToken(token: string): string
+	return DISPLAY_TOKENS[token] or token
+end
+
+local function deviceFamily(inputType: Enum.UserInputType): string?
+	local resolution = InputDeviceFamilyResolver.resolve(inputType.Name)
+	if resolution.DeviceFamilyId ~= nil then
+		return resolution.DeviceFamilyId
+	end
+	if inputType == Enum.UserInputType.None and UserInputService.KeyboardEnabled then
+		return InputDeviceFamilyResolver.DeviceFamilyIds.KeyboardPointer
+	end
+	return nil
+end
+
+local function readyStatusFor(inputType: Enum.UserInputType): string
+	local familyId = deviceFamily(inputType)
+	local action = InputActionMapConfig.get("SquadPing")
+	if familyId == nil or action == nil then
+		return "PING READY"
+	end
+	local hint = InputBindingHintResolver.resolve(action, familyId)
+	if hint.ResolutionId ~= InputBindingHintResolver.ResolutionIds.Available or hint.BindingToken == nil then
+		return "PING READY"
+	end
+	if familyId == InputDeviceFamilyResolver.DeviceFamilyIds.Touch then
+		return "PING READY"
+	end
+	local primary = displayToken(hint.BindingToken)
+	if familyId == InputDeviceFamilyResolver.DeviceFamilyIds.KeyboardPointer then
+		local mouseToken = action.MouseInputTypeNames[1]
+		if mouseToken ~= nil then
+			return string.format("PING  •  %s / %s", primary, displayToken(mouseToken))
+		end
+	end
+	return "PING  •  " .. primary
+end
+
+local function updateReadyStatus(inputType: Enum.UserInputType)
+	readyStatusText = readyStatusFor(inputType)
+	setStatus(readyStatusText)
+end
+
 local function candidatePosition(inputObject: InputObject): Vector3?
 	local root = rootPart()
 	if root == nil then
@@ -194,7 +246,7 @@ local function onState(payload: unknown)
 	end
 	authoritativeRevision = acceptedRevision
 	presentSnapshot(pings)
-	setStatus("PING  •  G / MMB / ↑")
+	setStatus(readyStatusText)
 end
 
 local function createStatusPresentation()
@@ -217,7 +269,7 @@ local function createStatusPresentation()
 	gui.Parent = localPlayer:WaitForChild("PlayerGui")
 	statusGui = gui
 	statusLabel = label
-	setStatus("PING  •  G / MMB / ↑")
+	updateReadyStatus(UserInputService:GetLastInputType())
 end
 
 function Controller.start()
@@ -236,6 +288,7 @@ function Controller.start()
 	)
 	ContextActionService:SetTitle(ACTION_NAME, "◇ Ping")
 	createStatusPresentation()
+	table.insert(connections, UserInputService.LastInputTypeChanged:Connect(updateReadyStatus))
 	table.insert(connections, stateRemote.OnClientEvent:Connect(onState))
 	table.insert(connections, localPlayer.CharacterRemoving:Connect(clearMarkers))
 	table.insert(
@@ -275,6 +328,7 @@ function Controller.stop()
 		statusGui = nil
 	end
 	statusLabel = nil
+	readyStatusText = "PING READY"
 	authoritativeRevision = 0
 end
 
