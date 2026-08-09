@@ -29,9 +29,9 @@ Read first:
 - The recovered authored overworld is a separate future coordinate/lifecycle space from the modern operation forest.
 - The live Ranger Station Forward Operations Hub is a temporary preparation bridge, not the final Main World.
 - R1 is accepted on recorded artifact 9028866465; the older pre-bootstrap-fix artifact remains invalid historical evidence.
-- PR #221 is no longer blocked by R1, but must be rebased/revalidated and satisfy its own evidence gate before merge.
-- PR #222 remains stacked/blocked pending #221 and its required evidence.
-- PR #239 is an open held pre-launch operation-selection contract; do not duplicate or activate it blindly.
+- PR #221 is merged with its exact-build single-listener evidence accepted at E2; later runtime matrices remain open.
+- PR #222 is merged as dormant R2 preparation only; `ClientReady` activation and R2 runtime evidence remain separate controlled work.
+- PR #239 is merged as the held pre-launch operation-selection contract; its runtime/network/launch handoff remains disabled.
 
 ## Two-lane rule
 
@@ -68,7 +68,7 @@ Allowed forms include:
 
 1. Fetch current `main` and inspect open related PRs before editing.
 2. Do not duplicate work already in an open PR.
-3. Do not merge #221/#222 early.
+3. Treat merged preparation as dormant unless runtime/evidence authority explicitly promotes it.
 4. Do not activate R2/R3/R4 cutovers early.
 5. Do not create a second gameplay authority for combat, enemies, inventory, persistence, loot/rewards, progression, economy, missions, networking, or presentation.
 6. Recovered Studio gameplay services remain inert; migrate content/data/presentation into canonical owners.
@@ -132,9 +132,9 @@ This is now a first-class product lane under Master Roadmap Phase W.
 | BA-030 | DONE | Dungeon/expedition content contract. | [`docs/specifications/dungeon-expedition-content-contract.md`](../specifications/dungeon-expedition-content-contract.md) — adds `EncounterSlotId`/`EncounterIntensity`/`RewardSourceId` to the existing handcrafted room pool (`RoomAssemblyContracts`/`RoomAssemblyConfig`), reusing `EquipmentRewardContracts`'s Elite/Boss reward vocabulary and the existing lobby return-to-safety remote for the return path. No spawner/runtime wiring changed. |
 | BA-031 | DONE | Portal destination/eligibility contract. | `src/shared/World/PortalDestinationContracts.luau` (destination ref, party/unlock constraints, denial-reason enum, pure `evaluateEligibility` resolver) plus the one authored `PortalDestinationConfig.luau` definition for `portal.expedition.primary`, tracking `ExpeditionConfig.Definitions.FirstExpedition`'s party bounds. `RuntimeEnabled = false`; no consumer calls it yet and no teleport/network authority was added. |
 | BA-032 | DONE | First repeatable dungeon content data. | [`docs/specifications/first-repeatable-dungeon-content.md`](../specifications/first-repeatable-dungeon-content.md) — pins canonical seed `202` for a seven-room First Descent and authors concrete basic/Runner/Crawler/Spitter/Brute/Screamer/Progenitor compositions against the existing room/enemy/horde contracts. Data-only; no runtime spawner wiring. |
-| BA-033 | READY | Elite/boss reward-decision data. | References canonical loot/item/run-build owners. |
-| BA-034 | IN PROGRESS via PR #239 | Held pre-launch operation-selection contract. | Inspect PR #239 before any work. Do not duplicate it; no runtime activation until accepted. |
-| BA-035 | BLOCKED on BA-034 + social/session design | Party/session ownership policy for operation selection. | Dedicated contract; do not invent a leader/host implicitly. |
+| BA-033 | DONE | Elite/boss reward-decision data. | [`docs/specifications/first-dungeon-reward-decisions.md`](../specifications/first-dungeon-reward-decisions.md) — maps the authored elite/boss room reward refs to canonical two-choice Run Relic decisions (`reward-source.elite-kill` / `reward-source.boss-milestone`) while keeping runtime consumption disabled and persistent equipment excluded pending BA-043. |
+| BA-034 | DONE | Held pre-launch operation-selection contract. | PR #239 merged the held operation-selection contracts/config with runtime/network/launch handoff disabled; no party-leader policy was invented. |
+| BA-035 | BLOCKED on social/session ownership decision | Party/session ownership policy for operation selection. | Dedicated contract; do not invent a leader/host implicitly. |
 
 ## P4 — combat/RPG depth audits without authority duplication
 
@@ -177,8 +177,7 @@ This is now a first-class product lane under Master Roadmap Phase W.
 
 Do not:
 
-- merge PR #221 before its R1 gate;
-- merge/activate PR #222 before its dependencies;
+- activate merged R2 preparation before its controlled stage and required runtime evidence;
 - activate ClientReady/R3/R4 cutovers early;
 - remove compatibility State paths without accepted replacement evidence;
 - claim the queue/Highlight incident fixed from source shape or an informational local run;
@@ -192,7 +191,7 @@ Do not:
 
 # Recommended next work
 
-Before starting, always re-fetch `main` and inspect PR #239 plus any newer PRs.
+Before starting, always re-fetch `main` and inspect any open overlapping PRs.
 
 ### Highest-ROI build-ahead task after current-patch work
 
@@ -231,7 +230,6 @@ BA-021 NPC contracts
 BA-022 crafting contracts
 BA-023 gathering/resource-node model
 BA-024 vendor/catalog contracts
-BA-033 elite/boss reward-decision data
 BA-050 authored route data
 BA-052 landmark/discovery definitions
 BA-060 onboarding sequence
