@@ -9,13 +9,14 @@
 	set covers fire, reload, empty, and handling today; unique
 	production-approved empty and handling assets remain pending.
 
-	These drive client-local presentation only: the server owns fire
-	resolution, ammunition, and reload timing. Playback is 2D (non-positional)
-	so gunfire stays audible under the fixed overhead isometric camera.
+	These drive client-local presentation only: the server owns fire resolution,
+	ammunition, and reload timing. Local firearm cues stay non-positional for
+	first-person punch while accepted remote shots use a bounded client emitter
+	pool so teammate gunfire preserves directional co-op information.
 ]]
 
 local FirearmAudioConfig = {
-	Version = "AUD-0102-v1",
+	Version = "AUD-0102-v2",
 
 	-- Bounded, reused Sound pool. One fire slot is claimed per accepted shot in
 	-- round-robin order so rapid automatic fire never creates unbounded Sounds.
@@ -29,6 +30,9 @@ local FirearmAudioConfig = {
 		-- sounding like one looping sample.
 		MinPlaybackSpeed = 0.93,
 		MaxPlaybackSpeed = 1.08,
+		RemoteEmitterSizeStuds = 4,
+		RemoteRollOffMinDistanceStuds = 10,
+		RemoteRollOffMaxDistanceStuds = 120,
 	}),
 
 	Reload = table.freeze({
@@ -64,6 +68,12 @@ assert(FirearmAudioConfig.FirePoolSize > 0, "fire pool must be positive")
 assert(
 	FirearmAudioConfig.Fire.MaxPlaybackSpeed >= FirearmAudioConfig.Fire.MinPlaybackSpeed,
 	"fire playback speed range must be ordered"
+)
+assert(FirearmAudioConfig.Fire.RemoteEmitterSizeStuds > 0, "remote fire emitter size must be positive")
+assert(FirearmAudioConfig.Fire.RemoteRollOffMinDistanceStuds > 0, "remote fire rolloff minimum must be positive")
+assert(
+	FirearmAudioConfig.Fire.RemoteRollOffMaxDistanceStuds > FirearmAudioConfig.Fire.RemoteRollOffMinDistanceStuds,
+	"remote fire rolloff range must be ordered"
 )
 assert(FirearmAudioConfig.Empty.PlaybackSpeed > 0, "empty click playback speed must be positive")
 assert(FirearmAudioConfig.Empty.MinimumIntervalSeconds > 0, "empty click throttle must be positive")
