@@ -110,6 +110,11 @@ for _, definition in ObjectiveChainConfig.Objectives do
 end
 
 local started = false
+-- Set once by Service.armPressure() when the player deliberately launches an
+-- expedition from the Forward Operations Hub. Never reset by start()/stop() so
+-- an already-armed server keeps its existing replay-restart behavior; only the
+-- very first safe-arrival window is gated.
+local pressureArmed = false
 local revision = 0
 local phaseId: MissionPhaseId = PhaseIds.Insertion
 local extractionUnlocked = false
@@ -1000,6 +1005,19 @@ local function buildMissionObjects()
 	end
 end
 
+-- Releases the insertion countdown once the player has deliberately launched
+-- an expedition. Safe to call before or after start(): whichever runs second
+-- observes pressureArmed already true and arms the countdown itself.
+function Service.armPressure()
+	if pressureArmed then
+		return
+	end
+	pressureArmed = true
+	if started and #Players:GetPlayers() > 0 then
+		armInsertionCountdown(now())
+	end
+end
+
 function Service.start()
 	if started then
 		return
@@ -1037,7 +1055,9 @@ function Service.start()
 		end
 	end)
 	playerAddedConnection = Players.PlayerAdded:Connect(function(player)
-		armInsertionCountdown(now())
+		if pressureArmed then
+			armInsertionCountdown(now())
+		end
 		pcall(function()
 			stateRemote:FireClient(player, safeSnapshot())
 		end)
@@ -1050,7 +1070,7 @@ function Service.start()
 			end)
 		end
 	end)
-	if #Players:GetPlayers() > 0 then
+	if pressureArmed and #Players:GetPlayers() > 0 then
 		armInsertionCountdown(startTimestamp)
 	end
 	heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)

@@ -12,6 +12,8 @@ local ExpeditionConfig = require(ReplicatedStorage.Shared.Config.ExpeditionConfi
 local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.ExpeditionContracts)
 local ExpeditionLobbyService = require(Systems.ExpeditionLobbyService)
 local ExpeditionLiveRuntimeService = require(Systems.ExpeditionLiveRuntimeService)
+local MissionDirectorService = require(Systems.MissionDirectorService)
+local HordeExperienceService = require(Systems.HordeExperienceService)
 
 local existing = ReplicatedStorage:FindFirstChild("ExpeditionLobbyNetwork")
 if existing ~= nil then
@@ -98,6 +100,11 @@ local function attemptLaunch()
 		broadcast()
 		return
 	end
+
+	-- The player has now deliberately left safe arrival; release the mission
+	-- clock and horde pressure that stayed dormant since server boot.
+	MissionDirectorService.armPressure()
+	HordeExperienceService.armPressure()
 
 	local launch = ExpeditionLiveRuntimeService.startExpedition({ PartySize = consumed.Snapshot.MemberCount })
 	if launch.Accepted ~= true then

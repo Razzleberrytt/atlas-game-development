@@ -41,6 +41,11 @@ local ENEMY_FOLDER_NAME = "EnemyEntities"
 local Service = {}
 
 local started = false
+-- Set once by Service.armPressure() when the player deliberately launches an
+-- expedition from the Forward Operations Hub. Never reset by start()/stop() so
+-- an already-armed server keeps its existing replay-restart behavior; only the
+-- very first safe-arrival window is gated.
+local pressureArmed = false
 local startTimestamp = 0
 local spawnSequence = 0
 local revision = 0
@@ -570,6 +575,9 @@ local function removePlayer(player: Player)
 end
 
 local function evaluate(serverTimestamp: number)
+	if not pressureArmed then
+		return
+	end
 	for _, record in enemyRecords do
 		processEnemy(record, serverTimestamp)
 	end
@@ -582,6 +590,13 @@ local function evaluate(serverTimestamp: number)
 			state.streak = 0
 		end
 	end
+end
+
+-- Releases horde spawn pressure once the player has deliberately launched an
+-- expedition. Safe to call before or after start(); evaluate() itself is the
+-- only gated behavior, so ordering between the two calls does not matter.
+function Service.armPressure()
+	pressureArmed = true
 end
 
 function Service.start()
