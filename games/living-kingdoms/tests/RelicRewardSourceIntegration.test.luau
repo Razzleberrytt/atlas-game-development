@@ -280,7 +280,10 @@ local Planned = rpgContracts.ImplementationStateIds.Planned
 assertThat(rewardStates[rpgContracts.RewardSourceIds.EliteKill] == Implemented, "elite kills must be live")
 assertThat(rewardStates[rpgContracts.RewardSourceIds.SpecialInterrupt] == Implemented, "interrupts must be live")
 assertThat(rewardStates[rpgContracts.RewardSourceIds.HordeClear] == Implemented, "horde milestones must be live")
-assertThat(rewardStates[rpgContracts.RewardSourceIds.BossMilestone] == Implemented, "First Descent boss milestone must be live")
+assertThat(
+	rewardStates[rpgContracts.RewardSourceIds.BossMilestone] == Implemented,
+	"First Descent boss milestone must be live"
+)
 assertThat(
 	rewardStates[rpgContracts.RewardSourceIds.ObjectiveCompletion] == Planned
 		and rewardStates[rpgContracts.RewardSourceIds.AuthoredContainer] == Planned,
