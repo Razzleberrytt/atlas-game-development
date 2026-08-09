@@ -1,12 +1,14 @@
 --!strict
 
 --[[
-	Owns local reload input and immediate presentation of server-disclosed combat
-	events. The unified HordeHUDController renders ammunition and status through
-	client-local Player attributes. This controller never selects legal targets,
-	spends ammunition, resolves hits, changes health, or fabricates authority.
+	Owns local weapon fire/reload intent origin and immediate presentation of
+	server-disclosed combat events. The unified HordeHUDController renders
+	ammunition and status through client-local Player attributes. This controller
+	never selects legal targets, spends ammunition, resolves hits, changes health,
+	or fabricates authority.
 ]]
 
+local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -31,6 +33,7 @@ end
 
 local REQUEST_COOLDOWN_SECONDS = 0.5
 local COMBAT_ENTITY_ID_ATTRIBUTE = "CombatEntityId"
+local FIRE_ACTION_NAME = "LK_Fire"
 local localPlayer = Players.LocalPlayer
 
 local HUD_ATTRIBUTES = {
@@ -163,6 +166,14 @@ local function sendFireIntent(isFiring: boolean)
 	end
 	state.lastAimSendLocalTimestamp = os.clock()
 	fireIntentRemote:FireServer(isFiring, direction)
+end
+
+local function setFiring(isFiring: boolean)
+	if state.isFiring == isFiring then
+		return
+	end
+	state.isFiring = isFiring
+	sendFireIntent(isFiring)
 end
 
 local function setStatus(text: string, durationSeconds: number?)
@@ -330,28 +341,41 @@ function WeaponController.requestReload(): boolean
 	return true
 end
 
+local function onFireAction(_actionName: string, inputState: Enum.UserInputState): Enum.ContextActionResult
+	if not state.started or state.destroyed then
+		return Enum.ContextActionResult.Pass
+	end
+	if inputState == Enum.UserInputState.Begin then
+		if UserInputService:GetFocusedTextBox() ~= nil then
+			return Enum.ContextActionResult.Pass
+		end
+		setFiring(true)
+		return Enum.ContextActionResult.Sink
+	end
+	if inputState == Enum.UserInputState.End or inputState == Enum.UserInputState.Cancel then
+		setFiring(false)
+		return Enum.ContextActionResult.Sink
+	end
+	return Enum.ContextActionResult.Pass
+end
+
 local function onInputBegan(input: InputObject, gameProcessedEvent: boolean)
 	if gameProcessedEvent or UserInputService:GetFocusedTextBox() ~= nil then
 		return
 	end
 	if input.KeyCode ~= Enum.KeyCode.R then
-		if input.UserInputType == Enum.UserInputType.MouseButton1 and not state.isFiring then
-			state.isFiring = true
-			sendFireIntent(true)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			setFiring(true)
 		end
 		return
 	end
-	if input.KeyCode == Enum.KeyCode.R then
-		WeaponController.requestReload()
-	end
+	WeaponController.requestReload()
 end
 
 local function onInputEnded(input: InputObject)
-	if input.UserInputType ~= Enum.UserInputType.MouseButton1 or not state.isFiring then
-		return
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		setFiring(false)
 	end
-	state.isFiring = false
-	sendFireIntent(false)
 end
 
 function WeaponController.init()
@@ -372,6 +396,8 @@ function WeaponController.start()
 	state.isFiring = false
 	clearHudAttributes()
 	createCrosshair()
+	ContextActionService:BindAction(FIRE_ACTION_NAME, onFireAction, true, Enum.KeyCode.ButtonR2)
+	ContextActionService:SetTitle(FIRE_ACTION_NAME, "Fire")
 	state.inputBeganConnection = UserInputService.InputBegan:Connect(onInputBegan)
 	state.inputEndedConnection = UserInputService.InputEnded:Connect(onInputEnded)
 	state.renderConnection = RunService.RenderStepped:Connect(function()
@@ -386,6 +412,7 @@ function WeaponController.stop()
 	if not state.started or state.destroyed then
 		return
 	end
+	ContextActionService:UnbindAction(FIRE_ACTION_NAME)
 	if state.inputBeganConnection ~= nil then
 		state.inputBeganConnection:Disconnect()
 		state.inputBeganConnection = nil
@@ -398,10 +425,7 @@ function WeaponController.stop()
 		state.renderConnection:Disconnect()
 		state.renderConnection = nil
 	end
-	if state.isFiring then
-		sendFireIntent(false)
-		state.isFiring = false
-	end
+	setFiring(false)
 	if state.presentationConnection ~= nil then
 		state.presentationConnection:Disconnect()
 		state.presentationConnection = nil
