@@ -166,10 +166,10 @@ local function validateObjective(value: unknown): boolean
 		ObjectiveId = true,
 		ProgressSourceRef = true,
 		RequiredCount = true,
-	})
-		and isNonEmptyBoundedString(objective.ObjectiveId, 96)
-		and isNonEmptyBoundedString(objective.ProgressSourceRef, 128)
-		and isPositiveInteger(objective.RequiredCount)
+	}) and isNonEmptyBoundedString(objective.ObjectiveId, 96) and isNonEmptyBoundedString(
+		objective.ProgressSourceRef,
+		128
+	) and isPositiveInteger(objective.RequiredCount)
 end
 
 local function validateRewardRef(value: unknown): boolean
@@ -180,9 +180,10 @@ local function validateRewardRef(value: unknown): boolean
 	return hasOnlyKeys(rewardRef, {
 		RewardRefId = true,
 		RewardAuthorityOwnerId = true,
-	})
-		and isNonEmptyBoundedString(rewardRef.RewardRefId, 128)
-		and isNonEmptyBoundedString(rewardRef.RewardAuthorityOwnerId, 96)
+	}) and isNonEmptyBoundedString(rewardRef.RewardRefId, 128) and isNonEmptyBoundedString(
+		rewardRef.RewardAuthorityOwnerId,
+		96
+	)
 end
 
 function Contracts.validateQuestDefinition(value: unknown): boolean
@@ -208,7 +209,11 @@ function Contracts.validateQuestDefinition(value: unknown): boolean
 	if not validateStringList(definition.PrerequisiteQuestIds, 96, definition.QuestId) then
 		return false
 	end
-	if type(definition.Objectives) ~= "table" or not isDenseArray(definition.Objectives) or #definition.Objectives < 1 then
+	if
+		type(definition.Objectives) ~= "table"
+		or not isDenseArray(definition.Objectives)
+		or #definition.Objectives < 1
+	then
 		return false
 	end
 	local objectiveIds = {}
