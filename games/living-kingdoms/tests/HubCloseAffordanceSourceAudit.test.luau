@@ -27,7 +27,10 @@ assert(contains(controller, "button.Selectable = true"), "close affordance must 
 assert(contains(controller, "button.Activated:Connect(closeHubUi)"), "all GUI activation paths must reuse closeHubUi")
 assert(contains(controller, "setCloseAffordanceVisible(true)"), "opening a hub screen must reveal the close control")
 assert(contains(controller, "setCloseAffordanceVisible(false)"), "closing hub screens must hide the close control")
-assert(contains(controller, "Enum.KeyCode.Escape"), "keyboard Escape compatibility must remain for this isolated M4 slice")
+assert(
+	contains(controller, "Enum.KeyCode.Escape"),
+	"keyboard Escape compatibility must remain for this isolated M4 slice"
+)
 assert(not contains(controller, "Enum.KeyCode.ButtonB"), "M4 must not steal the class-action gamepad key")
 assert(not contains(controller, "Enum.KeyCode.ButtonX"), "M4 must not steal the world-interaction gamepad key")
 assert(not contains(controller, "Enum.KeyCode.DPad"), "M4 must not invent a D-pad close shortcut")
