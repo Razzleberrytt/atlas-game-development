@@ -53,10 +53,16 @@ local function stateFor(player: Player): PlayerState
 	return created
 end
 
-local function rejected(reasonId: string, serverTimestamp: number): MeleeContracts.MeleeStrikeResult
+local function rejected(
+	reasonId: string,
+	serverTimestamp: number,
+	swingAccepted: boolean?,
+	strikeId: string?
+): MeleeContracts.MeleeStrikeResult
 	return table.freeze({
 		accepted = false,
-		strikeId = nil,
+		swingAccepted = swingAccepted == true,
+		strikeId = strikeId,
 		weaponId = Weapon.WeaponId,
 		targetEntityId = nil,
 		damageAmount = 0,
@@ -154,6 +160,7 @@ function Service.tryStrike(player: Player, requestId: unknown, aimDirection: unk
 	-- instant a target enters the cone.
 	state.lastAcceptedSwingServerTimestamp = serverTimestamp
 	recordRequest(state, requestIdString)
+	local strikeId = "melee:" .. tostring(player.UserId) .. ":" .. requestIdString
 
 	local facts = EnemyDirectorService.readEnemyCombatFacts()
 	local candidates = {}
@@ -166,19 +173,19 @@ function Service.tryStrike(player: Player, requestId: unknown, aimDirection: unk
 	end
 	local selection = MeleeStrikeResolver.selectTarget(origin, aimDirection :: Vector3, candidates)
 	if selection.targetEntityId == nil then
-		return rejected(selection.rejectionReasonId or Reasons.NoTarget, serverTimestamp)
+		return rejected(selection.rejectionReasonId or Reasons.NoTarget, serverTimestamp, true, strikeId)
 	end
 	local fact = selectedFact(selection.targetEntityId, facts)
 	if fact == nil then
-		return rejected(Reasons.TargetStale, serverTimestamp)
+		return rejected(Reasons.TargetStale, serverTimestamp, true, strikeId)
 	end
 	if targetOccluded(character, origin, fact) then
-		return rejected(Reasons.TargetOccluded, serverTimestamp)
+		return rejected(Reasons.TargetOccluded, serverTimestamp, true, strikeId)
 	end
 
 	local healthRead = EnemyDirectorService.readHealthState(fact.entityId)
 	if healthRead == nil or healthRead.isAlive ~= true then
-		return rejected(Reasons.TargetStale, serverTimestamp)
+		return rejected(Reasons.TargetStale, serverTimestamp, true, strikeId)
 	end
 	local previousHealth = healthRead.healthState.currentHealth
 	local healthStateAfter = {
@@ -189,7 +196,7 @@ function Service.tryStrike(player: Player, requestId: unknown, aimDirection: unk
 	local committed, committedDamage =
 		EnemyDirectorService.commitHealthState(fact.entityId, healthRead.revision, healthStateAfter, serverTimestamp)
 	if not committed or type(committedDamage) ~= "number" or committedDamage <= 0 then
-		return rejected(Reasons.CommitRejected, serverTimestamp)
+		return rejected(Reasons.CommitRejected, serverTimestamp, true, strikeId)
 	end
 
 	local operativeEntityId = "operative.player:" .. tostring(player.UserId)
@@ -203,7 +210,8 @@ function Service.tryStrike(player: Player, requestId: unknown, aimDirection: unk
 	end
 	return table.freeze({
 		accepted = true,
-		strikeId = "melee:" .. tostring(player.UserId) .. ":" .. requestIdString,
+		swingAccepted = true,
+		strikeId = strikeId,
 		weaponId = Weapon.WeaponId,
 		targetEntityId = fact.entityId,
 		damageAmount = committedDamage,

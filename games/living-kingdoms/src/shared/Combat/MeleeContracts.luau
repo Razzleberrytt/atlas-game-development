@@ -36,6 +36,7 @@ export type MeleeTargetSelection = {
 
 export type MeleeStrikeResult = {
 	accepted: boolean,
+	swingAccepted: boolean,
 	strikeId: MeleeStrikeId?,
 	weaponId: MeleeWeaponId,
 	targetEntityId: string?,
