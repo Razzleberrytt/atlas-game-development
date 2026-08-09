@@ -128,13 +128,11 @@ function Contracts.validateSelectionIntent(value: unknown): boolean
 		return false
 	end
 	local intent = value :: { [any]: any }
-	if
-		not hasOnlyKeys(intent, {
-			requestId = true,
-			operationId = true,
-			expectedSelectionRevision = true,
-		})
-	then
+	if not hasOnlyKeys(intent, {
+		requestId = true,
+		operationId = true,
+		expectedSelectionRevision = true,
+	}) then
 		return false
 	end
 	return isNonEmptyBoundedString(intent.requestId, 128)
@@ -166,10 +164,7 @@ function Contracts.validateSafeSelectionSnapshot(value: unknown): boolean
 		not isNonnegativeInteger(snapshot.catalogRevision)
 		or not isNonnegativeInteger(snapshot.selectionRevision)
 		or not containsValue(Contracts.SelectionStateIds, snapshot.selectionStateId)
-		or (
-			snapshot.selectedOperationId ~= nil
-			and not isNonEmptyBoundedString(snapshot.selectedOperationId, 64)
-		)
+		or (snapshot.selectedOperationId ~= nil and not isNonEmptyBoundedString(snapshot.selectedOperationId, 64))
 		or type(snapshot.operations) ~= "table"
 	then
 		return false
@@ -178,7 +173,12 @@ function Contracts.validateSafeSelectionSnapshot(value: unknown): boolean
 	local seenOperationIds = {}
 	local selectedFound = snapshot.selectedOperationId == nil
 	for index, summary in snapshot.operations :: { [any]: any } do
-		if type(index) ~= "number" or index % 1 ~= 0 or index < 1 or not Contracts.validateSafeOperationSummary(summary) then
+		if
+			type(index) ~= "number"
+			or index % 1 ~= 0
+			or index < 1
+			or not Contracts.validateSafeOperationSummary(summary)
+		then
 			return false
 		end
 		local operationId = summary.operationId
@@ -209,10 +209,7 @@ function Contracts.validateSafeSelectionRejection(value: unknown): boolean
 		return false
 	end
 	return rejection.networkOperationId == Contracts.NetworkOperationIds.Rejected
-		and (
-			rejection.requestId == nil
-			or isNonEmptyBoundedString(rejection.requestId, 128)
-		)
+		and (rejection.requestId == nil or isNonEmptyBoundedString(rejection.requestId, 128))
 		and isNonnegativeInteger(rejection.selectionRevision)
 		and containsValue(Contracts.RejectionReasonIds, rejection.rejectionReasonId)
 end

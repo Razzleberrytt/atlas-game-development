@@ -9,22 +9,34 @@ local function check(condition: unknown, message: string?)
 	end
 end
 
-local contracts = luau.load(
-	fs.readFile("games/living-kingdoms/src/shared/Operations/OperationSelectionContracts.luau"),
-	{
+local contracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Operations/OperationSelectionContracts.luau"), {
 		debugName = "OperationSelectionContracts",
 		injectGlobals = true,
-	}
-)()
+	})()
 
 local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/OperationSelectionConfig.luau"), {
 	debugName = "OperationSelectionConfig",
 	injectGlobals = true,
 })()
 
+local expeditionContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/ExpeditionContracts.luau"), {
+		debugName = "ExpeditionContracts",
+		injectGlobals = true,
+	})()
+
+local EXPEDITION_CONTRACTS_TOKEN = {}
 local expeditionConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/ExpeditionConfig.luau"), {
 	debugName = "ExpeditionConfig",
 	injectGlobals = true,
+	environment = {
+		script = { Parent = { Parent = { Expeditions = { ExpeditionContracts = EXPEDITION_CONTRACTS_TOKEN } } } },
+		require = function(token: unknown)
+			check(token == EXPEDITION_CONTRACTS_TOKEN, "unexpected ExpeditionConfig dependency")
+			return expeditionContracts
+		end,
+	},
 })()
 
 check(config.Version == "BA-005-OPERATION-SELECTION-v1")
