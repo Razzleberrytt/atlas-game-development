@@ -9,43 +9,69 @@ Living Kingdoms is developed repository-first. Coding agents should be able to i
 Before selecting implementation work, read:
 
 1. `../../docs/bible/00-current-product-authority.md`
-2. `../../docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md`
-3. `../../docs/roadmap/MVP-BUILD-THROUGH-TESTING-POLICY.md`
+2. `../../docs/roadmap/MVP-BUILD-THROUGH-TESTING-POLICY.md`
+3. `../../docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md`
 4. `../../docs/roadmap/MASTER-ROADMAP.md`
 5. `../../docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md`
 6. `../../docs/roadmap/PRODUCTION-CORE-V2.7.md`
 7. `../../docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md`
-8. `../../docs/roadmap/AGENT-BUILD-AHEAD-QUEUE.md` when the user/maintainer wants useful work to continue while a Studio-only v2.7 runtime gate is still pending.
+8. `../../docs/roadmap/AGENT-BUILD-AHEAD-QUEUE.md` for prepared work, dependency context, and useful repository tasks when Studio-only runtime verification is pending.
 9. `../../docs/roadmap/CROSS-SYSTEM-TRACEABILITY-V2.7.md` when the change touches player-facing replicated or presentation state.
 
-Blueprint v2.7 is the active **runtime** execution authority. Historical v1.9/v2.0/v2.3 queues are provenance, not task selection. Accepted runtime evidence and current Roblox platform behavior outrank authored roadmap prose.
+`MVP-BUILD-THROUGH-TESTING-POLICY.md` is the current execution-cadence and roadmap-status authority. `PLAYABLE-MVP-PATCH-EXECUTION.md` supplies the preferred player-facing milestone order. Blueprint v2.7 remains the active **runtime safety/stabilization** authority. Historical v1.9/v2.0/v2.3 queues are provenance, not task selection. Accepted runtime evidence and current Roblox platform behavior outrank authored roadmap prose.
 
-The active runtime queue is Tickets 331–360. Do not skip its stop conditions to activate persistence, broad visual expansion, networking cutovers, or deferred gameplay integration.
+Do not bypass concrete v2.7 safety boundaries involving server authority, current-state ownership, rollback integrity, lifecycle correctness, or evidence that downstream runtime work genuinely depends on. Merely belonging to a later roadmap phase is not a blocker.
 
-For MVP 0.1 manual-testing cadence, `MVP-BUILD-THROUGH-TESTING-POLICY.md` controls. Do not require a human Studio playtest after every intermediate implementation task, merge, patch fragment, or version label. Run all applicable automated/static validation, keep changes diagnosable and reversible, and continue through dependency-safe MVP 0.1 work until the First Complete Run is code-complete. Then stop expansion for the consolidated exact-build Studio playtest/debug/replay gate before Patch 0.2 becomes the normal focus.
+## Build-through and milestone verification
 
-Earlier Studio/runtime evidence is still mandatory when a narrow exception applies: an active v2.7 evidence gate, data-loss or persistence risk, consequential security/authority changes, engine-only behavior that later work cannot safely depend on without runtime proof, or a known blocker that makes further implementation unsafe or misleading.
+Do not require a human Studio playtest after every intermediate implementation task, merge, patch fragment, or version label. Run all applicable automated/static validation, keep changes diagnosable and reversible, and continue through useful dependency-safe work until a coherent player-facing milestone is ready to evaluate.
 
-The controlled build-ahead queue is a separate preparation lane. It allows agents to prepare migration manifests, pure contracts, content schemas, validation tooling, tests, and isolated/dormant gameplay branches while runtime evidence is pending. It does **not** authorize early runtime activation or false evidence promotion.
+Use these meanings when reporting roadmap work:
 
-Roadmap adoption does not prove the active Studio incidents are fixed. Preserve E1 unless a captured Studio evidence packet justifies promotion.
+- **NOT STARTED** — no meaningful implementation exists yet.
+- **BUILDING** — implementation is active or partial.
+- **BUILT — VERIFICATION PENDING** — implementation exists and applicable source/static checks pass, but required Studio/device/integration/human evidence is still open.
+- **VERIFIED** — applicable acceptance evidence passed.
+- **DEFERRED** — lower priority for now; not prohibited merely by phase order.
+- **BLOCKED** — work cannot safely or correctly proceed because of a named dependency, safety issue, broken owner/interface, or evidence boundary.
+- **HISTORICAL** — provenance only.
+
+The distinction between **BUILT — VERIFICATION PENDING** and **VERIFIED** is mandatory. Never erase completed source work merely because runtime evidence is pending, and never promote untested work to verified.
+
+Earlier Studio/runtime evidence is still mandatory when a narrow exception applies: data-loss or irreversible persistence risk, consequential security/authority changes, an active v2.7 safety gate, engine-only behavior that later work cannot safely depend on without runtime proof, or another concrete blocker that makes continued implementation unsafe or misleading.
+
+At a coherent player-facing milestone, stop broad expansion long enough to run the applicable Studio/playtest/debug/replay pass. Fix integration defects and mark the milestone **VERIFIED** only when its required evidence passes. Then continue building.
+
+## Build-ahead and later-phase work
+
+`AGENT-BUILD-AHEAD-QUEUE.md` is useful prepared-work and dependency context. Its historical `READY`, `PREPARED`, `BLOCKED`, and lock language does not override the current Build-Through status policy.
+
+Later-phase work may be implemented when it is dependency-safe and one of these is true:
+
+- it directly advances the current playable milestone;
+- it removes a real blocker or expensive near-term dependency;
+- it creates a reusable canonical owner/interface required by near-term work;
+- it is a small isolated improvement with clear value and low integration risk.
+
+Avoid broad speculative expansion with no near-term payoff. Prefer visible playable progress and real dependency reduction.
+
+Roadmap adoption does not prove Studio behavior. Preserve the actual evidence level until a captured Studio/device/runtime packet justifies promotion.
 
 ## Build-ahead branch rules
 
-When working from `AGENT-BUILD-AHEAD-QUEUE.md`:
+When working from `AGENT-BUILD-AHEAD-QUEUE.md` or another later-phase roadmap area:
 
 - fetch current `main` before selecting the task;
 - check related open PRs to avoid duplicate work;
 - prefer one task or tightly coupled task group per branch;
-- use `[BUILD-AHEAD]` or `[BUILD-AHEAD/BLOCKED]` in the PR title;
-- keep future runtime wiring separate from preparatory modules/data;
-- do not merge or activate PR #221/#222 ahead of their documented gates;
-- do not implement/activate R3 semantic suppression before R2 evidence;
+- keep risky runtime cutovers separate from preparatory modules/data when rollback or evidence requires that separation;
+- do not implement/activate R3 semantic suppression before R2 when the current runtime design genuinely depends on that ordering;
 - do not boot preserved legacy gameplay services alongside canonical services;
 - keep source-proven facts separate from Studio-only facts;
-- leave gameplay-prep PRs draft/blocked when their runtime activation gate is not yet open.
+- use **BUILT — VERIFICATION PENDING** when source work is complete but runtime acceptance remains open;
+- use **BLOCKED** only when the concrete blocking reason is named.
 
-Docs, tooling, source audits, pure validators and migration inventories that do not change active runtime behavior may be independently reviewable. Runtime-affecting gameplay preparation should remain isolated until its promotion gate is accepted.
+Docs, tooling, source audits, pure validators, migration inventories, content/data work, and isolated gameplay improvements may be independently reviewable when they preserve canonical ownership and do not create an unsafe activation path.
 
 ## Canonical layout
 
@@ -155,7 +181,7 @@ from an environment that can actually run it.
 
 Do not delete or loosen an existing test because a new implementation fails it unless the underlying documented requirement has intentionally changed.
 
-During MVP 0.1 build-through, passing applicable automated/static validation allows the next dependency-safe MVP task to continue when no narrow early-runtime exception applies. Static tests do not prove Studio behavior; record unresolved Studio-only checks as deferred to the consolidated MVP integration pass rather than forcing a routine human handoff.
+Passing applicable automated/static validation permits the next dependency-safe task to continue when no narrow early-runtime exception applies. Static tests do not prove Studio behavior; record unresolved Studio/device/integration checks as **BUILT — VERIFICATION PENDING** and group them into the next coherent milestone acceptance pass when safe.
 
 ## Working with a newer Roblox place
 
@@ -192,17 +218,19 @@ Flag these clearly rather than pretending they were validated by CI:
 - performance and memory;
 - publishing configuration.
 
-For ordinary MVP 0.1 implementation increments, the existence of a Studio-only check does not by itself create a hard manual gate. Defer it to the consolidated MVP 0.1 integration pass unless the build-through policy's early-runtime exception applies.
+The existence of a Studio-only check does not by itself create a hard manual gate. Defer it to the next coherent milestone pass unless the Build-Through policy's early-runtime exception applies. Work awaiting that evidence should be labeled **BUILT — VERIFICATION PENDING**, not reverted to not-started or falsely marked verified.
 
 ## Agent completion checklist
 
-- [ ] Read the active roadmap documents, the MVP build-through testing policy, and, when applicable, the build-ahead queue.
+- [ ] Read the active roadmap documents and the Build-Through + Milestone Verification policy.
 - [ ] Re-fetched current `main` and checked for overlapping open PRs.
+- [ ] Identified the current playable milestone and the highest-ROI useful task.
 - [ ] Preserved client/server authority boundaries.
-- [ ] Kept preparatory work separate from gated runtime activation.
+- [ ] Kept dangerous runtime migrations separable where rollback/evidence requires it.
 - [ ] Added or updated focused tests.
 - [ ] Ran layout, formatting, lint, fixture, roadmap-authority, and Rojo build checks as applicable.
-- [ ] Documented Studio-only validation as completed, required early, or deferred to the consolidated MVP pass.
+- [ ] Labeled implementation truthfully as building, built-verification-pending, verified, deferred, or concretely blocked.
+- [ ] Documented Studio-only validation as completed, required early, or pending for the next coherent milestone pass.
 - [ ] Avoided committing generated place files or secrets.
 - [ ] Updated the applicable roadmap/build-ahead task status when appropriate.
-- [ ] Summarized changed behavior, current build-through/manual-gate status, and remaining risks.
+- [ ] Summarized changed behavior, current verification status, and remaining risks.
