@@ -152,7 +152,7 @@ This is now a first-class product lane under Master Roadmap Phase W.
 |---|---|---|---|
 | BA-050 | DONE | First authored outdoor route as data. | [`docs/specifications/first-authored-outdoor-route.md`](../specifications/first-authored-outdoor-route.md) — orders the eight active Ranger Station → Extraction Clearing landmarks, exposes three route-local BA-051 encounter slots plus one optional BA-052 discovery slot, and hands off to First Descent at `descent-entry`. `RuntimeConsumptionActive = false`; recovered 189-Part WorldPath geometry remains held and the expedition launch terminal is not reused as dungeon-transition authority. |
 | BA-051 | DONE | Encounter-beat definitions. | [`docs/specifications/first-outdoor-encounter-beats.md`](../specifications/first-outdoor-encounter-beats.md) — binds the three BA-050 slots to a Basic orientation contact, a Basic/Runner/Crawler mixed group, and a two-wave Basic/Runner → Basic/Blight-Spitter roadblock. Duration/recovery values remain authoring targets, only the final roadblock carries late-route elite-resolver-candidate intent, and runtime consumption stays disabled. |
-| BA-052 | READY | Landmark/discovery definitions. | Stable discovery IDs, gameplay meaning, presentation intent, reward refs, streaming-safe identity. |
+| BA-052 | DONE | Landmark/discovery definitions. | [`docs/specifications/first-outdoor-discovery.md`](../specifications/first-outdoor-discovery.md) — defines the optional Lookout Cache with stable discovery/slot/landmark/streaming IDs, `OptionalVantageCache` gameplay meaning, `ReadableOptionalDetour` presentation intent, and canonical planned `reward-source.authored-container` reward reference. Data-only; no streaming, persistence, networking, presentation, or reward runtime ownership. |
 
 ## P6 — onboarding, input and UI preparation
 
@@ -230,7 +230,6 @@ BA-021 NPC contracts
 BA-022 crafting contracts
 BA-023 gathering/resource-node model
 BA-024 vendor/catalog contracts
-BA-052 landmark/discovery definitions
 BA-060 onboarding sequence
 BA-061 action-map audit
 BA-063 UI information architecture
