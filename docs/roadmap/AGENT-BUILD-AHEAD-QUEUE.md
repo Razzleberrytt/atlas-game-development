@@ -158,7 +158,7 @@ This is now a first-class product lane under Master Roadmap Phase W.
 
 | ID | Status | Task | Deliverable / boundary |
 |---|---|---|---|
-| BA-060 | READY | First-session onboarding sequence. | Main World spawn → preparation → expedition → reward → return. |
+| BA-060 | DONE | First-session onboarding sequence. | [`docs/specifications/first-session-onboarding-sequence.md`](../specifications/first-session-onboarding-sequence.md) — pins the 12-step safe arrival → preparation → deliberate launch → route/discovery → First Descent → Run Relic decision → result → safe return → build understanding → deliberate replay journey. Runtime-existing, prepared-data, prepared-integration, and blocked-lifecycle states remain explicit; final replay is blocked on the current `OperationLifecycleService` auto-replay behavior rather than being changed sideways. |
 | BA-061 | READY | PC/mobile/controller action-map audit. | Existing/missing/conflicting semantic actions + accessibility considerations. |
 | BA-062 | BLOCKED on BA-061 | Input abstraction improvements. | Client-only semantic mapping; no gameplay authority change. |
 | BA-063 | READY | UI information architecture. | Main World/expedition/loot/progression screen-state matrix and ownership boundaries. |
@@ -230,7 +230,6 @@ BA-021 NPC contracts
 BA-022 crafting contracts
 BA-023 gathering/resource-node model
 BA-024 vendor/catalog contracts
-BA-060 onboarding sequence
 BA-061 action-map audit
 BA-063 UI information architecture
 ```
