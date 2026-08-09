@@ -9,10 +9,11 @@ local function check(condition: unknown, message: string?)
 	end
 end
 
-local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/AuthoredWorldRecoveryCoverageConfig.luau"), {
-	debugName = "AuthoredWorldRecoveryCoverageConfig",
-	injectGlobals = true,
-})()
+local config =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/AuthoredWorldRecoveryCoverageConfig.luau"), {
+		debugName = "AuthoredWorldRecoveryCoverageConfig",
+		injectGlobals = true,
+	})()
 
 check(config.Version == "BA-005-RECOVERY-COVERAGE-v1")
 check(config.RuntimeEnabled == false)
