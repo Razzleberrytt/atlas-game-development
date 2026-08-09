@@ -10,18 +10,19 @@ Read these files before changing it:
 
 1. `docs/bible/00-current-product-authority.md` — current strategic product authority and conflict resolution
 2. `docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md` — **current implementation-sequencing authority**; decides which playable slice is built next
-3. `docs/roadmap/MASTER-ROADMAP.md` — complete v2.8 product path and requirements inventory
-4. `games/living-kingdoms/AGENTS.md`
-5. `games/living-kingdoms/CANONICAL-RUNTIME.md`
-6. `games/living-kingdoms/README.md`
-7. `docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md` — active runtime stabilization/rollout authority while its gates remain open
-8. `docs/roadmap/PRODUCTION-CORE-V2.7.md`
-9. `docs/roadmap/AGENT-BUILD-AHEAD-QUEUE.md` when runtime evidence is blocked or build-ahead work is requested
-10. `docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md` when touching runtime state, remotes, presentation, lifecycle, Studio migration, or incident closure
-11. `docs/production/V2.7-CUTOVER-LEDGER.md` for producer/consumer/presentation migration work
-12. `docs/production/V2.7-EVIDENCE-PACKET-TEMPLATE.md` before any Studio/runtime run intended to close a gate or promote evidence level
+3. `docs/roadmap/MVP-BUILD-THROUGH-TESTING-POLICY.md` — **current manual-testing cadence authority**; allows dependency-safe MVP 0.1 work to continue through code-complete before the normal consolidated Studio playtest
+4. `docs/roadmap/MASTER-ROADMAP.md` — complete v2.8 product path and requirements inventory
+5. `games/living-kingdoms/AGENTS.md`
+6. `games/living-kingdoms/CANONICAL-RUNTIME.md`
+7. `games/living-kingdoms/README.md`
+8. `docs/roadmap/BLUEPRINT-V2.7-EXECUTION.md` — active runtime stabilization/rollout authority while its gates remain open
+9. `docs/roadmap/PRODUCTION-CORE-V2.7.md`
+10. `docs/roadmap/AGENT-BUILD-AHEAD-QUEUE.md` when runtime evidence is blocked or build-ahead work is requested
+11. `docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md` when touching runtime state, remotes, presentation, lifecycle, Studio migration, or incident closure
+12. `docs/production/V2.7-CUTOVER-LEDGER.md` for producer/consumer/presentation migration work
+13. `docs/production/V2.7-EVIDENCE-PACKET-TEMPLATE.md` before any Studio/runtime run intended to close a gate or promote evidence level
 
-`docs/bible/00-project-charter.md` is historical Living Kingdoms product provenance. Read it when historical design context is relevant, but do not use it to override Current Product Authority, Playable MVP + Patch Execution v2.9, or Master Roadmap v2.8.
+`docs/bible/00-project-charter.md` is historical Living Kingdoms product provenance. Read it when historical design context is relevant, but do not use it to override Current Product Authority, Playable MVP + Patch Execution v2.9, MVP Build-Through Testing Policy, or Master Roadmap v2.8.
 
 More specific `AGENTS.md` files override this file for their directory scope.
 
@@ -57,7 +58,11 @@ Gate 0 runtime stabilization
 → measured live patches
 ```
 
-Each player-facing milestone ends with a hard **STOP / PLAY / FIX / REPLAY / THEN EXPAND** gate. A known blocker that prevents the current loop from being played end to end blocks the next patch.
+For **MVP 0.1**, do not interpret the older STOP / PLAY / FIX language as requiring a human Studio playtest after every intermediate task, merge, patch fragment, or version label. `docs/roadmap/MVP-BUILD-THROUGH-TESTING-POLICY.md` controls manual-test cadence: run applicable automated/static validation continuously, keep commits diagnosable and reversible, and continue through dependency-safe MVP 0.1 work until the First Complete Run is code-complete. Then stop expansion for the consolidated exact-build Studio playtest/debug/replay gate before Patch 0.2 becomes the normal focus.
+
+Earlier manual/runtime evidence is still mandatory when a narrow exception applies, including an active v2.7 evidence gate, data-loss/persistence risk, consequential security/authority change, engine-only behavior that later work cannot safely build on without runtime proof, or a known blocker that makes further implementation unsafe or misleading.
+
+After MVP 0.1, manual acceptance is milestone-based rather than reflexively version-based: coherent implementation increments may be grouped, but a player-facing milestone must receive its required Studio/runtime acceptance before it is declared complete and before incompatible expansion depends on unproven behavior.
 
 When a Master Roadmap phase contains more scope than the current playable patch needs, implement the **smallest coherent dependency-safe subset** required for the current patch exit gate. Do not complete a broad future phase merely because it is well specified.
 
@@ -202,7 +207,9 @@ A documentation-only roadmap/authority change must still be checked for broken l
 
 For v2.7 runtime migration tickets, static tests do not replace required Studio evidence such as listener timing, reset/respawn baselines, queue warnings, streaming rebind, multiplayer disconnect behavior, or profiling captures.
 
-For playable patches, static tests also do not replace the STOP / PLAY / FIX gate. The prior playable baseline must remain regression-tested, and required Studio evidence must be captured before claiming a player-facing patch complete.
+For MVP 0.1 implementation, passing static/automated checks permits the next dependency-safe MVP task to continue when no narrow early-runtime exception applies. Those checks do not prove Studio behavior; record unresolved Studio-only verification as deferred to the consolidated MVP 0.1 integration pass. Once the First Complete Run is code-complete, required exact-build Studio evidence must be captured before claiming MVP 0.1 accepted or making Patch 0.2 the normal implementation focus.
+
+For later player-facing milestones, static tests likewise do not replace milestone acceptance. Preserve the prior playable baseline with regression coverage and capture the required Studio/runtime evidence before declaring the coherent milestone complete.
 
 ## Change discipline
 
@@ -231,7 +238,9 @@ Follow `docs/production/RBXL-IMPORT-MIGRATION.md` when reconciling a newer place
 
 For current rollout evidence, follow `docs/roadmap/ACTIVE-PLACE-ROLLOUT-V2.7.md`, update `docs/production/V2.7-CUTOVER-LEDGER.md`, preserve the named rollback/build checkpoint and create a fresh evidence packet with exact build/commit/place identity.
 
-For playable patch acceptance, use Studio to exercise the full representative loop and replay it. Capture multiplayer, device, performance, streaming, lifecycle or outside-player evidence when the current patch's exit gate requires those dimensions.
+For MVP 0.1, Studio-only checks should be recorded as deferred when appropriate rather than forcing a routine human handoff after every implementation increment. At MVP 0.1 code-complete, use Studio to exercise the full representative loop and replay it before Patch 0.2 becomes the normal focus. Earlier Studio/runtime proof remains required for the narrow exceptions defined in `docs/roadmap/MVP-BUILD-THROUGH-TESTING-POLICY.md`.
+
+For later playable milestone acceptance, use Studio to exercise the representative player-facing layer and its prior baseline. Capture multiplayer, device, performance, streaming, lifecycle or outside-player evidence when the milestone's exit gate requires those dimensions.
 
 ## Completion report
 
@@ -244,8 +253,8 @@ When finishing a task, report:
 - ownership/authority boundaries touched;
 - cutover ledger rows changed where applicable;
 - before/after runtime counters where applicable;
-- evidence packet or Studio-only checks still required;
-- STOP / PLAY / FIX gate status for the current playable patch;
+- evidence packet or Studio-only checks still required or deferred to the consolidated MVP pass;
+- MVP build-through/manual-gate status for the current playable milestone;
 - rollback checkpoint/flag state for migration work;
 - current patch blocker status;
 - next highest-ROI task for the current playable patch;
