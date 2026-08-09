@@ -4,33 +4,35 @@
 
 **Lane:** controlled build-ahead, P6 onboarding/input/UI preparation
 
-**Status:** audit complete; no input behavior changed
+**Status:** audit complete; BA-062 M1 source remediation applied, remaining findings open
 
 **Evidence level:** E1 source/static only — no Studio device testing was performed
 
-**Playable-patch mapping:** MVP 0.1 device-parity input; remediation belongs to BA-062 and Patch 0.2
+**Playable-patch mapping:** MVP 0.1 device-parity input; remaining remediation belongs to BA-062 and Patch 0.2
 
-**Runtime behavior:** none
+**Runtime behavior:** BA-062 changes only the client fire-input origin; server combat authority is unchanged
 
 ## Decision
 
-Atlas's semantic action surface is **not device-neutral**. Seventeen player
-actions are bound across ten client controllers with no shared action map, and
-the split between `ContextActionService` (device-neutral, can create a touch
-button, accepts a gamepad key) and raw `UserInputService.InputBegan`
-(keyboard/mouse only) decides device coverage by accident rather than by design.
+Atlas's semantic action surface is still **not fully device-neutral**. Seventeen
+player actions are bound across ten client controllers with no shared action
+map, and the split between `ContextActionService` and raw
+`UserInputService.InputBegan` still makes device coverage inconsistent.
 
-Five actions use `ContextActionService` and are broadly reachable. The rest are
-bound through raw `UserInputService`, and three of them — **fire, reload and
-sprint** — are core combat verbs. Firing has no gamepad or touch binding at all.
+BA-062's first isolated remediation closes the critical M1 source gap: firing
+now keeps `MouseButton1` and adds `ButtonR2` plus a generated touch **Fire**
+button through `ContextActionService`. All three input origins converge on the
+same `WeaponController.setFiring` hold state and the existing `FireIntent`
+remote. No second client fire owner or server combat authority was added.
 
-Two hard binding conflicts exist, both between a controller-owned action and the
-engine's `ProximityPrompt` defaults: `E` (revive vs. every prompt) and `ButtonX`
-(class action vs. every prompt on gamepad).
+Reload, sprint and revive still lack complete gamepad coverage. Two hard binding
+conflicts also remain between controller-owned actions and the engine's
+`ProximityPrompt` defaults: `E` (revive vs. every prompt) and `ButtonX` (class
+action vs. every prompt on gamepad).
 
-This audit records the surface and its gaps. It changes no binding. BA-062 owns
-remediation and remains a client-only semantic mapping task with no gameplay
-authority change.
+This document therefore remains the BA-061 source audit plus its BA-062
+remediation ledger. Device behavior is not accepted until a later Studio/device
+pass verifies the source change on actual controller and touch surfaces.
 
 ## Method and limits
 
@@ -38,30 +40,31 @@ Every finding below is read from source in `games/living-kingdoms/src/client`
 and `games/living-kingdoms/src/server/Systems`, and is locked by
 `tests/InputActionMapSourceAudit.test.luau`.
 
-This is **E1**. No device was tested. Specifically unverified:
+This remains **E1** evidence. No device was tested. Specifically unverified:
 
-- whether the generated touch buttons are reachable, correctly sized or
+- whether the generated Fire touch button is reachable, correctly sized or
   non-overlapping on a real phone;
+- whether holding/releasing `ButtonR2` produces the intended feel on a real
+  controller;
 - whether gamepad UI navigation actually reaches every button;
 - whether the engine's default `ProximityPrompt` gamepad button behaves as
   documented alongside a competing `ContextActionService` binding;
 - any latency, comfort or discoverability judgement.
 
-Those belong to a Studio device pass, not to this audit.
+Those belong to the consolidated Studio device pass.
 
 ## Binding mechanisms in use
 
 | Mechanism | Device reach | Used by |
 |---|---|---|
-| `ContextActionService:BindAction(..., true, keys...)` | keyboard + gamepad + generated touch button | 5 actions |
-| Raw `UserInputService.InputBegan/InputEnded` | keyboard and mouse only | 8 actions |
+| `ContextActionService:BindAction(..., true, keys...)` | keyboard/gamepad and/or generated touch button, depending on registered keys | 6 actions after BA-062 M1 |
+| Raw `UserInputService.InputBegan/InputEnded` | keyboard and mouse only | 8 actions; fire now supplements its mouse path with CAS |
 | Engine `ProximityPrompt` | keyboard `E`, gamepad `ButtonX`, touch tap — all engine defaults | all world interaction |
 | Roblox `PlayerModule` | full native coverage | move, jump, camera |
 | GUI `Activated` + `GuiService.SelectedObject` | pointer, touch, gamepad selection focus | 2 choice surfaces |
 
-The third `BindAction` argument (`createTouchButton`) is `true` for every
-`ContextActionService` action in the codebase, so those five actions do get a
-mobile button. Raw `UserInputService` actions cannot.
+The third `BindAction` argument (`createTouchButton`) is `true` for the current
+`ContextActionService` actions, including BA-062's Fire action.
 
 ## Action inventory
 
@@ -72,7 +75,7 @@ mobile button. Raw `UserInputService` actions cannot.
 | Move | Roblox `PlayerModule` | WASD | — | left stick | thumbstick | engine |
 | Jump | Roblox `PlayerModule` | Space | — | ButtonA | button | engine |
 | Camera look | `PlayerModule` + `CameraController` | — | mouse | right stick | drag | engine |
-| **Fire weapon** | `WeaponController` | — | MouseButton1 | **—** | **—** | raw UIS |
+| **Fire weapon** | `WeaponController` | — | MouseButton1 | **ButtonR2** | **Fire button** | raw UIS + CAS |
 | Reload | `WeaponController`, `MobileControlsController` | R | — | **—** | button | raw UIS + touch-only CAS |
 | Sprint | `SurvivorController`, `MobileControlsController` | LeftShift | — | **—** | button | raw UIS + touch-only CAS |
 | Class action (Brace) | `ClassActionController` | Q | — | ButtonX | button | CAS |
@@ -89,23 +92,26 @@ mobile button. Raw `UserInputService` actions cannot.
 
 Only two actions are config-driven: `PersonalFlashlightConfig` and
 `SquadPingConfig` each expose `KeyboardKeyCodeName` and `GamepadKeyCodeName`.
-The other fifteen hardcode their bindings inside the controller.
+The other fifteen still hardcode their bindings inside controllers. BA-062's M1
+fix intentionally does not jump ahead to the later shared-action-map increment.
 
-## Missing bindings
+## Missing bindings / remediation ledger
 
-### M1 — Firing is mouse-only (critical)
+### M1 — Firing device coverage — source-remediated by BA-062
 
-`WeaponController` sends fire intent only from
-`input.UserInputType == Enum.UserInputType.MouseButton1`, with the matching
-release on `InputEnded`. There is no `ContextActionService` binding, no gamepad
-button and no touch button; `MobileControlsController` binds reload and sprint
-but not fire. `sendFireIntent` has exactly one call site chain, so no other
-surface can start firing.
+Before BA-062, `WeaponController` sent fire intent only from
+`MouseButton1`, leaving gamepad and touch unable to attack.
 
-A gamepad or touch player can move, jump, reload, sprint, ping, use the
-flashlight and collect loot — but cannot attack. This directly contradicts MVP
-0.1's device-parity acceptance question, and it is the single highest-value
-input fix available.
+The first BA-062 increment keeps that mouse path and adds a single
+`ContextActionService` action named `LK_Fire`, registered with
+`createTouchButton = true` and `Enum.KeyCode.ButtonR2`. Begin, End and Cancel
+all feed the same `setFiring` helper used by mouse input; that helper is the only
+local hold-state transition and still calls the existing `FireIntent` remote.
+`MobileControlsController` is deliberately not made a second fire owner.
+
+**Source status:** remediated.  
+**Runtime/device status:** unverified until the consolidated controller/touch
+Studio pass.
 
 ### M2 — Reload and sprint have no gamepad binding
 
@@ -129,9 +135,9 @@ in this controller.
 
 ### M5 — Panel shortcuts are keyboard-only, and their labels assume keyboard
 
-`C` and `I` have no gamepad or touch equivalent. The panels themselves *are*
-reachable — `RPGMenuController` creates on-screen buttons and a close button, so
-pointer, touch and gamepad UI navigation all work. But those buttons are
+`C` and `I` have no gamepad or touch shortcut equivalent. The panels themselves
+*are* reachable — `RPGMenuController` creates on-screen buttons and a close
+button, so pointer, touch and gamepad UI navigation work. But those buttons are
 labelled `"C   CHARACTER"` and `"I   INVENTORY"`, showing a keyboard key to
 players who have no keyboard.
 
@@ -147,14 +153,13 @@ interaction is a `ProximityPrompt` on the default keyboard key `E`:
 leave the default, which is also `E`.
 
 A player standing near a downed ally and a loot container presses `E` and drives
-both paths. This is the most likely conflict to be hit in real play, because
-downed allies and loot occupy the same fights.
+both paths. This remains the next isolated BA-062 remediation target.
 
 ### C2 — `ButtonX` is bound to both the class action and every ProximityPrompt
 
 `ClassActionController` binds `Enum.KeyCode.ButtonX` for Brace. `ButtonX` is
 also the engine's default `ProximityPrompt` gamepad button. The same collision
-as C1, on gamepad, against a different action.
+as C1 remains on gamepad, against a different action.
 
 ### C3 — Two independent `Escape` listeners
 
@@ -175,51 +180,49 @@ prevents that overlap; only the current pacing does.
 
 ## Accessibility considerations
 
-None of the following exist today. They are recorded as considerations for
-BA-062 and Patch 0.2, not as defects with an owner.
+None of the following broad options are implemented by the M1 remediation.
+They remain considerations for later BA-062/Patch 0.2 work.
 
 | Consideration | Current state |
 |---|---|
-| Rebinding | No action can be rebound. Fifteen of seventeen are hardcoded; two are config constants that are not player-facing. |
+| Rebinding | No action can be rebound. Fifteen of seventeen remain hardcoded; two are config constants that are not player-facing. |
 | Hold vs. toggle | Sprint, fire and revive are hold-only. No toggle alternative. |
 | Hold duration | Revive's hold length is not adjustable. |
 | One-handed / reduced-mobility play | Simultaneous hold-sprint plus hold-fire plus aim is required with no alternative. |
-| Keyboard-only play | Firing requires a mouse button; there is no keyboard fire. |
+| Keyboard-only play | Firing still requires a mouse button; there is no keyboard fire. |
 | Pointer-free play | Cursor is locked to centre (`MouseBehavior.LockCenter`) except while `LK_InputModalOpen` is set. |
 | Input labelling | Prompt and button labels are keyboard-worded (`"C   CHARACTER"`) and do not adapt to the active device. |
-| Choice surfaces | Upgrade and relic choices do support cursor, keyboard and gamepad selection focus via `GuiService.SelectedObject` — the one place device-neutral input is handled deliberately. |
-| Device detection | Only `MobileControlsController` adapts, via `TouchEnabled and not KeyboardEnabled`. A device with both touch and keyboard gets no touch buttons for reload or sprint. |
+| Choice surfaces | Upgrade and relic choices support cursor, keyboard and gamepad selection focus via `GuiService.SelectedObject`. |
+| Device detection | `MobileControlsController` still adapts via `TouchEnabled and not KeyboardEnabled`; the Fire CAS action is no longer dependent on that controller. |
 
 ## Structural finding
 
-There is no action map. Ten controllers each own their own bindings, so:
+There is still no shared action map. Ten controllers own their own bindings, so:
 
 - the full action surface cannot be listed, diffed or validated from one place;
-- a new controller can silently claim a key another controller already uses —
-  C1 through C4 all arose this way;
-- device coverage is a side effect of which binding API an author reached for;
+- a new controller can silently claim a key another controller already uses;
+- device coverage remains inconsistent outside the M1 remediation;
 - rebinding and device-adaptive labelling have nowhere to live.
 
-`PersonalFlashlightConfig` and `SquadPingConfig` show the shape the other
-fifteen actions lack: a named action with its key codes in shared config.
+`PersonalFlashlightConfig` and `SquadPingConfig` still show the config-driven
+shape the other fifteen actions lack.
 
 ## Recommended remediation order
 
-For BA-062, which is now unblocked. Each item is client-only semantic mapping
-and changes no gameplay authority.
+BA-062 remains an umbrella of isolated, merge-after-each increments. The first
+item is complete in source; do not bundle later items together merely because
+they share this ticket.
 
-1. **M1 — give firing a device-neutral binding.** Move fire to
-   `ContextActionService` with a gamepad trigger and a touch button, keeping
-   `MouseButton1`. The server remains the sole owner of shots, cadence,
-   ammunition, targeting and damage; only intent origin changes.
+1. **M1 — device-neutral firing:** source-remediated by BA-062. Confirm on real
+   controller/touch hardware during the consolidated Studio pass.
 2. **C1 and C2 — resolve the `E` and `ButtonX` collisions.** Either move Revive
    and Brace off the prompt keys, or make prompts and contextual actions share
-   one arbitration owner. Do not solve it by sinking the input, which would
-   break world interaction.
+   one arbitration owner. Do not solve it by blindly sinking the input, which
+   would break world interaction.
 3. **M3 and M2 — add gamepad bindings for revive, reload and sprint.**
 4. **Introduce a shared action map** covering all seventeen actions, following
-   the two existing configs, so BA-063's UI work and any future rebinding have
-   a single surface. This is the structural fix that prevents C1–C4 recurring.
+   the two existing configs, so BA-063's UI work and future rebinding have one
+   surface.
 5. **M4 and M5 — device-neutral close affordance and device-adaptive labels.**
 
 Accessibility options (rebinding, hold/toggle, hold duration) should follow the
@@ -227,8 +230,10 @@ action map rather than precede it.
 
 ## Completion boundary
 
-BA-061 is complete at E1 when this audit and its source fixture are green. It
-changes no binding, adds no abstraction layer, and makes no claim that any
-device was tested. BA-062 is unblocked; the Studio device pass that would verify
-touch-button reachability, gamepad navigation and prompt arbitration remains
-outstanding and belongs to the human/Studio lane.
+BA-061 remains complete at E1. BA-062's first increment changes only client
+input mapping and does not raise the evidence level: source now exposes firing
+to mouse, `ButtonR2`, and a generated touch button through one owner, while
+server authority for shots, cadence, ammunition, targeting and damage is
+unchanged. The Studio device pass that verifies touch-button reachability and
+controller behavior remains outstanding. BA-062 should continue one isolated
+remediation at a time, with C1/C2 next.

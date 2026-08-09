@@ -34,7 +34,10 @@ local renderStepped = createSignal()
 local presentationEvent = createSignal()
 local focusedTextBox: unknown = nil
 local reloadRequests = {}
+local fireRequests = {}
 local createdInstances = {}
+local boundActions = {}
+local actionTitles = {}
 local serverTimestamp = 10
 
 local function fakeInstance(className: string)
@@ -79,7 +82,9 @@ local reloadIntentRemote = {
 	end,
 }
 local fireIntentRemote = {
-	FireServer = function() end,
+	FireServer = function(_self: unknown, ...: any)
+		table.insert(fireRequests, table.pack(...))
+	end,
 }
 local presentationRemote = { OnClientEvent = presentationEvent }
 local combatNetwork = {
@@ -132,6 +137,28 @@ local userInputService = {
 		return focusedTextBox
 	end,
 }
+local contextActionService = {
+	BindAction = function(
+		_self: unknown,
+		name: string,
+		callback: (...any) -> any,
+		createTouchButton: boolean,
+		...: any
+	)
+		boundActions[name] = {
+			callback = callback,
+			createTouchButton = createTouchButton,
+			inputs = table.pack(...),
+		}
+	end,
+	SetTitle = function(_self: unknown, name: string, title: string)
+		actionTitles[name] = title
+	end,
+	UnbindAction = function(_self: unknown, name: string)
+		boundActions[name] = nil
+		actionTitles[name] = nil
+	end,
+}
 local workspace = {
 	CurrentCamera = {
 		CFrame = {
@@ -150,6 +177,7 @@ local workspace = {
 }
 
 local services = {
+	ContextActionService = contextActionService,
 	Players = players,
 	ReplicatedStorage = replicatedStorage,
 	UserInputService = userInputService,
@@ -177,6 +205,13 @@ local config = {
 }
 
 local keyCodeR = {}
+local keyCodeButtonR2 = {}
+local mouseButton1 = {}
+local inputStateBegin = {}
+local inputStateEnd = {}
+local inputStateCancel = {}
+local contextActionPass = {}
+local contextActionSink = {}
 local environment = {
 	game = {
 		GetService = function(_self: unknown, serviceName: string)
@@ -196,8 +231,17 @@ local environment = {
 	end,
 	Instance = { new = fakeInstance },
 	Enum = {
-		KeyCode = { R = keyCodeR },
-		UserInputType = { MouseButton1 = {} },
+		KeyCode = { R = keyCodeR, ButtonR2 = keyCodeButtonR2 },
+		UserInputType = { MouseButton1 = mouseButton1 },
+		UserInputState = {
+			Begin = inputStateBegin,
+			End = inputStateEnd,
+			Cancel = inputStateCancel,
+		},
+		ContextActionResult = {
+			Pass = contextActionPass,
+			Sink = contextActionSink,
+		},
 		HighlightDepthMode = { Occluded = "Occluded" },
 	},
 	Vector2 = {
@@ -239,6 +283,21 @@ local function inputR(gameProcessed: boolean)
 	inputBegan:Fire({ KeyCode = keyCodeR }, gameProcessed)
 end
 
+local function inputMouse(isDown: boolean, gameProcessed: boolean?)
+	local input = { UserInputType = mouseButton1 }
+	if isDown then
+		inputBegan:Fire(input, gameProcessed == true)
+	else
+		inputEnded:Fire(input)
+	end
+end
+
+local function fireAction(inputState: unknown)
+	local action = boundActions.LK_Fire
+	assert(action ~= nil, "fire action is not bound")
+	return action.callback("LK_Fire", inputState)
+end
+
 local function activeHighlight()
 	for index = #createdInstances, 1, -1 do
 		local instance = createdInstances[index]
@@ -254,6 +313,34 @@ controller.init()
 controller.start()
 controller.start()
 assert(playerAttributes.LK_HUD_LoadedRounds == nil, "start must clear stale ammunition")
+
+local fireActionBinding = boundActions.LK_Fire
+assert(fireActionBinding ~= nil, "start must bind the semantic fire action")
+assert(fireActionBinding.createTouchButton == true, "fire action must request a generated touch button")
+assert(
+	fireActionBinding.inputs.n == 1 and fireActionBinding.inputs[1] == keyCodeButtonR2,
+	"fire action must bind only ButtonR2 in addition to the preserved mouse path"
+)
+assert(actionTitles.LK_Fire == "Fire", "generated touch fire button must be labelled")
+
+inputMouse(true, false)
+inputMouse(true, false)
+inputMouse(false)
+assert(#fireRequests == 2, "mouse hold must send one begin and one end fire intent")
+assert(fireRequests[1][1] == true and fireRequests[2][1] == false, "mouse fire intents were malformed")
+
+focusedTextBox = {}
+assert(fireAction(inputStateBegin) == contextActionPass, "focused text input must not be consumed by fire")
+assert(#fireRequests == 2, "focused text input started firing")
+focusedTextBox = nil
+assert(fireAction(inputStateBegin) == contextActionSink, "gamepad/touch fire begin must be consumed")
+assert(fireAction(inputStateBegin) == contextActionSink, "duplicate fire begin must remain safely consumed")
+assert(fireAction(inputStateEnd) == contextActionSink, "gamepad/touch fire end must be consumed")
+assert(#fireRequests == 4, "device-neutral hold must send one begin and one end fire intent")
+assert(fireRequests[3][1] == true and fireRequests[4][1] == false, "device-neutral fire intents were malformed")
+assert(fireAction(inputStateBegin) == contextActionSink, "fire must restart after release")
+assert(fireAction(inputStateCancel) == contextActionSink, "cancelled fire must release the hold")
+assert(#fireRequests == 6 and fireRequests[6][1] == false, "cancel did not release fire intent")
 
 inputR(true)
 assert(#reloadRequests == 0, "game-processed R sent reload")
@@ -354,12 +441,14 @@ assert(playerAttributes.LK_HUD_CombatStatus == "+20 AMMUNITION", "collection fee
 
 controller.stop()
 controller.stop()
+assert(boundActions.LK_Fire == nil, "stop retained ContextActionService fire binding")
 assert(playerAttributes.LK_HUD_LoadedRounds == nil, "stop retained ammunition HUD attributes")
 assert(playerAttributes.LK_HUD_CombatStatus == nil, "stop retained combat status")
 inputR(false)
 assert(#reloadRequests == 1, "stopped controller retained input connection")
 
 controller.start()
+assert(boundActions.LK_Fire ~= nil, "safe restart did not restore fire action")
 inputR(false)
 assert(#reloadRequests == 2, "safe restart did not reconnect once")
 controller.destroy()
@@ -367,6 +456,9 @@ controller.destroy()
 controller.start()
 inputR(false)
 assert(#reloadRequests == 2, "destroyed controller retained input")
+assert(boundActions.LK_Fire == nil, "destroyed controller retained fire action")
 assert(activeHighlight() == nil, "destroyed controller retained presentation")
 
-print("WeaponController: reload input, attribute HUD bridge, disclosure, ammunition, and lifecycle checks passed")
+print(
+	"WeaponController: device-neutral fire, reload input, HUD bridge, disclosure, ammunition, and lifecycle checks passed"
+)
