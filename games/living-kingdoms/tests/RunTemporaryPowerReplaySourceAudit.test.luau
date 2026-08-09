@@ -20,33 +20,48 @@ assert(
 )
 
 assert(contains(runBuild, "store:startOperation()"), "run build reset must begin a fresh operation generation")
-assert(
-	contains(progression, "function RunProgressionService.resetOperation(): boolean"),
-	"run progression needs an application-safe replay reset seam"
-)
-for _, temporaryState in {
-	"level = 1",
-	"xp = 0",
-	"totalXp = 0",
-	"squadKills = 0",
-	"eliteKillsSinceReward = 0",
-	"unclaimedUpgradeChoices = 0",
-	"table.clear(pendingChoiceIds)",
-	"table.clear(processedFieldIntelRewardIds)",
-} do
-	assert(contains(progression, temporaryState), "run progression reset is missing temporary state: " .. temporaryState)
+local resetStart = assert(string.find(progression, "function RunProgressionService.resetOperation(): boolean", 1, true))
+local nextFunctionStart = assert(string.find(progression, "function RunProgressionService.start()", resetStart, true))
+local resetSource = string.sub(progression, resetStart, nextFunctionStart - 1)
+for _, temporaryState in
+	{
+		"level = 1",
+		"xp = 0",
+		"totalXp = 0",
+		"squadKills = 0",
+		"eliteKillsSinceReward = 0",
+		"unclaimedUpgradeChoices = 0",
+		"table.clear(pendingChoiceIds)",
+		"table.clear(processedFieldIntelRewardIds)",
+	}
+do
+	assert(contains(resetSource, temporaryState), "run progression reset is missing temporary state: " .. temporaryState)
 end
 assert(
-	contains(progression, "syncCombatModifierAttributes()") and contains(progression, "publishAll()"),
+	contains(resetSource, "syncCombatModifierAttributes()") and contains(resetSource, "publishAll()"),
 	"replay reset must republish neutral run modifiers and a fresh visible progression snapshot"
 )
+for _, monotonicTransportCounter in
+	{
+		"revision = 0",
+		"lastGainSequence = 0",
+		"selectionSequence = 0",
+	}
+do
+	assert(
+		not contains(resetSource, monotonicTransportCounter),
+		"replay must not roll back long-lived HUD transport counter: " .. monotonicTransportCounter
+	)
+end
 
-for _, durableOwner in {
-	"InventoryLiveService",
-	"PlayerInventoryPersistenceService",
-	"DiscoveryMemoryService",
-	"Achievement",
-} do
+for _, durableOwner in
+	{
+		"InventoryLiveService",
+		"PlayerInventoryPersistenceService",
+		"DiscoveryMemoryService",
+		"Achievement",
+	}
+do
 	assert(
 		not contains(lifecycle, durableOwner),
 		"temporary-power replay reset must not erase durable state: " .. durableOwner
