@@ -130,7 +130,7 @@ This is now a first-class product lane under Master Roadmap Phase W.
 | ID | Status | Task | Deliverable / boundary |
 |---|---|---|---|
 | BA-030 | DONE | Dungeon/expedition content contract. | [`docs/specifications/dungeon-expedition-content-contract.md`](../specifications/dungeon-expedition-content-contract.md) — adds `EncounterSlotId`/`EncounterIntensity`/`RewardSourceId` to the existing handcrafted room pool (`RoomAssemblyContracts`/`RoomAssemblyConfig`), reusing `EquipmentRewardContracts`'s Elite/Boss reward vocabulary and the existing lobby return-to-safety remote for the return path. No spawner/runtime wiring changed. |
-| BA-031 | READY | Portal destination/eligibility contract. | Destination, party/unlock constraints, denial reasons; no teleport authority invented. |
+| BA-031 | DONE | Portal destination/eligibility contract. | `src/shared/World/PortalDestinationContracts.luau` (destination ref, party/unlock constraints, denial-reason enum, pure `evaluateEligibility` resolver) plus the one authored `PortalDestinationConfig.luau` definition for `portal.expedition.primary`, tracking `ExpeditionConfig.Definitions.FirstExpedition`'s party bounds. `RuntimeEnabled = false`; no consumer calls it yet and no teleport/network authority was added. |
 | BA-032 | DONE | First repeatable dungeon content data. | [`docs/specifications/first-repeatable-dungeon-content.md`](../specifications/first-repeatable-dungeon-content.md) — pins canonical seed `202` for a seven-room First Descent and authors concrete basic/Runner/Crawler/Spitter/Brute/Screamer/Progenitor compositions against the existing room/enemy/horde contracts. Data-only; no runtime spawner wiring. |
 | BA-033 | READY | Elite/boss reward-decision data. | References canonical loot/item/run-build owners. |
 | BA-034 | IN PROGRESS via PR #239 | Held pre-launch operation-selection contract. | Inspect PR #239 before any work. Do not duplicate it; no runtime activation until accepted. |
@@ -231,7 +231,6 @@ BA-021 NPC contracts
 BA-022 crafting contracts
 BA-023 gathering/resource-node model
 BA-024 vendor/catalog contracts
-BA-031 portal eligibility contract
 BA-033 elite/boss reward-decision data
 BA-050 authored route data
 BA-052 landmark/discovery definitions

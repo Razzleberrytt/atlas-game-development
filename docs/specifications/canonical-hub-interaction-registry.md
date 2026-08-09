@@ -45,7 +45,7 @@ BA-012 adds no prompt, remote, bootstrap, geometry, placement, teleport, party p
 | `hub.anchor.npc.guide` | NPC conversation seam | unassigned Main World surface | unassigned | unassigned | BA-021; no NPC identity/dialogue invented |
 | `hub.anchor.crafting` | crafting seam | unassigned Main World surface | unassigned | unassigned | BA-022 + BA-026 |
 | `hub.anchor.gathering` | gathering seam | unassigned Main World surface | unassigned | unassigned | BA-023 + BA-026 |
-| `hub.anchor.expedition_portal` | authored expedition portal | recovered `Workspace/HubTown/DungeonPortal` | unassigned | `ExpeditionLobbyService` | Presentation held; BA-031 + BA-034 + BA-035 |
+| `hub.anchor.expedition_portal` | authored expedition portal | recovered `Workspace/HubTown/DungeonPortal` | unassigned | `ExpeditionLobbyService` | Presentation held; destination/eligibility contract done ([`PortalDestinationContracts.luau`](../../games/living-kingdoms/src/shared/World/PortalDestinationContracts.luau), unconsumed/`RuntimeEnabled = false`); BA-034 + BA-035 remain |
 | `hub.anchor.social` | social/party seam | unassigned Main World surface | unassigned | unassigned | BA-035 dedicated policy required |
 
 The two portal anchors deliberately share `portal.expedition.primary`: the live Forward Operations terminal and the held authored portal are alternate presentation surfaces for one canonical expedition entry concept, not competing launch authorities.
