@@ -170,7 +170,10 @@ for index, authoredBeat in FirstOutdoorEncounterBeatConfig.Beats do
 
 	if authoredBeat.ElitePlacementIntentId == ElitePlacementIntentIds.LateRouteResolverCandidate then
 		resolverCandidateCount += 1
-		assert(index == #FirstOutdoorEncounterBeatConfig.Beats, "only the final outdoor beat may carry elite-candidate intent")
+		assert(
+			index == #FirstOutdoorEncounterBeatConfig.Beats,
+			"only the final outdoor beat may carry elite-candidate intent"
+		)
 	else
 		assert(
 			authoredBeat.ElitePlacementIntentId == ElitePlacementIntentIds.Ordinary,
@@ -180,9 +183,15 @@ for index, authoredBeat in FirstOutdoorEncounterBeatConfig.Beats do
 
 	for waveIndex, authoredWave in authoredBeat.Waves do
 		if waveIndex == 1 then
-			assert(authoredWave.DelayAfterPreviousSeconds == 0, "the first authored wave cannot require a prior-wave delay")
+			assert(
+				authoredWave.DelayAfterPreviousSeconds == 0,
+				"the first authored wave cannot require a prior-wave delay"
+			)
 		else
-			assert(authoredWave.DelayAfterPreviousSeconds > 0, "follow-up authored waves require a positive pacing delay")
+			assert(
+				authoredWave.DelayAfterPreviousSeconds > 0,
+				"follow-up authored waves require a positive pacing delay"
+			)
 		end
 		assert(#authoredWave.Units >= 1, "outdoor authored waves cannot be empty")
 
@@ -192,7 +201,10 @@ for index, authoredBeat in FirstOutdoorEncounterBeatConfig.Beats do
 				knownEnemyArchetypeIds[authoredUnit.ArchetypeId] == true,
 				"unknown enemy archetype in outdoor encounter content"
 			)
-			assert(authoredUnit.ArchetypeId ~= EnemyArchetypeIds.Progenitor, "outdoor route cannot author the dungeon boss")
+			assert(
+				authoredUnit.ArchetypeId ~= EnemyArchetypeIds.Progenitor,
+				"outdoor route cannot author the dungeon boss"
+			)
 			assert(
 				authoredUnit.Count >= 1 and authoredUnit.Count % 1 == 0,
 				"outdoor authored enemy counts must be positive integers"
