@@ -483,4 +483,6 @@ do
 	assert(not string.find(serviceSource, prohibited, 1, true), "prohibited authority dependency: " .. prohibited)
 end
 
-print("SquadPingService: LK-0407 isolation, validation, limits, Rally identity, expiry, replication, and cleanup passed")
+print(
+	"SquadPingService: LK-0407 isolation, validation, limits, Rally identity, expiry, replication, and cleanup passed"
+)
