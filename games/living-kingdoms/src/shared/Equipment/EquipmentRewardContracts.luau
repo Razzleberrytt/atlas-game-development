@@ -3,7 +3,26 @@
 -- Blueprint v1.9 reward contracts. Authored definitions remain stable content;
 -- generated instances carry deterministic content and grant identities plus a
 -- globally unique server-created ownership identifier.
+--
+-- Keep this module runtime-independent: pure Lune consumers load it directly,
+-- so affix data is described structurally here instead of requiring another
+-- Roblox ModuleScript solely for a type alias.
 
+export type EquipmentAffixEffectId =
+	"DamagePercent"
+	| "ReloadSpeedPercent"
+	| "MaxHealthPercent"
+	| "MoveSpeedPercent"
+	| "AbilityHastePercent"
+	| "AbilityPowerPercent"
+
+export type EquipmentAffixRoll = {
+	Id: string,
+	Version: string,
+	DisplayName: string,
+	EffectId: EquipmentAffixEffectId,
+	Value: number,
+}
 export type EquipmentSlotId = "Primary" | "Secondary" | "Armor" | "Relic"
 export type EquipmentRarityId = "Common" | "Uncommon" | "Rare"
 export type RewardSourceId = "Elite" | "Boss"
@@ -32,6 +51,7 @@ export type EquipmentReward = {
 	Slot: EquipmentSlotId,
 	Rarity: EquipmentRarityId,
 	Power: number,
+	Affixes: { EquipmentAffixRoll },
 	SourceId: RewardSourceId,
 	RunId: string,
 	Seed: number,

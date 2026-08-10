@@ -9,13 +9,26 @@ local function assert(condition: unknown, message: string?)
 	end
 end
 
+local AFFIX_TOKEN = {}
 local EQUIPMENT_TOKEN = {}
 local EXPEDITION_TOKEN = {}
 local RESULT_TOKEN = {}
 
+local affixContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentAffixContracts.luau"), {
+		debugName = "EquipmentAffixContracts",
+		injectGlobals = true,
+	})()
 local equipmentContracts =
 	luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentRewardContracts.luau"), {
 		debugName = "EquipmentRewardContracts",
+		environment = {
+			script = { Parent = { EquipmentAffixContracts = AFFIX_TOKEN } },
+			require = function(token: unknown)
+				assert(token == AFFIX_TOKEN, "unexpected equipment contract dependency")
+				return affixContracts
+			end,
+		},
 		injectGlobals = true,
 	})()
 local expeditionContracts =
@@ -95,24 +108,30 @@ local snapshot = {
 }
 local eliteReward = {
 	InstanceId = "run-result-0001:Elite:1",
+	GrantId = "reward:run-result-0001:Elite",
+	ContentSignature = "v2|warden-rifle|1.0.0|Uncommon|14|Elite|12346|none",
 	DefinitionId = "warden-rifle",
 	DefinitionVersion = "1.0.0",
 	DisplayName = "Warden Rifle",
 	Slot = equipmentContracts.SlotIds.Primary,
 	Rarity = equipmentContracts.RarityIds.Uncommon,
 	Power = 14,
+	Affixes = {},
 	SourceId = equipmentContracts.SourceIds.Elite,
 	RunId = snapshot.RunId,
 	Seed = 12346,
 }
 local bossReward = {
 	InstanceId = "run-result-0001:Boss:1",
+	GrantId = "reward:run-result-0001:Boss",
+	ContentSignature = "v2|keeper-relic|1.0.0|Rare|19|Boss|12347|none",
 	DefinitionId = "keeper-relic",
 	DefinitionVersion = "1.0.0",
 	DisplayName = "Keeper Relic",
 	Slot = equipmentContracts.SlotIds.Relic,
 	Rarity = equipmentContracts.RarityIds.Rare,
 	Power = 19,
+	Affixes = {},
 	SourceId = equipmentContracts.SourceIds.Boss,
 	RunId = snapshot.RunId,
 	Seed = 12347,

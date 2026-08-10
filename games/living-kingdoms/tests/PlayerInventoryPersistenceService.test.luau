@@ -10,10 +10,21 @@ local function assert(condition: unknown, message: string?)
 end
 
 local EQUIPMENT_TOKEN = {}
+local AFFIX_TOKEN = {}
 local equipmentContracts = {
 	SlotIds = { Primary = "Primary", Secondary = "Secondary", Armor = "Armor", Relic = "Relic" },
 	RarityIds = { Common = "Common", Uncommon = "Uncommon", Rare = "Rare" },
 	SourceIds = { Elite = "Elite", Boss = "Boss" },
+}
+local affixContracts = {
+	EffectIds = {
+		DamagePercent = "DamagePercent",
+		ReloadSpeedPercent = "ReloadSpeedPercent",
+		MaxHealthPercent = "MaxHealthPercent",
+		MoveSpeedPercent = "MoveSpeedPercent",
+		AbilityHastePercent = "AbilityHastePercent",
+		AbilityPowerPercent = "AbilityPowerPercent",
+	},
 }
 local contracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/PlayerInventoryContracts.luau"), {
 	debugName = "PlayerInventoryContracts",
@@ -56,7 +67,7 @@ local dismantleResolver =
 local replicatedStorage = {
 	Shared = {
 		Persistence = { PlayerInventoryContracts = CONTRACTS_TOKEN, InventoryDismantleResolver = DISMANTLE_TOKEN },
-		Equipment = { EquipmentRewardContracts = EQUIPMENT_TOKEN },
+		Equipment = { EquipmentRewardContracts = EQUIPMENT_TOKEN, EquipmentAffixContracts = AFFIX_TOKEN },
 	},
 }
 local serviceModule =
@@ -75,6 +86,9 @@ local serviceModule =
 				end
 				if token == EQUIPMENT_TOKEN then
 					return equipmentContracts
+				end
+				if token == AFFIX_TOKEN then
+					return affixContracts
 				end
 				if token == DISMANTLE_TOKEN then
 					return dismantleResolver
@@ -118,6 +132,7 @@ local reward = {
 	Slot = "Primary",
 	Rarity = "Uncommon",
 	Power = 12,
+	Affixes = {},
 	SourceId = "Elite",
 	RunId = "run-123",
 	Seed = 77,
@@ -184,6 +199,7 @@ store.data["player:202:inventory"] = {
 local legacy = serviceModule.new(store):loadPlayer(202, 1200)
 assert(legacy.Accepted and legacy.Migrated, "schema one should migrate")
 assert(legacy.Record.AppliedRewardGrantIds["reward:legacy-run:Boss"] == true, "migration must rebuild grant index")
+assert(#legacy.Record.InventoryByInstanceId.legacy_item.Affixes == 0, "legacy gear should normalize to no affixes")
 
 store.failSaves = true
 local failedReward = table.clone(reward)
@@ -196,17 +212,12 @@ assert(not failed.Accepted and failed.ReasonId == "SaveFailed", "failed writes m
 assert(service:getRecord(101).AppliedRewardGrantIds[failedReward.GrantId] == nil, "failed grant must roll back")
 store.failSaves = false
 
---[[
-	Schema 3 added the dismantle ledger. Every previously supported version must
-	still load, or a live inventory is stranded.
-]]
 for _, supported in contracts.SupportedSchemaVersions do
 	assert(contracts.isSupportedSchemaVersion(supported), "each declared version must be supported")
 end
 assert(contracts.isSupportedSchemaVersion(contracts.CurrentSchemaVersion), "the current version must be supported")
 assert(not contracts.isSupportedSchemaVersion(contracts.CurrentSchemaVersion + 1), "future versions are unknown")
 
--- A schema 2 record predates dismantle and migrates to an empty ledger.
 store.data["player:303:inventory"] = {
 	SchemaVersion = 2,
 	PlayerId = 303,
@@ -225,33 +236,27 @@ assert(type(upgradedLoad.Record.AppliedDismantleTransactions) == "table", "migra
 assert(next(upgradedLoad.Record.AppliedDismantleTransactions) == nil, "a pre-dismantle record has no transactions")
 assert(upgradedLoad.Record.InventoryByInstanceId.item_carry_guid ~= nil, "migration preserves owned items")
 
--- Dismantle destroys the item once and records the transaction durably.
 local dismantled = upgraded:dismantle(303, "item_carry_guid", "txn-a", 1500, true, {})
 assert(dismantled.Accepted and dismantled.ReasonId == "ItemDismantled", "a valid dismantle is accepted")
 assert(dismantled.Outcome.SalvagedPower == 12, "the destroyed item's facts are reported")
 assert(dismantled.Record.InventoryByInstanceId.item_carry_guid == nil, "the item is gone")
 assert(dismantled.Record.AppliedDismantleTransactions["txn-a"] ~= nil, "the transaction is recorded")
 
--- The ledger survives a reload, so a replay is answered after a rejoin.
 local rejoined = serviceModule.new(store):loadPlayer(303, 1600)
 assert(rejoined.Accepted, "the profile reloads after a dismantle")
 assert(rejoined.Record.AppliedDismantleTransactions["txn-a"] ~= nil, "the dismantle ledger is durable")
 assert(rejoined.Record.InventoryByInstanceId.item_carry_guid == nil, "the destroyed item does not return")
 
--- Replaying the same transaction returns the original outcome and writes nothing.
 local replay = upgraded:dismantle(303, "item_carry_guid", "txn-a", 1700, true, {})
 assert(replay.Accepted and replay.ReasonId == "TransactionAlreadyApplied", "a replay is accepted")
 assert(replay.Outcome.InstanceId == "item_carry_guid", "the original outcome is returned")
 
--- A new transaction naming the destroyed item is rejected.
 local second = upgraded:dismantle(303, "item_carry_guid", "txn-b", 1800, true, {})
 assert(not second.Accepted and second.ReasonId == "ItemNotOwned", "an item cannot be destroyed twice")
 
--- Without the session lease the destructive write is refused.
 local unleased = upgraded:dismantle(303, "item_other", "txn-c", 1900, false, {})
 assert(not unleased.Accepted and unleased.ReasonId == "SessionLeaseRequired", "dismantle requires the lease")
 
--- The equipped item is protected, so a spare is needed for the failure case.
 local keeper = serviceModule.new(store)
 keeper:loadPlayer(101, 2000)
 assert(keeper:getRecord(101).EquippedBySlot.Primary == reward.InstanceId, "the first item is equipped")
@@ -266,7 +271,6 @@ local spareGranted = keeper:applyReward(101, spare, 2020)
 assert(spareGranted.Accepted, "the spare item is granted")
 assert(spareGranted.Record.AppliedDismantleTransactions ~= nil, "a reward grant preserves the dismantle ledger")
 
--- A failed save must not remove the item from memory.
 store.failSaves = true
 local failedDismantle = keeper:dismantle(101, spare.InstanceId, "txn-fail", 2100, true, {})
 assert(not failedDismantle.Accepted and failedDismantle.ReasonId == "SaveFailed", "a failed write is reported")
@@ -274,14 +278,10 @@ assert(keeper:getRecord(101).InventoryByInstanceId[spare.InstanceId] ~= nil, "a 
 assert(keeper:getRecord(101).AppliedDismantleTransactions["txn-fail"] == nil, "a failed dismantle records nothing")
 store.failSaves = false
 
--- Retrying the same transaction after the failure now succeeds, because the
--- failed attempt recorded nothing.
 local retried = keeper:dismantle(101, spare.InstanceId, "txn-fail", 2110, true, {})
 assert(retried.Accepted and retried.ReasonId == "ItemDismantled", "a retry after a failed write succeeds")
 assert(retried.Record.InventoryByInstanceId[spare.InstanceId] == nil, "the retry destroys the item")
 
--- A malformed ledger entry is rejected rather than dropped, because discarding
--- it would let an applied dismantle replay into a second destruction.
 store.data["player:404:inventory"] = {
 	SchemaVersion = contracts.CurrentSchemaVersion,
 	PlayerId = 404,

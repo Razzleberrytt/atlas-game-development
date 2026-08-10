@@ -17,8 +17,21 @@ local function assert(condition: unknown, message: string?)
 	end
 end
 
+local affixContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentAffixContracts.luau"), {
+		debugName = "EquipmentAffixContracts",
+		injectGlobals = true,
+	})()
+local AFFIX_CONTRACTS_TOKEN = {}
 local contracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentRewardContracts.luau"), {
 	debugName = "EquipmentRewardContracts",
+	environment = {
+		script = { Parent = { EquipmentAffixContracts = AFFIX_CONTRACTS_TOKEN } },
+		require = function(token: unknown)
+			assert(token == AFFIX_CONTRACTS_TOKEN, "unexpected reward contract dependency")
+			return affixContracts
+		end,
+	},
 	injectGlobals = true,
 })()
 
@@ -65,6 +78,7 @@ local function item(instanceId: string, definitionId: string, slot: string, rari
 		Slot = slot,
 		Rarity = rarity,
 		Power = power,
+		Affixes = {},
 		SourceId = "Elite",
 		RunId = "run-compare",
 		Seed = 11,
