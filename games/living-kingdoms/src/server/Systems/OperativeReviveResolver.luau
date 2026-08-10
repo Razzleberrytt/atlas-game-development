@@ -153,7 +153,7 @@ local function isValidSnapshot(snapshot: unknown): boolean
 	if
 		not isFiniteNumber(currentHealth)
 		or not isFiniteNumber(maximumHealth)
-		or maximumHealth ~= OperativeLifeConfig.MaximumHealth
+		or maximumHealth <= 0
 		or currentHealth < 0
 		or currentHealth > maximumHealth
 	then
