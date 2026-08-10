@@ -79,12 +79,24 @@ local function rankStatus(rank: any, snapshot: any): (string, Color3, Color3)
 	return "LOCKED", COLORS.locked, COLORS.panelMuted
 end
 
-local function milestoneCard(parent: Instance, rank: any, snapshot: any, y: number)
+local function unlocksForRank(rankOrdinal: number): { any }
+	local unlocks = {}
+	for _, unlock in OperativeProgressionConfig.Unlocks do
+		if unlock.RequiredRank == rankOrdinal then
+			table.insert(unlocks, unlock)
+		end
+	end
+	return unlocks
+end
+
+local function milestoneCard(parent: Instance, rank: any, snapshot: any, y: number): number
 	local statusText, statusColor, backgroundColor = rankStatus(rank, snapshot)
+	local unlocks = unlocksForRank(rank.Rank)
+	local cardHeight = if #unlocks > 0 then 110 + (#unlocks - 1) * 26 else 78
 	local card = Instance.new("Frame")
 	card.Name = "Rank" .. tostring(rank.Rank)
 	card.Position = UDim2.fromOffset(8, y)
-	card.Size = UDim2.new(1, -16, 0, 78)
+	card.Size = UDim2.new(1, -16, 0, cardHeight)
 	card.BackgroundColor3 = backgroundColor
 	card.BorderSizePixel = 0
 	card.Parent = parent
@@ -107,14 +119,32 @@ local function milestoneCard(parent: Instance, rank: any, snapshot: any, y: numb
 	status.TextXAlignment = Enum.TextXAlignment.Right
 	status.TextColor3 = statusColor
 
-	local note = label(
-		card,
-		if rank.Rank == 1 then "OPERATIVE RECORD ESTABLISHED" else "DURABLE MILESTONE",
-		UDim2.fromOffset(12, 55),
-		UDim2.new(1, -24, 0, 15),
-		8
-	)
-	note.TextColor3 = COLORS.locked
+	if #unlocks == 0 then
+		local note = label(
+			card,
+			if rank.Rank == 1 then "OPERATIVE RECORD ESTABLISHED" else "DURABLE MILESTONE",
+			UDim2.fromOffset(12, 55),
+			UDim2.new(1, -24, 0, 15),
+			8
+		)
+		note.TextColor3 = COLORS.locked
+	else
+		local unlockHeading = label(card, "RANK UNLOCKS", UDim2.fromOffset(12, 58), UDim2.new(1, -24, 0, 15), 8)
+		unlockHeading.TextColor3 = statusColor
+		for index, unlock in unlocks do
+			local unlockLabel = label(
+				card,
+				string.format("%s  //  %s", string.upper(unlock.DisplayName), unlock.Description),
+				UDim2.fromOffset(12, 74 + (index - 1) * 26),
+				UDim2.new(1, -24, 0, 24),
+				8
+			)
+			unlockLabel.TextWrapped = true
+			unlockLabel.TextColor3 = if statusText == "LOCKED" then COLORS.muted else COLORS.text
+		end
+	end
+
+	return cardHeight
 end
 
 function Presentation.rebuild(panel: ScrollingFrame)
@@ -149,8 +179,8 @@ function Presentation.rebuild(panel: ScrollingFrame)
 
 	local y = 88
 	for _, rank in OperativeProgressionConfig.Ranks do
-		milestoneCard(panel, rank, snapshot, y)
-		y += 88
+		local cardHeight = milestoneCard(panel, rank, snapshot, y)
+		y += cardHeight + 10
 	end
 	panel.CanvasSize = UDim2.fromOffset(0, y + 8)
 end

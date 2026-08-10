@@ -33,6 +33,28 @@ assertThat(
 	"durable progression map must render authored milestones rather than duplicating rank data"
 )
 assertThat(
+	presentationSource:find("OperativeProgressionConfig.Unlocks", 1, true) ~= nil,
+	"durable progression map must render authored unlocks rather than duplicating reward copy"
+)
+assertThat(
+	presentationSource:find("unlock.RequiredRank == rankOrdinal", 1, true) ~= nil,
+	"durable unlocks must attach to their authored rank milestone"
+)
+assertThat(
+	presentationSource:find("unlock.DisplayName", 1, true) ~= nil
+		and presentationSource:find("unlock.Description", 1, true) ~= nil,
+	"unlock milestone presentation must stay config-driven"
+)
+assertThat(
+	presentationSource:find("Rally Ping", 1, true) == nil
+		and presentationSource:find("squad-rally-ping", 1, true) == nil,
+	"the presenter must not hard-code the first Rally unlock"
+)
+assertThat(
+	presentationSource:find("RANK UNLOCKS", 1, true) ~= nil,
+	"rank cards with authored consequences need an explicit unlock section"
+)
+assertThat(
 	presentationSource:find("OPERATIVE PROGRESSION  //  DURABLE", 1, true) ~= nil,
 	"durable map must distinguish account progression from temporary run progression"
 )
