@@ -341,6 +341,8 @@ local neutralRelicModifiers = table.freeze({
 	sustainedFireShotThreshold = 0,
 	sustainedFireCadenceMultiplier = 1,
 	sustainedFireDamageMultiplier = 1,
+	equipmentDamageMultiplier = 1,
+	equipmentReloadDurationMultiplier = 1,
 })
 
 -- Relic modifier adapter mock: no operative has a relic equipped, so every read
