@@ -55,6 +55,11 @@ def validate_full_preflight() -> None:
         "--self-test",
     )
     python_script(
+        "RBXL subtree evidence selector self-test",
+        "scripts/roblox/select_rbxl_subtree_evidence.py",
+        "--self-test",
+    )
+    python_script(
         "RBXL presentation decoder self-test",
         "scripts/roblox/extract_rbxl_presentation_properties.py",
         "--self-test",
