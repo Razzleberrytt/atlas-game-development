@@ -9,11 +9,11 @@
 	surface to infer one. This resolver produces those facts.
 
 	Deliberate boundary: the verdict describes the *stat* direction only
-	(power, then rarity). Role changes are reported separately as gained and lost
-	tags. A shotgun that out-powers an equipped rifle is an `Upgrade` that also
-	loses `precision` and gains `close-range` — reporting both lets a surface say
-	"stronger, but close-range" instead of the resolver encoding a balance
-	opinion about which the player should prefer.
+	(power, then rarity). Role changes and affix changes are reported separately.
+	A shotgun that out-powers an equipped rifle is an `Upgrade` that can still
+	lose `precision`, gain `close-range`, and exchange affix effects. Reporting
+	those facts lets a surface explain the tradeoff without this resolver encoding
+	a balance opinion about which build the player should prefer.
 
 	This module owns no state, reads no services, and performs no mutation.
 ]]
@@ -23,10 +23,19 @@ local Contracts = require(script.Parent.EquipmentRewardContracts)
 export type EquipmentReward = Contracts.EquipmentReward
 export type EquipmentDefinition = Contracts.EquipmentDefinition
 export type EquipmentSlotId = Contracts.EquipmentSlotId
+export type EquipmentAffixRoll = Contracts.EquipmentAffixRoll
+export type EquipmentAffixEffectId = Contracts.EquipmentAffixEffectId
 
 local RarityRanks = Contracts.RarityRanks
 
 export type ComparisonVerdictId = "Upgrade" | "Sidegrade" | "Downgrade" | "SameItem" | "NotComparable"
+
+export type EquipmentAffixDelta = {
+	EffectId: EquipmentAffixEffectId,
+	CandidateValue: number,
+	IncumbentValue: number,
+	Delta: number,
+}
 
 export type EquipmentComparison = {
 	VerdictId: ComparisonVerdictId,
@@ -41,6 +50,10 @@ export type EquipmentComparison = {
 	FillsEmptySlot: boolean,
 	GainedTags: { string },
 	LostTags: { string },
+	-- Affix changes are facts, not verdict inputs. Multiple rolls sharing an
+	-- effect are aggregated and emitted in stable EffectId order so presentation
+	-- can say what a build gains/loses without reimplementing comparison logic.
+	AffixDeltas: { EquipmentAffixDelta },
 }
 
 export type ComparisonResult = {
@@ -82,6 +95,52 @@ local function tagDifference(fromTags: { string }?, toTags: { string }?): { stri
 	end
 	table.sort(difference)
 	return table.freeze(difference)
+end
+
+local function sumAffixEffects(affixes: { EquipmentAffixRoll }?): { [string]: number }
+	local totals = {}
+	for _, affix in affixes or {} do
+		if type(affix) == "table" and type(affix.EffectId) == "string" and type(affix.Value) == "number" then
+			totals[affix.EffectId] = (totals[affix.EffectId] or 0) + affix.Value
+		end
+	end
+	return totals
+end
+
+local function affixDeltas(candidate: EquipmentReward, incumbent: EquipmentReward?): { EquipmentAffixDelta }
+	local candidateTotals = sumAffixEffects(candidate.Affixes)
+	local incumbentTotals = sumAffixEffects(if incumbent then incumbent.Affixes else nil)
+	local effectIds = {}
+	local seen = {}
+	for effectId in candidateTotals do
+		seen[effectId] = true
+		table.insert(effectIds, effectId)
+	end
+	for effectId in incumbentTotals do
+		if not seen[effectId] then
+			table.insert(effectIds, effectId)
+		end
+	end
+	table.sort(effectIds)
+
+	local deltas = {}
+	for _, effectId in effectIds do
+		local candidateValue = candidateTotals[effectId] or 0
+		local incumbentValue = incumbentTotals[effectId] or 0
+		local delta = candidateValue - incumbentValue
+		if delta ~= 0 then
+			table.insert(
+				deltas,
+				table.freeze({
+					EffectId = effectId :: EquipmentAffixEffectId,
+					CandidateValue = candidateValue,
+					IncumbentValue = incumbentValue,
+					Delta = delta,
+				})
+			)
+		end
+	end
+	return table.freeze(deltas)
 end
 
 local EquipmentComparisonResolver = {}
@@ -129,6 +188,7 @@ function EquipmentComparisonResolver.compare(
 				FillsEmptySlot = incumbent == nil,
 				GainedTags = tagDifference(incumbentTags, candidateTags),
 				LostTags = tagDifference(candidateTags, incumbentTags),
+				AffixDeltas = affixDeltas(candidate, incumbent),
 			}),
 		})
 	end
@@ -151,7 +211,8 @@ function EquipmentComparisonResolver.compare(
 
 	-- An upgrade is better on at least one axis and worse on neither; a downgrade
 	-- is the mirror. Everything else — identical stats, or power and rarity
-	-- disagreeing — is a genuine tradeoff the player has to weigh.
+	-- disagreeing — is a genuine tradeoff the player has to weigh. Affixes are
+	-- deliberately not folded into this verdict; they are build-choice facts.
 	local improves = powerDelta >= 0 and rarityDelta >= 0 and (powerDelta > 0 or rarityDelta > 0)
 	local worsens = powerDelta <= 0 and rarityDelta <= 0 and (powerDelta < 0 or rarityDelta < 0)
 
