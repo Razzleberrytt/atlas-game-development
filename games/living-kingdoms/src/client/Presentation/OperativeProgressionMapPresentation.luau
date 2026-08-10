@@ -83,7 +83,7 @@ local function milestoneCard(parent: Instance, rank: any, snapshot: any, y: numb
 	local statusText, statusColor, backgroundColor = rankStatus(rank, snapshot)
 	local card = Instance.new("Frame")
 	card.Name = "Rank" .. tostring(rank.Rank)
-	card.Position = UDim2.new(0, 8, 0, y)
+	card.Position = UDim2.fromOffset(8, y)
 	card.Size = UDim2.new(1, -16, 0, 78)
 	card.BackgroundColor3 = backgroundColor
 	card.BorderSizePixel = 0
