@@ -67,4 +67,7 @@ assertThat(
 	menuSource:find("progressionChooseUpgrade", 1, true) == nil,
 	"RPG menu durable progression surface must not retain the old run-upgrade mutation remote"
 )
-assertThat(menuSource:find("FIELD SKILLS", 1, true) == nil, "old run-only skill-tree copy must be removed from RPG menu")
+assertThat(
+	menuSource:find("FIELD SKILLS", 1, true) == nil,
+	"old run-only skill-tree copy must be removed from RPG menu"
+)

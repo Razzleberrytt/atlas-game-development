@@ -90,7 +90,8 @@ local function milestoneCard(parent: Instance, rank: any, snapshot: any, y: numb
 	card.Parent = parent
 	decorate(card, statusColor, if statusText == "LOCKED" then 0.6 else 0.2)
 
-	local ordinal = label(card, string.format("RANK %d", rank.Rank), UDim2.fromOffset(12, 9), UDim2.fromOffset(70, 20), 10)
+	local ordinal =
+		label(card, string.format("RANK %d", rank.Rank), UDim2.fromOffset(12, 9), UDim2.fromOffset(70, 20), 10)
 	ordinal.TextColor3 = statusColor
 	local name = label(card, string.upper(rank.DisplayName), UDim2.fromOffset(84, 7), UDim2.new(1, -96, 0, 23), 14)
 	name.TextColor3 = if statusText == "LOCKED" then COLORS.muted else COLORS.text
@@ -125,13 +126,8 @@ function Presentation.rebuild(panel: ScrollingFrame)
 		then snapshot.RankDisplayName
 		else "Unavailable"
 
-	local heading = label(
-		panel,
-		"OPERATIVE PROGRESSION  //  DURABLE",
-		UDim2.fromOffset(8, 2),
-		UDim2.new(1, -16, 0, 28),
-		14
-	)
+	local heading =
+		label(panel, "OPERATIVE PROGRESSION  //  DURABLE", UDim2.fromOffset(8, 2), UDim2.new(1, -16, 0, 28), 14)
 	heading.TextColor3 = COLORS.gold
 	local summary = label(
 		panel,
