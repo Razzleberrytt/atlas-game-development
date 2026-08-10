@@ -55,7 +55,36 @@ local function context(definitionId: string, slot: string, rarity: string, tags:
 	}
 end
 
-assertThat(config.Version == "PATCH-0.3-AFFIX-v1", "affix config version must be stable")
+local function compatibleIds(slot: string, tags: { string }): { [string]: boolean }
+	local tagSet = {}
+	for _, tag in tags do
+		tagSet[tag] = true
+	end
+	local ids = {}
+	for _, definition in config.Definitions do
+		local slotAllowed = false
+		for _, allowedSlot in definition.AllowedSlots do
+			if allowedSlot == slot then
+				slotAllowed = true
+				break
+			end
+		end
+		local tagsSatisfied = true
+		for _, requiredTag in definition.RequiredTags do
+			if not tagSet[requiredTag] then
+				tagsSatisfied = false
+				break
+			end
+		end
+		if slotAllowed and tagsSatisfied then
+			ids[definition.Id] = true
+		end
+	end
+	return ids
+end
+
+assertThat(config.Version == "PATCH-0.3-AFFIX-v2", "affix config version must be stable")
+assertThat(#config.Definitions == 16, "v2 should expose sixteen bounded authored affixes")
 assertThat(config.AffixCountByRarity.Common == 1, "common items should roll one affix")
 assertThat(config.AffixCountByRarity.Uncommon == 1, "uncommon items should roll one affix")
 assertThat(config.AffixCountByRarity.Rare == 2, "rare items should roll two affixes")
@@ -87,8 +116,15 @@ local distinctSignatures = 0
 for _ in signatures do
 	distinctSignatures += 1
 end
-assertThat(distinctSignatures > 1, "distinct seeds must create bounded affix variation")
+assertThat(distinctSignatures >= 8, "expanded rifle pool should produce meaningful deterministic variety")
 
+local rifleIds = compatibleIds("Primary", { "rifle", "precision" })
+assertThat(rifleIds.deadeye and rifleIds["measured-cycle"], "precision rifle must expose both role affixes")
+assertThat(not rifleIds.breacher and not rifleIds["slam-loader"], "precision rifle must exclude close-range affixes")
+
+local shotgunIds = compatibleIds("Primary", { "shotgun", "close-range" })
+assertThat(shotgunIds.breacher and shotgunIds["slam-loader"], "shotgun must expose both close-range affixes")
+assertThat(not shotgunIds.deadeye and not shotgunIds["measured-cycle"], "shotgun must exclude precision affixes")
 local shotgun =
 	resolver.resolve(config, context("breach-shotgun", "Primary", "Rare", { "shotgun", "close-range" }, 777))
 assertThat(shotgun.Accepted and #shotgun.Affixes == 2, "shotgun must have a sufficient compatible pool")
@@ -96,12 +132,23 @@ for _, roll in shotgun.Affixes do
 	assertThat(roll.Id ~= "deadeye", "precision-only affix must not appear on shotgun")
 end
 
+local sidearmIds = compatibleIds("Secondary", { "sidearm", "reliable" })
+assertThat(sidearmIds.keen and sidearmIds["swift-loader"], "sidearm keeps broad weapon rolls")
+assertThat(sidearmIds["steady-hand"] and sidearmIds["field-service"], "sidearm gains two role-specific rolls")
+assertThat(not sidearmIds.deadeye and not sidearmIds.breacher, "sidearm cannot roll primary-only identities")
+
+local armorIds = compatibleIds("Armor", { "armor", "survival" })
+assertThat(armorIds.reinforced and armorIds.trailborn, "armor keeps broad defensive/traversal rolls")
+assertThat(armorIds.bulwark and armorIds.pathfinder, "survival armor gains two role-specific rolls")
 local armor = resolver.resolve(config, context("delver-plate", "Armor", "Rare", { "armor", "survival" }, 888))
 assertThat(armor.Accepted and #armor.Affixes == 2, "armor rare must resolve two compatible affixes")
 for _, roll in armor.Affixes do
 	assertThat(roll.EffectId ~= contracts.EffectIds.DamagePercent, "weapon damage affixes must not appear on armor")
 end
 
+local relicIds = compatibleIds("Relic", { "relic", "ability" })
+assertThat(relicIds.resonant and relicIds.focused, "relic keeps broad ability rolls")
+assertThat(relicIds.quickening and relicIds.overcharged, "ability relic gains two role-specific rolls")
 local relic = resolver.resolve(config, context("keeper-sigil", "Relic", "Rare", { "relic", "ability" }, 999))
 assertThat(relic.Accepted and #relic.Affixes == 2, "relic rare must resolve two compatible affixes")
 
