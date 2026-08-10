@@ -5,7 +5,7 @@
 	owns and commits targetHealthStateAfter, including its processed-ShotId set.
 	No hidden deduplication state, Humanoid mutation, death behavior, or
 	presentation is created here. Server-owned run modifiers — squad Field Upgrades
-	read from ProgressionNetwork and the caller-supplied per-operative relic bundle
+	read from ProgressionNetwork and the caller-supplied per-operative build bundle
 	— may raise damage within a strict multiple of the configured firearm value.
 ]]
 
@@ -29,10 +29,10 @@ type FirearmHitResolution = CombatContracts.FirearmHitResolution
 type ProcessedShotIds = CombatContracts.ProcessedShotIds
 type TargetHealthState = CombatContracts.TargetHealthState
 
--- RPG-0108 per-operative relic damage modifiers. Unlike the squad-global
--- ProgressionNetwork attributes these are supplied by the caller, because relics
--- are equipped per operative. The caller derives them from the pure
--- RelicModifierResolver; this module still bounds every value it receives.
+-- Per-operative damage modifiers are supplied by the server composition adapter.
+-- Relic fields retain their existing names for compatibility; durable equipment
+-- contributes only the optional bounded equipment multiplier. Every value is
+-- validated again here before it can affect authoritative damage.
 export type RelicDamageModifiers = {
 	specialEnemyDamageMultiplier: number,
 	lowReserveDamageMultiplier: number,
@@ -43,6 +43,7 @@ export type RelicDamageModifiers = {
 	sniperPatternDamageMultiplier: number,
 	sniperSpecialEnemyDamageMultiplier: number,
 	sustainedFireDamageMultiplier: number,
+	equipmentDamageMultiplier: number?,
 }
 
 export type RunDamageContext = {
@@ -120,9 +121,10 @@ end
 -- depth alongside the configured*3 total-damage ceiling below.
 local RUN_PATTERN_DAMAGE_CEILING = 2
 
--- Hard safety ceilings for the caller-supplied relic bundle, matching the shared
--- RPG-0101 ModifierCeilings. A malformed bundle fails the shot closed rather than
--- silently dropping the relic, so a wiring defect is loud instead of invisible.
+-- Hard safety ceilings for the caller-supplied per-operative bundle, matching
+-- existing RPG modifier ceilings. A malformed bundle fails the shot closed rather
+-- than silently dropping a modifier, so a wiring defect is loud instead of
+-- invisible. Current equipment affixes are far below this 2x per-source ceiling.
 local RELIC_DAMAGE_MULTIPLIER_CEILING = 2
 local RELIC_COMBINED_MULTIPLIER_CEILING = 3
 
@@ -135,16 +137,17 @@ local function isBoundedFraction(value: unknown): boolean
 end
 
 --[[
-	Derives the combined per-operative relic damage multiplier for one shot:
-	Choir Breaker against special enemies, Last Light at or below its reserve
-	fraction, and Execution Protocol at or below its target health fraction.
-	Returns `nil` when the supplied bundle is malformed.
+	Derives the combined per-operative damage multiplier for one shot. Existing
+	relic conditionals and the server-derived equipped-item multiplier share the
+	same final hard ceiling. The equipment field is optional so older fixtures and
+	legacy callers remain neutral by default.
 ]]
 local function resolveRelicMultiplier(weaponId: string, currentHealth: number, runContext: RunDamageContext): number?
 	local relic = runContext.relicModifiers
 	if relic == nil then
 		return 1
 	end
+	local equipmentDamageMultiplier = relic.equipmentDamageMultiplier or 1
 	if
 		type(relic) ~= "table"
 		or not isBoundedMultiplier(relic.specialEnemyDamageMultiplier)
@@ -152,12 +155,13 @@ local function resolveRelicMultiplier(weaponId: string, currentHealth: number, r
 		or not isBoundedMultiplier(relic.executionDamageMultiplier)
 		or not isBoundedMultiplier(relic.sniperSpecialEnemyDamageMultiplier)
 		or not isBoundedMultiplier(relic.sustainedFireDamageMultiplier)
+		or not isBoundedMultiplier(equipmentDamageMultiplier)
 		or not isBoundedFraction(relic.lowReserveFraction)
 		or not isBoundedFraction(relic.executionHealthFraction)
 	then
 		return nil
 	end
-	local multiplier = 1
+	local multiplier = equipmentDamageMultiplier
 	if runContext.isSpecialEnemy then
 		multiplier *= relic.specialEnemyDamageMultiplier
 		if weaponId == CombatContracts.WeaponIds.SniperRifle then
@@ -266,12 +270,10 @@ local function resolveDamageAmount(
 			end
 			relicMultiplier = resolvedRelicMultiplier
 		end
-		-- Each trusted run multiplier must stay within its bounded 1..3 range;
+		-- Each trusted run multiplier must stay within its bounded range;
 		-- anomalous values fail closed. Legitimate stacked damage and cull
-		-- multipliers may combine past the ceiling (e.g. maxed Overpressure 1.8x
-		-- and Cull 2.05x), so clamp the product to the hard configured*3 cap
-		-- instead of rejecting -- otherwise a maxed build would deal zero damage
-		-- to wounded enemies rather than capped damage.
+		-- multipliers may combine past the ceiling, so clamp the product to the
+		-- hard configured*3 cap instead of rejecting a valid maxed build.
 		if
 			damageMultiplier < 1
 			or damageMultiplier > 3
