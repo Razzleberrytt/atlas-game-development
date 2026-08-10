@@ -193,12 +193,13 @@ assertThat(
 	"equipped weapon resolver must expose the active item's reload modifier"
 )
 assertThat(
-	string.find(
-		compositionSource,
-		"combined.equipmentReloadDurationMultiplier = equipmentModifiers.reloadDurationMultiplier",
-		1,
-		true
-	) ~= nil,
+	string.find(compositionSource, "resolveForWeapon(record, activeWeaponId)", 1, true) ~= nil
+		and string.find(
+			compositionSource,
+			"combined.equipmentReloadDurationMultiplier = weaponModifiers.reloadDurationMultiplier",
+			1,
+			true
+		) ~= nil,
 	"server composition seam must join the authoritative inventory reload fact"
 )
 assertThat(
