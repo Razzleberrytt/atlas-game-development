@@ -86,10 +86,7 @@ function EquipmentAffixModifierResolver.resolve(affixes: { EquipmentAffixRoll }?
 	return table.freeze({
 		damageMultiplier = bounded.damageMultiplier,
 		reloadDurationMultiplier = bounded.reloadDurationMultiplier,
-		maximumHealthMultiplier = math.min(
-			MAXIMUM_HEALTH_MULTIPLIER_CEILING,
-			1 + maximumHealthPercent / PERCENT_SCALE
-		),
+		maximumHealthMultiplier = math.min(MAXIMUM_HEALTH_MULTIPLIER_CEILING, 1 + maximumHealthPercent / PERCENT_SCALE),
 	})
 end
 
