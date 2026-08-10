@@ -69,6 +69,45 @@ assertThat(
 	"durable map must explain the temporary-versus-durable boundary"
 )
 
+-- Per-unlock held state is server truth. The presenter renders the disclosed
+-- `IsEarned` answer and must never recompute the rank requirement itself,
+-- otherwise the map and the server entitlement check can disagree.
+assertThat(
+	presentationSource:find("unlock.IsEarned == true", 1, true) ~= nil,
+	"unlock held state must come from the server-disclosed snapshot"
+)
+assertThat(
+	presentationSource:find("snapshot.Unlocks", 1, true) ~= nil,
+	"the presenter must prefer the disclosed unlock list over the authored list"
+)
+assertThat(
+	presentationSource:find("currentRank >= unlock.RequiredRank", 1, true) == nil
+		and presentationSource:find("snapshot.Rank >= unlock", 1, true) == nil,
+	"the presenter must not re-derive the durable entitlement rule on the client"
+)
+for _, unlockStatus in { "[EARNED]", "[LOCKED]" } do
+	assertThat(
+		presentationSource:find(unlockStatus, 1, true) ~= nil,
+		"each unlock must read as held or not held on its own, not only through its rank card: " .. unlockStatus
+	)
+end
+assertThat(
+	presentationSource:find("snapshot.EarnedUnlockCount", 1, true) ~= nil
+		and presentationSource:find("snapshot.TotalUnlockCount", 1, true) ~= nil,
+	"the map must summarise how many authored unlocks the operative actually holds"
+)
+assertThat(
+	presentationSource:find("NEXT: %s AT RANK %d", 1, true) ~= nil,
+	"the map must name the next unearned unlock and the rank that grants it"
+)
+assertThat(
+	presentationSource:find("Focused Beam", 1, true) == nil
+		and presentationSource:find("Self-Treatment", 1, true) == nil
+		and presentationSource:find("personal-focused-beam", 1, true) == nil
+		and presentationSource:find("medic-self-treatment", 1, true) == nil,
+	"the presenter must stay config-driven as unlocks are added"
+)
+
 assertThat(
 	menuSource:find('topButton(window, "PROGRESSION"', 1, true) ~= nil,
 	"existing RPG menu must expose the durable progression surface"

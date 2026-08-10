@@ -12,11 +12,29 @@ export type RankDefinition = {
 	RequiredCompletedExpeditions: number,
 }
 
+export type UnlockDefinition = {
+	Id: string,
+	DisplayName: string,
+	Description: string,
+	RequiredRank: number,
+}
+
 export type ProgressionConfig = {
 	Version: string,
 	DurableRewardGrantPrefix: string,
 	CompletedExpeditionSourceId: string,
 	Ranks: { RankDefinition },
+	Unlocks: { UnlockDefinition }?,
+}
+
+-- One resolved unlock. `IsEarned` is the single canonical answer to "does this
+-- operative hold this unlock", so no consumer re-implements the rank comparison.
+export type ResolvedUnlock = {
+	Id: string,
+	DisplayName: string,
+	Description: string,
+	RequiredRank: number,
+	IsEarned: boolean,
 }
 
 export type ProgressionSnapshot = {
@@ -33,6 +51,9 @@ export type ProgressionSnapshot = {
 	NextRankRequiredCompletedExpeditions: number?,
 	CompletedExpeditionsToNextRank: number?,
 	IsMaximumRank: boolean,
+	Unlocks: { ResolvedUnlock },
+	EarnedUnlockCount: number,
+	TotalUnlockCount: number,
 }
 
 local Resolver = {}
@@ -52,6 +73,9 @@ local function rejected(reasonId: string): ProgressionSnapshot
 		NextRankRequiredCompletedExpeditions = nil,
 		CompletedExpeditionsToNextRank = nil,
 		IsMaximumRank = false,
+		Unlocks = table.freeze({}),
+		EarnedUnlockCount = 0,
+		TotalUnlockCount = 0,
 	})
 end
 
@@ -93,7 +117,80 @@ local function validConfig(config: unknown): boolean
 		end
 		previousThreshold = threshold
 	end
-	return candidate.Ranks[1].RequiredCompletedExpeditions == 0
+	if candidate.Ranks[1].RequiredCompletedExpeditions ~= 0 then
+		return false
+	end
+	-- Unlocks are optional so a partial runtime or a narrow fixture can resolve
+	-- rank alone, but a malformed unlock list fails the whole snapshot closed
+	-- rather than silently disclosing a partial entitlement set.
+	if candidate.Unlocks == nil then
+		return true
+	end
+	if type(candidate.Unlocks) ~= "table" then
+		return false
+	end
+	local seenUnlockIds = {}
+	for _, unlock in candidate.Unlocks do
+		if type(unlock) ~= "table" or not isNonemptyString(unlock.Id) or seenUnlockIds[unlock.Id] then
+			return false
+		end
+		if not isNonemptyString(unlock.DisplayName) or not isNonemptyString(unlock.Description) then
+			return false
+		end
+		local requiredRank = unlock.RequiredRank
+		if
+			type(requiredRank) ~= "number"
+			or requiredRank ~= requiredRank
+			or requiredRank % 1 ~= 0
+			or requiredRank < 1
+			or requiredRank > #candidate.Ranks
+		then
+			return false
+		end
+		seenUnlockIds[unlock.Id] = true
+	end
+	return true
+end
+
+--[[
+	Projects the authored unlock list against the resolved rank. This is the only
+	place the "rank at or above requirement" rule exists, so the server
+	entitlement check and the progression-map presentation cannot drift apart.
+
+	The order is deterministic — required rank, then unlock ID — so a disclosed
+	snapshot renders the same list every time.
+]]
+local function resolveUnlocks(config: ProgressionConfig, currentRank: number): ({ ResolvedUnlock }, number)
+	local authored = config.Unlocks
+	if authored == nil then
+		return table.freeze({}), 0
+	end
+	local resolved = {}
+	for _, unlock in authored do
+		table.insert(
+			resolved,
+			table.freeze({
+				Id = unlock.Id,
+				DisplayName = unlock.DisplayName,
+				Description = unlock.Description,
+				RequiredRank = unlock.RequiredRank,
+				IsEarned = currentRank >= unlock.RequiredRank,
+			})
+		)
+	end
+	table.sort(resolved, function(first, second)
+		if first.RequiredRank ~= second.RequiredRank then
+			return first.RequiredRank < second.RequiredRank
+		end
+		return first.Id < second.Id
+	end)
+	local earnedCount = 0
+	for _, unlock in resolved do
+		if unlock.IsEarned then
+			earnedCount += 1
+		end
+	end
+	return table.freeze(resolved), earnedCount
 end
 
 local function completedRunId(config: ProgressionConfig, grantId: string): string?
@@ -145,6 +242,7 @@ function Resolver.resolve(config: ProgressionConfig, appliedRewardGrantIds: unkn
 	end
 
 	local isMaximumRank = nextRank == nil
+	local unlocks, earnedUnlockCount = resolveUnlocks(config, current.Rank)
 	return table.freeze({
 		Accepted = true,
 		ReasonId = "ProgressionResolved",
@@ -161,6 +259,9 @@ function Resolver.resolve(config: ProgressionConfig, appliedRewardGrantIds: unkn
 			then nextRank.RequiredCompletedExpeditions - completedExpeditions
 			else nil,
 		IsMaximumRank = isMaximumRank,
+		Unlocks = unlocks,
+		EarnedUnlockCount = earnedUnlockCount,
+		TotalUnlockCount = #unlocks,
 	})
 end
 

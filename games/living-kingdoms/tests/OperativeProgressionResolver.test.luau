@@ -113,3 +113,92 @@ local malformedConfig = {
 local rejectedConfig = resolver.resolve(malformedConfig, {})
 assertThat(not rejectedConfig.Accepted, "duplicate rank thresholds must fail closed")
 assertThat(rejectedConfig.ReasonId == "InvalidConfig", "invalid progression config reason must be stable")
+assertThat(
+	type(rejectedConfig.Unlocks) == "table" and #rejectedConfig.Unlocks == 0 and rejectedConfig.EarnedUnlockCount == 0,
+	"a rejected snapshot must disclose no entitlement at all"
+)
+
+-- Unlock projection: the resolver is the single owner of the entitlement rule, so
+-- both the server check and the progression map read the same resolved answer.
+local function unlockById(snapshot: any, unlockId: string): any?
+	for _, unlock in snapshot.Unlocks do
+		if unlock.Id == unlockId then
+			return unlock
+		end
+	end
+	return nil
+end
+
+assertThat(#config.Unlocks > 0, "the durable progression map must author unlocks")
+assertThat(fresh.TotalUnlockCount == #config.Unlocks, "every authored unlock must be disclosed")
+assertThat(fresh.EarnedUnlockCount == 0, "a fresh operative holds no unlocks")
+for _, unlock in fresh.Unlocks do
+	assertThat(not unlock.IsEarned, "rank one must not earn a rank-two-or-higher unlock")
+	assertThat(
+		type(unlock.DisplayName) == "string" and type(unlock.Description) == "string",
+		"disclosed unlocks must carry their authored presentation copy"
+	)
+end
+
+local previousRequiredRank = 0
+for _, unlock in vanguard.Unlocks do
+	assertThat(unlock.RequiredRank >= previousRequiredRank, "disclosed unlocks must be ordered by required rank")
+	previousRequiredRank = unlock.RequiredRank
+	assertThat(unlock.IsEarned, "maximum rank must earn every authored unlock")
+end
+assertThat(vanguard.EarnedUnlockCount == vanguard.TotalUnlockCount, "maximum rank must report a complete unlock ledger")
+
+-- Rank boundaries: an unlock is held at exactly its required rank, not one later.
+assertThat(unlockById(firstClear, "squad-rally-ping").IsEarned, "rank two earns its own rank-two unlock")
+assertThat(not unlockById(firstClear, "personal-focused-beam").IsEarned, "rank two must not earn a rank-three unlock")
+assertThat(firstClear.EarnedUnlockCount == 2, "rank two earns exactly the two authored rank-two unlocks")
+assertThat(unlockById(duplicateAndNoise, "personal-focused-beam").IsEarned, "rank three earns the rank-three unlock")
+assertThat(
+	not unlockById(duplicateAndNoise, "medic-self-treatment").IsEarned,
+	"rank three must not earn the rank-four unlock"
+)
+assertThat(unlockById(veteran, "medic-self-treatment").IsEarned, "rank four earns the rank-four unlock")
+
+assertThat(table.isfrozen(fresh.Unlocks), "the disclosed unlock list must be immutable")
+assertThat(table.isfrozen(fresh.Unlocks[1]), "each disclosed unlock must be immutable")
+
+-- A config without unlocks still resolves rank, and a malformed unlock list fails
+-- the whole snapshot closed rather than disclosing a partial entitlement set.
+local rankOnlyConfig = {
+	Version = config.Version,
+	DurableRewardGrantPrefix = config.DurableRewardGrantPrefix,
+	CompletedExpeditionSourceId = config.CompletedExpeditionSourceId,
+	Ranks = config.Ranks,
+}
+local rankOnly = resolver.resolve(rankOnlyConfig, { boss("expedition:alpha") })
+assertThat(rankOnly.Accepted and rankOnly.Rank == 2, "a partial runtime may resolve rank without unlocks")
+assertThat(rankOnly.TotalUnlockCount == 0 and #rankOnly.Unlocks == 0, "an unlock-free config discloses no unlocks")
+
+for _, malformedUnlocks in
+	{
+		{ { Id = "", DisplayName = "A", Description = "B", RequiredRank = 1 } },
+		{
+			{ Id = "dup", DisplayName = "A", Description = "B", RequiredRank = 1 },
+			{ Id = "dup", DisplayName = "A", Description = "B", RequiredRank = 2 },
+		},
+		{ { Id = "a", DisplayName = "A", Description = "B", RequiredRank = 0 } },
+		{ { Id = "a", DisplayName = "A", Description = "B", RequiredRank = #config.Ranks + 1 } },
+		{ { Id = "a", DisplayName = "A", Description = "B", RequiredRank = 1.5 } },
+		{ { Id = "a", DisplayName = "", Description = "B", RequiredRank = 1 } },
+		{ { Id = "a", DisplayName = "A", Description = "", RequiredRank = 1 } },
+		{ "not-a-table" },
+	}
+do
+	local malformed = {
+		Version = config.Version,
+		DurableRewardGrantPrefix = config.DurableRewardGrantPrefix,
+		CompletedExpeditionSourceId = config.CompletedExpeditionSourceId,
+		Ranks = config.Ranks,
+		Unlocks = malformedUnlocks,
+	}
+	local resolved = resolver.resolve(malformed, {})
+	assertThat(
+		not resolved.Accepted and resolved.ReasonId == "InvalidConfig",
+		"a malformed unlock list must fail closed"
+	)
+end

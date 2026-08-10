@@ -79,9 +79,17 @@ local function rankStatus(rank: any, snapshot: any): (string, Color3, Color3)
 	return "LOCKED", COLORS.locked, COLORS.panelMuted
 end
 
-local function unlocksForRank(rankOrdinal: number): { any }
+--[[
+	Prefers the server-disclosed unlock list so earned state is authoritative
+	truth rather than a client re-derivation of the rank rule. A snapshot without
+	the field (unavailable server, older runtime) falls back to the authored list
+	with no earned claim, which renders as locked.
+]]
+local function unlocksForRank(rankOrdinal: number, snapshot: any): { any }
+	local disclosed = if snapshot ~= nil then snapshot.Unlocks else nil
+	local source = if type(disclosed) == "table" then disclosed else OperativeProgressionConfig.Unlocks
 	local unlocks = {}
-	for _, unlock in OperativeProgressionConfig.Unlocks do
+	for _, unlock in source do
 		if unlock.RequiredRank == rankOrdinal then
 			table.insert(unlocks, unlock)
 		end
@@ -89,9 +97,23 @@ local function unlocksForRank(rankOrdinal: number): { any }
 	return unlocks
 end
 
+local function nextUnearnedUnlock(snapshot: any): any?
+	local disclosed = if snapshot ~= nil then snapshot.Unlocks else nil
+	if type(disclosed) ~= "table" then
+		return nil
+	end
+	local best = nil
+	for _, unlock in disclosed do
+		if unlock.IsEarned ~= true and (best == nil or unlock.RequiredRank < best.RequiredRank) then
+			best = unlock
+		end
+	end
+	return best
+end
+
 local function milestoneCard(parent: Instance, rank: any, snapshot: any, y: number): number
 	local statusText, statusColor, backgroundColor = rankStatus(rank, snapshot)
-	local unlocks = unlocksForRank(rank.Rank)
+	local unlocks = unlocksForRank(rank.Rank, snapshot)
 	local cardHeight = if #unlocks > 0 then 110 + (#unlocks - 1) * 26 else 78
 	local card = Instance.new("Frame")
 	card.Name = "Rank" .. tostring(rank.Rank)
@@ -132,15 +154,24 @@ local function milestoneCard(parent: Instance, rank: any, snapshot: any, y: numb
 		local unlockHeading = label(card, "RANK UNLOCKS", UDim2.fromOffset(12, 58), UDim2.new(1, -24, 0, 15), 8)
 		unlockHeading.TextColor3 = statusColor
 		for index, unlock in unlocks do
+			-- Held state comes from the server-disclosed unlock, so an unlock at the
+			-- operative's current rank reads as held instead of inheriting the
+			-- ambiguous "CURRENT" rank colour.
+			local isEarned = unlock.IsEarned == true
 			local unlockLabel = label(
 				card,
-				string.format("%s  //  %s", string.upper(unlock.DisplayName), unlock.Description),
+				string.format(
+					"%s  %s  //  %s",
+					if isEarned then "[EARNED]" else "[LOCKED]",
+					string.upper(unlock.DisplayName),
+					unlock.Description
+				),
 				UDim2.fromOffset(12, 74 + (index - 1) * 26),
 				UDim2.new(1, -24, 0, 24),
 				8
 			)
 			unlockLabel.TextWrapped = true
-			unlockLabel.TextColor3 = if statusText == "LOCKED" then COLORS.muted else COLORS.text
+			unlockLabel.TextColor3 = if isEarned then COLORS.green else COLORS.muted
 		end
 	end
 
@@ -177,7 +208,28 @@ function Presentation.rebuild(panel: ScrollingFrame)
 	explanation.TextWrapped = true
 	explanation.TextColor3 = COLORS.muted
 
-	local y = 88
+	-- One legible answer to "what have I actually earned, and what is next".
+	local totalUnlocks = if snapshot ~= nil then tonumber(snapshot.TotalUnlockCount) or 0 else 0
+	local earnedUnlocks = if snapshot ~= nil then tonumber(snapshot.EarnedUnlockCount) or 0 else 0
+	local upcoming = nextUnearnedUnlock(snapshot)
+	local unlockSummaryText
+	if snapshot == nil or totalUnlocks == 0 then
+		unlockSummaryText = "UNLOCKS  //  UNAVAILABLE"
+	elseif upcoming == nil then
+		unlockSummaryText = string.format("UNLOCKS  //  %d OF %d EARNED  //  ALL EARNED", earnedUnlocks, totalUnlocks)
+	else
+		unlockSummaryText = string.format(
+			"UNLOCKS  //  %d OF %d EARNED  //  NEXT: %s AT RANK %d",
+			earnedUnlocks,
+			totalUnlocks,
+			string.upper(upcoming.DisplayName),
+			upcoming.RequiredRank
+		)
+	end
+	local unlockSummary = label(panel, unlockSummaryText, UDim2.fromOffset(8, 80), UDim2.new(1, -16, 0, 20), 9)
+	unlockSummary.TextColor3 = if snapshot ~= nil and totalUnlocks > 0 then COLORS.gold else COLORS.muted
+
+	local y = 106
 	for _, rank in OperativeProgressionConfig.Ranks do
 		local cardHeight = milestoneCard(panel, rank, snapshot, y)
 		y += cardHeight + 10

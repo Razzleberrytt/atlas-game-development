@@ -13,11 +13,6 @@ local InventoryLiveService = require(script.Parent.InventoryLiveService)
 
 local Service = {}
 
-local unlockById = {}
-for _, unlock in OperativeProgressionConfig.Unlocks do
-	unlockById[unlock.Id] = unlock
-end
-
 local function rejected(reasonId: string): any
 	return table.freeze({
 		Accepted = false,
@@ -33,6 +28,9 @@ local function rejected(reasonId: string): any
 		NextRankRequiredCompletedExpeditions = nil,
 		CompletedExpeditionsToNextRank = nil,
 		IsMaximumRank = false,
+		Unlocks = table.freeze({}),
+		EarnedUnlockCount = 0,
+		TotalUnlockCount = 0,
 	})
 end
 
@@ -55,17 +53,30 @@ function Service.readOwnedSnapshot(requesterId: number, ownerId: number): any
 	return OperativeProgressionResolver.resolve(OperativeProgressionConfig, record.AppliedRewardGrantIds)
 end
 
--- Unlocks are never stored independently. They are a deterministic projection of
--- the same durable rank snapshot, making future bounded unlocks cheap to add
--- without creating a second persistence or progression authority.
+--[[
+	Unlocks are never stored independently. They are a deterministic projection of
+	the same durable rank snapshot, making future bounded unlocks cheap to add
+	without creating a second persistence or progression authority.
+
+	The entitlement rule itself lives once, inside OperativeProgressionResolver, so
+	this server check and the disclosed progression-map presentation always answer
+	from the same resolved list rather than two copies of the rank comparison.
+]]
 function Service.hasOwnedUnlock(requesterId: number, ownerId: number, unlockId: string): boolean
-	local unlock = unlockById[unlockId]
-	if unlock == nil then
+	if type(unlockId) ~= "string" or unlockId == "" then
 		return false
 	end
 
 	local snapshot = Service.readOwnedSnapshot(requesterId, ownerId)
-	return snapshot.Accepted == true and type(snapshot.Rank) == "number" and snapshot.Rank >= unlock.RequiredRank
+	if snapshot.Accepted ~= true or type(snapshot.Unlocks) ~= "table" then
+		return false
+	end
+	for _, unlock in snapshot.Unlocks do
+		if unlock.Id == unlockId then
+			return unlock.IsEarned == true
+		end
+	end
+	return false
 end
 
 return table.freeze(Service)

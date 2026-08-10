@@ -22,6 +22,7 @@ local controllerPath = root .. "src/client/Controllers/SquadPingController.luau"
 
 local progressionConfigSource = fs.readFile(progressionConfigPath)
 local progressionServiceSource = fs.readFile(progressionServicePath)
+local progressionResolverSource = fs.readFile(root .. "src/shared/Progression/OperativeProgressionResolver.luau")
 local contractsSource = fs.readFile(contractsPath)
 local pingServiceSource = fs.readFile(pingServicePath)
 local controllerSource = fs.readFile(controllerPath)
@@ -44,15 +45,25 @@ end
 assertThat(rallyUnlock ~= nil, "Rally ping unlock must be authored in the durable progression map")
 assertThat(rallyUnlock.RequiredRank == 2, "Rally ping must unlock at durable Operative Rank 2")
 
+-- The guarantee, not its spelling: entitlement is answered from the freshly
+-- resolved owner-bound snapshot, never from stored unlock state. The rank
+-- comparison itself lives once inside OperativeProgressionResolver, so this audit
+-- asserts the service consumes that resolved answer rather than copying the rule.
 for _, required in
 	{
 		"function Service.hasOwnedUnlock(",
 		"Service.readOwnedSnapshot(requesterId, ownerId)",
-		"snapshot.Rank >= unlock.RequiredRank",
+		"unlock.IsEarned == true",
 	}
 do
 	assertThat(contains(progressionServiceSource, required), `durable unlock derivation is missing {required}`)
 end
+assertThat(
+	contains(progressionResolverSource, "IsEarned = currentRank >= unlock.RequiredRank"),
+	"the rank entitlement rule must live exactly once, in the pure resolver"
+)
+local _, ruleCopies = string.gsub(progressionServiceSource, "RequiredRank", "")
+assertThat(ruleCopies == 0, "the server adapter must not re-implement the rank requirement comparison")
 for _, forbidden in { "SetAsync", "UpdateAsync", "DataStore", "UnlockedIds =", "Unlocked =" } do
 	assertThat(
 		not contains(progressionServiceSource, forbidden),
