@@ -22,6 +22,7 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 - PR #356 converted the paused Skills surface into a durable progression map backed by `OperativeProgressionConfig`, while preserving the old temporary run-upgrade topology as run-only authority. Full validation and reproducible build are green; visual/device verification remains pending.
 - PR #357 proved the first live personal durable-unlock seam: Rank 2 `Rally Ping` is authored in durable progression, derived server-side from existing durable rank, routed through `SquadPingService`, and cannot be claimed by client intent. No new persistence owner was added.
 - PR #360 added Rank 2 `Dual Tactical Markers`: baseline personal capacity remains one, earned capacity becomes two, the squad hard cap remains four, and the existing server ping owner derives eligibility. The second progression unlock reused the established rank/unlock seam without another persistence or network owner.
+- The durable entitlement rule now lives exactly once, in `OperativeProgressionResolver`. The resolved snapshot discloses every authored unlock with its own `IsEarned` answer plus earned/total counts, `OperativeProgressionService.hasOwnedUnlock` consumes that resolved list instead of re-implementing the rank comparison, and the RPG progression map renders per-unlock `[EARNED]`/`[LOCKED]` state, an "n of m earned" summary, and the next unearned unlock. The presenter re-derives nothing.
 - Rank 4 `Self-Treatment` is the first ability side-grade: a Medic may spend a medical charge on themselves. It changes *who* may be treated, not how much is healed — cost, channel, cooldown, range, injury requirement, and every interruption rule are unchanged. Entitlement is one bounded optional fact on the existing `FieldTreatmentResolver` gate, derived at exactly one point in `ClassService`.
 - Rank 3 `Focused Beam` proved unlock breadth **outside** the squad-ping family: durable rank now routes into `PersonalFlashlightService`, which registers an authored wider cone with `GameplayLightingService` and discloses the earned coverage profile only to its owner. No new persistence owner, remote, or client intent was added, and an operative without the unlock keeps the standard cone on the same server.
 - Existing `RunProgressionService` remains explicitly **run-only** shared Field XP + temporary upgrades. Durable Operative Rank must not become a second author of those facts.
@@ -31,17 +32,13 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 
 ### NOW
 
-**Surface earned durable unlocks in the RPG progression map so the four authored unlocks are legible to a player, then continue Patch 0.4 breadth through authored config.**
+**Continue Patch 0.4 breadth through authored config: add the next durable unlock as data plus focused regression only.**
 
-The rank/unlock seam has now reached three different canonical owners (`SquadPingService`, `PersonalFlashlightService`, `ClassService`) with no second persistence owner and no client-authored entitlement. The next constraint is presentation, not authority: a player currently has no in-game way to see which unlocks exist, which they hold, and what the next rank grants.
+Authority, presentation, and the entitlement rule are now all settled — the seam reaches three canonical owners (`SquadPingService`, `PersonalFlashlightService`, `ClassService`), the rule lives once in the pure resolver, and the map renders held state from the disclosed snapshot. A new unlock whose consequence routes through an already-live owner should now cost one `OperativeProgressionConfig` entry plus a focused test, with **zero** presentation changes.
 
-Rules:
+If the next candidate instead needs a fourth owner, treat that owner adapter as the increment and keep the config entry trivial.
 
-- reuse the existing durable progression-map presentation seam; do not rewrite a menu per unlock;
-- entitlement truth stays server-derived — presentation may only render a disclosed snapshot;
-- keep the unlock list data-driven from `OperativeProgressionConfig`.
-
-Prior target chain, still authoritative for new unlocks:
+Target chain for new unlocks:
 
 ```text
 existing durable rank facts
