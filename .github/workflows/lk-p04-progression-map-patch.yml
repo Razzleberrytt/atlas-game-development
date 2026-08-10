@@ -1,0 +1,101 @@
+name: LK Patch 0.4 progression map conversion
+
+on:
+  push:
+    branches:
+      - lk-p04-operative-progression-map
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: lk-p04-operative-progression-map
+          fetch-depth: 0
+
+      - name: Convert dormant run-skill surface to durable progression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("games/living-kingdoms/src/client/Controllers/RPGMenuController.luau")
+          text = path.read_text()
+
+          old_require = 'local RunProgressionConfig = require(ReplicatedStorage.Shared.Config.RunProgressionConfig)\n'
+          new_require = 'local OperativeProgressionMapPresentation = require(script.Parent.Parent.Presentation.OperativeProgressionMapPresentation)\n'
+          assert text.count(old_require) == 1
+          text = text.replace(old_require, new_require)
+
+          old_remote = 'local progressionChooseUpgrade = progressionNetwork:WaitForChild("ChooseUpgrade") :: RemoteEvent\n'
+          assert text.count(old_remote) == 1
+          text = text.replace(old_remote, '')
+
+          block_start = text.index('local function upgradeStacks(): { [string]: number }')
+          block_end = text.index('local function selectTab(tabName: string)', block_start)
+          replacement = '''local function rebuildProgressionMap()\n\tlocal panel = skillsPanel\n\tif panel == nil then\n\t\treturn\n\tend\n\tOperativeProgressionMapPresentation.rebuild(panel)\nend\n\n'''
+          text = text[:block_start] + replacement + text[block_end:]
+
+          old_tabs_start = text.index('\tlocal charTab = topButton(window, "CHARACTER", -174, "Character")')
+          old_tabs_end = text.index('\n\n\tlocal charPanel = Instance.new("Frame")', old_tabs_start)
+          new_tabs = '''\tlocal charTab = topButton(window, "CHARACTER", -174, "Character")\n\tcharTab.AnchorPoint = Vector2.new(0, 0)\n\tcharTab.Position = UDim2.fromOffset(290, 11)\n\tcharTab.Size = UDim2.fromOffset(100, 36)\n\tlocal invTab = topButton(window, "INVENTORY", -12, "Inventory")\n\tinvTab.AnchorPoint = Vector2.new(0, 0)\n\tinvTab.Position = UDim2.fromOffset(395, 11)\n\tinvTab.Size = UDim2.fromOffset(100, 36)\n\tlocal progressionTab = topButton(window, "PROGRESSION", -12, "Skills")\n\tprogressionTab.AnchorPoint = Vector2.new(0, 0)\n\tprogressionTab.Position = UDim2.fromOffset(500, 11)\n\tprogressionTab.Size = UDim2.fromOffset(100, 36)\n\tcharacterTab = charTab\n\tinventoryTab = invTab\n\tskillsTab = progressionTab'''
+          text = text[:old_tabs_start] + new_tabs + text[old_tabs_end:]
+
+          assert text.count('rebuildSkillTree()') == 3
+          text = text.replace('rebuildSkillTree()', 'rebuildProgressionMap()')
+
+          old_event = '''\t\tprogressionStateRemote.OnClientEvent:Connect(function(snapshot)\n\t\t\tlatestProgression = snapshot\n\t\t\tif characterPanel ~= nil and characterPanel.Visible then\n\t\t\t\trebuildStats()\n\t\t\telseif skillsPanel ~= nil and skillsPanel.Visible then\n\t\t\t\trebuildProgressionMap()\n\t\t\tend\n\t\tend)\n'''
+          new_event = '''\t\tprogressionStateRemote.OnClientEvent:Connect(function(snapshot)\n\t\t\tlatestProgression = snapshot\n\t\t\tif characterPanel ~= nil and characterPanel.Visible then\n\t\t\t\trebuildStats()\n\t\t\tend\n\t\tend)\n'''
+          assert text.count(old_event) == 1
+          text = text.replace(old_event, new_event)
+
+          startup_call = '\n\trebuildProgressionMap()\nend\n\nfunction Controller.stop()'
+          assert text.count(startup_call) == 1
+          text = text.replace(startup_call, '\nend\n\nfunction Controller.stop()')
+
+          assert 'RunProgressionConfig.SkillTrees' not in text
+          assert 'progressionChooseUpgrade' not in text
+          assert 'FIELD SKILLS' not in text
+          assert 'ChooseUpgrade' not in text
+          assert 'topButton(window, "PROGRESSION"' in text
+          assert 'OperativeProgressionMapPresentation.rebuild(panel)' in text
+
+          path.write_text(text)
+          PY
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Apply canonical Luau formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          stylua games/living-kingdoms/src/client/Controllers/RPGMenuController.luau \
+            games/living-kingdoms/src/client/Presentation/OperativeProgressionMapPresentation.luau \
+            games/living-kingdoms/tests/OperativeProgressionMapPresentationSourceAudit.test.luau
+
+      - name: Commit clean feature tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/lk-p04-progression-map-patch.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add games/living-kingdoms/src/client/Controllers/RPGMenuController.luau \
+            games/living-kingdoms/src/client/Presentation/OperativeProgressionMapPresentation.luau \
+            games/living-kingdoms/tests/OperativeProgressionMapPresentationSourceAudit.test.luau \
+            .github/workflows/lk-p04-progression-map-patch.yml
+          git commit -m "feat(lk): activate durable operative progression map"
+          git push origin HEAD:lk-p04-operative-progression-map
