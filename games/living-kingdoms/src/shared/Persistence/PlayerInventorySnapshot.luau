@@ -24,9 +24,12 @@ export type PlayerInventoryRecord = Contracts.PlayerInventoryRecord
 export type EquipmentSlotId = EquipmentContracts.EquipmentSlotId
 export type EquipmentRarityId = EquipmentContracts.EquipmentRarityId
 export type RewardSourceId = EquipmentContracts.RewardSourceId
+export type EquipmentAffixRoll = EquipmentContracts.EquipmentAffixRoll
 
 -- The disclosed shape of one owned item. Deliberately narrower than
--- `EquipmentReward`: no GrantId, no RunId, no Seed.
+-- `EquipmentReward`: no GrantId, no RunId, no Seed. Affixes are safe authored
+-- gameplay metadata and are copied so a caller cannot retain authoritative
+-- reward tables through the snapshot.
 export type InventoryItemView = {
 	InstanceId: string,
 	ContentSignature: string,
@@ -36,6 +39,7 @@ export type InventoryItemView = {
 	Slot: EquipmentSlotId,
 	Rarity: EquipmentRarityId,
 	Power: number,
+	Affixes: { EquipmentAffixRoll },
 	SourceId: RewardSourceId,
 	Equipped: boolean,
 }
@@ -61,6 +65,23 @@ end
 
 local function reject(reasonId: string): SnapshotResult
 	return table.freeze({ Accepted = false, ReasonId = reasonId, Snapshot = nil })
+end
+
+local function copyAffixes(affixes: { EquipmentAffixRoll }): { EquipmentAffixRoll }
+	local copied = {}
+	for _, affix in affixes do
+		table.insert(
+			copied,
+			table.freeze({
+				Id = affix.Id,
+				Version = affix.Version,
+				DisplayName = affix.DisplayName,
+				EffectId = affix.EffectId,
+				Value = affix.Value,
+			})
+		)
+	end
+	return table.freeze(copied)
 end
 
 --[[
@@ -120,6 +141,7 @@ function PlayerInventorySnapshot.forOwner(
 				Slot = reward.Slot,
 				Rarity = reward.Rarity,
 				Power = reward.Power,
+				Affixes = copyAffixes(reward.Affixes),
 				SourceId = reward.SourceId,
 				Equipped = equipped[reward.Slot] == reward.InstanceId,
 			})
