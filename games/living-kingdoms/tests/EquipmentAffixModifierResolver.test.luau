@@ -83,21 +83,25 @@ assertThat(missing.reloadDurationMultiplier == 1, "missing affixes must keep rel
 assertThat(missing.maximumHealthMultiplier == 1, "missing affixes must keep max health neutral")
 assertThat(missing.movementSpeedMultiplier == 1, "missing affixes must keep movement neutral")
 assertThat(missing.abilityCooldownDurationMultiplier == 1, "missing affixes must keep ability cooldown neutral")
+assertThat(missing.abilityPowerMultiplier == 1, "missing affixes must keep ability power neutral")
 
 local damageOnly = resolver.resolve({ affix("DamagePercent", 7) })
 assertNear(damageOnly.damageMultiplier, 1.07, "damage percent must translate")
 assertThat(damageOnly.movementSpeedMultiplier == 1, "damage must not leak into movement")
 assertThat(damageOnly.abilityCooldownDurationMultiplier == 1, "damage must not leak into ability cooldown")
+assertThat(damageOnly.abilityPowerMultiplier == 1, "damage must not leak into ability power")
 
 local reloadOnly = resolver.resolve({ affix("ReloadSpeedPercent", 8) })
 assertNear(reloadOnly.reloadDurationMultiplier, 0.92, "reload speed percent must reduce reload duration")
 assertThat(reloadOnly.movementSpeedMultiplier == 1, "reload speed must not leak into movement")
 assertThat(reloadOnly.abilityCooldownDurationMultiplier == 1, "reload speed must not leak into ability cooldown")
+assertThat(reloadOnly.abilityPowerMultiplier == 1, "reload speed must not leak into ability power")
 
 local maxHealthOnly = resolver.resolve({ affix("MaxHealthPercent", 8) })
 assertNear(maxHealthOnly.maximumHealthMultiplier, 1.08, "max health percent must translate")
 assertThat(maxHealthOnly.movementSpeedMultiplier == 1, "max health must not leak into movement")
 assertThat(maxHealthOnly.abilityCooldownDurationMultiplier == 1, "max health must not leak into ability cooldown")
+assertThat(maxHealthOnly.abilityPowerMultiplier == 1, "max health must not leak into ability power")
 
 local movementOnly = resolver.resolve({ affix("MoveSpeedPercent", 6) })
 assertThat(movementOnly.damageMultiplier == 1, "movement speed must not leak into damage")
@@ -105,6 +109,7 @@ assertThat(movementOnly.reloadDurationMultiplier == 1, "movement speed must not 
 assertThat(movementOnly.maximumHealthMultiplier == 1, "movement speed must not leak into max health")
 assertNear(movementOnly.movementSpeedMultiplier, 1.06, "movement speed percent must translate")
 assertThat(movementOnly.abilityCooldownDurationMultiplier == 1, "movement speed must not leak into ability cooldown")
+assertThat(movementOnly.abilityPowerMultiplier == 1, "movement speed must not leak into ability power")
 assertNear(
 	resolver.resolve({ affix("MoveSpeedPercent", 3), affix("MoveSpeedPercent", 6) }).movementSpeedMultiplier,
 	1.09,
@@ -119,10 +124,22 @@ assertNear(
 )
 assertThat(abilityHasteOnly.reloadDurationMultiplier == 1, "ability haste must not leak into reload")
 assertThat(abilityHasteOnly.damageMultiplier == 1, "ability haste must not leak into damage")
+assertThat(abilityHasteOnly.abilityPowerMultiplier == 1, "ability haste must not leak into ability power")
 assertNear(
 	resolver.resolve({ affix("AbilityHastePercent", 5), affix("AbilityHastePercent", 10) }).abilityCooldownDurationMultiplier,
 	0.85,
 	"multiple ability-haste rolls must aggregate"
+)
+
+local abilityPowerOnly = resolver.resolve({ affix("AbilityPowerPercent", 8) })
+assertNear(abilityPowerOnly.abilityPowerMultiplier, 1.08, "ability power percent must translate")
+assertThat(abilityPowerOnly.damageMultiplier == 1, "ability power must not leak into firearm damage")
+assertThat(abilityPowerOnly.reloadDurationMultiplier == 1, "ability power must not leak into reload")
+assertThat(abilityPowerOnly.abilityCooldownDurationMultiplier == 1, "ability power must not leak into ability haste")
+assertNear(
+	resolver.resolve({ affix("AbilityPowerPercent", 4), affix("AbilityPowerPercent", 8) }).abilityPowerMultiplier,
+	1.12,
+	"multiple ability-power rolls must aggregate"
 )
 
 local mixed = resolver.resolve({
@@ -131,20 +148,14 @@ local mixed = resolver.resolve({
 	affix("MaxHealthPercent", 8),
 	affix("MoveSpeedPercent", 6),
 	affix("AbilityHastePercent", 10),
+	affix("AbilityPowerPercent", 8),
 })
 assertNear(mixed.damageMultiplier, 1.05, "mixed bundle must preserve damage")
 assertNear(mixed.reloadDurationMultiplier, 0.9, "mixed bundle must preserve reload speed")
 assertNear(mixed.maximumHealthMultiplier, 1.08, "mixed bundle must preserve maximum health")
 assertNear(mixed.movementSpeedMultiplier, 1.06, "mixed bundle must preserve movement speed")
 assertNear(mixed.abilityCooldownDurationMultiplier, 0.9, "mixed bundle must preserve ability haste")
-
-local futureEffect = resolver.resolve({ affix("AbilityPowerPercent", 15), affix("AbilityHastePercent", 5) })
-assertNear(
-	futureEffect.abilityCooldownDurationMultiplier,
-	0.95,
-	"live ability haste must survive unresolved ability effects"
-)
-assertThat(futureEffect.damageMultiplier == 1, "unresolved ability effect must stay damage-neutral")
+assertNear(mixed.abilityPowerMultiplier, 1.08, "mixed bundle must preserve ability power")
 
 assertThat(
 	resolver.resolve({ affix("DamagePercent", 500) }).damageMultiplier
@@ -170,6 +181,10 @@ assertThat(
 		== runConfig.ModifierCeilings.maximumMovementSpeedMultiplier,
 	"movement affixes must inherit the canonical global ceiling"
 )
+assertThat(
+	resolver.resolve({ affix("AbilityPowerPercent", 500) }).abilityPowerMultiplier == 2,
+	"ability-power affixes must inherit their bounded ceiling"
+)
 
 for _, malformed in
 	{
@@ -184,8 +199,9 @@ do
 	assertThat(result.maximumHealthMultiplier == 1, "malformed bundles must fail max health closed")
 	assertThat(result.movementSpeedMultiplier == 1, "malformed bundles must fail movement closed")
 	assertThat(result.abilityCooldownDurationMultiplier == 1, "malformed bundles must fail ability cooldown closed")
+	assertThat(result.abilityPowerMultiplier == 1, "malformed bundles must fail ability power closed")
 end
 
-assertThat(table.isfrozen(resolver.resolve({ affix("AbilityHastePercent", 5) })), "resolved bundle must be immutable")
+assertThat(table.isfrozen(resolver.resolve({ affix("AbilityPowerPercent", 5) })), "resolved bundle must be immutable")
 
-print("EquipmentAffixModifierResolver: bounded damage/reload/max-health/movement/ability-haste translation passed")
+print("EquipmentAffixModifierResolver: bounded damage/reload/health/movement/haste/power translation passed")
