@@ -100,11 +100,7 @@ local function readReloadDurationMultiplier(relicContext: RelicReloadContext?): 
 			type(relicContext.equipmentReloadDurationMultiplier) == "number"
 			and relicContext.equipmentReloadDurationMultiplier == relicContext.equipmentReloadDurationMultiplier
 		then
-			equipmentMultiplier = math.clamp(
-				relicContext.equipmentReloadDurationMultiplier,
-				RELOAD_DURATION_FLOOR,
-				1
-			)
+			equipmentMultiplier = math.clamp(relicContext.equipmentReloadDurationMultiplier, RELOAD_DURATION_FLOOR, 1)
 		end
 	end
 	return math.clamp(value * relicMultiplier * equipmentMultiplier, RELOAD_DURATION_FLOOR, 1)
