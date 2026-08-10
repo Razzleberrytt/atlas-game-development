@@ -48,23 +48,38 @@ local modifier = {
 	end,
 }
 
-local Resolver = luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau"), {
-	debugName = "EquippedEquipmentModifierResolver",
-	environment = {
-		script = { Parent = { Parent = { Config = { EquipmentRewardConfig = CONFIG_TOKEN } }, EquipmentRewardContracts = CONTRACTS_TOKEN, EquipmentAffixModifierResolver = MODIFIER_TOKEN } },
-		require = function(token: unknown)
-			if token == CONFIG_TOKEN then return config end
-			if token == CONTRACTS_TOKEN then return contracts end
-			if token == MODIFIER_TOKEN then return modifier end
-			error("unexpected equipped modifier dependency")
-		end,
-	},
-	injectGlobals = true,
-})()
+local Resolver =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau"), {
+		debugName = "EquippedEquipmentModifierResolver",
+		environment = {
+			script = {
+				Parent = {
+					Parent = { Config = { EquipmentRewardConfig = CONFIG_TOKEN } },
+					EquipmentRewardContracts = CONTRACTS_TOKEN,
+					EquipmentAffixModifierResolver = MODIFIER_TOKEN,
+				},
+			},
+			require = function(token: unknown)
+				if token == CONFIG_TOKEN then
+					return config
+				end
+				if token == CONTRACTS_TOKEN then
+					return contracts
+				end
+				if token == MODIFIER_TOKEN then
+					return modifier
+				end
+				error("unexpected equipped modifier dependency")
+			end,
+		},
+		injectGlobals = true,
+	})()
 
 local function reward(definitionId: string, effectId: string?, value: number?)
 	local affixes = {}
-	if effectId ~= nil and value ~= nil then table.insert(affixes, { EffectId = effectId, Value = value }) end
+	if effectId ~= nil and value ~= nil then
+		table.insert(affixes, { EffectId = effectId, Value = value })
+	end
 	return { DefinitionId = definitionId, Affixes = affixes }
 end
 
@@ -100,7 +115,10 @@ assert(healthArmor.movementSpeedMultiplier == 1, "health-only Armor remains move
 
 record.EquippedBySlot.Armor = nil
 local neutralArmor = Resolver.resolveForSlot(record, "Armor")
-assert(neutralArmor.maximumHealthMultiplier == 1 and neutralArmor.movementSpeedMultiplier == 1, "unequipped Armor is neutral")
+assert(
+	neutralArmor.maximumHealthMultiplier == 1 and neutralArmor.movementSpeedMultiplier == 1,
+	"unequipped Armor is neutral"
+)
 assert(neutralArmor.sourceInstanceId == nil, "unequipped Armor has no source")
 
 local invalid = Resolver.resolveForSlot(record, "NotASlot")
