@@ -38,6 +38,7 @@ export type RelicModifiers = RelicModifierResolver.RelicModifiers
 export type OperativeModifiers = RelicModifiers & {
 	equipmentDamageMultiplier: number,
 	equipmentReloadDurationMultiplier: number,
+	equipmentMaximumHealthMultiplier: number,
 }
 
 type CacheEntry = {
@@ -62,16 +63,22 @@ local function composeOperativeModifiers(player: Player, relicModifiers: RelicMo
 	local combined = table.clone(relicModifiers) :: any
 	combined.equipmentDamageMultiplier = 1
 	combined.equipmentReloadDurationMultiplier = 1
+	combined.equipmentMaximumHealthMultiplier = 1
 	if not canComposeEquipment(player) then
 		return table.freeze(combined) :: OperativeModifiers
 	end
+	local record = InventoryLiveService.getRecord(player.UserId)
 	local activeWeaponId = player:GetAttribute("LK_EquippedWeaponId")
-	local equipmentModifiers = EquippedEquipmentModifierResolver.resolveForWeapon(
-		InventoryLiveService.getRecord(player.UserId),
-		activeWeaponId
-	)
-	combined.equipmentDamageMultiplier = equipmentModifiers.damageMultiplier
-	combined.equipmentReloadDurationMultiplier = equipmentModifiers.reloadDurationMultiplier
+	local weaponModifiers = EquippedEquipmentModifierResolver.resolveForWeapon(record, activeWeaponId)
+	combined.equipmentDamageMultiplier = weaponModifiers.damageMultiplier
+	combined.equipmentReloadDurationMultiplier = weaponModifiers.reloadDurationMultiplier
+	local resolverAsAny = EquippedEquipmentModifierResolver :: any
+	if type(resolverAsAny.resolveForSlot) == "function" then
+		local armorModifiers = resolverAsAny.resolveForSlot(record, "Armor")
+		if type(armorModifiers) == "table" and type(armorModifiers.maximumHealthMultiplier) == "number" then
+			combined.equipmentMaximumHealthMultiplier = armorModifiers.maximumHealthMultiplier
+		end
+	end
 	return table.freeze(combined) :: OperativeModifiers
 end
 

@@ -80,13 +80,16 @@ end
 local missing = resolver.resolve(nil)
 assertThat(missing.damageMultiplier == 1, "legacy missing affixes must keep damage neutral")
 assertThat(missing.reloadDurationMultiplier == 1, "legacy missing affixes must keep reload neutral")
+assertThat(missing.maximumHealthMultiplier == 1, "legacy missing affixes must keep max health neutral")
 local empty = resolver.resolve({})
 assertThat(empty.damageMultiplier == 1, "empty affixes must keep damage neutral")
 assertThat(empty.reloadDurationMultiplier == 1, "empty affixes must keep reload neutral")
+assertThat(empty.maximumHealthMultiplier == 1, "empty affixes must keep max health neutral")
 
 local damageOnly = resolver.resolve({ affix("DamagePercent", 7) })
 assertNear(damageOnly.damageMultiplier, 1.07, "damage percent must translate")
 assertThat(damageOnly.reloadDurationMultiplier == 1, "damage must not leak into reload duration")
+assertThat(damageOnly.maximumHealthMultiplier == 1, "damage must not leak into maximum health")
 assertNear(
 	resolver.resolve({ affix("DamagePercent", 7), affix("DamagePercent", 5) }).damageMultiplier,
 	1.12,
@@ -96,19 +99,36 @@ assertNear(
 local reloadOnly = resolver.resolve({ affix("ReloadSpeedPercent", 8) })
 assertThat(reloadOnly.damageMultiplier == 1, "reload speed must not leak into damage")
 assertNear(reloadOnly.reloadDurationMultiplier, 0.92, "reload speed percent must reduce reload duration")
+assertThat(reloadOnly.maximumHealthMultiplier == 1, "reload speed must not leak into maximum health")
 assertNear(
 	resolver.resolve({ affix("ReloadSpeedPercent", 7), affix("ReloadSpeedPercent", 5) }).reloadDurationMultiplier,
 	0.88,
 	"multiple reload-speed rolls must aggregate"
 )
 
-local mixed = resolver.resolve({ affix("DamagePercent", 5), affix("ReloadSpeedPercent", 10) })
+local maxHealthOnly = resolver.resolve({ affix("MaxHealthPercent", 8) })
+assertThat(maxHealthOnly.damageMultiplier == 1, "max health must not leak into damage")
+assertThat(maxHealthOnly.reloadDurationMultiplier == 1, "max health must not leak into reload duration")
+assertNear(maxHealthOnly.maximumHealthMultiplier, 1.08, "max health percent must translate")
+assertNear(
+	resolver.resolve({ affix("MaxHealthPercent", 4), affix("MaxHealthPercent", 8) }).maximumHealthMultiplier,
+	1.12,
+	"multiple max-health rolls must aggregate"
+)
+
+local mixed = resolver.resolve({
+	affix("DamagePercent", 5),
+	affix("ReloadSpeedPercent", 10),
+	affix("MaxHealthPercent", 8),
+})
 assertNear(mixed.damageMultiplier, 1.05, "mixed bundle must preserve damage")
 assertNear(mixed.reloadDurationMultiplier, 0.9, "mixed bundle must preserve reload speed")
+assertNear(mixed.maximumHealthMultiplier, 1.08, "mixed bundle must preserve maximum health")
 
 local futureEffect = resolver.resolve({ affix("MoveSpeedPercent", 15), affix("DamagePercent", 5) })
 assertNear(futureEffect.damageMultiplier, 1.05, "live damage must survive unresolved effects")
 assertThat(futureEffect.reloadDurationMultiplier == 1, "unresolved movement effect must stay reload-neutral")
+assertThat(futureEffect.maximumHealthMultiplier == 1, "unresolved movement effect must stay max-health neutral")
 
 assertThat(
 	resolver.resolve({ affix("DamagePercent", 500) }).damageMultiplier
@@ -119,6 +139,10 @@ assertThat(
 	resolver.resolve({ affix("ReloadSpeedPercent", 500) }).reloadDurationMultiplier
 		== runConfig.ModifierCeilings.minimumReloadDurationMultiplier,
 	"reload affixes must inherit the canonical global floor"
+)
+assertThat(
+	resolver.resolve({ affix("MaxHealthPercent", 500) }).maximumHealthMultiplier == 2,
+	"max-health affixes must inherit their bounded ceiling"
 )
 
 for _, malformed in
@@ -131,11 +155,12 @@ do
 	local result = resolver.resolve(malformed :: any)
 	assertThat(result.damageMultiplier == 1, "malformed bundles must fail damage closed")
 	assertThat(result.reloadDurationMultiplier == 1, "malformed bundles must fail reload closed")
+	assertThat(result.maximumHealthMultiplier == 1, "malformed bundles must fail max health closed")
 end
 
 assertThat(
-	table.isfrozen(resolver.resolve({ affix("ReloadSpeedPercent", 5) })),
+	table.isfrozen(resolver.resolve({ affix("MaxHealthPercent", 5) })),
 	"resolved modifier bundle must be immutable"
 )
 
-print("EquipmentAffixModifierResolver: bounded damage/reload translation and fail-closed behavior passed")
+print("EquipmentAffixModifierResolver: bounded damage/reload/max-health translation and fail-closed behavior passed")

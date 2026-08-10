@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local InventoryLiveService = require(script.Parent.Systems.InventoryLiveService)
+local OperativeLifeService = require(script.Parent.Systems.OperativeLifeService)
 
 local LEASE_RENEW_INTERVAL_SECONDS = 30
 
@@ -75,6 +76,7 @@ local function loadPlayer(player: Player)
 		return
 	end
 	loadedPlayerIds[player.UserId] = true
+	OperativeLifeService.reconcileMaximumHealth(player)
 	pushTo(player)
 end
 
@@ -114,6 +116,7 @@ equipOwnedItem.OnServerInvoke = function(player: Player, instanceId: any): any
 	end
 	local outcome = InventoryLiveService.equipOwnedItem(player.UserId, player.UserId, instanceId, os.time())
 	if outcome.Accepted == true then
+		OperativeLifeService.reconcileMaximumHealth(player)
 		pushTo(player)
 	end
 	return table.freeze({ Accepted = outcome.Accepted == true, ReasonId = outcome.ReasonId })
@@ -126,6 +129,7 @@ dismantleOwnedItem.OnServerInvoke = function(player: Player, instanceId: any, tr
 	local outcome =
 		InventoryLiveService.dismantleOwnedItem(player.UserId, player.UserId, instanceId, transactionId, os.time())
 	if outcome.Accepted == true then
+		OperativeLifeService.reconcileMaximumHealth(player)
 		pushTo(player)
 	end
 	return table.freeze({

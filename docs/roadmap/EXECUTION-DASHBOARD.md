@@ -1,4 +1,4 @@
-# Atlas — Execution Dashboard v1.7
+# Atlas — Execution Dashboard v1.8
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-10  
@@ -19,7 +19,8 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 - PR #335 added affix-aware durable gear comparison/presentation.
 - PR #337 wired equipped durable `DamagePercent` through the existing server-owned damage authority with full validation green.
 - PR #343 routes equipped durable `ReloadSpeedPercent` through the existing server-owned reload authority with full automated validation green: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
-- `DamagePercent` and `ReloadSpeedPercent` are now live effect-owner routes; same-family variants should be data/config plus focused regression rather than bespoke runtime wiring.
+- PR #344 routes equipped Armor `MaxHealthPercent` through `OperativeLifeService` with ratio-preserving equip/unequip reconciliation, bounded variable-max life validation, replay/reconnect protection, and full automated validation green: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
+- `DamagePercent`, `ReloadSpeedPercent`, and `MaxHealthPercent` are now live effect-owner routes; same-family variants should be data/config plus focused regression rather than bespoke runtime wiring.
 - The effect-owner routing registry prevents affix effect vocabulary from existing without an explicit authority-routing state.
 - Verification truth remains strict: pending manual/engine evidence is never called VERIFIED.
 
@@ -27,43 +28,50 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 
 ### NOW
 
-**Resolve and route `MaxHealthPercent` through the existing authoritative operative-life owner without creating a parallel health system.**
+**Resolve and route `MoveSpeedPercent` through the canonical server-owned operative movement application path without creating a parallel movement authority.**
 
 Start with:
 
 ```bash
-python scripts/effect_routes.py show MaxHealthPercent
+python scripts/effect_routes.py show MoveSpeedPercent
 ```
 
-Confirmed ownership direction:
+Confirmed authored fact:
+
+```text
+Trailborn
+→ Armor-only durable affix
+→ MoveSpeedPercent +3–6%
+```
+
+Current ownership evidence:
 
 ```text
 authoritative equipped Armor item
 → slot-aware durable-equipment modifier fact
 → existing server composition seam
-→ OperativeLifeService
-→ existing revisioned P3 life snapshot
+→ server-owned operative character locomotion application
 ```
 
-Before live wiring, pin one deterministic health-rebase rule for equip/unequip because the current life validators and pure damage resolver still assume the prototype maximum health of `100`.
+`OperativeLifeService` is the leading canonical-owner candidate because it already owns Alive/Incapacitated/Dead character movement restrictions and server-side `Humanoid.WalkSpeed` application. Confirm there is no competing server player-movement owner before live wiring.
 
 Rules:
 
-- `OperativeLifeService` remains the canonical owner; no equipment-specific health service;
-- generalize the existing life-state validation coherently instead of writing Humanoid health;
-- define equip/unequip current-health behavior explicitly and regression-test it;
-- Armor-slot resolution must not be stretched through the weapon-only resolver;
-- healing, damage, downed/dead, revive, replay, reconnect, and replication invariants must remain server authoritative;
-- legacy/no-affix armor remains neutral;
-- after successful wiring, promote `MaxHealthPercent` from `unresolved` to `live` and name focused tests.
+- resolve one canonical server movement owner before implementation; no client/presentation movement authority;
+- reuse `RunModifierResolver` movement arithmetic and its existing movement-speed ceiling rather than inventing a second formula;
+- reuse the Armor slot-aware equipment resolver and existing server composition seam;
+- derive effective movement speed from a stable base, never from an already-modified `Humanoid.WalkSpeed`, so repeated equip/reapply cannot compound;
+- Alive movement may receive the bounded equipment multiplier; Incapacitated/Dead movement remains zero;
+- inventory load/equip/dismantle changes must reconcile through the canonical movement owner without adding a new RemoteEvent or polling loop;
+- legacy/no-affix Armor remains neutral;
+- after successful wiring, promote `MoveSpeedPercent` from `unresolved` to `live` and name focused tests.
 
 ### NEXT
 
-1. route `MoveSpeedPercent` after confirming its canonical server movement owner, reusing the slot-aware durable-equipment seam created for Armor where applicable;
-2. resolve canonical owners for `AbilityHastePercent` and `AbilityPowerPercent` before live implementation;
-3. expand affix/reward variety primarily through validated definitions once effect routes are live;
-4. add end-to-end regression coverage across generation → reward → inventory → equip → application → replay/persistence;
-5. continue into Patch 0.4 when Patch 0.3 source is coherent, keeping Studio evidence pending rather than inventing a lock.
+1. resolve canonical owners for `AbilityHastePercent` and `AbilityPowerPercent` before live implementation;
+2. expand affix/reward variety primarily through validated definitions once effect routes are live;
+3. add end-to-end regression coverage across generation → reward → inventory → equip → application → replay/persistence;
+4. continue into Patch 0.4 when Patch 0.3 source is coherent, keeping Studio evidence pending rather than inventing a lock.
 
 ### LATER
 
