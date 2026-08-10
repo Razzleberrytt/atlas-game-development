@@ -8,10 +8,13 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Contracts = require(ReplicatedStorage.Shared.Equipment.EquipmentRewardContracts)
+local EquipmentAffixResolver = require(ReplicatedStorage.Shared.Equipment.EquipmentAffixResolver)
 local Config = require(ReplicatedStorage.Shared.Config.EquipmentRewardConfig)
+local EquipmentAffixConfig = require(ReplicatedStorage.Shared.Config.EquipmentAffixConfig)
 
 export type RewardSourceId = Contracts.RewardSourceId
 export type EquipmentReward = Contracts.EquipmentReward
+export type EquipmentAffixRoll = Contracts.EquipmentAffixRoll
 export type RewardClaimResult = Contracts.RewardClaimResult
 
 export type Service = {
@@ -83,12 +86,39 @@ local function contentSignature(
 	rarityId: string,
 	power: number,
 	sourceId: string,
-	rollSeed: number
+	rollSeed: number,
+	affixSignature: string
 ): string
 	return table.concat(
-		{ "v1", definition.Id, definition.Version, rarityId, tostring(power), sourceId, tostring(rollSeed) },
+		{
+			"v2",
+			definition.Id,
+			definition.Version,
+			rarityId,
+			tostring(power),
+			sourceId,
+			tostring(rollSeed),
+			affixSignature,
+		},
 		"|"
 	)
+end
+
+local function copyAffixes(affixes: { EquipmentAffixRoll }): { EquipmentAffixRoll }
+	local copied = {}
+	for _, affix in affixes do
+		table.insert(
+			copied,
+			table.freeze({
+				Id = affix.Id,
+				Version = affix.Version,
+				DisplayName = affix.DisplayName,
+				EffectId = affix.EffectId,
+				Value = affix.Value,
+			})
+		)
+	end
+	return table.freeze(copied)
 end
 
 local function copyReward(reward: EquipmentReward): EquipmentReward
@@ -102,6 +132,7 @@ local function copyReward(reward: EquipmentReward): EquipmentReward
 		Slot = reward.Slot,
 		Rarity = reward.Rarity,
 		Power = reward.Power,
+		Affixes = copyAffixes(reward.Affixes),
 		SourceId = reward.SourceId,
 		RunId = reward.RunId,
 		Seed = reward.Seed,
@@ -147,17 +178,35 @@ function EquipmentRewardService:claimReward(sourceId: RewardSourceId): RewardCla
 	local powerSeed = deriveSeed(state.Seed, sourceId, 47)
 	local power = minimumPower + (powerSeed % (maximumPower - minimumPower + 1))
 	local rollSeed = deriveSeed(state.Seed, sourceId, 71)
+	local affixResolution = EquipmentAffixResolver.resolve(EquipmentAffixConfig, {
+		DefinitionId = definition.Id,
+		Slot = definition.Slot,
+		Rarity = rarityId,
+		Tags = definition.Tags,
+		Seed = rollSeed,
+	})
+	if affixResolution.Accepted ~= true then
+		return reject("AffixResolutionFailed")
+	end
 
 	local reward: EquipmentReward = table.freeze({
 		InstanceId = "item_" .. HttpService:GenerateGUID(false),
 		GrantId = string.format("reward:%s:%s", state.RunId, sourceId),
-		ContentSignature = contentSignature(definition, rarityId, power, sourceId, rollSeed),
+		ContentSignature = contentSignature(
+			definition,
+			rarityId,
+			power,
+			sourceId,
+			rollSeed,
+			affixResolution.Signature
+		),
 		DefinitionId = definition.Id,
 		DefinitionVersion = definition.Version,
 		DisplayName = definition.DisplayName,
 		Slot = definition.Slot,
 		Rarity = rarityId,
 		Power = power,
+		Affixes = copyAffixes(affixResolution.Affixes),
 		SourceId = sourceId,
 		RunId = state.RunId,
 		Seed = rollSeed,
