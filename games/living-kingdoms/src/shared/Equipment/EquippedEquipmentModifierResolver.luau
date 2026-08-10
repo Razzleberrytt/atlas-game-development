@@ -43,10 +43,7 @@ local function isKnownSlotId(value: unknown): boolean
 	return value == slots.Primary or value == slots.Secondary or value == slots.Armor or value == slots.Relic
 end
 
-local function equippedItem(
-	record: InventoryRecordLike?,
-	slotId: EquipmentSlotId
-): (string?, EquipmentReward?, any?)
+local function equippedItem(record: InventoryRecordLike?, slotId: EquipmentSlotId): (string?, EquipmentReward?, any?)
 	if
 		type(record) ~= "table"
 		or type(record.InventoryByInstanceId) ~= "table"
