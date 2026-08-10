@@ -65,6 +65,11 @@ local function pushTo(player: Player)
 	state:FireClient(player, readFor(player))
 end
 
+local function reconcileEquipmentEffects(player: Player)
+	OperativeLifeService.reconcileMaximumHealth(player)
+	OperativeLifeService.reconcileMovementSpeed(player)
+end
+
 local function loadPlayer(player: Player)
 	local loaded = InventoryLiveService.loadPlayer(player.UserId, os.time())
 	if loaded.Accepted ~= true then
@@ -76,7 +81,7 @@ local function loadPlayer(player: Player)
 		return
 	end
 	loadedPlayerIds[player.UserId] = true
-	OperativeLifeService.reconcileMaximumHealth(player)
+	reconcileEquipmentEffects(player)
 	pushTo(player)
 end
 
@@ -116,7 +121,7 @@ equipOwnedItem.OnServerInvoke = function(player: Player, instanceId: any): any
 	end
 	local outcome = InventoryLiveService.equipOwnedItem(player.UserId, player.UserId, instanceId, os.time())
 	if outcome.Accepted == true then
-		OperativeLifeService.reconcileMaximumHealth(player)
+		reconcileEquipmentEffects(player)
 		pushTo(player)
 	end
 	return table.freeze({ Accepted = outcome.Accepted == true, ReasonId = outcome.ReasonId })
@@ -129,7 +134,7 @@ dismantleOwnedItem.OnServerInvoke = function(player: Player, instanceId: any, tr
 	local outcome =
 		InventoryLiveService.dismantleOwnedItem(player.UserId, player.UserId, instanceId, transactionId, os.time())
 	if outcome.Accepted == true then
-		OperativeLifeService.reconcileMaximumHealth(player)
+		reconcileEquipmentEffects(player)
 		pushTo(player)
 	end
 	return table.freeze({
