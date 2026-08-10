@@ -30,12 +30,14 @@ type ReloadState = CombatContracts.ReloadState
 type WeaponCadenceState = CombatContracts.WeaponCadenceState
 type WeaponReadinessState = CombatContracts.WeaponReadinessState
 
--- RPG-0108 per-operative relic reload context. Emergency Chamber shortens only
--- reloads accepted while the operative is critically wounded, so the caller
--- supplies the authoritative wounded fact alongside the bounded multiplier.
+-- Per-operative reload context composed by the server combat owner. Emergency
+-- Chamber remains conditional on the authoritative wounded fact; durable
+-- equipment contributes an always-on bounded multiplier for the active weapon.
+-- The legacy type name is retained to avoid widening the public resolver seam.
 export type RelicReloadContext = {
 	woundedReloadDurationMultiplier: number,
 	isCriticallyWounded: boolean,
+	equipmentReloadDurationMultiplier: number?,
 }
 
 type ReloadResolver = {
@@ -78,22 +80,30 @@ local function readProgressionNumber(attributeName: string, fallback: number): n
 	return value
 end
 
--- The squad Combat Loader multiplier and the per-operative Emergency Chamber
--- multiplier compose, and the product is clamped to the same reload floor so no
--- combination can erase the authoritative reload commitment.
+-- Squad Combat Loader, conditional Emergency Chamber, and equipped reload-speed
+-- affixes compose once in the canonical reload owner. Each contribution fails
+-- neutral when malformed, and the final product uses the shared commitment floor
+-- so no build combination can erase the authoritative reload window.
 local function readReloadDurationMultiplier(relicContext: RelicReloadContext?): number
 	local value = readProgressionNumber("RunReloadDurationMultiplier", 1)
 	local relicMultiplier = 1
-	if
-		relicContext ~= nil
-		and type(relicContext) == "table"
-		and relicContext.isCriticallyWounded == true
-		and type(relicContext.woundedReloadDurationMultiplier) == "number"
-		and relicContext.woundedReloadDurationMultiplier == relicContext.woundedReloadDurationMultiplier
-	then
-		relicMultiplier = math.clamp(relicContext.woundedReloadDurationMultiplier, RELOAD_DURATION_FLOOR, 1)
+	local equipmentMultiplier = 1
+	if relicContext ~= nil and type(relicContext) == "table" then
+		if
+			relicContext.isCriticallyWounded == true
+			and type(relicContext.woundedReloadDurationMultiplier) == "number"
+			and relicContext.woundedReloadDurationMultiplier == relicContext.woundedReloadDurationMultiplier
+		then
+			relicMultiplier = math.clamp(relicContext.woundedReloadDurationMultiplier, RELOAD_DURATION_FLOOR, 1)
+		end
+		if
+			type(relicContext.equipmentReloadDurationMultiplier) == "number"
+			and relicContext.equipmentReloadDurationMultiplier == relicContext.equipmentReloadDurationMultiplier
+		then
+			equipmentMultiplier = math.clamp(relicContext.equipmentReloadDurationMultiplier, RELOAD_DURATION_FLOOR, 1)
+		end
 	end
-	return math.clamp(value * relicMultiplier, RELOAD_DURATION_FLOOR, 1)
+	return math.clamp(value * relicMultiplier * equipmentMultiplier, RELOAD_DURATION_FLOOR, 1)
 end
 
 local function copyAmmunition(ammunition: AmmunitionState): AmmunitionState

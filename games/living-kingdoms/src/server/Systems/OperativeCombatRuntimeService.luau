@@ -217,7 +217,6 @@ local function deriveOperativeEntityId(player: Player): string
 	-- coordination address the same operative.
 	return "operative.player:" .. tostring(player.UserId)
 end
-
 local function createPlayerState(player: Player): PlayerCombatState
 	local operativeEntityId = deriveOperativeEntityId(player)
 	local retained = retainedCombatByOperativeEntityId[operativeEntityId]
@@ -1135,23 +1134,33 @@ local function completeReload(player: Player, expectedCompletionTimestamp: numbe
 end
 
 --[[
-	Emergency Chamber only shortens reloads accepted while the operative is
-	critically wounded. The wounded fact comes from the authoritative P3 life
-	snapshot, never from the requesting client.
+	Durable equipment reload speed applies to the server-authored active weapon on
+	every accepted reload. Emergency Chamber remains conditional on the authoritative
+	P3 wounded fact, so an equipment-only bonus never needs health state and the
+	relic cannot leak onto healthy operatives.
 ]]
 local function relicReloadContext(player: Player): ReloadResolver.RelicReloadContext?
 	local modifiers = RelicModifierService.read(player)
-	if modifiers.woundedHealthFraction <= 0 or modifiers.woundedReloadDurationMultiplier >= 1 then
+	local hasEquipmentReloadModifier = modifiers.equipmentReloadDurationMultiplier < 1
+	local hasWoundedReloadModifier = modifiers.woundedHealthFraction > 0
+		and modifiers.woundedReloadDurationMultiplier < 1
+	if not hasEquipmentReloadModifier and not hasWoundedReloadModifier then
 		return nil
 	end
-	local lifeRead = OperativeLifeService.read(player)
-	local healthState = if lifeRead == nil then nil else lifeRead.snapshot.healthState
-	if healthState == nil or healthState.maximumHealth <= 0 then
-		return nil
+
+	local isCriticallyWounded = false
+	if hasWoundedReloadModifier then
+		local lifeRead = OperativeLifeService.read(player)
+		local healthState = if lifeRead == nil then nil else lifeRead.snapshot.healthState
+		if healthState ~= nil and healthState.maximumHealth > 0 then
+			isCriticallyWounded = healthState.currentHealth
+				<= healthState.maximumHealth * modifiers.woundedHealthFraction
+		end
 	end
 	return {
 		woundedReloadDurationMultiplier = modifiers.woundedReloadDurationMultiplier,
-		isCriticallyWounded = healthState.currentHealth <= healthState.maximumHealth * modifiers.woundedHealthFraction,
+		isCriticallyWounded = isCriticallyWounded,
+		equipmentReloadDurationMultiplier = modifiers.equipmentReloadDurationMultiplier,
 	}
 end
 
