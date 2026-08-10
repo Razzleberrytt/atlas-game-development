@@ -3,9 +3,9 @@
 --[[
 	Server owner for LK-0407's bounded location squad ping slice. Client intent
 	contains only a Location category and candidate position. Identity, squad,
-	time, limits, canonical position, durable Rally identity, ping identity,
-	recipients, and revisions are derived here. No discovery, perception,
-	targeting, or combat service is read or mutated.
+	time, limits, canonical position, durable Rally identity, marker capacity,
+	ping identity, recipients, and revisions are derived here. No discovery,
+	perception, targeting, or combat service is read or mutated.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -238,6 +238,21 @@ local function publishedCategoryFor(player: Player): string
 		return SquadPingContracts.CategoryIds.Rally
 	end
 	return SquadPingContracts.CategoryIds.Location
+end
+
+local function maximumActiveFor(player: Player): number
+	local unlockId = OperativeProgressionConfig.UnlockIds.DualTacticalMarkers
+	if unlockId == nil then
+		return SquadPingConfig.MaximumActivePerSender
+	end
+	local unlocked = false
+	local ok = pcall(function()
+		unlocked = OperativeProgressionService.hasOwnedUnlock(player.UserId, player.UserId, unlockId)
+	end)
+	if ok and unlocked then
+		return SquadPingConfig.DualTacticalMaximumActivePerSender
+	end
+	return SquadPingConfig.MaximumActivePerSender
 end
 
 local function cancelExpiry()
@@ -507,10 +522,11 @@ function Service.requestPing(player: Player, intent: unknown): OperationResult
 		return reject(player, SquadPingContracts.RejectionReasonIds.RateLimited)
 	end
 	local owned = ownedPings(entry.operativeEntityId)
-	if #owned > SquadPingConfig.MaximumActivePerSender then
+	local maximumActive = maximumActiveFor(player)
+	if #owned > maximumActive then
 		return reject(player, SquadPingContracts.RejectionReasonIds.SenderLimitExceeded)
 	end
-	local replacing = owned[1]
+	local replacing = if #owned >= maximumActive then owned[1] else nil
 	local squadCountAfterReplacement = activeCountForSquad(entry.squadId) - (if replacing == nil then 0 else 1)
 	if squadCountAfterReplacement >= SquadPingConfig.MaximumActivePerSquad then
 		return reject(player, SquadPingContracts.RejectionReasonIds.SquadLimitExceeded)

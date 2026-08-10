@@ -40,6 +40,7 @@ local Ranks = table.freeze({
 
 local UnlockIds = table.freeze({
 	SquadRallyPing = "squad-rally-ping",
+	DualTacticalMarkers = "squad-dual-tactical-markers",
 })
 
 local Unlocks = table.freeze({
@@ -47,6 +48,12 @@ local Unlocks = table.freeze({
 		Id = UnlockIds.SquadRallyPing,
 		DisplayName = "Rally Ping",
 		Description = "Your standard squad ping carries a Rally identity.",
+		RequiredRank = 2,
+	}),
+	table.freeze({
+		Id = UnlockIds.DualTacticalMarkers,
+		DisplayName = "Dual Tactical Markers",
+		Description = "Maintain two personal squad markers at once.",
 		RequiredRank = 2,
 	}),
 })
