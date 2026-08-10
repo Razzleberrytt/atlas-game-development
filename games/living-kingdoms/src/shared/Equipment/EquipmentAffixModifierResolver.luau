@@ -13,15 +13,20 @@ local RunModifierResolver = require(script.Parent.Parent.Progression.RunModifier
 export type EquipmentAffixRoll = EquipmentRewardContracts.EquipmentAffixRoll
 export type ResolvedModifiers = {
 	damageMultiplier: number,
+	reloadDurationMultiplier: number,
 }
 
 local EquipmentAffixModifierResolver = {}
 
 local DAMAGE_EFFECT_ID = "DamagePercent"
+local RELOAD_SPEED_EFFECT_ID = "ReloadSpeedPercent"
 local PERCENT_SCALE = 100
 
 local function neutral(): ResolvedModifiers
-	return table.freeze({ damageMultiplier = 1 })
+	return table.freeze({
+		damageMultiplier = 1,
+		reloadDurationMultiplier = 1,
+	})
 end
 
 local function isFiniteNonnegative(value: unknown): boolean
@@ -29,9 +34,10 @@ local function isFiniteNonnegative(value: unknown): boolean
 end
 
 --[[
-	Resolves only effects that have an existing canonical runtime owner. The first
-	live Patch 0.3 application is DamagePercent; reload, life, movement, and ability
-	effects remain inert until their own authority seams are wired explicitly.
+	Resolves only effects that have an existing canonical runtime owner. Patch 0.3
+	currently routes DamagePercent through the authoritative damage owner and
+	ReloadSpeedPercent through the authoritative reload owner; life, movement, and
+	ability effects remain inert until their authority seams are wired explicitly.
 
 	Malformed affix data fails the entire bundle closed to neutral instead of
 	partially applying a suspicious build. Unknown-but-well-formed effects are
@@ -46,6 +52,7 @@ function EquipmentAffixModifierResolver.resolve(affixes: { EquipmentAffixRoll }?
 	end
 
 	local damagePercent = 0
+	local reloadSpeedPercent = 0
 	for _, affix in affixes :: any do
 		if
 			type(affix) ~= "table"
@@ -57,11 +64,19 @@ function EquipmentAffixModifierResolver.resolve(affixes: { EquipmentAffixRoll }?
 		end
 		if affix.EffectId == DAMAGE_EFFECT_ID then
 			damagePercent += affix.Value
+		elseif affix.EffectId == RELOAD_SPEED_EFFECT_ID then
+			reloadSpeedPercent += affix.Value
 		end
 	end
 
-	local bounded = RunModifierResolver.resolve({ damageBonus = damagePercent / PERCENT_SCALE })
-	return table.freeze({ damageMultiplier = bounded.damageMultiplier })
+	local bounded = RunModifierResolver.resolve({
+		damageBonus = damagePercent / PERCENT_SCALE,
+		reloadDurationReduction = reloadSpeedPercent / PERCENT_SCALE,
+	})
+	return table.freeze({
+		damageMultiplier = bounded.damageMultiplier,
+		reloadDurationMultiplier = bounded.reloadDurationMultiplier,
+	})
 end
 
 function EquipmentAffixModifierResolver.neutral(): ResolvedModifiers
