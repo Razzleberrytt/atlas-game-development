@@ -21,8 +21,9 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 - PR #343 routes equipped durable `ReloadSpeedPercent` through the existing server-owned reload authority with full automated validation green: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
 - PR #344 routes equipped Armor `MaxHealthPercent` through `OperativeLifeService` with ratio-preserving equip/unequip reconciliation, bounded variable-max life validation, replay/reconnect protection, and full automated validation green: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
 - PR #345 routes equipped Armor `MoveSpeedPercent` through the existing server-owned `OperativeLifeService` locomotion application, derives speed from the stable bound base to prevent compounding, preserves hard-zero incapacitated/dead movement, and passed full automated validation: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
-- PR #348 routes equipped Relic `AbilityHastePercent` through the existing server-owned `ClassService` action lifecycle, snapshots the bounded cooldown-duration multiplier at activation, and applies it consistently to Brace, Field Treatment, and Field Resupply cooldown outcomes: **BUILT — VERIFICATION PENDING** after full automated validation passes and until ordinary Studio/device evidence is run.
-- `DamagePercent`, `ReloadSpeedPercent`, `MaxHealthPercent`, `MoveSpeedPercent`, and `AbilityHastePercent` are now live effect-owner routes; same-family variants should be data/config plus focused regression rather than bespoke runtime wiring.
+- PR #348 routes equipped Relic `AbilityHastePercent` through the existing server-owned `ClassService` action lifecycle, snapshots the bounded cooldown-duration multiplier at activation, applies it consistently to Brace, Field Treatment, and Field Resupply cooldown outcomes, and passed full automated validation: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
+- PR #349 implements equipped Relic `AbilityPowerPercent` through `ClassService`, snapshots the bounded power multiplier at activation, and applies it only to existing server-owned Brace cadence benefit, Field Treatment healing, and Field Resupply ammunition consequences. Full repository validation is still the merge gate for this increment.
+- `DamagePercent`, `ReloadSpeedPercent`, `MaxHealthPercent`, `MoveSpeedPercent`, and `AbilityHastePercent` are live on `main`; `AbilityPowerPercent` is the final current effect route and is implemented on PR #349 pending its full automated gate.
 - The effect-owner routing registry prevents affix effect vocabulary from existing without an explicit authority-routing state.
 - Verification truth remains strict: pending manual/engine evidence is never called VERIFIED.
 
@@ -30,36 +31,31 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 
 ### NOW
 
-**Resolve and route `AbilityPowerPercent` through the canonical server-owned ability-consequence path without creating a generic parallel ability-power authority.**
+**Close PR #349 through the full repository validation gate. If green, merge it and immediately move Patch 0.3 from bespoke effect wiring into data-first affix/reward expansion.**
 
-Start with:
-
-```bash
-python scripts/effect_routes.py show AbilityPowerPercent
-```
-
-Confirmed authored fact:
+Ability Power authority on #349:
 
 ```text
-Focused
-→ Relic-only durable affix
-→ AbilityPowerPercent +4–8%
+authoritative equipped durable Relic
+→ bounded AbilityPowerPercent fact
+→ RelicModifierService composition seam
+→ ClassService activation snapshot
+→ configured server-owned class consequence
 ```
 
 Rules:
 
-- identify one canonical server consequence owner before implementation;
-- do not let the client provide power, healing, ammunition, damage, duration, or other consequential ability values;
-- prefer a narrow shared server-derived ability-power fact over per-action bespoke affix arithmetic;
-- preserve existing resource costs, targeting, timing, life/ammunition/damage commit boundaries, and configured base values;
-- derive modified consequences from configured/server-owned base values, never from already-modified output;
+- no new ability service or RemoteEvent;
+- no client-authored power, healing, ammunition, cadence, or output values;
+- power is snapshotted at activation so gear swapping cannot rewrite an in-flight action;
+- consequences derive from configured server bases, never already-modified output;
 - malformed/legacy/no-affix equipment remains neutral;
-- add focused resolver + integration regression coverage;
-- after successful wiring, promote `AbilityPowerPercent` from `unresolved` to `live` and name the canonical owner/tests.
+- do not call the route complete until full automated validation is green;
+- ordinary Studio/device evidence remains pending rather than blocking dependency-safe source work.
 
 ### NEXT
 
-1. expand affix/reward variety primarily through validated definitions once all current effect routes are live;
+1. expand affix/reward variety primarily through validated definitions now that runtime effect seams are reusable;
 2. add end-to-end regression coverage across generation → reward → inventory → equip → application → replay/persistence;
 3. reconcile Patch 0.3 source completeness and close remaining loot/build replayability gaps;
 4. continue into Patch 0.4 when Patch 0.3 source is coherent, keeping Studio evidence pending rather than inventing a lock.
