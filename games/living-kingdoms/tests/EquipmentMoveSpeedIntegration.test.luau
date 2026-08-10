@@ -34,10 +34,7 @@ assert(
 		and contains(life, "humanoid.WalkSpeed = baseWalkSpeed * effectiveMovementSpeedMultiplier(entry.player)"),
 	"life authority must derive effective speed from the stable bound base rather than current Humanoid speed"
 )
-assert(
-	contains(life, "humanoid.WalkSpeed = 0"),
-	"incapacitated/dead movement must remain hard disabled"
-)
+assert(contains(life, "humanoid.WalkSpeed = 0"), "incapacitated/dead movement must remain hard disabled")
 assert(
 	contains(life, "function OperativeLifeService.reconcileMovementSpeed(player: Player): boolean")
 		and contains(inventory, "OperativeLifeService.reconcileMovementSpeed(player)"),
