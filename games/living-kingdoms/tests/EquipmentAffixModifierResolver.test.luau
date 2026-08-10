@@ -9,6 +9,10 @@ local function assertThat(condition: unknown, message: string)
 	end
 end
 
+local function assertNear(actual: number, expected: number, message: string)
+	assertThat(math.abs(actual - expected) < 1e-9, message)
+end
+
 local RUN_CONFIG_TOKEN = {}
 local runConfig = {
 	ModifierCeilings = {
@@ -73,37 +77,63 @@ local function affix(effectId: string, value: number): any
 	return { Id = effectId, Version = "1", DisplayName = effectId, EffectId = effectId, Value = value }
 end
 
-assertThat(resolver.resolve(nil).damageMultiplier == 1, "legacy missing affixes must stay neutral")
-assertThat(resolver.resolve({}).damageMultiplier == 1, "empty affixes must stay neutral")
-assertThat(resolver.resolve({ affix("DamagePercent", 7) }).damageMultiplier == 1.07, "damage percent must translate")
-assertThat(
-	resolver.resolve({ affix("DamagePercent", 7), affix("DamagePercent", 5) }).damageMultiplier == 1.12,
+local missing = resolver.resolve(nil)
+assertThat(missing.damageMultiplier == 1, "legacy missing affixes must keep damage neutral")
+assertThat(missing.reloadDurationMultiplier == 1, "legacy missing affixes must keep reload neutral")
+local empty = resolver.resolve({})
+assertThat(empty.damageMultiplier == 1, "empty affixes must keep damage neutral")
+assertThat(empty.reloadDurationMultiplier == 1, "empty affixes must keep reload neutral")
+
+local damageOnly = resolver.resolve({ affix("DamagePercent", 7) })
+assertNear(damageOnly.damageMultiplier, 1.07, "damage percent must translate")
+assertThat(damageOnly.reloadDurationMultiplier == 1, "damage must not leak into reload duration")
+assertNear(
+	resolver.resolve({ affix("DamagePercent", 7), affix("DamagePercent", 5) }).damageMultiplier,
+	1.12,
 	"multiple damage rolls must aggregate"
 )
-assertThat(
-	resolver.resolve({ affix("MoveSpeedPercent", 15), affix("DamagePercent", 5) }).damageMultiplier == 1.05,
-	"well-formed effects without a live owner must remain inert"
+
+local reloadOnly = resolver.resolve({ affix("ReloadSpeedPercent", 8) })
+assertThat(reloadOnly.damageMultiplier == 1, "reload speed must not leak into damage")
+assertNear(reloadOnly.reloadDurationMultiplier, 0.92, "reload speed percent must reduce reload duration")
+assertNear(
+	resolver.resolve({ affix("ReloadSpeedPercent", 7), affix("ReloadSpeedPercent", 5) }).reloadDurationMultiplier,
+	0.88,
+	"multiple reload-speed rolls must aggregate"
 )
+
+local mixed = resolver.resolve({ affix("DamagePercent", 5), affix("ReloadSpeedPercent", 10) })
+assertNear(mixed.damageMultiplier, 1.05, "mixed bundle must preserve damage")
+assertNear(mixed.reloadDurationMultiplier, 0.9, "mixed bundle must preserve reload speed")
+
+local futureEffect = resolver.resolve({ affix("MoveSpeedPercent", 15), affix("DamagePercent", 5) })
+assertNear(futureEffect.damageMultiplier, 1.05, "live damage must survive unresolved effects")
+assertThat(futureEffect.reloadDurationMultiplier == 1, "unresolved movement effect must stay reload-neutral")
+
 assertThat(
 	resolver.resolve({ affix("DamagePercent", 500) }).damageMultiplier
 		== runConfig.ModifierCeilings.maximumDamageMultiplier,
 	"damage affixes must inherit the canonical global ceiling"
 )
 assertThat(
-	resolver.resolve({ { EffectId = "DamagePercent", Value = -1 } }).damageMultiplier == 1,
-	"negative values fail closed"
+	resolver.resolve({ affix("ReloadSpeedPercent", 500) }).reloadDurationMultiplier
+		== runConfig.ModifierCeilings.minimumReloadDurationMultiplier,
+	"reload affixes must inherit the canonical global floor"
 )
+
+for _, malformed in {
+	{ { EffectId = "DamagePercent", Value = -1 } },
+	{ { EffectId = "", Value = 5 } },
+	{ { EffectId = "ReloadSpeedPercent", Value = 0 / 0 } },
+} do
+	local result = resolver.resolve(malformed :: any)
+	assertThat(result.damageMultiplier == 1, "malformed bundles must fail damage closed")
+	assertThat(result.reloadDurationMultiplier == 1, "malformed bundles must fail reload closed")
+end
+
 assertThat(
-	resolver.resolve({ { EffectId = "", Value = 5 } }).damageMultiplier == 1,
-	"missing effect identity fails closed"
-)
-assertThat(
-	resolver.resolve({ { EffectId = "DamagePercent", Value = 0 / 0 } }).damageMultiplier == 1,
-	"NaN fails closed"
-)
-assertThat(
-	table.isfrozen(resolver.resolve({ affix("DamagePercent", 5) })),
+	table.isfrozen(resolver.resolve({ affix("ReloadSpeedPercent", 5) })),
 	"resolved modifier bundle must be immutable"
 )
 
-print("EquipmentAffixModifierResolver: bounded damage translation and fail-closed behavior passed")
+print("EquipmentAffixModifierResolver: bounded damage/reload translation and fail-closed behavior passed")
