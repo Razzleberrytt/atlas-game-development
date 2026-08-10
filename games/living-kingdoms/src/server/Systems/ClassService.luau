@@ -54,6 +54,7 @@ type Entry = {
 	actionOriginPosition: Vector3?,
 	actionActorProcessedDamageEventIds: { [string]: boolean }?,
 	actionCooldownDurationMultiplier: number?,
+	actionPowerMultiplier: number?,
 	resources: { [string]: ClassContracts.AuthoritativeClassResourceState },
 	processedRequestIds: { [string]: boolean },
 	processedRequestOrder: { string },
@@ -390,6 +391,7 @@ local function registerPlayer(player: Player, allowLockedRegistration: boolean):
 		actionOriginPosition = nil,
 		actionActorProcessedDamageEventIds = nil,
 		actionCooldownDurationMultiplier = nil,
+		actionPowerMultiplier = nil,
 		resources = resourcesForClass(ClassConfig.Selection.defaultClassId),
 		processedRequestIds = {},
 		processedRequestOrder = {},
@@ -553,10 +555,30 @@ local function effectiveAbilityCooldownDurationMultiplier(player: Player): numbe
 	return multiplier
 end
 
+local function effectiveAbilityPowerMultiplier(player: Player): number
+	if RelicModifierService == nil then
+		return 1
+	end
+	local modifiers = RelicModifierService.read(player)
+	local multiplier = (modifiers :: any).equipmentAbilityPowerMultiplier
+	if
+		type(multiplier) ~= "number"
+		or multiplier ~= multiplier
+		or multiplier == math.huge
+		or multiplier == -math.huge
+		or multiplier < 1
+		or multiplier > 2
+	then
+		return 1
+	end
+	return multiplier
+end
+
 local function clearActionContinuity(entry: Entry)
 	entry.actionOriginPosition = nil
 	entry.actionActorProcessedDamageEventIds = nil
 	entry.actionCooldownDurationMultiplier = nil
+	entry.actionPowerMultiplier = nil
 end
 
 local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBegin: boolean): boolean
@@ -571,6 +593,7 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 		movementDistanceStuds = if position == nil or origin == nil then 1e9 else (position - origin).Magnitude
 	end
 	local cooldownDurationMultiplier = entry.actionCooldownDurationMultiplier or 1
+	local abilityPowerMultiplier = entry.actionPowerMultiplier or 1
 	local resolution
 	if state.actionId == ActionIds.FieldTreatment then
 		local actorRead = OperativeLifeService.read(entry.player)
@@ -606,7 +629,7 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 					healingEventId = string.format("class-treatment:%s:%d", entry.operativeEntityId, state.revision),
 					sourceEntityId = entry.operativeEntityId,
 					targetEntityId = targetId,
-					healingAmount = ClassConfig.Actions.FieldTreatment.healAmount,
+					healingAmount = ClassConfig.Actions.FieldTreatment.healAmount * abilityPowerMultiplier,
 					serverTimestamp = serverTimestamp,
 				})
 			if committed ~= nil and committed.didCommit and medical ~= nil then
@@ -669,7 +692,10 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 				didCommit, grantedRounds = engineerResupplyCommitter(
 					targetPlayer,
 					string.format("class-resupply:%s:%d", entry.operativeEntityId, state.revision),
-					ClassConfig.Actions.FieldResupply.roundsPerCharge
+					math.max(
+						1,
+						math.floor(ClassConfig.Actions.FieldResupply.roundsPerCharge * abilityPowerMultiplier + 0.5)
+					)
 				)
 			end
 			if didCommit and grantedRounds > 0 and supply ~= nil then
@@ -842,6 +868,7 @@ function Service.requestAction(player: Player, payload: unknown): OperationResul
 		end
 		if resolution.didActivate then
 			entry.actionCooldownDurationMultiplier = effectiveAbilityCooldownDurationMultiplier(player)
+			entry.actionPowerMultiplier = effectiveAbilityPowerMultiplier(player)
 		end
 	else
 		local cooldownDurationMultiplier = entry.actionCooldownDurationMultiplier or 1
@@ -918,7 +945,9 @@ function Service.readBraceCadenceMultiplier(player: Player): number
 		and entry.actionState.actionStateId == ActionStateIds.Active
 		and entry.actionState.actionId == ActionIds.Brace
 	then
-		return ClassConfig.Actions.Brace.cadenceIntervalMultiplier
+		local baseMultiplier = ClassConfig.Actions.Brace.cadenceIntervalMultiplier
+		local powerMultiplier = entry.actionPowerMultiplier or 1
+		return math.clamp(1 - (1 - baseMultiplier) * powerMultiplier, 0.25, 1)
 	end
 	return 1
 end
