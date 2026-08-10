@@ -46,7 +46,8 @@ assertThat(
 	"unlock milestone presentation must stay config-driven"
 )
 assertThat(
-	presentationSource:find("Rally Ping", 1, true) == nil and presentationSource:find("squad-rally-ping", 1, true) == nil,
+	presentationSource:find("Rally Ping", 1, true) == nil
+		and presentationSource:find("squad-rally-ping", 1, true) == nil,
 	"the presenter must not hard-code the first Rally unlock"
 )
 assertThat(
