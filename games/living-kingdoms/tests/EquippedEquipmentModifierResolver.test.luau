@@ -123,8 +123,14 @@ assert(armor.sourceInstanceId == "armor_move", "Armor source must be authoritati
 
 local relic = Resolver.resolveForSlot(record, "Relic")
 assertNear(relic.abilityCooldownDurationMultiplier, 0.9, "equipped Relic contributes ability haste")
-assert(relic.damageMultiplier == 1 and relic.reloadDurationMultiplier == 1, "Relic haste must not leak weapon modifiers")
-assert(relic.maximumHealthMultiplier == 1 and relic.movementSpeedMultiplier == 1, "Relic haste must not leak Armor modifiers")
+assert(
+	relic.damageMultiplier == 1 and relic.reloadDurationMultiplier == 1,
+	"Relic haste must not leak weapon modifiers"
+)
+assert(
+	relic.maximumHealthMultiplier == 1 and relic.movementSpeedMultiplier == 1,
+	"Relic haste must not leak Armor modifiers"
+)
 assert(relic.sourceInstanceId == "relic_haste", "Relic source must be authoritative equipped instance")
 
 record.EquippedBySlot.Armor = "armor_health"

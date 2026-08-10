@@ -54,7 +54,14 @@ local function normalizedCooldownDurationMultiplier(value: unknown): number?
 	if value == nil then
 		return 1
 	end
-	if type(value) ~= "number" or value ~= value or value == math.huge or value == -math.huge or value <= 0 or value > 1 then
+	if
+		type(value) ~= "number"
+		or value ~= value
+		or value == math.huge
+		or value == -math.huge
+		or value <= 0
+		or value > 1
+	then
 		return nil
 	end
 	return value
@@ -198,11 +205,7 @@ function Resolver.resolveStart(currentState, rawIntent: unknown, facts: Facts): 
 	})
 end
 
-function Resolver.resolveContinuity(
-	currentState,
-	facts: Facts,
-	cooldownDurationMultiplier: number?
-): Resolution
+function Resolver.resolveContinuity(currentState, facts: Facts, cooldownDurationMultiplier: number?): Resolution
 	if
 		not ClassContracts.validateAuthoritativeClassActionState(currentState)
 		or not validFacts(facts)

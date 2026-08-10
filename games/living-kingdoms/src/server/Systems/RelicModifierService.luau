@@ -93,7 +93,8 @@ local function composeOperativeModifiers(player: Player, relicModifiers: RelicMo
 			type(relicEquipmentModifiers) == "table"
 			and type(relicEquipmentModifiers.abilityCooldownDurationMultiplier) == "number"
 		then
-			combined.equipmentAbilityCooldownDurationMultiplier = relicEquipmentModifiers.abilityCooldownDurationMultiplier
+			combined.equipmentAbilityCooldownDurationMultiplier =
+				relicEquipmentModifiers.abilityCooldownDurationMultiplier
 		end
 	end
 	return table.freeze(combined) :: OperativeModifiers

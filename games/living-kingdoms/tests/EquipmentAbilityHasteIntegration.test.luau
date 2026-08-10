@@ -33,7 +33,10 @@ assert(
 	"server composition must derive ability haste from authoritative equipped Relic"
 )
 assert(
-	contains(classService, "entry.actionCooldownDurationMultiplier = effectiveAbilityCooldownDurationMultiplier(player)"),
+	contains(
+		classService,
+		"entry.actionCooldownDurationMultiplier = effectiveAbilityCooldownDurationMultiplier(player)"
+	),
 	"ClassService must snapshot server-derived haste when the class action activates"
 )
 assert(
@@ -41,8 +44,14 @@ assert(
 	"ClassService must release the activation haste snapshot when action continuity ends"
 )
 assert(
-	contains(classService, "FieldTreatmentResolver.resolveEffectRejected(state, serverTimestamp, cooldownDurationMultiplier)")
-		and contains(classService, "FieldResupplyResolver.resolveEffectRejected(state, serverTimestamp, cooldownDurationMultiplier)"),
+	contains(
+		classService,
+		"FieldTreatmentResolver.resolveEffectRejected(state, serverTimestamp, cooldownDurationMultiplier)"
+	)
+		and contains(
+			classService,
+			"FieldResupplyResolver.resolveEffectRejected(state, serverTimestamp, cooldownDurationMultiplier)"
+		),
 	"effect-rejection cooldowns must consume the same activation snapshot"
 )
 assert(

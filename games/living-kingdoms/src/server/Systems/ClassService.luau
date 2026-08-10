@@ -626,7 +626,8 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 					0
 				)
 			else
-				resolution = FieldTreatmentResolver.resolveEffectRejected(state, serverTimestamp, cooldownDurationMultiplier)
+				resolution =
+					FieldTreatmentResolver.resolveEffectRejected(state, serverTimestamp, cooldownDurationMultiplier)
 			end
 		end
 	elseif state.actionId == ActionIds.FieldResupply then
@@ -684,7 +685,8 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 					grantedRounds
 				)
 			else
-				resolution = FieldResupplyResolver.resolveEffectRejected(state, serverTimestamp, cooldownDurationMultiplier)
+				resolution =
+					FieldResupplyResolver.resolveEffectRejected(state, serverTimestamp, cooldownDurationMultiplier)
 			end
 		end
 	else
@@ -844,10 +846,25 @@ function Service.requestAction(player: Player, payload: unknown): OperationResul
 	else
 		local cooldownDurationMultiplier = entry.actionCooldownDurationMultiplier or 1
 		resolution = if entry.actionState.actionId == ActionIds.FieldTreatment
-			then FieldTreatmentResolver.resolveCancel(entry.actionState, payload, serverTimestamp, cooldownDurationMultiplier)
+			then FieldTreatmentResolver.resolveCancel(
+				entry.actionState,
+				payload,
+				serverTimestamp,
+				cooldownDurationMultiplier
+			)
 			else if entry.actionState.actionId == ActionIds.FieldResupply
-				then FieldResupplyResolver.resolveCancel(entry.actionState, payload, serverTimestamp, cooldownDurationMultiplier)
-				else BraceResolver.resolveCancel(entry.actionState, payload, serverTimestamp, cooldownDurationMultiplier)
+				then FieldResupplyResolver.resolveCancel(
+					entry.actionState,
+					payload,
+					serverTimestamp,
+					cooldownDurationMultiplier
+				)
+				else BraceResolver.resolveCancel(
+					entry.actionState,
+					payload,
+					serverTimestamp,
+					cooldownDurationMultiplier
+				)
 	end
 	if not resolution.didChange then
 		if didAdvance then

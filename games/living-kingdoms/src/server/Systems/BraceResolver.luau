@@ -93,7 +93,14 @@ local function normalizedCooldownDurationMultiplier(value: unknown): number?
 	if value == nil then
 		return 1
 	end
-	if type(value) ~= "number" or value ~= value or value == math.huge or value == -math.huge or value <= 0 or value > 1 then
+	if
+		type(value) ~= "number"
+		or value ~= value
+		or value == math.huge
+		or value == -math.huge
+		or value <= 0
+		or value > 1
+	then
 		return nil
 	end
 	return value
@@ -260,7 +267,12 @@ function Resolver.resolveContinuity(
 			false,
 			ReasonIds.MovementInterrupted,
 			nil,
-			cooldownState(currentState, facts.serverTimestamp, ReasonIds.MovementInterrupted, cooldownDurationMultiplier)
+			cooldownState(
+				currentState,
+				facts.serverTimestamp,
+				ReasonIds.MovementInterrupted,
+				cooldownDurationMultiplier
+			)
 		)
 	end
 	if facts.didReloadBegin and ClassConfig.Actions.Brace.interruptOnReload then

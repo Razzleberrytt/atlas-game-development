@@ -139,11 +139,8 @@ local moved = resolver.resolveContinuity(accepted.actionStateAfter, continuity({
 assertThat(moved.actionStateAfter.actionStateId == contracts.ClassActionStateIds.Cooldown, "movement interrupts")
 assertThat(moved.rejectionReasonId == contracts.ClassActionRejectionReasonIds.MovementInterrupted, "movement reason")
 assertThat(moved.actionStateAfter.cooldownEndServerTimestamp == 25, "interruption starts configured cooldown")
-local movedWithHaste = resolver.resolveContinuity(
-	accepted.actionStateAfter,
-	continuity({ movementDistanceStuds = 1.51 }),
-	0.9
-)
+local movedWithHaste =
+	resolver.resolveContinuity(accepted.actionStateAfter, continuity({ movementDistanceStuds = 1.51 }), 0.9)
 assertNear(
 	movedWithHaste.actionStateAfter.cooldownEndServerTimestamp,
 	23.6,
@@ -165,8 +162,12 @@ local cancelled =
 	resolver.resolveCancel(accepted.actionStateAfter, intent(contracts.ClassActionPhaseIds.Cancel, "brace-cancel"), 12)
 assertThat(cancelled.actionStateAfter.actionStateId == contracts.ClassActionStateIds.Cooldown, "cancel starts cooldown")
 assertThat(cancelled.actionStateAfter.cooldownEndServerTimestamp == 26, "cancel cooldown deadline")
-local cancelledWithHaste =
-	resolver.resolveCancel(accepted.actionStateAfter, intent(contracts.ClassActionPhaseIds.Cancel, "brace-haste"), 12, 0.9)
+local cancelledWithHaste = resolver.resolveCancel(
+	accepted.actionStateAfter,
+	intent(contracts.ClassActionPhaseIds.Cancel, "brace-haste"),
+	12,
+	0.9
+)
 assertNear(cancelledWithHaste.actionStateAfter.cooldownEndServerTimestamp, 24.6, "cancel must consume haste snapshot")
 local cooled = resolver.resolveContinuity(cancelled.actionStateAfter, continuity({ serverTimestamp = 26 }))
 assertThat(cooled.actionStateAfter.actionStateId == contracts.ClassActionStateIds.Idle, "cooldown returns to idle")
