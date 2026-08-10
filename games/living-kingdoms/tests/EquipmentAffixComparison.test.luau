@@ -71,18 +71,30 @@ assertThat(#result.Comparison.AffixDeltas == 3, "all changed effect families mus
 
 local deltas = result.Comparison.AffixDeltas
 assertThat(deltas[1].EffectId == "AbilityHastePercent", "effect deltas must be sorted deterministically")
-assertThat(deltas[1].CandidateValue == 6 and deltas[1].IncumbentValue == 0 and deltas[1].Delta == 6, "gained effect facts mismatch")
+assertThat(
+	deltas[1].CandidateValue == 6 and deltas[1].IncumbentValue == 0 and deltas[1].Delta == 6,
+	"gained effect facts mismatch"
+)
 assertThat(deltas[2].EffectId == "DamagePercent", "damage should follow stable effect ordering")
-assertThat(deltas[2].CandidateValue == 7 and deltas[2].IncumbentValue == 4 and deltas[2].Delta == 3, "same-effect rolls must aggregate")
+assertThat(
+	deltas[2].CandidateValue == 7 and deltas[2].IncumbentValue == 4 and deltas[2].Delta == 3,
+	"same-effect rolls must aggregate"
+)
 assertThat(deltas[3].EffectId == "MaxHealthPercent", "lost health effect must remain visible")
-assertThat(deltas[3].CandidateValue == 0 and deltas[3].IncumbentValue == 3 and deltas[3].Delta == -3, "lost effect facts mismatch")
+assertThat(
+	deltas[3].CandidateValue == 0 and deltas[3].IncumbentValue == 3 and deltas[3].Delta == -3,
+	"lost effect facts mismatch"
+)
 assertThat(table.isfrozen(deltas), "affix delta collection must be immutable")
 assertThat(table.isfrozen(deltas[1]), "affix delta entries must be immutable")
 
 local repeated = resolver.compare(candidate, incumbent, nil)
 for index, delta in repeated.Comparison.AffixDeltas do
 	local original = deltas[index]
-	assertThat(delta.EffectId == original.EffectId and delta.Delta == original.Delta, "same pair must reproduce affix facts")
+	assertThat(
+		delta.EffectId == original.EffectId and delta.Delta == original.Delta,
+		"same pair must reproduce affix facts"
+	)
 end
 
 local legacy = resolver.compare(reward("item-legacy", nil), incumbent, nil)
@@ -91,7 +103,10 @@ assertThat(#legacy.Comparison.AffixDeltas == 2, "legacy candidate should report 
 
 local emptySlot = resolver.compare(candidate, nil, nil)
 assertThat(emptySlot.Accepted and emptySlot.Comparison.FillsEmptySlot, "empty-slot comparison must still resolve")
-assertThat(#emptySlot.Comparison.AffixDeltas == 2, "candidate effects should remain available to presentation for an empty slot")
+assertThat(
+	#emptySlot.Comparison.AffixDeltas == 2,
+	"candidate effects should remain available to presentation for an empty slot"
+)
 
 local same = resolver.compare(candidate, candidate, nil)
 assertThat(same.Comparison.VerdictId == "SameItem", "same-item verdict must be preserved")
