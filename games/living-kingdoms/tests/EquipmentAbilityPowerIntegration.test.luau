@@ -26,7 +26,10 @@ assert(
 )
 assert(
 	contains(composition, 'resolveForSlot(record, "Relic")')
-		and contains(composition, "combined.equipmentAbilityPowerMultiplier = relicEquipmentModifiers.abilityPowerMultiplier"),
+		and contains(
+			composition,
+			"combined.equipmentAbilityPowerMultiplier = relicEquipmentModifiers.abilityPowerMultiplier"
+		),
 	"server composition must derive ability power from the authoritative equipped Relic"
 )
 assert(

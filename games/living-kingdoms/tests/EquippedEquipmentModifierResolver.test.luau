@@ -146,7 +146,10 @@ record.EquippedBySlot.Relic = "relic_power"
 local powerRelic = Resolver.resolveForSlot(record, "Relic")
 assertNear(powerRelic.abilityPowerMultiplier, 1.08, "equipped Relic contributes ability power")
 assert(powerRelic.abilityCooldownDurationMultiplier == 1, "power Relic must remain ability-cooldown neutral")
-assert(powerRelic.damageMultiplier == 1 and powerRelic.reloadDurationMultiplier == 1, "power Relic must not leak weapon modifiers")
+assert(
+	powerRelic.damageMultiplier == 1 and powerRelic.reloadDurationMultiplier == 1,
+	"power Relic must not leak weapon modifiers"
+)
 assert(
 	powerRelic.maximumHealthMultiplier == 1 and powerRelic.movementSpeedMultiplier == 1,
 	"power Relic must not leak Armor modifiers"
