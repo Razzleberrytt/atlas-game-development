@@ -4,8 +4,10 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
 
+local ActiveInputDeviceFamily = require(script.Parent.Parent.State.ActiveInputDeviceFamily)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local InputActionMapConfig = require(ReplicatedStorage.Shared.Config.InputActionMapConfig)
+local InputDeviceFamilyResolver = require(ReplicatedStorage.Shared.Input.InputDeviceFamilyResolver)
 local MovementLimits = require(ReplicatedStorage.Shared.Config.MovementLimits)
 local RunProgressionConfig = require(ReplicatedStorage.Shared.Config.RunProgressionConfig)
 local EquipmentRewardConfig = require(ReplicatedStorage.Shared.Config.EquipmentRewardConfig)
@@ -62,16 +64,12 @@ local COLORS = table.freeze({
 	green = Color3.fromRGB(105, 214, 139),
 })
 
-local function usesKeyboardShortcutLabels(inputType: Enum.UserInputType): boolean
-	if inputType == Enum.UserInputType.None then
-		return UserInputService.KeyboardEnabled
-	end
-	return inputType == Enum.UserInputType.Keyboard
-		or inputType == Enum.UserInputType.MouseButton1
-		or inputType == Enum.UserInputType.MouseButton2
-		or inputType == Enum.UserInputType.MouseButton3
-		or inputType == Enum.UserInputType.MouseMovement
-		or inputType == Enum.UserInputType.MouseWheel
+-- Delegated to the single active-device owner. The previous local test mapped any
+-- unrecognised input type to "not keyboard", so the engine's non-device `Focus`
+-- event (fired whenever the window regains focus) silently dropped the C / I
+-- shortcut hints for keyboard players.
+local function usesKeyboardShortcutLabels(): boolean
+	return ActiveInputDeviceFamily.get() == InputDeviceFamilyResolver.DeviceFamilyIds.KeyboardPointer
 end
 
 local function keyboardShortcut(actionId: string): string
@@ -82,8 +80,8 @@ local function keyboardShortcut(actionId: string): string
 	return definition.KeyboardKeyCodeNames[1] or ""
 end
 
-local function updateLauncherLabels(inputType: Enum.UserInputType)
-	local showShortcut = usesKeyboardShortcutLabels(inputType)
+local function updateLauncherLabels()
+	local showShortcut = usesKeyboardShortcutLabels()
 	local characterButton = characterLauncherButton
 	if characterButton ~= nil then
 		local shortcut = keyboardShortcut("OpenCharacter")
@@ -728,7 +726,7 @@ local function createPresentation()
 	created.DisplayOrder = 70
 	characterLauncherButton = topButton(created, "CHARACTER", -148, "Character")
 	inventoryLauncherButton = topButton(created, "INVENTORY", -12, "Inventory")
-	updateLauncherLabels(UserInputService:GetLastInputType())
+	updateLauncherLabels()
 
 	local shade = Instance.new("Frame")
 	shade.Name = "Modal"
@@ -888,7 +886,7 @@ function Controller.start()
 	end
 	started = true
 	createPresentation()
-	table.insert(connections, UserInputService.LastInputTypeChanged:Connect(updateLauncherLabels))
+	table.insert(connections, ActiveInputDeviceFamily.onChanged(updateLauncherLabels))
 	table.insert(
 		connections,
 		UserInputService.InputBegan:Connect(function(input, gameProcessed)

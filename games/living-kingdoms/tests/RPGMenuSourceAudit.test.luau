@@ -15,7 +15,10 @@ check(string.find(controller, 'topButton(created, "CHARACTER"', 1, true), "chara
 check(string.find(controller, 'topButton(created, "INVENTORY"', 1, true), "inventory button must always be available")
 check(string.find(controller, 'shortcut .. "   CHARACTER"', 1, true), "character keyboard hint must remain available")
 check(string.find(controller, 'shortcut .. "   INVENTORY"', 1, true), "inventory keyboard hint must remain available")
-check(string.find(controller, "LastInputTypeChanged", 1, true), "launcher labels must adapt to the active input family")
+check(
+	string.find(controller, "ActiveInputDeviceFamily.onChanged(updateLauncherLabels)", 1, true),
+	"launcher labels must adapt to the active input family"
+)
 check(string.find(controller, 'view.Name = "CharacterBody"', 1, true), "character screen requires a body preview")
 check(string.find(controller, 'equipmentSlot(equipment, "Head"', 1, true), "paper doll requires a head slot")
 check(string.find(controller, 'equipmentSlot(equipment, "Chest"', 1, true), "paper doll requires a chest slot")

@@ -45,7 +45,7 @@ do
 			"InputActionMapConfig",
 			"InputDeviceFamilyResolver",
 			"InputHintPresentationResolver",
-			"activeDeviceFamily()",
+			"ActiveInputDeviceFamily.get()",
 		}
 	do
 		assertThat(
@@ -110,9 +110,23 @@ assertThat(
 -- A device switch mid-run must rewrite the hints; a controller picked up after
 -- spawn cannot be left reading keyboard text.
 assertThat(
-	contains(hud, "UserInputService.LastInputTypeChanged"),
+	contains(hud, "ActiveInputDeviceFamily.onChanged("),
 	"the combat HUD must refresh its hints when the player changes input device"
 )
+-- The device family must come from the single owner that ignores the engine's
+-- non-device `Focus` type; a raw last-input read here would flip a gamepad
+-- player's hints to keyboard text on every window focus.
+for _, pair in
+	{
+		{ Name = "HordeHUDController", Source = hud },
+		{ Name = "RunBuildHUDController", Source = runBuild },
+	}
+do
+	assertThat(
+		not contains(pair.Source, "UserInputService:GetLastInputType()"),
+		`{pair.Name} must not re-derive the device family from a raw last-input read`
+	)
+end
 
 -- The shared vocabulary stays pure and authority-free: it may not bind input,
 -- create instances, or touch the network.

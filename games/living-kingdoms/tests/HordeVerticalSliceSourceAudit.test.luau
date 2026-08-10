@@ -200,7 +200,7 @@ for _, required in
 		"InputHintPresentationResolver.resolve(",
 		"choicePromptText(familyId, keyTokens)",
 		"choiceButtonActionText(familyId, keyTokens, index)",
-		"UserInputService.LastInputTypeChanged",
+		"ActiveInputDeviceFamily.onChanged(",
 	}
 do
 	assertThat(contains(hud, required), "unified HUD upgrade prompt is missing device-adaptive wiring: " .. required)

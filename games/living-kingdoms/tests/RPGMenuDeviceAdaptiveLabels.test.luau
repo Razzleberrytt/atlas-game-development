@@ -21,17 +21,25 @@ local configSource = fs.readFile("games/living-kingdoms/src/shared/Config/InputA
 local config = luau.load(configSource, { debugName = "InputActionMapConfig", injectGlobals = true })()
 
 assert(contains(controller, "Shared.Config.InputActionMapConfig"), "RPG menu labels must read the shared action map")
+-- The active family comes from the single client owner rather than a local read
+-- of GetLastInputType(). That indirection is the fix for a live defect: the
+-- engine reports the non-device `Focus` type through the same signal, and the
+-- old local test mapped it to "not keyboard", dropping the C / I hints whenever
+-- the window regained focus.
 assert(
-	contains(controller, "UserInputService:GetLastInputType()"),
+	contains(controller, "ActiveInputDeviceFamily.get()"),
 	"initial launcher labels must reflect the active input family"
 )
 assert(
-	contains(controller, "UserInputService.LastInputTypeChanged:Connect(updateLauncherLabels)"),
+	contains(controller, "ActiveInputDeviceFamily.onChanged(updateLauncherLabels)"),
 	"launcher labels must update when the active input family changes"
 )
+assert(
+	not contains(controller, "UserInputService:GetLastInputType()"),
+	"launcher labels must not re-derive the device family from a raw last-input read"
+)
 assert(contains(controller, "usesKeyboardShortcutLabels"), "keyboard/pointer label policy must be explicit")
-assert(contains(controller, "Enum.UserInputType.Keyboard"), "keyboard input must retain shortcut labels")
-assert(contains(controller, "Enum.UserInputType.MouseMovement"), "pointer input must retain keyboard shortcut labels")
+assert(contains(controller, "DeviceFamilyIds.KeyboardPointer"), "keyboard/pointer input must retain shortcut labels")
 assert(contains(controller, 'shortcut .. "   CHARACTER"'), "Character keyboard label must come from the action map")
 assert(contains(controller, 'shortcut .. "   INVENTORY"'), "Inventory keyboard label must come from the action map")
 assert(contains(controller, 'else "CHARACTER"'), "non-keyboard Character label must omit the shortcut")

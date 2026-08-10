@@ -23,6 +23,7 @@ local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
 local ChoiceInputCoordinator = require(script.Parent.ChoiceInputCoordinator)
 local InterfaceTheme = require(script.Parent.Parent.UI.InterfaceTheme)
+local ActiveInputDeviceFamily = require(script.Parent.Parent.State.ActiveInputDeviceFamily)
 local InputActionMapConfig = require(ReplicatedStorage.Shared.Config.InputActionMapConfig)
 local InputDeviceFamilyResolver = require(ReplicatedStorage.Shared.Input.InputDeviceFamilyResolver)
 local InputHintPresentationResolver = require(ReplicatedStorage.Shared.Input.InputHintPresentationResolver)
@@ -64,14 +65,7 @@ local mouseIconWasEnabled = false
 	device instead of telling a controller player to press a number.
 ]]
 local function activeDeviceFamily(): string
-	local resolution = InputDeviceFamilyResolver.resolve(UserInputService:GetLastInputType().Name)
-	if resolution.DeviceFamilyId ~= nil then
-		return resolution.DeviceFamilyId
-	end
-	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
-		return InputDeviceFamilyResolver.DeviceFamilyIds.Touch
-	end
-	return InputDeviceFamilyResolver.DeviceFamilyIds.KeyboardPointer
+	return ActiveInputDeviceFamily.get()
 end
 
 local function choiceKeyTokens(familyId: string): { string }

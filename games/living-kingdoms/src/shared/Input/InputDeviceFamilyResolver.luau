@@ -71,4 +71,25 @@ function Resolver.resolve(inputTypeName: unknown): Resolution
 	return result(ResolutionIds.Unknown, nil, inputTypeName)
 end
 
+--[[
+	Decides which device family to adopt after observing an input type.
+
+	Roblox reports non-device input types through the same signal as real input:
+	`Focus` fires whenever the window regains focus, and `TextInput`,
+	`InputMethod` and `None` are not devices either. Treating those as a device
+	change is a live defect — a gamepad player who alt-tabs back into the game
+	would have every hint rewritten as keyboard text.
+
+	Unclassifiable input therefore retains `previousFamilyId` rather than
+	resolving to any family. Callers supply the capability-based default only for
+	the case where no real device has been observed yet.
+]]
+function Resolver.adopt(inputTypeName: unknown, previousFamilyId: string?): string?
+	local resolution = Resolver.resolve(inputTypeName)
+	if resolution.DeviceFamilyId ~= nil then
+		return resolution.DeviceFamilyId
+	end
+	return previousFamilyId
+end
+
 return table.freeze(Resolver)
