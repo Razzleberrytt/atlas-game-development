@@ -17,10 +17,11 @@ local function assert(condition: unknown, message: string?)
 	end
 end
 
-local affixContracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentAffixContracts.luau"), {
-	debugName = "EquipmentAffixContracts",
-	injectGlobals = true,
-})()
+local affixContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentAffixContracts.luau"), {
+		debugName = "EquipmentAffixContracts",
+		injectGlobals = true,
+	})()
 local AFFIX_CONTRACTS_TOKEN = {}
 local contracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentRewardContracts.luau"), {
 	debugName = "EquipmentRewardContracts",
