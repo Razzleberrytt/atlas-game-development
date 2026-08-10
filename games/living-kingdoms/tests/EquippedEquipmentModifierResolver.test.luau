@@ -135,9 +135,7 @@ assert(unequippedArmor.sourceInstanceId == nil, "unequipped Armor must not remai
 
 local unloaded = Resolver.resolveForWeapon(nil, "weapon.rifle")
 assert(
-	unloaded.damageMultiplier == 1
-		and unloaded.reloadDurationMultiplier == 1
-		and unloaded.maximumHealthMultiplier == 1,
+	unloaded.damageMultiplier == 1 and unloaded.reloadDurationMultiplier == 1 and unloaded.maximumHealthMultiplier == 1,
 	"unloaded inventory fails closed"
 )
 local invalid = Resolver.resolveForWeapon(record, "")
