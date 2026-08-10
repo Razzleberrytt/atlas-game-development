@@ -62,16 +62,20 @@
     },
     {
       "effect_id": "MoveSpeedPercent",
-      "status": "unresolved",
+      "status": "live",
       "capability_id": "combat-authority",
       "owner_kind": "server",
-      "canonical_owner": null,
-      "composition_seam": null,
-      "shared_adapter": null,
+      "canonical_owner": "games/living-kingdoms/src/server/Systems/OperativeLifeService.luau",
+      "composition_seam": "games/living-kingdoms/src/server/Systems/RelicModifierService.luau",
+      "shared_adapter": "games/living-kingdoms/src/shared/Equipment/EquipmentAffixModifierResolver.luau",
       "selection_resolver": "games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau",
-      "focused_tests": [],
+      "focused_tests": [
+        "games/living-kingdoms/tests/EquipmentAffixModifierResolver.test.luau",
+        "games/living-kingdoms/tests/EquippedEquipmentModifierResolver.test.luau",
+        "games/living-kingdoms/tests/EquipmentMoveSpeedIntegration.test.luau"
+      ],
       "risk_tier": "R2",
-      "extension_rule": "Resolve the canonical server movement-speed owner before implementation; presentation or local Humanoid writes may not become authority."
+      "extension_rule": "New MoveSpeedPercent Armor affixes should be data/config plus focused regression only; compose through RelicModifierService and reapply through OperativeLifeService from the stable bound base WalkSpeed. Never author consequential movement from the client or compound from current Humanoid.WalkSpeed."
     },
     {
       "effect_id": "AbilityHastePercent",
