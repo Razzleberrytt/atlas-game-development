@@ -2,18 +2,26 @@
 
 local Contracts = {}
 
-export type CategoryId = "Location" | "Teammate" | "Objective" | "ObservedHostile"
+export type CategoryId = "Location" | "Rally" | "Teammate" | "Objective" | "ObservedHostile"
 export type LifecycleId = "Active" | "Expired" | "Removed"
 
 Contracts.CategoryIds = table.freeze({
 	Location = "Location",
+	Rally = "Rally",
 	Teammate = "Teammate",
 	Objective = "Objective",
 	ObservedHostile = "ObservedHostile",
 })
 
+-- Client intent remains deliberately Location-only. Rally is a server-derived
+-- durable progression identity and must never become a client-selectable claim.
 Contracts.ImplementedCategoryIds = table.freeze({
 	Location = "Location",
+})
+
+Contracts.ServerPublishedLocationCategoryIds = table.freeze({
+	Location = "Location",
+	Rally = "Rally",
 })
 
 Contracts.LifecycleIds = table.freeze({
@@ -144,7 +152,7 @@ function Contracts.validateSafeSnapshot(payload: unknown): boolean
 		end
 		if
 			type(ping.pingId) ~= "string"
-			or ping.categoryId ~= Contracts.CategoryIds.Location
+			or Contracts.ServerPublishedLocationCategoryIds[ping.categoryId] ~= ping.categoryId
 			or type(ping.senderOperativeEntityId) ~= "string"
 			or ping.senderOperativeEntityId == ""
 			or not validatePosition(ping.position)
