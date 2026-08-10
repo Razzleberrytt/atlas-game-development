@@ -91,7 +91,10 @@
       "StarterPlayerScripts": {
         "$className": "StarterPlayerScripts",
         "Client": {
-          "$path": "src/client"
+          "$path": "src/client",
+          "$properties": {
+            "Disabled": false
+          }
         }
       }
     }
