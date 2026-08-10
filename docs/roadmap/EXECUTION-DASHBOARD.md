@@ -20,7 +20,8 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 - PR #337 wired equipped durable `DamagePercent` through the existing server-owned damage authority with full validation green.
 - PR #343 routes equipped durable `ReloadSpeedPercent` through the existing server-owned reload authority with full automated validation green: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
 - PR #344 routes equipped Armor `MaxHealthPercent` through `OperativeLifeService` with ratio-preserving equip/unequip reconciliation, bounded variable-max life validation, replay/reconnect protection, and full automated validation green: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
-- `DamagePercent`, `ReloadSpeedPercent`, and `MaxHealthPercent` are now live effect-owner routes; same-family variants should be data/config plus focused regression rather than bespoke runtime wiring.
+- PR #345 routes equipped Armor `MoveSpeedPercent` through the existing server-owned `OperativeLifeService` locomotion application, derives speed from the stable bound base to prevent compounding, preserves hard-zero incapacitated/dead movement, and passed full automated validation: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
+- `DamagePercent`, `ReloadSpeedPercent`, `MaxHealthPercent`, and `MoveSpeedPercent` are now live effect-owner routes; same-family variants should be data/config plus focused regression rather than bespoke runtime wiring.
 - The effect-owner routing registry prevents affix effect vocabulary from existing without an explicit authority-routing state.
 - Verification truth remains strict: pending manual/engine evidence is never called VERIFIED.
 
@@ -28,47 +29,41 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 
 ### NOW
 
-**Resolve and route `MoveSpeedPercent` through the canonical server-owned operative movement application path without creating a parallel movement authority.**
+**Resolve and route `AbilityHastePercent` through the canonical server-owned class-action cooldown path without creating a parallel ability timer.**
 
 Start with:
 
 ```bash
-python scripts/effect_routes.py show MoveSpeedPercent
-```
-
-Confirmed authored fact:
-
-```text
-Trailborn
-→ Armor-only durable affix
-→ MoveSpeedPercent +3–6%
+python scripts/effect_routes.py show AbilityHastePercent
 ```
 
 Current ownership evidence:
 
 ```text
-authoritative equipped Armor item
+authoritative equipped durable item
 → slot-aware durable-equipment modifier fact
 → existing server composition seam
-→ server-owned operative character locomotion application
+→ ClassService-owned authoritative class action state
+→ pure class action resolvers compute cooldownEndServerTimestamp
 ```
 
-`OperativeLifeService` is the leading canonical-owner candidate because it already owns Alive/Incapacitated/Dead character movement restrictions and server-side `Humanoid.WalkSpeed` application. Confirm there is no competing server player-movement owner before live wiring.
+`ClassService` is the leading canonical owner because it owns action lifecycle/state and server timestamps. `FieldTreatmentResolver`, `FieldResupplyResolver`, and `BraceResolver` currently derive cooldown deadlines from server-authored config. Confirm the narrowest shared timing seam before wiring haste so one modifier applies consistently without duplicating cooldown authority.
 
 Rules:
 
-- resolve one canonical server movement owner before implementation; no client/presentation movement authority;
-- reuse `RunModifierResolver` movement arithmetic and its existing movement-speed ceiling rather than inventing a second formula;
-- reuse the Armor slot-aware equipment resolver and existing server composition seam;
-- derive effective movement speed from a stable base, never from an already-modified `Humanoid.WalkSpeed`, so repeated equip/reapply cannot compound;
-- Alive movement may receive the bounded equipment multiplier; Incapacitated/Dead movement remains zero;
-- inventory load/equip/dismantle changes must reconcile through the canonical movement owner without adding a new RemoteEvent or polling loop;
-- legacy/no-affix Armor remains neutral;
-- after successful wiring, promote `MoveSpeedPercent` from `unresolved` to `live` and name focused tests.
+- cooldown legality and timestamps remain server-owned;
+- no client-provided cooldown, haste value, duration, or completion timestamp;
+- reuse authoritative equipped-item selection and the existing server composition seam;
+- use one bounded cooldown-duration multiplier shared by all eligible class actions rather than per-action bespoke affix math;
+- derive modified cooldown from the configured base duration, never from an already-modified deadline;
+- malformed/legacy/no-affix equipment remains neutral;
+- preserve action resource costs, targeting, channel requirements, cancel rules, and effect commit authority;
+- add focused resolver + integration regression coverage;
+- after successful wiring, promote `AbilityHastePercent` from `unresolved` to `live` and name the canonical owner/tests.
 
 ### NEXT
 
-1. resolve canonical owners for `AbilityHastePercent` and `AbilityPowerPercent` before live implementation;
+1. resolve and route `AbilityPowerPercent` through the canonical server-owned ability-consequence path;
 2. expand affix/reward variety primarily through validated definitions once effect routes are live;
 3. add end-to-end regression coverage across generation → reward → inventory → equip → application → replay/persistence;
 4. continue into Patch 0.4 when Patch 0.3 source is coherent, keeping Studio evidence pending rather than inventing a lock.
