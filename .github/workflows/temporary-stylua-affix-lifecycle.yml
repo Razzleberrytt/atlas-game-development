@@ -1,0 +1,39 @@
+name: Temporary Stylua Affix Lifecycle
+
+on:
+  push:
+    branches:
+      - patch-0.3/affix-lifecycle-regression
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Apply canonical Stylua formatting and remove helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          stylua games/living-kingdoms/tests/EquipmentAffixDurableLifecycle.test.luau
+          rm .github/workflows/temporary-stylua-affix-lifecycle.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "style(lk): format durable affix lifecycle fixture"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
