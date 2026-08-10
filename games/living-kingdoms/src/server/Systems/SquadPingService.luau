@@ -264,7 +264,7 @@ local function cancelExpiry()
 	expiryGeneration += 1
 	if expiryThread ~= nil then
 		pcall(task.cancel, expiryThread)
-		lockThread = nil
+		expiryThread = nil
 	end
 end
 
