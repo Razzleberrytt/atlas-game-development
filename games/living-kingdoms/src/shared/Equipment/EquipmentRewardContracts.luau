@@ -4,6 +4,9 @@
 -- generated instances carry deterministic content and grant identities plus a
 -- globally unique server-created ownership identifier.
 
+local EquipmentAffixContracts = require(script.Parent.EquipmentAffixContracts)
+
+export type EquipmentAffixRoll = EquipmentAffixContracts.EquipmentAffixRoll
 export type EquipmentSlotId = "Primary" | "Secondary" | "Armor" | "Relic"
 export type EquipmentRarityId = "Common" | "Uncommon" | "Rare"
 export type RewardSourceId = "Elite" | "Boss"
@@ -32,6 +35,7 @@ export type EquipmentReward = {
 	Slot: EquipmentSlotId,
 	Rarity: EquipmentRarityId,
 	Power: number,
+	Affixes: { EquipmentAffixRoll },
 	SourceId: RewardSourceId,
 	RunId: string,
 	Seed: number,
