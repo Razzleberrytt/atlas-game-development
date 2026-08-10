@@ -10,6 +10,8 @@ local Workspace = game:GetService("Workspace")
 local Controller = {}
 local started = false
 local connection: RBXScriptConnection? = nil
+local workspaceChildAdded: RBXScriptConnection? = nil
+local workspaceChildRemoved: RBXScriptConnection? = nil
 local rootAdded: RBXScriptConnection? = nil
 local rootRemoved: RBXScriptConnection? = nil
 local tracked: { BasePart } = {}
@@ -74,6 +76,17 @@ local function bindRoot(root: Instance?)
 	rootRemoved = root.DescendantRemoving:Connect(remove)
 end
 
+local function disconnectWorkspaceListeners()
+	if workspaceChildAdded then
+		workspaceChildAdded:Disconnect()
+		workspaceChildAdded = nil
+	end
+	if workspaceChildRemoved then
+		workspaceChildRemoved:Disconnect()
+		workspaceChildRemoved = nil
+	end
+end
+
 local function step(deltaTime: number)
 	elapsed += deltaTime
 	for index = #tracked, 1, -1 do
@@ -114,12 +127,12 @@ function Controller.start()
 	end
 	started = true
 	bindRoot(Workspace:FindFirstChild("ExpeditionRooms"))
-	Workspace.ChildAdded:Connect(function(child)
+	workspaceChildAdded = Workspace.ChildAdded:Connect(function(child)
 		if child.Name == "ExpeditionRooms" then
 			bindRoot(child)
 		end
 	end)
-	Workspace.ChildRemoved:Connect(function(child)
+	workspaceChildRemoved = Workspace.ChildRemoved:Connect(function(child)
 		if child.Name == "ExpeditionRooms" then
 			bindRoot(nil)
 		end
@@ -136,6 +149,7 @@ function Controller.stop()
 		connection:Disconnect()
 		connection = nil
 	end
+	disconnectWorkspaceListeners()
 	bindRoot(nil)
 end
 
