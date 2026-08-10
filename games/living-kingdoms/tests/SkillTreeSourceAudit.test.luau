@@ -44,8 +44,14 @@ check(
 	string.find(menu, "OperativeProgressionMapPresentation.rebuild(panel)", 1, true),
 	"RPG menu must delegate the durable map to its read-only presenter"
 )
-check(not string.find(menu, "progressionChooseUpgrade", 1, true), "durable RPG menu must not submit temporary run choices")
-check(not string.find(menu, "RunProgressionConfig.SkillTrees", 1, true), "durable RPG menu must not render run topology")
+check(
+	not string.find(menu, "progressionChooseUpgrade", 1, true),
+	"durable RPG menu must not submit temporary run choices"
+)
+check(
+	not string.find(menu, "RunProgressionConfig.SkillTrees", 1, true),
+	"durable RPG menu must not render run topology"
+)
 check(not string.find(menu, "FIELD SKILLS", 1, true), "durable RPG menu must not present temporary Field Skills")
 
 check(
