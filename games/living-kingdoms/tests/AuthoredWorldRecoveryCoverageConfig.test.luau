@@ -53,3 +53,32 @@ check(config.Groups.Atmosphere.reconstructionModule == nil)
 check(config.canPromoteNewGeometry("Atmosphere") == false)
 check(config.canPromoteNewGeometry("Unknown") == false)
 check(#config.ResumeRequirements == 3)
+
+local worldPathConfig =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RecoveredWorldPathConfig.luau"), {
+		debugName = "RecoveredWorldPathConfig",
+		injectGlobals = true,
+	})()
+
+check(worldPathConfig.Version == "BA-005-WORLDPATH-v1")
+check(worldPathConfig.RuntimeEnabled == false)
+check(worldPathConfig.Evidence.SegmentCount == 189)
+local firstSegment = worldPathConfig.segmentCenter(1)
+check(firstSegment.z == worldPathConfig.Route.StartCenter.z)
+local lastSegment = worldPathConfig.segmentCenter(189)
+check(math.abs(lastSegment.z - worldPathConfig.Route.EndCenter.z) < 0.0001)
+
+local dungeonPortalConfig =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RecoveredDungeonPortalConfig.luau"), {
+		debugName = "RecoveredDungeonPortalConfig",
+		injectGlobals = true,
+	})()
+
+check(dungeonPortalConfig.Version == "BA-005-DUNGEON-PORTAL-v2")
+check(dungeonPortalConfig.RuntimeEnabled == false)
+check(dungeonPortalConfig.Interaction.LegacyGameplayAuthority == false)
+check(dungeonPortalConfig.Interaction.CanonicalAuthority == "ExpeditionLobbyService")
+check(#dungeonPortalConfig.Parts == 3)
+check(#dungeonPortalConfig.PointLights == 2)
+check(dungeonPortalConfig.Evidence.PropertyBackedRows == 9)
+check(dungeonPortalConfig.Evidence.IdentityRows == 10)
