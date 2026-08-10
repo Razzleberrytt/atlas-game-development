@@ -13,9 +13,25 @@ end
 local CONTRACTS_TOKEN = {}
 local CONFIG_TOKEN = {}
 local COMBAT_CONTRACTS_TOKEN = {}
+local AFFIX_CONTRACTS_TOKEN = {}
+local AFFIX_CONFIG_TOKEN = {}
+local AFFIX_RESOLVER_TOKEN = {}
+
+local affixContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentAffixContracts.luau"), {
+		debugName = "EquipmentAffixContracts",
+		injectGlobals = true,
+	})()
 
 local contracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentRewardContracts.luau"), {
 	debugName = "EquipmentRewardContracts",
+	environment = {
+		script = { Parent = { EquipmentAffixContracts = AFFIX_CONTRACTS_TOKEN } },
+		require = function(token: unknown)
+			assert(token == AFFIX_CONTRACTS_TOKEN, "unexpected reward contract dependency")
+			return affixContracts
+		end,
+	},
 	injectGlobals = true,
 })()
 
@@ -46,6 +62,36 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Eq
 	injectGlobals = true,
 })()
 
+local affixConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/EquipmentAffixConfig.luau"), {
+	debugName = "EquipmentAffixConfig",
+	environment = {
+		script = {
+			Parent = {
+				Parent = {
+					Equipment = { EquipmentAffixContracts = AFFIX_CONTRACTS_TOKEN },
+				},
+			},
+		},
+		require = function(token: unknown)
+			assert(token == AFFIX_CONTRACTS_TOKEN, "unexpected affix config dependency")
+			return affixContracts
+		end,
+	},
+	injectGlobals = true,
+})()
+
+local affixResolver = luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentAffixResolver.luau"), {
+	debugName = "EquipmentAffixResolver",
+	environment = {
+		script = { Parent = { EquipmentAffixContracts = AFFIX_CONTRACTS_TOKEN } },
+		require = function(token: unknown)
+			assert(token == AFFIX_CONTRACTS_TOKEN, "unexpected affix resolver dependency")
+			return affixContracts
+		end,
+	},
+	injectGlobals = true,
+})()
+
 -- Every weapon-slot definition must drive a real combat weapon, and non-weapon
 -- slots must drive none, or an item could equip and change nothing.
 local weaponSlots = { [contracts.SlotIds.Primary] = true, [contracts.SlotIds.Secondary] = true }
@@ -63,8 +109,14 @@ assert(weaponLinks >= 3, "the authored roster must link at least the rifle, shot
 
 local replicatedStorage = {
 	Shared = {
-		Equipment = { EquipmentRewardContracts = CONTRACTS_TOKEN },
-		Config = { EquipmentRewardConfig = CONFIG_TOKEN },
+		Equipment = {
+			EquipmentRewardContracts = CONTRACTS_TOKEN,
+			EquipmentAffixResolver = AFFIX_RESOLVER_TOKEN,
+		},
+		Config = {
+			EquipmentRewardConfig = CONFIG_TOKEN,
+			EquipmentAffixConfig = AFFIX_CONFIG_TOKEN,
+		},
 	},
 }
 
@@ -98,6 +150,12 @@ local serviceModule = luau.load(fs.readFile("games/living-kingdoms/src/server/Sy
 			if token == CONFIG_TOKEN then
 				return config
 			end
+			if token == AFFIX_RESOLVER_TOKEN then
+				return affixResolver
+			end
+			if token == AFFIX_CONFIG_TOKEN then
+				return affixConfig
+			end
 			error("unexpected equipment reward dependency")
 		end,
 	},
@@ -106,6 +164,14 @@ local serviceModule = luau.load(fs.readFile("games/living-kingdoms/src/server/Sy
 
 local SourceIds = contracts.SourceIds
 local RarityIds = contracts.RarityIds
+
+local function affixSignature(affixes): string
+	local parts = {}
+	for _, affix in affixes do
+		table.insert(parts, string.format("%s@%s=%d", affix.Id, affix.Version, affix.Value))
+	end
+	return table.concat(parts, ",")
+end
 
 -- Content identity is deterministic from the reward context. It deliberately
 -- excludes InstanceId, which is a globally unique server-minted item identity.
@@ -118,6 +184,7 @@ local function rewardSignature(reward): string
 		tostring(reward.Power),
 		reward.SourceId,
 		tostring(reward.Seed),
+		affixSignature(reward.Affixes),
 	}, "|")
 end
 
@@ -140,6 +207,11 @@ assert(elite.Reward ~= nil and elite.Reward.SourceId == SourceIds.Elite, "elite 
 assert(elite.Reward.RunId == runId, "reward must preserve run provenance")
 assert(elite.Reward.Power >= config.Sources[SourceIds.Elite].MinimumPower, "elite reward below source floor")
 assert(elite.Reward.Power <= config.Sources[SourceIds.Elite].MaximumPower, "elite reward above source ceiling")
+assert(#elite.Reward.Affixes == affixConfig.AffixCountByRarity[elite.Reward.Rarity], "elite affix count mismatch")
+assert(table.isfrozen(elite.Reward.Affixes), "reward affixes must be immutable")
+for _, affix in elite.Reward.Affixes do
+	assert(table.isfrozen(affix), "each reward affix must be immutable")
+end
 local eliteDefinition = findDefinition(elite.Reward.DefinitionId)
 assert(eliteDefinition ~= nil, "elite reward must use a known definition")
 assert(eliteDefinition.Version == elite.Reward.DefinitionVersion, "definition version must be preserved")
@@ -163,6 +235,7 @@ assert(boss.Accepted and boss.Reward ~= nil, "boss reward should be accepted")
 assert(boss.Reward.SourceId == SourceIds.Boss, "boss source mismatch")
 assert(boss.Reward.Power >= config.Sources[SourceIds.Boss].MinimumPower, "boss reward below source floor")
 assert(boss.Reward.Power <= config.Sources[SourceIds.Boss].MaximumPower, "boss reward above source ceiling")
+assert(#boss.Reward.Affixes == affixConfig.AffixCountByRarity[boss.Reward.Rarity], "boss affix count mismatch")
 assert(boss.Reward.InstanceId ~= elite.Reward.InstanceId, "reward instances must be source-unique")
 assert(
 	boss.Reward.Rarity == RarityIds.Common
@@ -176,11 +249,11 @@ local replayElite = replay:claimReward(SourceIds.Elite)
 local replayBoss = replay:claimReward(SourceIds.Boss)
 assert(
 	rewardSignature(replayElite.Reward) == rewardSignature(elite.Reward),
-	"elite reward must reproduce from the same run seed"
+	"elite reward and affixes must reproduce from the same run seed"
 )
 assert(
 	rewardSignature(replayBoss.Reward) == rewardSignature(boss.Reward),
-	"boss reward must reproduce from the same run seed"
+	"boss reward and affixes must reproduce from the same run seed"
 )
 
 -- The declared ContentSignature is the deterministic identity and must agree
@@ -208,16 +281,12 @@ local variationFound = false
 for candidateSeed = seed + 1, seed + 100 do
 	local candidate = serviceModule.new(runId .. "-candidate", candidateSeed)
 	local candidateReward = candidate:claimReward(SourceIds.Boss)
-	if
-		candidateReward.Reward.DefinitionId ~= boss.Reward.DefinitionId
-		or candidateReward.Reward.Rarity ~= boss.Reward.Rarity
-		or candidateReward.Reward.Power ~= boss.Reward.Power
-	then
+	if rewardSignature(candidateReward.Reward) ~= rewardSignature(boss.Reward) then
 		variationFound = true
 		break
 	end
 end
-assert(variationFound, "different seeds should produce bounded reward variation")
+assert(variationFound, "different seeds should produce bounded reward or affix variation")
 
 local unknown = service:claimReward("TreasureChest" :: any)
 assert(not unknown.Accepted and unknown.ReasonId == "UnknownSource", "unknown reward source must be rejected")
