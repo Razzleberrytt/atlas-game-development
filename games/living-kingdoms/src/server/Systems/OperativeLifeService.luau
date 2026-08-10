@@ -54,6 +54,7 @@ type CharacterBinding = {
 }
 
 type OperativeEntry = {
+	player: Player,
 	operativeEntityId: string,
 	snapshot: OperativeLifeStateSnapshot,
 	revision: number,
@@ -80,6 +81,7 @@ type OperativeLifeService = {
 	playerForOperativeEntityId: (operativeEntityId: string) -> Player?,
 	readAll: () -> { AuthoritativeRosterRead },
 	reconcileMaximumHealth: (player: Player) -> AuthoritativeRead?,
+	reconcileMovementSpeed: (player: Player) -> boolean,
 	configureSoloOperationEligibility: (operativeEntityId: string, isEligible: boolean) -> boolean,
 	applyAuthoritativeDamage: (
 		operativeEntityId: string,
@@ -189,6 +191,21 @@ local function effectiveMaximumHealth(player: Player): number
 		multiplier = 1
 	end
 	return OperativeLifeConfig.MaximumHealth * multiplier
+end
+
+local function effectiveMovementSpeedMultiplier(player: Player): number
+	local multiplier = (RelicModifierService.read(player) :: any).equipmentMovementSpeedMultiplier
+	if
+		type(multiplier) ~= "number"
+		or multiplier ~= multiplier
+		or multiplier == math.huge
+		or multiplier == -math.huge
+		or multiplier < 1
+		or multiplier > 2
+	then
+		return 1
+	end
+	return multiplier
 end
 
 local function initialSnapshot(operativeEntityId: string, maximumHealth: number?): OperativeLifeStateSnapshot
@@ -337,10 +354,11 @@ local function applyCharacterRestrictions(entry: OperativeEntry)
 		humanoid.Health = 1
 	end
 	if entry.snapshot.lifeStateId == lifeStateIds.Alive then
-		-- Alive is an explicit movement contract. Never restore a transient zero
-		-- captured while a character was spawning or being rebound; doing so leaves
-		-- jumping functional while making every horizontal control appear broken.
-		humanoid.WalkSpeed = math.max(binding.walkSpeed or 0, ALIVE_HORIZONTAL_SPEED)
+		-- The bound WalkSpeed is the stable base. The equipment multiplier is
+		-- derived from server-owned inventory each application, so repeated equip
+		-- reconciliation cannot compound an already-modified Humanoid value.
+		local baseWalkSpeed = math.max(binding.walkSpeed or 0, ALIVE_HORIZONTAL_SPEED)
+		humanoid.WalkSpeed = baseWalkSpeed * effectiveMovementSpeedMultiplier(entry.player)
 		humanoid.JumpPower = binding.jumpPower or humanoid.JumpPower
 		humanoid.JumpHeight = binding.jumpHeight or humanoid.JumpHeight
 		humanoid.AutoRotate = if binding.autoRotate == nil then true else binding.autoRotate
@@ -415,6 +433,7 @@ function OperativeLifeService.registerPlayer(player: Player): AuthoritativeRead?
 	local retained = retainedSnapshotByOperativeEntityId[operativeEntityId]
 	retainedSnapshotByOperativeEntityId[operativeEntityId] = nil
 	local entry: OperativeEntry = {
+		player = player,
 		operativeEntityId = operativeEntityId,
 		snapshot = if retained ~= nil
 			then copySnapshot(retained)
@@ -520,6 +539,21 @@ function OperativeLifeService.reconcileMaximumHealth(player: Player): Authoritat
 	applyCharacterRestrictions(entry)
 	notifyListeners(player, entry)
 	return { revision = entry.revision, snapshot = copySnapshot(entry.snapshot) }
+end
+
+-- Re-applies the canonical Alive/downed/dead locomotion contract using the
+-- current server-owned equipment fact. This does not mutate the P3 life snapshot
+-- or revision; Humanoid locomotion is a replicated consequence of that authority.
+function OperativeLifeService.reconcileMovementSpeed(player: Player): boolean
+	if not isServerPlayer(player) then
+		return false
+	end
+	local entry = entries[player]
+	if entry == nil then
+		return false
+	end
+	applyCharacterRestrictions(entry)
+	return true
 end
 
 function OperativeLifeService.configureSoloOperationEligibility(operativeEntityId: string, isEligible: boolean): boolean
