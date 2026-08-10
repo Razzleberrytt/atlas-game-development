@@ -89,19 +89,16 @@ local function contentSignature(
 	rollSeed: number,
 	affixSignature: string
 ): string
-	return table.concat(
-		{
-			"v2",
-			definition.Id,
-			definition.Version,
-			rarityId,
-			tostring(power),
-			sourceId,
-			tostring(rollSeed),
-			affixSignature,
-		},
-		"|"
-	)
+	return table.concat({
+		"v2",
+		definition.Id,
+		definition.Version,
+		rarityId,
+		tostring(power),
+		sourceId,
+		tostring(rollSeed),
+		affixSignature,
+	}, "|")
 end
 
 local function copyAffixes(affixes: { EquipmentAffixRoll }): { EquipmentAffixRoll }
@@ -192,14 +189,7 @@ function EquipmentRewardService:claimReward(sourceId: RewardSourceId): RewardCla
 	local reward: EquipmentReward = table.freeze({
 		InstanceId = "item_" .. HttpService:GenerateGUID(false),
 		GrantId = string.format("reward:%s:%s", state.RunId, sourceId),
-		ContentSignature = contentSignature(
-			definition,
-			rarityId,
-			power,
-			sourceId,
-			rollSeed,
-			affixResolution.Signature
-		),
+		ContentSignature = contentSignature(definition, rarityId, power, sourceId, rollSeed, affixResolution.Signature),
 		DefinitionId = definition.Id,
 		DefinitionVersion = definition.Version,
 		DisplayName = definition.DisplayName,
