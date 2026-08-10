@@ -44,11 +44,13 @@ end
 assertThat(rallyUnlock ~= nil, "Rally ping unlock must be authored in the durable progression map")
 assertThat(rallyUnlock.RequiredRank == 2, "Rally ping must unlock at durable Operative Rank 2")
 
-for _, required in {
-	"function Service.hasOwnedUnlock(",
-	"Service.readOwnedSnapshot(requesterId, ownerId)",
-	"snapshot.Rank >= unlock.RequiredRank",
-} do
+for _, required in
+	{
+		"function Service.hasOwnedUnlock(",
+		"Service.readOwnedSnapshot(requesterId, ownerId)",
+		"snapshot.Rank >= unlock.RequiredRank",
+	}
+do
 	assertThat(contains(progressionServiceSource, required), `durable unlock derivation is missing {required}`)
 end
 for _, forbidden in { "SetAsync", "UpdateAsync", "DataStore", "UnlockedIds =", "Unlocked =" } do
@@ -64,25 +66,32 @@ assertThat(
 	"safe snapshots must explicitly distinguish server-published categories from client intent"
 )
 assertThat(
-	not contains(contractsSource, "ImplementedCategoryIds = table.freeze({\n\tLocation = \"Location\",\n\tRally"),
+	not contains(contractsSource, 'ImplementedCategoryIds = table.freeze({\n\tLocation = "Location",\n\tRally'),
 	"Rally must not become a client-implemented/requestable category"
 )
 
-for _, required in {
-	"OperativeProgressionService.hasOwnedUnlock(",
-	"OperativeProgressionConfig.UnlockIds.SquadRallyPing",
-	"SquadPingContracts.CategoryIds.Rally",
-	"local categoryId = publishedCategoryFor(player)",
-} do
-	assertThat(contains(pingServiceSource, required), `SquadPingService is missing server-owned Rally routing: {required}`)
+for _, required in
+	{
+		"OperativeProgressionService.hasOwnedUnlock(",
+		"OperativeProgressionConfig.UnlockIds.SquadRallyPing",
+		"SquadPingContracts.CategoryIds.Rally",
+		"local categoryId = publishedCategoryFor(player)",
+	}
+do
+	assertThat(
+		contains(pingServiceSource, required),
+		`SquadPingService is missing server-owned Rally routing: {required}`
+	)
 end
-for _, invariant in {
-	"SquadPingConfig.CooldownSeconds",
-	"SquadPingConfig.MaximumDistanceStuds",
-	"SquadPingConfig.MaximumActivePerSender",
-	"SquadPingConfig.MaximumActivePerSquad",
-	"SquadPingConfig.LifetimeSeconds",
-} do
+for _, invariant in
+	{
+		"SquadPingConfig.CooldownSeconds",
+		"SquadPingConfig.MaximumDistanceStuds",
+		"SquadPingConfig.MaximumActivePerSender",
+		"SquadPingConfig.MaximumActivePerSquad",
+		"SquadPingConfig.LifetimeSeconds",
+	}
+do
 	assertThat(contains(pingServiceSource, invariant), `Rally must preserve the bounded ping invariant {invariant}`)
 end
 
@@ -91,7 +100,10 @@ assertThat(
 	"the client must continue to request only ordinary Location intent"
 )
 assertThat(contains(controllerSource, '"◆  RALLY\\nSQUAD PING"'), "Rally snapshots need distinct client presentation")
-assertThat(contains(controllerSource, '"◇  LOCATION\\nSQUAD PING"'), "ordinary Location presentation must remain intact")
+assertThat(
+	contains(controllerSource, '"◇  LOCATION\\nSQUAD PING"'),
+	"ordinary Location presentation must remain intact"
+)
 assertThat(
 	contains(controllerSource, "Enum.KeyCode[SquadPingConfig.KeyboardKeyCodeName]"),
 	"Rally must reuse the existing keyboard ping action"
