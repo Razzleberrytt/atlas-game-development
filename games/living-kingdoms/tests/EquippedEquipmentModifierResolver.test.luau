@@ -35,9 +35,8 @@ local modifier = {
 	end,
 }
 
-local Resolver = luau.load(
-	fs.readFile("games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau"),
-	{
+local Resolver =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau"), {
 		debugName = "EquippedEquipmentModifierResolver",
 		environment = {
 			script = {
@@ -59,8 +58,7 @@ local Resolver = luau.load(
 			end,
 		},
 		injectGlobals = true,
-	}
-)()
+	})()
 
 local function reward(definitionId: string, effectId: string?, value: number?)
 	local affixes = {}
