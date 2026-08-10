@@ -195,11 +195,12 @@ assertThat(
 assertThat(
 	string.find(compositionSource, "resolveForWeapon(record, activeWeaponId)", 1, true) ~= nil
 		and string.find(
-			compositionSource,
-			"combined.equipmentReloadDurationMultiplier = weaponModifiers.reloadDurationMultiplier",
-			1,
-			true
-		) ~= nil,
+				compositionSource,
+				"combined.equipmentReloadDurationMultiplier = weaponModifiers.reloadDurationMultiplier",
+				1,
+				true
+			)
+			~= nil,
 	"server composition seam must join the authoritative inventory reload fact"
 )
 assertThat(
