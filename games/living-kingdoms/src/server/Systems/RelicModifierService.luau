@@ -3,11 +3,12 @@
 --[[
 	Server-side per-operative modifier adapter.
 
-	The authoritative combat, reload, and life owners need one operative's bounded
-	modifier bundle many times per evaluation. Relic facts are derived from the
-	existing RunBuildService owner and cached against its server-owned revision.
-	Durable-equipment facts are joined from the authoritative inventory record on
-	each read so an equip change cannot be hidden behind the relic cache.
+	The authoritative combat, reload, life, and class-action owners need one
+	operative's bounded modifier bundle many times per evaluation. Relic facts are
+	derived from the existing RunBuildService owner and cached against its
+	server-owned revision. Durable-equipment facts are joined from the authoritative
+	inventory record on each read so an equip change cannot be hidden behind the
+	relic cache.
 
 	This adapter owns no relic or inventory state, creates no connections, and adds
 	no network surface. It is the server composition seam between independently
@@ -40,6 +41,7 @@ export type OperativeModifiers = RelicModifiers & {
 	equipmentReloadDurationMultiplier: number,
 	equipmentMaximumHealthMultiplier: number,
 	equipmentMovementSpeedMultiplier: number,
+	equipmentAbilityCooldownDurationMultiplier: number,
 }
 
 type CacheEntry = {
@@ -66,6 +68,7 @@ local function composeOperativeModifiers(player: Player, relicModifiers: RelicMo
 	combined.equipmentReloadDurationMultiplier = 1
 	combined.equipmentMaximumHealthMultiplier = 1
 	combined.equipmentMovementSpeedMultiplier = 1
+	combined.equipmentAbilityCooldownDurationMultiplier = 1
 	if not canComposeEquipment(player) then
 		return table.freeze(combined) :: OperativeModifiers
 	end
@@ -84,6 +87,13 @@ local function composeOperativeModifiers(player: Player, relicModifiers: RelicMo
 			if type(armorModifiers.movementSpeedMultiplier) == "number" then
 				combined.equipmentMovementSpeedMultiplier = armorModifiers.movementSpeedMultiplier
 			end
+		end
+		local relicEquipmentModifiers = resolverAsAny.resolveForSlot(record, "Relic")
+		if
+			type(relicEquipmentModifiers) == "table"
+			and type(relicEquipmentModifiers.abilityCooldownDurationMultiplier) == "number"
+		then
+			combined.equipmentAbilityCooldownDurationMultiplier = relicEquipmentModifiers.abilityCooldownDurationMultiplier
 		end
 	end
 	return table.freeze(combined) :: OperativeModifiers
