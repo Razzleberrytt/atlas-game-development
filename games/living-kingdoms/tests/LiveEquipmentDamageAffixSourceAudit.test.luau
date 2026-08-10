@@ -23,7 +23,8 @@ assert(
 	"equipment modifier must be gated by the server-authored active weapon"
 )
 assert(
-	contains(modifierService, "combined.equipmentDamageMultiplier = equipmentModifiers.damageMultiplier"),
+	contains(modifierService, "resolveForWeapon(record, activeWeaponId)")
+		and contains(modifierService, "combined.equipmentDamageMultiplier = weaponModifiers.damageMultiplier"),
 	"durable equipment must join the existing per-operative modifier bundle exactly once"
 )
 assert(
