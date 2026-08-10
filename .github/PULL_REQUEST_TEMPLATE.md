@@ -10,6 +10,18 @@
 - Validation profile: `docs` / `fast` / `full`
 - Status after merge: `BUILDING` / `BUILT — VERIFICATION PENDING` / `VERIFIED` / other
 
+## Extension cost / compounding
+
+<!-- Required for repeated feature/content families; otherwise use N/A. -->
+
+- Extension contract: `<contract-id>` / `N/A`
+- Preferred maturity path used: yes / no / N/A
+- `python scripts/extension_cost.py check <contract-id> --base main` result: WITHIN BUDGET / REVIEW REQUIRED / N/A
+- If REVIEW REQUIRED: new semantic or reusable-seam issue?
+- Future variants made cheaper by this change:
+
+Do not force necessary behavior through an inadequate abstraction just to satisfy a file-count budget. Repeated budget overruns should improve the reusable seam before breadth expands further.
+
 ## Scope / ownership
 
 - Player-facing behavior changed:
@@ -54,5 +66,6 @@ Do not promote source/static results to VERIFIED when the claim requires Studio/
 
 - [ ] change is the smallest coherent result for this PR
 - [ ] no duplicate overlapping open PR was created
+- [ ] repeated-family extension cost stayed narrow or a deliberate semantic escalation is explained
 - [ ] generated build artifacts/secrets are not committed
 - [ ] evidence/status claims are truthful
