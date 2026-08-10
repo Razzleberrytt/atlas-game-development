@@ -30,10 +30,7 @@ assert(
 	not contains(modifierService, "OnServerEvent"),
 	"modifier composition must not add a client-to-server combat authority surface"
 )
-assert(
-	not contains(modifierService, "InvokeClient"),
-	"modifier composition must not ask a client for equipment facts"
-)
+assert(not contains(modifierService, "InvokeClient"), "modifier composition must not ask a client for equipment facts")
 
 assert(
 	contains(damageResolver, "equipmentDamageMultiplier: number?"),
