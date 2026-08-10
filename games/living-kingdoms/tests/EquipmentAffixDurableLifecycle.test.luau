@@ -413,12 +413,21 @@ local initial = persistence:loadPlayer(playerId, 10_000)
 assertThat(initial.Accepted, "fresh durable inventory must load")
 
 local orderedTargets = { "Weapon", "Armor", "Relic" }
-for index, target in orderedTargets do
+local mutationTimestamp = 10_000
+for _, target in orderedTargets do
 	local reward = found[target].reward
-	local applied = persistence:applyReward(playerId, reward, 10_000 + index)
-	assertThat(applied.Accepted, target .. " reward must enter durable inventory")
-	local equipped = persistence:equip(playerId, reward.Slot, reward.InstanceId, 10_100 + index)
-	assertThat(equipped.Accepted, target .. " reward must equip through durable authority")
+	mutationTimestamp += 1
+	local applied = persistence:applyReward(playerId, reward, mutationTimestamp)
+	assertThat(
+		applied.Accepted,
+		string.format("%s reward must enter durable inventory (%s)", target, tostring(applied.ReasonId))
+	)
+	mutationTimestamp += 1
+	local equipped = persistence:equip(playerId, reward.Slot, reward.InstanceId, mutationTimestamp)
+	assertThat(
+		equipped.Accepted,
+		string.format("%s reward must equip through durable authority (%s)", target, tostring(equipped.ReasonId))
+	)
 end
 
 local beforeReconnect = persistence:getRecord(playerId)
