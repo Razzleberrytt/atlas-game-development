@@ -23,18 +23,22 @@
     },
     {
       "effect_id": "ReloadSpeedPercent",
-      "status": "owner-confirmed",
+      "status": "live",
       "capability_id": "combat-authority",
       "owner_kind": "server",
       "canonical_owner": "games/living-kingdoms/src/server/Systems/ReloadResolver.luau",
       "composition_seam": "games/living-kingdoms/src/server/Systems/RelicModifierService.luau",
-      "shared_adapter": null,
+      "shared_adapter": "games/living-kingdoms/src/shared/Equipment/EquipmentAffixModifierResolver.luau",
       "selection_resolver": "games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau",
       "focused_tests": [
+        "games/living-kingdoms/tests/EquipmentAffixModifierResolver.test.luau",
+        "games/living-kingdoms/tests/EquippedEquipmentModifierResolver.test.luau",
+        "games/living-kingdoms/tests/ReloadResolver.test.luau",
+        "games/living-kingdoms/tests/LiveEquipmentReloadAffixSourceAudit.test.luau",
         "games/living-kingdoms/tests/RelicCombatIntegration.test.luau"
       ],
       "risk_tier": "R2",
-      "extension_rule": "Introduce one bounded reload-duration adapter, then route through ReloadResolver; do not create an equipment reload service."
+      "extension_rule": "New ReloadSpeedPercent affix definitions should be data/config plus focused regression only; do not add per-weapon reload wiring or an equipment reload service."
     },
     {
       "effect_id": "MaxHealthPercent",

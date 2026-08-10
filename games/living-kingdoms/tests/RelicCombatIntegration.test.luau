@@ -697,8 +697,8 @@ assertThat(
 	"the combat owner must supply per-operative relic damage modifiers"
 )
 assertThat(
-	contains(combatRuntime, "relicReloadContext(player)"),
-	"the combat owner must supply the per-operative relic reload context"
+	contains(combatRuntime, "reloadDurationContext(player)"),
+	"the combat owner must supply the per-operative reload-duration context"
 )
 assertThat(
 	contains(combatRuntime, "RelicModifierService.forget(player)")

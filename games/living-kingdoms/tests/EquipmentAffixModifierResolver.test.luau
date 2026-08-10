@@ -85,6 +85,47 @@ assertThat(
 	"well-formed effects without a live owner must remain inert"
 )
 assertThat(
+	resolver.resolve({ affix("MoveSpeedPercent", 15) }).reloadDurationMultiplier == 1,
+	"effects without a live owner must not disturb the reload duration"
+)
+
+local function approximately(value: number, expected: number): boolean
+	return math.abs(value - expected) < 1e-9
+end
+
+assertThat(resolver.resolve(nil).reloadDurationMultiplier == 1, "legacy missing affixes must keep the full reload")
+assertThat(resolver.resolve({}).reloadDurationMultiplier == 1, "empty affixes must keep the full reload")
+assertThat(
+	approximately(resolver.resolve({ affix("ReloadSpeedPercent", 8) }).reloadDurationMultiplier, 0.92),
+	"reload speed percent must shorten the duration"
+)
+assertThat(
+	approximately(
+		resolver.resolve({ affix("ReloadSpeedPercent", 8), affix("ReloadSpeedPercent", 10) }).reloadDurationMultiplier,
+		0.82
+	),
+	"multiple reload rolls must aggregate"
+)
+local mixed = resolver.resolve({ affix("DamagePercent", 6), affix("ReloadSpeedPercent", 5) })
+assertThat(
+	approximately(mixed.damageMultiplier, 1.06) and approximately(mixed.reloadDurationMultiplier, 0.95),
+	"damage and reload effects must resolve independently from one bundle"
+)
+assertThat(
+	resolver.resolve({ affix("ReloadSpeedPercent", 500) }).reloadDurationMultiplier
+		== runConfig.ModifierCeilings.minimumReloadDurationMultiplier,
+	"reload affixes must inherit the canonical global reload floor"
+)
+assertThat(
+	resolver.resolve({ { EffectId = "ReloadSpeedPercent", Value = -5 } }).reloadDurationMultiplier == 1,
+	"negative reload values fail closed"
+)
+assertThat(
+	resolver.resolve({ affix("ReloadSpeedPercent", 8), { EffectId = "DamagePercent", Value = 0 / 0 } }).reloadDurationMultiplier
+		== 1,
+	"a malformed sibling affix fails the whole bundle closed"
+)
+assertThat(
 	resolver.resolve({ affix("DamagePercent", 500) }).damageMultiplier
 		== runConfig.ModifierCeilings.maximumDamageMultiplier,
 	"damage affixes must inherit the canonical global ceiling"
@@ -106,4 +147,4 @@ assertThat(
 	"resolved modifier bundle must be immutable"
 )
 
-print("EquipmentAffixModifierResolver: bounded damage translation and fail-closed behavior passed")
+print("EquipmentAffixModifierResolver: bounded damage/reload translation and fail-closed behavior passed")

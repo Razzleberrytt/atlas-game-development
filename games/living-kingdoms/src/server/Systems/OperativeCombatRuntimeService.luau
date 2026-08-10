@@ -1135,23 +1135,43 @@ local function completeReload(player: Player, expectedCompletionTimestamp: numbe
 end
 
 --[[
-	Emergency Chamber only shortens reloads accepted while the operative is
-	critically wounded. The wounded fact comes from the authoritative P3 life
-	snapshot, never from the requesting client.
+	Builds the per-operative reload-duration context for the authoritative reload
+	owner. Two independent build facts feed it:
+
+	- Emergency Chamber only shortens reloads accepted while the operative is
+	  critically wounded. The wounded fact comes from the authoritative P3 life
+	  snapshot, never from the requesting client.
+	- Durable equipment `ReloadSpeedPercent` applies unconditionally, derived from
+	  the server-owned inventory record through the existing modifier composition
+	  seam. The client never supplies a multiplier or a duration.
+
+	Returning `nil` when neither fact is active keeps the unmodified configured
+	reload duration as the default.
 ]]
-local function relicReloadContext(player: Player): ReloadResolver.RelicReloadContext?
+local function reloadDurationContext(player: Player): ReloadResolver.ReloadDurationContext?
 	local modifiers = RelicModifierService.read(player)
-	if modifiers.woundedHealthFraction <= 0 or modifiers.woundedReloadDurationMultiplier >= 1 then
-		return nil
+	local equipmentReloadDurationMultiplier = modifiers.equipmentReloadDurationMultiplier
+	if type(equipmentReloadDurationMultiplier) ~= "number" then
+		equipmentReloadDurationMultiplier = 1
 	end
-	local lifeRead = OperativeLifeService.read(player)
-	local healthState = if lifeRead == nil then nil else lifeRead.snapshot.healthState
-	if healthState == nil or healthState.maximumHealth <= 0 then
+	local woundedReloadDurationMultiplier = 1
+	local isCriticallyWounded = false
+	if modifiers.woundedHealthFraction > 0 and modifiers.woundedReloadDurationMultiplier < 1 then
+		local lifeRead = OperativeLifeService.read(player)
+		local healthState = if lifeRead == nil then nil else lifeRead.snapshot.healthState
+		if healthState ~= nil and healthState.maximumHealth > 0 then
+			woundedReloadDurationMultiplier = modifiers.woundedReloadDurationMultiplier
+			isCriticallyWounded = healthState.currentHealth
+				<= healthState.maximumHealth * modifiers.woundedHealthFraction
+		end
+	end
+	if not isCriticallyWounded and equipmentReloadDurationMultiplier >= 1 then
 		return nil
 	end
 	return {
-		woundedReloadDurationMultiplier = modifiers.woundedReloadDurationMultiplier,
-		isCriticallyWounded = healthState.currentHealth <= healthState.maximumHealth * modifiers.woundedHealthFraction,
+		woundedReloadDurationMultiplier = woundedReloadDurationMultiplier,
+		isCriticallyWounded = isCriticallyWounded,
+		equipmentReloadDurationMultiplier = equipmentReloadDurationMultiplier,
 	}
 end
 
@@ -1217,7 +1237,7 @@ local function onReloadIntent(player: Player, weaponId: unknown, ...: unknown)
 		playerState.operativeState,
 		playerState.weaponState,
 		nowTimestamp,
-		relicReloadContext(player)
+		reloadDurationContext(player)
 	)
 	playerState.operativeState = resolution.operativeStateAfter
 	playerState.weaponState = resolution.weaponStateAfter
@@ -1237,8 +1257,9 @@ local function onReloadIntent(player: Player, weaponId: unknown, ...: unknown)
 		return
 	end
 	-- Wake at the authoritative deadline rather than the unmodified configured
-	-- duration, so Combat Loader and Emergency Chamber actually shorten the wait
-	-- instead of only shortening the deadline the completion pass checks.
+	-- duration, so Combat Loader, Emergency Chamber, and durable reload gear
+	-- actually shorten the wait instead of only shortening the deadline the
+	-- completion pass checks.
 	task.delay(math.max(0, reloadState.completionServerTimestamp - nowTimestamp), function()
 		completeReload(player, reloadState.completionServerTimestamp, generation)
 	end)

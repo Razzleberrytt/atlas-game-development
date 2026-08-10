@@ -197,6 +197,67 @@ assert(
 	"absent Combat Loader state must restore the configured reload duration"
 )
 
+-- Durable equipment ReloadSpeedPercent arrives as a bounded caller-supplied
+-- multiplier on the same reload-duration context. It applies without the wounded
+-- gate, composes with the squad and relic reductions, and can never lengthen or
+-- erase the authoritative reload commitment.
+local function approximately(value: number, expected: number): boolean
+	return math.abs(value - expected) < 1e-9
+end
+
+local equipmentBegin = resolver.begin(operative(), weaponState(), 10, {
+	woundedReloadDurationMultiplier = 1,
+	isCriticallyWounded = false,
+	equipmentReloadDurationMultiplier = 0.9,
+})
+assert(
+	approximately(equipmentBegin.weaponStateAfter.reloadState.completionServerTimestamp, 11.8),
+	"equipment reload speed must shorten a healthy operative's reload (2s * 0.9 = 1.8s)"
+)
+
+local composedBegin = resolver.begin(operative(), weaponState(), 10, {
+	woundedReloadDurationMultiplier = 0.8,
+	isCriticallyWounded = true,
+	equipmentReloadDurationMultiplier = 0.9,
+})
+assert(
+	approximately(composedBegin.weaponStateAfter.reloadState.completionServerTimestamp, 11.44),
+	"relic and equipment reductions must compose (2s * 0.8 * 0.9 = 1.44s)"
+)
+
+progressionAttributes.RunReloadDurationMultiplier = 0.6
+local flooredComposedBegin = resolver.begin(operative(), weaponState(), 10, {
+	woundedReloadDurationMultiplier = 0.6,
+	isCriticallyWounded = true,
+	equipmentReloadDurationMultiplier = 0.6,
+})
+assert(
+	flooredComposedBegin.weaponStateAfter.reloadState.completionServerTimestamp == 11,
+	"the composed squad, relic, and equipment product must clamp to the 0.5 reload floor"
+)
+progressionAttributes.RunReloadDurationMultiplier = nil
+
+for _, malformed in { 1.5, 0.1, 0 / 0, "0.5", -1 } :: { any } do
+	local malformedBegin = resolver.begin(operative(), weaponState(), 10, {
+		woundedReloadDurationMultiplier = 1,
+		isCriticallyWounded = false,
+		equipmentReloadDurationMultiplier = malformed,
+	})
+	assert(
+		malformedBegin.weaponStateAfter.reloadState.completionServerTimestamp == 12,
+		"an out-of-range equipment multiplier must fail closed to the configured duration"
+	)
+end
+
+local legacyContextBegin = resolver.begin(operative(), weaponState(), 10, {
+	woundedReloadDurationMultiplier = 0.75,
+	isCriticallyWounded = true,
+})
+assert(
+	approximately(legacyContextBegin.weaponStateAfter.reloadState.completionServerTimestamp, 11.5),
+	"a context without an equipment multiplier must keep the existing relic behavior"
+)
+
 local fullOperative, fullWeapon = operative(), weaponState(12, 24)
 assertBeginRejected(
 	resolver.begin(fullOperative, fullWeapon, 10),

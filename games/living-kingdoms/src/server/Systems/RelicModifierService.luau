@@ -37,6 +37,7 @@ local RunBuildService = require(script.Parent.RunBuildService)
 export type RelicModifiers = RelicModifierResolver.RelicModifiers
 export type OperativeModifiers = RelicModifiers & {
 	equipmentDamageMultiplier: number,
+	equipmentReloadDurationMultiplier: number,
 }
 
 type CacheEntry = {
@@ -60,6 +61,7 @@ end
 local function composeOperativeModifiers(player: Player, relicModifiers: RelicModifiers): OperativeModifiers
 	local combined = table.clone(relicModifiers) :: any
 	combined.equipmentDamageMultiplier = 1
+	combined.equipmentReloadDurationMultiplier = 1
 	if not canComposeEquipment(player) then
 		return table.freeze(combined) :: OperativeModifiers
 	end
@@ -69,6 +71,7 @@ local function composeOperativeModifiers(player: Player, relicModifiers: RelicMo
 		activeWeaponId
 	)
 	combined.equipmentDamageMultiplier = equipmentModifiers.damageMultiplier
+	combined.equipmentReloadDurationMultiplier = equipmentModifiers.reloadDurationMultiplier
 	return table.freeze(combined) :: OperativeModifiers
 end
 

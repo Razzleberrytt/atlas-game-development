@@ -26,12 +26,18 @@ local config = {
 local modifier = {
 	resolve = function(affixes)
 		local damagePercent = 0
+		local reloadSpeedPercent = 0
 		for _, affix in affixes or {} do
 			if affix.EffectId == "DamagePercent" then
 				damagePercent += affix.Value
+			elseif affix.EffectId == "ReloadSpeedPercent" then
+				reloadSpeedPercent += affix.Value
 			end
 		end
-		return table.freeze({ damageMultiplier = 1 + damagePercent / 100 })
+		return table.freeze({
+			damageMultiplier = 1 + damagePercent / 100,
+			reloadDurationMultiplier = 1 - reloadSpeedPercent / 100,
+		})
 	end,
 }
 
@@ -90,8 +96,11 @@ assert(shotgun.damageMultiplier == 1, "owned but unequipped weapon contributes n
 assert(shotgun.sourceInstanceId == nil, "unequipped item is not a modifier source")
 
 local sidearm = Resolver.resolveForWeapon(record, "weapon.sidearm")
-assert(sidearm.damageMultiplier == 1, "non-damage affixes stay neutral until their canonical owner is wired")
-assert(sidearm.sourceInstanceId == "sidearm_a", "matching equipped item remains identifiable even when neutral")
+assert(sidearm.damageMultiplier == 1, "a reload-only item contributes no damage")
+assert(math.abs(sidearm.reloadDurationMultiplier - 0.92) < 1e-9, "equipped reload affix shortens the reload duration")
+assert(sidearm.sourceInstanceId == "sidearm_a", "matching equipped item remains identifiable")
+assert(rifle.reloadDurationMultiplier == 1, "a damage-only item leaves the reload duration untouched")
+assert(shotgun.reloadDurationMultiplier == 1, "an unequipped item contributes no reload reduction")
 
 record.EquippedBySlot.Primary = "rifle_b"
 local switched = Resolver.resolveForWeapon(record, "weapon.rifle")
@@ -99,6 +108,11 @@ assert(switched.damageMultiplier == 1.09, "changing authoritative equip changes 
 assert(switched.sourceInstanceId == "rifle_b", "new equipped instance becomes the source")
 
 assert(Resolver.resolveForWeapon(nil, "weapon.rifle").damageMultiplier == 1, "unloaded inventory fails closed")
+assert(
+	Resolver.resolveForWeapon(nil, "weapon.rifle").reloadDurationMultiplier == 1,
+	"unloaded inventory keeps the full reload duration"
+)
 assert(Resolver.resolveForWeapon(record, "").damageMultiplier == 1, "invalid weapon identity fails closed")
+assert(Resolver.neutral().reloadDurationMultiplier == 1, "the published neutral bundle keeps the full reload duration")
 
 print("EquippedEquipmentModifierResolver fixture passed")

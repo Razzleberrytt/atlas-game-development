@@ -18,6 +18,7 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 - PR #334 added bounded pure affix modifier translation.
 - PR #335 added affix-aware durable gear comparison/presentation.
 - PR #337 wired equipped durable `DamagePercent` through the existing server-owned damage authority with full validation green.
+- `ReloadSpeedPercent` is now **live**: the shared affix adapter translates it into the canonical `reloadDurationReduction` contribution, `RelicModifierService` composes it per operative, and `ReloadResolver` bakes it into the authoritative completion timestamp inside the existing 0.5 reload floor. No equipment reload service was created.
 - The effect-owner routing registry now prevents affix effect vocabulary from existing without an explicit authority-routing state.
 - Verification truth remains strict: pending manual/engine evidence is never called VERIFIED.
 
@@ -25,37 +26,40 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 
 ### NOW
 
-**Route `ReloadSpeedPercent` through the already-confirmed authoritative reload owner using the effect-owner registry.**
+**Resolve and register the canonical server owner for `MaxHealthPercent`, then route it.**
 
 Start with:
 
 ```bash
-python scripts/effect_routes.py show ReloadSpeedPercent
+python scripts/effect_routes.py next
+python scripts/effect_routes.py show MaxHealthPercent
 ```
 
-Desired architecture:
+Owner discovery is the task — the route is `unresolved`, so the existing authoritative maximum-health owner must be identified and registered before any consequence is implemented.
+
+Desired architecture (mirroring the two live routes):
 
 ```text
 authoritative equipped durable item
 → existing equipment modifier composition seam
-→ one bounded reload-duration adapter
-→ ReloadResolver
-→ existing server-owned reload completion timestamp
+→ the shared bounded affix adapter
+→ the canonical server life owner
+→ existing server-owned health state
 ```
 
 Rules:
 
-- no equipment-specific reload service;
-- no client-provided multiplier/duration;
-- keep the existing reload-duration floor;
+- no equipment-specific health service;
+- never write a Humanoid's health from an affix adapter;
+- no client-provided multiplier or health value;
 - legacy/no-affix gear remains neutral;
 - equip changes must affect the authoritative source;
-- after successful wiring, promote the route from `owner-confirmed` to `live` and name focused tests.
+- after successful wiring, promote the route to `live` and name focused tests.
 
 ### NEXT
 
 1. use `python scripts/effect_routes.py next` to select the next owner-confirmed/unresolved reusable effect rather than rediscovering architecture;
-2. resolve canonical owners for `MaxHealthPercent`, `MoveSpeedPercent`, `AbilityHastePercent`, and `AbilityPowerPercent` before live implementation;
+2. resolve canonical owners for `MoveSpeedPercent`, `AbilityHastePercent`, and `AbilityPowerPercent` before live implementation;
 3. expand affix/reward variety primarily through validated definitions once effect routes are live;
 4. add end-to-end regression coverage across generation → reward → inventory → equip → application → replay/persistence;
 5. continue into Patch 0.4 when Patch 0.3 source is coherent, keeping Studio evidence pending rather than inventing a lock.

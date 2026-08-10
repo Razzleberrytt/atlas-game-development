@@ -30,20 +30,28 @@ type ReloadState = CombatContracts.ReloadState
 type WeaponCadenceState = CombatContracts.WeaponCadenceState
 type WeaponReadinessState = CombatContracts.WeaponReadinessState
 
--- RPG-0108 per-operative relic reload context. Emergency Chamber shortens only
--- reloads accepted while the operative is critically wounded, so the caller
--- supplies the authoritative wounded fact alongside the bounded multiplier.
-export type RelicReloadContext = {
+-- RPG-0108 per-operative reload context. Emergency Chamber shortens only reloads
+-- accepted while the operative is critically wounded, so the caller supplies the
+-- authoritative wounded fact alongside the bounded multiplier.
+--
+-- Patch 0.3 adds the durable-equipment `ReloadSpeedPercent` multiplier to the same
+-- context rather than a second reload path. It is unconditional (no wounded gate)
+-- and, like every other reload contribution, may only shorten the commitment.
+export type ReloadDurationContext = {
 	woundedReloadDurationMultiplier: number,
 	isCriticallyWounded: boolean,
+	equipmentReloadDurationMultiplier: number?,
 }
+
+-- Retained name for existing relic callers/fixtures.
+export type RelicReloadContext = ReloadDurationContext
 
 type ReloadResolver = {
 	begin: (
 		operativeState: OperativeReloadState,
 		weaponState: WeaponReadinessState,
 		serverTimestamp: number,
-		relicContext: RelicReloadContext?
+		relicContext: ReloadDurationContext?
 	) -> ReloadBeginResolution,
 	complete: (
 		operativeState: OperativeReloadState,
@@ -78,22 +86,31 @@ local function readProgressionNumber(attributeName: string, fallback: number): n
 	return value
 end
 
--- The squad Combat Loader multiplier and the per-operative Emergency Chamber
--- multiplier compose, and the product is clamped to the same reload floor so no
--- combination can erase the authoritative reload commitment.
-local function readReloadDurationMultiplier(relicContext: RelicReloadContext?): number
-	local value = readProgressionNumber("RunReloadDurationMultiplier", 1)
-	local relicMultiplier = 1
-	if
-		relicContext ~= nil
-		and type(relicContext) == "table"
-		and relicContext.isCriticallyWounded == true
-		and type(relicContext.woundedReloadDurationMultiplier) == "number"
-		and relicContext.woundedReloadDurationMultiplier == relicContext.woundedReloadDurationMultiplier
-	then
-		relicMultiplier = math.clamp(relicContext.woundedReloadDurationMultiplier, RELOAD_DURATION_FLOOR, 1)
+-- A caller-supplied reload multiplier is only honoured when it is a real number in
+-- [floor, 1]. A malformed or out-of-range value fails closed to neutral, so a
+-- wiring defect lengthens nothing and shortens nothing.
+local function boundedContextMultiplier(value: unknown): number
+	if type(value) ~= "number" or value ~= value or value < RELOAD_DURATION_FLOOR or value > 1 then
+		return 1
 	end
-	return math.clamp(value * relicMultiplier, RELOAD_DURATION_FLOOR, 1)
+	return value
+end
+
+-- The squad Combat Loader multiplier, the per-operative Emergency Chamber
+-- multiplier, and the durable-equipment ReloadSpeedPercent multiplier compose, and
+-- the product is clamped to the same reload floor so no combination can erase the
+-- authoritative reload commitment.
+local function readReloadDurationMultiplier(relicContext: ReloadDurationContext?): number
+	local value = readProgressionNumber("RunReloadDurationMultiplier", 1)
+	if relicContext == nil or type(relicContext) ~= "table" then
+		return math.clamp(value, RELOAD_DURATION_FLOOR, 1)
+	end
+	local relicMultiplier = 1
+	if relicContext.isCriticallyWounded == true then
+		relicMultiplier = boundedContextMultiplier(relicContext.woundedReloadDurationMultiplier)
+	end
+	local equipmentMultiplier = boundedContextMultiplier(relicContext.equipmentReloadDurationMultiplier)
+	return math.clamp(value * relicMultiplier * equipmentMultiplier, RELOAD_DURATION_FLOOR, 1)
 end
 
 local function copyAmmunition(ammunition: AmmunitionState): AmmunitionState
