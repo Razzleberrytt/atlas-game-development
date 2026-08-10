@@ -184,6 +184,7 @@ local function effectiveMaximumHealth(player: Player): number
 		or multiplier == math.huge
 		or multiplier == -math.huge
 		or multiplier < 1
+		or multiplier > 2
 	then
 		multiplier = 1
 	end
@@ -237,7 +238,8 @@ local function isValidSnapshot(value: unknown, operativeEntityId: string): boole
 	if
 		not isFiniteNonnegative(currentHealth)
 		or not isFiniteNonnegative(maximumHealth)
-		or maximumHealth <= 0
+		or maximumHealth < OperativeLifeConfig.MaximumHealth
+		or maximumHealth > OperativeLifeConfig.MaximumHealth * 2
 		or currentHealth > maximumHealth
 	then
 		return false
@@ -737,6 +739,13 @@ local function commitAcceptedTransitionInternal(
 	end
 	local result = resolverResult :: any
 	local snapshotAfter = resultSnapshot(result)
+	if
+		type(snapshotAfter) ~= "table"
+		or type((snapshotAfter :: any).healthState) ~= "table"
+		or (snapshotAfter :: any).healthState.maximumHealth ~= entry.snapshot.healthState.maximumHealth
+	then
+		return rejected("InvalidSnapshot")
+	end
 	if not isValidSnapshot(snapshotAfter, entry.operativeEntityId) then
 		return rejected("InvalidSnapshot")
 	end
