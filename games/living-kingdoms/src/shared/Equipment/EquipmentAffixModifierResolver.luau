@@ -3,9 +3,9 @@
 -- Patch 0.3 pure equipment-affix modifier adapter.
 --
 -- Durable equipment owns the affix facts. Existing canonical modifier arithmetic
--- owns damage/reload/movement/duration bounds; this adapter adds the durable-life
--- maximum-health ceiling needed by OperativeLifeService. It owns no state and
--- creates no runtime authority.
+-- owns damage/reload/movement/duration bounds; this adapter adds bounded durable
+-- maximum-health and ability-power facts for their existing server owners. It
+-- owns no state and creates no runtime authority.
 
 local EquipmentRewardContracts = require(script.Parent.EquipmentRewardContracts)
 local RunModifierResolver = require(script.Parent.Parent.Progression.RunModifierResolver)
@@ -17,6 +17,7 @@ export type ResolvedModifiers = {
 	maximumHealthMultiplier: number,
 	movementSpeedMultiplier: number,
 	abilityCooldownDurationMultiplier: number,
+	abilityPowerMultiplier: number,
 }
 
 local EquipmentAffixModifierResolver = {}
@@ -26,11 +27,13 @@ local RELOAD_SPEED_EFFECT_ID = "ReloadSpeedPercent"
 local MAXIMUM_HEALTH_EFFECT_ID = "MaxHealthPercent"
 local MOVEMENT_SPEED_EFFECT_ID = "MoveSpeedPercent"
 local ABILITY_HASTE_EFFECT_ID = "AbilityHastePercent"
+local ABILITY_POWER_EFFECT_ID = "AbilityPowerPercent"
 local PERCENT_SCALE = 100
--- Durable maximum health is defense-in-depth bounded independently from run
--- effects. Current authored rolls are far below this ceiling; 2x is a hard
--- safety limit for malformed/future content, not a balance target.
+-- Durable health and ability power are defense-in-depth bounded independently
+-- from run effects. Current authored rolls are far below these ceilings; 2x is
+-- a hard malformed/future-content safety limit, not a balance target.
 local MAXIMUM_HEALTH_MULTIPLIER_CEILING = 2
+local ABILITY_POWER_MULTIPLIER_CEILING = 2
 
 local function neutral(): ResolvedModifiers
 	return table.freeze({
@@ -39,6 +42,7 @@ local function neutral(): ResolvedModifiers
 		maximumHealthMultiplier = 1,
 		movementSpeedMultiplier = 1,
 		abilityCooldownDurationMultiplier = 1,
+		abilityPowerMultiplier = 1,
 	})
 end
 
@@ -47,17 +51,19 @@ local function isFiniteNonnegative(value: unknown): boolean
 end
 
 --[[
-	Resolves only effects that have an identified canonical runtime owner. Patch
-	0.3 routes DamagePercent through damage, ReloadSpeedPercent through reload,
-	MaxHealthPercent and MoveSpeedPercent through OperativeLifeService, and
-	AbilityHastePercent through ClassService. AbilityPowerPercent remains inert
-	until its consequence owner is wired explicitly.
+	Resolves only effects with identified canonical runtime owners. Patch 0.3
+	routes weapon effects through combat/reload, Armor effects through
+	OperativeLifeService, and durable Relic ability effects through ClassService.
 
 	Ability haste deliberately reuses RunModifierResolver's canonical bounded
 	duration-reduction arithmetic. The shared arithmetic happens to expose the
 	result as reloadDurationMultiplier; this adapter translates the same generic
 	"shorter duration" fact into an abilityCooldownDurationMultiplier without
 	making reload or class actions own one another.
+
+	Ability power is a generic server-consumed consequence-strength multiplier.
+	ClassService decides which configured class outputs are eligible; the adapter
+	never authors healing, ammunition, cadence, revive health, or any other effect.
 
 	Malformed affix data fails the entire bundle closed to neutral instead of
 	partially applying a suspicious build. Unknown-but-well-formed effects are
@@ -76,6 +82,7 @@ function EquipmentAffixModifierResolver.resolve(affixes: { EquipmentAffixRoll }?
 	local maximumHealthPercent = 0
 	local movementSpeedPercent = 0
 	local abilityHastePercent = 0
+	local abilityPowerPercent = 0
 	for _, affix in affixes :: any do
 		if
 			type(affix) ~= "table"
@@ -95,6 +102,8 @@ function EquipmentAffixModifierResolver.resolve(affixes: { EquipmentAffixRoll }?
 			movementSpeedPercent += affix.Value
 		elseif affix.EffectId == ABILITY_HASTE_EFFECT_ID then
 			abilityHastePercent += affix.Value
+		elseif affix.EffectId == ABILITY_POWER_EFFECT_ID then
+			abilityPowerPercent += affix.Value
 		end
 	end
 
@@ -112,6 +121,7 @@ function EquipmentAffixModifierResolver.resolve(affixes: { EquipmentAffixRoll }?
 		maximumHealthMultiplier = math.min(MAXIMUM_HEALTH_MULTIPLIER_CEILING, 1 + maximumHealthPercent / PERCENT_SCALE),
 		movementSpeedMultiplier = bounded.movementSpeedMultiplier,
 		abilityCooldownDurationMultiplier = boundedAbilityDuration.reloadDurationMultiplier,
+		abilityPowerMultiplier = math.min(ABILITY_POWER_MULTIPLIER_CEILING, 1 + abilityPowerPercent / PERCENT_SCALE),
 	})
 end
 
