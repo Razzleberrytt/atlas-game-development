@@ -38,14 +38,14 @@
     },
     {
       "id": "equipment-affixes",
-      "name": "Deterministic equipment affix resolution",
+      "name": "Deterministic equipment affixes and build-choice facts",
       "owner": "shared",
       "status": "active",
-      "extension_points": ["games/living-kingdoms/src/shared/Equipment/EquipmentAffixContracts.luau", "games/living-kingdoms/src/shared/Equipment/EquipmentAffixResolver.luau", "games/living-kingdoms/src/shared/Config/EquipmentAffixConfig.luau"],
-      "consumers": ["equipment-rewards", "loot-comparison", "build-replayability"],
-      "tests_glob": "games/living-kingdoms/tests/EquipmentAffixResolver.test.luau",
+      "extension_points": ["games/living-kingdoms/src/shared/Equipment/EquipmentAffixContracts.luau", "games/living-kingdoms/src/shared/Equipment/EquipmentAffixResolver.luau", "games/living-kingdoms/src/shared/Equipment/EquipmentComparisonResolver.luau", "games/living-kingdoms/src/shared/Equipment/EquipmentBuildChoicePresentation.luau", "games/living-kingdoms/src/shared/Config/EquipmentAffixConfig.luau"],
+      "consumers": ["equipment-rewards", "durable-inventory", "loot-comparison", "build-replayability", "reward-presentation"],
+      "tests_glob": "games/living-kingdoms/tests/Equipment*.test.luau",
       "data_driven": true,
-      "notes": "Stable deterministic metadata seam only; runtime combat application and persistence remain owned by their existing authorities."
+      "notes": "Generation, comparison, and compact presentation reuse one deterministic metadata seam; runtime effect application and persistence stay with their existing authorities."
     },
     {
       "id": "hub-interactions",

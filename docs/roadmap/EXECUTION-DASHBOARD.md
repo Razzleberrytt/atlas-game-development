@@ -1,4 +1,4 @@
-# Atlas — Execution Dashboard v1.5
+# Atlas — Execution Dashboard v1.6
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-09  
@@ -12,34 +12,47 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 - **Patch 0.2 combat/readability source pass:** **BUILT — VERIFICATION PENDING**.
 - Studio/device play/performance evidence remains a parallel lane; unrun evidence is not a source-development lock.
 - **Patch 0.3 — Loot + Build Replayability:** **BUILDING**.
-- PR #330 merged the first Patch 0.3 leverage slice: stable affix/effect contracts, bounded data-driven affix configuration, deterministic compatibility-aware affix resolution, and focused regression coverage.
-- No open implementation PR is currently recorded at this checkpoint.
+- PR #330 established deterministic, validated, data-driven equipment affixes.
+- PR #332 carried affix rolls through the retained reward/result/inventory/persistence path.
+- PR #333 added deterministic comparison facts including affix gains/losses.
+- PR #334 added a bounded pure `DamagePercent` → canonical damage-modifier adapter; it is not yet wired into live damage authority.
+- PR #335 adds affix-aware build-choice presentation to the existing durable RPG inventory and makes sanitized inventory views share the same comparison path as reward records.
 - Verification truth remains strict: pending manual/engine evidence is never called VERIFIED.
 
 ## 2. NOW → NEXT → LATER
 
 ### NOW
 
-**Integrate deterministic affix metadata into the retained equipment reward/result snapshot path without creating a second loot, inventory, persistence, or combat authority.**
+**Apply equipped durable `DamagePercent` affixes through the existing server-owned combat damage path using the shared bounded modifier adapter from PR #334.**
 
-Desired outcome:
+Desired architecture:
 
 ```text
-existing reward owner
-→ deterministic affix resolver
-→ stable reward/equipment snapshot metadata
-→ existing comparison/inventory path can consume it later
+existing durable inventory/equip owner
+→ equipped item affix facts
+→ EquipmentAffixModifierResolver
+→ existing canonical player damage calculation
+→ existing server-owned damage consequence
 ```
 
-Keep this slice bounded. Do not apply affix effects to live combat or migrate durable persistence unless that is explicitly required by the next coherent contract.
+Rules for this slice:
+
+- do not create per-weapon affix services;
+- do not let the client submit affix values or damage multipliers;
+- do not create a second damage authority;
+- resolve the currently equipped authoritative item on the server;
+- legacy/no-affix gear remains neutral;
+- preserve the canonical global modifier ceiling;
+- add a regression path proving equip changes affect the modifier source without bypassing combat authority.
 
 ### NEXT
 
-1. make comparison/reward presentation understand affix metadata using the existing equipment path;
-2. add meaningful build-choice application through existing authority owners;
-3. expand reward/build variety primarily through validated definitions;
-4. protect generation, ownership, equip/application, replay, and persistence boundaries with focused regression coverage;
-5. continue into Patch 0.4 when Patch 0.3 source is coherently built, while keeping manual evidence pending rather than inventing a lock.
+1. wire additional affix effects only through their existing canonical owners as those seams are identified (`ReloadSpeedPercent`, health, movement, ability effects);
+2. keep the shared affix resolver/adapter vocabulary generic so later affix variants remain mostly configuration;
+3. expand reward/build variety primarily through validated equipment/affix definitions rather than new services;
+4. improve reward reveal/comparison presentation using the same shared build-choice formatter where useful;
+5. protect generation, ownership, equip/application, replay, and persistence boundaries with focused regression coverage;
+6. continue into Patch 0.4 when Patch 0.3 source is coherently built, while keeping manual evidence pending rather than inventing a lock.
 
 ### LATER
 
@@ -83,9 +96,19 @@ Rules:
 
 **North-star engineering metric:** declining marginal implementation cost for proven feature families.
 
+Patch 0.3 is now deliberately separating three reusable layers:
+
+```text
+authored affix data
+→ deterministic affix/comparison/modifier facts
+→ existing gameplay + presentation owners consume those facts
+```
+
+That separation is the compounding payoff: adding another ordinary affix should increasingly be a configuration/test change rather than a new runtime subsystem.
+
 ## 4. Studio/device evidence lane
 
-The consolidated pass should still cover the representative run, replay, keyboard/controller/touch, combat feel/readability, banking/equip, lifecycle, and representative performance.
+The consolidated pass should still cover the representative run, replay, keyboard/controller/touch, combat feel/readability, banking/equip, lifecycle, build-choice readability, and representative performance.
 
 Evidence outcomes:
 

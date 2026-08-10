@@ -5,6 +5,8 @@ local Contracts = require(script.Parent.PlayerInventoryContracts)
 
 export type EquipmentAffixRoll = EquipmentContracts.EquipmentAffixRoll
 export type EquipmentSlotId = EquipmentContracts.EquipmentSlotId
+export type EquipmentRarityId = EquipmentContracts.EquipmentRarityId
+export type RewardSourceId = EquipmentContracts.RewardSourceId
 export type PlayerInventoryRecord = Contracts.PlayerInventoryRecord
 
 export type InventoryItemView = {
@@ -14,10 +16,10 @@ export type InventoryItemView = {
 	DefinitionVersion: string,
 	DisplayName: string,
 	Slot: EquipmentSlotId,
-	Rarity: string,
+	Rarity: EquipmentRarityId,
 	Power: number,
 	Affixes: { EquipmentAffixRoll },
-	SourceId: string,
+	SourceId: RewardSourceId,
 	Equipped: boolean,
 }
 
@@ -64,11 +66,6 @@ local function copyAffixes(affixes: { EquipmentAffixRoll }?): { EquipmentAffixRo
 	return table.freeze(copied)
 end
 
---[[
-	Items are ordered by InstanceId so the same record always produces the same
-	snapshot. A client-visible ordering that depends on table iteration would make
-	snapshots impossible to compare or diff.
-]]
 local function sortedInstanceIds(record: PlayerInventoryRecord): { string }
 	local instanceIds = {}
 	for instanceId in record.InventoryByInstanceId do
@@ -80,11 +77,6 @@ end
 
 local PlayerInventorySnapshot = {}
 
---[[
-	Builds the owner-only snapshot. `requesterId` is the identity the server
-	derived from the connection, never a client-supplied field; `ownerId` is the
-	inventory being read. They must match.
-]]
 function PlayerInventorySnapshot.forOwner(
 	requesterId: number,
 	ownerId: number,
@@ -99,14 +91,11 @@ function PlayerInventorySnapshot.forOwner(
 	if record == nil then
 		return reject("InventoryNotLoaded")
 	end
-	-- A record loaded under a different identity is a server-side ownership bug,
-	-- not a client error. Fail closed rather than disclose it.
 	if record.PlayerId ~= ownerId then
 		return reject("InventoryOwnerMismatch")
 	end
 
 	local equipped = table.clone(record.EquippedBySlot)
-
 	local items = {}
 	for _, instanceId in sortedInstanceIds(record) do
 		local reward = record.InventoryByInstanceId[instanceId]
