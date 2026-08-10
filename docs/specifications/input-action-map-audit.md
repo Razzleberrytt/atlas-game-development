@@ -2,7 +2,7 @@
 
 **Roadmap ticket:** BA-061  
 **Lane:** controlled build-ahead, P6 onboarding/input/UI preparation  
-**Status:** audit complete; BA-062 M1-M5 and C1-C4 source-remediated  
+**Status:** audit complete; BA-062 M1-M6 and C1-C4 source-remediated  
 **Evidence level:** E1 source/static only — consolidated Studio/device acceptance remains open
 
 ## Current decision
@@ -159,12 +159,46 @@ BA-062 source remediation does not implement broad accessibility customization. 
 | Hold duration | Revive hold duration is not player-adjustable. |
 | One-handed / reduced-mobility play | No alternate simultaneous aim/fire/sprint scheme. |
 | Keyboard-only play | Fire still requires a pointer button. |
-| Global device-adaptive hints | Foundations exist, but not every HUD/prompt consumes them yet. |
+| Global device-adaptive hints | The combat control strip, the run-upgrade offer and the relic offer now resolve their hints from the canonical map through `InputHintPresentationResolver`. Remaining HUD/prompt surfaces still carry no hints rather than wrong ones. |
 | Device switching | Source resolver exists; real switching behavior remains unverified. |
+
+### M6 — Device-adaptive HUD hint text — source-remediated
+
+Fixing the bindings left a second half of the BA-061 finding open: the HUD still
+*told* every player to use keyboard keys. The combat control strip read
+`MOVE WASD • INTERACT / PICK UP E • RELOAD R • FLASHLIGHT F`, the run-upgrade
+offer read `PRESS 1, 2, OR 3` with `PRESS n OR CLICK` on each button, and the
+relic offer read `CHOOSE ONE [1 / 2]` with `Press 1 or 2, or click.` A controller
+player was being instructed to press keys their device does not have, on the
+three surfaces that carry the run's core verbs and both reward decisions.
+
+`InputHintPresentationResolver` (`src/shared/Input/`) is now the single display
+vocabulary: it converts canonical action-map binding names into short
+player-facing tokens (`ButtonR1` → `RB`, `Thumbstick1` → `L STICK`,
+`PromptTap` → `TAP PROMPT`) and reports *absence* when an action has no direct
+binding on the active family. Callers must omit the hint in that case rather than
+fall back to the keyboard key, so GUI navigation is still never advertised as a
+direct gamepad shortcut. Because numbers are keyboard-only, gamepad and touch now
+get a truthful verb (`SELECT ONE` / `TAP ONE`) and lose the `[n]` prefix.
+
+The combat HUD also rewrites its hints on `LastInputTypeChanged`, so a controller
+picked up mid-run stops showing keyboard text.
+
+**Source status:** remediated, locked by
+`tests/DeviceAdaptiveHudHintSourceAudit.test.luau` and
+`tests/InputHintPresentationResolver.test.luau`.
+**Runtime/device status:** unverified.
+
+**Known limitation:** the relic panel resolves the device family when it renders
+but does not re-render on a mid-panel device switch; its choice render is inline
+in the revision-gated `applySnapshot` path, and re-entering it was judged riskier
+than the narrow case it covers. The combat HUD does refresh.
 
 ## Completion boundary
 
-BA-061 remains complete at E1. BA-062's identified M1-M5 and C1-C4 source findings are now remediated, while consolidated Studio/device acceptance remains outstanding.
+BA-061 remains complete at E1. BA-062's identified M1-M5 and C1-C4 source findings
+are now remediated, plus the M6 hint-text half of the original finding, while
+consolidated Studio/device acceptance remains outstanding.
 
 Source/static acceptance proves ownership and wiring only. It does **not** promote these changes to E2 device evidence, does not validate comfort or placement, and does not change server authority for combat, movement, revive, class actions, prompts, progression choices, relic choices, or persistence.
 

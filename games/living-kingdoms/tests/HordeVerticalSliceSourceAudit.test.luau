@@ -174,7 +174,6 @@ for _, required in
 		"choice.statPreview",
 		"snapshot.runStats",
 		"CHOOSE ONE RUN UPGRADE",
-		"PRESS 1, 2, OR 3",
 		"LK_P3_CurrentHealth",
 		"LK_HUD_LoadedRounds",
 		"LK_HUD_Objective",
@@ -190,6 +189,30 @@ assertThat(
 assertThat(not contains(hud, "streakLabel"), "the unified HUD must not retain a duplicate streak presentation owner")
 assertThat(not contains(hud, "MASSACRE x%d"), "the legacy static streak label must stay removed")
 assertThat(not contains(hud, "CHOOSE YOUR MUTATION"), "player-facing upgrades must use the Field Upgrade vocabulary")
+
+-- BA-062: the upgrade offer must still tell the player how to choose, but the
+-- prompt is now resolved from the canonical action map per device family. The
+-- guarantee is "a truthful choice affordance on every device", not one literal
+-- keyboard sentence, so this holds the resolution path rather than the spelling.
+for _, required in
+	{
+		'InputActionMapConfig.get("NumberedChoiceInput")',
+		"InputHintPresentationResolver.resolve(",
+		"choicePromptText(familyId, keyTokens)",
+		"choiceButtonActionText(familyId, keyTokens, index)",
+		"UserInputService.LastInputTypeChanged",
+	}
+do
+	assertThat(contains(hud, required), "unified HUD upgrade prompt is missing device-adaptive wiring: " .. required)
+end
+assertThat(
+	not contains(hud, "PRESS 1, 2, OR 3"),
+	"the upgrade title must not hard-code keyboard keys that do nothing on gamepad or touch"
+)
+assertThat(
+	not contains(hud, "PRESS %d OR CLICK"),
+	"the upgrade buttons must not hard-code a keyboard/pointer call to action"
+)
 assertThat(contains(hud, "threatPanel.Visible = false"), "wave-style threat chrome must stay hidden by default")
 
 for _, required in

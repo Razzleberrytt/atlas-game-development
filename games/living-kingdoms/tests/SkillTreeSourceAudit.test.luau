@@ -41,7 +41,16 @@ check(string.find(menu, "progressionChooseUpgrade:FireServer", 1, true), "availa
 check(string.find(menu, '"AVAILABLE — CHOOSE"', 1, true), "available nodes require a readable state")
 check(string.find(menu, '"MASTERED"', 1, true), "max-rank nodes require a readable state")
 check(string.find(menu, '"REQUIRES "', 1, true), "locked nodes must explain prerequisites")
-check(string.find(hud, "PRESS 1, 2, OR 3", 1, true), "contextual level-up choices require keyboard instructions")
+-- Contextual level-up choices must still instruct the player, but BA-062 resolves
+-- that instruction per device family instead of naming keyboard keys outright.
+check(
+	string.find(hud, "choicePromptText(familyId, keyTokens)", 1, true),
+	"contextual level-up choices require a device-resolved instruction"
+)
+check(
+	not string.find(hud, "PRESS 1, 2, OR 3", 1, true),
+	"contextual level-up instructions must not hard-code keyboard-only keys"
+)
 check(string.find(hud, "LK_InputModalOpen", 1, true), "contextual level-up choices must release the cursor")
 
 print("SkillTreeSourceAudit: topology stays authoritative while premature tree navigation remains paused")

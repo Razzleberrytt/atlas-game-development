@@ -17,6 +17,9 @@ local Workspace = game:GetService("Workspace")
 
 local ChoiceInputCoordinator = require(script.Parent.ChoiceInputCoordinator)
 local HordeStateEarlyListener = require(script.Parent.Parent.State.HordeStateEarlyListener)
+local InputActionMapConfig = require(ReplicatedStorage.Shared.Config.InputActionMapConfig)
+local InputDeviceFamilyResolver = require(ReplicatedStorage.Shared.Input.InputDeviceFamilyResolver)
+local InputHintPresentationResolver = require(ReplicatedStorage.Shared.Input.InputHintPresentationResolver)
 
 local Controller = {}
 local localPlayer = Players.LocalPlayer
@@ -72,6 +75,90 @@ local levelCelebration: Frame? = nil
 local levelCelebrationText: TextLabel? = nil
 local controlsHint: TextLabel? = nil
 local controlsHintVisibleUntil = 0
+-- Retained so a mid-run device switch can re-render the offer with that device's
+-- affordances rather than leaving stale keyboard text on screen.
+local lastUpgradeChoices: { any } = {}
+
+-- BA-062 device-adaptive hints. The HUD renders the canonical action map rather
+-- than literal keyboard text, so a controller or touch player is never told to
+-- press a key that does nothing on their device. An action with no direct binding
+-- on the active family is omitted instead of being given an invented shortcut.
+local CONTROL_STRIP_ENTRIES = table.freeze({
+	table.freeze({ ActionId = "Move", Label = "MOVE", Separator = "" }),
+	table.freeze({ ActionId = "Interact", Label = "INTERACT / PICK UP" }),
+	table.freeze({ ActionId = "Reload", Label = "RELOAD" }),
+	table.freeze({ ActionId = "Flashlight", Label = "FLASHLIGHT" }),
+})
+
+local function activeDeviceFamily(): string
+	local resolution = InputDeviceFamilyResolver.resolve(UserInputService:GetLastInputType().Name)
+	if resolution.DeviceFamilyId ~= nil then
+		return resolution.DeviceFamilyId
+	end
+	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+		return InputDeviceFamilyResolver.DeviceFamilyIds.Touch
+	end
+	return InputDeviceFamilyResolver.DeviceFamilyIds.KeyboardPointer
+end
+
+local function controlStripText(familyId: string): string
+	local segments: { string } = {}
+	for _, entry in CONTROL_STRIP_ENTRIES do
+		local action = InputActionMapConfig.get(entry.ActionId)
+		if action == nil then
+			continue
+		end
+		local token = InputHintPresentationResolver.resolveText(action, familyId, {
+			Separator = entry.Separator,
+			MaximumTokens = if entry.Separator == "" then nil else 1,
+		})
+		if token ~= nil then
+			table.insert(segments, string.format("%s  %s", entry.Label, token))
+		end
+	end
+	return table.concat(segments, "  •  ")
+end
+
+--[[
+	Upgrade and relic offers are chosen by direct number keys only on keyboard.
+	Gamepad uses selection focus and touch uses the button itself, so those
+	families get a truthful verb instead of a fabricated number shortcut.
+]]
+local function choiceKeyTokens(familyId: string, choiceCount: number): { string }
+	local action = InputActionMapConfig.get("NumberedChoiceInput")
+	if action == nil then
+		return {}
+	end
+	return InputHintPresentationResolver.resolve(action, familyId, { MaximumTokens = choiceCount }).Tokens
+end
+
+local function choicePromptText(familyId: string, tokens: { string }): string
+	if #tokens > 0 then
+		return "PRESS " .. table.concat(tokens, ", ")
+	end
+	if familyId == InputDeviceFamilyResolver.DeviceFamilyIds.Touch then
+		return "TAP ONE"
+	end
+	return "SELECT ONE"
+end
+
+-- The per-button index prefix and call to action only exist where a direct key
+-- does; otherwise the button names the affordance the device actually has.
+local function choiceButtonPrefix(tokens: { string }, choiceIndex: number): string
+	local token = tokens[choiceIndex]
+	return if token == nil then "" else string.format("[%s]  ", token)
+end
+
+local function choiceButtonActionText(familyId: string, tokens: { string }, choiceIndex: number): string
+	local token = tokens[choiceIndex]
+	if token ~= nil then
+		return string.format("PRESS %s OR CLICK", token)
+	end
+	if familyId == InputDeviceFamilyResolver.DeviceFamilyIds.Touch then
+		return "TAP TO CHOOSE"
+	end
+	return "SELECT TO CHOOSE"
+end
 
 local COLORS = table.freeze({
 	panel = Color3.fromRGB(12, 15, 18),
@@ -392,13 +479,18 @@ local function renderUpgradeChoices(choices: { any })
 	clearUpgradeButtons()
 	if #choices == 0 then
 		hasUpgradeChoices = false
+		lastUpgradeChoices = {}
 		overlay.Visible = false
 		setUpgradeInputActive(false)
 		return
 	end
 	hasUpgradeChoices = true
+	lastUpgradeChoices = choices
+	local familyId = activeDeviceFamily()
+	local keyTokens = choiceKeyTokens(familyId, #choices)
 	if upgradeTitle ~= nil then
-		upgradeTitle.Text = "LEVEL UP  //  CHOOSE ONE RUN UPGRADE  //  PRESS 1, 2, OR 3"
+		upgradeTitle.Text =
+			string.format("LEVEL UP  //  CHOOSE ONE RUN UPGRADE  //  %s", choicePromptText(familyId, keyTokens))
 	end
 	for index, choice in choices do
 		if type(choice) ~= "table" or type(choice.id) ~= "string" then
@@ -418,14 +510,14 @@ local function renderUpgradeChoices(choices: { any })
 		button.RichText = true
 		local statPreview = if type(choice.statPreview) == "string" then choice.statPreview else "RUN POWER INCREASE"
 		button.Text = string.format(
-			'<b>[%d]  %s</b>   <font color="#C7A85F">[%d/%d]</font>\n<font color="#F2C65D">%s</font>\n<font color="#C5CBC5">%s</font>\n<font color="#FFFFFF"><b>PRESS %d OR CLICK</b></font>',
-			index,
+			'<b>%s%s</b>   <font color="#C7A85F">[%d/%d]</font>\n<font color="#F2C65D">%s</font>\n<font color="#C5CBC5">%s</font>\n<font color="#FFFFFF"><b>%s</b></font>',
+			choiceButtonPrefix(keyTokens, index),
 			string.upper(tostring(choice.name or choice.id)),
 			tonumber(choice.stacks) or 0,
 			tonumber(choice.maximumStacks) or 1,
 			statPreview,
 			tostring(choice.description or ""),
-			index
+			choiceButtonActionText(familyId, keyTokens, index)
 		)
 		button.Parent = container
 		addCorner(button, 7)
@@ -601,7 +693,7 @@ local function createPresentation()
 	hint.BackgroundColor3 = Color3.fromRGB(9, 16, 14)
 	hint.BackgroundTransparency = 0.2
 	hint.BorderSizePixel = 0
-	hint.Text = "MOVE  WASD  •  INTERACT / PICK UP  E  •  RELOAD  R  •  FLASHLIGHT  F"
+	hint.Text = controlStripText(activeDeviceFamily())
 	hint.TextColor3 = Color3.fromRGB(245, 229, 181)
 	hint.Visible = true
 	addCorner(hint, 8)
@@ -903,6 +995,19 @@ function Controller.start()
 	table.insert(connections, HordeStateEarlyListener.subscribe(onState))
 	table.insert(connections, progressionStateRemote.OnClientEvent:Connect(onProgressionState))
 	table.insert(connections, RunService.RenderStepped:Connect(updateFrame))
+	-- Rewrite the hints when the player switches device so a controller picked up
+	-- mid-run stops showing keyboard keys.
+	table.insert(
+		connections,
+		UserInputService.LastInputTypeChanged:Connect(function()
+			if controlsHint ~= nil then
+				controlsHint.Text = controlStripText(activeDeviceFamily())
+			end
+			if hasUpgradeChoices then
+				renderUpgradeChoices(lastUpgradeChoices)
+			end
+		end)
+	)
 
 	-- Recover the current progression snapshot for late joins so the XP bar and
 	-- any pending upgrade offer render immediately.
@@ -953,6 +1058,7 @@ function Controller.stop()
 	runStatsSecondaryLabel = nil
 	controlsHint = nil
 	controlsHintVisibleUntil = 0
+	lastUpgradeChoices = {}
 end
 
 return Controller

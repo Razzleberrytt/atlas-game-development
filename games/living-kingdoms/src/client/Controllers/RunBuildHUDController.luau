@@ -23,6 +23,9 @@ local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
 local ChoiceInputCoordinator = require(script.Parent.ChoiceInputCoordinator)
 local InterfaceTheme = require(script.Parent.Parent.UI.InterfaceTheme)
+local InputActionMapConfig = require(ReplicatedStorage.Shared.Config.InputActionMapConfig)
+local InputDeviceFamilyResolver = require(ReplicatedStorage.Shared.Input.InputDeviceFamilyResolver)
+local InputHintPresentationResolver = require(ReplicatedStorage.Shared.Input.InputHintPresentationResolver)
 
 local RunBuildHUDController = {}
 
@@ -53,6 +56,55 @@ local lastRevision = -1
 local requestSequence = 0
 local choiceInputActive = false
 local mouseIconWasEnabled = false
+
+--[[
+	BA-062 device-adaptive choice affordance. Direct number keys exist only on
+	keyboard; gamepad reaches these buttons through selection focus and touch taps
+	them. Rendering the canonical action map keeps the prompt truthful on every
+	device instead of telling a controller player to press a number.
+]]
+local function activeDeviceFamily(): string
+	local resolution = InputDeviceFamilyResolver.resolve(UserInputService:GetLastInputType().Name)
+	if resolution.DeviceFamilyId ~= nil then
+		return resolution.DeviceFamilyId
+	end
+	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+		return InputDeviceFamilyResolver.DeviceFamilyIds.Touch
+	end
+	return InputDeviceFamilyResolver.DeviceFamilyIds.KeyboardPointer
+end
+
+local function choiceKeyTokens(familyId: string): { string }
+	local action = InputActionMapConfig.get("NumberedChoiceInput")
+	if action == nil then
+		return {}
+	end
+	return InputHintPresentationResolver.resolve(action, familyId, { MaximumTokens = CHOICE_COUNT }).Tokens
+end
+
+-- Returns the per-button prefix for a choice, or an empty string when the active
+-- device has no direct key for that index.
+local function choiceButtonPrefix(tokens: { string }, choiceIndex: number): string
+	local token = tokens[choiceIndex]
+	return if token == nil then "" else string.format("[%s]  ", token)
+end
+
+local function choiceTitleText(tokens: { string }): string
+	if #tokens == 0 then
+		return "RUN RELIC — CHOOSE ONE"
+	end
+	return string.format("RUN RELIC — CHOOSE ONE [%s]", table.concat(tokens, " / "))
+end
+
+local function choiceSubtitleText(familyId: string, tokens: { string }): string
+	if #tokens > 0 then
+		return string.format("Temporary expedition power. Press %s, or click.", table.concat(tokens, " or "))
+	end
+	if familyId == InputDeviceFamilyResolver.DeviceFamilyIds.Touch then
+		return "Temporary expedition power. Tap a relic to choose it."
+	end
+	return "Temporary expedition power. Select a relic to choose it."
+end
 
 local runBuildNetwork = ReplicatedStorage:WaitForChild("RunBuildNetwork")
 local stateRemote = runBuildNetwork:WaitForChild("State") :: RemoteEvent
@@ -398,6 +450,8 @@ local function applySnapshot(snapshot: unknown)
 		return
 	end
 	activeRewardSequence = reward.rewardSequence
+	local familyId = activeDeviceFamily()
+	local keyTokens = choiceKeyTokens(familyId)
 	local visibleChoices = 0
 	for choiceIndex = 1, CHOICE_COUNT do
 		local button = choiceButtons[choiceIndex]
@@ -411,7 +465,12 @@ local function applySnapshot(snapshot: unknown)
 		end
 		visibleChoices += 1
 		choiceRelicIds[choiceIndex] = relicId
-		button.Text = string.format("[%d]  %s\n%s", choiceIndex, displayName(relicId), description(relicId))
+		button.Text = string.format(
+			"%s%s\n%s",
+			choiceButtonPrefix(keyTokens, choiceIndex),
+			displayName(relicId),
+			description(relicId)
+		)
 		button.Visible = true
 	end
 	if awaitingReplacement then
@@ -420,8 +479,8 @@ local function applySnapshot(snapshot: unknown)
 			then "Choose a relic, then choose the slot it replaces."
 			else string.format("Choose the slot to discard for %s.", displayName(pendingReplacementRelicId))
 	else
-		title.Text = "RUN RELIC — CHOOSE ONE [1 / 2]"
-		subtitle.Text = "Temporary expedition power. Press 1 or 2, or click."
+		title.Text = choiceTitleText(keyTokens)
+		subtitle.Text = choiceSubtitleText(familyId, keyTokens)
 	end
 	panel.Visible = visibleChoices > 0
 	setChoiceInputActive(panel.Visible)
