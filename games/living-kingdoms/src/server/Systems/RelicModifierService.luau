@@ -21,8 +21,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- them. Missing composition dependencies therefore fail closed to the neutral
 -- multiplier instead of crashing unrelated relic behavior.
 local equipmentFolder = ReplicatedStorage.Shared.Equipment
-local equippedEquipmentModifierResolverModule =
-	if equipmentFolder == nil then nil else equipmentFolder.EquippedEquipmentModifierResolver
+local equippedEquipmentModifierResolverModule = if equipmentFolder == nil
+	then nil
+	else equipmentFolder.EquippedEquipmentModifierResolver
 local EquippedEquipmentModifierResolver = if equippedEquipmentModifierResolverModule == nil
 	then nil
 	else require(equippedEquipmentModifierResolverModule)
