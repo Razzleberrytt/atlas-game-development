@@ -105,20 +105,22 @@ assert(
 	"ping hint must use binding-hint resolver"
 )
 assert(string.find(source, 'InputActionMapConfig.get("SquadPing")', 1, true), "hint must resolve the SquadPing action")
+-- The observed family now comes from the single client owner, which ignores the
+-- engine's non-device `Focus` input type instead of letting it clear the hint.
 assert(
-	string.find(source, "InputDeviceFamilyResolver.resolve(inputType.Name)", 1, true),
-	"input family must come from observed input"
+	string.find(source, "ActiveInputDeviceFamily.get()", 1, true),
+	"input family must come from the shared observed-device owner"
 )
 assert(
 	string.find(source, "InputBindingHintResolver.resolve(action, familyId)", 1, true),
 	"display token must come from shared resolver"
 )
 assert(
-	string.find(source, "UserInputService:GetLastInputType()", 1, true),
-	"initial hint must use current observed input"
+	not string.find(source, "UserInputService:GetLastInputType()", 1, true),
+	"the hint must not re-derive the device family from a raw last-input read"
 )
 assert(
-	string.find(source, "UserInputService.LastInputTypeChanged:Connect(updateReadyStatus)", 1, true),
+	string.find(source, "ActiveInputDeviceFamily.onChanged(updateReadyStatus)", 1, true),
 	"hint must update when the observed input family changes"
 )
 assert(string.find(source, 'MouseButton3 = "MMB"', 1, true), "desktop middle-mouse token must stay readable")

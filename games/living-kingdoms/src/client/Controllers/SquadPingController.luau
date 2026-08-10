@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
+local ActiveInputDeviceFamily = require(script.Parent.Parent.State.ActiveInputDeviceFamily)
 local InputActionMapConfig = require(ReplicatedStorage.Shared.Config.InputActionMapConfig)
 local SquadPingConfig = require(ReplicatedStorage.Shared.Config.SquadPingConfig)
 local InputBindingHintResolver = require(ReplicatedStorage.Shared.Input.InputBindingHintResolver)
@@ -133,21 +134,12 @@ local function displayToken(token: string): string
 	return DISPLAY_TOKENS[token] or token
 end
 
-local function deviceFamily(inputType: Enum.UserInputType): string?
-	local resolution = InputDeviceFamilyResolver.resolve(inputType.Name)
-	if resolution.DeviceFamilyId ~= nil then
-		return resolution.DeviceFamilyId
-	end
-	if inputType == Enum.UserInputType.None and UserInputService.KeyboardEnabled then
-		return InputDeviceFamilyResolver.DeviceFamilyIds.KeyboardPointer
-	end
-	return nil
-end
-
-local function readyStatusFor(inputType: Enum.UserInputType): string
-	local familyId = deviceFamily(inputType)
+-- The active device is owned centrally so a non-device `Focus` event cannot drop
+-- the ping hint or misreport a gamepad player as keyboard.
+local function readyStatusFor(): string
+	local familyId = ActiveInputDeviceFamily.get()
 	local action = InputActionMapConfig.get("SquadPing")
-	if familyId == nil or action == nil then
+	if action == nil then
 		return "PING READY"
 	end
 	local hint = InputBindingHintResolver.resolve(action, familyId)
@@ -167,8 +159,8 @@ local function readyStatusFor(inputType: Enum.UserInputType): string
 	return "PING  •  " .. primary
 end
 
-local function updateReadyStatus(inputType: Enum.UserInputType)
-	readyStatusText = readyStatusFor(inputType)
+local function updateReadyStatus()
+	readyStatusText = readyStatusFor()
 	setStatus(readyStatusText)
 end
 
@@ -269,7 +261,7 @@ local function createStatusPresentation()
 	gui.Parent = localPlayer:WaitForChild("PlayerGui")
 	statusGui = gui
 	statusLabel = label
-	updateReadyStatus(UserInputService:GetLastInputType())
+	updateReadyStatus()
 end
 
 function Controller.start()
@@ -288,7 +280,7 @@ function Controller.start()
 	)
 	ContextActionService:SetTitle(ACTION_NAME, "◇ Ping")
 	createStatusPresentation()
-	table.insert(connections, UserInputService.LastInputTypeChanged:Connect(updateReadyStatus))
+	table.insert(connections, ActiveInputDeviceFamily.onChanged(updateReadyStatus))
 	table.insert(connections, stateRemote.OnClientEvent:Connect(onState))
 	table.insert(connections, localPlayer.CharacterRemoving:Connect(clearMarkers))
 	table.insert(

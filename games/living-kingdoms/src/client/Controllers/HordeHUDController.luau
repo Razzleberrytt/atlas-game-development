@@ -17,6 +17,7 @@ local Workspace = game:GetService("Workspace")
 
 local ChoiceInputCoordinator = require(script.Parent.ChoiceInputCoordinator)
 local HordeStateEarlyListener = require(script.Parent.Parent.State.HordeStateEarlyListener)
+local ActiveInputDeviceFamily = require(script.Parent.Parent.State.ActiveInputDeviceFamily)
 local InputActionMapConfig = require(ReplicatedStorage.Shared.Config.InputActionMapConfig)
 local InputDeviceFamilyResolver = require(ReplicatedStorage.Shared.Input.InputDeviceFamilyResolver)
 local InputHintPresentationResolver = require(ReplicatedStorage.Shared.Input.InputHintPresentationResolver)
@@ -91,14 +92,7 @@ local CONTROL_STRIP_ENTRIES = table.freeze({
 })
 
 local function activeDeviceFamily(): string
-	local resolution = InputDeviceFamilyResolver.resolve(UserInputService:GetLastInputType().Name)
-	if resolution.DeviceFamilyId ~= nil then
-		return resolution.DeviceFamilyId
-	end
-	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
-		return InputDeviceFamilyResolver.DeviceFamilyIds.Touch
-	end
-	return InputDeviceFamilyResolver.DeviceFamilyIds.KeyboardPointer
+	return ActiveInputDeviceFamily.get()
 end
 
 local function controlStripText(familyId: string): string
@@ -996,12 +990,13 @@ function Controller.start()
 	table.insert(connections, progressionStateRemote.OnClientEvent:Connect(onProgressionState))
 	table.insert(connections, RunService.RenderStepped:Connect(updateFrame))
 	-- Rewrite the hints when the player switches device so a controller picked up
-	-- mid-run stops showing keyboard keys.
+	-- mid-run stops showing keyboard keys. This fires only on a real family
+	-- change, so window focus events do not churn the HUD.
 	table.insert(
 		connections,
-		UserInputService.LastInputTypeChanged:Connect(function()
+		ActiveInputDeviceFamily.onChanged(function(familyId)
 			if controlsHint ~= nil then
-				controlsHint.Text = controlStripText(activeDeviceFamily())
+				controlsHint.Text = controlStripText(familyId)
 			end
 			if hasUpgradeChoices then
 				renderUpgradeChoices(lastUpgradeChoices)
