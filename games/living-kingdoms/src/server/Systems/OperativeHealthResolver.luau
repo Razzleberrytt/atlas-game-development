@@ -152,7 +152,7 @@ local function validateHealth(operativeSnapshot: any): boolean
 	if not isFiniteNumber(currentHealth) or not isFiniteNumber(maximumHealth) then
 		return false
 	end
-	if maximumHealth <= 0 or maximumHealth ~= OperativeLifeConfig.MaximumHealth then
+	if maximumHealth <= 0 then
 		return false
 	end
 	if currentHealth < 0 or currentHealth > maximumHealth then
