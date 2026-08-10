@@ -70,10 +70,15 @@ local function composeOperativeModifiers(player: Player, relicModifiers: RelicMo
 	local record = InventoryLiveService.getRecord(player.UserId)
 	local activeWeaponId = player:GetAttribute("LK_EquippedWeaponId")
 	local weaponModifiers = EquippedEquipmentModifierResolver.resolveForWeapon(record, activeWeaponId)
-	local armorModifiers = EquippedEquipmentModifierResolver.resolveForSlot(record, "Armor")
 	combined.equipmentDamageMultiplier = weaponModifiers.damageMultiplier
 	combined.equipmentReloadDurationMultiplier = weaponModifiers.reloadDurationMultiplier
-	combined.equipmentMaximumHealthMultiplier = armorModifiers.maximumHealthMultiplier
+	local resolverAsAny = EquippedEquipmentModifierResolver :: any
+	if type(resolverAsAny.resolveForSlot) == "function" then
+		local armorModifiers = resolverAsAny.resolveForSlot(record, "Armor")
+		if type(armorModifiers) == "table" and type(armorModifiers.maximumHealthMultiplier) == "number" then
+			combined.equipmentMaximumHealthMultiplier = armorModifiers.maximumHealthMultiplier
+		end
+	end
 	return table.freeze(combined) :: OperativeModifiers
 end
 
