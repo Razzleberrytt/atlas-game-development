@@ -16,8 +16,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local EquippedEquipmentModifierResolver =
-	require(ReplicatedStorage.Shared.Equipment.EquippedEquipmentModifierResolver)
+local EquippedEquipmentModifierResolver = require(ReplicatedStorage.Shared.Equipment.EquippedEquipmentModifierResolver)
 local RelicModifierResolver = require(ReplicatedStorage.Shared.RPG.RelicModifierResolver)
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
 local InventoryLiveService = require(script.Parent.InventoryLiveService)
