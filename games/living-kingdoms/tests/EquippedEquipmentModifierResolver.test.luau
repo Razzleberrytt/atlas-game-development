@@ -9,6 +9,10 @@ local function assert(condition: unknown, message: string?)
 	end
 end
 
+local function assertNear(actual: number, expected: number, message: string)
+	assert(math.abs(actual - expected) < 1e-9, message)
+end
+
 local CONFIG_TOKEN = {}
 local CONTRACTS_TOKEN = {}
 local MODIFIER_TOKEN = {}
@@ -26,12 +30,18 @@ local config = {
 local modifier = {
 	resolve = function(affixes)
 		local damagePercent = 0
+		local reloadSpeedPercent = 0
 		for _, affix in affixes or {} do
 			if affix.EffectId == "DamagePercent" then
 				damagePercent += affix.Value
+			elseif affix.EffectId == "ReloadSpeedPercent" then
+				reloadSpeedPercent += affix.Value
 			end
 		end
-		return table.freeze({ damageMultiplier = 1 + damagePercent / 100 })
+		return table.freeze({
+			damageMultiplier = 1 + damagePercent / 100,
+			reloadDurationMultiplier = 1 - reloadSpeedPercent / 100,
+		})
 	end,
 }
 
@@ -82,23 +92,29 @@ local record = {
 }
 
 local rifle = Resolver.resolveForWeapon(record, "weapon.rifle")
-assert(rifle.damageMultiplier == 1.05, "equipped matching rifle contributes its bounded damage affix")
+assertNear(rifle.damageMultiplier, 1.05, "equipped matching rifle contributes its bounded damage affix")
+assert(rifle.reloadDurationMultiplier == 1, "damage-only rifle remains reload neutral")
 assert(rifle.sourceInstanceId == "rifle_a", "modifier names the authoritative equipped instance")
 
 local shotgun = Resolver.resolveForWeapon(record, "weapon.shotgun")
-assert(shotgun.damageMultiplier == 1, "owned but unequipped weapon contributes nothing")
+assert(shotgun.damageMultiplier == 1, "owned but unequipped weapon contributes no damage")
+assert(shotgun.reloadDurationMultiplier == 1, "owned but unequipped weapon contributes no reload speed")
 assert(shotgun.sourceInstanceId == nil, "unequipped item is not a modifier source")
 
 local sidearm = Resolver.resolveForWeapon(record, "weapon.sidearm")
-assert(sidearm.damageMultiplier == 1, "non-damage affixes stay neutral until their canonical owner is wired")
-assert(sidearm.sourceInstanceId == "sidearm_a", "matching equipped item remains identifiable even when neutral")
+assert(sidearm.damageMultiplier == 1, "reload-speed sidearm remains damage neutral")
+assertNear(sidearm.reloadDurationMultiplier, 0.92, "equipped matching sidearm contributes reload speed")
+assert(sidearm.sourceInstanceId == "sidearm_a", "matching equipped item remains the authoritative source")
 
 record.EquippedBySlot.Primary = "rifle_b"
 local switched = Resolver.resolveForWeapon(record, "weapon.rifle")
-assert(switched.damageMultiplier == 1.09, "changing authoritative equip changes the modifier source")
+assertNear(switched.damageMultiplier, 1.09, "changing authoritative equip changes the damage modifier source")
+assert(switched.reloadDurationMultiplier == 1, "switching damage-only rifles remains reload neutral")
 assert(switched.sourceInstanceId == "rifle_b", "new equipped instance becomes the source")
 
-assert(Resolver.resolveForWeapon(nil, "weapon.rifle").damageMultiplier == 1, "unloaded inventory fails closed")
-assert(Resolver.resolveForWeapon(record, "").damageMultiplier == 1, "invalid weapon identity fails closed")
+local unloaded = Resolver.resolveForWeapon(nil, "weapon.rifle")
+assert(unloaded.damageMultiplier == 1 and unloaded.reloadDurationMultiplier == 1, "unloaded inventory fails closed")
+local invalid = Resolver.resolveForWeapon(record, "")
+assert(invalid.damageMultiplier == 1 and invalid.reloadDurationMultiplier == 1, "invalid weapon identity fails closed")
 
-print("EquippedEquipmentModifierResolver fixture passed")
+print("EquippedEquipmentModifierResolver damage/reload fixture passed")
