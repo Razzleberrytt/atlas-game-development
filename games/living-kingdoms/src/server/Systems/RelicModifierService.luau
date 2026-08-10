@@ -16,10 +16,22 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local EquippedEquipmentModifierResolver = require(ReplicatedStorage.Shared.Equipment.EquippedEquipmentModifierResolver)
+-- Equipment is an additive Patch 0.3 composition seam. Full production builds
+-- contain both modules; narrow resolver fixtures and partial runtimes may omit
+-- them. Missing composition dependencies therefore fail closed to the neutral
+-- multiplier instead of crashing unrelated relic behavior.
+local equipmentFolder = ReplicatedStorage.Shared.Equipment
+local equippedEquipmentModifierResolverModule =
+	if equipmentFolder == nil then nil else equipmentFolder.EquippedEquipmentModifierResolver
+local EquippedEquipmentModifierResolver = if equippedEquipmentModifierResolverModule == nil
+	then nil
+	else require(equippedEquipmentModifierResolverModule)
 local RelicModifierResolver = require(ReplicatedStorage.Shared.RPG.RelicModifierResolver)
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
-local InventoryLiveService = require(script.Parent.InventoryLiveService)
+local inventoryLiveServiceModule = script.Parent.InventoryLiveService
+local InventoryLiveService = if EquippedEquipmentModifierResolver == nil or inventoryLiveServiceModule == nil
+	then nil
+	else require(inventoryLiveServiceModule)
 local RunBuildService = require(script.Parent.RunBuildService)
 
 export type RelicModifiers = RelicModifierResolver.RelicModifiers
@@ -38,12 +50,21 @@ local NEUTRAL_RELIC_MODIFIERS: RelicModifiers = RelicModifierResolver.deriveModi
 local cache: { [Player]: CacheEntry } = {}
 
 local function composeOperativeModifiers(player: Player, relicModifiers: RelicModifiers): OperativeModifiers
+	local combined = table.clone(relicModifiers) :: any
+	combined.equipmentDamageMultiplier = 1
+	local playerAsAny = player :: any
+	if
+		EquippedEquipmentModifierResolver == nil
+		or InventoryLiveService == nil
+		or type(playerAsAny.GetAttribute) ~= "function"
+	then
+		return table.freeze(combined) :: OperativeModifiers
+	end
 	local activeWeaponId = player:GetAttribute("LK_EquippedWeaponId")
 	local equipmentModifiers = EquippedEquipmentModifierResolver.resolveForWeapon(
 		InventoryLiveService.getRecord(player.UserId),
 		activeWeaponId
 	)
-	local combined = table.clone(relicModifiers) :: any
 	combined.equipmentDamageMultiplier = equipmentModifiers.damageMultiplier
 	return table.freeze(combined) :: OperativeModifiers
 end
