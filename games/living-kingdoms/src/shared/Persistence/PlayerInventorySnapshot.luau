@@ -1,35 +1,12 @@
 --!strict
 
---[[
-	Blueprint v2.0 queue item 1 — owner-only inventory snapshots.
-
-	One pure boundary converts an authoritative `PlayerInventoryRecord` into the
-	only shape a client may ever observe. Two rules are enforced here rather than
-	at each call site:
-
-	1. A snapshot is produced for exactly one owner, and only for a requester who
-	   is that owner. Cross-player reads are rejected, not filtered.
-	2. Server-only bookkeeping never leaves the server. `AppliedRewardInstanceIds`
-	   and `AppliedRewardGrantIds` are replay-protection ledgers, and `GrantId` is
-	   the idempotency key for a grant. Disclosing any of them hands a client the
-	   vocabulary of the reward transaction boundary, so they are dropped.
-
-	This module owns no state, reads no services, and performs no mutation.
-]]
-
-local Contracts = require(script.Parent.PlayerInventoryContracts)
 local EquipmentContracts = require(script.Parent.Parent.Equipment.EquipmentRewardContracts)
+local Contracts = require(script.Parent.PlayerInventoryContracts)
 
-export type PlayerInventoryRecord = Contracts.PlayerInventoryRecord
-export type EquipmentSlotId = EquipmentContracts.EquipmentSlotId
-export type EquipmentRarityId = EquipmentContracts.EquipmentRarityId
-export type RewardSourceId = EquipmentContracts.RewardSourceId
 export type EquipmentAffixRoll = EquipmentContracts.EquipmentAffixRoll
+export type EquipmentSlotId = EquipmentContracts.EquipmentSlotId
+export type PlayerInventoryRecord = Contracts.PlayerInventoryRecord
 
--- The disclosed shape of one owned item. Deliberately narrower than
--- `EquipmentReward`: no GrantId, no RunId, no Seed. Affixes are safe authored
--- gameplay metadata and are copied so a caller cannot retain authoritative
--- reward tables through the snapshot.
 export type InventoryItemView = {
 	InstanceId: string,
 	ContentSignature: string,
@@ -37,10 +14,10 @@ export type InventoryItemView = {
 	DefinitionVersion: string,
 	DisplayName: string,
 	Slot: EquipmentSlotId,
-	Rarity: EquipmentRarityId,
+	Rarity: string,
 	Power: number,
 	Affixes: { EquipmentAffixRoll },
-	SourceId: RewardSourceId,
+	SourceId: string,
 	Equipped: boolean,
 }
 
@@ -67,9 +44,12 @@ local function reject(reasonId: string): SnapshotResult
 	return table.freeze({ Accepted = false, ReasonId = reasonId, Snapshot = nil })
 end
 
-local function copyAffixes(affixes: { EquipmentAffixRoll }): { EquipmentAffixRoll }
+local function copyAffixes(affixes: { EquipmentAffixRoll }?): { EquipmentAffixRoll }
 	local copied = {}
-	for _, affix in affixes do
+	-- Persistence normalizes pre-affix records on load, but the disclosure
+	-- boundary remains defensive so legacy/synthetic records cannot crash an
+	-- owner-only read. Missing affix data has the same meaning as zero affixes.
+	for _, affix in affixes or {} do
 		table.insert(
 			copied,
 			table.freeze({
