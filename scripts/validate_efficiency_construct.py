@@ -10,11 +10,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EFFICIENCY = ROOT / "scripts" / "efficiency.py"
 EXTENSION_TOOL = ROOT / "scripts" / "extension_cost.py"
+EFFECT_ROUTE_TOOL = ROOT / "scripts" / "effect_routes.py"
 REGISTRY = ROOT / "config" / "efficiency" / "capabilities.json"
 EXTENSION_CONTRACTS = ROOT / "config" / "efficiency" / "extension-contracts.json"
+EFFECT_ROUTES = ROOT / "config" / "efficiency" / "effect-owner-routes.json"
 FLYWHEEL = ROOT / "docs" / "roadmap" / "DEVELOPMENT-FLYWHEEL.md"
 OPS = ROOT / "docs" / "production" / "ENGINEERING-EFFICIENCY-OPS.md"
 EXTENSION_MODEL = ROOT / "docs" / "production" / "EXTENSION-COST-MODEL.md"
+EFFECT_ROUTE_MODEL = ROOT / "docs" / "production" / "EFFECT-OWNER-ROUTING.md"
 AGENTS = ROOT / "AGENTS.md"
 GAME_AGENTS = ROOT / "games" / "living-kingdoms" / "AGENTS.md"
 PR_TEMPLATE = ROOT / ".github" / "PULL_REQUEST_TEMPLATE.md"
@@ -39,11 +42,14 @@ def main() -> int:
         required_paths = (
             EFFICIENCY,
             EXTENSION_TOOL,
+            EFFECT_ROUTE_TOOL,
             REGISTRY,
             EXTENSION_CONTRACTS,
+            EFFECT_ROUTES,
             FLYWHEEL,
             OPS,
             EXTENSION_MODEL,
+            EFFECT_ROUTE_MODEL,
             AGENTS,
             GAME_AGENTS,
             PR_TEMPLATE,
@@ -72,6 +78,12 @@ def main() -> int:
                     f"{contract['capability_id']!r}"
                 )
 
+        effect_route_module = load_module("atlas_effect_routes", EFFECT_ROUTE_TOOL)
+        effect_route_data = json.loads(EFFECT_ROUTES.read_text(encoding="utf-8"))
+        effect_route_errors = effect_route_module.validate_routes(effect_route_data)
+        if effect_route_errors:
+            fail("effect owner routes invalid:\n- " + "\n- ".join(effect_route_errors))
+
         agent_text = AGENTS.read_text(encoding="utf-8")
         required_agent_markers = (
             "scripts/efficiency.py audit",
@@ -86,10 +98,13 @@ def main() -> int:
         for marker in (
             "scripts/extension_cost.py show",
             "scripts/extension_cost.py check",
+            "scripts/effect_routes.py show",
+            "scripts/effect_routes.py next",
             "EXTENSION-COST-MODEL.md",
+            "EFFECT-OWNER-ROUTING.md",
         ):
             if marker not in game_agent_text:
-                fail(f"game AGENTS.md does not wire extension-cost control: missing {marker!r}")
+                fail(f"game AGENTS.md does not wire compounding controls: missing {marker!r}")
 
         ops_text = OPS.read_text(encoding="utf-8")
         for command in (
@@ -109,15 +124,27 @@ def main() -> int:
             if command not in extension_model_text:
                 fail(f"extension-cost model missing command: {command}")
 
+        effect_model_text = EFFECT_ROUTE_MODEL.read_text(encoding="utf-8")
+        for command in (
+            "python scripts/effect_routes.py validate",
+            "python scripts/effect_routes.py list",
+            "python scripts/effect_routes.py show",
+            "python scripts/effect_routes.py next",
+        ):
+            if command not in effect_model_text:
+                fail(f"effect-owner-routing model missing command: {command}")
+
         pr_text = PR_TEMPLATE.read_text(encoding="utf-8")
         for marker in ("Extension contract:", "extension_cost.py check", "REVIEW REQUIRED"):
             if marker not in pr_text:
                 fail(f"PR template does not surface extension cost: missing {marker!r}")
 
+        live_effects = sum(1 for route in effect_route_data["routes"] if route["status"] == "live")
         print(
             "Efficiency construct OK — "
             f"{len(registry_data['capabilities'])} capabilities, "
-            f"{len(extension_data['contracts'])} extension contracts"
+            f"{len(extension_data['contracts'])} extension contracts, "
+            f"{len(effect_route_data['routes'])} effect routes ({live_effects} live)"
         )
         return 0
     except (RuntimeError, OSError, json.JSONDecodeError) as exc:
