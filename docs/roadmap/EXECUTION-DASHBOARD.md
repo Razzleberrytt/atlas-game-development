@@ -1,4 +1,4 @@
-# Atlas — Execution Dashboard v1.9
+# Atlas — Execution Dashboard v1.10
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-10  
@@ -12,60 +12,65 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 - **Patch 0.2 combat/readability source pass:** **BUILT — VERIFICATION PENDING**.
 - **Patch 0.3 — Loot + Build Replayability source pass:** **BUILT — VERIFICATION PENDING**.
 - Studio/device/play/performance evidence remains a parallel lane; unrun evidence is not a source-development lock and is never called VERIFIED.
-- Patch 0.3 now has live canonical routes for all six current durable effect families: `DamagePercent`, `ReloadSpeedPercent`, `MaxHealthPercent`, `MoveSpeedPercent`, `AbilityHastePercent`, and `AbilityPowerPercent`.
+- Patch 0.3 has live canonical routes for all six current durable effect families: `DamagePercent`, `ReloadSpeedPercent`, `MaxHealthPercent`, `MoveSpeedPercent`, `AbilityHastePercent`, and `AbilityPowerPercent`.
 - PR #350 proved the compounding seam by expanding the authored affix pool from 8 to 16 with only config + pure fixture changes and **zero server-authority changes**.
 - PR #351 added a composed end-to-end durable affix lifecycle regression proving representative Weapon, Armor, and Relic effects survive deterministic generation → banked durable reward → inventory reconstruction → equipped-slot resolution → live modifier facts after reconnect reconstruction. Full validation and the reproducible build are green.
 - **Patch 0.4 — RPG Progression:** **BUILDING**.
-- PR #352 established the first bounded durable Operative Rank map: Initiate → Delver → Pathfinder → Veteran → Vanguard at 0/1/3/6/10 completed expeditions. Rank is derived from already-persisted canonical Boss reward grant identities, so no second DataStore/schema/player-load owner was introduced.
+- PR #352 established the bounded durable Operative Rank map: Initiate → Delver → Pathfinder → Veteran → Vanguard at 0/1/3/6/10 completed expeditions. Rank is derived from already-persisted canonical Boss reward grant identities, so no second DataStore/schema/player-load owner was introduced.
 - PR #353 wired a read-only owner-bound Operative Rank runtime through the existing loaded inventory record. The client can request only its own server-derived snapshot; there is no durable-progression mutation RemoteEvent.
-- PR #354 surfaced current durable rank, lifetime expedition clears, and clears-to-next-rank inside the existing Character menu. Full validation and reproducible build are green; visual placement/play-feel remains Studio verification pending.
+- PR #354 surfaced current durable rank, lifetime expedition clears, and clears-to-next-rank inside the existing Character menu.
+- PR #356 converted the paused Skills surface into a durable progression map backed by `OperativeProgressionConfig`, while preserving the old temporary run-upgrade topology as run-only authority. Full validation and reproducible build are green; visual/device verification remains pending.
+- PR #357 proved the first live personal durable-unlock seam: Rank 2 `Rally Ping` is authored in durable progression, derived server-side from existing durable rank, routed through `SquadPingService`, and cannot be claimed by client intent. No new persistence owner was added.
+- PR #360 added Rank 2 `Dual Tactical Markers`: baseline personal capacity remains one, earned capacity becomes two, the squad hard cap remains four, and the existing server ping owner derives eligibility. The second progression unlock reused the established rank/unlock seam without another persistence or network owner.
 - Existing `RunProgressionService` remains explicitly **run-only** shared Field XP + temporary upgrades. Durable Operative Rank must not become a second author of those facts.
-- The preserved/paused `SkillsPanel` shell exists in `RPGMenuController`, but its old `rebuildSkillTree()` semantics are temporary run-upgrade topology. Re-enabling that old tree as permanent progression would be false ownership.
 - The four non-pistol firearms remain intentionally authored as rare in-run discoveries; Patch 0.4 should not casually convert them into permanent insertion unlocks and erase that discovery loop.
 
 ## 2. NOW → NEXT → LATER
 
 ### NOW
 
-**Turn the existing paused Skills surface into a small personal durable progression map backed by `OperativeProgressionConfig`, without reactivating the old run-only skill-tree semantics.**
+**Prove Patch 0.4 progression breadth outside the squad-ping family by choosing the smallest personal long-term side-grade/access/identity unlock whose consequence can route through a different existing canonical owner.**
 
 Target chain:
 
 ```text
-canonical OperativeProgressionConfig ranks
-→ server-owned OperativeProgression snapshot
-→ existing RPG menu shell / paused SkillsPanel
-→ visible bounded rank path
-→ current / earned / upcoming milestone truth
+existing durable rank facts
+→ OperativeProgressionConfig unlock definition
+→ existing owner-bound OperativeProgressionService eligibility
+→ a different existing server consequence owner
+→ existing RPG progression-map presentation
+→ focused ownership/regression proof
 ```
 
 Rules:
 
-- use the existing RPG menu as the UI owner; do not create a parallel progression menu;
-- preserve `RunProgressionService` as run-only shared progression and do not label its temporary upgrades as durable skills;
-- show only milestones that are actually authored in durable progression config;
-- do not claim gameplay rewards/unlocks that have no live consequence owner yet;
-- keep the initial map small and readable across keyboard/controller/touch layouts;
-- prefer an extension seam that lets later personal side-grade unlocks attach to rank milestones without rewriting the menu again;
+- do not add another persistence schema, unlock DataStore, duplicate runtime service, or client-authored entitlement;
+- prefer choice/access/identity and bounded utility over permanent raw damage/health inflation;
+- prefer an existing server owner with an already-safe client intent or no new client intent at all;
+- do not weaken the rare in-run firearm discovery loop;
+- do not attach personal durable rank to shared Field XP/run-choice authority unless co-op ownership policy is explicitly solved first;
+- keep the progression map data-driven: a new authored unlock should appear through existing presentation seams rather than another menu rewrite;
+- if the next candidate requires a genuinely new semantic, improve one reusable owner seam once instead of scattering rank checks through callers;
 - keep visual/device verification pending until Studio/device evidence is actually run.
 
 ### NEXT
 
-1. choose the first **personal bounded long-term side-grade/unlock** whose consequence can route through an existing owner without converting shared run progression into account power;
-2. prefer increased choice/access/identity over permanent raw damage/health inflation;
-3. add the unlock to the durable progression map only when its runtime consequence is real and server-owned;
-4. continue adding Patch 0.4 progression breadth through data/config once the first unlock seam is proven;
+1. after one non-ping unlock proves cross-owner breadth, choose the first bounded **class/archetype or ability side-grade** that reuses an existing server ability/class owner;
+2. prefer alternate behavior, utility, access, or identity over additive permanent combat-stat growth;
+3. keep each durable unlock personal and server-derived while shared run progression remains temporary and squad-scoped;
+4. continue Patch 0.4 breadth through authored config and stable owner adapters so the marginal cost of later unlocks declines;
 5. retain the consolidated Studio/device/play-feel evidence lane for Patch 0.1–0.4 source work.
 
-Rejected first-unlock shortcuts:
+Rejected shortcuts remain:
 
 - rank-based shared run-upgrade rerolls/extra cards: current run-upgrade choices are squad-wide while Operative Rank is personal, creating ambiguous co-op/carry policy;
 - permanent insertion access to the rare LMG/shotgun/sniper/SMG: current firearm contract intentionally preserves those weapons as rare in-run discoveries;
-- raw permanent combat-stat inflation: weakens the current-run loop instead of adding RPG choice.
+- raw permanent combat-stat inflation: weakens the current-run loop instead of adding RPG choice;
+- client-only cosmetic eligibility presented as a server-owned gameplay unlock: identity presentation is valid only when entitlement truth still comes from a canonical server-owned fact.
 
 ### LATER
 
-- deeper Patch 0.4 RPG progression: class/archetype progression, ability/skill side-grades, activity/world unlocks, quests/NPCs, limited crafting, achievements/codex;
+- deeper Patch 0.4 RPG progression: broader class/archetype progression, ability/skill side-grades, activity/world unlocks, quests/NPCs, limited crafting, achievements/codex;
 - Patch 0.5 Main World/environment;
 - Patch 0.6 systemic replayability;
 - Patch 0.7 persistence hardening;
@@ -118,19 +123,22 @@ Rules:
 
 **North-star engineering metric:** declining marginal implementation cost for proven feature families.
 
-Patch 0.4 reusable layers now begin as:
+Patch 0.4 reusable layers are now:
 
 ```text
 banked completed-expedition facts already owned by durable inventory
 → pure bounded Operative Rank resolver
-→ owner-bound read-only runtime snapshot
-→ existing RPG presentation owner
-→ future personal side-grade/access consequences
+→ owner-bound read-only progression snapshot + generic unlock eligibility
+→ existing RPG progression-map presentation
+→ server-owned personal unlock consequence adapters
+→ authored unlock breadth without another save owner
 ```
+
+The Rally + Dual Tactical Marker pair proves one owner family. The next leverage test is **cross-owner reuse**: the same durable unlock seam should drive a different existing server owner without creating parallel progression infrastructure.
 
 ## 4. Studio/device evidence lane
 
-The consolidated pass should cover the representative run, replay, keyboard/controller/touch, combat feel/readability, banking/equip, lifecycle, build-choice readability, durable rank presentation, and representative performance.
+The consolidated pass should cover the representative run, replay, keyboard/controller/touch, combat feel/readability, banking/equip, lifecycle, build-choice readability, durable rank/progression presentation, Rally/marker readability, and representative performance.
 
 - **pass:** promote applicable BUILT — VERIFICATION PENDING work to VERIFIED;
 - **reproducible failure:** make the concrete FIX NOW and preempt expansion;
@@ -144,7 +152,7 @@ The consolidated pass should cover the representative run, replay, keyboard/cont
 | MVP 0.1 | BUILT — VERIFICATION PENDING | regression-protected baseline |
 | 0.2 combat/readability | BUILT — VERIFICATION PENDING | reusable feedback/reaction contracts |
 | 0.3 loot/builds | BUILT — VERIFICATION PENDING | affix/effect/reward variants are data-first |
-| **0.4 RPG progression** | **NOW — BUILDING** | durable facts → small map → reusable personal unlock seams |
+| **0.4 RPG progression** | **NOW — BUILDING** | rank facts → data-driven map → reusable cross-owner personal unlock seams |
 | 0.5 Main World | preparation partial | stable IDs + registry-driven interactions |
 | 0.6 systemic replayability | foundations present | combinatorial output from reusable systems |
 | 0.7 persistence | substantial foundations | migration/lifecycle invariants and recovery tests |
@@ -157,7 +165,7 @@ The consolidated pass should cover the representative run, replay, keyboard/cont
 When asked to continue:
 
 1. fetch current `main`;
-2. inspect open PRs;
+2. inspect open PRs and same-capability branches;
 3. read NOW/NEXT;
 4. fix concrete safety/authority/data/runtime/validation failures first;
 5. otherwise implement the smallest coherent NOW increment;
