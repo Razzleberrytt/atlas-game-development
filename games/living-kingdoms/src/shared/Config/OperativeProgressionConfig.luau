@@ -43,6 +43,7 @@ local UnlockIds = table.freeze({
 	DualTacticalMarkers = "squad-dual-tactical-markers",
 	FocusedFlashlightBeam = "personal-focused-beam",
 	MedicSelfTreatment = "medic-self-treatment",
+	PersistentMarkers = "squad-persistent-markers",
 })
 
 local Unlocks = table.freeze({
@@ -76,6 +77,15 @@ local Unlocks = table.freeze({
 		DisplayName = "Self-Treatment",
 		Description = "As a Medic, you may spend a medical charge on yourself.",
 		RequiredRank = 4,
+	}),
+	-- A bounded utility side-grade for the existing squad-ping owner. The server
+	-- keeps owning expiry; the client already consumes the authoritative expiry
+	-- timestamp, so the unlock needs no new remote or presentation-specific path.
+	table.freeze({
+		Id = UnlockIds.PersistentMarkers,
+		DisplayName = "Persistent Markers",
+		Description = "Your personal squad markers remain visible for longer.",
+		RequiredRank = 5,
 	}),
 })
 

@@ -4,8 +4,8 @@
 	Server owner for LK-0407's bounded location squad ping slice. Client intent
 	contains only a Location category and candidate position. Identity, squad,
 	time, limits, canonical position, durable Rally identity, marker capacity,
-	ping identity, recipients, and revisions are derived here. No discovery,
-	perception, targeting, or combat service is read or mutated.
+	marker lifetime, ping identity, recipients, and revisions are derived here.
+	No discovery, perception, targeting, or combat service is read or mutated.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -225,34 +225,39 @@ local function ownedPings(operativeEntityId: string): { PingEntry }
 	return owned
 end
 
-local function publishedCategoryFor(player: Player): string
+-- The squad-ping family has multiple durable variants now. Keep the owner-bound
+-- entitlement call in one fail-closed adapter so adding another bounded ping
+-- utility does not copy progression plumbing throughout this service.
+local function hasDurableUnlock(player: Player, unlockId: string?): boolean
+	if unlockId == nil then
+		return false
+	end
 	local unlocked = false
 	local ok = pcall(function()
-		unlocked = OperativeProgressionService.hasOwnedUnlock(
-			player.UserId,
-			player.UserId,
-			OperativeProgressionConfig.UnlockIds.SquadRallyPing
-		)
+		unlocked = OperativeProgressionService.hasOwnedUnlock(player.UserId, player.UserId, unlockId)
 	end)
-	if ok and unlocked then
+	return ok and unlocked
+end
+
+local function publishedCategoryFor(player: Player): string
+	if hasDurableUnlock(player, OperativeProgressionConfig.UnlockIds.SquadRallyPing) then
 		return SquadPingContracts.CategoryIds.Rally
 	end
 	return SquadPingContracts.CategoryIds.Location
 end
 
 local function maximumActiveFor(player: Player): number
-	local unlockId = OperativeProgressionConfig.UnlockIds.DualTacticalMarkers
-	if unlockId == nil then
-		return SquadPingConfig.MaximumActivePerSender
-	end
-	local unlocked = false
-	local ok = pcall(function()
-		unlocked = OperativeProgressionService.hasOwnedUnlock(player.UserId, player.UserId, unlockId)
-	end)
-	if ok and unlocked then
+	if hasDurableUnlock(player, OperativeProgressionConfig.UnlockIds.DualTacticalMarkers) then
 		return SquadPingConfig.DualTacticalMaximumActivePerSender
 	end
 	return SquadPingConfig.MaximumActivePerSender
+end
+
+local function lifetimeFor(player: Player): number
+	if hasDurableUnlock(player, OperativeProgressionConfig.UnlockIds.PersistentMarkers) then
+		return SquadPingConfig.PersistentMarkerLifetimeSeconds
+	end
+	return SquadPingConfig.LifetimeSeconds
 end
 
 local function cancelExpiry()
@@ -546,7 +551,7 @@ function Service.requestPing(player: Player, intent: unknown): OperationResult
 		categoryId = categoryId,
 		position = quantizeTowardSender(senderPosition, candidatePosition),
 		senderOperativeEntityId = entry.operativeEntityId,
-		expiresAtServerTimestamp = now + SquadPingConfig.LifetimeSeconds,
+		expiresAtServerTimestamp = now + lifetimeFor(player),
 		revision = revision,
 		sequence = nextPingSequence,
 		squadId = entry.squadId,
