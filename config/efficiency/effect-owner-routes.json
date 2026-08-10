@@ -79,16 +79,16 @@
     },
     {
       "effect_id": "AbilityHastePercent",
-      "status": "unresolved",
+      "status": "owner-confirmed",
       "capability_id": "combat-authority",
       "owner_kind": "server",
-      "canonical_owner": null,
-      "composition_seam": null,
+      "canonical_owner": "games/living-kingdoms/src/server/Systems/ClassService.luau",
+      "composition_seam": "games/living-kingdoms/src/server/Systems/RelicModifierService.luau",
       "shared_adapter": null,
       "selection_resolver": "games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau",
       "focused_tests": [],
       "risk_tier": "R2",
-      "extension_rule": "Resolve the canonical server cooldown/ability timing owner before implementation; keep cooldown legality server-owned."
+      "extension_rule": "Route durable Relic haste into ClassService as one bounded server-derived cooldown-duration multiplier. Pure class-action resolvers may consume that fact when constructing cooldown deadlines, but cooldown legality, server timestamps, configured base durations, resource costs, and effect commits remain owned by existing class-action authority."
     },
     {
       "effect_id": "AbilityPowerPercent",
