@@ -14,10 +14,11 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Op
 	injectGlobals = true,
 })()
 
-local resolver = luau.load(fs.readFile("games/living-kingdoms/src/shared/Progression/OperativeProgressionResolver.luau"), {
-	debugName = "OperativeProgressionResolver",
-	injectGlobals = true,
-})()
+local resolver =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Progression/OperativeProgressionResolver.luau"), {
+		debugName = "OperativeProgressionResolver",
+		injectGlobals = true,
+	})()
 
 local function boss(runId: string): string
 	return string.format("reward:%s:Boss", runId)
@@ -80,7 +81,10 @@ local vanguard = resolver.resolve(config, tenClears)
 assertThat(vanguard.Accepted, "maximum rank ledger must resolve")
 assertThat(vanguard.CompletedExpeditions == 10, "maximum-rank clear count must remain visible")
 assertThat(vanguard.Rank == 5 and vanguard.RankId == "Vanguard", "ten clears should reach Vanguard")
-assertThat(vanguard.NextRank == nil and vanguard.CompletedExpeditionsToNextRank == nil, "maximum rank has no fake next step")
+assertThat(
+	vanguard.NextRank == nil and vanguard.CompletedExpeditionsToNextRank == nil,
+	"maximum rank has no fake next step"
+)
 assertThat(vanguard.IsMaximumRank, "ten clears should report maximum rank")
 
 local beyondCap = table.clone(tenClears)
@@ -88,7 +92,10 @@ for index = 11, 15 do
 	table.insert(beyondCap, boss("expedition:run:" .. tostring(index)))
 end
 local capped = resolver.resolve(config, beyondCap)
-assertThat(capped.Rank == 5 and capped.CompletedExpeditions == 15, "rank cap must not discard lifetime completion truth")
+assertThat(
+	capped.Rank == 5 and capped.CompletedExpeditions == 15,
+	"rank cap must not discard lifetime completion truth"
+)
 
 local malformedLedger = resolver.resolve(config, { boss("expedition:alpha"), 42 })
 assertThat(not malformedLedger.Accepted, "non-string durable grant identity must fail closed")
