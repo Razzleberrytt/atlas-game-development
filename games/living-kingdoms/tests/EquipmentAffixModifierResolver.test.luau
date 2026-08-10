@@ -121,11 +121,13 @@ assertThat(
 	"reload affixes must inherit the canonical global floor"
 )
 
-for _, malformed in {
-	{ { EffectId = "DamagePercent", Value = -1 } },
-	{ { EffectId = "", Value = 5 } },
-	{ { EffectId = "ReloadSpeedPercent", Value = 0 / 0 } },
-} do
+for _, malformed in
+	{
+		{ { EffectId = "DamagePercent", Value = -1 } },
+		{ { EffectId = "", Value = 5 } },
+		{ { EffectId = "ReloadSpeedPercent", Value = 0 / 0 } },
+	}
+do
 	local result = resolver.resolve(malformed :: any)
 	assertThat(result.damageMultiplier == 1, "malformed bundles must fail damage closed")
 	assertThat(result.reloadDurationMultiplier == 1, "malformed bundles must fail reload closed")
