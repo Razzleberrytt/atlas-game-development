@@ -41,7 +41,11 @@ local function signal()
 			nextId += 1
 			local id = nextId
 			callbacks[id] = callback
-			return { Disconnect = function() callbacks[id] = nil end }
+			return {
+				Disconnect = function()
+					callbacks[id] = nil
+				end,
+			}
 		end,
 		Fire = function(_self, ...)
 			for _, callback in callbacks do
@@ -112,10 +116,18 @@ local environment = {
 			return contracts
 		end
 		if token == HEALTH_RESOLVER_TOKEN then
-			return { resolveDamage = function() error("damage path not used") end }
+			return {
+				resolveDamage = function()
+					error("damage path not used")
+				end,
+			}
 		end
 		if token == HEALING_RESOLVER_TOKEN then
-			return { resolve = function() error("healing path not used") end }
+			return {
+				resolve = function()
+					error("healing path not used")
+				end,
+			}
 		end
 		if token == RELIC_MODIFIER_TOKEN then
 			return {
@@ -145,9 +157,15 @@ local environment = {
 	Vector3 = { zero = { X = 0, Y = 0, Z = 0 } },
 	Enum = { HumanoidStateType = { Dead = "Dead" } },
 	task = {
-		spawn = function(callback) callback() end,
-		defer = function(callback) callback() end,
-		delay = function(_seconds, callback) callback() end,
+		spawn = function(callback)
+			callback()
+		end,
+		defer = function(callback)
+			callback()
+		end,
+		delay = function(_seconds, callback)
+			callback()
+		end,
 	},
 }
 
@@ -262,11 +280,15 @@ players._members[neutralPlayer] = nil
 local inventoryNetworkSource = fs.readFile("games/living-kingdoms/src/server/inventory-network.server.luau")
 assert(
 	string.find(inventoryNetworkSource, "InventoryLiveService.loadPlayer", 1, true) ~= nil
-		and string.find(inventoryNetworkSource, "OperativeLifeService.reconcileMaximumHealth(player)", 1, true) ~= nil,
+		and string.find(inventoryNetworkSource, "OperativeLifeService.reconcileMaximumHealth(player)", 1, true)
+			~= nil,
 	"inventory load does not reconcile maximum health"
 )
 assert(string.find(inventoryNetworkSource, "equipOwnedItem.OnServerInvoke", 1, true) ~= nil, "equip route missing")
-assert(string.find(inventoryNetworkSource, "dismantleOwnedItem.OnServerInvoke", 1, true) ~= nil, "dismantle route missing")
+assert(
+	string.find(inventoryNetworkSource, "dismantleOwnedItem.OnServerInvoke", 1, true) ~= nil,
+	"dismantle route missing"
+)
 local compositionSource = fs.readFile("games/living-kingdoms/src/server/Systems/RelicModifierService.luau")
 assert(
 	string.find(compositionSource, 'resolveForSlot(record, "Armor")', 1, true) ~= nil,
