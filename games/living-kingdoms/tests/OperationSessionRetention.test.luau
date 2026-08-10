@@ -24,14 +24,19 @@ local classes = fs.readFile("games/living-kingdoms/src/server/Systems/ClassServi
 local ledger = fs.readFile("games/living-kingdoms/src/server/Systems/MatchResultService.luau")
 
 -- 1. Life state survives a disconnect and resumes on reconnect, so reconnecting
---    cannot undo an incapacitation or death by handing back a fresh operative.
+--    cannot undo an incapacitation, death, or retained equipment-adjusted health
+--    by handing back a freshly-derived operative snapshot.
 assertThat(
 	contains(life, "retainedSnapshotByOperativeEntityId[entry.operativeEntityId] = copySnapshot(entry.snapshot)"),
 	"a disconnect must retain the authoritative life snapshot"
 )
 assertThat(
-	contains(life, "snapshot = if retained ~= nil then copySnapshot(retained) else initialSnapshot(operativeEntityId)"),
-	"a reconnect must resume the retained snapshot rather than a fresh one"
+	contains(life, "snapshot = if retained ~= nil") and contains(life, "then copySnapshot(retained)"),
+	"a reconnect must resume the retained snapshot rather than derive a fresh one"
+)
+assertThat(
+	contains(life, "else initialSnapshot(operativeEntityId, effectiveMaximumHealth(player))"),
+	"only a fresh registration may derive current equipment-adjusted maximum health"
 )
 assertThat(
 	contains(life, "retainedSnapshotByOperativeEntityId[operativeEntityId] = nil"),
