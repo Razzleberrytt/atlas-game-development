@@ -17,6 +17,7 @@ Load other authority **only when relevant**:
 - detailed current-patch acceptance → `../../docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md`
 - long-range scope lookup → `../../docs/roadmap/MASTER-ROADMAP.md`
 - repeated feature/content extension or implementation friction → `../../docs/production/EXTENSION-COST-MODEL.md`
+- gameplay modifier/effect ownership → `../../docs/production/EFFECT-OWNER-ROUTING.md`
 - broader leverage decision → `../../docs/roadmap/DEVELOPMENT-FLYWHEEL.md` and `../../docs/production/ENGINEERING-EFFICIENCY-OPS.md`
 - runtime state/remotes/lifecycle/rollback → v2.7 Blueprint/Production Core/Active Place Rollout
 - replicated or presentation ownership migration → Cross-System Traceability + cutover ledger
@@ -132,6 +133,23 @@ Interpretation:
 
 Extension contracts live at `../../config/efficiency/extension-contracts.json`. Update a contract only when the real reusable path materially changes.
 
+### Gameplay effect routing
+
+Before wiring a reusable affix/progression/relic effect into live gameplay, inspect its registered authority route:
+
+```bash
+python scripts/effect_routes.py show <EffectId>
+python scripts/effect_routes.py next
+```
+
+Routing statuses mean:
+
+- **live** — reuse the named owner/seam/adapter; ordinary variants should not need new runtime wiring;
+- **owner-confirmed** — the owner is known; add one bounded adapter and wire through that owner rather than creating another service;
+- **unresolved** — owner discovery is the task. Do not guess or implement the consequence until the canonical server owner is confirmed.
+
+The registry lives at `../../config/efficiency/effect-owner-routes.json`. Every `EquipmentAffixEffectId` must have exactly one route, and validation fails if that coverage drifts.
+
 The desired maturity curve is:
 
 ```text
@@ -183,6 +201,7 @@ Record source-complete work as **BUILT — VERIFICATION PENDING** until applicab
 - [ ] current dashboard and open PR overlap checked
 - [ ] smallest coherent high-ROI increment selected
 - [ ] registered extension contract used when adding a repeated family variant
+- [ ] effect owner route checked when wiring a reusable gameplay modifier
 - [ ] extension-cost budget checked or deliberate semantic escalation explained
 - [ ] authority boundaries preserved
 - [ ] focused regression coverage added/updated
