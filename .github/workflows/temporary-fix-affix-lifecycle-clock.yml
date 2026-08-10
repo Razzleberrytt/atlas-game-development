@@ -1,0 +1,73 @@
+name: Temporary Affix Lifecycle Clock Fix
+
+on:
+  push:
+    branches:
+      - patch-0.3/affix-lifecycle-regression
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+
+      - name: Fix monotonic lifecycle clock, format, and remove helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('games/living-kingdoms/tests/EquipmentAffixDurableLifecycle.test.luau')
+          text = path.read_text()
+          old = '''local orderedTargets = { "Weapon", "Armor", "Relic" }
+          for index, target in orderedTargets do
+          \tlocal reward = found[target].reward
+          \tlocal applied = persistence:applyReward(playerId, reward, 10_000 + index)
+          \tassertThat(applied.Accepted, target .. " reward must enter durable inventory")
+          \tlocal equipped = persistence:equip(playerId, reward.Slot, reward.InstanceId, 10_100 + index)
+          \tassertThat(equipped.Accepted, target .. " reward must equip through durable authority")
+          end'''
+          new = '''local orderedTargets = { "Weapon", "Armor", "Relic" }
+          local mutationTimestamp = 10_000
+          for _, target in orderedTargets do
+          \tlocal reward = found[target].reward
+          \tmutationTimestamp += 1
+          \tlocal applied = persistence:applyReward(playerId, reward, mutationTimestamp)
+          \tassertThat(
+          \t\tapplied.Accepted,
+          \t\tstring.format("%s reward must enter durable inventory (%s)", target, tostring(applied.ReasonId))
+          \t)
+          \tmutationTimestamp += 1
+          \tlocal equipped = persistence:equip(playerId, reward.Slot, reward.InstanceId, mutationTimestamp)
+          \tassertThat(
+          \t\tequipped.Accepted,
+          \t\tstring.format("%s reward must equip through durable authority (%s)", target, tostring(equipped.ReasonId))
+          \t)
+          end'''
+          if text.count(old) != 1:
+              raise SystemExit(f'expected exactly one lifecycle mutation block, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          stylua games/living-kingdoms/tests/EquipmentAffixDurableLifecycle.test.luau
+          rm .github/workflows/temporary-fix-affix-lifecycle-clock.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "test(lk): keep durable lifecycle mutations monotonic"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
