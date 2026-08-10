@@ -9,13 +9,11 @@ local function assert(condition: unknown, message: string?)
 	end
 end
 
-local Presentation = luau.load(
-	fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentBuildChoicePresentation.luau"),
-	{
+local Presentation =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentBuildChoicePresentation.luau"), {
 		debugName = "EquipmentBuildChoicePresentation",
 		injectGlobals = true,
-	}
-)()
+	})()
 
 local affixes = {
 	{ EffectId = "ReloadSpeedPercent", Value = 8 },
