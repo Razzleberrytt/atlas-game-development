@@ -10,7 +10,7 @@
       "capability_id": "combat-authority",
       "owner_kind": "server",
       "canonical_owner": "games/living-kingdoms/src/server/Systems/DamageResolver.luau",
-      "composition_seam": "games/living-kings/src/server/Systems/RelicModifierService.luau",
+      "composition_seam": "games/living-kingdoms/src/server/Systems/RelicModifierService.luau",
       "shared_adapter": "games/living-kingdoms/src/shared/Equipment/EquipmentAffixModifierResolver.luau",
       "selection_resolver": "games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau",
       "focused_tests": [
