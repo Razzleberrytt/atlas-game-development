@@ -16,22 +16,22 @@ local function contains(source: string, token: string): boolean
 	return string.find(source, token, 1, true) ~= nil
 end
 
-local source = fs.readFile(
-	"games/living-kingdoms/src/client/Controllers/ExpeditionEnvironmentAnimationController.luau"
-)
+local source = fs.readFile("games/living-kingdoms/src/client/Controllers/ExpeditionEnvironmentAnimationController.luau")
 
-for _, required in {
-	"local workspaceChildAdded: RBXScriptConnection? = nil",
-	"local workspaceChildRemoved: RBXScriptConnection? = nil",
-	"workspaceChildAdded = Workspace.ChildAdded:Connect(function(child)",
-	"workspaceChildRemoved = Workspace.ChildRemoved:Connect(function(child)",
-	"workspaceChildAdded:Disconnect()",
-	"workspaceChildAdded = nil",
-	"workspaceChildRemoved:Disconnect()",
-	"workspaceChildRemoved = nil",
-	"disconnectWorkspaceListeners()",
-	"bindRoot(nil)",
-} do
+for _, required in
+	{
+		"local workspaceChildAdded: RBXScriptConnection? = nil",
+		"local workspaceChildRemoved: RBXScriptConnection? = nil",
+		"workspaceChildAdded = Workspace.ChildAdded:Connect(function(child)",
+		"workspaceChildRemoved = Workspace.ChildRemoved:Connect(function(child)",
+		"workspaceChildAdded:Disconnect()",
+		"workspaceChildAdded = nil",
+		"workspaceChildRemoved:Disconnect()",
+		"workspaceChildRemoved = nil",
+		"disconnectWorkspaceListeners()",
+		"bindRoot(nil)",
+	}
+do
 	assertThat(contains(source, required), `expedition environment lifecycle is missing {required}`)
 end
 
