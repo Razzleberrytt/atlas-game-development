@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "project": "living-kingdoms",
+  "updated": "2026-08-10",
+  "source_contract": "games/living-kingdoms/src/shared/Equipment/EquipmentAffixContracts.luau",
+  "routes": [
+    {
+      "effect_id": "DamagePercent",
+      "status": "live",
+      "capability_id": "combat-authority",
+      "owner_kind": "server",
+      "canonical_owner": "games/living-kingdoms/src/server/Systems/DamageResolver.luau",
+      "composition_seam": "games/living-kingdoms/src/server/Systems/RelicModifierService.luau",
+      "shared_adapter": "games/living-kingdoms/src/shared/Equipment/EquipmentAffixModifierResolver.luau",
+      "selection_resolver": "games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau",
+      "focused_tests": [
+        "games/living-kingdoms/tests/EquipmentAffixModifierResolver.test.luau",
+        "games/living-kingdoms/tests/EquippedEquipmentModifierResolver.test.luau",
+        "games/living-kingdoms/tests/LiveEquipmentDamageAffixSourceAudit.test.luau"
+      ],
+      "risk_tier": "R2",
+      "extension_rule": "New DamagePercent affix definitions should be data/config plus focused regression only; do not add per-weapon damage wiring."
+    },
+    {
+      "effect_id": "ReloadSpeedPercent",
+      "status": "owner-confirmed",
+      "capability_id": "combat-authority",
+      "owner_kind": "server",
+      "canonical_owner": "games/living-kingdoms/src/server/Systems/ReloadResolver.luau",
+      "composition_seam": "games/living-kingdoms/src/server/Systems/RelicModifierService.luau",
+      "shared_adapter": null,
+      "selection_resolver": "games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau",
+      "focused_tests": [
+        "games/living-kingdoms/tests/RelicCombatIntegration.test.luau"
+      ],
+      "risk_tier": "R2",
+      "extension_rule": "Introduce one bounded reload-duration adapter, then route through ReloadResolver; do not create an equipment reload service."
+    },
+    {
+      "effect_id": "MaxHealthPercent",
+      "status": "unresolved",
+      "capability_id": "combat-authority",
+      "owner_kind": "server",
+      "canonical_owner": null,
+      "composition_seam": null,
+      "shared_adapter": null,
+      "selection_resolver": "games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau",
+      "focused_tests": [],
+      "risk_tier": "R2",
+      "extension_rule": "Resolve and register the existing authoritative maximum-health owner before implementation; never write Humanoid health from an affix adapter directly."
+    },
+    {
+      "effect_id": "MoveSpeedPercent",
+      "status": "unresolved",
+      "capability_id": "combat-authority",
+      "owner_kind": "server",
+      "canonical_owner": null,
+      "composition_seam": null,
+      "shared_adapter": null,
+      "selection_resolver": "games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau",
+      "focused_tests": [],
+      "risk_tier": "R2",
+      "extension_rule": "Resolve the canonical server movement-speed owner before implementation; presentation or local Humanoid writes may not become authority."
+    },
+    {
+      "effect_id": "AbilityHastePercent",
+      "status": "unresolved",
+      "capability_id": "combat-authority",
+      "owner_kind": "server",
+      "canonical_owner": null,
+      "composition_seam": null,
+      "shared_adapter": null,
+      "selection_resolver": "games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau",
+      "focused_tests": [],
+      "risk_tier": "R2",
+      "extension_rule": "Resolve the canonical server cooldown/ability timing owner before implementation; keep cooldown legality server-owned."
+    },
+    {
+      "effect_id": "AbilityPowerPercent",
+      "status": "unresolved",
+      "capability_id": "combat-authority",
+      "owner_kind": "server",
+      "canonical_owner": null,
+      "composition_seam": null,
+      "shared_adapter": null,
+      "selection_resolver": "games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau",
+      "focused_tests": [],
+      "risk_tier": "R2",
+      "extension_rule": "Resolve the canonical server ability-consequence owner before implementation; do not create a generic client-authored power multiplier."
+    }
+  ]
+}
