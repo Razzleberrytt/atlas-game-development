@@ -7,17 +7,17 @@ This is the executable companion to `docs/roadmap/DEVELOPMENT-FLYWHEEL.md`. The 
 
 ## 1. Agent bootstrap
 
-At the start of an implementation session, the agent can run:
+At the start of an implementation session:
 
 ```bash
 python scripts/efficiency.py bootstrap
 ```
 
-This prints the minimum read path and extracts the current `NOW` section from the execution dashboard. It is intentionally small; agents should not preload the full documentation stack.
+This prints the minimum read path and current NOW section. Agents should not preload the full documentation stack.
 
 ## 2. Capability registry
 
-The machine-readable registry lives at:
+The reusable-owner registry lives at:
 
 ```text
 config/efficiency/capabilities.json
@@ -29,11 +29,36 @@ Inspect it with:
 python scripts/efficiency.py registry
 ```
 
-Each stable capability records its owner, maturity, extension points, known consumers, test surface, and whether future variants are intended to become data-driven.
+Register durable owners/seams, not every helper. A capability records ownership, extension points, consumers, tests, maturity, and whether future variants should become data-driven.
 
-Update the registry when a PR creates a durable reusable owner/seam, materially changes an extension point, or retires a capability. Do not register every helper or one-off module.
+## 3. Extension-cost contracts
 
-## 3. Automated leverage audit
+Repeated feature/content families use:
+
+```text
+config/efficiency/extension-contracts.json
+```
+
+The contract answers the practical question: **how should the next one of these be added cheaply and safely?**
+
+Use:
+
+```bash
+python scripts/extension_cost.py list
+python scripts/extension_cost.py show <contract-id>
+python scripts/extension_cost.py check <contract-id> --base main
+```
+
+The check measures implementation-file surface, server-authority touches, and whether the branch escaped the registered extension path.
+
+A non-zero budget result is a deliberate review point:
+
+- if the change introduces a genuinely new semantic, escalate and explain it;
+- if it is merely another normal variant, inspect/improve the reusable seam before accepting permanent complexity growth.
+
+See `docs/production/EXTENSION-COST-MODEL.md`.
+
+## 4. Automated leverage audit
 
 Run:
 
@@ -47,19 +72,11 @@ For machine processing:
 python scripts/efficiency.py audit --json
 ```
 
-The audit currently surfaces:
+The audit surfaces large/growing owners, substantial repeated code shapes, remote-construction review targets, source/test direction, and capability-registry gaps. Findings are candidates, not automatic refactor orders.
 
-- large/growing source-owner hotspots;
-- substantial cross-file repeated lines as possible generalization candidates;
-- remote construction outside canonical networking as an authority review target;
-- directional source/test ratios;
-- architecture directories not represented by capability extension points.
+## 5. Roadmap/task ROI scoring
 
-Audit findings are **candidates, not commands**. A finding is permission to inspect, not permission to refactor. Dependency order, player value, authority, and evidence gates remain controlling.
-
-## 4. Roadmap/task ROI scoring
-
-Use the scorer only when two or more tasks are already similarly valid by dependency order and player value:
+Use only when candidates are already similarly valid by dependency order and player value:
 
 ```bash
 python scripts/efficiency.py score "candidate name" \
@@ -72,11 +89,11 @@ python scripts/efficiency.py score "candidate name" \
   --agent-autonomy 1
 ```
 
-Every dimension is 0–2. Player value and dependency removal are weighted far above leverage, so the score cannot rationally justify skipping a real blocker for architecture work. Leverage breaks close calls.
+Player value and dependency removal remain dominant; leverage breaks close calls.
 
-## 5. Development telemetry
+## 6. Development telemetry
 
-Use local git history to find repeated-touch and churn hotspots:
+Use git history to surface repeated-touch/high-churn hotspots:
 
 ```bash
 python scripts/dev_metrics.py
@@ -88,67 +105,73 @@ or:
 python scripts/dev_metrics.py --days 30 --json
 ```
 
-Repeated high touch plus high churn is evidence to inspect ownership, tests, data conversion, or tooling. It is not evidence by itself that a file should be split.
+High touch + high churn is a signal to inspect ownership, tests, data conversion, or tooling—not proof that a file must be split.
 
-This gives the project development telemetry without requiring a new external service or committed mutable metrics database.
+## 7. Definition/schema scaling rule
 
-## 6. Definition/schema scaling rule
-
-Do not create a universal generator before a schema is proven. For a content family (weapons, enemies, effects, loot, quests, encounters, routes):
+For a content family (weapons, enemies, effects, loot, quests, encounters, routes):
 
 1. first implementation proves behavior;
-2. second/third implementation identifies the repeated fields/invariants;
-3. the repeated shape moves into a validated definition/config module;
-4. add or extend a repository validator for IDs/references/ranges;
-5. only then add a scaffold/generator if authoring the definitions remains repetitive.
+2. second/third implementation reveals the repeated shape;
+3. move the common shape into a validated definition/config module;
+4. register the canonical extension contract and a realistic file/authority budget;
+5. add validators for IDs/references/ranges;
+6. add a scaffold/generator only if definition authoring is still materially repetitive.
 
-This keeps "automation" from becoming a speculative framework while still guaranteeing the path toward mostly declarative content.
+The target is not “more automation.” It is **declining marginal cost**.
 
-## 7. Regression-defense rule
+## 8. Regression-defense rule
 
 A meaningful bug should normally close with one of:
 
-- a focused Lune regression fixture;
-- a source/wiring validator;
-- a schema/invariant check;
-- a lifecycle/evidence assertion where engine behavior is required.
+- focused Lune regression fixture;
+- source/wiring validator;
+- schema/invariant check;
+- lifecycle/evidence assertion where engine behavior is required.
 
-If none is practical, document why in the PR completion report. Repeated defects of the same class escalate the missing defense to a leverage task.
+Repeated defects of the same class escalate the missing defense to leverage work.
 
-## 8. Bounded leverage-pass triggers
+## 9. Bounded leverage triggers
 
-Run the audit/telemetry and consider a dedicated leverage pass when:
+Consider a bounded leverage pass when:
 
-- a pattern reaches its third real implementation;
+- a pattern reaches its third implementation;
+- a normal extension exceeds its contract review threshold more than once;
+- a data-first variant repeatedly touches server authority;
+- the same mechanical agent step recurs;
 - a failure class repeats;
-- the same mechanical agent step recurs across tasks;
-- a file/owner is repeatedly a high-touch/high-churn bottleneck;
-- a patch is about to scale content breadth;
-- a patch boundary provides a low-risk consolidation point.
+- a file/owner is repeatedly high-touch/high-churn;
+- a patch is about to scale content breadth.
 
-A leverage pass must name its immediate consumers and remain small enough to validate coherently.
+The pass must name immediate consumers and remain small enough to validate coherently.
 
-## 9. Continuous validation
+## 10. Continuous validation
 
-The efficiency construct itself is checked by:
+The efficiency construct is checked by:
 
 ```bash
 python scripts/validate_efficiency_construct.py
 ```
 
-It is also wired into the unified repository validation entry point, so missing registry extension points, invalid capability schema, or disconnected operating instructions fail normal validation rather than silently decaying.
+It is wired into the unified repository validator, so disconnected instructions, invalid capability/extension schemas, missing canonical paths, or broken operating hooks fail normal validation rather than silently decaying.
 
-## 10. Expected maturity curve
-
-Success is not "more abstractions." Success is a declining marginal cost for proven content families and fewer repeated failures.
-
-Track qualitative movement in these directions:
+## 11. Expected maturity curve
 
 ```text
-bespoke behavior → stable owner → repeated shape → validated data → cheap variants
-bug → root cause → regression defense → failure class becomes rarer
-manual repeated step → deterministic tool → agent no longer rediscovers/repeats it
-unclear ownership → registered capability → known extension point → safer autonomous change
+bespoke behavior
+→ stable owner
+→ repeated shape
+→ registered extension contract
+→ validated data/registry path
+→ cheap variants
 ```
 
-Patch 0.9 should be where the accumulated investment becomes obvious: new breadth should be primarily data/content authoring plus automated validation rather than new bespoke authority code.
+Alongside:
+
+```text
+bug → root cause → permanent regression defense
+manual repeated step → deterministic tool
+unclear ownership → registered capability → known extension path
+```
+
+Patch 0.9 should cash in the accumulated work: new breadth should mostly be data/content authoring plus automated validation rather than bespoke authority code.

@@ -16,6 +16,8 @@ Load other authority **only when relevant**:
 - product/design conflict → `../../docs/bible/00-current-product-authority.md`
 - detailed current-patch acceptance → `../../docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md`
 - long-range scope lookup → `../../docs/roadmap/MASTER-ROADMAP.md`
+- repeated feature/content extension or implementation friction → `../../docs/production/EXTENSION-COST-MODEL.md`
+- broader leverage decision → `../../docs/roadmap/DEVELOPMENT-FLYWHEEL.md` and `../../docs/production/ENGINEERING-EFFICIENCY-OPS.md`
 - runtime state/remotes/lifecycle/rollback → v2.7 Blueprint/Production Core/Active Place Rollout
 - replicated or presentation ownership migration → Cross-System Traceability + cutover ledger
 - Main World/environment → applicable `../../docs/specifications/main-world-*`
@@ -103,6 +105,41 @@ Avoid live-service coupling in pure shared modules.
 - Preserve mobile/controller/accessibility behavior when changing controls or presentation.
 - Never invent asset, animation, product, place, universe IDs, or secrets.
 
+## Scaling / compounding rule
+
+The marginal cost of repeated features must trend **down**, not up.
+
+Before adding another member of a repeated family (affix, enemy variant, presentation profile, class/archetype, hub interaction, and future registered families):
+
+```bash
+python scripts/extension_cost.py list
+python scripts/extension_cost.py show <contract-id>
+```
+
+Implement through the registered canonical extension path first. Before completion, check the branch surface:
+
+```bash
+python scripts/extension_cost.py check <contract-id> --base main
+```
+
+Interpretation:
+
+- **WITHIN BUDGET** — normal extension path stayed narrow.
+- **REVIEW REQUIRED** — do not merely shrink the diff; decide whether this is a genuinely new semantic or whether the reusable seam has become too expensive.
+- A data-first variant should normally touch **zero server-authority files**.
+- Repeated budget overruns are a leverage trigger: improve the owner/schema/validator before scaling that family further.
+- Never force a necessary new semantic through an inadequate abstraction just to satisfy a number.
+
+Extension contracts live at `../../config/efficiency/extension-contracts.json`. Update a contract only when the real reusable path materially changes.
+
+The desired maturity curve is:
+
+```text
+bespoke → shared owner → stable registry/seam → data-first → generated only when still repetitive
+```
+
+Do not build generators before the repeated shape is proven.
+
 ## Risk and validation
 
 Use the repository risk tiers from root `AGENTS.md`:
@@ -145,6 +182,8 @@ Record source-complete work as **BUILT — VERIFICATION PENDING** until applicab
 
 - [ ] current dashboard and open PR overlap checked
 - [ ] smallest coherent high-ROI increment selected
+- [ ] registered extension contract used when adding a repeated family variant
+- [ ] extension-cost budget checked or deliberate semantic escalation explained
 - [ ] authority boundaries preserved
 - [ ] focused regression coverage added/updated
 - [ ] correct validation profile passed

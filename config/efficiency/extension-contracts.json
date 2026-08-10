@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "project": "living-kingdoms",
+  "updated": "2026-08-09",
+  "contracts": [
+    {
+      "id": "equipment-affix-variant",
+      "capability_id": "equipment-affixes",
+      "maturity": "data-first",
+      "goal": "Add or tune an affix without adding new gameplay authority code.",
+      "preferred_change_type": "data",
+      "canonical_paths": [
+        "games/living-kingdoms/src/shared/Config/EquipmentAffixConfig.luau"
+      ],
+      "support_paths": [
+        "games/living-kingdoms/src/shared/Equipment/EquipmentAffixContracts.luau",
+        "games/living-kingdoms/src/shared/Equipment/EquipmentAffixResolver.luau"
+      ],
+      "test_paths": [
+        "games/living-kingdoms/tests/EquipmentAffixResolver.test.luau"
+      ],
+      "metadata_paths": [
+        "config/efficiency/"
+      ],
+      "target_changed_files": 2,
+      "review_threshold_files": 4,
+      "authority_file_budget": 0,
+      "validation_profile": "fast",
+      "steps": [
+        "Add or tune the stable affix definition in EquipmentAffixConfig.",
+        "Extend contracts/resolver only when the existing schema cannot express the required behavior.",
+        "Add focused resolver coverage for any new compatibility, bound, or determinism rule.",
+        "Do not add persistence/combat mutation here; those remain with their canonical owners."
+      ],
+      "escalate_when": [
+        "a new effect semantic is required",
+        "combat application behavior must change",
+        "persistence or durable inventory shape must change"
+      ]
+    },
+    {
+      "id": "enemy-archetype-variant",
+      "capability_id": "combat-authority",
+      "maturity": "data-first",
+      "goal": "Create a stat/tuning enemy variant primarily through validated configuration.",
+      "preferred_change_type": "data",
+      "canonical_paths": [
+        "games/living-kingdoms/src/shared/Config/EnemyConfig.luau",
+        "games/living-kingdoms/src/shared/Config/EnemyLootConfig.luau",
+        "games/living-kingdoms/src/shared/Config/EnemyAudioConfig.luau"
+      ],
+      "support_paths": [
+        "games/living-kingdoms/src/server/Domain/",
+        "games/living-kingdoms/src/server/Systems/"
+      ],
+      "test_paths": [
+        "games/living-kingdoms/tests/"
+      ],
+      "metadata_paths": [
+        "config/efficiency/"
+      ],
+      "target_changed_files": 3,
+      "review_threshold_files": 6,
+      "authority_file_budget": 0,
+      "validation_profile": "fast",
+      "steps": [
+        "Express health, movement, reward, and presentation differences in existing config first.",
+        "Reuse existing enemy combat/AI semantics when the variant does not need a genuinely new behavior.",
+        "Add focused config/resolver coverage for new invariants.",
+        "Escalate to an authority change only for a new reusable attack or AI semantic."
+      ],
+      "escalate_when": [
+        "a new attack semantic is required",
+        "a new AI state/lifecycle is required",
+        "reward authority or mission lifecycle must change"
+      ]
+    },
+    {
+      "id": "combat-presentation-profile",
+      "capability_id": "combat-authority",
+      "maturity": "data-first",
+      "goal": "Add a combat feedback/audio/readability variant without creating a new presentation owner.",
+      "preferred_change_type": "data",
+      "canonical_paths": [
+        "games/living-kingdoms/src/shared/Config/CombatImpactPresentationConfig.luau",
+        "games/living-kingdoms/src/shared/Config/EnemyAudioConfig.luau",
+        "games/living-kingdoms/src/shared/Config/ConfirmedHitMarkerConfig.luau"
+      ],
+      "support_paths": [
+        "games/living-kingdoms/src/client/"
+      ],
+      "test_paths": [
+        "games/living-kingdoms/tests/"
+      ],
+      "metadata_paths": [
+        "config/efficiency/"
+      ],
+      "target_changed_files": 3,
+      "review_threshold_files": 5,
+      "authority_file_budget": 0,
+      "validation_profile": "fast",
+      "steps": [
+        "Reuse the current presentation owner and event contract.",
+        "Prefer profile/config changes over another controller or remote.",
+        "Add a source audit or fixture when a new mapping/invariant is introduced."
+      ],
+      "escalate_when": [
+        "a genuinely new presentation lifecycle owner is required",
+        "a new replicated fact must be introduced",
+        "server combat semantics must change"
+      ]
+    },
+    {
+      "id": "class-archetype-variant",
+      "capability_id": "combat-authority",
+      "maturity": "shared-owner",
+      "goal": "Grow archetypes by reusing class/stat/effect owners instead of parallel progression services.",
+      "preferred_change_type": "data-plus-resolver",
+      "canonical_paths": [
+        "games/living-kingdoms/src/shared/Config/ClassConfig.luau",
+        "games/living-kingdoms/src/shared/Classes/"
+      ],
+      "support_paths": [
+        "games/living-kingdoms/src/server/Domain/",
+        "games/living-kingdoms/src/server/Systems/"
+      ],
+      "test_paths": [
+        "games/living-kingdoms/tests/"
+      ],
+      "metadata_paths": [
+        "config/efficiency/"
+      ],
+      "target_changed_files": 4,
+      "review_threshold_files": 7,
+      "authority_file_budget": 1,
+      "validation_profile": "full",
+      "steps": [
+        "Add archetype identity/stat choices to ClassConfig and the existing class resolver surface.",
+        "Reuse existing effect/reward/progression boundaries before introducing a new service.",
+        "Add regression coverage for unlock/application rules.",
+        "After the repeated shape stabilizes, move later archetypes toward config-only authoring."
+      ],
+      "escalate_when": [
+        "new durable progression state is required",
+        "new persistence schema is required",
+        "a second progression authority would otherwise be introduced"
+      ]
+    },
+    {
+      "id": "hub-interaction-entry",
+      "capability_id": "hub-interactions",
+      "maturity": "registry-first",
+      "goal": "Add Main World interactions through the canonical registry/interaction owner rather than script-per-object behavior.",
+      "preferred_change_type": "registry-data",
+      "canonical_paths": [
+        "games/living-kingdoms/src/server/hub-preparation.server.luau",
+        "docs/specifications/canonical-hub-interaction-registry.md"
+      ],
+      "support_paths": [
+        "games/living-kingdoms/src/shared/"
+      ],
+      "test_paths": [
+        "games/living-kingdoms/tests/"
+      ],
+      "metadata_paths": [
+        "config/efficiency/"
+      ],
+      "target_changed_files": 4,
+      "review_threshold_files": 6,
+      "authority_file_budget": 1,
+      "validation_profile": "full",
+      "steps": [
+        "Give the interaction a stable ID and register it with the existing owner.",
+        "Reuse the device-neutral interaction contract.",
+        "Keep world objects declarative where possible and avoid one Script per prop/NPC.",
+        "Add validation for duplicate IDs/orphan references when the registry expands."
+      ],
+      "escalate_when": [
+        "economy/vendor authority is introduced",
+        "persistent progression is mutated",
+        "a new interaction transport or owner is required"
+      ]
+    }
+  ]
+}
