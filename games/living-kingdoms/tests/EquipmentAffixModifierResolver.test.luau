@@ -85,12 +85,25 @@ assertThat(
 	"well-formed effects without a live owner must remain inert"
 )
 assertThat(
-	resolver.resolve({ affix("DamagePercent", 500) }).damageMultiplier == runConfig.ModifierCeilings.maximumDamageMultiplier,
+	resolver.resolve({ affix("DamagePercent", 500) }).damageMultiplier
+		== runConfig.ModifierCeilings.maximumDamageMultiplier,
 	"damage affixes must inherit the canonical global ceiling"
 )
-assertThat(resolver.resolve({ { EffectId = "DamagePercent", Value = -1 } }).damageMultiplier == 1, "negative values fail closed")
-assertThat(resolver.resolve({ { EffectId = "", Value = 5 } }).damageMultiplier == 1, "missing effect identity fails closed")
-assertThat(resolver.resolve({ { EffectId = "DamagePercent", Value = 0 / 0 } }).damageMultiplier == 1, "NaN fails closed")
-assertThat(table.isfrozen(resolver.resolve({ affix("DamagePercent", 5) })), "resolved modifier bundle must be immutable")
+assertThat(
+	resolver.resolve({ { EffectId = "DamagePercent", Value = -1 } }).damageMultiplier == 1,
+	"negative values fail closed"
+)
+assertThat(
+	resolver.resolve({ { EffectId = "", Value = 5 } }).damageMultiplier == 1,
+	"missing effect identity fails closed"
+)
+assertThat(
+	resolver.resolve({ { EffectId = "DamagePercent", Value = 0 / 0 } }).damageMultiplier == 1,
+	"NaN fails closed"
+)
+assertThat(
+	table.isfrozen(resolver.resolve({ affix("DamagePercent", 5) })),
+	"resolved modifier bundle must be immutable"
+)
 
 print("EquipmentAffixModifierResolver: bounded damage translation and fail-closed behavior passed")
