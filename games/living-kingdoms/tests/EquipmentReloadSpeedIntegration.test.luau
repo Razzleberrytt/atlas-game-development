@@ -123,28 +123,44 @@ local function completion(context: any?): number
 end
 
 assertThat(completion(nil) == 12, "neutral reload must preserve configured duration")
-assertNear(completion({
-	woundedReloadDurationMultiplier = 1,
-	isCriticallyWounded = false,
-	equipmentReloadDurationMultiplier = 0.9,
-}), 11.8, "equipment reload speed must always shorten the active weapon reload")
-assertNear(completion({
-	woundedReloadDurationMultiplier = 0.75,
-	isCriticallyWounded = false,
-	equipmentReloadDurationMultiplier = 0.9,
-}), 11.8, "healthy Emergency Chamber must not leak into equipment reload speed")
-assertNear(completion({
-	woundedReloadDurationMultiplier = 0.75,
-	isCriticallyWounded = true,
-	equipmentReloadDurationMultiplier = 0.9,
-}), 11.35, "wounded relic and equipped reload speed must compose")
+assertNear(
+	completion({
+		woundedReloadDurationMultiplier = 1,
+		isCriticallyWounded = false,
+		equipmentReloadDurationMultiplier = 0.9,
+	}),
+	11.8,
+	"equipment reload speed must always shorten the active weapon reload"
+)
+assertNear(
+	completion({
+		woundedReloadDurationMultiplier = 0.75,
+		isCriticallyWounded = false,
+		equipmentReloadDurationMultiplier = 0.9,
+	}),
+	11.8,
+	"healthy Emergency Chamber must not leak into equipment reload speed"
+)
+assertNear(
+	completion({
+		woundedReloadDurationMultiplier = 0.75,
+		isCriticallyWounded = true,
+		equipmentReloadDurationMultiplier = 0.9,
+	}),
+	11.35,
+	"wounded relic and equipped reload speed must compose"
+)
 
 progressionAttributes.RunReloadDurationMultiplier = 0.8
-assertNear(completion({
-	woundedReloadDurationMultiplier = 0.75,
-	isCriticallyWounded = true,
-	equipmentReloadDurationMultiplier = 0.9,
-}), 11.08, "squad, relic, and equipment reload modifiers must compose once")
+assertNear(
+	completion({
+		woundedReloadDurationMultiplier = 0.75,
+		isCriticallyWounded = true,
+		equipmentReloadDurationMultiplier = 0.9,
+	}),
+	11.08,
+	"squad, relic, and equipment reload modifiers must compose once"
+)
 progressionAttributes.RunReloadDurationMultiplier = 0.5
 assertThat(completion({
 	woundedReloadDurationMultiplier = 0.5,
@@ -164,20 +180,39 @@ local compositionSource = fs.readFile("games/living-kingdoms/src/server/Systems/
 local runtimeSource = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau")
 local reloadSource = fs.readFile("games/living-kingdoms/src/server/Systems/ReloadResolver.luau")
 
-assertThat(string.find(affixSource, 'RELOAD_SPEED_EFFECT_ID = "ReloadSpeedPercent"', 1, true) ~= nil,
-	"reload-speed affix must be translated by the shared bounded adapter")
-assertThat(string.find(affixSource, "reloadDurationReduction = reloadSpeedPercent / PERCENT_SCALE", 1, true) ~= nil,
-	"reload-speed percentage must route through canonical modifier arithmetic")
-assertThat(string.find(equippedSource, "reloadDurationMultiplier = modifiers.reloadDurationMultiplier", 1, true) ~= nil,
-	"equipped weapon resolver must expose the active item's reload modifier")
-assertThat(string.find(compositionSource,
-	"combined.equipmentReloadDurationMultiplier = equipmentModifiers.reloadDurationMultiplier", 1, true) ~= nil,
-	"server composition seam must join the authoritative inventory reload fact")
-assertThat(string.find(runtimeSource,
-	"equipmentReloadDurationMultiplier = modifiers.equipmentReloadDurationMultiplier", 1, true) ~= nil,
-	"combat runtime must pass the server-composed equipment fact into reload authority")
-assertThat(string.find(reloadSource,
-	"value * relicMultiplier * equipmentMultiplier", 1, true) ~= nil,
-	"ReloadResolver must remain the one composition owner")
+assertThat(
+	string.find(affixSource, 'RELOAD_SPEED_EFFECT_ID = "ReloadSpeedPercent"', 1, true) ~= nil,
+	"reload-speed affix must be translated by the shared bounded adapter"
+)
+assertThat(
+	string.find(affixSource, "reloadDurationReduction = reloadSpeedPercent / PERCENT_SCALE", 1, true) ~= nil,
+	"reload-speed percentage must route through canonical modifier arithmetic"
+)
+assertThat(
+	string.find(equippedSource, "reloadDurationMultiplier = modifiers.reloadDurationMultiplier", 1, true) ~= nil,
+	"equipped weapon resolver must expose the active item's reload modifier"
+)
+assertThat(
+	string.find(
+		compositionSource,
+		"combined.equipmentReloadDurationMultiplier = equipmentModifiers.reloadDurationMultiplier",
+		1,
+		true
+	) ~= nil,
+	"server composition seam must join the authoritative inventory reload fact"
+)
+assertThat(
+	string.find(
+		runtimeSource,
+		"equipmentReloadDurationMultiplier = modifiers.equipmentReloadDurationMultiplier",
+		1,
+		true
+	) ~= nil,
+	"combat runtime must pass the server-composed equipment fact into reload authority"
+)
+assertThat(
+	string.find(reloadSource, "value * relicMultiplier * equipmentMultiplier", 1, true) ~= nil,
+	"ReloadResolver must remain the one composition owner"
+)
 
 print("EquipmentReloadSpeedIntegration: authoritative equipment reload routing passed")
