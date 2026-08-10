@@ -242,6 +242,16 @@ assert(light.Enabled == true, "stale state must not override newer state")
 stateSignal:Fire({ stateId = "Active", revision = 3, resultStatusId = "Changed", targetEntityId = "hidden" })
 assert(light.Enabled == true, "unsafe payload must be ignored")
 
+-- The server owns which coverage profile this operative earned. Presentation
+-- follows the disclosed profile and never asserts one on its own.
+assert(light.Angle == 64 and light.Range == 78, "an operative without the unlock keeps the standard beam")
+stateSignal:Fire({ stateId = "Active", revision = 4, resultStatusId = "Changed", coverageProfileId = "Focused" })
+assert(light.Angle == 72 and light.Range == 92, "a disclosed Focused profile must widen the local beam")
+stateSignal:Fire({ stateId = "Active", revision = 5, resultStatusId = "Changed", coverageProfileId = "Standard" })
+assert(light.Angle == 64 and light.Range == 78, "the server may return an operative to the standard beam")
+stateSignal:Fire({ stateId = "Active", revision = 6, resultStatusId = "Changed", coverageProfileId = "Invented" })
+assert(light.Angle == 64 and light.Range == 78, "an unknown profile must be rejected, not rendered")
+
 attributes.LK_P3_LifeState = "Dead"
 lifeSignal:Fire()
 assert(light.Enabled == false, "death must stop presentation")
@@ -261,5 +271,9 @@ assert(not string.find(source, "Raycast", 1, true))
 assert(not string.find(source, "VisibilityResolver", 1, true))
 assert(not string.find(source, "targetEntityId", 1, true))
 assert(string.find(source, "currentCamera.CFrame", 1, true), "the local beam must follow the camera")
+assert(
+	not string.find(source, "hasOwnedUnlock", 1, true) and not string.find(source, "OperativeProgression", 1, true),
+	"the client must never derive its own durable unlock eligibility"
+)
 
 print("PersonalFlashlightController: LK-0406 prediction, reconciliation, accessibility, and cleanup passed")

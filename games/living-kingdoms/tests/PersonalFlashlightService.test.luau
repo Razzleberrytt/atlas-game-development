@@ -26,6 +26,17 @@ local flashlightContracts = loadSimple(
 )
 local coverage =
 	loadSimple("games/living-kingdoms/src/server/Systems/PersonalFlashlightCoverage.luau", "PersonalFlashlightCoverage")
+local operativeProgressionConfig =
+	loadSimple("games/living-kingdoms/src/shared/Config/OperativeProgressionConfig.luau", "OperativeProgressionConfig")
+
+-- The authored focused profile must stay inside the canonical LK-0401 cone bounds
+-- that GameplayLightDescriptorValidator enforces, otherwise a rank-3 operative
+-- would silently fail light registration instead of seeing a better beam.
+assert(
+	flashlightConfig.FocusedRangeStuds <= lightConfig.MaximumConeRangeStuds
+		and flashlightConfig.FocusedConeAngleDegrees <= lightConfig.MaximumConeAngleDegrees,
+	"focused coverage must fit the canonical gameplay-light cone bounds"
+)
 
 local LIGHT_CONFIG_TOKEN = {}
 local FLASHLIGHT_CONFIG_TOKEN = {}
@@ -36,6 +47,8 @@ local LIGHTING_TOKEN = {}
 local LIFE_TOKEN = {}
 local COVERAGE_TOKEN = {}
 local FAILURE_TOKEN = {}
+local PROGRESSION_CONFIG_TOKEN = {}
+local PROGRESSION_TOKEN = {}
 
 local validator =
 	luau.load(fs.readFile("games/living-kingdoms/src/shared/Lighting/GameplayLightDescriptorValidator.luau"), {
@@ -162,6 +175,7 @@ local replicatedStorage = {
 		Config = {
 			GameplayLightingConfig = LIGHT_CONFIG_TOKEN,
 			PersonalFlashlightConfig = FLASHLIGHT_CONFIG_TOKEN,
+			OperativeProgressionConfig = PROGRESSION_CONFIG_TOKEN,
 		},
 		Lighting = {
 			GameplayLightContracts = LIGHT_CONTRACTS_TOKEN,
@@ -242,9 +256,25 @@ function lightingAdapter.readSnapshot()
 	return lightingService.readSnapshot()
 end
 
+-- Durable progression stub. It records every query so the fixture can prove the
+-- flashlight owner only ever asks about the operative's own account.
+local focusUnlockedByUserId: { [number]: boolean } = {}
+local progressionQueries = {}
+local progressionService = {
+	hasOwnedUnlock = function(requesterId, ownerId, unlockId)
+		table.insert(progressionQueries, { requesterId = requesterId, ownerId = ownerId, unlockId = unlockId })
+		if requesterId ~= ownerId then
+			return false
+		end
+		return unlockId == operativeProgressionConfig.UnlockIds.FocusedFlashlightBeam
+			and focusUnlockedByUserId[ownerId] == true
+	end,
+}
+
 local parentTokens = {
 	GameplayLightingService = LIGHTING_TOKEN,
 	OperativeLifeService = LIFE_TOKEN,
+	OperativeProgressionService = PROGRESSION_TOKEN,
 	PersonalFlashlightCoverage = COVERAGE_TOKEN,
 	SquadFailureService = FAILURE_TOKEN,
 }
@@ -279,6 +309,10 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return coverage
 			elseif token == FAILURE_TOKEN then
 				return failureService
+			elseif token == PROGRESSION_CONFIG_TOKEN then
+				return operativeProgressionConfig
+			elseif token == PROGRESSION_TOKEN then
+				return progressionService
 			end
 			error("unexpected flashlight service dependency")
 		end,
@@ -331,6 +365,7 @@ local function reset()
 	table.clear(stateMessages)
 	table.clear(registeredDescriptors)
 	table.clear(scheduled)
+	table.clear(progressionQueries)
 	for key in lightingCalls do
 		lightingCalls[key] = 0
 	end
@@ -356,6 +391,14 @@ assert(descriptor.sourceId == flashlightConfig.SourceId)
 assert(descriptor.sourceTypeId == "ApprovedPersonal")
 assert(descriptor.coverage.kind == "ForwardCone")
 assert(descriptor.coverage.rangeStuds == 48 and descriptor.coverage.angleDegrees == 50)
+assert(registered.state.coverageProfileId == "Standard", "an operative without the unlock keeps standard coverage")
+assert(#progressionQueries == 1, "coverage must be derived from durable progression exactly once per registration")
+assert(
+	progressionQueries[1].requesterId == owner.UserId
+		and progressionQueries[1].ownerId == owner.UserId
+		and progressionQueries[1].unlockId == "personal-focused-beam",
+	"the flashlight owner must only ask about the operative's own durable unlock"
+)
 assert(lightingRecord(lightId).activationStateId == "Inactive")
 assert(service.registerOperative(owner.operativeEntityId, owner).rejectionReasonId == "DuplicateOperative")
 assert(service.registerOperative(other.operativeEntityId, owner).rejectionReasonId == "PlayerAlreadyRegistered")
@@ -454,11 +497,30 @@ local latestPayload = stateMessages[#stateMessages].payload
 assert(flashlightContracts.validateSafeState(latestPayload))
 assert(latestPayload.radius == nil and latestPayload.cone == nil and latestPayload.operativeEntityId == nil)
 assert(latestPayload.discovery == nil and latestPayload.targetEntityId == nil and latestPayload.timestamp == nil)
-local acceptedNew, reconciledState, reconciledRevision =
+local acceptedNew, reconciledState, reconciledRevision, reconciledProfile =
 	flashlightContracts.reconcilePresentation(latestPayload.revision, latestPayload)
 assert(acceptedNew and reconciledState == latestPayload.stateId and reconciledRevision == latestPayload.revision)
+assert(reconciledProfile == "Standard", "an owner-only profile must reconcile for presentation")
 local acceptedStale = flashlightContracts.reconcilePresentation(latestPayload.revision + 1, latestPayload)
 assert(not acceptedStale, "stale state must not override newer presentation")
+
+-- A payload from an older server that predates the profile field still reconciles
+-- and falls back to the standard beam.
+local _, _, _, legacyProfile = flashlightContracts.reconcilePresentation(0, {
+	stateId = "Active",
+	revision = 0,
+	resultStatusId = "Changed",
+})
+assert(legacyProfile == "Standard", "an absent profile must mean standard coverage")
+for _, forged in
+	{
+		{ stateId = "Active", revision = 0, resultStatusId = "Changed", coverageProfileId = "Focused2" },
+		{ stateId = "Active", revision = 0, resultStatusId = "Changed", coverageProfileId = 64 },
+		{ stateId = "Active", revision = 0, resultStatusId = "Changed", coverageProfileId = "" },
+	}
+do
+	assert(not flashlightContracts.validateSafeState(forged), "an unknown coverage profile must be rejected")
+end
 
 local ownerRevisionBeforeRemoteAttacks = service.readOperativeState(owner.operativeEntityId).revision
 intentSignal:Fire(other, { operativeEntityId = owner.operativeEntityId, requestedActive = true })
@@ -481,6 +543,60 @@ do
 end
 assert(service.readOperativeState(owner.operativeEntityId).revision == ownerRevisionBeforeRemoteAttacks)
 assert(service.readOperativeState(owner.operativeEntityId).stateId == "Inactive")
+
+-- Rank-earned Focused Beam: the durable unlock changes the authoritative cone the
+-- server registers, the coverage facts it derives, and the owner-only disclosure.
+reset()
+local focusedOwner = makePlayer(30, "operative.player:30")
+focusUnlockedByUserId[30] = true
+admit(focusedOwner, focusedOwner.operativeEntityId)
+local focusedRegistration = service.registerOperative(focusedOwner.operativeEntityId, focusedOwner)
+assert(focusedRegistration.didChange and focusedRegistration.state.coverageProfileId == "Focused")
+local focusedLightId = flashlightConfig.LightIdPrefix .. focusedOwner.operativeEntityId
+local focusedDescriptor = registeredDescriptors[focusedLightId]
+assert(validator.validate(focusedDescriptor).isValid, "the focused descriptor must remain LK-0401-valid")
+assert(
+	focusedDescriptor.coverage.rangeStuds == flashlightConfig.FocusedRangeStuds
+		and focusedDescriptor.coverage.angleDegrees == flashlightConfig.FocusedConeAngleDegrees,
+	"the durable unlock must widen the authoritative registered cone"
+)
+now = 40
+assert(service.requestToggle(focusedOwner, true).didChange)
+local focusedFacts = service.readCoverageFacts(focusedOwner.operativeEntityId)
+assert(
+	focusedFacts ~= nil
+		and focusedFacts.rangeStuds == flashlightConfig.FocusedRangeStuds
+		and focusedFacts.coneAngleDegrees == flashlightConfig.FocusedConeAngleDegrees,
+	"server coverage facts must follow the earned profile"
+)
+assert(
+	coverage.qualifiesPoint(focusedFacts, { x = 0, y = 0, z = -flashlightConfig.FocusedRangeStuds }),
+	"the extended range boundary must qualify"
+)
+assert(
+	not coverage.qualifiesPoint(focusedFacts, { x = 0, y = 0, z = -flashlightConfig.FocusedRangeStuds - 0.001 }),
+	"the extended range must still be bounded"
+)
+local focusedPayload = stateMessages[#stateMessages].payload
+assert(flashlightContracts.validateSafeState(focusedPayload) and focusedPayload.coverageProfileId == "Focused")
+assert(
+	focusedPayload.operativeEntityId == nil and focusedPayload.rangeStuds == nil,
+	"the profile disclosure must not leak coverage geometry or identity"
+)
+
+-- A second operative on the same server without the unlock keeps the standard
+-- cone, so the unlock stays personal rather than becoming a squad-wide upgrade.
+local standardPeer = makePlayer(31, "operative.player:31")
+admit(standardPeer, standardPeer.operativeEntityId)
+local peerRegistration = service.registerOperative(standardPeer.operativeEntityId, standardPeer)
+assert(peerRegistration.didChange and peerRegistration.state.coverageProfileId == "Standard")
+local peerDescriptor = registeredDescriptors[flashlightConfig.LightIdPrefix .. standardPeer.operativeEntityId]
+assert(
+	peerDescriptor.coverage.rangeStuds == flashlightConfig.RangeStuds
+		and peerDescriptor.coverage.angleDegrees == flashlightConfig.ConeAngleDegrees,
+	"an unearned operative must keep the standard cone alongside an earned one"
+)
+focusUnlockedByUserId[30] = nil
 
 reset()
 local budgetOwner = makePlayer(10, "operative.player:10")

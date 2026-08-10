@@ -12,11 +12,13 @@ local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
 
+local OperativeProgressionConfig = require(ReplicatedStorage.Shared.Config.OperativeProgressionConfig)
 local PersonalFlashlightConfig = require(ReplicatedStorage.Shared.Config.PersonalFlashlightConfig)
 local GameplayLightContracts = require(ReplicatedStorage.Shared.Lighting.GameplayLightContracts)
 local PersonalFlashlightContracts = require(ReplicatedStorage.Shared.Lighting.PersonalFlashlightContracts)
 local GameplayLightingService = require(script.Parent.GameplayLightingService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
+local OperativeProgressionService = require(script.Parent.OperativeProgressionService)
 local PersonalFlashlightCoverage = require(script.Parent.PersonalFlashlightCoverage)
 local SquadFailureService = require(script.Parent.SquadFailureService)
 
@@ -28,6 +30,13 @@ export type OperativeFlashlightState = {
 	stateId: string,
 	revision: number,
 	eligible: boolean,
+	coverageProfileId: string,
+}
+
+export type CoverageProfile = {
+	coverageProfileId: string,
+	rangeStuds: number,
+	coneAngleDegrees: number,
 }
 
 export type OperationResult = {
@@ -49,6 +58,7 @@ type Entry = {
 	lastAcceptedToggleTimestamp: number?,
 	lastLightingTransitionTimestamp: number?,
 	lastLifeRevision: number,
+	coverage: CoverageProfile,
 }
 
 type Listener = (state: OperativeFlashlightState) -> ()
@@ -84,6 +94,49 @@ local rosterConnection: ListenerConnection? = nil
 local failureConnection: ListenerConnection? = nil
 local developmentHarness: Folder? = nil
 
+local STANDARD_PROFILE_ID = PersonalFlashlightContracts.CoverageProfileIds.Standard
+local FOCUSED_PROFILE_ID = PersonalFlashlightContracts.CoverageProfileIds.Focused
+
+local STANDARD_COVERAGE: CoverageProfile = table.freeze({
+	coverageProfileId = STANDARD_PROFILE_ID,
+	rangeStuds = PersonalFlashlightConfig.RangeStuds,
+	coneAngleDegrees = PersonalFlashlightConfig.ConeAngleDegrees,
+})
+local FOCUSED_COVERAGE: CoverageProfile = table.freeze({
+	coverageProfileId = FOCUSED_PROFILE_ID,
+	rangeStuds = PersonalFlashlightConfig.FocusedRangeStuds,
+	coneAngleDegrees = PersonalFlashlightConfig.FocusedConeAngleDegrees,
+})
+
+--[[
+	Derives the operative's authored coverage profile from durable progression.
+
+	The profile is read from the owner-bound progression adapter using the
+	operative's own UserId as both requester and owner, so no cross-player
+	progression is ever consulted and no client intent participates. A missing or
+	unloaded durable record fails safe to the standard profile, and a partial
+	runtime without the progression adapter behaves exactly as before.
+
+	Coverage is resolved once per registration because the light descriptor is
+	registered with GameplayLightingService at that moment. Durable rank only
+	advances between expeditions, so a run cannot rewrite its own coverage.
+]]
+local function resolveCoverage(player: Player): CoverageProfile
+	local playerAsAny = player :: any
+	if type(playerAsAny.UserId) ~= "number" then
+		return STANDARD_COVERAGE
+	end
+	local userId = playerAsAny.UserId :: number
+	local didRead, hasUnlock = pcall(function()
+		return OperativeProgressionService.hasOwnedUnlock(
+			userId,
+			userId,
+			OperativeProgressionConfig.UnlockIds.FocusedFlashlightBeam
+		)
+	end)
+	return if didRead and hasUnlock == true then FOCUSED_COVERAGE else STANDARD_COVERAGE
+end
+
 local function copyState(entry: Entry): OperativeFlashlightState
 	return table.freeze({
 		operativeEntityId = entry.operativeEntityId,
@@ -91,6 +144,7 @@ local function copyState(entry: Entry): OperativeFlashlightState
 		stateId = entry.stateId,
 		revision = entry.revision,
 		eligible = entry.eligible,
+		coverageProfileId = entry.coverage.coverageProfileId,
 	})
 end
 
@@ -115,6 +169,7 @@ local function safePayload(entry: Entry, statusId: string, rejectionReasonId: st
 		revision = entry.revision,
 		resultStatusId = statusId,
 		rejectionReasonId = rejectionReasonId,
+		coverageProfileId = entry.coverage.coverageProfileId,
 	})
 end
 
@@ -133,7 +188,7 @@ local function deterministicLightId(operativeEntityId: string): string
 	return PersonalFlashlightConfig.LightIdPrefix .. operativeEntityId
 end
 
-local function descriptor(operativeEntityId: string): any
+local function descriptor(operativeEntityId: string, coverage: CoverageProfile): any
 	return {
 		sourceId = PersonalFlashlightConfig.SourceId,
 		sourceTypeId = GameplayLightContracts.GameplayLightSourceTypeIds.ApprovedPersonal,
@@ -145,8 +200,8 @@ local function descriptor(operativeEntityId: string): any
 		},
 		coverage = {
 			kind = GameplayLightContracts.GameplayLightCoverageKindIds.ForwardCone,
-			rangeStuds = PersonalFlashlightConfig.RangeStuds,
-			angleDegrees = PersonalFlashlightConfig.ConeAngleDegrees,
+			rangeStuds = coverage.rangeStuds,
+			angleDegrees = coverage.coneAngleDegrees,
 		},
 		ownerEntityId = operativeEntityId,
 	}
@@ -166,7 +221,8 @@ local function lightingRecord(lightId: string): any?
 end
 
 local function registerLight(entry: Entry): string?
-	local registered = GameplayLightingService.registerLight(entry.lightId, descriptor(entry.operativeEntityId))
+	local registered =
+		GameplayLightingService.registerLight(entry.lightId, descriptor(entry.operativeEntityId, entry.coverage))
 	if not registered.didChange then
 		return registered.rejectionReasonId or PersonalFlashlightContracts.RejectionReasonIds.LightingRejected
 	end
@@ -392,6 +448,7 @@ function PersonalFlashlightService.registerOperative(operativeEntityId: string, 
 		lastAcceptedToggleTimestamp = nil,
 		lastLightingTransitionTimestamp = nil,
 		lastLifeRevision = read.revision,
+		coverage = resolveCoverage(player),
 	}
 	local rejectionReasonId = registerLight(entry)
 	if rejectionReasonId ~= nil then
@@ -530,8 +587,8 @@ function PersonalFlashlightService.readCoverageFacts(
 	return PersonalFlashlightCoverage.buildFacts(
 		{ x = position.X, y = position.Y, z = position.Z },
 		{ x = direction.X, y = direction.Y, z = direction.Z },
-		PersonalFlashlightConfig.RangeStuds,
-		PersonalFlashlightConfig.ConeAngleDegrees,
+		entry.coverage.rangeStuds,
+		entry.coverage.coneAngleDegrees,
 		PersonalFlashlightConfig.VisibilityProfileId
 	)
 end
