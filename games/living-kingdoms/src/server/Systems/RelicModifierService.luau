@@ -42,6 +42,7 @@ export type OperativeModifiers = RelicModifiers & {
 type CacheEntry = {
 	revision: number,
 	modifiers: RelicModifiers,
+	partialRuntimeModifiers: OperativeModifiers?,
 }
 
 local RelicModifierService = {}
@@ -49,15 +50,17 @@ local RelicModifierService = {}
 local NEUTRAL_RELIC_MODIFIERS: RelicModifiers = RelicModifierResolver.deriveModifiers({})
 local cache: { [Player]: CacheEntry } = {}
 
+local function canComposeEquipment(player: Player): boolean
+	local playerAsAny = player :: any
+	return EquippedEquipmentModifierResolver ~= nil
+		and InventoryLiveService ~= nil
+		and type(playerAsAny.GetAttribute) == "function"
+end
+
 local function composeOperativeModifiers(player: Player, relicModifiers: RelicModifiers): OperativeModifiers
 	local combined = table.clone(relicModifiers) :: any
 	combined.equipmentDamageMultiplier = 1
-	local playerAsAny = player :: any
-	if
-		EquippedEquipmentModifierResolver == nil
-		or InventoryLiveService == nil
-		or type(playerAsAny.GetAttribute) ~= "function"
-	then
+	if not canComposeEquipment(player) then
 		return table.freeze(combined) :: OperativeModifiers
 	end
 	local activeWeaponId = player:GetAttribute("LK_EquippedWeaponId")
@@ -73,6 +76,11 @@ end
 	Returns the operative's current bounded modifier bundle. Relics may be served
 	from the build-revision cache; durable equipment is resolved from the current
 	authoritative inventory record and server-authored active weapon every read.
+
+	Partial runtimes that omit equipment composition reuse one neutral composed
+	bundle per relic revision. Full production runtimes deliberately do not cache
+	the composed equipment result, because durable equip changes have an authority
+	revision independent from the temporary run-build revision.
 ]]
 function RelicModifierService.read(player: Player): OperativeModifiers
 	local read = RunBuildService.readEquippedRelicIds(player)
@@ -82,11 +90,22 @@ function RelicModifierService.read(player: Player): OperativeModifiers
 	end
 	local cached = cache[player]
 	if cached ~= nil and cached.revision == read.revision then
+		if not canComposeEquipment(player) then
+			if cached.partialRuntimeModifiers == nil then
+				cached.partialRuntimeModifiers = composeOperativeModifiers(player, cached.modifiers)
+			end
+			return cached.partialRuntimeModifiers
+		end
 		return composeOperativeModifiers(player, cached.modifiers)
 	end
 	local modifiers = RelicModifierResolver.deriveModifiers(read.relicIds)
-	cache[player] = { revision = read.revision, modifiers = modifiers }
-	return composeOperativeModifiers(player, modifiers)
+	local composed = composeOperativeModifiers(player, modifiers)
+	cache[player] = {
+		revision = read.revision,
+		modifiers = modifiers,
+		partialRuntimeModifiers = if canComposeEquipment(player) then nil else composed,
+	}
+	return composed
 end
 
 --[[
