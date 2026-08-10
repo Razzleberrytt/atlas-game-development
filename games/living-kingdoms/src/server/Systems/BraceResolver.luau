@@ -2,8 +2,9 @@
 
 --[[
 	Pure P7-0103 Brace lifecycle. The runtime supplies server-derived assignment,
-	operation, life, movement, reload, time, replay, and rate-limit facts. This
-	module owns no Player, service, scheduler, remote, combat state, or position.
+	operation, life, movement, reload, time, replay, rate-limit, and optional
+	cooldown-duration facts. This module owns no Player, service, scheduler, remote,
+	combat state, equipment state, or position.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -88,6 +89,16 @@ local function isFiniteNonnegative(value: unknown): boolean
 	return type(value) == "number" and value == value and value ~= math.huge and value ~= -math.huge and value >= 0
 end
 
+local function normalizedCooldownDurationMultiplier(value: unknown): number?
+	if value == nil then
+		return 1
+	end
+	if type(value) ~= "number" or value ~= value or value == math.huge or value == -math.huge or value <= 0 or value > 1 then
+		return nil
+	end
+	return value
+end
+
 local function validStartFacts(facts: unknown): boolean
 	if type(facts) ~= "table" then
 		return false
@@ -117,15 +128,17 @@ end
 local function cooldownState(
 	state: ClassContracts.AuthoritativeClassActionState,
 	serverTimestamp: number,
-	reasonId: string
+	reasonId: string,
+	cooldownDurationMultiplier: number?
 ): ClassContracts.AuthoritativeClassActionState
+	local multiplier = normalizedCooldownDurationMultiplier(cooldownDurationMultiplier) or 1
 	return table.freeze({
 		actionStateId = ActionStateIds.Cooldown,
 		actionId = ActionIds.Brace,
 		targetOperativeEntityId = nil,
 		startedAtServerTimestamp = nil,
 		completionServerTimestamp = nil,
-		cooldownEndServerTimestamp = serverTimestamp + ClassConfig.Actions.Brace.cooldownSeconds,
+		cooldownEndServerTimestamp = serverTimestamp + ClassConfig.Actions.Brace.cooldownSeconds * multiplier,
 		statusReasonId = reasonId,
 		revision = state.revision + 1,
 	})
@@ -203,9 +216,14 @@ end
 
 function Resolver.resolveContinuity(
 	currentState: ClassContracts.AuthoritativeClassActionState,
-	facts: ContinuityFacts
+	facts: ContinuityFacts,
+	cooldownDurationMultiplier: number?
 ): Resolution
-	if not ClassContracts.validateAuthoritativeClassActionState(currentState) or not validContinuityFacts(facts) then
+	if
+		not ClassContracts.validateAuthoritativeClassActionState(currentState)
+		or not validContinuityFacts(facts)
+		or normalizedCooldownDurationMultiplier(cooldownDurationMultiplier) == nil
+	then
 		return rejected(currentState, ReasonIds.InvalidIntent, nil)
 	end
 	if currentState.actionStateId == ActionStateIds.Cooldown then
@@ -224,7 +242,7 @@ function Resolver.resolveContinuity(
 			false,
 			ReasonIds.OperationResolved,
 			nil,
-			cooldownState(currentState, facts.serverTimestamp, ReasonIds.OperationResolved)
+			cooldownState(currentState, facts.serverTimestamp, ReasonIds.OperationResolved, cooldownDurationMultiplier)
 		)
 	end
 	if not facts.isActorAlive then
@@ -233,7 +251,7 @@ function Resolver.resolveContinuity(
 			false,
 			ReasonIds.ActorNotAlive,
 			nil,
-			cooldownState(currentState, facts.serverTimestamp, ReasonIds.ActorNotAlive)
+			cooldownState(currentState, facts.serverTimestamp, ReasonIds.ActorNotAlive, cooldownDurationMultiplier)
 		)
 	end
 	if facts.movementDistanceStuds > ClassConfig.Actions.Brace.movementToleranceStuds then
@@ -242,7 +260,7 @@ function Resolver.resolveContinuity(
 			false,
 			ReasonIds.MovementInterrupted,
 			nil,
-			cooldownState(currentState, facts.serverTimestamp, ReasonIds.MovementInterrupted)
+			cooldownState(currentState, facts.serverTimestamp, ReasonIds.MovementInterrupted, cooldownDurationMultiplier)
 		)
 	end
 	if facts.didReloadBegin and ClassConfig.Actions.Brace.interruptOnReload then
@@ -251,7 +269,7 @@ function Resolver.resolveContinuity(
 			false,
 			ReasonIds.ReloadInterrupted,
 			nil,
-			cooldownState(currentState, facts.serverTimestamp, ReasonIds.ReloadInterrupted)
+			cooldownState(currentState, facts.serverTimestamp, ReasonIds.ReloadInterrupted, cooldownDurationMultiplier)
 		)
 	end
 	local completion = currentState.completionServerTimestamp
@@ -261,7 +279,7 @@ function Resolver.resolveContinuity(
 			false,
 			ReasonIds.ActionCompleted,
 			nil,
-			cooldownState(currentState, facts.serverTimestamp, ReasonIds.ActionCompleted)
+			cooldownState(currentState, facts.serverTimestamp, ReasonIds.ActionCompleted, cooldownDurationMultiplier)
 		)
 	end
 	return result(false, false, nil, nil, currentState)
@@ -270,12 +288,14 @@ end
 function Resolver.resolveCancel(
 	currentState: ClassContracts.AuthoritativeClassActionState,
 	rawIntent: unknown,
-	serverTimestamp: number
+	serverTimestamp: number,
+	cooldownDurationMultiplier: number?
 ): Resolution
 	if
 		not ClassContracts.validateAuthoritativeClassActionState(currentState)
 		or not ClassContracts.validateClassActionIntent(rawIntent)
 		or not isFiniteNonnegative(serverTimestamp)
+		or normalizedCooldownDurationMultiplier(cooldownDurationMultiplier) == nil
 	then
 		return rejected(currentState, ReasonIds.InvalidIntent, nil)
 	end
@@ -295,7 +315,7 @@ function Resolver.resolveCancel(
 		false,
 		ReasonIds.ActionCancelled,
 		requestId,
-		cooldownState(currentState, serverTimestamp, ReasonIds.ActionCancelled)
+		cooldownState(currentState, serverTimestamp, ReasonIds.ActionCancelled, cooldownDurationMultiplier)
 	)
 end
 
