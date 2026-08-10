@@ -97,16 +97,20 @@
     },
     {
       "effect_id": "AbilityPowerPercent",
-      "status": "owner-confirmed",
+      "status": "live",
       "capability_id": "combat-authority",
       "owner_kind": "server",
       "canonical_owner": "games/living-kingdoms/src/server/Systems/ClassService.luau",
       "composition_seam": "games/living-kingdoms/src/server/Systems/RelicModifierService.luau",
-      "shared_adapter": null,
+      "shared_adapter": "games/living-kingdoms/src/shared/Equipment/EquipmentAffixModifierResolver.luau",
       "selection_resolver": "games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau",
-      "focused_tests": [],
+      "focused_tests": [
+        "games/living-kingdoms/tests/EquipmentAffixModifierResolver.test.luau",
+        "games/living-kingdoms/tests/EquippedEquipmentModifierResolver.test.luau",
+        "games/living-kingdoms/tests/EquipmentAbilityPowerIntegration.test.luau"
+      ],
       "risk_tier": "R2",
-      "extension_rule": "Route durable Relic ability power into ClassService as one bounded server-derived consequence multiplier. Apply it only to server-owned class-action effect strength (such as Brace cadence benefit, Field Treatment healing, Field Resupply rounds, and Medic revive restored health), derived from configured base values; never let the client provide power or consequential output values."
+      "extension_rule": "New AbilityPowerPercent Relic affixes should be data/config plus focused regression only; compose through RelicModifierService and snapshot the bounded power multiplier when ClassService activates an action. Apply it only to existing server-owned class consequences such as Brace cadence benefit, Field Treatment healing, and Field Resupply rounds, all derived from configured base values; never accept client-authored power or output values."
     }
   ]
 }
