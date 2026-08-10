@@ -10,7 +10,7 @@
       "capability_id": "combat-authority",
       "owner_kind": "server",
       "canonical_owner": "games/living-kingdoms/src/server/Systems/DamageResolver.luau",
-      "composition_seam": "games/living-kingdoms/src/server/Systems/RelicModifierService.luau",
+      "composition_seam": "games/living-kings/src/server/Systems/RelicModifierService.luau",
       "shared_adapter": "games/living-kingdoms/src/shared/Equipment/EquipmentAffixModifierResolver.luau",
       "selection_resolver": "games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau",
       "focused_tests": [
@@ -41,16 +41,24 @@
     },
     {
       "effect_id": "MaxHealthPercent",
-      "status": "unresolved",
+      "status": "live",
       "capability_id": "combat-authority",
       "owner_kind": "server",
-      "canonical_owner": null,
-      "composition_seam": null,
-      "shared_adapter": null,
+      "canonical_owner": "games/living-kingdoms/src/server/Systems/OperativeLifeService.luau",
+      "composition_seam": "games/living-kingdoms/src/server/Systems/RelicModifierService.luau",
+      "shared_adapter": "games/living-kingdoms/src/shared/Equipment/EquipmentAffixModifierResolver.luau",
       "selection_resolver": "games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau",
-      "focused_tests": [],
+      "focused_tests": [
+        "games/living-kingdoms/tests/EquipmentAffixModifierResolver.test.luau",
+        "games/living-kingdoms/tests/EquippedEquipmentModifierResolver.test.luau",
+        "games/living-kingdoms/tests/EquipmentMaxHealthIntegration.test.luau",
+        "games/living-kingdoms/tests/OperativeLifeService.test.luau",
+        "games/living-kingdoms/tests/OperativeHealthResolver.test.luau",
+        "games/living-kingdoms/tests/OperativeIncapacitationResolver.test.luau",
+        "games/living-kingdoms/tests/OperativeReviveResolver.test.luau"
+      ],
       "risk_tier": "R2",
-      "extension_rule": "Resolve and register the existing authoritative maximum-health owner before implementation; never write Humanoid health from an affix adapter directly."
+      "extension_rule": "New MaxHealthPercent affix definitions should be data/config plus focused regression only; select Armor through the slot-aware equipment resolver and reconcile through OperativeLifeService while preserving health percentage. Never write Humanoid health from an affix adapter."
     },
     {
       "effect_id": "MoveSpeedPercent",
