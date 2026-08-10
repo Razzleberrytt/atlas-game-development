@@ -115,18 +115,17 @@ local affixConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Conf
 	injectGlobals = true,
 })()
 
-local affixResolver =
-	luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentAffixResolver.luau"), {
-		debugName = "EquipmentAffixResolver",
-		environment = {
-			script = { Parent = { EquipmentAffixContracts = AFFIX_CONTRACTS_TOKEN } },
-			require = function(token: unknown)
-				assertThat(token == AFFIX_CONTRACTS_TOKEN, "unexpected affix-resolver dependency")
-				return affixContracts
-			end,
-		},
-		injectGlobals = true,
-	})()
+local affixResolver = luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentAffixResolver.luau"), {
+	debugName = "EquipmentAffixResolver",
+	environment = {
+		script = { Parent = { EquipmentAffixContracts = AFFIX_CONTRACTS_TOKEN } },
+		require = function(token: unknown)
+			assertThat(token == AFFIX_CONTRACTS_TOKEN, "unexpected affix-resolver dependency")
+			return affixContracts
+		end,
+	},
+	injectGlobals = true,
+})()
 
 local runModifierConfig = {
 	ModifierCeilings = {
@@ -470,12 +469,18 @@ for _, target in orderedTargets do
 	local actualModifiers
 	if target == "Weapon" then
 		local definition = definitionsById[originalReward.DefinitionId]
-		assertThat(definition ~= nil and type(definition.WeaponId) == "string", "weapon definition must retain combat link")
+		assertThat(
+			definition ~= nil and type(definition.WeaponId) == "string",
+			"weapon definition must retain combat link"
+		)
 		actualModifiers = equippedResolver.resolveForWeapon(reconstructedRecord, definition.WeaponId)
 	else
 		actualModifiers = equippedResolver.resolveForSlot(reconstructedRecord, originalReward.Slot)
 	end
-	assertThat(actualModifiers.sourceInstanceId == originalReward.InstanceId, target .. " selected wrong durable instance")
+	assertThat(
+		actualModifiers.sourceInstanceId == originalReward.InstanceId,
+		target .. " selected wrong durable instance"
+	)
 	assertModifierBundle(actualModifiers, expectedModifiers, target)
 end
 
@@ -502,7 +507,10 @@ local neutralArmor = equippedResolver.resolveForSlot(unequipped, SlotIds.Armor)
 local neutralRelic = equippedResolver.resolveForSlot(unequipped, SlotIds.Relic)
 local mismatchedWeapon = equippedResolver.resolveForWeapon(reconstructedRecord, "weapon.not-authored")
 assertThat(neutralArmor.sourceInstanceId == nil, "unequipped Armor must have no modifier source")
-assertThat(neutralArmor.maximumHealthMultiplier == 1 and neutralArmor.movementSpeedMultiplier == 1, "unequipped Armor must be neutral")
+assertThat(
+	neutralArmor.maximumHealthMultiplier == 1 and neutralArmor.movementSpeedMultiplier == 1,
+	"unequipped Armor must be neutral"
+)
 assertThat(neutralRelic.sourceInstanceId == nil, "unequipped Relic must have no modifier source")
 assertThat(
 	neutralRelic.abilityCooldownDurationMultiplier == 1 and neutralRelic.abilityPowerMultiplier == 1,
@@ -517,9 +525,11 @@ assertThat(
 persistence:destroy()
 reconnectService:destroy()
 
-print(string.format(
-	"EquipmentAffixDurableLifecycle: weapon seed=%d, Armor seed=%d, Relic seed=%d survived generation -> persistence -> reconnect -> equip -> live facts",
-	found.Weapon.seed,
-	found.Armor.seed,
-	found.Relic.seed
-))
+print(
+	string.format(
+		"EquipmentAffixDurableLifecycle: weapon seed=%d, Armor seed=%d, Relic seed=%d survived generation -> persistence -> reconnect -> equip -> live facts",
+		found.Weapon.seed,
+		found.Armor.seed,
+		found.Relic.seed
+	)
+)
