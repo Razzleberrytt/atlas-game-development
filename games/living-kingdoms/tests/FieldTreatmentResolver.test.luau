@@ -109,8 +109,51 @@ assertThat(
 assertThat(
 	resolver.resolveStart(idle(), intent("Begin"), startFacts({ isSelfTarget = true })).rejectionReasonId
 		== reasons.SelfTargetNotAllowed,
-	"self treatment is forbidden"
+	"self treatment is forbidden without the durable unlock"
 )
+for _, unearned in { false, nil, 1, "true", {} } :: { any } do
+	assertThat(
+		resolver.resolveStart(idle(), intent("Begin"), startFacts({ isSelfTarget = true, mayTreatSelf = unearned })).rejectionReasonId
+				== reasons.SelfTargetNotAllowed
+			or resolver.resolveStart(
+					idle(),
+					intent("Begin"),
+					startFacts({ isSelfTarget = true, mayTreatSelf = unearned })
+				).rejectionReasonId
+				== reasons.InvalidIntent,
+		"only a real boolean entitlement may permit self treatment"
+	)
+end
+
+-- Durable Self-Treatment changes who may be treated, never the cost or cadence.
+local earnedSelf =
+	resolver.resolveStart(idle(), intent("Begin"), startFacts({ isSelfTarget = true, mayTreatSelf = true }))
+assertThat(earnedSelf.didActivate, "an earned Medic may treat themselves")
+assertThat(
+	earnedSelf.actionStateAfter.completionServerTimestamp == 13,
+	"self treatment keeps the configured channel duration"
+)
+for _, blocked in
+	{
+		{ resourceAmount = 0, reasonId = reasons.InsufficientResource },
+		{ isTargetInjured = false, reasonId = reasons.TargetNotInjured },
+		{ distanceStuds = 8.01, reasonId = reasons.OutOfRange },
+		{ hasLineOfSight = false, reasonId = reasons.NoLineOfSight },
+		{ isActorAlive = false, reasonId = reasons.ActorNotAlive },
+		{ assignedClassId = "Engineer", reasonId = reasons.WrongAssignedClass },
+	}
+do
+	local overrides = { isSelfTarget = true, mayTreatSelf = true }
+	for key, value in blocked do
+		if key ~= "reasonId" then
+			overrides[key] = value
+		end
+	end
+	assertThat(
+		resolver.resolveStart(idle(), intent("Begin"), startFacts(overrides)).rejectionReasonId == blocked.reasonId,
+		"the unlock must not bypass any other treatment rule"
+	)
+end
 assertThat(
 	resolver.resolveStart(idle(), intent("Begin"), startFacts({ isTargetInjured = false })).rejectionReasonId
 		== reasons.TargetNotInjured,

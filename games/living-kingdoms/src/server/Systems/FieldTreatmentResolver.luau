@@ -31,6 +31,11 @@ export type StartFacts = {
 	distanceStuds: number,
 	hasLineOfSight: boolean,
 	serverTimestamp: number,
+	-- Patch 0.4 durable Self-Treatment entitlement, supplied by the authoritative
+	-- caller from the operative's own durable rank. Absent or false keeps the
+	-- original self-target prohibition, so legacy callers and every other
+	-- rejection rule are unchanged.
+	mayTreatSelf: boolean?,
 }
 
 export type ContinuityFacts = {
@@ -150,6 +155,7 @@ local function validStartFacts(facts: unknown): boolean
 		and isFiniteNonnegative(value.distanceStuds)
 		and type(value.hasLineOfSight) == "boolean"
 		and isFiniteNonnegative(value.serverTimestamp)
+		and (value.mayTreatSelf == nil or type(value.mayTreatSelf) == "boolean")
 end
 
 local function validContinuityFacts(facts: unknown): boolean
@@ -208,7 +214,11 @@ function Resolver.resolveStart(currentState, rawIntent: unknown, facts: StartFac
 	if not facts.isTargetKnown then
 		return rejected(currentState, ReasonIds.UnknownTarget, requestId)
 	end
-	if facts.isSelfTarget then
+	-- Self-Treatment changes only who may be treated. The charge cost, channel,
+	-- cooldown, range, injury requirement, and every interruption rule below are
+	-- unchanged, so an earned Medic trades the same resource for a different
+	-- tactical option rather than a larger number.
+	if facts.isSelfTarget and facts.mayTreatSelf ~= true then
 		return rejected(currentState, ReasonIds.SelfTargetNotAllowed, requestId)
 	end
 	if not facts.isTargetAlive then
