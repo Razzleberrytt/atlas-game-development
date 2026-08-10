@@ -19,6 +19,7 @@ export type InventoryRecordLike = {
 
 export type ResolvedEquippedModifiers = {
 	damageMultiplier: number,
+	reloadDurationMultiplier: number,
 	sourceInstanceId: string?,
 }
 
@@ -30,6 +31,7 @@ end
 local function neutral(): ResolvedEquippedModifiers
 	return table.freeze({
 		damageMultiplier = 1,
+		reloadDurationMultiplier = 1,
 		sourceInstanceId = nil,
 	})
 end
@@ -60,6 +62,7 @@ function EquippedEquipmentModifierResolver.resolveForWeapon(
 					local modifiers = EquipmentAffixModifierResolver.resolve(reward.Affixes)
 					return table.freeze({
 						damageMultiplier = modifiers.damageMultiplier,
+						reloadDurationMultiplier = modifiers.reloadDurationMultiplier,
 						sourceInstanceId = instanceId,
 					})
 				end
