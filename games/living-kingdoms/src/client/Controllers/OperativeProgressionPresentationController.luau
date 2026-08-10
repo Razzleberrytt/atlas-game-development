@@ -64,14 +64,11 @@ local function render(snapshot: any)
 		return
 	end
 
-	local nextName = if type(snapshot.NextRankDisplayName) == "string" then snapshot.NextRankDisplayName else "NEXT RANK"
+	local nextName = if type(snapshot.NextRankDisplayName) == "string"
+		then snapshot.NextRankDisplayName
+		else "NEXT RANK"
 	local remaining = tonumber(snapshot.CompletedExpeditionsToNextRank) or 0
-	secondary.Text = string.format(
-		"%d CLEARED  //  %d TO %s",
-		completed,
-		remaining,
-		string.upper(nextName)
-	)
+	secondary.Text = string.format("%d CLEARED  //  %d TO %s", completed, remaining, string.upper(nextName))
 	secondary.TextColor3 = COLORS.muted
 end
 

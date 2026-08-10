@@ -47,5 +47,8 @@ assertThat(
 
 local menuStart = bootstrapSource:find("RPGMenuController.start()", 1, true)
 local progressionStart = bootstrapSource:find("OperativeProgressionPresentationController.start()", 1, true)
-assertThat(menuStart ~= nil and progressionStart ~= nil, "client bootstrap must mount both RPG menu and rank presentation")
+assertThat(
+	menuStart ~= nil and progressionStart ~= nil,
+	"client bootstrap must mount both RPG menu and rank presentation"
+)
 assertThat(menuStart < progressionStart, "RPG menu must exist before its rank card mounts")

@@ -68,7 +68,8 @@ local CriticalConditionController = require(script.Controllers.CriticalCondition
 local PresentationSettingsController = require(script.Controllers.PresentationSettingsController)
 local SurvivalHUDController = require(script.Controllers.SurvivalHUDController)
 local RPGMenuController = require(script.Controllers.RPGMenuController)
-local OperativeProgressionPresentationController = require(script.Controllers.OperativeProgressionPresentationController)
+local OperativeProgressionPresentationController =
+	require(script.Controllers.OperativeProgressionPresentationController)
 local HubPreparationController = require(script.Controllers.HubPreparationController)
 
 CameraController.init()
