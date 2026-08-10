@@ -21,8 +21,10 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 - PR #343 routes equipped durable `ReloadSpeedPercent` through the existing server-owned reload authority with full automated validation green: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
 - PR #344 routes equipped Armor `MaxHealthPercent` through `OperativeLifeService` with ratio-preserving equip/unequip reconciliation, bounded variable-max life validation, replay/reconnect protection, and full automated validation green: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
 - PR #345 routes equipped Armor `MoveSpeedPercent` through the existing server-owned `OperativeLifeService` locomotion application, derives speed from the stable bound base to prevent compounding, preserves hard-zero incapacitated/dead movement, and passed full automated validation: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
-- PR #348 routes equipped Relic `AbilityHastePercent` through the existing server-owned `ClassService` action lifecycle, snapshots the bounded cooldown-duration multiplier at activation, and applies it consistently to Brace, Field Treatment, and Field Resupply cooldown outcomes: **BUILT — VERIFICATION PENDING** after full automated validation passes and until ordinary Studio/device evidence is run.
-- `DamagePercent`, `ReloadSpeedPercent`, `MaxHealthPercent`, `MoveSpeedPercent`, and `AbilityHastePercent` are now live effect-owner routes; same-family variants should be data/config plus focused regression rather than bespoke runtime wiring.
+- PR #348 routes equipped Relic `AbilityHastePercent` through the existing server-owned `ClassService` action lifecycle, snapshots the bounded cooldown-duration multiplier at activation, applies it consistently to Brace, Field Treatment, and Field Resupply cooldown outcomes, and passed full automated validation: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
+- PR #349 routes equipped Relic `AbilityPowerPercent` through `ClassService`, snapshots the bounded power multiplier at activation, applies it only to existing server-owned Brace cadence benefit, Field Treatment healing, and Field Resupply ammunition consequences, and passed full automated validation with a reproducible Living Kingdoms build: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
+- `DamagePercent`, `ReloadSpeedPercent`, `MaxHealthPercent`, `MoveSpeedPercent`, `AbilityHastePercent`, and `AbilityPowerPercent` now have live canonical effect-owner routes. The current durable effect vocabulary no longer contains an unresolved runtime route.
+- Same-family variants should now be data/config plus focused regression rather than bespoke runtime wiring.
 - The effect-owner routing registry prevents affix effect vocabulary from existing without an explicit authority-routing state.
 - Verification truth remains strict: pending manual/engine evidence is never called VERIFIED.
 
@@ -30,39 +32,43 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 
 ### NOW
 
-**Resolve and route `AbilityPowerPercent` through the canonical server-owned ability-consequence path without creating a generic parallel ability-power authority.**
+**Prove the compounding-development payoff by expanding role-driven affix variety through data/config + focused resolver tests only, without touching server authority files.**
 
-Start with:
-
-```bash
-python scripts/effect_routes.py show AbilityPowerPercent
-```
-
-Confirmed authored fact:
+High-leverage preserved candidate from closed PR #336:
 
 ```text
-Focused
-→ Relic-only durable affix
-→ AbilityPowerPercent +4–8%
+8 current affixes
+→ 16 bounded role-aware affixes
+→ reuse all six now-live effect routes
+→ zero new services/remotes/authority owners
+```
+
+Candidate role-specific additions:
+
+```text
+precision Primary → Measured Cycle (ReloadSpeedPercent)
+close-range Primary → Slam Loader (ReloadSpeedPercent)
+Secondary → Steady Hand (DamagePercent) + Field Service (ReloadSpeedPercent)
+Armor/survival → Bulwark (MaxHealthPercent) + Pathfinder (MoveSpeedPercent)
+Relic/ability → Quickening (AbilityHastePercent) + Overcharged (AbilityPowerPercent)
 ```
 
 Rules:
 
-- identify one canonical server consequence owner before implementation;
-- do not let the client provide power, healing, ammunition, damage, duration, or other consequential ability values;
-- prefer a narrow shared server-derived ability-power fact over per-action bespoke affix arithmetic;
-- preserve existing resource costs, targeting, timing, life/ammunition/damage commit boundaries, and configured base values;
-- derive modified consequences from configured/server-owned base values, never from already-modified output;
-- malformed/legacy/no-affix equipment remains neutral;
-- add focused resolver + integration regression coverage;
-- after successful wiring, promote `AbilityPowerPercent` from `unresolved` to `live` and name the canonical owner/tests.
+- implement from current `main`; do not resurrect stale runtime wiring from the old branch;
+- touch data/config + focused pure tests unless validation exposes a real shared-seam defect;
+- reuse existing slot/tag compatibility and deterministic roll resolver;
+- keep value bands narrow and bounded;
+- prove incompatible role affixes cannot cross tags/slots;
+- prove deterministic variety materially increases without changing reward authority;
+- if this needs bespoke server wiring, stop and fix the extension seam rather than paying the old cost again.
 
 ### NEXT
 
-1. expand affix/reward variety primarily through validated definitions once all current effect routes are live;
-2. add end-to-end regression coverage across generation → reward → inventory → equip → application → replay/persistence;
-3. reconcile Patch 0.3 source completeness and close remaining loot/build replayability gaps;
-4. continue into Patch 0.4 when Patch 0.3 source is coherent, keeping Studio evidence pending rather than inventing a lock.
+1. add end-to-end regression coverage across generation → reward → inventory → equip → application → replay/persistence;
+2. reconcile Patch 0.3 source completeness and close remaining loot/build replayability gaps;
+3. assess whether Patch 0.3 is source-coherent enough to advance into Patch 0.4;
+4. keep consolidated Studio/device/play-feel evidence pending as its parallel lane.
 
 ### LATER
 

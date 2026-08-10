@@ -42,6 +42,7 @@ export type OperativeModifiers = RelicModifiers & {
 	equipmentMaximumHealthMultiplier: number,
 	equipmentMovementSpeedMultiplier: number,
 	equipmentAbilityCooldownDurationMultiplier: number,
+	equipmentAbilityPowerMultiplier: number,
 }
 
 type CacheEntry = {
@@ -69,6 +70,7 @@ local function composeOperativeModifiers(player: Player, relicModifiers: RelicMo
 	combined.equipmentMaximumHealthMultiplier = 1
 	combined.equipmentMovementSpeedMultiplier = 1
 	combined.equipmentAbilityCooldownDurationMultiplier = 1
+	combined.equipmentAbilityPowerMultiplier = 1
 	if not canComposeEquipment(player) then
 		return table.freeze(combined) :: OperativeModifiers
 	end
@@ -89,12 +91,14 @@ local function composeOperativeModifiers(player: Player, relicModifiers: RelicMo
 			end
 		end
 		local relicEquipmentModifiers = resolverAsAny.resolveForSlot(record, "Relic")
-		if
-			type(relicEquipmentModifiers) == "table"
-			and type(relicEquipmentModifiers.abilityCooldownDurationMultiplier) == "number"
-		then
-			combined.equipmentAbilityCooldownDurationMultiplier =
-				relicEquipmentModifiers.abilityCooldownDurationMultiplier
+		if type(relicEquipmentModifiers) == "table" then
+			if type(relicEquipmentModifiers.abilityCooldownDurationMultiplier) == "number" then
+				combined.equipmentAbilityCooldownDurationMultiplier =
+					relicEquipmentModifiers.abilityCooldownDurationMultiplier
+			end
+			if type(relicEquipmentModifiers.abilityPowerMultiplier) == "number" then
+				combined.equipmentAbilityPowerMultiplier = relicEquipmentModifiers.abilityPowerMultiplier
+			end
 		end
 	end
 	return table.freeze(combined) :: OperativeModifiers

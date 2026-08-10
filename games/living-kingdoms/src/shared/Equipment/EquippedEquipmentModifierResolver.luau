@@ -23,6 +23,7 @@ export type ResolvedEquippedModifiers = {
 	maximumHealthMultiplier: number,
 	movementSpeedMultiplier: number,
 	abilityCooldownDurationMultiplier: number,
+	abilityPowerMultiplier: number,
 	sourceInstanceId: string?,
 }
 
@@ -38,6 +39,7 @@ local function neutral(): ResolvedEquippedModifiers
 		maximumHealthMultiplier = 1,
 		movementSpeedMultiplier = 1,
 		abilityCooldownDurationMultiplier = 1,
+		abilityPowerMultiplier = 1,
 		sourceInstanceId = nil,
 	})
 end
@@ -79,6 +81,7 @@ local function resolveReward(instanceId: string, reward: EquipmentReward): Resol
 		maximumHealthMultiplier = modifiers.maximumHealthMultiplier,
 		movementSpeedMultiplier = modifiers.movementSpeedMultiplier,
 		abilityCooldownDurationMultiplier = modifiers.abilityCooldownDurationMultiplier,
+		abilityPowerMultiplier = modifiers.abilityPowerMultiplier,
 		sourceInstanceId = instanceId,
 	})
 end
