@@ -1,4 +1,4 @@
-# Atlas — Execution Dashboard v1.8
+# Atlas — Execution Dashboard v1.9
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-10  
@@ -10,72 +10,62 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 
 - **MVP 0.1 source:** **BUILT — VERIFICATION PENDING**.
 - **Patch 0.2 combat/readability source pass:** **BUILT — VERIFICATION PENDING**.
-- Studio/device play/performance evidence remains a parallel lane; unrun evidence is not a source-development lock.
-- **Patch 0.3 — Loot + Build Replayability:** **BUILDING**.
-- PR #330 established deterministic data-driven equipment affixes.
-- PR #332 carried affix rolls through reward/result/inventory/persistence.
-- PR #333 added deterministic affix comparison facts.
-- PR #334 added bounded pure affix modifier translation.
-- PR #335 added affix-aware durable gear comparison/presentation.
-- PR #337 wired equipped durable `DamagePercent` through the existing server-owned damage authority with full validation green.
-- PR #343 routes equipped durable `ReloadSpeedPercent` through the existing server-owned reload authority with full automated validation green: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
-- PR #344 routes equipped Armor `MaxHealthPercent` through `OperativeLifeService` with ratio-preserving equip/unequip reconciliation, bounded variable-max life validation, replay/reconnect protection, and full automated validation green: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
-- PR #345 routes equipped Armor `MoveSpeedPercent` through the existing server-owned `OperativeLifeService` locomotion application, derives speed from the stable bound base to prevent compounding, preserves hard-zero incapacitated/dead movement, and passed full automated validation: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
-- PR #348 routes equipped Relic `AbilityHastePercent` through the existing server-owned `ClassService` action lifecycle, snapshots the bounded cooldown-duration multiplier at activation, applies it consistently to Brace, Field Treatment, and Field Resupply cooldown outcomes, and passed full automated validation: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
-- PR #349 routes equipped Relic `AbilityPowerPercent` through `ClassService`, snapshots the bounded power multiplier at activation, applies it only to existing server-owned Brace cadence benefit, Field Treatment healing, and Field Resupply ammunition consequences, and passed full automated validation with a reproducible Living Kingdoms build: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
-- PR #350 expands the authored affix pool from 8 to 16 role-aware definitions using only `EquipmentAffixConfig` plus its pure resolver fixture. Precision, close-range, sidearm, survival-Armor, and ability-Relic identities gain distinct bounded rolls with slot/tag exclusion coverage. Full automated validation and the reproducible build are green.
-- `DamagePercent`, `ReloadSpeedPercent`, `MaxHealthPercent`, `MoveSpeedPercent`, `AbilityHastePercent`, and `AbilityPowerPercent` now have live canonical effect-owner routes. The current durable effect vocabulary no longer contains an unresolved runtime route.
-- Same-family variants are now demonstrably data-first: PR #350 added eight variants with **zero server-authority changes**.
-- The effect-owner routing registry prevents affix effect vocabulary from existing without an explicit authority-routing state.
-- Verification truth remains strict: pending manual/engine evidence is never called VERIFIED.
+- **Patch 0.3 — Loot + Build Replayability source pass:** **BUILT — VERIFICATION PENDING**.
+- Studio/device/play/performance evidence remains a parallel lane; unrun evidence is not a source-development lock and is never called VERIFIED.
+- Patch 0.3 now has live canonical routes for all six current durable effect families: `DamagePercent`, `ReloadSpeedPercent`, `MaxHealthPercent`, `MoveSpeedPercent`, `AbilityHastePercent`, and `AbilityPowerPercent`.
+- PR #350 proved the compounding seam by expanding the authored affix pool from 8 to 16 with only config + pure fixture changes and **zero server-authority changes**.
+- PR #351 added a composed end-to-end durable affix lifecycle regression proving representative Weapon, Armor, and Relic effects survive deterministic generation → banked durable reward → inventory reconstruction → equipped-slot resolution → live modifier facts after reconnect reconstruction. Full validation and the reproducible build are green.
+- **Patch 0.4 — RPG Progression:** **BUILDING**.
+- PR #352 established the first bounded durable Operative Rank map: Initiate → Delver → Pathfinder → Veteran → Vanguard at 0/1/3/6/10 completed expeditions. Rank is derived from already-persisted canonical Boss reward grant identities, so no second DataStore/schema/player-load owner was introduced.
+- PR #353 wired a read-only owner-bound Operative Rank runtime through the existing loaded inventory record. The client can request only its own server-derived snapshot; there is no durable-progression mutation RemoteEvent.
+- PR #354 surfaced current durable rank, lifetime expedition clears, and clears-to-next-rank inside the existing Character menu. Full validation and reproducible build are green; visual placement/play-feel remains Studio verification pending.
+- Existing `RunProgressionService` remains explicitly **run-only** shared Field XP + temporary upgrades. Durable Operative Rank must not become a second author of those facts.
+- The preserved/paused `SkillsPanel` shell exists in `RPGMenuController`, but its old `rebuildSkillTree()` semantics are temporary run-upgrade topology. Re-enabling that old tree as permanent progression would be false ownership.
+- The four non-pistol firearms remain intentionally authored as rare in-run discoveries; Patch 0.4 should not casually convert them into permanent insertion unlocks and erase that discovery loop.
 
 ## 2. NOW → NEXT → LATER
 
 ### NOW
 
-**Add one end-to-end Patch 0.3 regression that proves durable affix truth survives the complete source lifecycle instead of relying on disconnected unit fixtures.**
+**Turn the existing paused Skills surface into a small personal durable progression map backed by `OperativeProgressionConfig`, without reactivating the old run-only skill-tree semantics.**
 
 Target chain:
 
 ```text
-authored equipment + deterministic seed
-→ generated affix roll
-→ reward/result payload
-→ durable inventory representation
-→ authoritative equipped slot
-→ canonical effect adapter / owner seam
-→ persistence encode/decode or reconnect reconstruction
-→ same affix identity/value and same neutral/live consequence facts
-```
-
-Representative coverage should span the three ownership shapes rather than every definition individually:
-
-```text
-weapon → DamagePercent / ReloadSpeedPercent
-Armor → MaxHealthPercent / MoveSpeedPercent
-Relic → AbilityHastePercent / AbilityPowerPercent
+canonical OperativeProgressionConfig ranks
+→ server-owned OperativeProgression snapshot
+→ existing RPG menu shell / paused SkillsPanel
+→ visible bounded rank path
+→ current / earned / upcoming milestone truth
 ```
 
 Rules:
 
-- prefer one composed regression fixture over copying six separate integration harnesses;
-- use real production pure modules/contracts wherever feasible;
-- prove stable affix IDs/values survive durable serialization and reconstruction;
-- prove equipped-slot selection still resolves the correct owner fact after reconstruction;
-- prove unequipped or mismatched slot/weapon remains neutral;
-- do not invent a second persistence, inventory, reward, or gameplay authority merely to make the test convenient;
-- source-only coverage does not become Studio VERIFIED evidence.
+- use the existing RPG menu as the UI owner; do not create a parallel progression menu;
+- preserve `RunProgressionService` as run-only shared progression and do not label its temporary upgrades as durable skills;
+- show only milestones that are actually authored in durable progression config;
+- do not claim gameplay rewards/unlocks that have no live consequence owner yet;
+- keep the initial map small and readable across keyboard/controller/touch layouts;
+- prefer an extension seam that lets later personal side-grade unlocks attach to rank milestones without rewriting the menu again;
+- keep visual/device verification pending until Studio/device evidence is actually run.
 
 ### NEXT
 
-1. reconcile Patch 0.3 source completeness and close any remaining loot/build replayability gaps exposed by the lifecycle regression;
-2. assess whether Patch 0.3 is source-coherent enough to advance into Patch 0.4;
-3. if coherent, advance the execution dashboard to Patch 0.4 RPG progression while retaining the consolidated Studio/device/play-feel evidence lane;
-4. keep extension-cost discipline as new content variants are added.
+1. choose the first **personal bounded long-term side-grade/unlock** whose consequence can route through an existing owner without converting shared run progression into account power;
+2. prefer increased choice/access/identity over permanent raw damage/health inflation;
+3. add the unlock to the durable progression map only when its runtime consequence is real and server-owned;
+4. continue adding Patch 0.4 progression breadth through data/config once the first unlock seam is proven;
+5. retain the consolidated Studio/device/play-feel evidence lane for Patch 0.1–0.4 source work.
+
+Rejected first-unlock shortcuts:
+
+- rank-based shared run-upgrade rerolls/extra cards: current run-upgrade choices are squad-wide while Operative Rank is personal, creating ambiguous co-op/carry policy;
+- permanent insertion access to the rare LMG/shotgun/sniper/SMG: current firearm contract intentionally preserves those weapons as rare in-run discoveries;
+- raw permanent combat-stat inflation: weakens the current-run loop instead of adding RPG choice.
 
 ### LATER
 
-- Patch 0.4 RPG progression;
+- deeper Patch 0.4 RPG progression: class/archetype progression, ability/skill side-grades, activity/world unlocks, quests/NPCs, limited crafting, achievements/codex;
 - Patch 0.5 Main World/environment;
 - Patch 0.6 systemic replayability;
 - Patch 0.7 persistence hardening;
@@ -120,26 +110,27 @@ extension contract → how expensive another family member should be
 Rules:
 
 - data-first variants should normally touch zero server-authority files;
-- an effect marked `live` should not require repeated bespoke runtime wiring;
-- an effect marked `unresolved` must have its canonical server owner identified before implementation;
+- a live effect should not require repeated bespoke runtime wiring;
+- unresolved effects require a canonical server owner before implementation;
 - if the third variant still needs bespoke wiring, improve the seam before scaling breadth;
 - repeated budget overruns are engineering friction, not a normal cost of growth;
 - genuine new semantics may exceed budgets—explain/escalate instead of hiding complexity.
 
 **North-star engineering metric:** declining marginal implementation cost for proven feature families.
 
-Patch 0.3 reusable layers:
+Patch 0.4 reusable layers now begin as:
 
 ```text
-authored affix data
-→ deterministic affix/comparison/modifier facts
-→ effect-owner route
-→ existing gameplay/presentation owner
+banked completed-expedition facts already owned by durable inventory
+→ pure bounded Operative Rank resolver
+→ owner-bound read-only runtime snapshot
+→ existing RPG presentation owner
+→ future personal side-grade/access consequences
 ```
 
 ## 4. Studio/device evidence lane
 
-The consolidated pass should cover the representative run, replay, keyboard/controller/touch, combat feel/readability, banking/equip, lifecycle, build-choice readability, and representative performance.
+The consolidated pass should cover the representative run, replay, keyboard/controller/touch, combat feel/readability, banking/equip, lifecycle, build-choice readability, durable rank presentation, and representative performance.
 
 - **pass:** promote applicable BUILT — VERIFICATION PENDING work to VERIFIED;
 - **reproducible failure:** make the concrete FIX NOW and preempt expansion;
@@ -152,8 +143,8 @@ The consolidated pass should cover the representative run, replay, keyboard/cont
 | Foundation / architecture | mature | stable owners + machine-readable routing + low rediscovery |
 | MVP 0.1 | BUILT — VERIFICATION PENDING | regression-protected baseline |
 | 0.2 combat/readability | BUILT — VERIFICATION PENDING | reusable feedback/reaction contracts |
-| **0.3 loot/builds** | **NOW — BUILDING** | affix/effect/reward variants become data-first |
-| 0.4 RPG progression | foundations present | reuse effect/reward/progression owners |
+| 0.3 loot/builds | BUILT — VERIFICATION PENDING | affix/effect/reward variants are data-first |
+| **0.4 RPG progression** | **NOW — BUILDING** | durable facts → small map → reusable personal unlock seams |
 | 0.5 Main World | preparation partial | stable IDs + registry-driven interactions |
 | 0.6 systemic replayability | foundations present | combinatorial output from reusable systems |
 | 0.7 persistence | substantial foundations | migration/lifecycle invariants and recovery tests |
