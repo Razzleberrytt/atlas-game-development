@@ -1,4 +1,4 @@
-# Atlas — Execution Dashboard v1.10
+# Atlas — Execution Dashboard v1.11
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-10  
@@ -11,74 +11,81 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 - **MVP 0.1 source:** **BUILT — VERIFICATION PENDING**.
 - **Patch 0.2 combat/readability source pass:** **BUILT — VERIFICATION PENDING**.
 - **Patch 0.3 — Loot + Build Replayability source pass:** **BUILT — VERIFICATION PENDING**.
+- **Patch 0.4 — RPG Progression source pass:** **BUILT — VERIFICATION PENDING**.
 - Studio/device/play/performance evidence remains a parallel lane; unrun evidence is not a source-development lock and is never called VERIFIED.
 - Patch 0.3 has live canonical routes for all six current durable effect families: `DamagePercent`, `ReloadSpeedPercent`, `MaxHealthPercent`, `MoveSpeedPercent`, `AbilityHastePercent`, and `AbilityPowerPercent`.
 - PR #350 proved the compounding seam by expanding the authored affix pool from 8 to 16 with only config + pure fixture changes and **zero server-authority changes**.
 - PR #351 added a composed end-to-end durable affix lifecycle regression proving representative Weapon, Armor, and Relic effects survive deterministic generation → banked durable reward → inventory reconstruction → equipped-slot resolution → live modifier facts after reconnect reconstruction. Full validation and the reproducible build are green.
-- **Patch 0.4 — RPG Progression:** **BUILDING**.
 - PR #352 established the bounded durable Operative Rank map: Initiate → Delver → Pathfinder → Veteran → Vanguard at 0/1/3/6/10 completed expeditions. Rank is derived from already-persisted canonical Boss reward grant identities, so no second DataStore/schema/player-load owner was introduced.
 - PR #353 wired a read-only owner-bound Operative Rank runtime through the existing loaded inventory record. The client can request only its own server-derived snapshot; there is no durable-progression mutation RemoteEvent.
 - PR #354 surfaced current durable rank, lifetime expedition clears, and clears-to-next-rank inside the existing Character menu.
 - PR #356 converted the paused Skills surface into a durable progression map backed by `OperativeProgressionConfig`, while preserving the old temporary run-upgrade topology as run-only authority. Full validation and reproducible build are green; visual/device verification remains pending.
 - PR #357 proved the first live personal durable-unlock seam: Rank 2 `Rally Ping` is authored in durable progression, derived server-side from existing durable rank, routed through `SquadPingService`, and cannot be claimed by client intent. No new persistence owner was added.
 - PR #360 added Rank 2 `Dual Tactical Markers`: baseline personal capacity remains one, earned capacity becomes two, the squad hard cap remains four, and the existing server ping owner derives eligibility. The second progression unlock reused the established rank/unlock seam without another persistence or network owner.
-- The durable entitlement rule now lives exactly once, in `OperativeProgressionResolver`. The resolved snapshot discloses every authored unlock with its own `IsEarned` answer plus earned/total counts, `OperativeProgressionService.hasOwnedUnlock` consumes that resolved list instead of re-implementing the rank comparison, and the RPG progression map renders per-unlock `[EARNED]`/`[LOCKED]` state, an "n of m earned" summary, and the next unearned unlock. The presenter re-derives nothing.
-- Rank 4 `Self-Treatment` is the first ability side-grade: a Medic may spend a medical charge on themselves. It changes *who* may be treated, not how much is healed — cost, channel, cooldown, range, injury requirement, and every interruption rule are unchanged. Entitlement is one bounded optional fact on the existing `FieldTreatmentResolver` gate, derived at exactly one point in `ClassService`.
-- Rank 3 `Focused Beam` proved unlock breadth **outside** the squad-ping family: durable rank now routes into `PersonalFlashlightService`, which registers an authored wider cone with `GameplayLightingService` and discloses the earned coverage profile only to its owner. No new persistence owner, remote, or client intent was added, and an operative without the unlock keeps the standard cone on the same server.
-- Existing `RunProgressionService` remains explicitly **run-only** shared Field XP + temporary upgrades. Durable Operative Rank must not become a second author of those facts.
-- The four non-pistol firearms remain intentionally authored as rare in-run discoveries; Patch 0.4 should not casually convert them into permanent insertion unlocks and erase that discovery loop.
+- PR #362 added Rank 3 `Focused Beam`, proving the same durable unlock seam reaches `PersonalFlashlightService` and `GameplayLightingService` without another persistence owner, remote, or client-authored entitlement.
+- PR #363 added Rank 4 `Self-Treatment`, the first ability side-grade: an eligible Medic may spend the existing medical charge on themselves while heal amount, range, channel, cooldown, injury requirement, and interruption rules remain unchanged.
+- PR #364 centralized the durable entitlement rule in `OperativeProgressionResolver`, disclosed per-unlock earned state through the owner-bound snapshot, and made the existing RPG progression map render generic `[EARNED]` / `[LOCKED]` state without per-unlock presentation rewrites.
+- PR #365 added Rank 5 `Persistent Markers`: earned owners receive a bounded 9-second server-owned marker lifetime versus the 6-second baseline. The third durable variant in `SquadPingService` also consolidated the family's repeated entitlement plumbing behind one fail-closed owner adapter. Full validation and reproducible build are green.
+- The Patch 0.4 source map is deliberately small and testable rather than a giant skill tree: five durable unlocks span ranks 2–5 and three existing server consequence owners (`SquadPingService`, `PersonalFlashlightService`, `ClassService`) without permanent raw combat-stat inflation or a second save owner.
+- Existing `RunProgressionService` remains explicitly **run-only** shared Field XP + temporary upgrades. Durable Operative Rank does not author those facts.
+- The four non-pistol firearms remain intentionally authored as rare in-run discoveries; durable progression has not erased that discovery loop.
+- PR #366 repaired the BA-010 expedition-environment lifecycle debt by retaining the controller's Workspace child listeners and disconnecting them on `stop()`. Focused regression coverage now prevents anonymous listener reintroduction; full validation and reproducible build are green.
+- **Patch 0.5 — Main World + Environment Expansion:** **BUILDING**.
+- BA-010 through BA-014 already define the Main World audit, dedicated-place/source boundary, stable interaction registry, production kits/budgets, and unrun acceptance matrix. These are authority and evidence inputs, not permission to dump or activate the recovered world.
+- `MainWorldRepresentationConfig` holds the dedicated Main World boundary, 1:1 authored coordinates, semantic streaming groups, and arrival/return anchor policy. `AuthoredWorldRecoveryCoverageConfig` remains the geometry-admission gate: incomplete evidence cannot be promoted into new geometry.
 
 ## 2. NOW → NEXT → LATER
 
 ### NOW
 
-**Continue Patch 0.4 breadth through authored config: add the next durable unlock as data plus focused regression only.**
+**Admit the first coherent `main_world.hub_core` civic review unit from complete evidence — without activating Main World runtime.**
 
-Authority, presentation, and the entitlement rule are now all settled — the seam reaches three canonical owners (`SquadPingService`, `PersonalFlashlightService`, `ClassService`), the rule lives once in the pure resolver, and the map renders held state from the disclosed snapshot. A new unlock whose consequence routes through an already-live owner should now cost one `OperativeProgressionConfig` entry plus a focused test, with **zero** presentation changes.
+The highest-value first target is the compact arrival/orientation/adventure-gate composition identified by BA-010/BA-013. The arrival anchor and DungeonPortal already have bounded held contracts, but the civic orientation candidates (Central Fountain, Grand Staircase, Hub Archway) do not yet have a complete promoted reconstruction contract. The first source increment should therefore close evidence/admission for **one** coherent civic landmark, preferring Central Fountain when the canonical RBXL evidence supports it.
 
-If the next candidate instead needs a fourth owner, treat that owner adapter as the increment and keep the config entry trivial.
-
-Target chain for new unlocks:
+Target chain:
 
 ```text
-existing durable rank facts
-→ OperativeProgressionConfig unlock definition
-→ existing owner-bound OperativeProgressionService eligibility
-→ a different existing server consequence owner
-→ existing RPG progression-map presentation
-→ focused ownership/regression proof
+canonical checksum-pinned RBXL
+→ complete supported-property evidence for one coherent HubTown civic group
+→ stable main_world.hub_core review-unit identity
+→ held source representation + property-parity regression
+→ reviewable model asset only after evidence admits it
+→ dedicated Main World mapping/bootstrap only after the existing creation gate is satisfied
 ```
 
 Rules:
 
-- do not add another persistence schema, unlock DataStore, duplicate runtime service, or client-authored entitlement;
-- prefer choice/access/identity and bounded utility over permanent raw damage/health inflation;
-- prefer an existing server owner with an already-safe client intent or no new client intent at all;
-- do not weaken the rare in-run firearm discovery loop;
-- do not attach personal durable rank to shared Field XP/run-choice authority unless co-op ownership policy is explicitly solved first;
-- keep the progression map data-driven: a new authored unlock should appear through existing presentation seams rather than another menu rewrite;
-- if the next candidate requires a genuinely new semantic, improve one reusable owner seam once instead of scattering rank checks through callers;
-- keep visual/device verification pending until Studio/device evidence is actually run.
+- do not create or activate the dedicated Main World project merely to make progress; its creation gate still requires reviewable content plus an explicit bootstrap allowlist and reproducible build check;
+- do not map held content into the current operation project or parent recovered content under `LivingKingdomsWorld`;
+- preserve authored-overworld coordinates 1:1; no global translation, rotation, or scale to fit the operation forest;
+- do not guess Terrain voxels, missing properties, asset IDs, NPC/vendor/quest authority, teleport policy, or legacy gameplay behavior;
+- keep `WorldFoundationService` operation-world generation out of the future Main World bootstrap;
+- use stable semantic IDs and semantic streaming groups so gameplay/presentation truth survives a locally absent Instance;
+- a review unit must be coherent and bounded; never restore all 1,775 recovered rows or the whole `HubTown` / `WorldStructures` root as one production unit;
+- keep the existing Forward Operations Hub as the temporary bridge until the authored arrival/preparation/launch/return loop is actually accepted;
+- keep Studio/device/streaming/performance evidence pending until BA-014 is run against a real representative build.
 
 ### NEXT
 
-1. surface earned unlocks in the RPG progression map presentation as the authored unlock list grows, rather than rewriting a menu per unlock;
-2. prefer alternate behavior, utility, access, or identity over additive permanent combat-stat growth;
-3. keep each durable unlock personal and server-derived while shared run progression remains temporary and squad-scoped;
-4. continue Patch 0.4 breadth through authored config and stable owner adapters so the marginal cost of later unlocks declines;
-5. retain the consolidated Studio/device/play-feel evidence lane for Patch 0.1–0.4 source work.
+1. after the first civic review unit passes property parity, preview the held arrival + orientation landmark + expedition-gate composition without runtime activation;
+2. establish the authored Main World return/debrief anchor and cold-join/success/failure/replay re-entry semantics before activation;
+3. create the dedicated Main World Rojo project only when the existing gate is satisfied: first property-validated coherent model group + explicit server/client bootstrap allowlists + reproducible offline build;
+4. expand `main_world.hub_core` through stable-ID interaction/service forms, preserving canonical class/loadout/inventory/progression/expedition owners rather than recreating state in world objects;
+5. replace recovered `WorldPath` slabs with stable route/control data and bounded 64–128-stud render chunks after the hub core is readable;
+6. admit terrain, structures, props, foliage, lighting, VFX, and audio only through the BA-013 kit/budget rules and BA-014 evidence matrix;
+7. retain the consolidated Studio/device/play-feel evidence lane for Patch 0.1–0.4 while Patch 0.5 source-safe preparation continues.
 
 Rejected shortcuts remain:
 
-- rank-based shared run-upgrade rerolls/extra cards: current run-upgrade choices are squad-wide while Operative Rank is personal, creating ambiguous co-op/carry policy;
-- permanent insertion access to the rare LMG/shotgun/sniper/SMG: current firearm contract intentionally preserves those weapons as rare in-run discoveries;
-- raw permanent combat-stat inflation: weakens the current-run loop instead of adding RPG choice;
-- client-only cosmetic eligibility presented as a server-owned gameplay unlock: identity presentation is valid only when entitlement truth still comes from a canonical server-owned fact.
+- copying the recovered whole world into the active operation place;
+- treating recovered hierarchy counts, lights, particles, or 189 path slabs as a production budget/interface;
+- creating a second gameplay owner inside reconstructed vendors, quest boards, portal models, NPCs, or prompts;
+- inventing Terrain, asset IDs, global Lighting ownership, teleport/session behavior, or streaming radii without their required evidence/authority;
+- marking Main World VERIFIED from source-only reconstruction or screenshots without the BA-014 device/traversal/streaming/performance evidence.
 
 ### LATER
 
-- deeper Patch 0.4 RPG progression: broader class/archetype progression, ability/skill side-grades, activity/world unlocks, quests/NPCs, limited crafting, achievements/codex;
-- Patch 0.5 Main World/environment;
+- deeper Patch 0.5 Main World environment breadth after the hub core is accepted;
 - Patch 0.6 systemic replayability;
 - Patch 0.7 persistence hardening;
 - Patch 0.8 co-op/social/session;
@@ -130,22 +137,38 @@ Rules:
 
 **North-star engineering metric:** declining marginal implementation cost for proven feature families.
 
-Patch 0.4 reusable layers are now:
+Patch 0.4 closed with these reusable layers:
 
 ```text
 banked completed-expedition facts already owned by durable inventory
 → pure bounded Operative Rank resolver
 → owner-bound read-only progression snapshot + generic unlock eligibility
-→ existing RPG progression-map presentation
+→ existing data-driven RPG progression-map presentation
 → server-owned personal unlock consequence adapters
 → authored unlock breadth without another save owner
 ```
 
-The Rally + Dual Tactical Marker pair proves one owner family. The next leverage test is **cross-owner reuse**: the same durable unlock seam should drive a different existing server owner without creating parallel progression infrastructure.
+The same seam now spans three consequence owners, and the third squad-ping variant consolidated its repeated entitlement plumbing rather than copying it again.
+
+Patch 0.5 should compound around a different family:
+
+```text
+checksum-pinned recovered evidence
+→ bounded coherent review unit
+→ stable semantic ID + streaming group
+→ deterministic property-parity validation
+→ held source-managed representation
+→ reusable reconstruction/admission path
+→ later place mapping only after explicit gates
+```
+
+The first admitted hub-core unit should make the **second** coherent unit cheaper. If each landmark needs a bespoke extraction/reconstruction ritual, improve the evidence/admission seam before scaling breadth.
 
 ## 4. Studio/device evidence lane
 
 The consolidated pass should cover the representative run, replay, keyboard/controller/touch, combat feel/readability, banking/equip, lifecycle, build-choice readability, durable rank/progression presentation, Rally/marker readability, and representative performance.
+
+For Patch 0.5, source admission and held reconstruction do **not** substitute for the BA-014 Main World matrix. When a representative Main World build exists, BA-014 must cover arrival camera/readability, four-player clearance, traversal/dead travel, interaction visibility, streaming continuity/rebind, quality tiers, performance, memory, and cleanup.
 
 - **pass:** promote applicable BUILT — VERIFICATION PENDING work to VERIFIED;
 - **reproducible failure:** make the concrete FIX NOW and preempt expansion;
@@ -159,8 +182,8 @@ The consolidated pass should cover the representative run, replay, keyboard/cont
 | MVP 0.1 | BUILT — VERIFICATION PENDING | regression-protected baseline |
 | 0.2 combat/readability | BUILT — VERIFICATION PENDING | reusable feedback/reaction contracts |
 | 0.3 loot/builds | BUILT — VERIFICATION PENDING | affix/effect/reward variants are data-first |
-| **0.4 RPG progression** | **NOW — BUILDING** | rank facts → data-driven map → reusable cross-owner personal unlock seams |
-| 0.5 Main World | preparation partial | stable IDs + registry-driven interactions |
+| 0.4 RPG progression | BUILT — VERIFICATION PENDING | bounded rank map + generic entitlement/presentation + reusable owner adapters |
+| **0.5 Main World** | **NOW — BUILDING** | evidence → stable IDs → bounded review units → reusable admission/reconstruction |
 | 0.6 systemic replayability | foundations present | combinatorial output from reusable systems |
 | 0.7 persistence | substantial foundations | migration/lifecycle invariants and recovery tests |
 | 0.8 co-op/social | basic foundations | multiplayer coverage over existing owners |
