@@ -79,6 +79,7 @@ type OperativeLifeService = {
 	readByOperativeEntityId: (operativeEntityId: string) -> AuthoritativeRead?,
 	playerForOperativeEntityId: (operativeEntityId: string) -> Player?,
 	readAll: () -> { AuthoritativeRosterRead },
+	reconcileMaximumHealth: (player: Player) -> AuthoritativeRead?,
 	configureSoloOperationEligibility: (operativeEntityId: string, isEligible: boolean) -> boolean,
 	applyAuthoritativeDamage: (
 		operativeEntityId: string,
@@ -175,13 +176,28 @@ local function copySnapshot(snapshot: OperativeLifeStateSnapshot): OperativeLife
 	}
 end
 
-local function initialSnapshot(operativeEntityId: string): OperativeLifeStateSnapshot
+local function effectiveMaximumHealth(player: Player): number
+	local multiplier = (RelicModifierService.read(player) :: any).equipmentMaximumHealthMultiplier
+	if
+		type(multiplier) ~= "number"
+		or multiplier ~= multiplier
+		or multiplier == math.huge
+		or multiplier == -math.huge
+		or multiplier < 1
+	then
+		multiplier = 1
+	end
+	return OperativeLifeConfig.MaximumHealth * multiplier
+end
+
+local function initialSnapshot(operativeEntityId: string, maximumHealth: number?): OperativeLifeStateSnapshot
+	local resolvedMaximumHealth = maximumHealth or OperativeLifeConfig.MaximumHealth
 	return {
 		operativeEntityId = operativeEntityId,
 		lifeStateId = lifeStateIds.Alive,
 		healthState = {
-			currentHealth = OperativeLifeConfig.MaximumHealth,
-			maximumHealth = OperativeLifeConfig.MaximumHealth,
+			currentHealth = resolvedMaximumHealth,
+			maximumHealth = resolvedMaximumHealth,
 		},
 		incapacitationState = nil,
 		-- Operation participation is not owned by LK-0305. The conservative
@@ -220,7 +236,8 @@ local function isValidSnapshot(value: unknown, operativeEntityId: string): boole
 	local maximumHealth = snapshot.healthState.maximumHealth
 	if
 		not isFiniteNonnegative(currentHealth)
-		or maximumHealth ~= OperativeLifeConfig.MaximumHealth
+		or not isFiniteNonnegative(maximumHealth)
+		or maximumHealth <= 0
 		or currentHealth > maximumHealth
 	then
 		return false
@@ -397,7 +414,9 @@ function OperativeLifeService.registerPlayer(player: Player): AuthoritativeRead?
 	retainedSnapshotByOperativeEntityId[operativeEntityId] = nil
 	local entry: OperativeEntry = {
 		operativeEntityId = operativeEntityId,
-		snapshot = if retained ~= nil then copySnapshot(retained) else initialSnapshot(operativeEntityId),
+		snapshot = if retained ~= nil
+			then copySnapshot(retained)
+			else initialSnapshot(operativeEntityId, effectiveMaximumHealth(player)),
 		revision = 0,
 		lastTransitionServerTimestamp = nil,
 		characterBinding = nil,
@@ -465,6 +484,40 @@ function OperativeLifeService.readAll(): { AuthoritativeRosterRead }
 		return left.operativeEntityId < right.operativeEntityId
 	end)
 	return result
+end
+
+--[[
+	Reconciles the authoritative life snapshot against the currently equipped
+	Armor modifier. The target maximum always derives from base health plus the
+	current server-owned equipment fact, never from the previous maximum, so
+	repeated equip changes cannot compound. Current health preserves its fraction
+	of maximum health, preventing gear swaps from becoming a free-heal mechanic.
+]]
+function OperativeLifeService.reconcileMaximumHealth(player: Player): AuthoritativeRead?
+	if not isServerPlayer(player) then
+		return nil
+	end
+	local entry = entries[player]
+	if entry == nil then
+		return nil
+	end
+	local targetMaximumHealth = effectiveMaximumHealth(player)
+	local currentMaximumHealth = entry.snapshot.healthState.maximumHealth
+	if targetMaximumHealth == currentMaximumHealth then
+		return { revision = entry.revision, snapshot = copySnapshot(entry.snapshot) }
+	end
+	local healthFraction = math.clamp(entry.snapshot.healthState.currentHealth / currentMaximumHealth, 0, 1)
+	local snapshotAfter = copySnapshot(entry.snapshot)
+	snapshotAfter.healthState.maximumHealth = targetMaximumHealth
+	snapshotAfter.healthState.currentHealth = targetMaximumHealth * healthFraction
+	if not isValidSnapshot(snapshotAfter, entry.operativeEntityId) then
+		return { revision = entry.revision, snapshot = copySnapshot(entry.snapshot) }
+	end
+	entry.snapshot = snapshotAfter
+	entry.revision += 1
+	applyCharacterRestrictions(entry)
+	notifyListeners(player, entry)
+	return { revision = entry.revision, snapshot = copySnapshot(entry.snapshot) }
 end
 
 function OperativeLifeService.configureSoloOperationEligibility(operativeEntityId: string, isEligible: boolean): boolean
@@ -985,7 +1038,7 @@ function OperativeLifeService.resetForReplay()
 	table.clear(temporaryArmorByPlayer)
 	table.clear(retainedSnapshotByOperativeEntityId)
 	for player, entry in entries do
-		entry.snapshot = initialSnapshot(entry.operativeEntityId)
+		entry.snapshot = initialSnapshot(entry.operativeEntityId, effectiveMaximumHealth(player))
 		entry.revision += 1
 		entry.lastTransitionServerTimestamp = nil
 		entry.soloOperationEligible = false
