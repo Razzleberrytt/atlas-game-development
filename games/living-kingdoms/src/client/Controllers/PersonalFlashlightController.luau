@@ -25,6 +25,9 @@ local started = false
 local lifecycleGeneration = 0
 local authoritativeRevision = 0
 local expectedActive = false
+-- Presentation only. The server owns which coverage profile this operative has
+-- earned; this controller just renders the matching beam and never claims one.
+local coverageProfileId: string = PersonalFlashlightContracts.CoverageProfileIds.Standard
 local lastInputTimestamp = -math.huge
 local attachment: Attachment? = nil
 local spotLight: SpotLight? = nil
@@ -56,6 +59,26 @@ local function destroyLightPresentation()
 	end
 end
 
+local function presentationConeAngleDegrees(): number
+	return if coverageProfileId == PersonalFlashlightContracts.CoverageProfileIds.Focused
+		then PersonalFlashlightConfig.FocusedPresentationConeAngleDegrees
+		else PersonalFlashlightConfig.PresentationConeAngleDegrees
+end
+
+local function presentationRangeStuds(): number
+	return if coverageProfileId == PersonalFlashlightContracts.CoverageProfileIds.Focused
+		then PersonalFlashlightConfig.FocusedPresentationRangeStuds
+		else PersonalFlashlightConfig.PresentationRangeStuds
+end
+
+local function applyCoverageProfile()
+	local light = spotLight
+	if light ~= nil then
+		light.Angle = presentationConeAngleDegrees()
+		light.Range = presentationRangeStuds()
+	end
+end
+
 local function ensureLightPresentation()
 	if attachment ~= nil then
 		return
@@ -81,8 +104,8 @@ local function ensureLightPresentation()
 	createdAttachment.Parent = carrier
 	local createdLight = Instance.new("SpotLight")
 	createdLight.Name = "LocalPersonalFlashlightBeam"
-	createdLight.Angle = PersonalFlashlightConfig.PresentationConeAngleDegrees
-	createdLight.Range = PersonalFlashlightConfig.PresentationRangeStuds
+	createdLight.Angle = presentationConeAngleDegrees()
+	createdLight.Range = presentationRangeStuds()
 	createdLight.Brightness = PersonalFlashlightConfig.PresentationBrightness
 		* (if USE_REDUCED_VISUAL_INTENSITY then PersonalFlashlightConfig.ReducedPresentationIntensityScale else 1)
 	createdLight.Color = Color3.fromRGB(244, 239, 214)
@@ -170,12 +193,16 @@ local function onAction(_actionName: string, inputState: Enum.UserInputState): E
 end
 
 local function onState(payload: unknown)
-	local accepted, stateId, revision =
+	local accepted, stateId, revision, profileId =
 		PersonalFlashlightContracts.reconcilePresentation(authoritativeRevision, payload)
 	if not accepted or stateId == nil or revision == nil then
 		return
 	end
 	authoritativeRevision = revision
+	if profileId ~= nil then
+		coverageProfileId = profileId
+		applyCoverageProfile()
+	end
 	expectedActive = stateId == PersonalFlashlightContracts.StateIds.Active
 	present(expectedActive)
 end
@@ -195,6 +222,7 @@ function Controller.start()
 	lifecycleGeneration += 1
 	authoritativeRevision = 0
 	expectedActive = false
+	coverageProfileId = PersonalFlashlightContracts.CoverageProfileIds.Standard
 	lastInputTimestamp = -math.huge
 	ContextActionService:BindAction(
 		ACTION_NAME,

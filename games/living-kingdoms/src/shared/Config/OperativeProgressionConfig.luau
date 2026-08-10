@@ -41,6 +41,7 @@ local Ranks = table.freeze({
 local UnlockIds = table.freeze({
 	SquadRallyPing = "squad-rally-ping",
 	DualTacticalMarkers = "squad-dual-tactical-markers",
+	FocusedFlashlightBeam = "personal-focused-beam",
 })
 
 local Unlocks = table.freeze({
@@ -55,6 +56,15 @@ local Unlocks = table.freeze({
 		DisplayName = "Dual Tactical Markers",
 		Description = "Maintain two personal squad markers at once.",
 		RequiredRank = 2,
+	}),
+	-- The first unlock outside the squad-ping family. Its consequence is owned by
+	-- PersonalFlashlightService, proving the rank/unlock seam routes into a
+	-- different existing canonical owner without a second persistence authority.
+	table.freeze({
+		Id = UnlockIds.FocusedFlashlightBeam,
+		DisplayName = "Focused Beam",
+		Description = "Your personal flashlight reaches farther and wider.",
+		RequiredRank = 3,
 	}),
 })
 

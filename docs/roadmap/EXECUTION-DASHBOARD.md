@@ -22,6 +22,7 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 - PR #356 converted the paused Skills surface into a durable progression map backed by `OperativeProgressionConfig`, while preserving the old temporary run-upgrade topology as run-only authority. Full validation and reproducible build are green; visual/device verification remains pending.
 - PR #357 proved the first live personal durable-unlock seam: Rank 2 `Rally Ping` is authored in durable progression, derived server-side from existing durable rank, routed through `SquadPingService`, and cannot be claimed by client intent. No new persistence owner was added.
 - PR #360 added Rank 2 `Dual Tactical Markers`: baseline personal capacity remains one, earned capacity becomes two, the squad hard cap remains four, and the existing server ping owner derives eligibility. The second progression unlock reused the established rank/unlock seam without another persistence or network owner.
+- Rank 3 `Focused Beam` proved unlock breadth **outside** the squad-ping family: durable rank now routes into `PersonalFlashlightService`, which registers an authored wider cone with `GameplayLightingService` and discloses the earned coverage profile only to its owner. No new persistence owner, remote, or client intent was added, and an operative without the unlock keeps the standard cone on the same server.
 - Existing `RunProgressionService` remains explicitly **run-only** shared Field XP + temporary upgrades. Durable Operative Rank must not become a second author of those facts.
 - The four non-pistol firearms remain intentionally authored as rare in-run discoveries; Patch 0.4 should not casually convert them into permanent insertion unlocks and erase that discovery loop.
 
@@ -29,7 +30,9 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 
 ### NOW
 
-**Prove Patch 0.4 progression breadth outside the squad-ping family by choosing the smallest personal long-term side-grade/access/identity unlock whose consequence can route through a different existing canonical owner.**
+**Take the first bounded class/archetype or ability side-grade unlock that reuses an existing server ability/class owner.**
+
+Cross-owner breadth is now proven by `Focused Beam` (squad-ping owner, then lighting owner). The next question is whether the same rank/unlock seam reaches the ability layer without scattering rank checks through `ClassService` callers: prefer one bounded adapter at the existing class/ability owner, and prefer alternate behavior or access over additive permanent combat-stat growth.
 
 Target chain:
 
@@ -55,7 +58,7 @@ Rules:
 
 ### NEXT
 
-1. after one non-ping unlock proves cross-owner breadth, choose the first bounded **class/archetype or ability side-grade** that reuses an existing server ability/class owner;
+1. surface earned unlocks in the RPG progression map presentation as the authored unlock list grows, rather than rewriting a menu per unlock;
 2. prefer alternate behavior, utility, access, or identity over additive permanent combat-stat growth;
 3. keep each durable unlock personal and server-derived while shared run progression remains temporary and squad-scoped;
 4. continue Patch 0.4 breadth through authored config and stable owner adapters so the marginal cost of later unlocks declines;
