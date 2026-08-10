@@ -1142,8 +1142,8 @@ end
 local function relicReloadContext(player: Player): ReloadResolver.RelicReloadContext?
 	local modifiers = RelicModifierService.read(player)
 	local hasEquipmentReloadModifier = modifiers.equipmentReloadDurationMultiplier < 1
-	local hasWoundedReloadModifier =
-		modifiers.woundedHealthFraction > 0 and modifiers.woundedReloadDurationMultiplier < 1
+	local hasWoundedReloadModifier = modifiers.woundedHealthFraction > 0
+		and modifiers.woundedReloadDurationMultiplier < 1
 	if not hasEquipmentReloadModifier and not hasWoundedReloadModifier then
 		return nil
 	end
@@ -1153,8 +1153,8 @@ local function relicReloadContext(player: Player): ReloadResolver.RelicReloadCon
 		local lifeRead = OperativeLifeService.read(player)
 		local healthState = if lifeRead == nil then nil else lifeRead.snapshot.healthState
 		if healthState ~= nil and healthState.maximumHealth > 0 then
-			isCriticallyWounded =
-				healthState.currentHealth <= healthState.maximumHealth * modifiers.woundedHealthFraction
+			isCriticallyWounded = healthState.currentHealth
+				<= healthState.maximumHealth * modifiers.woundedHealthFraction
 		end
 	end
 	return {
