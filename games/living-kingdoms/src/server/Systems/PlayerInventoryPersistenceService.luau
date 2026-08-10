@@ -5,8 +5,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Contracts = require(ReplicatedStorage.Shared.Persistence.PlayerInventoryContracts)
 local InventoryDismantleResolver = require(ReplicatedStorage.Shared.Persistence.InventoryDismantleResolver)
 local EquipmentContracts = require(ReplicatedStorage.Shared.Equipment.EquipmentRewardContracts)
+local EquipmentAffixContracts = require(ReplicatedStorage.Shared.Equipment.EquipmentAffixContracts)
 
 export type EquipmentReward = EquipmentContracts.EquipmentReward
+export type EquipmentAffixRoll = EquipmentContracts.EquipmentAffixRoll
 export type EquipmentSlotId = EquipmentContracts.EquipmentSlotId
 export type PlayerInventoryRecord = Contracts.PlayerInventoryRecord
 export type LoadResult = Contracts.LoadResult
@@ -35,6 +37,7 @@ local CURRENT_SCHEMA = Contracts.CurrentSchemaVersion
 local VALID_SLOTS = EquipmentContracts.SlotIds
 local VALID_RARITIES = EquipmentContracts.RarityIds
 local VALID_SOURCES = EquipmentContracts.SourceIds
+local VALID_AFFIX_EFFECTS = EquipmentAffixContracts.EffectIds
 
 local Service = {}
 Service.__index = Service
@@ -54,6 +57,55 @@ local function isKnownValue(container: any, value: any): boolean
 		end
 	end
 	return false
+end
+
+-- Saved rewards may predate Patch 0.3. Missing affixes therefore normalize to
+-- an empty list, while malformed affix payloads fail closed instead of being
+-- silently dropped. Historical rolls are validated structurally rather than
+-- against today's config so a future balance change cannot invalidate old gear.
+local function normalizedAffixes(value: any): { EquipmentAffixRoll }?
+	if value == nil then
+		return table.freeze({})
+	end
+	if type(value) ~= "table" then
+		return nil
+	end
+
+	local normalized = {}
+	local seenIds = {}
+	for index, rawAffix in value do
+		if type(index) ~= "number" or index % 1 ~= 0 or index < 1 or type(rawAffix) ~= "table" then
+			return nil
+		end
+		if
+			type(rawAffix.Id) ~= "string"
+			or #rawAffix.Id < 1
+			or type(rawAffix.Version) ~= "string"
+			or #rawAffix.Version < 1
+			or type(rawAffix.DisplayName) ~= "string"
+			or #rawAffix.DisplayName < 1
+			or not isKnownValue(VALID_AFFIX_EFFECTS, rawAffix.EffectId)
+			or not isInteger(rawAffix.Value)
+			or seenIds[rawAffix.Id] == true
+		then
+			return nil
+		end
+		seenIds[rawAffix.Id] = true
+		table.insert(
+			normalized,
+			table.freeze({
+				Id = rawAffix.Id,
+				Version = rawAffix.Version,
+				DisplayName = rawAffix.DisplayName,
+				EffectId = rawAffix.EffectId,
+				Value = rawAffix.Value,
+			})
+		)
+	end
+	if #normalized ~= #value then
+		return nil
+	end
+	return table.freeze(normalized)
 end
 
 local function normalizedReward(value: any): EquipmentReward?
@@ -76,6 +128,10 @@ local function normalizedReward(value: any): EquipmentReward?
 	if type(value.RunId) ~= "string" or not isInteger(value.Seed) then
 		return nil
 	end
+	local affixes = normalizedAffixes(value.Affixes)
+	if affixes == nil then
+		return nil
+	end
 
 	local grantId = value.GrantId
 	if type(grantId) ~= "string" or #grantId < 8 then
@@ -96,6 +152,7 @@ local function normalizedReward(value: any): EquipmentReward?
 		Slot = value.Slot,
 		Rarity = value.Rarity,
 		Power = value.Power,
+		Affixes = affixes,
 		SourceId = value.SourceId,
 		RunId = value.RunId,
 		Seed = value.Seed,
