@@ -89,8 +89,11 @@ do
 	assertThat(contains(pingServiceSource, invariant), `Persistent Markers must preserve {invariant}`)
 end
 
-for _, forbidden in { "SetAsync", "UpdateAsync", "GetDataStore", "Instance.new(\"RemoteEvent\")" } do
-	assertThat(not contains(pingServiceSource, forbidden), `Persistent Markers must not add authority surface: {forbidden}`)
+for _, forbidden in { "SetAsync", "UpdateAsync", "GetDataStore", 'Instance.new("RemoteEvent")' } do
+	assertThat(
+		not contains(pingServiceSource, forbidden),
+		`Persistent Markers must not add authority surface: {forbidden}`
+	)
 end
 assertThat(
 	not contains(pingServiceSource, "payload.PersistentMarkers")
@@ -98,8 +101,7 @@ assertThat(
 	"the client must never claim Persistent Markers entitlement"
 )
 assertThat(
-	not contains(controllerSource, "PersistentMarkers")
-		and contains(controllerSource, "ping.expiresAtServerTimestamp"),
+	not contains(controllerSource, "PersistentMarkers") and contains(controllerSource, "ping.expiresAtServerTimestamp"),
 	"the client must consume server-owned expiry without deciding durable entitlement"
 )
 
