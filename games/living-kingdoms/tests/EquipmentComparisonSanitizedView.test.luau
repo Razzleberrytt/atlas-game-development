@@ -47,7 +47,13 @@ local candidate = {
 	Rarity = contracts.RarityIds.Rare,
 	Power = 12,
 	Affixes = {
-		{ Id = "swift-loader", Version = "1.0.0", DisplayName = "Swift Loader", EffectId = "ReloadSpeedPercent", Value = 8 },
+		{
+			Id = "swift-loader",
+			Version = "1.0.0",
+			DisplayName = "Swift Loader",
+			EffectId = "ReloadSpeedPercent",
+			Value = 8,
+		},
 	},
 }
 
