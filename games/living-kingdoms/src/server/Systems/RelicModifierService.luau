@@ -1,27 +1,32 @@
 --!strict
 
 --[[
-	RPG-0108 (part 2) server-side per-operative relic modifier adapter.
+	Server-side per-operative modifier adapter.
 
 	The authoritative combat, reload, and life owners need one operative's bounded
-	relic modifiers many times per evaluation. This thin adapter reads the equipped
-	relics from the existing RunBuildService owner, derives the bundle through the
-	pure RelicModifierResolver, and caches it against the server-owned build
-	revision so a stable build costs one table lookup per read. It also forwards
-	counted-relic advances to the same owner, which holds the canonical slot
-	counter.
+	modifier bundle many times per evaluation. Relic facts are derived from the
+	existing RunBuildService owner and cached against its server-owned revision.
+	Durable-equipment facts are joined from the authoritative inventory record on
+	each read so an equip change cannot be hidden behind the relic cache.
 
-	It owns no relic state, creates no connections, and adds no network surface.
-	Callers release their entry through forget(); stop paths call clear().
+	This adapter owns no relic or inventory state, creates no connections, and adds
+	no network surface. It is the server composition seam between independently
+	owned build facts and the existing gameplay owners that consume them.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local EquippedEquipmentModifierResolver =
+	require(ReplicatedStorage.Shared.Equipment.EquippedEquipmentModifierResolver)
 local RelicModifierResolver = require(ReplicatedStorage.Shared.RPG.RelicModifierResolver)
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
+local InventoryLiveService = require(script.Parent.InventoryLiveService)
 local RunBuildService = require(script.Parent.RunBuildService)
 
 export type RelicModifiers = RelicModifierResolver.RelicModifiers
+export type OperativeModifiers = RelicModifiers & {
+	equipmentDamageMultiplier: number,
+}
 
 type CacheEntry = {
 	revision: number,
@@ -30,27 +35,38 @@ type CacheEntry = {
 
 local RelicModifierService = {}
 
-local NEUTRAL_MODIFIERS: RelicModifiers = RelicModifierResolver.deriveModifiers({})
+local NEUTRAL_RELIC_MODIFIERS: RelicModifiers = RelicModifierResolver.deriveModifiers({})
 local cache: { [Player]: CacheEntry } = {}
 
+local function composeOperativeModifiers(player: Player, relicModifiers: RelicModifiers): OperativeModifiers
+	local activeWeaponId = player:GetAttribute("LK_EquippedWeaponId")
+	local equipmentModifiers = EquippedEquipmentModifierResolver.resolveForWeapon(
+		InventoryLiveService.getRecord(player.UserId),
+		activeWeaponId
+	)
+	local combined = table.clone(relicModifiers) :: any
+	combined.equipmentDamageMultiplier = equipmentModifiers.damageMultiplier
+	return table.freeze(combined) :: OperativeModifiers
+end
+
 --[[
-	Returns the operative's current bounded relic modifiers, or the frozen neutral
-	bundle when the operation is stopped, the operative is untracked, or no relic
-	is equipped.
+	Returns the operative's current bounded modifier bundle. Relics may be served
+	from the build-revision cache; durable equipment is resolved from the current
+	authoritative inventory record and server-authored active weapon every read.
 ]]
-function RelicModifierService.read(player: Player): RelicModifiers
+function RelicModifierService.read(player: Player): OperativeModifiers
 	local read = RunBuildService.readEquippedRelicIds(player)
 	if read == nil then
 		cache[player] = nil
-		return NEUTRAL_MODIFIERS
+		return composeOperativeModifiers(player, NEUTRAL_RELIC_MODIFIERS)
 	end
 	local cached = cache[player]
 	if cached ~= nil and cached.revision == read.revision then
-		return cached.modifiers
+		return composeOperativeModifiers(player, cached.modifiers)
 	end
 	local modifiers = RelicModifierResolver.deriveModifiers(read.relicIds)
 	cache[player] = { revision = read.revision, modifiers = modifiers }
-	return modifiers
+	return composeOperativeModifiers(player, modifiers)
 end
 
 --[[
