@@ -1,9 +1,9 @@
 --!strict
 
 -- Patch 0.4 durable progression begins with one deliberately small progression
--- map. Rank is derived from already-persisted completed-expedition Boss grant
--- identities, so this foundation adds no second save owner and no permanent raw
--- combat-stat inflation.
+-- map. Rank and unlock eligibility are derived from already-persisted
+-- completed-expedition Boss grant identities, so this foundation adds no second
+-- save owner and no permanent raw combat-stat inflation.
 
 local Ranks = table.freeze({
 	table.freeze({
@@ -38,11 +38,26 @@ local Ranks = table.freeze({
 	}),
 })
 
+local UnlockIds = table.freeze({
+	SquadRallyPing = "squad-rally-ping",
+})
+
+local Unlocks = table.freeze({
+	table.freeze({
+		Id = UnlockIds.SquadRallyPing,
+		DisplayName = "Rally Ping",
+		Description = "Your standard squad ping carries a Rally identity.",
+		RequiredRank = 2,
+	}),
+})
+
 local Config = {
 	Version = "PATCH-0.4-OPERATIVE-RANK-v1",
 	DurableRewardGrantPrefix = "reward:",
 	CompletedExpeditionSourceId = "Boss",
 	Ranks = Ranks,
+	UnlockIds = UnlockIds,
+	Unlocks = Unlocks,
 }
 
 local previousThreshold = -1
@@ -58,6 +73,22 @@ for index, rank in Ranks do
 	)
 	assert(rank.RequiredCompletedExpeditions > previousThreshold, "operative rank thresholds must strictly increase")
 	previousThreshold = rank.RequiredCompletedExpeditions
+end
+
+local unlockIds = {}
+for _, unlock in Unlocks do
+	assert(type(unlock.Id) == "string" and unlock.Id ~= "", "operative unlocks require stable IDs")
+	assert(unlockIds[unlock.Id] == nil, "operative unlock IDs must be unique")
+	assert(type(unlock.DisplayName) == "string" and unlock.DisplayName ~= "", "operative unlocks require display names")
+	assert(type(unlock.Description) == "string" and unlock.Description ~= "", "operative unlocks require descriptions")
+	assert(
+		type(unlock.RequiredRank) == "number"
+			and unlock.RequiredRank >= 1
+			and unlock.RequiredRank <= #Ranks
+			and unlock.RequiredRank % 1 == 0,
+		"operative unlock rank requirements must reference an authored rank"
+	)
+	unlockIds[unlock.Id] = true
 end
 
 assert(Ranks[1].RequiredCompletedExpeditions == 0, "rank one must be available before the first clear")

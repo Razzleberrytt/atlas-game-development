@@ -66,6 +66,13 @@ local function clearMarkers()
 	end
 end
 
+local function markerCopy(categoryId: string): (string, string, Vector3, number)
+	if categoryId == SquadPingContracts.CategoryIds.Rally then
+		return "RallyLabel", "◆  RALLY\nSQUAD PING", Vector3.new(0, 3.35, 0), 126
+	end
+	return "LocationLabel", "◇  LOCATION\nSQUAD PING", Vector3.new(0, 3, 0), 116
+end
+
 local function createMarker(ping: any): Marker
 	local part = Instance.new("Part")
 	part.Name = "SquadLocationPing_" .. ping.pingId
@@ -78,23 +85,24 @@ local function createMarker(ping: any): Marker
 	part.Transparency = 1
 	part.Position = ping.position
 
+	local labelName, text, studsOffset, width = markerCopy(ping.categoryId)
 	local billboard = Instance.new("BillboardGui")
 	billboard.Name = "Marker"
 	billboard.AlwaysOnTop = true
 	billboard.LightInfluence = 0
 	billboard.MaxDistance = SquadPingConfig.MaximumDistanceStuds + 24
-	billboard.Size = UDim2.fromOffset(116, 54)
-	billboard.StudsOffsetWorldSpace = Vector3.new(0, 3, 0)
+	billboard.Size = UDim2.fromOffset(width, 54)
+	billboard.StudsOffsetWorldSpace = studsOffset
 	billboard.Parent = part
 
 	local label = Instance.new("TextLabel")
-	label.Name = "LocationLabel"
+	label.Name = labelName
 	label.Size = UDim2.fromScale(1, 1)
 	label.BackgroundColor3 = Color3.fromRGB(18, 24, 34)
 	label.BackgroundTransparency = 0.12
 	label.BorderSizePixel = 0
 	label.Font = Enum.Font.GothamBold
-	label.Text = "◇  LOCATION\nSQUAD PING"
+	label.Text = text
 	label.TextColor3 = Color3.fromRGB(238, 246, 255)
 	label.TextSize = 15
 	label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)

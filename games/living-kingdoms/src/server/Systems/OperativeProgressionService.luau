@@ -2,7 +2,8 @@
 
 -- Patch 0.4 read-only durable progression adapter. InventoryLiveService remains
 -- the persistence/session owner; this service only derives a sanitized rank
--- snapshot from the owner's already-loaded durable reward-grant ledger.
+-- snapshot and unlock eligibility from the owner's already-loaded durable
+-- reward-grant ledger.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -11,6 +12,11 @@ local OperativeProgressionResolver = require(ReplicatedStorage.Shared.Progressio
 local InventoryLiveService = require(script.Parent.InventoryLiveService)
 
 local Service = {}
+
+local unlockById = {}
+for _, unlock in OperativeProgressionConfig.Unlocks do
+	unlockById[unlock.Id] = unlock
+end
 
 local function rejected(reasonId: string): any
 	return table.freeze({
@@ -47,6 +53,19 @@ function Service.readOwnedSnapshot(requesterId: number, ownerId: number): any
 	end
 
 	return OperativeProgressionResolver.resolve(OperativeProgressionConfig, record.AppliedRewardGrantIds)
+end
+
+-- Unlocks are never stored independently. They are a deterministic projection of
+-- the same durable rank snapshot, making future bounded unlocks cheap to add
+-- without creating a second persistence or progression authority.
+function Service.hasOwnedUnlock(requesterId: number, ownerId: number, unlockId: string): boolean
+	local unlock = unlockById[unlockId]
+	if unlock == nil then
+		return false
+	end
+
+	local snapshot = Service.readOwnedSnapshot(requesterId, ownerId)
+	return snapshot.Accepted == true and type(snapshot.Rank) == "number" and snapshot.Rank >= unlock.RequiredRank
 end
 
 return table.freeze(Service)

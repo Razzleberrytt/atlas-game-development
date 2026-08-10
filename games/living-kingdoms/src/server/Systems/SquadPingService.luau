@@ -1,11 +1,11 @@
 --!strict
 
 --[[
-	Server owner for LK-0407's bounded Location-only squad ping slice. Client
-	intent contains only a category and candidate position. Identity, squad,
-	time, limits, canonical position, ping identity, recipients, and revisions
-	are derived here. No discovery, perception, targeting, or combat service is
-	read or mutated.
+	Server owner for LK-0407's bounded location squad ping slice. Client intent
+	contains only a Location category and candidate position. Identity, squad,
+	time, limits, canonical position, durable Rally identity, ping identity,
+	recipients, and revisions are derived here. No discovery, perception,
+	targeting, or combat service is read or mutated.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,9 +13,11 @@ local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
 
+local OperativeProgressionConfig = require(ReplicatedStorage.Shared.Config.OperativeProgressionConfig)
 local SquadPingConfig = require(ReplicatedStorage.Shared.Config.SquadPingConfig)
 local SquadPingContracts = require(ReplicatedStorage.Shared.Navigation.SquadPingContracts)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
+local OperativeProgressionService = require(script.Parent.OperativeProgressionService)
 
 type ListenerConnection = { Disconnect: (self: ListenerConnection) -> () }
 
@@ -221,6 +223,21 @@ local function ownedPings(operativeEntityId: string): { PingEntry }
 		return left.sequence < right.sequence
 	end)
 	return owned
+end
+
+local function publishedCategoryFor(player: Player): string
+	local unlocked = false
+	local ok = pcall(function()
+		unlocked = OperativeProgressionService.hasOwnedUnlock(
+			player.UserId,
+			player.UserId,
+			OperativeProgressionConfig.UnlockIds.SquadRallyPing
+		)
+	end)
+	if ok and unlocked then
+		return SquadPingContracts.CategoryIds.Rally
+	end
+	return SquadPingContracts.CategoryIds.Location
 end
 
 local function cancelExpiry()
@@ -501,6 +518,7 @@ function Service.requestPing(player: Player, intent: unknown): OperationResult
 	if entry ~= entriesByOperativeId[entry.operativeEntityId] then
 		return reject(player, SquadPingContracts.RejectionReasonIds.StateMismatch)
 	end
+	local categoryId = publishedCategoryFor(player)
 	if replacing ~= nil then
 		removeInternal(replacing.pingId)
 	end
@@ -509,7 +527,7 @@ function Service.requestPing(player: Player, intent: unknown): OperationResult
 	local pingId = "ping:" .. tostring(nextPingSequence)
 	local ping: PingEntry = {
 		pingId = pingId,
-		categoryId = SquadPingContracts.CategoryIds.Location,
+		categoryId = categoryId,
 		position = quantizeTowardSender(senderPosition, candidatePosition),
 		senderOperativeEntityId = entry.operativeEntityId,
 		expiresAtServerTimestamp = now + SquadPingConfig.LifetimeSeconds,

@@ -108,9 +108,19 @@ local network = {
 local CONFIG_TOKEN = {}
 local CONTRACTS_TOKEN = {}
 local LIFE_TOKEN = {}
+local PROGRESSION_CONFIG_TOKEN = {}
+local PROGRESSION_SERVICE_TOKEN = {}
+local progressionConfig = {
+	UnlockIds = {
+		SquadRallyPing = "squad-rally-ping",
+	},
+}
 local replicatedStorage = {
 	Shared = {
-		Config = { SquadPingConfig = CONFIG_TOKEN },
+		Config = {
+			SquadPingConfig = CONFIG_TOKEN,
+			OperativeProgressionConfig = PROGRESSION_CONFIG_TOKEN,
+		},
 		Navigation = { SquadPingContracts = CONTRACTS_TOKEN },
 	},
 	WaitForChild = function(_, name)
@@ -154,6 +164,19 @@ local lifeService = {
 	end,
 }
 
+local unlockedByUserId = {}
+local progressionCalls = {}
+local progressionService = {
+	hasOwnedUnlock = function(requesterId, ownerId, unlockId)
+		table.insert(progressionCalls, {
+			requesterId = requesterId,
+			ownerId = ownerId,
+			unlockId = unlockId,
+		})
+		return unlockedByUserId[ownerId] == true
+	end,
+}
+
 local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/SquadPingService.luau"), {
 	debugName = "SquadPingService",
 	environment = {
@@ -169,7 +192,12 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return workspace
 			end,
 		},
-		script = { Parent = { OperativeLifeService = LIFE_TOKEN } },
+		script = {
+			Parent = {
+				OperativeLifeService = LIFE_TOKEN,
+				OperativeProgressionService = PROGRESSION_SERVICE_TOKEN,
+			},
+		},
 		require = function(token)
 			if token == CONFIG_TOKEN then
 				return config
@@ -177,6 +205,10 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return contracts
 			elseif token == LIFE_TOKEN then
 				return lifeService
+			elseif token == PROGRESSION_CONFIG_TOKEN then
+				return progressionConfig
+			elseif token == PROGRESSION_SERVICE_TOKEN then
+				return progressionService
 			end
 			error("unexpected SquadPingService dependency")
 		end,
@@ -234,6 +266,8 @@ local function reset()
 	table.clear(roster)
 	table.clear(stateMessages)
 	table.clear(scheduled)
+	table.clear(unlockedByUserId)
+	table.clear(progressionCalls)
 	now = 0
 	service.start()
 end
@@ -258,6 +292,10 @@ now = 10
 local accepted = service.requestPing(alpha, intent(roblox.Vector3.new(9.9, 0, -5)))
 assert(accepted.didChange and accepted.lifecycleId == "Active")
 assert(accepted.ping.pingId == "ping:1" and accepted.ping.revision == 1)
+assert(accepted.ping.categoryId == contracts.CategoryIds.Location, "locked player must publish Location")
+assert(#progressionCalls == 1)
+assert(progressionCalls[1].requesterId == alpha.UserId and progressionCalls[1].ownerId == alpha.UserId)
+assert(progressionCalls[1].unlockId == progressionConfig.UnlockIds.SquadRallyPing)
 assert(accepted.ping.position == roblox.Vector3.new(8, 0, -4), "position must be sender-relative quantized")
 assert(accepted.ping.expiresAtServerTimestamp == 16)
 local alphaSnapshot = service.readRecipientSnapshot(alpha)
@@ -295,7 +333,7 @@ do
 	assert(service.requestPing(alpha, malformed).rejectionReasonId == "MalformedIntent")
 end
 assert(service.requestPing(alpha, intent(roblox.Vector3.zero, "Invented")).rejectionReasonId == "InvalidCategory")
-for _, categoryId in { "Teammate", "Objective", "ObservedHostile" } do
+for _, categoryId in { "Rally", "Teammate", "Objective", "ObservedHostile" } do
 	assert(service.requestPing(alpha, intent(roblox.Vector3.zero, categoryId)).rejectionReasonId == "InvalidCategory")
 end
 for _, hostileReason in
@@ -319,11 +357,15 @@ assert(service.requestPing({}, intent(roblox.Vector3.zero)).rejectionReasonId ==
 now = 10.5
 assert(service.requestPing(alpha, intent(roblox.Vector3.new(20, 0, 0))).rejectionReasonId == "RateLimited")
 assert(service.readRecipientSnapshot(alpha).pings[1].pingId == "ping:1")
+unlockedByUserId[alpha.UserId] = true
 now = 11.5
 local replacement = service.requestPing(alpha, intent(roblox.Vector3.new(20, 0, 0)))
 assert(replacement.didChange and replacement.ping.pingId == "ping:2")
+assert(replacement.ping.categoryId == contracts.CategoryIds.Rally, "unlocked player must publish Rally")
 local replacementSnapshot = service.readRecipientSnapshot(alpha)
 assert(#replacementSnapshot.pings == 1 and replacementSnapshot.pings[1].pingId == "ping:2")
+assert(replacementSnapshot.pings[1].categoryId == contracts.CategoryIds.Rally)
+assert(contracts.validateSafeSnapshot(replacementSnapshot), "Rally must remain a safe location-only snapshot")
 assert(replacementSnapshot.pings[1].revision > accepted.ping.revision)
 
 reset()
@@ -441,4 +483,6 @@ do
 	assert(not string.find(serviceSource, prohibited, 1, true), "prohibited authority dependency: " .. prohibited)
 end
 
-print("SquadPingService: LK-0407 isolation, validation, limits, expiry, replication, and cleanup passed")
+print(
+	"SquadPingService: LK-0407 isolation, validation, limits, Rally identity, expiry, replication, and cleanup passed"
+)
