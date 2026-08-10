@@ -79,16 +79,21 @@
     },
     {
       "effect_id": "AbilityHastePercent",
-      "status": "owner-confirmed",
+      "status": "live",
       "capability_id": "combat-authority",
       "owner_kind": "server",
       "canonical_owner": "games/living-kingdoms/src/server/Systems/ClassService.luau",
       "composition_seam": "games/living-kingdoms/src/server/Systems/RelicModifierService.luau",
-      "shared_adapter": null,
+      "shared_adapter": "games/living-kingdoms/src/shared/Equipment/EquipmentAffixModifierResolver.luau",
       "selection_resolver": "games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau",
-      "focused_tests": [],
+      "focused_tests": [
+        "games/living-kingdoms/tests/EquipmentAffixModifierResolver.test.luau",
+        "games/living-kingdoms/tests/EquippedEquipmentModifierResolver.test.luau",
+        "games/living-kingdoms/tests/BraceResolver.test.luau",
+        "games/living-kingdoms/tests/EquipmentAbilityHasteIntegration.test.luau"
+      ],
       "risk_tier": "R2",
-      "extension_rule": "Route durable Relic haste into ClassService as one bounded server-derived cooldown-duration multiplier. Pure class-action resolvers may consume that fact when constructing cooldown deadlines, but cooldown legality, server timestamps, configured base durations, resource costs, and effect commits remain owned by existing class-action authority."
+      "extension_rule": "New AbilityHastePercent Relic affixes should be data/config plus focused regression only; compose through RelicModifierService and snapshot the bounded cooldown-duration multiplier when ClassService activates the action so gear swaps cannot rewrite an in-flight cooldown."
     },
     {
       "effect_id": "AbilityPowerPercent",

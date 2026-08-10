@@ -9,6 +9,10 @@ local function assertThat(condition: unknown, message: string)
 	end
 end
 
+local function assertNear(actual: number, expected: number, message: string)
+	assertThat(math.abs(actual - expected) < 1e-9, message)
+end
+
 local contracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Classes/ClassContracts.luau"), {
 	debugName = "ClassContracts",
 	injectGlobals = true,
@@ -135,6 +139,18 @@ local moved = resolver.resolveContinuity(accepted.actionStateAfter, continuity({
 assertThat(moved.actionStateAfter.actionStateId == contracts.ClassActionStateIds.Cooldown, "movement interrupts")
 assertThat(moved.rejectionReasonId == contracts.ClassActionRejectionReasonIds.MovementInterrupted, "movement reason")
 assertThat(moved.actionStateAfter.cooldownEndServerTimestamp == 25, "interruption starts configured cooldown")
+local movedWithHaste =
+	resolver.resolveContinuity(accepted.actionStateAfter, continuity({ movementDistanceStuds = 1.51 }), 0.9)
+assertNear(
+	movedWithHaste.actionStateAfter.cooldownEndServerTimestamp,
+	23.6,
+	"server-derived haste must shorten configured cooldown duration"
+)
+assertThat(
+	resolver.resolveContinuity(accepted.actionStateAfter, continuity({ movementDistanceStuds = 1.51 }), 0).rejectionReasonId
+		== contracts.ClassActionRejectionReasonIds.InvalidIntent,
+	"invalid cooldown multipliers must fail closed"
+)
 local reloaded = resolver.resolveContinuity(accepted.actionStateAfter, continuity({ didReloadBegin = true }))
 assertThat(reloaded.rejectionReasonId == contracts.ClassActionRejectionReasonIds.ReloadInterrupted, "reload interrupts")
 local dead = resolver.resolveContinuity(accepted.actionStateAfter, continuity({ isActorAlive = false }))
@@ -146,10 +162,17 @@ local cancelled =
 	resolver.resolveCancel(accepted.actionStateAfter, intent(contracts.ClassActionPhaseIds.Cancel, "brace-cancel"), 12)
 assertThat(cancelled.actionStateAfter.actionStateId == contracts.ClassActionStateIds.Cooldown, "cancel starts cooldown")
 assertThat(cancelled.actionStateAfter.cooldownEndServerTimestamp == 26, "cancel cooldown deadline")
+local cancelledWithHaste = resolver.resolveCancel(
+	accepted.actionStateAfter,
+	intent(contracts.ClassActionPhaseIds.Cancel, "brace-haste"),
+	12,
+	0.9
+)
+assertNear(cancelledWithHaste.actionStateAfter.cooldownEndServerTimestamp, 24.6, "cancel must consume haste snapshot")
 local cooled = resolver.resolveContinuity(cancelled.actionStateAfter, continuity({ serverTimestamp = 26 }))
 assertThat(cooled.actionStateAfter.actionStateId == contracts.ClassActionStateIds.Idle, "cooldown returns to idle")
 assertThat(cooled.actionStateAfter.actionId == nil, "idle clears action identity")
 
 print(
-	"BraceResolver: activation, authority gates, interruption, cancellation, cooldown, and immutability checks passed"
+	"BraceResolver: activation, authority gates, interruption, cancellation, bounded haste, cooldown, and immutability checks passed"
 )

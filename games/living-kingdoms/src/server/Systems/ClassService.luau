@@ -22,6 +22,8 @@ local FieldTreatmentResolver = require(script.Parent.FieldTreatmentResolver)
 local FieldResupplyResolver = require(script.Parent.FieldResupplyResolver)
 local MissionDirectorService = require(script.Parent.MissionDirectorService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
+local relicModifierServiceModule = script.Parent.RelicModifierService
+local RelicModifierService = if relicModifierServiceModule == nil then nil else require(relicModifierServiceModule)
 
 local NetworkOperationIds = ClassContracts.ClassSelectionNetworkOperationIds
 local RejectionReasonIds = ClassContracts.ClassActionRejectionReasonIds
@@ -51,6 +53,7 @@ type Entry = {
 	actionState: AuthoritativeClassActionState,
 	actionOriginPosition: Vector3?,
 	actionActorProcessedDamageEventIds: { [string]: boolean }?,
+	actionCooldownDurationMultiplier: number?,
 	resources: { [string]: ClassContracts.AuthoritativeClassResourceState },
 	processedRequestIds: { [string]: boolean },
 	processedRequestOrder: { string },
@@ -386,6 +389,7 @@ local function registerPlayer(player: Player, allowLockedRegistration: boolean):
 		actionState = idleActionState(),
 		actionOriginPosition = nil,
 		actionActorProcessedDamageEventIds = nil,
+		actionCooldownDurationMultiplier = nil,
 		resources = resourcesForClass(ClassConfig.Selection.defaultClassId),
 		processedRequestIds = {},
 		processedRequestOrder = {},
@@ -530,9 +534,29 @@ local function actorTookDamage(entry: Entry, snapshot: OperativeLifeContracts.Op
 	return false
 end
 
+local function effectiveAbilityCooldownDurationMultiplier(player: Player): number
+	if RelicModifierService == nil then
+		return 1
+	end
+	local modifiers = RelicModifierService.read(player)
+	local multiplier = (modifiers :: any).equipmentAbilityCooldownDurationMultiplier
+	if
+		type(multiplier) ~= "number"
+		or multiplier ~= multiplier
+		or multiplier == math.huge
+		or multiplier == -math.huge
+		or multiplier <= 0
+		or multiplier > 1
+	then
+		return 1
+	end
+	return multiplier
+end
+
 local function clearActionContinuity(entry: Entry)
 	entry.actionOriginPosition = nil
 	entry.actionActorProcessedDamageEventIds = nil
+	entry.actionCooldownDurationMultiplier = nil
 end
 
 local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBegin: boolean): boolean
@@ -546,6 +570,7 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 		local origin = entry.actionOriginPosition
 		movementDistanceStuds = if position == nil or origin == nil then 1e9 else (position - origin).Magnitude
 	end
+	local cooldownDurationMultiplier = entry.actionCooldownDurationMultiplier or 1
 	local resolution
 	if state.actionId == ActionIds.FieldTreatment then
 		local actorRead = OperativeLifeService.read(entry.player)
@@ -570,7 +595,7 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 			distanceStuds = distanceStuds,
 			hasLineOfSight = hasLineOfSight,
 			serverTimestamp = serverTimestamp,
-		})
+		}, cooldownDurationMultiplier)
 		if resolution.shouldCommitHealing then
 			local medical = entry.resources[ResourceIds.MedicalCharge]
 			local committed = if targetRead == nil
@@ -601,7 +626,8 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 					0
 				)
 			else
-				resolution = FieldTreatmentResolver.resolveEffectRejected(state, serverTimestamp)
+				resolution =
+					FieldTreatmentResolver.resolveEffectRejected(state, serverTimestamp, cooldownDurationMultiplier)
 			end
 		end
 	elseif state.actionId == ActionIds.FieldResupply then
@@ -636,7 +662,7 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 			movementDistanceStuds = movementDistanceStuds,
 			didActorTakeDamage = actorRead ~= nil and actorTookDamage(entry, actorRead.snapshot),
 			serverTimestamp = serverTimestamp,
-		})
+		}, cooldownDurationMultiplier)
 		if resolution.shouldCommitResupply then
 			local didCommit, grantedRounds = false, 0
 			if targetPlayer ~= nil and supply ~= nil and engineerResupplyCommitter ~= nil then
@@ -659,7 +685,8 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 					grantedRounds
 				)
 			else
-				resolution = FieldResupplyResolver.resolveEffectRejected(state, serverTimestamp)
+				resolution =
+					FieldResupplyResolver.resolveEffectRejected(state, serverTimestamp, cooldownDurationMultiplier)
 			end
 		end
 	else
@@ -669,7 +696,7 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 			movementDistanceStuds = movementDistanceStuds,
 			didReloadBegin = didReloadBegin,
 			serverTimestamp = serverTimestamp,
-		})
+		}, cooldownDurationMultiplier)
 	end
 	if not resolution.didChange then
 		return false
@@ -813,12 +840,31 @@ function Service.requestAction(player: Player, payload: unknown): OperationResul
 				entry.actionOriginPosition = startPosition
 			end
 		end
+		if resolution.didActivate then
+			entry.actionCooldownDurationMultiplier = effectiveAbilityCooldownDurationMultiplier(player)
+		end
 	else
+		local cooldownDurationMultiplier = entry.actionCooldownDurationMultiplier or 1
 		resolution = if entry.actionState.actionId == ActionIds.FieldTreatment
-			then FieldTreatmentResolver.resolveCancel(entry.actionState, payload, serverTimestamp)
+			then FieldTreatmentResolver.resolveCancel(
+				entry.actionState,
+				payload,
+				serverTimestamp,
+				cooldownDurationMultiplier
+			)
 			else if entry.actionState.actionId == ActionIds.FieldResupply
-				then FieldResupplyResolver.resolveCancel(entry.actionState, payload, serverTimestamp)
-				else BraceResolver.resolveCancel(entry.actionState, payload, serverTimestamp)
+				then FieldResupplyResolver.resolveCancel(
+					entry.actionState,
+					payload,
+					serverTimestamp,
+					cooldownDurationMultiplier
+				)
+				else BraceResolver.resolveCancel(
+					entry.actionState,
+					payload,
+					serverTimestamp,
+					cooldownDurationMultiplier
+				)
 	end
 	if not resolution.didChange then
 		if didAdvance then

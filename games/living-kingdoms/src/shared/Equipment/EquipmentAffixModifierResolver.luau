@@ -3,7 +3,7 @@
 -- Patch 0.3 pure equipment-affix modifier adapter.
 --
 -- Durable equipment owns the affix facts. Existing canonical modifier arithmetic
--- owns damage/reload/movement bounds; this adapter adds the durable-life
+-- owns damage/reload/movement/duration bounds; this adapter adds the durable-life
 -- maximum-health ceiling needed by OperativeLifeService. It owns no state and
 -- creates no runtime authority.
 
@@ -16,6 +16,7 @@ export type ResolvedModifiers = {
 	reloadDurationMultiplier: number,
 	maximumHealthMultiplier: number,
 	movementSpeedMultiplier: number,
+	abilityCooldownDurationMultiplier: number,
 }
 
 local EquipmentAffixModifierResolver = {}
@@ -24,6 +25,7 @@ local DAMAGE_EFFECT_ID = "DamagePercent"
 local RELOAD_SPEED_EFFECT_ID = "ReloadSpeedPercent"
 local MAXIMUM_HEALTH_EFFECT_ID = "MaxHealthPercent"
 local MOVEMENT_SPEED_EFFECT_ID = "MoveSpeedPercent"
+local ABILITY_HASTE_EFFECT_ID = "AbilityHastePercent"
 local PERCENT_SCALE = 100
 -- Durable maximum health is defense-in-depth bounded independently from run
 -- effects. Current authored rolls are far below this ceiling; 2x is a hard
@@ -36,6 +38,7 @@ local function neutral(): ResolvedModifiers
 		reloadDurationMultiplier = 1,
 		maximumHealthMultiplier = 1,
 		movementSpeedMultiplier = 1,
+		abilityCooldownDurationMultiplier = 1,
 	})
 end
 
@@ -46,9 +49,15 @@ end
 --[[
 	Resolves only effects that have an identified canonical runtime owner. Patch
 	0.3 routes DamagePercent through damage, ReloadSpeedPercent through reload,
-	MaxHealthPercent through OperativeLifeService, and MoveSpeedPercent through
-	the same service's server-owned character locomotion application. Ability
-	effects remain inert until their authority seams are wired explicitly.
+	MaxHealthPercent and MoveSpeedPercent through OperativeLifeService, and
+	AbilityHastePercent through ClassService. AbilityPowerPercent remains inert
+	until its consequence owner is wired explicitly.
+
+	Ability haste deliberately reuses RunModifierResolver's canonical bounded
+	duration-reduction arithmetic. The shared arithmetic happens to expose the
+	result as reloadDurationMultiplier; this adapter translates the same generic
+	"shorter duration" fact into an abilityCooldownDurationMultiplier without
+	making reload or class actions own one another.
 
 	Malformed affix data fails the entire bundle closed to neutral instead of
 	partially applying a suspicious build. Unknown-but-well-formed effects are
@@ -66,6 +75,7 @@ function EquipmentAffixModifierResolver.resolve(affixes: { EquipmentAffixRoll }?
 	local reloadSpeedPercent = 0
 	local maximumHealthPercent = 0
 	local movementSpeedPercent = 0
+	local abilityHastePercent = 0
 	for _, affix in affixes :: any do
 		if
 			type(affix) ~= "table"
@@ -83,6 +93,8 @@ function EquipmentAffixModifierResolver.resolve(affixes: { EquipmentAffixRoll }?
 			maximumHealthPercent += affix.Value
 		elseif affix.EffectId == MOVEMENT_SPEED_EFFECT_ID then
 			movementSpeedPercent += affix.Value
+		elseif affix.EffectId == ABILITY_HASTE_EFFECT_ID then
+			abilityHastePercent += affix.Value
 		end
 	end
 
@@ -91,11 +103,15 @@ function EquipmentAffixModifierResolver.resolve(affixes: { EquipmentAffixRoll }?
 		reloadDurationReduction = reloadSpeedPercent / PERCENT_SCALE,
 		movementSpeedBonus = movementSpeedPercent / PERCENT_SCALE,
 	})
+	local boundedAbilityDuration = RunModifierResolver.resolve({
+		reloadDurationReduction = abilityHastePercent / PERCENT_SCALE,
+	})
 	return table.freeze({
 		damageMultiplier = bounded.damageMultiplier,
 		reloadDurationMultiplier = bounded.reloadDurationMultiplier,
 		maximumHealthMultiplier = math.min(MAXIMUM_HEALTH_MULTIPLIER_CEILING, 1 + maximumHealthPercent / PERCENT_SCALE),
 		movementSpeedMultiplier = bounded.movementSpeedMultiplier,
+		abilityCooldownDurationMultiplier = boundedAbilityDuration.reloadDurationMultiplier,
 	})
 end
 
