@@ -226,6 +226,18 @@ Prioritize:
 - damage/death/reward punctuation;
 - relevant presentation accessibility controls.
 
+**Delivered so far (BUILT — VERIFICATION PENDING):**
+
+- **Elite readability.** `EliteAffixResolver` had been assigning affixes and
+  `EnemyDirectorService` had been disclosing them on the enemy model
+  (`EnemyEliteAffixId`, `EnemyEliteDisplayName`, `EnemyEliteArmorRemaining`), but
+  no client surface read any of it — an elite was visually identical to trash and
+  the player had no way to know which enemy deserved attention.
+  `EliteReadabilityController` now renders a bounded pool of world-space
+  nameplates naming the affix, why it is dangerous, and the disclosed armor
+  remaining. Server authority is unchanged; the client never infers an elite, and
+  meaning is never carried by colour alone.
+
 **Exit question:** is the same MVP run substantially more enjoyable because fighting itself feels good?
 
 # Patch 0.3 — Loot + Build Replayability
