@@ -97,16 +97,16 @@
     },
     {
       "effect_id": "AbilityPowerPercent",
-      "status": "unresolved",
+      "status": "owner-confirmed",
       "capability_id": "combat-authority",
       "owner_kind": "server",
-      "canonical_owner": null,
-      "composition_seam": null,
+      "canonical_owner": "games/living-kingdoms/src/server/Systems/ClassService.luau",
+      "composition_seam": "games/living-kingdoms/src/server/Systems/RelicModifierService.luau",
       "shared_adapter": null,
       "selection_resolver": "games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau",
       "focused_tests": [],
       "risk_tier": "R2",
-      "extension_rule": "Resolve the canonical server ability-consequence owner before implementation; do not create a generic client-authored power multiplier."
+      "extension_rule": "Route durable Relic ability power into ClassService as one bounded server-derived consequence multiplier. Apply it only to server-owned class-action effect strength (such as Brace cadence benefit, Field Treatment healing, Field Resupply rounds, and Medic revive restored health), derived from configured base values; never let the client provide power or consequential output values."
     }
   ]
 }
