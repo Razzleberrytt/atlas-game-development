@@ -21,6 +21,18 @@ assert(contains('durableEquippedItem("Secondary")'), "character panel must displ
 assert(contains('durableEquippedItem("Armor")'), "character panel must display durable armor equipment")
 assert(contains('durableEquippedItem("Relic")'), "character panel must display durable relic equipment")
 
+assert(
+	contains("Shared.Equipment.EquipmentComparisonResolver"),
+	"RPG menu must reuse shared deterministic equipment comparison facts"
+)
+assert(
+	contains("Shared.Equipment.EquipmentBuildChoicePresentation"),
+	"RPG menu must reuse the compact build-choice presentation seam"
+)
+assert(contains("EquipmentComparisonResolver.compare(item, incumbent"), "durable cards compare against equipped gear")
+assert(contains("formatAffixDeltas(comparison.AffixDeltas)"), "durable cards must disclose affix gains and losses")
+assert(contains("formatAffixes(item.Affixes)"), "durable cards must disclose their rolled affixes")
+
 assert(contains("slot.Activated:Connect(function()"), "durable equip must use device-neutral GUI activation")
 assert(
 	contains("inventoryEquipOwnedItem:InvokeServer(instanceId)"),
@@ -35,5 +47,5 @@ assert(not contains("inventoryEquipOwnedItem:InvokeServer(item.WeaponId"), "clie
 assert(contains('created.Name = "RPGMenu"'), "durable inventory must reuse the existing RPG menu surface")
 
 print(
-	"DurableInventoryRPGMenuSourceAudit: sanitized durable gear, existing menu, and device-neutral owner-only equip passed"
+	"DurableInventoryRPGMenuSourceAudit: affix-aware build choices, sanitized gear, existing menu, and owner-only equip passed"
 )

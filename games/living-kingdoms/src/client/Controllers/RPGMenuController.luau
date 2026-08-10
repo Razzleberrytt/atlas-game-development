@@ -8,6 +8,9 @@ local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local InputActionMapConfig = require(ReplicatedStorage.Shared.Config.InputActionMapConfig)
 local MovementLimits = require(ReplicatedStorage.Shared.Config.MovementLimits)
 local RunProgressionConfig = require(ReplicatedStorage.Shared.Config.RunProgressionConfig)
+local EquipmentRewardConfig = require(ReplicatedStorage.Shared.Config.EquipmentRewardConfig)
+local EquipmentComparisonResolver = require(ReplicatedStorage.Shared.Equipment.EquipmentComparisonResolver)
+local EquipmentBuildChoicePresentation = require(ReplicatedStorage.Shared.Equipment.EquipmentBuildChoicePresentation)
 
 local Controller = {}
 local player = Players.LocalPlayer
@@ -43,6 +46,11 @@ local selectedTab = "Character"
 local latestSurvival: any = nil
 local latestProgression: any = nil
 local latestDurableInventory: any = nil
+
+local EQUIPMENT_DEFINITIONS_BY_ID = {}
+for _, definition in EquipmentRewardConfig.Definitions do
+	EQUIPMENT_DEFINITIONS_BY_ID[definition.Id] = definition
+end
 
 local COLORS = table.freeze({
 	background = Color3.fromRGB(9, 12, 14),
@@ -148,6 +156,29 @@ local function durableItemLabel(item: any): string
 	local name = if type(item.DisplayName) == "string" then item.DisplayName else "Gear"
 	local power = tonumber(item.Power)
 	return if power ~= nil then string.format("%s  P%d", name, power) else name
+end
+
+local function lookupEquipmentDefinition(definitionId: string): any
+	return EQUIPMENT_DEFINITIONS_BY_ID[definitionId]
+end
+
+local function durableBuildChoice(item: any): (string, string)
+	local rawAffixes = EquipmentBuildChoicePresentation.formatAffixes(item.Affixes)
+	if type(item) ~= "table" or type(item.Slot) ~= "string" then
+		return "", rawAffixes
+	end
+	local incumbent = durableEquippedItem(item.Slot)
+	local result = EquipmentComparisonResolver.compare(item, incumbent, lookupEquipmentDefinition)
+	if type(result) ~= "table" or result.Accepted ~= true or type(result.Comparison) ~= "table" then
+		return "", rawAffixes
+	end
+	local comparison = result.Comparison
+	local verdict = EquipmentBuildChoicePresentation.formatVerdict(comparison)
+	if item.Equipped == true or incumbent == nil then
+		return verdict, rawAffixes
+	end
+	local affixFacts = EquipmentBuildChoicePresentation.formatAffixDeltas(comparison.AffixDeltas)
+	return verdict, if affixFacts == "NO AFFIX CHANGE" then rawAffixes else affixFacts
 end
 
 local function rebuildViewport()
@@ -335,27 +366,30 @@ local function durableInventorySlot(parent: Instance, order: number, item: any)
 	local iconText = if item.Slot == "Primary" or item.Slot == "Secondary"
 		then "⌁"
 		else if item.Slot == "Armor" then "▣" else "✦"
-	local itemIcon = label(slot, iconText, UDim2.fromOffset(8, 4), UDim2.new(1, -16, 0, 31), 23)
+	local itemIcon = label(slot, iconText, UDim2.fromOffset(8, 2), UDim2.new(1, -16, 0, 27), 21)
 	itemIcon.TextXAlignment = Enum.TextXAlignment.Center
 	itemIcon.TextColor3 = border
-	local itemName = label(slot, tostring(item.DisplayName), UDim2.fromOffset(6, 35), UDim2.new(1, -12, 0, 30), 10)
+	local itemName = label(slot, tostring(item.DisplayName), UDim2.fromOffset(6, 28), UDim2.new(1, -12, 0, 27), 10)
 	itemName.TextXAlignment = Enum.TextXAlignment.Center
 	itemName.TextWrapped = true
-	local meta = label(
-		slot,
-		string.format("%s • P%d", tostring(item.Rarity), tonumber(item.Power) or 0),
-		UDim2.fromOffset(6, 65),
-		UDim2.new(1, -12, 0, 16),
-		9
-	)
+	local verdictText, affixText = durableBuildChoice(item)
+	local metaText = string.format("%s • P%d", tostring(item.Rarity), tonumber(item.Power) or 0)
+	if verdictText ~= "" then
+		metaText ..= " • " .. verdictText
+	end
+	local meta = label(slot, metaText, UDim2.fromOffset(6, 55), UDim2.new(1, -12, 0, 14), 8)
 	meta.TextXAlignment = Enum.TextXAlignment.Center
 	meta.TextColor3 = COLORS.muted
+	local affixes = label(slot, affixText, UDim2.fromOffset(5, 68), UDim2.new(1, -10, 0, 21), 8)
+	affixes.TextXAlignment = Enum.TextXAlignment.Center
+	affixes.TextWrapped = true
+	affixes.TextColor3 = if item.Equipped == true then COLORS.muted else COLORS.text
 	local status = label(
 		slot,
 		if item.Equipped == true then "EQUIPPED" else "EQUIP",
-		UDim2.fromOffset(6, 82),
-		UDim2.new(1, -12, 0, 16),
-		10
+		UDim2.fromOffset(6, 89),
+		UDim2.new(1, -12, 0, 13),
+		9
 	)
 	status.TextXAlignment = Enum.TextXAlignment.Center
 	status.TextColor3 = if item.Equipped == true then COLORS.green else COLORS.gold

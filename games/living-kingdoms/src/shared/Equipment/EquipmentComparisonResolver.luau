@@ -1,21 +1,17 @@
 --!strict
 
 --[[
-	Blueprint v2.0 queue item 2 — deterministic item comparison.
+	Deterministic item comparison facts for equipment/reward surfaces.
 
-	The fun gate for this work is that a fresh player can explain an item's
-	tradeoff without coaching. That is a presentation outcome, but it is only
-	reachable if the server states the tradeoff as facts rather than leaving each
-	surface to infer one. This resolver produces those facts.
+	The verdict describes stat direction only (power, then rarity). Role and affix
+	changes remain separate facts so presentation can explain a tradeoff without
+	this resolver encoding a balance opinion about which build a player should
+	prefer.
 
-	Deliberate boundary: the verdict describes the *stat* direction only
-	(power, then rarity). Role changes and affix changes are reported separately.
-	A shotgun that out-powers an equipped rifle is an `Upgrade` that can still
-	lose `precision`, gain `close-range`, and exchange affix effects. Reporting
-	those facts lets a surface explain the tradeoff without this resolver encoding
-	a balance opinion about which build the player should prefer.
-
-	This module owns no state, reads no services, and performs no mutation.
+	The comparison input is intentionally the smallest durable equipment shape
+	required by the resolver. Full server reward records and sanitized owner-only
+	inventory views can therefore share this one comparison path instead of
+	creating parallel UI/server comparison logic.
 ]]
 
 local Contracts = require(script.Parent.EquipmentRewardContracts)
@@ -23,8 +19,18 @@ local Contracts = require(script.Parent.EquipmentRewardContracts)
 export type EquipmentReward = Contracts.EquipmentReward
 export type EquipmentDefinition = Contracts.EquipmentDefinition
 export type EquipmentSlotId = Contracts.EquipmentSlotId
+export type EquipmentRarityId = Contracts.EquipmentRarityId
 export type EquipmentAffixRoll = Contracts.EquipmentAffixRoll
 export type EquipmentAffixEffectId = Contracts.EquipmentAffixEffectId
+
+export type ComparableEquipmentItem = {
+	InstanceId: string,
+	DefinitionId: string,
+	Slot: EquipmentSlotId,
+	Rarity: EquipmentRarityId,
+	Power: number,
+	Affixes: { EquipmentAffixRoll },
+}
 
 local RarityRanks = Contracts.RarityRanks
 
@@ -42,17 +48,12 @@ export type EquipmentComparison = {
 	Slot: EquipmentSlotId,
 	CandidateInstanceId: string,
 	IncumbentInstanceId: string?,
-	-- Positive means the candidate is better. Both are 0 when there is nothing
-	-- equipped in the slot, because there is no baseline to differ from.
 	PowerDelta: number,
 	RarityDelta: number,
 	SameDefinition: boolean,
 	FillsEmptySlot: boolean,
 	GainedTags: { string },
 	LostTags: { string },
-	-- Affix changes are facts, not verdict inputs. Multiple rolls sharing an
-	-- effect are aggregated and emitted in stable EffectId order so presentation
-	-- can say what a build gains/loses without reimplementing comparison logic.
 	AffixDeltas: { EquipmentAffixDelta },
 }
 
@@ -68,20 +69,17 @@ local function reject(reasonId: string): ComparisonResult
 	return table.freeze({ Accepted = false, ReasonId = reasonId, Comparison = nil })
 end
 
-local function isReward(value: any): boolean
+local function isComparableItem(value: any): boolean
 	return type(value) == "table"
 		and type(value.InstanceId) == "string"
 		and value.InstanceId ~= ""
 		and type(value.DefinitionId) == "string"
+		and type(value.Slot) == "string"
 		and type(value.Power) == "number"
 		and RarityRanks[value.Rarity] ~= nil
+		and (value.Affixes == nil or type(value.Affixes) == "table")
 end
 
---[[
-	Tags describe an item's role and live on the authored definition, not on the
-	generated instance, so a missing definition yields no tag facts rather than a
-	guess. Results are sorted so the same pair always reads the same way.
-]]
 local function tagDifference(fromTags: { string }?, toTags: { string }?): { string }
 	local present = {}
 	for _, tag in fromTags or {} do
@@ -107,7 +105,10 @@ local function sumAffixEffects(affixes: { EquipmentAffixRoll }?): { [string]: nu
 	return totals
 end
 
-local function affixDeltas(candidate: EquipmentReward, incumbent: EquipmentReward?): { EquipmentAffixDelta }
+local function affixDeltas(
+	candidate: ComparableEquipmentItem,
+	incumbent: ComparableEquipmentItem?
+): { EquipmentAffixDelta }
 	local candidateTotals = sumAffixEffects(candidate.Affixes)
 	local incumbentTotals = sumAffixEffects(if incumbent then incumbent.Affixes else nil)
 	local effectIds = {}
@@ -145,20 +146,15 @@ end
 
 local EquipmentComparisonResolver = {}
 
---[[
-	Compares a candidate item against whatever currently occupies its slot.
-	`incumbent` is nil when the slot is empty. `lookupDefinition` resolves authored
-	definitions for tag facts and may return nil for an unknown definition.
-]]
 function EquipmentComparisonResolver.compare(
-	candidate: EquipmentReward,
-	incumbent: EquipmentReward?,
+	candidate: ComparableEquipmentItem,
+	incumbent: ComparableEquipmentItem?,
 	lookupDefinition: DefinitionLookup?
 ): ComparisonResult
-	if not isReward(candidate) then
+	if not isComparableItem(candidate) then
 		return reject("InvalidCandidateItem")
 	end
-	if incumbent ~= nil and not isReward(incumbent) then
+	if incumbent ~= nil and not isComparableItem(incumbent) then
 		return reject("InvalidIncumbentItem")
 	end
 	if incumbent ~= nil and candidate.Slot ~= incumbent.Slot then
@@ -193,26 +189,16 @@ function EquipmentComparisonResolver.compare(
 		})
 	end
 
-	-- Nothing equipped: the candidate is strictly an addition, and there is no
-	-- baseline, so the deltas stay zero rather than being measured against zero
-	-- power (which would read as a large fake gain).
 	if incumbent == nil then
 		return build("Upgrade", 0, 0)
 	end
 
-	-- Re-comparing the equipped item with itself is a legitimate UI state, not an
-	-- error, and must not read as a sidegrade.
 	if candidate.InstanceId == incumbent.InstanceId then
 		return build("SameItem", 0, 0)
 	end
 
 	local powerDelta = candidate.Power - incumbent.Power
 	local rarityDelta = RarityRanks[candidate.Rarity] - RarityRanks[incumbent.Rarity]
-
-	-- An upgrade is better on at least one axis and worse on neither; a downgrade
-	-- is the mirror. Everything else — identical stats, or power and rarity
-	-- disagreeing — is a genuine tradeoff the player has to weigh. Affixes are
-	-- deliberately not folded into this verdict; they are build-choice facts.
 	local improves = powerDelta >= 0 and rarityDelta >= 0 and (powerDelta > 0 or rarityDelta > 0)
 	local worsens = powerDelta <= 0 and rarityDelta <= 0 and (powerDelta < 0 or rarityDelta < 0)
 
@@ -226,17 +212,13 @@ function EquipmentComparisonResolver.compare(
 	return build(verdictId, powerDelta, rarityDelta)
 end
 
---[[
-	Convenience for the common surface case: compare a candidate against the item
-	currently equipped in its slot, given an owner's equipped map and item lookup.
-]]
 function EquipmentComparisonResolver.compareAgainstEquipped(
-	candidate: EquipmentReward,
+	candidate: ComparableEquipmentItem,
 	equippedBySlot: { [EquipmentSlotId]: string? },
-	itemsByInstanceId: { [string]: EquipmentReward },
+	itemsByInstanceId: { [string]: ComparableEquipmentItem },
 	lookupDefinition: DefinitionLookup?
 ): ComparisonResult
-	if not isReward(candidate) then
+	if not isComparableItem(candidate) then
 		return reject("InvalidCandidateItem")
 	end
 	if type(equippedBySlot) ~= "table" or type(itemsByInstanceId) ~= "table" then
@@ -250,8 +232,6 @@ function EquipmentComparisonResolver.compareAgainstEquipped(
 
 	local incumbent = itemsByInstanceId[equippedInstanceId]
 	if incumbent == nil then
-		-- The slot names an item the owner does not hold. That is a server-side
-		-- inconsistency, so fail closed instead of reporting a free upgrade.
 		return reject("EquippedItemNotOwned")
 	end
 	return EquipmentComparisonResolver.compare(candidate, incumbent, lookupDefinition)
