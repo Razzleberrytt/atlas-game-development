@@ -25,11 +25,7 @@ local function neutral(): ResolvedModifiers
 end
 
 local function isFiniteNonnegative(value: unknown): boolean
-	return type(value) == "number"
-		and value == value
-		and value ~= math.huge
-		and value ~= -math.huge
-		and value >= 0
+	return type(value) == "number" and value == value and value ~= math.huge and value ~= -math.huge and value >= 0
 end
 
 --[[
