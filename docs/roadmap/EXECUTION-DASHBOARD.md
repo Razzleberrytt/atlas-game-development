@@ -23,8 +23,9 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 - PR #345 routes equipped Armor `MoveSpeedPercent` through the existing server-owned `OperativeLifeService` locomotion application, derives speed from the stable bound base to prevent compounding, preserves hard-zero incapacitated/dead movement, and passed full automated validation: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
 - PR #348 routes equipped Relic `AbilityHastePercent` through the existing server-owned `ClassService` action lifecycle, snapshots the bounded cooldown-duration multiplier at activation, applies it consistently to Brace, Field Treatment, and Field Resupply cooldown outcomes, and passed full automated validation: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
 - PR #349 routes equipped Relic `AbilityPowerPercent` through `ClassService`, snapshots the bounded power multiplier at activation, applies it only to existing server-owned Brace cadence benefit, Field Treatment healing, and Field Resupply ammunition consequences, and passed full automated validation with a reproducible Living Kingdoms build: **BUILT — VERIFICATION PENDING** until ordinary Studio/device evidence is run.
+- PR #350 expands the authored affix pool from 8 to 16 role-aware definitions using only `EquipmentAffixConfig` plus its pure resolver fixture. Precision, close-range, sidearm, survival-Armor, and ability-Relic identities gain distinct bounded rolls with slot/tag exclusion coverage. Full automated validation and the reproducible build are green.
 - `DamagePercent`, `ReloadSpeedPercent`, `MaxHealthPercent`, `MoveSpeedPercent`, `AbilityHastePercent`, and `AbilityPowerPercent` now have live canonical effect-owner routes. The current durable effect vocabulary no longer contains an unresolved runtime route.
-- Same-family variants should now be data/config plus focused regression rather than bespoke runtime wiring.
+- Same-family variants are now demonstrably data-first: PR #350 added eight variants with **zero server-authority changes**.
 - The effect-owner routing registry prevents affix effect vocabulary from existing without an explicit authority-routing state.
 - Verification truth remains strict: pending manual/engine evidence is never called VERIFIED.
 
@@ -32,43 +33,45 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 
 ### NOW
 
-**Prove the compounding-development payoff by expanding role-driven affix variety through data/config + focused resolver tests only, without touching server authority files.**
+**Add one end-to-end Patch 0.3 regression that proves durable affix truth survives the complete source lifecycle instead of relying on disconnected unit fixtures.**
 
-High-leverage preserved candidate from closed PR #336:
+Target chain:
 
 ```text
-8 current affixes
-→ 16 bounded role-aware affixes
-→ reuse all six now-live effect routes
-→ zero new services/remotes/authority owners
+authored equipment + deterministic seed
+→ generated affix roll
+→ reward/result payload
+→ durable inventory representation
+→ authoritative equipped slot
+→ canonical effect adapter / owner seam
+→ persistence encode/decode or reconnect reconstruction
+→ same affix identity/value and same neutral/live consequence facts
 ```
 
-Candidate role-specific additions:
+Representative coverage should span the three ownership shapes rather than every definition individually:
 
 ```text
-precision Primary → Measured Cycle (ReloadSpeedPercent)
-close-range Primary → Slam Loader (ReloadSpeedPercent)
-Secondary → Steady Hand (DamagePercent) + Field Service (ReloadSpeedPercent)
-Armor/survival → Bulwark (MaxHealthPercent) + Pathfinder (MoveSpeedPercent)
-Relic/ability → Quickening (AbilityHastePercent) + Overcharged (AbilityPowerPercent)
+weapon → DamagePercent / ReloadSpeedPercent
+Armor → MaxHealthPercent / MoveSpeedPercent
+Relic → AbilityHastePercent / AbilityPowerPercent
 ```
 
 Rules:
 
-- implement from current `main`; do not resurrect stale runtime wiring from the old branch;
-- touch data/config + focused pure tests unless validation exposes a real shared-seam defect;
-- reuse existing slot/tag compatibility and deterministic roll resolver;
-- keep value bands narrow and bounded;
-- prove incompatible role affixes cannot cross tags/slots;
-- prove deterministic variety materially increases without changing reward authority;
-- if this needs bespoke server wiring, stop and fix the extension seam rather than paying the old cost again.
+- prefer one composed regression fixture over copying six separate integration harnesses;
+- use real production pure modules/contracts wherever feasible;
+- prove stable affix IDs/values survive durable serialization and reconstruction;
+- prove equipped-slot selection still resolves the correct owner fact after reconstruction;
+- prove unequipped or mismatched slot/weapon remains neutral;
+- do not invent a second persistence, inventory, reward, or gameplay authority merely to make the test convenient;
+- source-only coverage does not become Studio VERIFIED evidence.
 
 ### NEXT
 
-1. add end-to-end regression coverage across generation → reward → inventory → equip → application → replay/persistence;
-2. reconcile Patch 0.3 source completeness and close remaining loot/build replayability gaps;
-3. assess whether Patch 0.3 is source-coherent enough to advance into Patch 0.4;
-4. keep consolidated Studio/device/play-feel evidence pending as its parallel lane.
+1. reconcile Patch 0.3 source completeness and close any remaining loot/build replayability gaps exposed by the lifecycle regression;
+2. assess whether Patch 0.3 is source-coherent enough to advance into Patch 0.4;
+3. if coherent, advance the execution dashboard to Patch 0.4 RPG progression while retaining the consolidated Studio/device/play-feel evidence lane;
+4. keep extension-cost discipline as new content variants are added.
 
 ### LATER
 
