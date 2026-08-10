@@ -62,7 +62,10 @@ end
 
 assert(Ranks[1].RequiredCompletedExpeditions == 0, "rank one must be available before the first clear")
 assert(#Ranks >= 2 and #Ranks <= 10, "the initial operative progression map must stay small and testable")
-assert(Config.DurableRewardGrantPrefix == "reward:", "rank derivation must match the canonical durable reward grant prefix")
+assert(
+	Config.DurableRewardGrantPrefix == "reward:",
+	"rank derivation must match the canonical durable reward grant prefix"
+)
 assert(Config.CompletedExpeditionSourceId == "Boss", "completed-expedition rank credit must use the banked Boss grant")
 
 return table.freeze(Config)
