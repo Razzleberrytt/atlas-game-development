@@ -11,6 +11,7 @@ local Workspace = game:GetService("Workspace")
 
 local ClassContracts = require(ReplicatedStorage.Shared.Classes.ClassContracts)
 local ClassConfig = require(ReplicatedStorage.Shared.Config.ClassConfig)
+local OperativeProgressionConfig = require(ReplicatedStorage.Shared.Config.OperativeProgressionConfig)
 local OperativeLifeConfig = require(ReplicatedStorage.Shared.Config.OperativeLifeConfig)
 local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.OperativeLifeContracts)
 local MissionContracts = require(ReplicatedStorage.Shared.Mission.MissionContracts)
@@ -24,6 +25,13 @@ local MissionDirectorService = require(script.Parent.MissionDirectorService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local relicModifierServiceModule = script.Parent.RelicModifierService
 local RelicModifierService = if relicModifierServiceModule == nil then nil else require(relicModifierServiceModule)
+-- Durable progression is an additive Patch 0.4 read-only adapter. Narrow resolver
+-- fixtures and partial runtimes may omit it, and a missing adapter must fail
+-- closed to the unearned behaviour rather than crash class actions.
+local operativeProgressionServiceModule = script.Parent.OperativeProgressionService
+local OperativeProgressionService = if operativeProgressionServiceModule == nil
+	then nil
+	else require(operativeProgressionServiceModule)
 
 local NetworkOperationIds = ClassContracts.ClassSelectionNetworkOperationIds
 local RejectionReasonIds = ClassContracts.ClassActionRejectionReasonIds
@@ -574,6 +582,45 @@ local function effectiveAbilityPowerMultiplier(player: Player): number
 	return multiplier
 end
 
+--[[
+	Durable Self-Treatment entitlement for one operative.
+
+	The unlock is derived from the operative's own durable rank through the
+	owner-bound progression adapter — never from the requesting client, and never
+	from another player's account. A missing adapter, an unloaded durable record,
+	or any read failure keeps the original self-target prohibition.
+]]
+local function mayTreatSelf(player: Player): boolean
+	if OperativeProgressionService == nil then
+		return false
+	end
+	local userId = (player :: any).UserId
+	if type(userId) ~= "number" then
+		return false
+	end
+	local didRead, unlocked = pcall(function()
+		return OperativeProgressionService.hasOwnedUnlock(
+			userId,
+			userId,
+			OperativeProgressionConfig.UnlockIds.MedicSelfTreatment
+		)
+	end)
+	return didRead and unlocked == true
+end
+
+-- A self-targeted class action is trivially in range and unobstructed. Deriving
+-- it explicitly matches the existing Field Resupply self path instead of relying
+-- on a zero-length raycast.
+local function distanceAndLineOfSightForTarget(actor: Player, target: Player?): (number, boolean)
+	if target == nil then
+		return 0, false
+	end
+	if target == actor then
+		return 0, true
+	end
+	return distanceAndLineOfSight(actor, target)
+end
+
 local function clearActionContinuity(entry: Entry)
 	entry.actionOriginPosition = nil
 	entry.actionActorProcessedDamageEventIds = nil
@@ -601,10 +648,7 @@ local function evaluateEntry(entry: Entry, serverTimestamp: number, didReloadBeg
 		local targetEntry = if targetId == nil then nil else entriesByOperativeId[targetId]
 		local targetRead = if targetId == nil then nil else OperativeLifeService.readByOperativeEntityId(targetId)
 		local targetPlayer = if targetEntry == nil then nil else targetEntry.player
-		local distanceStuds, hasLineOfSight = 0, false
-		if targetPlayer ~= nil then
-			distanceStuds, hasLineOfSight = distanceAndLineOfSight(entry.player, targetPlayer)
-		end
+		local distanceStuds, hasLineOfSight = distanceAndLineOfSightForTarget(entry.player, targetPlayer)
 		local targetSnapshot = if targetRead == nil then nil else targetRead.snapshot
 		resolution = FieldTreatmentResolver.resolveContinuity(state, {
 			isOperationActive = operationIsActive(MissionDirectorService.read().phaseId),
@@ -785,10 +829,7 @@ function Service.requestAction(player: Player, payload: unknown): OperationResul
 			local targetEntry = if targetId == nil then nil else entriesByOperativeId[targetId]
 			local targetRead = if targetId == nil then nil else OperativeLifeService.readByOperativeEntityId(targetId)
 			local targetPlayer = if targetEntry == nil then nil else targetEntry.player
-			local distanceStuds, hasLineOfSight = 0, false
-			if targetPlayer ~= nil then
-				distanceStuds, hasLineOfSight = distanceAndLineOfSight(player, targetPlayer)
-			end
+			local distanceStuds, hasLineOfSight = distanceAndLineOfSightForTarget(player, targetPlayer)
 			local targetSnapshot = if targetRead == nil then nil else targetRead.snapshot
 			local medical = entry.resources[ResourceIds.MedicalCharge]
 			resolution = FieldTreatmentResolver.resolveStart(entry.actionState, payload, {
@@ -805,6 +846,7 @@ function Service.requestAction(player: Player, payload: unknown): OperationResul
 				distanceStuds = distanceStuds,
 				hasLineOfSight = hasLineOfSight,
 				serverTimestamp = serverTimestamp,
+				mayTreatSelf = mayTreatSelf(player),
 			})
 			if resolution.didActivate then
 				local actorRead = OperativeLifeService.read(player)

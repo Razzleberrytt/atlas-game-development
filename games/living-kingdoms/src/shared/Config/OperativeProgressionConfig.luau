@@ -42,6 +42,7 @@ local UnlockIds = table.freeze({
 	SquadRallyPing = "squad-rally-ping",
 	DualTacticalMarkers = "squad-dual-tactical-markers",
 	FocusedFlashlightBeam = "personal-focused-beam",
+	MedicSelfTreatment = "medic-self-treatment",
 })
 
 local Unlocks = table.freeze({
@@ -65,6 +66,16 @@ local Unlocks = table.freeze({
 		DisplayName = "Focused Beam",
 		Description = "Your personal flashlight reaches farther and wider.",
 		RequiredRank = 3,
+	}),
+	-- The first ability side-grade. It changes who a Medic may treat rather than
+	-- how much the treatment heals, so durable rank buys a tactical option instead
+	-- of permanent combat-stat growth. Cost, cadence, range, channel, and every
+	-- interruption rule stay exactly as authored.
+	table.freeze({
+		Id = UnlockIds.MedicSelfTreatment,
+		DisplayName = "Self-Treatment",
+		Description = "As a Medic, you may spend a medical charge on yourself.",
+		RequiredRank = 4,
 	}),
 })
 
