@@ -62,20 +62,23 @@ function RunModifierPlanner.plan(roomPlan: any): RunModifierPlan?
 	local overrides = {}
 	for _, node in roomPlan.Nodes do
 		if
-		type(node.EncounterSlotId) == "string"
+			type(node.EncounterSlotId) == "string"
 			and modifier.EligibleEncounterSlots[node.EncounterSlotId] == true
 			and type(node.EncounterIntensity) == "number"
 			and node.EncounterIntensity >= Config.MinimumEncounterIntensity
 		then
 			local modifiedIntensity = clampIntensity(node.EncounterIntensity + modifier.EncounterIntensityDelta)
 			if modifiedIntensity ~= node.EncounterIntensity then
-				table.insert(overrides, table.freeze({
-					NodeIndex = node.Index,
-					RoomId = node.RoomId,
-					EncounterSlotId = node.EncounterSlotId,
-					BaseIntensity = node.EncounterIntensity,
-					ModifiedIntensity = modifiedIntensity,
-				}))
+				table.insert(
+					overrides,
+					table.freeze({
+						NodeIndex = node.Index,
+						RoomId = node.RoomId,
+						EncounterSlotId = node.EncounterSlotId,
+						BaseIntensity = node.EncounterIntensity,
+						ModifiedIntensity = modifiedIntensity,
+					})
+				)
 			end
 		end
 	end
@@ -87,10 +90,11 @@ function RunModifierPlanner.plan(roomPlan: any): RunModifierPlan?
 			`{override.NodeIndex}:{override.RoomId}:{override.BaseIntensity}>{override.ModifiedIntensity}`
 		)
 	end
-	local identity = `{Config.Version}|seed={roomPlan.Seed}|modifier={modifier.Id}@{modifier.Version}|overrides={table.concat(
-		overrideIdentityParts,
-		"," 
-	)}`
+	local identity =
+		`{Config.Version}|seed={roomPlan.Seed}|modifier={modifier.Id}@{modifier.Version}|overrides={table.concat(
+			overrideIdentityParts,
+			","
+		)}`
 
 	return table.freeze({
 		Seed = roomPlan.Seed,
