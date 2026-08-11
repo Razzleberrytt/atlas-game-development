@@ -1,0 +1,14 @@
+{
+  "assetKey": "world.environment-kit.abandoned-interiors",
+  "version": "ENV-INTERIORS-v1",
+  "sourceType": "project-original-source-models",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "assets": [
+    {"semanticId":"env.prop.frontier.broken_table_a","registrySourceModelPath":"Environment/Interiors/BrokenTableA","file":"BrokenTableA.model.json","minimumPartCount":4},
+    {"semanticId":"env.prop.industry.rusted_locker_a","registrySourceModelPath":"Environment/Interiors/RustedLockerA","file":"RustedLockerA.model.json","minimumPartCount":3},
+    {"semanticId":"env.prop.frontier.cot_frame_a","registrySourceModelPath":"Environment/Interiors/CotFrameA","file":"CotFrameA.model.json","minimumPartCount":4},
+    {"semanticId":"env.prop.frontier.wall_shelf_a","registrySourceModelPath":"Environment/Interiors/WallShelfA","file":"WallShelfA.model.json","minimumPartCount":3}
+  ]
+}
