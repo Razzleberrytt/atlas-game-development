@@ -1,4 +1,4 @@
-# Atlas — Execution Dashboard v1.16
+# Atlas — Execution Dashboard v1.17
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-10  
@@ -34,6 +34,10 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 - The first bounded primary-route representation is now source-managed and mapped:
   - PR #396 — `MainWorldPrimaryRouteRenderConfig` plus a 12-Part model derived from route-control/chunk truth and exact recovered WorldPath surface style, with parity/topology regression coverage and no legacy slab resurrection;
   - PR #397 — maps that validated model only at `Workspace/LivingKingdomsMainWorld/Routes/PrimaryRoute`, while keeping runtime activation, place IDs, exact streaming radii, `ModelStreamingMode`, quality-tier behavior, and BA-014 acceptance evidence unset/pending.
+- - The BA-014 run is now executable rather than only defined:
+  - PR #399 — operator runbook turning the 31-check definition into a repeatable Studio sequence, recording no outcome;
+  - PR #400 — placement parity: BA-011 named a `Routes/Primary` container the built place does not contain, while the project and render contract both map `Routes/PrimaryRoute`. Declared placement is now bound to the dedicated project by fixture in both directions, and each streaming group carries an explicit `projectMappingStatus`;
+  - PR #401 — `MainWorldAcceptanceScopeResolver` derives which checks the mapped build can actually answer: **10 in scope (7 blocking), 21 out of scope** on `resources`/`structures`/`atmosphere` content the place does not contain. A scoped pass authorizes nothing; the full matrix keeps its own gate.
 - The dedicated build therefore contains the exact admitted arrival + Central Fountain + Grand Staircase + Hub Archway + Dungeon Portal presentation **plus the bounded 12-Part primary route**. The 189 recovered `WorldPath` slabs remain non-authoritative and unmapped.
 - Other Resources, WorldStructures, atmosphere, Terrain, NPC/vendor/quest, and asset-specific details remain outside active representation when complete current evidence is absent. Do not invent them merely to increase coverage.
 - `AuthoredWorldRecoveryCoverageConfig` remains the admission boundary. Source admission, offline building, and source mapping do not equal runtime activation or acceptance verification.
@@ -45,6 +49,10 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 **Run or capture the first BA-014 Main World hub/route acceptance evidence on the currently mapped bounded representation; fix concrete failures before adding environmental breadth.**
 
 The repository-first source chain is complete through a reproducible dedicated build containing the admitted hub core and a 12-Part primary route representation derived from canonical route/chunk contracts. The next material truth is measured engine/device behavior, not another guessed streaming or environment parameter.
+
+The first run is a **10-check scoped pass**, not a 31-check pass. Derive the worklist from source rather than from prose — `MainWorldAcceptanceScopeResolver.resolveScope(matrix, MainWorldRepresentationConfig.mappedStreamingGroupIds())` — and use [`../validation/MAIN-WORLD-BA-014-STUDIO-RUNBOOK.md`](../validation/MAIN-WORLD-BA-014-STUDIO-RUNBOOK.md) as the operator sequence. Record results only for in-scope checks; a scoped run that records an out-of-scope result is rejected. Satisfying the scope does **not** promote Patch 0.5 to VERIFIED — it clears the mapped hub/route for the next environment family, and full acceptance stays gated until the remaining families are mapped and their checks recorded.
+
+No Studio/device lane was available on 2026-08-10, so no BA-014 check has been executed and every check remains `NotRun`.
 
 Target chain:
 
@@ -157,7 +165,7 @@ A representative Studio/device pass still needs to cover arrival camera/readabil
 | 0.2 combat/readability | BUILT — VERIFICATION PENDING | reusable feedback/reaction contracts |
 | 0.3 loot/builds | BUILT — VERIFICATION PENDING | affix/effect/reward variants are data-first |
 | 0.4 RPG progression | BUILT — VERIFICATION PENDING | bounded rank map + generic entitlement/presentation + reusable owner adapters |
-| **0.5 Main World** | **DEDICATED SOURCE BUILD + BOUNDED PRIMARY ROUTE MAPPED; BA-014 VERIFICATION PENDING** | measured hub/route evidence → fix failures → gated environment breadth/activation |
+| **0.5 Main World** | **DEDICATED SOURCE BUILD + BOUNDED PRIMARY ROUTE MAPPED; BA-014 SCOPED AND RUNNABLE, NO CHECK EXECUTED** | measured hub/route evidence → fix failures → gated environment breadth/activation |
 | 0.6 systemic replayability | future; do not start before coherent 0.5 Main World progress | combinatorial output from reusable systems |
 | 0.7 persistence | substantial foundations | migration/lifecycle invariants and recovery tests |
 | 0.8 co-op/social | basic foundations | multiplayer coverage over existing owners |
@@ -185,7 +193,7 @@ When asked to continue:
 
 Stop expansion and fix/report when continuing would knowingly build on unsafe or false assumptions, including client-authored consequential truth, valuable-state corruption/duplication, competing owners, known lifecycle failure, missing required canonical authority/evidence, irreversible unsafe migration, automated validation failure, or a representation decision that requires unmeasured BA-014 streaming/performance assumptions.
 
-The former civic-property-evidence blocker, dedicated source-build gate, hub semantic/readability gate, WorldPath control-conversion gate, bounded route-chunk planning gate, held portal-delegation gate, bounded route-source gate, and dedicated route-mapping gate are closed by the checksum-pinned 2026-08-10 intake and PRs #371/#377/#379/#380/#382/#383/#384/#385/#386/#387/#389/#390/#391/#392/#393/#395/#396/#397.
+The former civic-property-evidence blocker, dedicated source-build gate, hub semantic/readability gate, WorldPath control-conversion gate, bounded route-chunk planning gate, held portal-delegation gate, bounded route-source gate, dedicated route-mapping gate, and BA-014 run-scoping gate are closed by the checksum-pinned 2026-08-10 intake and PRs #371/#377/#379/#380/#382/#383/#384/#385/#386/#387/#389/#390/#391/#392/#393/#395/#396/#397/#399/#400/#401.
 
 The current breadth gate is measured BA-014 behavior of the mapped hub/route build. Remaining incomplete world-property families are not permission to fabricate them. Unrun ordinary Studio/device/play-feel evidence alone is not a stop condition when dependency-safe source preparation remains, but it **is** a gate against broader representation choices that would require guessing streaming/readability/performance behavior.
 
