@@ -6,12 +6,15 @@
 	The resolver consumes an already-valid main room plan and produces a separate
 	branch descriptor. It never rewrites PreviousIndex/NextIndex on the required
 	main route, so entry-to-boss connectivity cannot be damaged by the secret.
+	The host and curated secret variant are both derived from the same run seed.
 ]]
 
 local Config = require(script.Parent.Parent.Config.SecretBranchConfig)
 
 export type SecretBranchPlan = {
 	Seed: number,
+	ConfigVersion: string,
+	PlanIdentity: string,
 	HostIndex: number,
 	HostRoomId: string,
 	SecretRoomId: string,
@@ -62,15 +65,23 @@ function SecretBranchResolver.plan(roomPlan: any): SecretBranchPlan?
 
 	rollState = nextValue(rollState)
 	local host = candidates[(rollState % #candidates) + 1]
+
+	rollState = nextValue(rollState)
+	local secret = Config.SecretRooms[(rollState % #Config.SecretRooms) + 1]
+	local reward = secret.Reward
+	local identity = `{Config.Version}|seed={roomPlan.Seed}|host={host.RoomId}@{host.Index}|secret={secret.Id}@{secret.Version}|reward={reward.RewardId}@{reward.RewardVersion}`
+
 	return table.freeze({
 		Seed = roomPlan.Seed,
+		ConfigVersion = Config.Version,
+		PlanIdentity = identity,
 		HostIndex = host.Index,
 		HostRoomId = host.RoomId,
-		SecretRoomId = Config.SecretRoom.Id,
-		SecretRoomVersion = Config.SecretRoom.Version,
-		RewardId = Config.Reward.RewardId,
-		RewardVersion = Config.Reward.RewardVersion,
-		RunCurrencyAmount = Config.Reward.RunCurrencyAmount,
+		SecretRoomId = secret.Id,
+		SecretRoomVersion = secret.Version,
+		RewardId = reward.RewardId,
+		RewardVersion = reward.RewardVersion,
+		RunCurrencyAmount = reward.RunCurrencyAmount,
 	})
 end
 
