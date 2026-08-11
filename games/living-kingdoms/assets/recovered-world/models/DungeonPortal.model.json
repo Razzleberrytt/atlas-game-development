@@ -1,0 +1,230 @@
+{
+  "ClassName": "Folder",
+  "Children": [
+    {
+      "Name": "PortalFrame",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 8.0, 22.0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.27450980392156865, 0.2549019607843137, 0.23529411764705882],
+        "Material": {"Enum": 800},
+        "Reflectance": 0.0,
+        "Shape": {"Enum": 1},
+        "Size": [10.0, 16.0, 4.0],
+        "Transparency": 0.0
+      },
+      "Children": [
+        {
+          "Name": "PortalGlow",
+          "ClassName": "PointLight",
+          "Properties": {
+            "Brightness": 3.0,
+            "Color": [0.5882353186607361, 0.19607843458652496, 1.0],
+            "Enabled": true,
+            "Range": 25.0,
+            "Shadows": false
+          }
+        }
+      ]
+    },
+    {
+      "Name": "PortalEffect",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 8.0, 22.0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.39215686274509803, 0.7843137254901961, 1.0],
+        "Material": {"Enum": 288},
+        "Reflectance": 0.0,
+        "Shape": {"Enum": 1},
+        "Size": [8.0, 14.0, 2.0],
+        "Transparency": 0.4000000059604645
+      },
+      "Children": [
+        {
+          "Name": "PointLight",
+          "ClassName": "PointLight",
+          "Properties": {
+            "Brightness": 3.0,
+            "Color": [0.3921568691730499, 0.7843137383460999, 1.0],
+            "Enabled": true,
+            "Range": 20.0,
+            "Shadows": false
+          }
+        },
+        {
+          "Name": "PortalSwirlAttach",
+          "ClassName": "Attachment",
+          "Properties": {
+            "CFrame": [0.0, 0.0, 0.0, 1, 0, 0, 0, 1, 0, 0, 0, 1]
+          },
+          "Children": [
+            {
+              "Name": "PortalSwirl",
+              "ClassName": "ParticleEmitter",
+              "Properties": {
+                "Acceleration": [0.0, 2.0, 0.0],
+                "Brightness": 1.0,
+                "Color": {
+                  "ColorSequence": {
+                    "keypoints": [
+                      {"time": 0.0, "color": [0.5882353186607361, 0.19607843458652496, 1.0]},
+                      {"time": 1.0, "color": [0.5882353186607361, 0.19607843458652496, 1.0]}
+                    ]
+                  }
+                },
+                "Drag": 0.0,
+                "EmissionDirection": {"Enum": 1},
+                "Enabled": true,
+                "FlipbookBlendFrames": true,
+                "FlipbookFramerate": {"NumberRange": [1.0, 1.0]},
+                "FlipbookLayout": {"Enum": 0},
+                "FlipbookMode": {"Enum": 0},
+                "FlipbookSizeX": 1,
+                "FlipbookSizeY": 1,
+                "FlipbookStartRandom": false,
+                "Lifetime": {"NumberRange": [2.0, 3.0]},
+                "LightEmission": 0.0,
+                "LightInfluence": 0.0,
+                "LockedToPart": false,
+                "Orientation": {"Enum": 0},
+                "Rate": 40.0,
+                "RotSpeed": {"NumberRange": [0.0, 0.0]},
+                "Rotation": {"NumberRange": [0.0, 0.0]},
+                "Shape": {"Enum": 0},
+                "ShapeInOut": {"Enum": 0},
+                "ShapePartial": 1.0,
+                "ShapeStyle": {"Enum": 0},
+                "Size": {
+                  "NumberSequence": {
+                    "keypoints": [
+                      {"time": 0.0, "value": 1.0, "envelope": 0.0},
+                      {"time": 0.5, "value": 2.0, "envelope": 0.0},
+                      {"time": 1.0, "value": 0.5, "envelope": 0.0}
+                    ]
+                  }
+                },
+                "Speed": {"NumberRange": [1.0, 3.0]},
+                "SpreadAngle": [360.0, 360.0],
+                "Squash": {
+                  "NumberSequence": {
+                    "keypoints": [
+                      {"time": 0.0, "value": 0.0, "envelope": 0.0},
+                      {"time": 1.0, "value": 0.0, "envelope": 0.0}
+                    ]
+                  }
+                },
+                "Texture": "rbxassetid://241876674",
+                "TimeScale": 1.0,
+                "Transparency": {
+                  "NumberSequence": {
+                    "keypoints": [
+                      {"time": 0.0, "value": 0.800000011920929, "envelope": 0.0},
+                      {"time": 0.5, "value": 0.20000000298023224, "envelope": 0.0},
+                      {"time": 1.0, "value": 0.800000011920929, "envelope": 0.0}
+                    ]
+                  }
+                },
+                "VelocityInheritance": 0.0,
+                "WindAffectsDrag": false,
+                "ZOffset": 0.0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "Name": "PortalSign",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 17.0, 22.0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.3137254901960784, 0.21568627450980393, 0.09803921568627451],
+        "Material": {"Enum": 528},
+        "Reflectance": 0.0,
+        "Shape": {"Enum": 1},
+        "Size": [8.0, 2.0, 0.5],
+        "Transparency": 0.0
+      },
+      "Children": [
+        {
+          "Name": "SurfaceGui",
+          "ClassName": "SurfaceGui",
+          "Properties": {
+            "Active": true,
+            "AlwaysOnTop": false,
+            "Brightness": 1.0,
+            "CanvasSize": [800.0, 600.0],
+            "ClipsDescendants": false,
+            "Enabled": true,
+            "Face": {"Enum": 5},
+            "LightInfluence": 0.0,
+            "MaxDistance": 0.0,
+            "PixelsPerStud": 50.0,
+            "ResetOnSpawn": true,
+            "SizingMode": {"Enum": 0},
+            "ToolPunchThroughDistance": 0.0,
+            "ZIndexBehavior": {"Enum": 0},
+            "ZOffset": 0.0
+          },
+          "Children": [
+            {
+              "Name": "TextLabel",
+              "ClassName": "TextLabel",
+              "Properties": {
+                "Active": false,
+                "AnchorPoint": [0.0, 0.0],
+                "AutomaticSize": {"Enum": 0},
+                "BackgroundColor3": [0.6392157077789307, 0.6352941393852234, 0.6470588445663452],
+                "BackgroundTransparency": 1.0,
+                "BorderColor3": [0.10588235408067703, 0.16470588743686676, 0.2078431397676468],
+                "BorderMode": {"Enum": 0},
+                "BorderSizePixel": 1,
+                "ClipsDescendants": false,
+                "Interactable": true,
+                "LayoutOrder": 0,
+                "LineHeight": 1.0,
+                "Position": {"UDim2": [[0.0, 0], [0.0, 0]]},
+                "RichText": false,
+                "Rotation": 0.0,
+                "Selectable": false,
+                "SelectionGroup": false,
+                "SelectionOrder": 0,
+                "Size": {"UDim2": [[1.0, 0], [1.0, 0]]},
+                "SizeConstraint": {"Enum": 0},
+                "Text": "ENTER THE DEPTHS\n[G] to enter dungeon",
+                "TextColor3": [0.7843137383460999, 0.8627451062202454, 1.0],
+                "TextDirection": {"Enum": 0},
+                "TextScaled": true,
+                "TextSize": 8.0,
+                "TextStrokeColor3": [0.0, 0.0, 0.0],
+                "TextStrokeTransparency": 1.0,
+                "TextTransparency": 0.0,
+                "TextTruncate": {"Enum": 0},
+                "TextWrapped": true,
+                "TextXAlignment": {"Enum": 2},
+                "TextYAlignment": {"Enum": 1},
+                "Visible": true,
+                "ZIndex": 1
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

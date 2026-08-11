@@ -42,6 +42,12 @@
             "HubArchway": {
               "$path": "assets/recovered-world/models/HubArchway.model.json"
             }
+          },
+          "ExpeditionGate": {
+            "$className": "Folder",
+            "DungeonPortal": {
+              "$path": "assets/recovered-world/models/DungeonPortal.model.json"
+            }
           }
         }
       }
