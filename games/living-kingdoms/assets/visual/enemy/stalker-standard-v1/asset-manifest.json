@@ -1,0 +1,13 @@
+{
+  "assetKey": "enemy.presentation.stalker.standard_v1",
+  "version": "STALKER-STANDARD-v1",
+  "sourceType": "project-original-procedural-blockout",
+  "registryModelPath": "Enemies/Stalker/StandardV1",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "minimumPartCount": 14,
+  "requiredParts": ["PelvisCore","TorsoBroken","RibLeft","RibRight","Spine","HeadSearch","ArmLeft","ArmRight","ForearmLeft","ForearmRight","LegLeft","LegRight","Jaw","SensorWeakpoint"],
+  "requiredAttachments": ["AttackOrigin", "WeakpointPresentation"],
+  "silhouetteClaims": ["wrong-joint-angle", "rib-cage-silhouette", "searching-head-motion"]
+}

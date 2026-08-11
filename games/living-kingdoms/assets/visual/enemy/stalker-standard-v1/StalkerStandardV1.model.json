@@ -1,0 +1,21 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {"Name":"PelvisCore","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,2.3,0,1,0,0,0,1,0,0,0,1],"Color":[0.17,0.12,0.10],"Material":{"Enum":256},"Size":[1.8,0.9,1.2]}},
+    {"Name":"TorsoBroken","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,4.15,0,0.98,0.17,0,-0.17,0.98,0,0,0,1],"Color":[0.19,0.13,0.11],"Material":{"Enum":256},"Size":[2.0,2.8,1.1]}},
+    {"Name":"RibLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-1.0,4.2,-0.25,0.94,0.34,0,-0.34,0.94,0,0,0,1],"Color":[0.36,0.28,0.22],"Material":{"Enum":256},"Size":[0.25,1.9,0.45]}},
+    {"Name":"RibRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[1.0,4.2,-0.25,0.94,-0.34,0,0.34,0.94,0,0,0,1],"Color":[0.36,0.28,0.22],"Material":{"Enum":256},"Size":[0.25,1.9,0.45]}},
+    {"Name":"Spine","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,4.4,0.65,1,0,0,0,1,0,0,0,1],"Color":[0.30,0.22,0.18],"Material":{"Enum":256},"Size":[0.35,2.4,0.35]}},
+    {"Name":"HeadSearch","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0.25,6.0,-0.65,0.94,0,-0.34,0,1,0,0.34,0,0.94],"Color":[0.18,0.11,0.10],"Material":{"Enum":256},"Size":[1.25,1.0,1.2]}},
+    {"Name":"ArmLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-1.45,4.0,0,0.82,0.57,0,-0.57,0.82,0,0,0,1],"Color":[0.15,0.10,0.09],"Material":{"Enum":256},"Size":[0.55,2.0,0.55]}},
+    {"Name":"ArmRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[1.4,4.2,0,0.94,-0.34,0,0.34,0.94,0,0,0,1],"Color":[0.15,0.10,0.09],"Material":{"Enum":256},"Size":[0.55,2.0,0.55]}},
+    {"Name":"ForearmLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-1.9,2.65,-0.4,0.64,0.77,0,-0.77,0.64,0,0,0,1],"Color":[0.14,0.09,0.08],"Material":{"Enum":256},"Size":[0.5,2.5,0.5]}},
+    {"Name":"ForearmRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[1.65,2.8,0.35,0.87,-0.5,0,0.5,0.87,0,0,0,1],"Color":[0.14,0.09,0.08],"Material":{"Enum":256},"Size":[0.5,2.35,0.5]}},
+    {"Name":"LegLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-0.55,0.55,0.15,0.94,-0.34,0,0.34,0.94,0,0,0,1],"Color":[0.14,0.09,0.08],"Material":{"Enum":256},"Size":[0.65,3.4,0.7]}},
+    {"Name":"LegRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0.55,0.45,-0.1,0.98,0.17,0,-0.17,0.98,0,0,0,1],"Color":[0.14,0.09,0.08],"Material":{"Enum":256},"Size":[0.65,3.4,0.7]}},
+    {"Name":"Jaw","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0.2,5.55,-1.15,0.94,0,-0.34,0,1,0,0.34,0,0.94],"Color":[0.28,0.15,0.13],"Material":{"Enum":256},"Size":[1.35,0.35,0.8]}},
+    {"Name":"SensorWeakpoint","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":false,"CFrame":[0.25,6.1,-1.25,1,0,0,0,1,0,0,0,1],"Color":[0.66,0.17,0.15],"Material":{"Enum":288},"Size":[0.45,0.45,0.25]}},
+    {"Name":"WeakpointPresentation","ClassName":"Attachment","Properties":{"CFrame":[0.25,6.1,-1.45,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"AttackOrigin","ClassName":"Attachment","Properties":{"CFrame":[0,4.0,-1.8,1,0,0,0,1,0,0,0,1]}}
+  ]
+}
