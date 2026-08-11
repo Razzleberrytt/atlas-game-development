@@ -32,10 +32,16 @@ def main() -> int:
         "dedicated Main World project build",
     )
 
+    source_sha_expression = "${{ github.event.pull_request.head.sha || github.sha }}"
     require(
         workflow,
-        "living-kingdoms-main-world-rbxlx-${{ github.sha }}",
-        "commit-addressed Main World artifact name",
+        f"living-kingdoms-main-world-rbxlx-{source_sha_expression}",
+        "source-commit-addressed Main World artifact name",
+    )
+    require(
+        workflow,
+        f"SOURCE_SHA: {source_sha_expression}",
+        "PR-head-or-push source identity selection",
     )
     require(
         workflow,
@@ -57,7 +63,7 @@ def main() -> int:
         "sha256sum /tmp/LivingKingdomsMainWorld.rbxlx",
         "Main World SHA-256 generation",
     )
-    require(workflow, 'commit=${GITHUB_SHA}', "commit identity record")
+    require(workflow, 'commit=${SOURCE_SHA}', "source commit identity record")
     require(
         workflow,
         "project=games/living-kingdoms/main-world.project.json",
