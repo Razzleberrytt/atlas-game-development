@@ -133,7 +133,10 @@ jobs:
         run: |
           set -euo pipefail
           test -f /tmp/LivingKingdomsMainWorld.rbxlx
-          sha256sum /tmp/LivingKingdomsMainWorld.rbxlx | tee /tmp/LivingKingdomsMainWorld.rbxlx.sha256
+          (
+            cd /tmp
+            sha256sum LivingKingdomsMainWorld.rbxlx | tee LivingKingdomsMainWorld.rbxlx.sha256
+          )
           {
             echo "commit=${SOURCE_SHA}"
             echo "project=games/living-kingdoms/main-world.project.json"
