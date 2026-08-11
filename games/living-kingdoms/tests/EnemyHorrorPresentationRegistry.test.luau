@@ -80,7 +80,12 @@ check(foundAuthorityIssue)
 
 local modifierSkin = table.clone(registry.Skins[1])
 modifierSkin.gameplayModifiers = { health = 2 }
-local skinIssues = contracts.validate(registry.Definitions, { modifierSkin, registry.Skins[2], registry.Skins[3] }, knownArchetypeIds, knownRoleIds)
+local skinIssues = contracts.validate(
+	registry.Definitions,
+	{ modifierSkin, registry.Skins[2], registry.Skins[3] },
+	knownArchetypeIds,
+	knownRoleIds
+)
 local foundSkinModifierIssue = false
 for _, issue in skinIssues do
 	if issue.code == "SkinGameplayModifierForbidden" then
