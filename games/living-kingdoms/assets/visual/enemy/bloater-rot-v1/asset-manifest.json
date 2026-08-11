@@ -1,0 +1,29 @@
+{
+  "assetKey": "enemy.presentation.bloater.rot_v1",
+  "version": "BLOATER-ROT-v1",
+  "sourceType": "project-original-procedural-blockout",
+  "registryModelPath": "Enemies/Bloater/RotV1",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "minimumPartCount": 15,
+  "requiredParts": [
+    "PelvisCore",
+    "TorsoMass",
+    "PressureSacLeft",
+    "PressureSacRight",
+    "ChestPlate",
+    "HeadLow",
+    "ArmLeft",
+    "ArmRightHeavy",
+    "HandLeft",
+    "HandRight",
+    "LegLeft",
+    "LegRight",
+    "DragMass",
+    "SpineBulge",
+    "PressureWeakpoint"
+  ],
+  "requiredAttachments": ["AttackOrigin", "WeakpointPresentation", "VfxOrigin"],
+  "silhouetteClaims": ["asymmetric-pressure-sacs", "dragging-side-weight", "translucent-swelling"]
+}
