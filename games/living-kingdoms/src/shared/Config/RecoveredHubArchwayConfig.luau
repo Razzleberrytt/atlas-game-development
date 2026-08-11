@@ -1,0 +1,96 @@
+--!strict
+
+-- Patch 0.5 held reconstruction contract for the Studio-authored
+-- Workspace/HubTown/HubArchway group from the 2026-08-10 RBXL revision.
+-- Presentation evidence only; this module never creates runtime geometry.
+
+local Config = {
+	Version = "P0.5-HUB-ARCHWAY-v1",
+	SourcePath = "Workspace/HubTown/HubArchway",
+	CoordinateSpaceId = "authored-overworld",
+	SemanticContentId = "main_world.hub_core.archway",
+	StreamingGroupId = "main_world.hub_core",
+	SourceHold = true,
+	RuntimeEnabled = false,
+	Evidence = table.freeze({
+		SourceRbxlSha256 = "7cfa9ae257cccc1c048459029f95dfdb83a4e113cbf1ff2f281bc7c9532a695b",
+		SourceRbxlBytes = 1808699,
+		IdentityRows = 6,
+		PropertyBackedRows = 5,
+		GeneratedContainerRows = 1,
+		PendingNodeRows = 0,
+		EvidenceArtifactName = "hub-civic-geometry-summary.json",
+	}),
+	Parts = table.freeze({
+		table.freeze({
+			name = "LeftPillar",
+			sourceId = 383,
+			parent = "HubArchway",
+			position = table.freeze({ x = -8.0, y = 7.5, z = -20.0 }),
+			rotationId = 2,
+			size = table.freeze({ x = 2.0, y = 8.0, z = 2.0 }),
+			colorBytes = table.freeze({ r = 180, g = 170, b = 160 }),
+			materialEnumValue = 784,
+			shapeEnumValue = 1,
+			canCollide = true,
+			transparency = 0.0,
+			reflectance = 0.0,
+		}),
+		table.freeze({
+			name = "RightPillar",
+			sourceId = 384,
+			parent = "HubArchway",
+			position = table.freeze({ x = 8.0, y = 7.5, z = -20.0 }),
+			rotationId = 2,
+			size = table.freeze({ x = 2.0, y = 8.0, z = 2.0 }),
+			colorBytes = table.freeze({ r = 180, g = 170, b = 160 }),
+			materialEnumValue = 784,
+			shapeEnumValue = 1,
+			canCollide = true,
+			transparency = 0.0,
+			reflectance = 0.0,
+		}),
+		table.freeze({
+			name = "TopBeam",
+			sourceId = 385,
+			parent = "HubArchway",
+			position = table.freeze({ x = 0.0, y = 12.5, z = -20.0 }),
+			rotationId = 2,
+			size = table.freeze({ x = 20.0, y = 2.0, z = 2.0 }),
+			colorBytes = table.freeze({ r = 170, g = 160, b = 150 }),
+			materialEnumValue = 784,
+			shapeEnumValue = 1,
+			canCollide = true,
+			transparency = 0.0,
+			reflectance = 0.0,
+		}),
+		table.freeze({
+			name = "ArchCrystal",
+			sourceId = 386,
+			parent = "HubArchway",
+			position = table.freeze({ x = 0.0, y = 14.5, z = -20.0 }),
+			rotationId = 2,
+			size = table.freeze({ x = 1.5, y = 1.5, z = 1.5 }),
+			colorBytes = table.freeze({ r = 100, g = 200, b = 255 }),
+			materialEnumValue = 288,
+			shapeEnumValue = 0,
+			canCollide = false,
+			transparency = 0.0,
+			reflectance = 0.0,
+		}),
+	}),
+	PointLights = table.freeze({
+		table.freeze({
+			name = "PointLight",
+			sourceId = 387,
+			parent = "ArchCrystal",
+			brightness = 2.0,
+			color = table.freeze({ r = 0.3921568691730499, g = 0.7843137383460999, b = 1.0 }),
+			enabled = true,
+			range = 15.0,
+			shadows = false,
+		}),
+	}),
+}
+
+return table.freeze(Config)
