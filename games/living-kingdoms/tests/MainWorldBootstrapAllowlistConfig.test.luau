@@ -27,16 +27,21 @@ check(config.Client.BootstrapRoot == "games/living-kingdoms/src/main-world/clien
 check(config.Client.EntryPoint == "MainWorldClient.client.luau")
 check(config.Client.ConsequentialAuthorityAllowed == false)
 
-local forbiddenOwners = {}
-for _, owner in config.Server.ForbiddenOwners do
-	forbiddenOwners[owner] = true
+check(#config.Server.AllowedCanonicalOwners == 1)
+check(config.Server.AllowedCanonicalOwners[1] == "ExpeditionLobbyService")
+local operationForbidden = {}
+for _, owner in config.Server.ForbiddenOperationOwners do
+	operationForbidden[owner] = true
 end
-check(forbiddenOwners.WorldFoundationService == true)
-check(forbiddenOwners.RPGServerBootstrap == true)
-check(forbiddenOwners.CombatService == true)
-check(forbiddenOwners.EnemyService == true)
-check(forbiddenOwners.LootService == true)
-check(forbiddenOwners.MonetizationService == true)
+check(operationForbidden.WorldFoundationService == true)
+
+local responsibilities = {}
+for _, responsibility in config.Server.AllowedResponsibilities do
+	responsibilities[responsibility] = true
+end
+check(responsibilities["expedition-launch-intent"] == true)
+check(responsibilities["durable-player-state-adapter"] == true)
+check(responsibilities["durable-inventory-adapter"] == true)
 
 local excluded = {}
 for _, root in config.ExcludedSourceRoots do
@@ -61,5 +66,5 @@ check(
 	string.find(projectText, "src/main%-world", 1) == nil,
 	"current operation project must not map Main World bootstrap roots"
 )
-check(string.find(projectText, "legacy%-src", 1) == nil, "current operation project must not map legacy runtime")
+check(string.find(projectText, "legacy%-src", 1) == nil, "current operation project must not map preserved runtime")
 check(string.find(projectText, "imports", 1, true) == nil, "current operation project must not map imports")
