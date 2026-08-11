@@ -30,7 +30,7 @@ function Factory.create(): WeaponVisualModelRig
 	local weaponId = FirearmConfig.LightMachineGun.WeaponId
 	local context = Builder.newContext(
 		weaponId,
-		VisualAssetContracts.AssetKeys.WeaponLightMachineGunModel,
+		VisualAssetContracts.AssetKeys.WeaponBasicFirearmModel,
 		"blackwater-support-lmg.v2",
 		"weapon.light-machine-gun"
 	)
