@@ -1,0 +1,15 @@
+{
+  "assetKey": "world.environment-kit.dense-ground-clutter",
+  "version": "ENV-DENSE-GROUND-CLUTTER-v1",
+  "sourceType": "project-original-source-models",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "artDirection": ["dark-frontier", "dense-ground-detail", "low-silhouette"],
+  "assets": [
+    {"semanticId":"env.clutter.frontier.pebble_scatter_a","registrySourceModelPath":"Environment/GroundClutter/PebbleScatterA","file":"PebbleScatterA.model.json","role":"repeatable-stone-ground-detail","minimumPartCount":5},
+    {"semanticId":"env.clutter.frontier.fallen_branch_tangle_a","registrySourceModelPath":"Environment/GroundClutter/FallenBranchTangleA","file":"FallenBranchTangleA.model.json","role":"repeatable-organic-ground-detail","minimumPartCount":5},
+    {"semanticId":"env.clutter.cave.shard_scatter_a","registrySourceModelPath":"Environment/GroundClutter/CaveShardScatterA","file":"CaveShardScatterA.model.json","role":"subterranean-ground-detail","minimumPartCount":4},
+    {"semanticId":"env.brush.frontier.dead_brush_mat_a","registrySourceModelPath":"Environment/GroundClutter/DeadBrushMatA","file":"DeadBrushMatA.model.json","role":"dead-brush-ground-mat","minimumPartCount":5}
+  ]
+}
