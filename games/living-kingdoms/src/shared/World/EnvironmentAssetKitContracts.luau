@@ -14,6 +14,7 @@ export type EnvironmentFamily =
 	| "Cave"
 	| "Industrial"
 	| "Camp"
+	| "Corruption"
 	| "UnknownStructure"
 
 export type ScaleClass = "Tiny" | "Small" | "Medium" | "Large" | "Hero"
@@ -63,6 +64,7 @@ local VALID_FAMILIES = table.freeze({
 	Cave = true,
 	Industrial = true,
 	Camp = true,
+	Corruption = true,
 	UnknownStructure = true,
 })
 
