@@ -18,7 +18,9 @@ local contracts = fs.readFile("games/living-kingdoms/src/shared/Visual/VisualAss
 
 assert(contains(router, "require(script.Parent.LightMachineGunPresentationFactory)"))
 assert(contains(router, "LightMachineGunPresentationFactory.create()"))
-assert(not contains(router, "FirearmConfig.BasicFirearm.WeaponId or weaponId == FirearmConfig.LightMachineGun.WeaponId"))
+assert(
+	not contains(router, "FirearmConfig.BasicFirearm.WeaponId or weaponId == FirearmConfig.LightMachineGun.WeaponId")
+)
 assert(contains(source, "blackwater-support-lmg.v2"))
 assert(contains(source, "FirearmConfig.LightMachineGun.WeaponId"))
 assert(contains(source, "VisualAssetContracts.AssetKeys.WeaponBasicFirearmModel"))
@@ -26,27 +28,31 @@ assert(contains(contracts, "WeaponBasicFirearmModel"))
 assert(contains(source, "Builder.finish"))
 assert(count(source, "Builder.") >= 28, "LMG model is too primitive for a dedicated heavy-weapon silhouette")
 
-for _, partName in {
-	"FeedCover",
-	"BarrelJacket",
-	"MuzzleBrake",
-	"MagazineBody",
-	"CarryHandle",
-	"BipodLeftLeg",
-	"BipodRightLeg",
-	"IdentityPanel",
-} do
+for _, partName in
+	{
+		"FeedCover",
+		"BarrelJacket",
+		"MuzzleBrake",
+		"MagazineBody",
+		"CarryHandle",
+		"BipodLeftLeg",
+		"BipodRightLeg",
+		"IdentityPanel",
+	}
+do
 	assert(contains(source, '"' .. partName), "LMG missing defining model component " .. partName)
 end
 
-for _, prohibited in {
-	"FireServer",
-	"InvokeServer",
-	"OnServerEvent",
-	"DamagePerHit",
-	"loadedRounds -=",
-	"Humanoid.Health",
-} do
+for _, prohibited in
+	{
+		"FireServer",
+		"InvokeServer",
+		"OnServerEvent",
+		"DamagePerHit",
+		"loadedRounds -=",
+		"Humanoid.Health",
+	}
+do
 	assert(not contains(source, prohibited), "LMG presentation gained gameplay authority token " .. prohibited)
 end
 
