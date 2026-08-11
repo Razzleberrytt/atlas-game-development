@@ -42,6 +42,12 @@ local scope = MainWorldAcceptanceScopeResolver.resolveScope(
 
 At the time of writing that yields **10 in-scope checks (7 blocking)** and **21 out of scope**. The first run is therefore a 10-check pass, not a 31-check pass.
 
+Generate a blank run record for the current scope instead of copying one from this document:
+
+```bash
+lune run games/living-kingdoms/tools/evidence/evaluate-ba014-run.luau > run-record.json
+```
+
 Rules:
 
 - record results **only** for in-scope checks; a scoped run that records an out-of-scope result is rejected, because the place contains no instance of that family;
@@ -251,6 +257,25 @@ For each reproducible defect record:
 A blocking `Fail` preempts Main World environment breadth. Fix the smallest source-owned cause; do not compensate by adding unrelated scenery or resurrecting recovered runtime.
 
 ## 10. Acceptance decision
+
+Do not decide the run by reading the sheet. Fill the generated run record and let the committed contracts decide it:
+
+```bash
+lune run games/living-kingdoms/tools/evidence/evaluate-ba014-run.luau run-record.json
+```
+
+The evaluator reports one of `INVALID` / `PARTIAL` / `FAIL` / `PASS`, and exits non-zero for anything but `PASS`:
+
+| Result | Meaning |
+|---|---|
+| `INVALID` | The record is malformed — an unknown check, an unknown status, a non-string identity field, or a result recorded for a check this build cannot answer. |
+| `PARTIAL` | The record is incomplete — missing identity, an omitted result, a `NotRun`, or a `Blocked` transport failure. |
+| `FAIL` | A blocking in-scope check reproduced a real defect. |
+| `PASS` | Every in-scope check was observed and every blocking one passed. |
+
+A `Blocked` check reports `PARTIAL`, never `FAIL`: a bridge or tooling failure is not a runtime defect. Non-blocking failures are surfaced under *non-blocking findings* and reach the packet without gating.
+
+Attach both the run record and the evaluator output to the evidence packet. The evaluator measures nothing and owns no threshold — every number stays in `MainWorldAcceptanceMatrixConfig`.
 
 The run may promote Main World acceptance only when:
 
