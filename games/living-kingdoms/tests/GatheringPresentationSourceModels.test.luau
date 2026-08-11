@@ -33,13 +33,14 @@ check(#manifest.assets == 4)
 check(gatheringContracts.RuntimeConsumptionActive == false)
 check(gatheringContracts.MutationIntentAllowed == false)
 
-for _, forbiddenKey in {
+local forbiddenKeys = {
 	"ResourceRefId",
 	"RequiredToolRefId",
 	"RespawnPolicyRefId",
 	"RewardRefId",
 	"canonicalRefId",
-} do
+}
+for _, forbiddenKey in forbiddenKeys do
 	check(string.find(manifestSource, forbiddenKey, 1, true) == nil, "manifest must not publish " .. forbiddenKey)
 end
 
