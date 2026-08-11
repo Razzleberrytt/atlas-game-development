@@ -11,18 +11,23 @@ local function check(condition: unknown, message: string?)
 	end
 end
 
-for _, forbidden in {
-	"DamagePerHit",
-	"CadenceSeconds",
-	"MagazineCapacity",
-	"ReloadDurationSeconds",
-	"RemoteEvent",
-	"RemoteFunction",
-	"FireServer",
-	"FireClient",
-	"DataStoreService",
-} do
-	check(string.find(registrySource, forbidden, 1, true) == nil, "weapon visual registry contains gameplay/runtime surface: " .. forbidden)
+for _, forbidden in
+	{
+		"DamagePerHit",
+		"CadenceSeconds",
+		"MagazineCapacity",
+		"ReloadDurationSeconds",
+		"RemoteEvent",
+		"RemoteFunction",
+		"FireServer",
+		"FireClient",
+		"DataStoreService",
+	}
+do
+	check(
+		string.find(registrySource, forbidden, 1, true) == nil,
+		"weapon visual registry contains gameplay/runtime surface: " .. forbidden
+	)
 end
 
 check(string.find(contractsSource, "GameplayAuthorityForbidden", 1, true) ~= nil)
