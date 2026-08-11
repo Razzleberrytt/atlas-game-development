@@ -1,0 +1,19 @@
+{
+  "ClassName":"Model",
+  "Children":[
+    {"Name":"BenchTop","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,3.1,0,1,0,0,0,1,0,0,0,1],"Color":[0.30,0.20,0.12],"Size":[7.2,0.55,3.2]},"Children":[
+      {"Name":"socket.ingredient.left","ClassName":"Attachment","Properties":{"Position":[-2.0,0.35,0]}},
+      {"Name":"socket.ingredient.right","ClassName":"Attachment","Properties":{"Position":[0,0.35,0]}},
+      {"Name":"socket.output.center","ClassName":"Attachment","Properties":{"Position":[2.0,0.35,0]}},
+      {"Name":"socket.tool.main","ClassName":"Attachment","Properties":{"Position":[0,0.35,-1.0]}},
+      {"Name":"socket.vfx.work","ClassName":"Attachment","Properties":{"Position":[0,1.0,0]}},
+      {"Name":"socket.audio.work","ClassName":"Attachment","Properties":{"Position":[0,0.5,0]}}
+    ]},
+    {"Name":"LegFrontLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-2.8,1.5,-1.0,1,0,0,0,1,0,0,0,1],"Color":[0.22,0.14,0.08],"Size":[0.55,3.0,0.55]}},
+    {"Name":"LegFrontRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[2.8,1.5,-1.0,1,0,0,0,1,0,0,0,1],"Color":[0.22,0.14,0.08],"Size":[0.55,3.0,0.55]}},
+    {"Name":"LegRearLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-2.8,1.5,1.0,1,0,0,0,1,0,0,0,1],"Color":[0.22,0.14,0.08],"Size":[0.55,3.0,0.55]}},
+    {"Name":"LegRearRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[2.8,1.5,1.0,1,0,0,0,1,0,0,0,1],"Color":[0.22,0.14,0.08],"Size":[0.55,3.0,0.55]}},
+    {"Name":"BackRail","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,4.2,1.35,1,0,0,0,1,0,0,0,1],"Color":[0.18,0.19,0.18],"Size":[6.8,1.5,0.25]}},
+    {"Name":"LowerShelf","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,1.0,0,1,0,0,0,1,0,0,0,1],"Color":[0.26,0.17,0.10],"Size":[5.8,0.35,2.4]}}
+  ]
+}

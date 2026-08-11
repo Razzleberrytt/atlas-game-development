@@ -1,0 +1,18 @@
+{
+  "assetKey": "crafting.presentation.source-models",
+  "version": "CRAFTING-SOURCE-MODELS-v1",
+  "sourceType": "project-original-source-models",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "presentationRegistry": "games/living-kingdoms/src/shared/Config/CraftingPresentationRegistry.luau",
+  "gameplayContract": "games/living-kingdoms/src/shared/Crafting/CraftingContracts.luau",
+  "artDirection": ["dark-frontier", "field-repaired", "salvaged-industrial"],
+  "assets": [
+    {"presentationId":"crafting.presentation.station.field_bench_v1","registryModelPath":"Crafting/Stations/FieldBenchV1","file":"Stations/FieldBenchV1.model.json","role":"crafting-workstation","minimumPartCount":7,"canonicalRefId":"station.hub.crafting"},
+    {"presentationId":"crafting.presentation.ingredient.scrap_bundle_v1","registryModelPath":"Crafting/Ingredients/ScrapBundleV1","file":"Ingredients/ScrapBundleV1.model.json","role":"crafting-ingredient-display","minimumPartCount":4},
+    {"presentationId":"crafting.presentation.ingredient.fabric_roll_v1","registryModelPath":"Crafting/Ingredients/FabricRollV1","file":"Ingredients/FabricRollV1.model.json","role":"crafting-ingredient-display","minimumPartCount":4},
+    {"presentationId":"crafting.presentation.tool.hand_tools_v1","registryModelPath":"Crafting/Tools/HandToolsV1","file":"Tools/HandToolsV1.model.json","role":"crafting-tool-display","minimumPartCount":5},
+    {"presentationId":"crafting.presentation.container.parts_crate_v1","registryModelPath":"Crafting/Containers/PartsCrateV1","file":"Containers/PartsCrateV1.model.json","role":"crafting-parts-container","minimumPartCount":5}
+  ]
+}
