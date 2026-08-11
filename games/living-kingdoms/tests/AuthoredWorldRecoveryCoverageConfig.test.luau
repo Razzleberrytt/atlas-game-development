@@ -130,11 +130,10 @@ check(staircaseConfig.Evidence.SourceRbxlSha256 == config.LatestAuthoredRevision
 check(staircaseConfig.Evidence.IdentityRows == 35)
 check(staircaseConfig.Evidence.PropertyBackedRows == 35)
 
-local archwayConfig =
-	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RecoveredHubArchwayConfig.luau"), {
-		debugName = "RecoveredHubArchwayConfig",
-		injectGlobals = true,
-	})()
+local archwayConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RecoveredHubArchwayConfig.luau"), {
+	debugName = "RecoveredHubArchwayConfig",
+	injectGlobals = true,
+})()
 
 check(archwayConfig.RuntimeEnabled == false)
 check(archwayConfig.SourceHold == true)
