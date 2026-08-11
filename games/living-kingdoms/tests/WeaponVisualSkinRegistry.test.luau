@@ -16,14 +16,10 @@ local function loadModule(path: string, debugName: string)
 	})()
 end
 
-local contracts = loadModule(
-	"games/living-kingdoms/src/shared/Visual/WeaponVisualSkinContracts.luau",
-	"WeaponVisualSkinContracts"
-)
-local registry = loadModule(
-	"games/living-kingdoms/src/shared/Config/WeaponVisualSkinRegistry.luau",
-	"WeaponVisualSkinRegistry"
-)
+local contracts =
+	loadModule("games/living-kingdoms/src/shared/Visual/WeaponVisualSkinContracts.luau", "WeaponVisualSkinContracts")
+local registry =
+	loadModule("games/living-kingdoms/src/shared/Config/WeaponVisualSkinRegistry.luau", "WeaponVisualSkinRegistry")
 
 local knownWeaponIds = {
 	["weapon.basic_firearm"] = true,
@@ -55,12 +51,13 @@ for _, issue in authorityIssues do
 	if issue.code == "GameplayAuthorityForbidden" then
 		foundAuthorityIssue = true
 	end
-end
+nend
 check(foundAuthorityIssue)
 
 local statSkin = table.clone(registry.Skins[1])
 statSkin.gameplayModifiers = { damage = 1.1 }
-local skinIssues = contracts.validate(registry.Visuals, { statSkin, registry.Skins[2], registry.Skins[3] }, knownWeaponIds)
+local skinIssues =
+	contracts.validate(registry.Visuals, { statSkin, registry.Skins[2], registry.Skins[3] }, knownWeaponIds)
 local foundSkinAuthorityIssue = false
 for _, issue in skinIssues do
 	if issue.code == "SkinGameplayModifierForbidden" then
