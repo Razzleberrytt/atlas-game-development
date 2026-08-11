@@ -14,7 +14,7 @@ local Disposition = table.freeze({
 })
 
 local Config = {
-	Version = "BA-005-RECOVERY-COVERAGE-v2",
+	Version = "BA-005-RECOVERY-COVERAGE-v3",
 	RuntimeEnabled = false,
 	CoordinateSpaceId = "authored-overworld",
 
@@ -46,6 +46,7 @@ local Config = {
 			declaredInstances = 2342,
 			parsedInstances = 2342,
 			reviewEvidenceCommitted = true,
+			reviewUnitsCommitted = 3,
 		}),
 	}),
 	Groups = table.freeze({
@@ -83,7 +84,23 @@ local Config = {
 			reconstructionModule = "RecoveredCentralFountainConfig",
 			newGeometryPromotionAllowed = false,
 			evidenceRevision = "AuthoredRevision20260810",
-			note = "First Patch 0.5 civic review unit; 11-instance bounded evidence is committed and checksum-pinned.",
+			note = "Patch 0.5 civic review unit; 11-instance bounded evidence is committed and checksum-pinned.",
+		}),
+		GrandStaircase = table.freeze({
+			sourcePath = "Workspace/HubTown/GrandStaircase",
+			disposition = Disposition.RecoveredHeld,
+			reconstructionModule = "RecoveredGrandStaircaseConfig",
+			newGeometryPromotionAllowed = false,
+			evidenceRevision = "AuthoredRevision20260810",
+			note = "Patch 0.5 arrival review unit; 35-instance exact property evidence is committed and held.",
+		}),
+		HubArchway = table.freeze({
+			sourcePath = "Workspace/HubTown/HubArchway",
+			disposition = Disposition.RecoveredHeld,
+			reconstructionModule = "RecoveredHubArchwayConfig",
+			newGeometryPromotionAllowed = false,
+			evidenceRevision = "AuthoredRevision20260810",
+			note = "Patch 0.5 arrival review unit; 6-instance exact property evidence is committed and held.",
 		}),
 		Resources = table.freeze({
 			sourcePath = "Workspace/Resources",
