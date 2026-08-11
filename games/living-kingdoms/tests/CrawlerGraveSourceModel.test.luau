@@ -14,10 +14,11 @@ end
 
 local manifest = serde.decode("json", fs.readFile(ROOT .. "asset-manifest.json"))
 local model = serde.decode("json", fs.readFile(ROOT .. "CrawlerGraveV1.model.json"))
-local registry = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/EnemyHorrorPresentationRegistry.luau"), {
-	debugName = "EnemyHorrorPresentationRegistry",
-	injectGlobals = true,
-})()
+local registry =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/EnemyHorrorPresentationRegistry.luau"), {
+		debugName = "EnemyHorrorPresentationRegistry",
+		injectGlobals = true,
+	})()
 
 local crawler = nil
 for _, definition in registry.Definitions do
@@ -47,7 +48,10 @@ local function visit(node)
 	if node.ClassName == "Part" then
 		partCount += 1
 		parts[node.Name] = true
-		check(node.Properties ~= nil and node.Properties.Anchored == true, "held horror blockout Parts must be anchored")
+		check(
+			node.Properties ~= nil and node.Properties.Anchored == true,
+			"held horror blockout Parts must be anchored"
+		)
 	end
 	if node.ClassName == "Attachment" then
 		attachments[node.Name] = true
