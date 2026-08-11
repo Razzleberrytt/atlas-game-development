@@ -1,0 +1,10 @@
+{
+  "ClassName":"Model",
+  "Children":[
+    {"Name":"BranchA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,0.35,0,0.82,0.57,0,-0.57,0.82,0,0,0,1],"Color":[0.22,0.13,0.07],"Material":{"Enum":512},"Size":[0.35,4.2,0.35]}},
+    {"Name":"BranchB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0.2,0.3,0.3,0.82,-0.57,0,0.57,0.82,0,0,0,1],"Color":[0.19,0.11,0.06],"Material":{"Enum":512},"Size":[0.3,3.8,0.3]}},
+    {"Name":"TwigA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-0.9,0.48,-0.1,0.94,0.34,0,-0.34,0.94,0,0,0,1],"Color":[0.18,0.10,0.05],"Material":{"Enum":512},"Size":[0.18,2.2,0.18]}},
+    {"Name":"TwigB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[1.0,0.42,0.45,0.94,-0.34,0,0.34,0.94,0,0,0,1],"Color":[0.20,0.12,0.06],"Material":{"Enum":512},"Size":[0.16,2.0,0.16]}},
+    {"Name":"RootKnuckle","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-0.1,0.22,-0.45,1,0,0,0,1,0,0,0,1],"Color":[0.16,0.09,0.05],"Material":{"Enum":512},"Size":[1.1,0.45,0.9]}}
+  ]
+}
