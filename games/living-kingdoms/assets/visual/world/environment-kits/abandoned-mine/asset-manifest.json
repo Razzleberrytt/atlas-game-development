@@ -1,0 +1,43 @@
+{
+  "assetKey": "world.environment-kit.abandoned-mine",
+  "version": "ENV-MINE-v1",
+  "sourceType": "project-original-source-models",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "artDirection": [
+    "dark-frontier",
+    "abandoned-industry",
+    "mine-decay"
+  ],
+  "assets": [
+    {
+      "semanticId": "env.structure.industry.mine_support_a",
+      "registrySourceModelPath": "Environment/Industry/MineSupportA",
+      "file": "MineSupportA.model.json",
+      "role": "repeatable-tunnel-support",
+      "minimumPartCount": 7
+    },
+    {
+      "semanticId": "env.structure.industry.broken_support_a",
+      "registrySourceModelPath": "Environment/Industry/BrokenSupportA",
+      "file": "BrokenSupportA.model.json",
+      "role": "damaged-structure-variant",
+      "minimumPartCount": 4
+    },
+    {
+      "semanticId": "env.prop.industry.ore_cart_a",
+      "registrySourceModelPath": "Environment/Industry/OreCartA",
+      "file": "OreCartA.model.json",
+      "role": "industrial-storytelling-prop",
+      "minimumPartCount": 7
+    },
+    {
+      "semanticId": "env.prop.industry.timber_barricade_a",
+      "registrySourceModelPath": "Environment/Industry/TimberBarricadeA",
+      "file": "TimberBarricadeA.model.json",
+      "role": "route-blocking-dressing-prop",
+      "minimumPartCount": 5
+    }
+  ]
+}
