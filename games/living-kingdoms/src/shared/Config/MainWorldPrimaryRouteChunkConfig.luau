@@ -1,9 +1,10 @@
 --!strict
 
--- Patch 0.5 held authoring chunks for the source-managed primary route.
+-- Patch 0.5 bounded authoring chunks for the source-managed primary route.
 -- BA-013 sets a 64–128 stud route-per-chunk target. This contract derives the
 -- largest source-aligned chunk that fits that ceiling, then covers the route
--- with deterministic semantic chunks. It does not create or map render assets.
+-- with deterministic semantic chunks. The validated 12-part presentation is
+-- now mapped into the dedicated Main World while runtime activation stays held.
 
 local MinimumChunkSpanStuds = 64.0
 local MaximumChunkSpanStuds = 128.0
@@ -35,7 +36,7 @@ for index = 1, ChunkCount do
 		endProgress = endInterval / SourceIntervalCount,
 		spanStuds = spanStuds,
 		seamPolicy = "shared-control-boundary",
-		renderAssetMapped = false,
+		renderAssetMapped = true,
 	})
 	startInterval = endInterval
 end
@@ -47,7 +48,7 @@ local Config = {
 	StreamingGroupId = "main_world.primary_route",
 	SourceHold = true,
 	RuntimeEnabled = false,
-	RenderAssetsMapped = false,
+	RenderAssetsMapped = true,
 	Policy = table.freeze({
 		MinimumChunkSpanStuds = MinimumChunkSpanStuds,
 		MaximumChunkSpanStuds = MaximumChunkSpanStuds,
