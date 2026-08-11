@@ -1,0 +1,15 @@
+{
+  "assetKey": "world.environment-kit.cave-ritual",
+  "version": "ENV-CAVE-RITUAL-v1",
+  "sourceType": "project-original-source-models",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "artDirection": ["dark-frontier", "subterranean", "ritual-decay"],
+  "assets": [
+    {"semanticId":"env.cave.ritual.rib_arch_a","registrySourceModelPath":"Environment/CaveRitual/CaveRibArchA","file":"CaveRibArchA.model.json","role":"modular-cave-threshold","minimumPartCount":7},
+    {"semanticId":"env.structure.ritual.stone_altar_a","registrySourceModelPath":"Environment/CaveRitual/RitualStoneAltarA","file":"RitualStoneAltarA.model.json","role":"ritual-landmark-structure","minimumPartCount":6},
+    {"semanticId":"env.structure.ritual.runic_pillar_a","registrySourceModelPath":"Environment/CaveRitual/RunicStonePillarA","file":"RunicStonePillarA.model.json","role":"ritual-silhouette-structure","minimumPartCount":6},
+    {"semanticId":"env.prop.ritual.offering_brazier_a","registrySourceModelPath":"Environment/CaveRitual/OfferingBrazierA","file":"OfferingBrazierA.model.json","role":"ritual-ambient-prop","minimumPartCount":6}
+  ]
+}
