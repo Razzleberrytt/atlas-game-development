@@ -1,0 +1,107 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {
+      "Name": "CartBody",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0, 3.2, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.1765, 0.1686, 0.1569],
+        "Size": [6, 3, 4]
+      }
+    },
+    {
+      "Name": "FrontLip",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "CanQuery": true,
+        "CanTouch": false,
+        "CastShadow": true,
+        "CFrame": [3.1, 3.7, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.1176, 0.1137, 0.1059],
+        "Size": [0.4, 3.4, 4.4]
+      }
+    },
+    {
+      "Name": "LeftWheelFront",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "CanQuery": true,
+        "CanTouch": false,
+        "CastShadow": true,
+        "CFrame": [1.9, 1.3, -2.2, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.0824, 0.0824, 0.0824],
+        "Shape": { "Enum": 2 },
+        "Size": [1.4, 1.4, 0.8]
+      }
+    },
+    {
+      "Name": "LeftWheelRear",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "CanQuery": true,
+        "CanTouch": false,
+        "CastShadow": true,
+        "CFrame": [-1.9, 1.3, -2.2, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.0824, 0.0824, 0.0824],
+        "Shape": { "Enum": 2 },
+        "Size": [1.4, 1.4, 0.8]
+      }
+    },
+    {
+      "Name": "RightWheelFront",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "CanQuery": true,
+        "CanTouch": false,
+        "CastShadow": true,
+        "CFrame": [1.9, 1.3, 2.2, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.0824, 0.0824, 0.0824],
+        "Shape": { "Enum": 2 },
+        "Size": [1.4, 1.4, 0.8]
+      }
+    },
+    {
+      "Name": "RightWheelRear",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "CanQuery": true,
+        "CanTouch": false,
+        "CastShadow": true,
+        "CFrame": [-1.9, 1.3, 2.2, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.0824, 0.0824, 0.0824],
+        "Shape": { "Enum": 2 },
+        "Size": [1.4, 1.4, 0.8]
+      }
+    },
+    {
+      "Name": "Handle",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "CanQuery": true,
+        "CanTouch": false,
+        "CastShadow": true,
+        "CFrame": [-4.2, 4.1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.1373, 0.1294, 0.1176],
+        "Size": [2.4, 0.5, 2.6]
+      }
+    }
+  ]
+}

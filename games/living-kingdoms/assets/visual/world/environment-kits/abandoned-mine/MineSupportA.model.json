@@ -1,0 +1,130 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {
+      "Name": "LeftPost",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [-6, 7, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.2549, 0.1961, 0.1373],
+        "Size": [2, 14, 3]
+      },
+      "Children": [
+        {
+          "Name": "socket.snap.left",
+          "ClassName": "Attachment",
+          "Properties": {
+            "CFrame": [0, -7, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]
+          }
+        }
+      ]
+    },
+    {
+      "Name": "RightPost",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [6, 7, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.2549, 0.1961, 0.1373],
+        "Size": [2, 14, 3]
+      },
+      "Children": [
+        {
+          "Name": "socket.snap.right",
+          "ClassName": "Attachment",
+          "Properties": {
+            "CFrame": [0, -7, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]
+          }
+        }
+      ]
+    },
+    {
+      "Name": "TopBeam",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0, 14, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.2235, 0.1725, 0.1176],
+        "Size": [16, 2, 4]
+      },
+      "Children": [
+        {
+          "Name": "socket.prop.lantern",
+          "ClassName": "Attachment",
+          "Properties": {
+            "CFrame": [0, -1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]
+          }
+        }
+      ]
+    },
+    {
+      "Name": "LeftFoot",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [-6, 0.75, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.1843, 0.1451, 0.102],
+        "Size": [4, 1.5, 8]
+      }
+    },
+    {
+      "Name": "RightFoot",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [6, 0.75, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.1843, 0.1451, 0.102],
+        "Size": [4, 1.5, 8]
+      }
+    },
+    {
+      "Name": "LeftBrace",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "CanQuery": true,
+        "CanTouch": false,
+        "CastShadow": true,
+        "CFrame": [-3.9, 11.2, 0, 0.8660254, -0.5, 0, 0.5, 0.8660254, 0, 0, 0, 1],
+        "Color": [0.2392, 0.1843, 0.1255],
+        "Size": [7, 1, 2]
+      }
+    },
+    {
+      "Name": "RightBrace",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "CanQuery": true,
+        "CanTouch": false,
+        "CastShadow": true,
+        "CFrame": [3.9, 11.2, 0, 0.8660254, 0.5, 0, -0.5, 0.8660254, 0, 0, 0, 1],
+        "Color": [0.2392, 0.1843, 0.1255],
+        "Size": [7, 1, 2]
+      }
+    }
+  ]
+}

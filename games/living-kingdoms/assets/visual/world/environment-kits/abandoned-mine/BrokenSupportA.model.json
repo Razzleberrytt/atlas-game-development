@@ -1,0 +1,61 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {
+      "Name": "StandingPost",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [-5, 5, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.2392, 0.1843, 0.1255],
+        "Size": [2, 10, 3]
+      }
+    },
+    {
+      "Name": "LeaningPost",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [4.5, 4.4, 0, 0.9659258, 0.258819, 0, -0.258819, 0.9659258, 0, 0, 0, 1],
+        "Color": [0.2157, 0.1647, 0.1098],
+        "Size": [2, 10, 3]
+      }
+    },
+    {
+      "Name": "DroppedBeam",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.8, 2.1, 1.6, 0.9396926, -0.3420201, 0, 0.3420201, 0.9396926, 0, 0, 0, 1],
+        "Color": [0.1961, 0.149, 0.102],
+        "Size": [12, 1.5, 2]
+      }
+    },
+    {
+      "Name": "SplinterBlock",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": false,
+        "CanQuery": true,
+        "CanTouch": false,
+        "CastShadow": true,
+        "CFrame": [-1.8, 1.1, -1.4, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "Color": [0.2863, 0.2118, 0.1373],
+        "Size": [3, 0.6, 0.8]
+      }
+    }
+  ]
+}
