@@ -58,7 +58,7 @@ for _, asset in manifest.assets do
 	local definition = byId[asset.presentationId]
 	check(definition ~= nil, "registry missing crafting presentation " .. asset.presentationId)
 	check(definition.modelPath == asset.registryModelPath)
-	check(definition.status == "HeldSourceModel")
+	check(definition.status == "SourceReady")
 	check(definition.presentationOnly == true)
 	check(definition.gameplayAuthorityOwnerId == nil)
 
