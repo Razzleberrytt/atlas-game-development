@@ -77,7 +77,9 @@ check(resolve(mainWorldAnchor, heldBridge, destination).reasonId == "CurrentBrid
 
 local mainWorldIdentityMismatch = table.clone(mainWorldAnchor)
 mainWorldIdentityMismatch.id = "hub.anchor.other"
-check(resolve(mainWorldIdentityMismatch, currentBridgeAnchor, destination).reasonId == "MainWorldAnchorIdentityMismatch")
+check(
+	resolve(mainWorldIdentityMismatch, currentBridgeAnchor, destination).reasonId == "MainWorldAnchorIdentityMismatch"
+)
 
 local bridgeIdentityMismatch = table.clone(currentBridgeAnchor)
 bridgeIdentityMismatch.id = "hub.anchor.other"
@@ -99,7 +101,10 @@ local destinationContentMismatch = {
 	},
 	RuntimeEnabled = false,
 }
-check(resolve(mainWorldAnchor, currentBridgeAnchor, destinationContentMismatch).reasonId == "AnchorDestinationContentMismatch")
+check(
+	resolve(mainWorldAnchor, currentBridgeAnchor, destinationContentMismatch).reasonId
+		== "AnchorDestinationContentMismatch"
+)
 
 local destinationDefinitionMismatch = {
 	ContentId = config.PortalContentId,
@@ -109,11 +114,16 @@ local destinationDefinitionMismatch = {
 	},
 	RuntimeEnabled = false,
 }
-check(resolve(mainWorldAnchor, currentBridgeAnchor, destinationDefinitionMismatch).reasonId == "DestinationContentMismatch")
+check(
+	resolve(mainWorldAnchor, currentBridgeAnchor, destinationDefinitionMismatch).reasonId
+		== "DestinationContentMismatch"
+)
 
 local mainWorldIntentMismatch = table.clone(mainWorldAnchor)
 mainWorldIntentMismatch.interactionIntentId = "hub.intent.other"
-check(resolve(mainWorldIntentMismatch, currentBridgeAnchor, destination).reasonId == "MainWorldInteractionIntentMismatch")
+check(
+	resolve(mainWorldIntentMismatch, currentBridgeAnchor, destination).reasonId == "MainWorldInteractionIntentMismatch"
+)
 
 local bridgeIntentMismatch = table.clone(currentBridgeAnchor)
 bridgeIntentMismatch.interactionIntentId = "hub.intent.other"
@@ -143,7 +153,10 @@ local destinationOwnerMismatch = {
 	},
 	RuntimeEnabled = false,
 }
-check(resolve(mainWorldAnchor, currentBridgeAnchor, destinationOwnerMismatch).reasonId == "DestinationCanonicalOwnerMismatch")
+check(
+	resolve(mainWorldAnchor, currentBridgeAnchor, destinationOwnerMismatch).reasonId
+		== "DestinationCanonicalOwnerMismatch"
+)
 
 check(config.RuntimeEnabled == false)
 check(config.Rules.MainWorldSurfaceOwnsConsequentialMutation == false)
