@@ -32,17 +32,11 @@ check(manifest.canonicalBindings == false)
 check(#manifest.assets == 4)
 check(gatheringContracts.RuntimeConsumptionActive == false)
 check(gatheringContracts.MutationIntentAllowed == false)
-
-local forbiddenKeys = {
-	"ResourceRefId",
-	"RequiredToolRefId",
-	"RespawnPolicyRefId",
-	"RewardRefId",
-	"canonicalRefId",
-}
-for _, forbiddenKey in forbiddenKeys do
-	check(string.find(manifestSource, forbiddenKey, 1, true) == nil, "manifest must not publish " .. forbiddenKey)
-end
+check(string.find(manifestSource, "ResourceRefId", 1, true) == nil)
+check(string.find(manifestSource, "RequiredToolRefId", 1, true) == nil)
+check(string.find(manifestSource, "RespawnPolicyRefId", 1, true) == nil)
+check(string.find(manifestSource, "RewardRefId", 1, true) == nil)
+check(string.find(manifestSource, "canonicalRefId", 1, true) == nil)
 
 local seenPresentationIds = {}
 local requiredAttachments = {
