@@ -93,6 +93,14 @@ local Config = {
 			evidenceRevision = "AuthoredRevision20260810",
 			note = "35-instance direct-binary review unit preserves the authored steps, rails, lanterns, and lights behind hold.",
 		}),
+		HubArchway = table.freeze({
+			sourcePath = "Workspace/HubTown/HubArchway",
+			disposition = Disposition.RecoveredHeld,
+			reconstructionModule = "RecoveredHubArchwayConfig",
+			newGeometryPromotionAllowed = false,
+			evidenceRevision = "AuthoredRevision20260810",
+			note = "6-instance direct-binary civic review unit preserves the authored pillars, beam, crystal, and light behind hold.",
+		}),
 		Resources = table.freeze({
 			sourcePath = "Workspace/Resources",
 			disposition = Disposition.PartialSampleOnly,
