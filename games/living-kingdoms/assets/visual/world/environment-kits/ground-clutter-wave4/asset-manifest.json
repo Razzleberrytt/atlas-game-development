@@ -1,0 +1,15 @@
+{
+  "assetKey": "world.environment-kit.ground-clutter-wave4",
+  "version": "ENV-GROUND-CLUTTER-WAVE4-v1",
+  "sourceType": "project-original-source-models",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "artDirection": ["dark-frontier", "dense-ground-detail", "biome-reusable"],
+  "assets": [
+    {"semanticId":"env.clutter.frontier.dry_brush_patch_a","registrySourceModelPath":"Environment/GroundClutter/DryBrushPatchA","file":"DryBrushPatchA.model.json","role":"frontier-dry-brush","minimumPartCount":5},
+    {"semanticId":"env.clutter.frontier.stone_shard_scatter_a","registrySourceModelPath":"Environment/GroundClutter/StoneShardScatterA","file":"StoneShardScatterA.model.json","role":"stone-shard-scatter","minimumPartCount":5},
+    {"semanticId":"env.clutter.industry.rusted_scrap_scatter_a","registrySourceModelPath":"Environment/GroundClutter/RustedScrapScatterA","file":"RustedScrapScatterA.model.json","role":"industrial-scrap-scatter","minimumPartCount":5},
+    {"semanticId":"env.clutter.corruption.tendril_mat_a","registrySourceModelPath":"Environment/GroundClutter/CorruptionTendrilMatA","file":"CorruptionTendrilMatA.model.json","role":"corruption-ground-tendril","minimumPartCount":5}
+  ]
+}

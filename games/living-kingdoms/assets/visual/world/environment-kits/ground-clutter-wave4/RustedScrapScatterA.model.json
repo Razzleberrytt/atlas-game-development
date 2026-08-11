@@ -1,0 +1,10 @@
+{
+  "ClassName":"Model",
+  "Children":[
+    {"Name":"PlateA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-0.9,0.16,0.2,0.91,0,-0.42,0,1,0,0.42,0,0.91],"Color":[0.29,0.20,0.14],"Material":{"Enum":1088},"Size":[1.7,0.18,0.8]}},
+    {"Name":"PlateB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0.7,0.18,-0.5,0.82,0,0.57,0,1,0,-0.57,0,0.82],"Color":[0.24,0.19,0.15],"Material":{"Enum":1088},"Size":[1.4,0.16,0.7]}},
+    {"Name":"CanBody","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0.9,0.35,0.8,1,0,0,0,1,0,0,0,1],"Color":[0.20,0.22,0.21],"Material":{"Enum":1088},"Size":[0.65,0.7,0.65]}},
+    {"Name":"PipeScrap","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-0.1,0.25,0.8,0.71,0,0.71,0,1,0,-0.71,0,0.71],"Color":[0.18,0.18,0.17],"Material":{"Enum":1088},"Size":[0.28,0.28,2.1]}},
+    {"Name":"WireBar","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":false,"CFrame":[0.1,0.12,-0.9,0.94,0,-0.34,0,1,0,0.34,0,0.94],"Color":[0.12,0.12,0.11],"Material":{"Enum":1088},"Size":[0.10,0.10,2.5]}}
+  ]
+}

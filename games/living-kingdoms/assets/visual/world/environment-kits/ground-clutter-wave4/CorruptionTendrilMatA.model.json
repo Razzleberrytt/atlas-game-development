@@ -1,0 +1,10 @@
+{
+  "ClassName":"Model",
+  "Children":[
+    {"Name":"TendrilA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-0.9,0.22,0,0.94,0,-0.34,0,1,0,0.34,0,0.94],"Color":[0.20,0.06,0.08],"Material":{"Enum":256},"Size":[2.1,0.18,0.38]}},
+    {"Name":"TendrilB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0.6,0.20,-0.5,0.82,0,0.57,0,1,0,-0.57,0,0.82],"Color":[0.18,0.05,0.07],"Material":{"Enum":256},"Size":[2.5,0.16,0.34]}},
+    {"Name":"TendrilC","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0.3,0.18,0.8,0.71,0,-0.71,0,1,0,0.71,0,0.71],"Color":[0.24,0.07,0.10],"Material":{"Enum":256},"Size":[1.8,0.15,0.30]}},
+    {"Name":"ResinNodeA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":false,"CFrame":[-0.2,0.28,-0.1,1,0,0,0,1,0,0,0,1],"Color":[0.47,0.07,0.13],"Material":{"Enum":288},"Transparency":0.24,"Size":[0.65,0.30,0.65]},"Children":[{"Name":"VfxSocket","ClassName":"Attachment","Properties":{"Position":[0,0.25,0]}}]},
+    {"Name":"ResinNodeB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":false,"CFrame":[1.0,0.24,0.4,1,0,0,0,1,0,0,0,1],"Color":[0.42,0.06,0.11],"Material":{"Enum":288},"Transparency":0.28,"Size":[0.45,0.26,0.45]}}
+  ]
+}
