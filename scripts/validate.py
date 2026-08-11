@@ -19,6 +19,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from _console import use_utf8_output
+
 ROOT = Path(__file__).resolve().parents[1]
 GAME = ROOT / "games" / "living-kingdoms"
 
@@ -155,4 +157,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    use_utf8_output()
     raise SystemExit(main())

@@ -39,6 +39,8 @@ import re
 import sys
 from pathlib import Path
 
+from _console import use_utf8_output
+
 ROOT = Path(__file__).resolve().parents[1]
 CURRENT_DIR = ROOT / "docs" / "migration" / "current"
 IMPORT_MANIFEST = (
@@ -296,4 +298,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    use_utf8_output()
     raise SystemExit(main())
