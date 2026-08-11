@@ -27,6 +27,28 @@ Expected source topology at the start of the run:
 
 If current `main` no longer matches this scope, update the candidate description before using this runbook. Never silently run a materially different build against stale assumptions.
 
+### 1.1 Which checks this build can answer
+
+BA-014 defines acceptance for the whole Main World; its 31 checks span all five BA-011 streaming groups. The dedicated place currently maps only `main_world.hub_core` and `main_world.primary_route`, so a check that depends on `main_world.resources`, `main_world.structures` or `main_world.atmosphere` has no content to observe. Running it would produce a result about nothing.
+
+`MainWorldAcceptanceScopeResolver` derives that partition from committed mapping truth rather than from this document. Regenerate it against current `main` instead of trusting the counts below:
+
+```lua
+local scope = MainWorldAcceptanceScopeResolver.resolveScope(
+	MainWorldAcceptanceMatrixConfig,
+	MainWorldRepresentationConfig.mappedStreamingGroupIds()
+)
+```
+
+At the time of writing that yields **10 in-scope checks (7 blocking)** and **21 out of scope**. The first run is therefore a 10-check pass, not a 31-check pass.
+
+Rules:
+
+- record results **only** for in-scope checks; a scoped run that records an out-of-scope result is rejected, because the place contains no instance of that family;
+- an out-of-scope check may still be captured informationally, but it is not a BA-014 result until its content is mapped;
+- scope narrows *which* checks a run may record. It never lowers a threshold, never converts a missing observation into a pass, and never authorizes activation;
+- a satisfied scope is **not** acceptance. `evaluateScopedRun` reports `activationAcceptable` from the full matrix, which keeps rejecting while any family stays unmapped.
+
 ## 2. Hard preflight — prove evidence transport before testing
 
 The prior Studio attempt on 2026-08-09 was `INVALID`: the exact Rojo artifact opened in Studio, but the Studio MCP proxy exposed only an older disconnected instance. No gameplay observation from that attempt counted.
@@ -94,73 +116,75 @@ Use this order so cheap structural failures stop the run before expensive profil
 
 ## 6. BA-014 check sheet
 
-The source config is authoritative for thresholds, blocking flags, capture modes and evaluation. This table is an operator index only.
+The source config is authoritative for thresholds, blocking flags, capture modes and evaluation, and the scope resolver is authoritative for the partition. This table is an operator index only.
+
+`Scope` reflects the currently mapped build (see §1.1). Rows marked *unmapped* name the streaming groups the place does not contain; leave them `NotRun` and record no result for them.
 
 ### Arrival and flow
 
-| Check ID | Result | Evidence reference / notes |
-|---|---|---|
-| `mwam.arrival.destination_matrix` | `NotRun` | |
-| `mwam.arrival.four_player_simultaneous` | `NotRun` | |
-| `mwam.arrival.orientation_recognition` | `NotRun` | |
-| `mwam.arrival.preparation_reachability` | `NotRun` | |
-| `mwam.arrival.return_debrief_context` | `NotRun` | |
-| `mwam.arrival.character_release_gating` | `NotRun` | |
+| Check ID | Scope | Result | Evidence reference / notes |
+|---|---|---|---|
+| `mwam.arrival.destination_matrix` | in scope (blocking) | `NotRun` | |
+| `mwam.arrival.four_player_simultaneous` | in scope (blocking) | `NotRun` | |
+| `mwam.arrival.orientation_recognition` | in scope (blocking) | `NotRun` | |
+| `mwam.arrival.preparation_reachability` | in scope (blocking) | `NotRun` | |
+| `mwam.arrival.return_debrief_context` | in scope (blocking) | `NotRun` | |
+| `mwam.arrival.character_release_gating` | in scope (blocking) | `NotRun` | |
 
 ### Navigation and composition
 
-| Check ID | Result | Evidence reference / notes |
-|---|---|---|
-| `mwam.navigation.core_loop_traversal` | `NotRun` | |
-| `mwam.navigation.dead_travel` | `NotRun` | |
-| `mwam.navigation.multiplayer_congestion` | `NotRun` | |
-| `mwam.navigation.boundary_and_metrics` | `NotRun` | |
-| `mwam.navigation.optional_branch_payoff` | `NotRun` | |
+| Check ID | Scope | Result | Evidence reference / notes |
+|---|---|---|---|
+| `mwam.navigation.core_loop_traversal` | in scope | `NotRun` | |
+| `mwam.navigation.dead_travel` | in scope | `NotRun` | |
+| `mwam.navigation.multiplayer_congestion` | in scope | `NotRun` | |
+| `mwam.navigation.boundary_and_metrics` | unmapped: structures | `NotRun` | |
+| `mwam.navigation.optional_branch_payoff` | unmapped: resources | `NotRun` | |
 
 ### Landmark and readability
 
-| Check ID | Result | Evidence reference / notes |
-|---|---|---|
-| `mwam.readability.landmark_recognition_distance` | `NotRun` | |
-| `mwam.readability.independent_channels` | `NotRun` | |
-| `mwam.readability.cues_under_atmosphere` | `NotRun` | |
-| `mwam.readability.minimum_tier_preserves_meaning` | `NotRun` | |
+| Check ID | Scope | Result | Evidence reference / notes |
+|---|---|---|---|
+| `mwam.readability.landmark_recognition_distance` | unmapped: structures | `NotRun` | |
+| `mwam.readability.independent_channels` | unmapped: structures | `NotRun` | |
+| `mwam.readability.cues_under_atmosphere` | unmapped: atmosphere | `NotRun` | |
+| `mwam.readability.minimum_tier_preserves_meaning` | unmapped: resources, structures, atmosphere | `NotRun` | |
 
 ### Visual environment
 
-| Check ID | Result | Evidence reference / notes |
-|---|---|---|
-| `mwam.visual.fixed_camera_capture_set` | `NotRun` | |
-| `mwam.visual.geometry_defects` | `NotRun` | |
-| `mwam.visual.environment_profile_ownership` | `NotRun` | |
-| `mwam.visual.ambient_ceilings` | `NotRun` | |
+| Check ID | Scope | Result | Evidence reference / notes |
+|---|---|---|---|
+| `mwam.visual.fixed_camera_capture_set` | in scope (blocking) | `NotRun` | |
+| `mwam.visual.geometry_defects` | unmapped: structures, resources | `NotRun` | |
+| `mwam.visual.environment_profile_ownership` | unmapped: atmosphere | `NotRun` | |
+| `mwam.visual.ambient_ceilings` | unmapped: atmosphere | `NotRun` | |
 
 ### Audio
 
-| Check ID | Result | Evidence reference / notes |
-|---|---|---|
-| `mwam.audio.asset_permission` | `NotRun` | |
-| `mwam.audio.crossfade_and_reentry` | `NotRun` | |
-| `mwam.audio.mix_review` | `NotRun` | |
-| `mwam.audio.accessibility` | `NotRun` | |
+| Check ID | Scope | Result | Evidence reference / notes |
+|---|---|---|---|
+| `mwam.audio.asset_permission` | unmapped: atmosphere | `NotRun` | |
+| `mwam.audio.crossfade_and_reentry` | unmapped: atmosphere | `NotRun` | |
+| `mwam.audio.mix_review` | unmapped: atmosphere | `NotRun` | |
+| `mwam.audio.accessibility` | unmapped: atmosphere | `NotRun` | |
 
 ### Streaming and lifecycle
 
-| Check ID | Result | Evidence reference / notes |
-|---|---|---|
-| `mwam.streaming.semantic_group_rebind` | `NotRun` | |
-| `mwam.streaming.no_completion_on_stream_out` | `NotRun` | |
-| `mwam.streaming.hitch_budget` | `NotRun` | |
-| `mwam.lifecycle.cleanup_drift` | `NotRun` | |
+| Check ID | Scope | Result | Evidence reference / notes |
+|---|---|---|---|
+| `mwam.streaming.semantic_group_rebind` | unmapped: resources, structures, atmosphere | `NotRun` | |
+| `mwam.streaming.no_completion_on_stream_out` | unmapped: resources, structures, atmosphere | `NotRun` | |
+| `mwam.streaming.hitch_budget` | unmapped: resources, structures, atmosphere | `NotRun` | |
+| `mwam.lifecycle.cleanup_drift` | unmapped: resources, structures, atmosphere | `NotRun` | |
 
 ### Performance and memory
 
-| Check ID | Result | Evidence reference / notes |
-|---|---|---|
-| `mwam.performance.desktop_full_traversal` | `NotRun` | |
-| `mwam.performance.mobile_minimum_traversal` | `NotRun` | |
-| `mwam.performance.four_player_census` | `NotRun` | |
-| `mwam.performance.static_replication_churn` | `NotRun` | |
+| Check ID | Scope | Result | Evidence reference / notes |
+|---|---|---|---|
+| `mwam.performance.desktop_full_traversal` | unmapped: resources, structures, atmosphere | `NotRun` | |
+| `mwam.performance.mobile_minimum_traversal` | unmapped: resources, structures, atmosphere | `NotRun` | |
+| `mwam.performance.four_player_census` | unmapped: resources, structures, atmosphere | `NotRun` | |
+| `mwam.performance.static_replication_churn` | unmapped: resources, structures, atmosphere | `NotRun` | |
 
 ## 7. Required capture set
 
@@ -240,10 +264,12 @@ The run may promote Main World acceptance only when:
 
 If the matrix does not accept the run, record why and keep Patch 0.5 verification pending.
 
+A scoped run on the currently mapped build **cannot** satisfy that list, because 21 checks have no content to observe. That is the expected outcome, not a failure of the run. What a satisfied scope does buy is concrete: the mapped hub and route are known good against every check they can answer, so the next environment family may be admitted on measured ground rather than assumption. Full acceptance stays gated until the remaining families are mapped and their checks recorded.
+
 ## 11. Resume conditions
 
 - **Bridge blocked:** repair/reconnect the exact Studio evidence path, then start a new packet.
 - **Blocking BA-014 failure:** implement the smallest FIX NOW change, merge only when repository validation is green, then build a new artifact and rerun.
-- **All blocking checks pass:** execution authority may advance to the next smallest evidence-backed Main World family; activation/publishing and inter-place transport remain separately gated.
+- **All blocking in-scope checks pass:** execution authority may advance to the next smallest evidence-backed Main World family. Admitting that family widens the derived scope, so its checks join the next run's worklist automatically. Activation/publishing and inter-place transport remain separately gated.
 
 > This document makes the run repeatable. Only a completed evidence packet can make the run real.
