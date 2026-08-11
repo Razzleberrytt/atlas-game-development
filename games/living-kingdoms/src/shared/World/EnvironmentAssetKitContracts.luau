@@ -114,7 +114,11 @@ function Contracts.validate(definitions: { EnvironmentAssetDefinition }): { Vali
 			issue(id, "InvalidFootprint", "footprint dimensions must all be positive")
 		end
 		if not definition.presentationOnly or definition.gameplayAuthorityOwnerId ~= nil then
-			issue(id, "GameplayAuthorityForbidden", "environment kit assets are presentation-only and may not own gameplay authority")
+			issue(
+				id,
+				"GameplayAuthorityForbidden",
+				"environment kit assets are presentation-only and may not own gameplay authority"
+			)
 		end
 
 		local seenQuality = {}
