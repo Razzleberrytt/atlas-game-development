@@ -1,0 +1,13 @@
+{
+  "ClassName":"Model",
+  "Children":[
+    {"Name":"BaseRock","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CFrame":[0,0.7,0,1,0,0,0,1,0,0,0,1],"Color":[0.24,0.25,0.25],"Material":{"Enum":1536},"Size":[4.8,1.4,3.8]}},
+    {"Name":"RockLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CFrame":[-1.1,1.65,0.2,0.94,0.17,0.30,-0.16,0.98,-0.08,-0.31,0.03,0.95],"Color":[0.28,0.29,0.29],"Material":{"Enum":1536},"Size":[2.3,2.5,2.1]}},
+    {"Name":"RockRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CFrame":[1.15,1.45,-0.25,0.97,-0.12,-0.22,0.08,0.98,-0.18,0.24,0.16,0.96],"Color":[0.20,0.21,0.22],"Material":{"Enum":1536},"Size":[2.2,2.2,2.0]}},
+    {"Name":"VeinA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CFrame":[-0.7,2.05,-0.95,0.91,0.34,0.24,-0.32,0.94,-0.11,-0.25,0.02,0.97],"Color":[0.52,0.48,0.34],"Material":{"Enum":1088},"Size":[1.5,0.22,0.28]}},
+    {"Name":"VeinB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CFrame":[0.75,1.65,-0.95,0.95,-0.25,0.18,0.27,0.96,-0.06,-0.16,0.10,0.98],"Color":[0.48,0.45,0.33],"Material":{"Enum":1088},"Size":[1.2,0.18,0.24]}},
+    {"Name":"GroundSnap","ClassName":"Attachment","Properties":{"CFrame":[0,0,0,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"GatherVfx","ClassName":"Attachment","Properties":{"CFrame":[0,2.0,-1.1,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"GatherAudio","ClassName":"Attachment","Properties":{"CFrame":[0,1.5,0,1,0,0,0,1,0,0,0,1]}}
+  ]
+}
