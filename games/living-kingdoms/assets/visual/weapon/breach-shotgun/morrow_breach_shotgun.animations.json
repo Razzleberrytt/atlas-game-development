@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "presentationOnly": true,
+  "clips": [
+    { "name": "Fire", "durationSeconds": 0.14, "targetNode": "Bolt", "curve": [[0.0, 0.0], [0.035, -0.20], [0.14, 0.0]] },
+    { "name": "Reload", "durationSeconds": 1.55, "targetNode": "Magazine", "curve": [[0.0, 0.0], [0.42, -0.75], [1.08, -0.75], [1.55, 0.0]] },
+    { "name": "Empty", "durationSeconds": 0.24, "targetNode": "Bolt", "curve": [[0.0, 0.0], [0.08, -0.24], [0.24, -0.24]] }
+  ]
+}
