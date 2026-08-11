@@ -1,0 +1,21 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {"Name":"PelvisCore","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,2.2,0,1,0,0,0,1,0,0,0,1],"Color":[0.20,0.15,0.13],"Material":{"Enum":256},"Size":[2.8,1.1,2.0]}},
+    {"Name":"TorsoLow","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,2.7,-0.9,1,0,0,0,0.94,0.34,0,-0.34,0.94],"Color":[0.24,0.17,0.15],"Material":{"Enum":256},"Size":[3.1,1.2,2.3]}},
+    {"Name":"SpineArch","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,4.15,-0.25,1,0,0,0,0.87,-0.5,0,0.5,0.87],"Color":[0.45,0.36,0.31],"Material":{"Enum":256},"Size":[0.65,0.7,3.8]}},
+    {"Name":"ShoulderLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-1.85,2.95,-0.9,0.82,0.57,0,-0.57,0.82,0,0,0,1],"Color":[0.23,0.15,0.14],"Material":{"Enum":256},"Size":[1.3,0.9,1.0]}},
+    {"Name":"ShoulderRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[1.85,2.95,-0.9,0.82,-0.57,0,0.57,0.82,0,0,0,1],"Color":[0.23,0.15,0.14],"Material":{"Enum":256},"Size":[1.3,0.9,1.0]}},
+    {"Name":"ForelimbLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-2.55,1.75,-0.15,0.64,0.77,0,-0.77,0.64,0,0,0,1],"Color":[0.18,0.12,0.11],"Material":{"Enum":256},"Size":[0.75,0.75,3.0]}},
+    {"Name":"ForelimbRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[2.55,1.75,-0.15,0.64,-0.77,0,0.77,0.64,0,0,0,1],"Color":[0.18,0.12,0.11],"Material":{"Enum":256},"Size":[0.75,0.75,3.0]}},
+    {"Name":"PalmLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-3.15,0.42,0.75,1,0,0,0,1,0,0,0,1],"Color":[0.14,0.10,0.09],"Material":{"Enum":256},"Size":[1.1,0.35,1.5]}},
+    {"Name":"PalmRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[3.15,0.42,0.75,1,0,0,0,1,0,0,0,1],"Color":[0.14,0.10,0.09],"Material":{"Enum":256},"Size":[1.1,0.35,1.5]}},
+    {"Name":"HindLimbLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-1.35,1.15,1.15,0.87,-0.5,0,0.5,0.87,0,0,0,1],"Color":[0.19,0.13,0.11],"Material":{"Enum":256},"Size":[0.85,0.85,2.6]}},
+    {"Name":"HindLimbRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[1.35,1.15,1.15,0.87,0.5,0,-0.5,0.87,0,0,0,1],"Color":[0.19,0.13,0.11],"Material":{"Enum":256},"Size":[0.85,0.85,2.6]}},
+    {"Name":"HeadLow","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,1.55,-2.25,1,0,0,0,1,0,0,0,1],"Color":[0.21,0.13,0.12],"Material":{"Enum":256},"Size":[1.75,1.2,1.4]}},
+    {"Name":"JawSplit","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,1.00,-2.70,1,0,0,0,0.94,-0.34,0,0.34,0.94],"Color":[0.32,0.17,0.15],"Material":{"Enum":256},"Size":[1.9,0.45,1.1]}},
+    {"Name":"ExposedSpineWeakpoint","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":false,"CFrame":[0,4.65,-0.30,1,0,0,0,1,0,0,0,1],"Color":[0.55,0.16,0.18],"Material":{"Enum":288},"Size":[0.42,0.42,2.8]}},
+    {"Name":"AttackOrigin","ClassName":"Attachment","Properties":{"CFrame":[0,1.2,-3.0,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"WeakpointPresentation","ClassName":"Attachment","Properties":{"CFrame":[0,4.65,-0.3,1,0,0,0,1,0,0,0,1]}}
+  ]
+}
