@@ -83,7 +83,8 @@ local splash = byPath["FountainWater/WaterParticleAttach/WaterSplash"].node.Prop
 check(splash.Texture == "rbxassetid://241876674")
 check(splash.Rate == 30.0)
 check(splash.Acceleration[2] == -8.0)
-check(splash.Lifetime[1] == 1.0 and splash.Lifetime[2] == 2.0)
+check(splash.Lifetime.NumberRange[1] == 1.0 and splash.Lifetime.NumberRange[2] == 2.0)
+check(splash.Speed.NumberRange[1] == 2.0 and splash.Speed.NumberRange[2] == 4.0)
 
 check(project.name == "LivingKingdomsMainWorld")
 check(project.placeId == nil and project.gameId == nil and project.servePlaceIds == nil)
