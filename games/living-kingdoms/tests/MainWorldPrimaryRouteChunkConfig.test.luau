@@ -76,8 +76,8 @@ check(chunks.Rules.NoRuntimeRenderingBeforeAssetsAndStreamingEvidence == true)
 check(chunks.Rules.SemanticBeatMaySplitEarlierWithinBudget == true)
 
 local projectSource = fs.readFile("games/living-kingdoms/main-world.project.json")
-check(string.find(projectSource, "\"Routes\"", 1, true) ~= nil, "dedicated Main World must expose route hierarchy")
-check(string.find(projectSource, "\"PrimaryRoute\"", 1, true) ~= nil, "primary route mapping missing")
+check(string.find(projectSource, '"Routes"', 1, true) ~= nil, "dedicated Main World must expose route hierarchy")
+check(string.find(projectSource, '"PrimaryRoute"', 1, true) ~= nil, "primary route mapping missing")
 check(
 	string.find(projectSource, "assets/visual/world/primary-route/MainWorldPrimaryRoute.model.json", 1, true) ~= nil,
 	"primary route source asset mapping missing"
