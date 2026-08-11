@@ -25,8 +25,8 @@ local registry = loadModule(
 	"EnvironmentAssetKitRegistry"
 )
 
-check(registry.Version == "ENV-ASSET-KIT-v2")
-check(#registry.Definitions >= 9)
+check(registry.Version == "ENV-ASSET-KIT-v3")
+check(#registry.Definitions >= 12)
 check(contracts.isValid(registry.Definitions), "expanded environment registry must validate")
 
 local seenIds = {}
@@ -39,10 +39,20 @@ for _, definition in registry.Definitions do
 	check(string.sub(definition.sourceModelPath, 1, 12) == "Environment/")
 end
 
-check(seenIds["env.tree.corrupted.dead_pine_a"] == true)
-check(seenIds["env.root.corrupted.fallen_mass_a"] == true)
-check(seenIds["env.rock.frontier.boulder_a"] == true)
-check(seenIds["env.root.corrupted.stump_cluster_a"] == true)
+for _, requiredId in
+	{
+		"env.tree.corrupted.dead_pine_a",
+		"env.root.corrupted.fallen_mass_a",
+		"env.rock.frontier.boulder_a",
+		"env.root.corrupted.stump_cluster_a",
+		"env.camp.frontier.abandoned_fire_ring_a",
+		"env.camp.frontier.torn_shelter_a",
+		"env.prop.frontier.supply_crate_stack_a",
+		"env.camp.frontier.hanging_tarp_frame_a",
+	}
+do
+	check(seenIds[requiredId] == true, "expanded environment registry missing " .. requiredId)
+end
 
 local duplicate = table.clone(registry.Definitions)
 table.insert(duplicate, registry.Definitions[1])
