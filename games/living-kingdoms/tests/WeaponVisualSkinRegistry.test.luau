@@ -51,7 +51,7 @@ for _, issue in authorityIssues do
 	if issue.code == "GameplayAuthorityForbidden" then
 		foundAuthorityIssue = true
 	end
-nend
+end
 check(foundAuthorityIssue)
 
 local statSkin = table.clone(registry.Skins[1])
