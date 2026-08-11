@@ -49,10 +49,18 @@ check(wave4Registry.Version == "ENV-ASSET-KIT-WAVE4-v1")
 check(#wave4Registry.Definitions == 4)
 
 local combined = {}
-for _, definition in baseRegistry.Definitions do table.insert(combined, definition) end
-for _, definition in wave2Registry.Definitions do table.insert(combined, definition) end
-for _, definition in wave3Registry.Definitions do table.insert(combined, definition) end
-for _, definition in wave4Registry.Definitions do table.insert(combined, definition) end
+for _, definition in baseRegistry.Definitions do
+	table.insert(combined, definition)
+end
+for _, definition in wave2Registry.Definitions do
+	table.insert(combined, definition)
+end
+for _, definition in wave3Registry.Definitions do
+	table.insert(combined, definition)
+end
+for _, definition in wave4Registry.Definitions do
+	table.insert(combined, definition)
+end
 check(contracts.isValid(combined), "base + wave-2 + wave-3 + wave-4 environment definitions must compose")
 
 local byId = {}
@@ -87,7 +95,9 @@ for _, asset in manifest.assets do
 		if asset.semanticId == "env.clutter.corruption.tendril_mat_a" and node.Name == "VfxSocket" then
 			tendrilVfxSocket = node.ClassName == "Attachment"
 		end
-		for _, child in node.Children or {} do visit(child) end
+		for _, child in node.Children or {} do
+			visit(child)
+		end
 	end
 	visit(model)
 	check(partCount >= asset.minimumPartCount, asset.semanticId .. " has too few source Parts")
