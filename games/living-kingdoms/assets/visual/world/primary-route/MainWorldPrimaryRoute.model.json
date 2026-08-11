@@ -1,0 +1,221 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {
+      "Name": "main_world.primary_route.chunk.001",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 0.10000000149011612, -66.6666663453934, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "CanCollide": true,
+        "Color": [0.39215686274509803, 0.37254901960784315, 0.35294117647058826],
+        "Material": { "Enum": 880 },
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "Shape": { "Enum": 1 },
+        "Size": [6.0, 0.20000000298023224, 127.40740743596501]
+      }
+    },
+    {
+      "Name": "main_world.primary_route.chunk.002",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 0.10000000149011612, -194.0740737813584, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "CanCollide": true,
+        "Color": [0.39215686274509803, 0.37254901960784315, 0.35294117647058826],
+        "Material": { "Enum": 880 },
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "Shape": { "Enum": 1 },
+        "Size": [6.0, 0.20000000298023224, 127.40740743596501]
+      }
+    },
+    {
+      "Name": "main_world.primary_route.chunk.003",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 0.10000000149011612, -321.48148121732345, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "CanCollide": true,
+        "Color": [0.39215686274509803, 0.37254901960784315, 0.35294117647058826],
+        "Material": { "Enum": 880 },
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "Shape": { "Enum": 1 },
+        "Size": [6.0, 0.20000000298023224, 127.40740743596501]
+      }
+    },
+    {
+      "Name": "main_world.primary_route.chunk.004",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 0.10000000149011612, -448.8888886532884, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "CanCollide": true,
+        "Color": [0.39215686274509803, 0.37254901960784315, 0.35294117647058826],
+        "Material": { "Enum": 880 },
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "Shape": { "Enum": 1 },
+        "Size": [6.0, 0.20000000298023224, 127.40740743596501]
+      }
+    },
+    {
+      "Name": "main_world.primary_route.chunk.005",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 0.10000000149011612, -576.2962960892535, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "CanCollide": true,
+        "Color": [0.39215686274509803, 0.37254901960784315, 0.35294117647058826],
+        "Material": { "Enum": 880 },
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "Shape": { "Enum": 1 },
+        "Size": [6.0, 0.20000000298023224, 127.40740743596507]
+      }
+    },
+    {
+      "Name": "main_world.primary_route.chunk.006",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 0.10000000149011612, -703.7037035252185, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "CanCollide": true,
+        "Color": [0.39215686274509803, 0.37254901960784315, 0.35294117647058826],
+        "Material": { "Enum": 880 },
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "Shape": { "Enum": 1 },
+        "Size": [6.0, 0.20000000298023224, 127.40740743596496]
+      }
+    },
+    {
+      "Name": "main_world.primary_route.chunk.007",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 0.10000000149011612, -831.1111109611835, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "CanCollide": true,
+        "Color": [0.39215686274509803, 0.37254901960784315, 0.35294117647058826],
+        "Material": { "Enum": 880 },
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "Shape": { "Enum": 1 },
+        "Size": [6.0, 0.20000000298023224, 127.40740743596507]
+      }
+    },
+    {
+      "Name": "main_world.primary_route.chunk.008",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 0.10000000149011612, -958.5185183971486, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "CanCollide": true,
+        "Color": [0.39215686274509803, 0.37254901960784315, 0.35294117647058826],
+        "Material": { "Enum": 880 },
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "Shape": { "Enum": 1 },
+        "Size": [6.0, 0.20000000298023224, 127.40740743596507]
+      }
+    },
+    {
+      "Name": "main_world.primary_route.chunk.009",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 0.10000000149011612, -1085.9259258331135, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "CanCollide": true,
+        "Color": [0.39215686274509803, 0.37254901960784315, 0.35294117647058826],
+        "Material": { "Enum": 880 },
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "Shape": { "Enum": 1 },
+        "Size": [6.0, 0.20000000298023224, 127.40740743596496]
+      }
+    },
+    {
+      "Name": "main_world.primary_route.chunk.010",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 0.10000000149011612, -1213.3333332690786, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "CanCollide": true,
+        "Color": [0.39215686274509803, 0.37254901960784315, 0.35294117647058826],
+        "Material": { "Enum": 880 },
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "Shape": { "Enum": 1 },
+        "Size": [6.0, 0.20000000298023224, 127.40740743596507]
+      }
+    },
+    {
+      "Name": "main_world.primary_route.chunk.011",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 0.10000000149011612, -1340.7407407050437, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "CanCollide": true,
+        "Color": [0.39215686274509803, 0.37254901960784315, 0.35294117647058826],
+        "Material": { "Enum": 880 },
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "Shape": { "Enum": 1 },
+        "Size": [6.0, 0.20000000298023224, 127.40740743596507]
+      }
+    },
+    {
+      "Name": "main_world.primary_route.chunk.012",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 0.10000000149011612, -1452.222222211513, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "CanCollide": true,
+        "Color": [0.39215686274509803, 0.37254901960784315, 0.35294117647058826],
+        "Material": { "Enum": 880 },
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "Shape": { "Enum": 1 },
+        "Size": [6.0, 0.20000000298023224, 95.5555555769738]
+      }
+    }
+  ]
+}
