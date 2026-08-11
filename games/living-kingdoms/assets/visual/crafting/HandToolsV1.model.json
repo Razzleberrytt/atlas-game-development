@@ -1,0 +1,10 @@
+{
+  "ClassName":"Model",
+  "Children":[
+    {"Name":"HammerHandle","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CFrame":[-0.45,0.45,0,0.94,0.34,0,-0.34,0.94,0,0,0,1],"Color":[0.28,0.18,0.10],"Material":{"Enum":512},"Size":[0.25,2.2,0.25]}},
+    {"Name":"HammerHead","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CFrame":[-0.8,1.45,0,1,0,0,0,1,0,0,0,1],"Color":[0.20,0.21,0.21],"Material":{"Enum":1088},"Size":[1.1,0.35,0.45]}},
+    {"Name":"WrenchBody","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CFrame":[0.65,0.55,0,0.94,-0.34,0,0.34,0.94,0,0,0,1],"Color":[0.25,0.26,0.25],"Material":{"Enum":1088},"Size":[0.28,2.2,0.28]}},
+    {"Name":"WrenchJaw","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CFrame":[1.0,1.45,0,0.94,-0.34,0,0.34,0.94,0,0,0,1],"Color":[0.25,0.26,0.25],"Material":{"Enum":1088},"Size":[0.8,0.45,0.3]}},
+    {"Name":"WorkbenchSnap","ClassName":"Attachment","Properties":{"CFrame":[0,0,0,1,0,0,0,1,0,0,0,1]}}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "assetKey": "crafting.presentation.source-models",
+  "version": "CRAFTING-SOURCE-MODELS-v1",
+  "sourceType": "project-original-source-models",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "assets": [
+    {"presentationId":"crafting.presentation.station.field_bench_v1","registryModelPath":"Crafting/Stations/FieldBenchV1","file":"FieldBenchV1.model.json","minimumPartCount":5},
+    {"presentationId":"crafting.presentation.ingredient.scrap_bundle_v1","registryModelPath":"Crafting/Ingredients/ScrapBundleV1","file":"ScrapBundleV1.model.json","minimumPartCount":4},
+    {"presentationId":"crafting.presentation.ingredient.fabric_roll_v1","registryModelPath":"Crafting/Ingredients/FabricRollV1","file":"FabricRollV1.model.json","minimumPartCount":4},
+    {"presentationId":"crafting.presentation.tool.hand_tools_v1","registryModelPath":"Crafting/Tools/HandToolsV1","file":"HandToolsV1.model.json","minimumPartCount":4},
+    {"presentationId":"crafting.presentation.container.parts_crate_v1","registryModelPath":"Crafting/Containers/PartsCrateV1","file":"PartsCrateV1.model.json","minimumPartCount":7}
+  ]
+}

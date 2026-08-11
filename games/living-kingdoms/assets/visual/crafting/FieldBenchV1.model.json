@@ -1,0 +1,16 @@
+{
+  "ClassName":"Model",
+  "Children":[
+    {"Name":"Top","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CFrame":[0,3.3,0,1,0,0,0,1,0,0,0,1],"Color":[0.27,0.18,0.10],"Material":{"Enum":512},"Size":[8,0.5,3]}},
+    {"Name":"LegLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CFrame":[-3,1.6,0,1,0,0,0,1,0,0,0,1],"Color":[0.20,0.13,0.08],"Material":{"Enum":512},"Size":[0.7,3.2,2.3]}},
+    {"Name":"LegRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CFrame":[3,1.6,0,1,0,0,0,1,0,0,0,1],"Color":[0.20,0.13,0.08],"Material":{"Enum":512},"Size":[0.7,3.2,2.3]}},
+    {"Name":"BackRail","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CFrame":[0,4.3,1.2,1,0,0,0,1,0,0,0,1],"Color":[0.18,0.19,0.19],"Material":{"Enum":1088},"Size":[7.2,1.5,0.25]}},
+    {"Name":"ToolTray","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CFrame":[0,2.6,0.9,1,0,0,0,1,0,0,0,1],"Color":[0.15,0.16,0.16],"Material":{"Enum":1088},"Size":[4.5,0.25,1]}},
+    {"Name":"IngredientLeft","ClassName":"Attachment","Properties":{"CFrame":[-2.2,3.65,0,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"IngredientRight","ClassName":"Attachment","Properties":{"CFrame":[2.2,3.65,0,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"OutputCenter","ClassName":"Attachment","Properties":{"CFrame":[0,3.65,0,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"ToolMain","ClassName":"Attachment","Properties":{"CFrame":[0,3.65,1.05,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"WorkVfx","ClassName":"Attachment","Properties":{"CFrame":[0,3.8,-0.8,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"WorkAudio","ClassName":"Attachment","Properties":{"CFrame":[0,3.2,0,1,0,0,0,1,0,0,0,1]}}
+  ]
+}
