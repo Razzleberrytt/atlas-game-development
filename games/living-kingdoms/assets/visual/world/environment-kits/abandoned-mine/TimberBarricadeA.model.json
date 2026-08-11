@@ -1,0 +1,75 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {
+      "Name": "LeftStake",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [-4.5, 3, 0, 0.9848078, -0.1736482, 0, 0.1736482, 0.9848078, 0, 0, 0, 1],
+        "Color": [0.2235, 0.1647, 0.1059],
+        "Size": [1.2, 6, 1.5]
+      }
+    },
+    {
+      "Name": "RightStake",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [4.5, 3, 0, 0.9848078, 0.1736482, 0, -0.1736482, 0.9848078, 0, 0, 0, 1],
+        "Color": [0.2235, 0.1647, 0.1059],
+        "Size": [1.2, 6, 1.5]
+      }
+    },
+    {
+      "Name": "CrossPlankLower",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0, 2.1, 0, 0.9961947, -0.0871557, 0, 0.0871557, 0.9961947, 0, 0, 0, 1],
+        "Color": [0.251, 0.1843, 0.1176],
+        "Size": [11, 1.5, 1.2]
+      }
+    },
+    {
+      "Name": "CrossPlankMiddle",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.2, 3.8, 0.2, 0.9902681, 0.1391731, 0, -0.1391731, 0.9902681, 0, 0, 0, 1],
+        "Color": [0.2039, 0.149, 0.098],
+        "Size": [10.5, 1.4, 1.1]
+      }
+    },
+    {
+      "Name": "CrossPlankUpper",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanCollide": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [-0.2, 5.3, -0.1, 0.9945219, -0.1045285, 0, 0.1045285, 0.9945219, 0, 0, 0, 1],
+        "Color": [0.2353, 0.1725, 0.1098],
+        "Size": [9.5, 1.2, 1]
+      }
+    }
+  ]
+}
