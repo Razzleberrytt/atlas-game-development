@@ -2,7 +2,7 @@
 
 --[[
 	Client-only router for the complete firearm presentation roster. Every
-	selectable weapon now owns a dedicated project-original model factory while
+	selectable weapon owns a dedicated project-original model factory while
 	retaining the shared grip, bolt, magazine, muzzle, and ejection contracts.
 ]]
 
@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local BasicFirearmPresentationFactory = require(script.Parent.BasicFirearmPresentationFactory)
 local BreachShotgunPresentationFactory = require(script.Parent.BreachShotgunPresentationFactory)
+local LightMachineGunPresentationFactory = require(script.Parent.LightMachineGunPresentationFactory)
 local ServicePistolPresentationFactory = require(script.Parent.ServicePistolPresentationFactory)
 local SniperRiflePresentationFactory = require(script.Parent.SniperRiflePresentationFactory)
 local SubmachineGunPresentationFactory = require(script.Parent.SubmachineGunPresentationFactory)
@@ -20,7 +21,7 @@ export type WeaponPresentationRig = WeaponVisualModelBuilder.WeaponVisualModelRi
 
 local Factory = {}
 
-local function createSupportWeapon(weaponId: string): WeaponPresentationRig
+local function createBasicWeapon(weaponId: string): WeaponPresentationRig
 	local basic = BasicFirearmPresentationFactory.create()
 	basic.model.Name = "WeaponPresentation"
 	basic.model:SetAttribute("GameplayWeaponId", weaponId)
@@ -43,8 +44,10 @@ local function createSupportWeapon(weaponId: string): WeaponPresentationRig
 end
 
 function Factory.create(weaponId: string): WeaponPresentationRig
-	if weaponId == FirearmConfig.BasicFirearm.WeaponId or weaponId == FirearmConfig.LightMachineGun.WeaponId then
-		return createSupportWeapon(weaponId)
+	if weaponId == FirearmConfig.BasicFirearm.WeaponId then
+		return createBasicWeapon(weaponId)
+	elseif weaponId == FirearmConfig.LightMachineGun.WeaponId then
+		return LightMachineGunPresentationFactory.create()
 	elseif weaponId == FirearmConfig.BreachShotgun.WeaponId then
 		return BreachShotgunPresentationFactory.create()
 	elseif weaponId == FirearmConfig.SniperRifle.WeaponId then
