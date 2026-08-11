@@ -2,7 +2,7 @@
 
 -- Patch 0.5 source-managed replacement for the 189 recovered WorldPath slabs.
 -- The legacy slab sequence is evidence, not route authority. This contract keeps
--- only the exact recovered line/corridor truth needed for later bounded rendering.
+-- only the exact recovered line/corridor truth needed for bounded rendering.
 
 local Config = {
 	Version = "P0.5-MAIN-WORLD-PRIMARY-ROUTE-v1",
@@ -10,11 +10,13 @@ local Config = {
 	SourceContractVersion = "BA-005-WORLDPATH-v1",
 	SourcePath = "Workspace/WorldPath",
 	CoordinateSpaceId = "authored-overworld",
-	StreamingGroupId = "main_world.route.primary",
+	StreamingGroupId = "main_world.primary_route",
 	SourceHold = true,
 	RuntimeEnabled = false,
 	LegacySegmentInstancesAuthoritative = false,
-	RenderChunksDefined = false,
+	RenderChunksDefined = true,
+	RenderChunkPolicyVersion = "P0.5-MAIN-WORLD-PRIMARY-ROUTE-CHUNKS-v1",
+	RenderAssetsMapped = false,
 	ControlPoints = table.freeze({
 		table.freeze({
 			id = "route.world.primary.start",
