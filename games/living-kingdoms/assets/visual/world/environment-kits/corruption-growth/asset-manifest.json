@@ -1,0 +1,15 @@
+{
+  "assetKey": "world.environment-kit.corruption-growth",
+  "version": "ENV-CORRUPTION-GROWTH-v1",
+  "sourceType": "project-original-source-models",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "artDirection": ["dark-frontier", "organic-corruption", "hostile-growth"],
+  "assets": [
+    {"semanticId":"env.growth.corruption.resin_cluster_a","registrySourceModelPath":"Environment/Corruption/ResinGrowthClusterA","file":"ResinGrowthClusterA.model.json","role":"corruption-ground-cluster","minimumPartCount":6},
+    {"semanticId":"env.growth.corruption.root_arch_a","registrySourceModelPath":"Environment/Corruption/CorruptedRootArchA","file":"CorruptedRootArchA.model.json","role":"corruption-silhouette-structure","minimumPartCount":5},
+    {"semanticId":"env.growth.corruption.ground_spire_a","registrySourceModelPath":"Environment/Corruption/CorruptionGroundSpireA","file":"CorruptionGroundSpireA.model.json","role":"corruption-landmark-growth","minimumPartCount":5},
+    {"semanticId":"env.growth.corruption.spore_lantern_a","registrySourceModelPath":"Environment/Corruption/SporeLanternGrowthA","file":"SporeLanternGrowthA.model.json","role":"corruption-glow-growth","minimumPartCount":5}
+  ]
+}
