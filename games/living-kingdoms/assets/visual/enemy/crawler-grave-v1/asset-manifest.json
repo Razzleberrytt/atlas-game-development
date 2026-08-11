@@ -1,0 +1,33 @@
+{
+  "assetKey": "enemy.presentation.crawler.grave_v1",
+  "version": "CRAWLER-GRAVE-v1",
+  "sourceType": "project-original-procedural-blockout",
+  "registryModelPath": "Enemies/Crawler/GraveV1",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "minimumPartCount": 14,
+  "requiredParts": [
+    "PelvisCore",
+    "TorsoLow",
+    "SpineArch",
+    "ShoulderLeft",
+    "ShoulderRight",
+    "ForelimbLeft",
+    "ForelimbRight",
+    "PalmLeft",
+    "PalmRight",
+    "HindLimbLeft",
+    "HindLimbRight",
+    "HeadLow",
+    "JawSplit",
+    "ExposedSpineWeakpoint"
+  ],
+  "requiredAttachments": ["AttackOrigin", "WeakpointPresentation"],
+  "silhouetteClaims": [
+    "four-point-ground-contact",
+    "inverted-shoulder-line",
+    "spine-above-head",
+    "wall-shadow-like-profile"
+  ]
+}
