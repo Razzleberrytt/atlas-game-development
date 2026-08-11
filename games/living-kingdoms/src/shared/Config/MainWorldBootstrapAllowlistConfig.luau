@@ -38,15 +38,14 @@ local Config = {
 		}),
 		ConsequentialAuthorityAllowed = false,
 	}),
-	ExcludedSourceRoots = table.freeze({
+	ExcludedActiveSourceRoots = table.freeze({
 		"games/living-kingdoms/imports",
-		"games/living-kingdoms/legacy-src",
 		"games/living-kingdoms/src/server",
 		"games/living-kingdoms/src/client",
 	}),
 	Rules = table.freeze({
 		ExplicitEntryPointsOnly = true,
-		LegacyRuntimeMayNeverBeMapped = true,
+		PreservedRuntimeMayNeverBeMapped = true,
 		OperationRuntimeRootsMayNotBeMappedWholesale = true,
 		CanonicalSharedModulesMayBeRequiredSelectively = true,
 		NoPlaceOrUniverseIdsUntilAuthorizedPublishing = true,
