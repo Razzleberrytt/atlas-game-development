@@ -29,7 +29,7 @@ local Config = {
 		PropertyBackedRows = 10,
 		GeneratedContainerRows = 1,
 		PendingNodeRows = 0,
-		EvidenceArtifact = "games/living-kingdoms/imports/studio-2026-08-10/central-fountain.review.json",
+		EvidenceArtifactName = "central-fountain.review.json",
 	}),
 	Parts = table.freeze({
 		table.freeze({
