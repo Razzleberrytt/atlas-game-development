@@ -7,7 +7,7 @@
 -- enable streaming, or start an authored-overworld runtime.
 
 local Config = {
-	Version = "BA-011-v2-arrival-contract-link",
+	Version = "BA-011-v3-mapped-placement-parity",
 	SourceHold = true,
 	RuntimeEnabled = false,
 	PlaceBoundary = table.freeze({
@@ -47,6 +47,16 @@ local Config = {
 			MayBeCommitted = false,
 		}),
 	}),
+	-- `projectMappingStatus` records whether the dedicated Main World project
+	-- actually maps the group's `targetPath` today. It is declared here so Luau
+	-- consumers can read mapping truth without parsing the Rojo project, and it
+	-- is bound to `main-world.project.json` by fixture so the two cannot drift.
+	-- `Mapped` describes source placement only; it never implies runtime
+	-- activation, streaming configuration, or BA-014 acceptance.
+	ProjectMappingStatuses = table.freeze({
+		Mapped = "Mapped",
+		Unmapped = "Unmapped",
+	}),
 	StreamingGroups = table.freeze({
 		table.freeze({
 			id = "main_world.hub_core",
@@ -54,13 +64,17 @@ local Config = {
 			targetPath = "Workspace/LivingKingdomsMainWorld/HubCore",
 			representation = "coherent-model-groups",
 			streamingPolicy = "persistent-core-candidate",
+			projectMappingStatus = "Mapped",
 		}),
 		table.freeze({
 			id = "main_world.primary_route",
 			sourceRoots = table.freeze({ "Workspace/WorldPath" }),
-			targetPath = "Workspace/LivingKingdomsMainWorld/Routes/Primary",
+			-- The mapped container is the bounded 12-Part route model itself, so
+			-- this is `PrimaryRoute` rather than a separate `Primary` folder.
+			targetPath = "Workspace/LivingKingdomsMainWorld/Routes/PrimaryRoute",
 			representation = "route-data-plus-bounded-render-chunks",
 			streamingPolicy = "spatial-chunks",
+			projectMappingStatus = "Mapped",
 		}),
 		table.freeze({
 			id = "main_world.resources",
@@ -68,6 +82,7 @@ local Config = {
 			targetPath = "Workspace/LivingKingdomsMainWorld/Resources",
 			representation = "resource-cluster-models",
 			streamingPolicy = "spatial-chunks",
+			projectMappingStatus = "Unmapped",
 		}),
 		table.freeze({
 			id = "main_world.structures",
@@ -75,6 +90,7 @@ local Config = {
 			targetPath = "Workspace/LivingKingdomsMainWorld/Structures",
 			representation = "one-model-per-authored-structure-group",
 			streamingPolicy = "per-structure-never-whole-root-atomic",
+			projectMappingStatus = "Unmapped",
 		}),
 		table.freeze({
 			id = "main_world.atmosphere",
@@ -82,6 +98,7 @@ local Config = {
 			targetPath = "Workspace/LivingKingdomsMainWorld/Atmosphere",
 			representation = "bounded-local-emitters-plus-environment-profile-data",
 			streamingPolicy = "local-volumes-no-global-particle-root",
+			projectMappingStatus = "Unmapped",
 		}),
 	}),
 	Anchors = table.freeze({
@@ -111,8 +128,30 @@ local Config = {
 		StableSemanticIdsSurviveMissingInstances = true,
 		LegacyServicesRemainInert = true,
 		TerrainRequiresManifestAndStudioEvidence = true,
+		MappedTargetPathMustMatchDedicatedProject = true,
+		MappedPlacementDoesNotImplyRuntimeActivation = true,
 	}),
 }
+
+function Config.isStreamingGroupMapped(groupId: string): boolean
+	for _, group in Config.StreamingGroups do
+		if group.id == groupId then
+			return group.projectMappingStatus == Config.ProjectMappingStatuses.Mapped
+		end
+	end
+	return false
+end
+
+-- Ordered so callers that report or iterate the mapped surface stay deterministic.
+function Config.mappedStreamingGroupIds(): { string }
+	local mapped: { string } = {}
+	for _, group in Config.StreamingGroups do
+		if group.projectMappingStatus == Config.ProjectMappingStatuses.Mapped then
+			table.insert(mapped, group.id)
+		end
+	end
+	return mapped
+end
 
 function Config.streamingGroupForSourcePath(path: string): any?
 	for _, group in Config.StreamingGroups do
@@ -124,5 +163,25 @@ function Config.streamingGroupForSourcePath(path: string): any?
 	end
 	return nil
 end
+
+-- Module-load invariants: every group declares a known mapping status, every
+-- target path stays under the dedicated Main World root, and admitting content
+-- to source never flips the held runtime flag.
+local seenGroupIds: { [string]: boolean } = {}
+for _, group in Config.StreamingGroups do
+	assert(not seenGroupIds[group.id], `duplicate streaming group: {group.id}`)
+	seenGroupIds[group.id] = true
+	assert(
+		group.projectMappingStatus == Config.ProjectMappingStatuses.Mapped
+			or group.projectMappingStatus == Config.ProjectMappingStatuses.Unmapped,
+		`streaming group {group.id} needs a known project mapping status`
+	)
+	local rootPrefix = `{Config.Root.ParentService}/{Config.Root.Name}`
+	assert(
+		string.sub(group.targetPath, 1, #rootPrefix) == rootPrefix,
+		`streaming group {group.id} places content outside the dedicated Main World root`
+	)
+end
+assert(Config.RuntimeEnabled == false, "BA-011 describes placement; it activates nothing")
 
 return table.freeze(Config)
