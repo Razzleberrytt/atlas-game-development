@@ -128,12 +128,14 @@ jobs:
       - name: Record Main World artifact identity
         if: needs.classify.outputs.profile != 'docs'
         shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
           test -f /tmp/LivingKingdomsMainWorld.rbxlx
           sha256sum /tmp/LivingKingdomsMainWorld.rbxlx | tee /tmp/LivingKingdomsMainWorld.rbxlx.sha256
           {
-            echo "commit=${GITHUB_SHA}"
+            echo "commit=${SOURCE_SHA}"
             echo "project=games/living-kingdoms/main-world.project.json"
             echo "artifact=LivingKingdomsMainWorld.rbxlx"
           } > /tmp/LivingKingdomsMainWorld.identity.txt
@@ -151,7 +153,7 @@ jobs:
         if: needs.classify.outputs.profile != 'docs'
         uses: actions/upload-artifact@v4
         with:
-          name: living-kingdoms-main-world-rbxlx-${{ github.sha }}
+          name: living-kingdoms-main-world-rbxlx-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
             /tmp/LivingKingdomsMainWorld.rbxlx
             /tmp/LivingKingdomsMainWorld.rbxlx.sha256
