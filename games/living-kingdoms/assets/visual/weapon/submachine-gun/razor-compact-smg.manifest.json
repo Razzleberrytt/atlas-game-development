@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "assetKey": "visual.weapon.submachine-gun.model",
+  "visualId": "weapon.visual.submachine_gun.razor_v1",
+  "weaponId": "weapon.submachine-gun",
+  "candidateId": "razor-compact-smg.v2",
+  "status": "source-candidate-not-runtime-approved",
+  "sourceKind": "ProjectOriginal",
+  "sourceLicense": "Original project asset; all project rights retained",
+  "generatorFile": "generate_razor_compact_smg.py",
+  "generatedModelFile": "razor_compact_smg.obj",
+  "animationFile": "razor_compact_smg.animations.json",
+  "format": "Generated OBJ multi-object source; animation curves in companion JSON",
+  "designIntent": "Original compact SMG with short shroud, folding wire stock, reflex optic, vertical foregrip, curved magazine, and blue identification panels",
+  "orientation": { "forward": "+X", "up": "+Z" },
+  "sourceRootName": "WeaponRoot (integration wrapper)",
+  "robloxModelName": "WeaponPresentation",
+  "minimumComponentMeshCount": 22,
+  "attachmentLocators": {
+    "RightGripAttachment": [-0.29, 0.0, -0.64],
+    "LeftGripAttachment": [0.98, 0.0, -0.46],
+    "Muzzle": [2.44, 0.0, 0.13],
+    "Magazine": [0.20, 0.0, -0.78],
+    "Ejection": [0.18, -0.40, 0.16]
+  },
+  "animationClips": [
+    { "name": "Fire", "durationSeconds": 0.08, "targetNode": "Bolt" },
+    { "name": "Reload", "durationSeconds": 1.20, "targetNode": "Magazine" },
+    { "name": "Empty", "durationSeconds": 0.18, "targetNode": "Bolt" }
+  ],
+  "gameplayAuthority": {
+    "cadence": "server", "ammunition": "server", "reloadAcceptance": "server",
+    "targeting": "server", "hitValidation": "server", "damage": "server"
+  },
+  "studioGate": {
+    "imported": false, "visualReviewPassed": false, "animationImportVerified": false,
+    "isometricReadabilityVerified": false, "performanceVerified": false
+  }
+}
