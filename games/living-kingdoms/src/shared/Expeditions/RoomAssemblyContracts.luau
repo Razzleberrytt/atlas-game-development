@@ -44,6 +44,9 @@ export type RoomPlanNode = {
 	RoomId: string,
 	RoomVersion: string,
 	Role: RoomRoleId,
+	EncounterSlotId: EncounterSlotId,
+	EncounterIntensity: number,
+	RewardSourceId: RoomRewardSourceId?,
 	PreviousIndex: number?,
 	NextIndex: number?,
 }
@@ -52,6 +55,8 @@ export type RoomPlan = {
 	Seed: number,
 	DefinitionId: string,
 	DefinitionVersion: string,
+	ConfigVersion: number,
+	PlanIdentity: string,
 	Nodes: { RoomPlanNode },
 	EntryIndex: number,
 	EliteIndex: number,

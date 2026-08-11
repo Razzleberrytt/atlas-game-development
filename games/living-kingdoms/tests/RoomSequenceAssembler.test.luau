@@ -54,6 +54,11 @@ local assembler = luau.load(fs.readFile("games/living-kingdoms/src/shared/Expedi
 	injectGlobals = true,
 })()
 
+local definitionById = {}
+for _, definition in config.Rooms do
+	definitionById[definition.Id] = definition
+end
+
 local function signature(plan: any): string
 	local ids = {}
 	for _, node in plan.Nodes do
@@ -83,14 +88,27 @@ local function validatePlan(plan: any)
 	local combatCount = 0
 	local seenIds = {}
 	for index, node in plan.Nodes do
+		local definition = definitionById[node.RoomId]
+		assert(definition ~= nil, "planned room must resolve to an authored definition")
 		assert(node.Index == index, "node indexes must be contiguous")
 		assert(node.Depth == index - 1, "node depth must match linear position")
 		assert(node.PreviousIndex == (if index > 1 then index - 1 else nil), "previous link is invalid")
 		assert(node.NextIndex == (if index < #plan.Nodes then index + 1 else nil), "next link is invalid")
 		assert(seenIds[node.RoomId] == nil, "non-repeatable room was selected twice")
+		assert(node.EncounterSlotId == definition.EncounterSlotId, "plan must retain authored encounter slot identity")
 		assert(
-			string.find(plan.PlanIdentity, `{node.RoomId}@{node.RoomVersion}`, 1, true) ~= nil,
-			"plan identity must include every selected room version"
+			node.EncounterIntensity == definition.EncounterIntensity,
+			"plan must retain authored encounter intensity"
+		)
+		assert(node.RewardSourceId == definition.RewardSourceId, "plan must retain authored reward source identity")
+		assert(
+			string.find(
+				plan.PlanIdentity,
+				`{node.RoomId}@{node.RoomVersion}[{node.EncounterSlotId}:{node.EncounterIntensity}]`,
+				1,
+				true
+			) ~= nil,
+			"plan identity must include every room and encounter decision"
 		)
 		seenIds[node.RoomId] = true
 		if node.Role == contracts.RoleIds.Combat then
@@ -112,10 +130,17 @@ assert(
 )
 
 local signatures = {}
+local encounterSignatures = {}
 for seed = 1, 30 do
 	local plan = assembler.assemble(seed)
 	validatePlan(plan)
 	signatures[signature(plan)] = true
+
+	local encounters = {}
+	for _, node in plan.Nodes do
+		table.insert(encounters, `{node.EncounterSlotId}:{node.EncounterIntensity}`)
+	end
+	encounterSignatures[table.concat(encounters, ">")] = true
 end
 
 local variationCount = 0
@@ -123,6 +148,12 @@ for _ in signatures do
 	variationCount += 1
 end
 assert(variationCount >= 4, "seed range should produce multiple valid routes")
+
+local encounterVariationCount = 0
+for _ in encounterSignatures do
+	encounterVariationCount += 1
+end
+assert(encounterVariationCount >= 2, "seed range should expose more than one authored encounter sequence")
 
 local okZero = pcall(function()
 	assembler.assemble(0)

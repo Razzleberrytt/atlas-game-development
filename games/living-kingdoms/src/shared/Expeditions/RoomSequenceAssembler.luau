@@ -74,6 +74,9 @@ local function appendNode(nodes: { any }, definition: any, depth: number)
 		RoomId = definition.Id,
 		RoomVersion = definition.Version,
 		Role = definition.Role,
+		EncounterSlotId = definition.EncounterSlotId,
+		EncounterIntensity = definition.EncounterIntensity,
+		RewardSourceId = definition.RewardSourceId,
 		PreviousIndex = previous,
 		NextIndex = nil,
 	}
@@ -86,7 +89,10 @@ end
 local function planIdentity(seed: number, nodes: { any }): string
 	local roomIdentities = {}
 	for _, node in nodes do
-		table.insert(roomIdentities, `{node.RoomId}@{node.RoomVersion}`)
+		table.insert(
+			roomIdentities,
+			`{node.RoomId}@{node.RoomVersion}[{node.EncounterSlotId}:{node.EncounterIntensity}]`
+		)
 	end
 
 	return `{Config.DefinitionId}@{Config.DefinitionVersion}|config={Config.Version}|seed={seed}|rooms={table.concat(
