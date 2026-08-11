@@ -55,6 +55,19 @@
     "workspace_property_equivalence_claimed": false,
     "interpretation": "The supplied revision preserves the same aggregate Workspace population/class distribution as the historical authored-world import while containing substantially more non-Workspace runtime/source instances. Exact property equality with the historical binary is not assumed."
   },
+  "script_reconciliation": {
+    "uploaded_scripts": 367,
+    "historical_unique_legacy_set": 28,
+    "historical_unique_present_in_uploaded_revision": 27,
+    "historical_unique_absent_from_uploaded_revision": 1,
+    "non_historical_unique_scripts": 340,
+    "absent_historical_unique_paths": [
+      "ReplicatedStorage/Shared/Config/RNGConfig.luau"
+    ],
+    "absent_source_preserved_by_historical_archive": true,
+    "historical_archive_manifest": "games/living-kingdoms/imports/studio-2026-08-07/manifest.json",
+    "policy": "Do not replace current repository source with embedded place copies. Retain the 2026-08-07 preservation archive because it contains one historical unique source no longer embedded in this revision."
+  },
   "merge_policy": {
     "canonical_runtime": "latest repository src wins for overlapping gameplay, networking, persistence, presentation, and bootstraps",
     "authored_world": "checksum-pinned source revision may contribute bounded held reconstruction evidence",
