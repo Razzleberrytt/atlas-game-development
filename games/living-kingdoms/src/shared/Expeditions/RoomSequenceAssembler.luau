@@ -89,7 +89,10 @@ local function planIdentity(seed: number, nodes: { any }): string
 		table.insert(roomIdentities, `{node.RoomId}@{node.RoomVersion}`)
 	end
 
-	return `{Config.DefinitionId}@{Config.DefinitionVersion}|config={Config.Version}|seed={seed}|rooms={table.concat(roomIdentities, ",")}`
+	return `{Config.DefinitionId}@{Config.DefinitionVersion}|config={Config.Version}|seed={seed}|rooms={table.concat(
+		roomIdentities,
+		"," 
+	)}`
 end
 
 local RoomSequenceAssembler = {}
