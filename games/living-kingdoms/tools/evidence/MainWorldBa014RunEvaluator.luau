@@ -41,6 +41,12 @@ export type Decision = {
 	nonBlockingFindings: { string },
 }
 
+local IDENTITY_HEX_LENGTHS = table.freeze({
+	repositoryCommit = 40,
+	rollbackCheckpointCommit = 40,
+	placeArtifactSha256 = 64,
+})
+
 local function append(target: { string }, message: string)
 	table.insert(target, message)
 end
@@ -52,6 +58,10 @@ local function sortedKeys(map: { [string]: any }): { string }
 	end
 	table.sort(keys)
 	return keys
+end
+
+local function isHexOfLength(value: string, expectedLength: number): boolean
+	return #value == expectedLength and string.match(value, "^[0-9a-fA-F]+$") ~= nil
 end
 
 local function decisionFor(invalid: { string }, missing: { string }, failures: { string }): string
@@ -112,6 +122,11 @@ function Evaluator.evaluate(matrix: any, scopeResolver: any, mappedGroupIds: { s
 			append(missing, `run identity is missing {field}`)
 		elseif type(recorded) ~= "string" then
 			append(invalid, `run identity field {field} must be a string`)
+		else
+			local expectedHexLength = IDENTITY_HEX_LENGTHS[field]
+			if expectedHexLength ~= nil and not isHexOfLength(recorded, expectedHexLength) then
+				append(invalid, `run identity field {field} must be a {expectedHexLength}-character hexadecimal value`)
+			end
 		end
 	end
 
