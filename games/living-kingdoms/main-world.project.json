@@ -61,6 +61,7 @@
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
         "MainWorldClient": {
           "$path": "src/main-world/client/MainWorldClient.client.luau",
           "$properties": {
