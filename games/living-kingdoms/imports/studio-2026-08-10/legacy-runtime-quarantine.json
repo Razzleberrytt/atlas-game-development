@@ -1,0 +1,39 @@
+{
+  "format_version": 1,
+  "source_revision": {
+    "file": "livingkingdoms.rbxl",
+    "sha256": "7cfa9ae257cccc1c048459029f95dfdb83a4e113cbf1ff2f281bc7c9532a695b",
+    "bytes": 1808699,
+    "embedded_scripts": 367
+  },
+  "canonical_runtime": {
+    "project": "games/living-kingdoms/default.project.json",
+    "server_source": "games/living-kingdoms/src/server",
+    "shared_source": "games/living-kingdoms/src/shared",
+    "client_source": "games/living-kingdoms/src/client",
+    "import_directory_mapped_by_rojo": false,
+    "incoming_binary_committed": false,
+    "embedded_place_runtime_authoritative": false
+  },
+  "quarantined_overlapping_authorities": [
+    "ServerScriptService/RPGServerBootstrap.server.luau",
+    "ServerScriptService/MonetizationService.server.luau",
+    "ServerScriptService/Services/CombatService.luau",
+    "ServerScriptService/Services/EnemyService.luau",
+    "ServerScriptService/Services/InventoryService.luau",
+    "ServerScriptService/Services/LootService.luau",
+    "ServerScriptService/Services/PlayerDataService.luau"
+  ],
+  "preservation_policy": {
+    "historical_unique_source_archive": "games/living-kingdoms/imports/studio-2026-08-07/legacy-src",
+    "missing_current_unique_source": "ReplicatedStorage/Shared/Config/RNGConfig.luau",
+    "missing_current_unique_source_preserved_historically": true,
+    "wholesale_legacy_boot_allowed": false,
+    "duplicate_gameplay_owners_allowed": false
+  },
+  "verification": {
+    "default_project_maps_import_directory": false,
+    "default_project_maps_incoming_rbxl": false,
+    "result": "CURRENT_RBXL_LEGACY_RUNTIME_QUARANTINED"
+  }
+}
