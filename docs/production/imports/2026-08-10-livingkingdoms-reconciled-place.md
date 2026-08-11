@@ -9,54 +9,52 @@
 - RBXL version field: `0`
 - Declared classes: `98`
 - Declared instances: `2,342`
+- Workspace instances: `1,775`
+- Embedded scripts: `367` (`344` ModuleScripts, `16` Scripts, `7` LocalScripts)
 - Received: 2026-08-10
-- Purpose: reconcile the user-supplied Studio version with the latest source-first Living Kingdoms repository without discarding either authored world work or newer repo runtime work.
 
-The binary itself is not committed. The pre-intake repository state was checkpointed at `backup/living-kingdoms-pre-import-2026-08-10`.
+The binary itself is not committed. The pre-intake repository state remains preserved on the backup branch created before reconciliation.
 
-## Inventory summary
+## Final reconciliation decision
 
-The supplied place contains:
+The 2026-08-10 place and current repository are now reconciled under a best-of-both authority boundary:
 
-- `1,775` Workspace instances;
-- `367` embedded scripts (`344` ModuleScripts, `16` Scripts, `7` LocalScripts);
-- `20` RemoteEvents;
-- authored HubTown content including `CentralFountain`, `GrandStaircase`, `HubArchway`, `DungeonPortal`, and related civic/world structures.
+1. **Current GitHub/Rojo source remains authoritative for gameplay/runtime.** Combat, enemies, inventory, loot, persistence, expedition, networking, presentation, monetization, and bootstrap ownership stay with current `games/living-kingdoms/src` code.
+2. **The incoming RBXL is a checksum-pinned authored-world source revision.** Useful exact world evidence is preserved as inert review artifacts and held reconstruction contracts.
+3. **Overlapping legacy runtime is quarantined.** `RPGServerBootstrap`, the old monetization bootstrap, and overlapping Combat/Enemy/Inventory/Loot/PlayerData services are not mapped by the active Rojo project and cannot become a second gameplay authority through this import.
+4. **Unique historical source remains preserved.** Script reconciliation confirmed all but one of the 28 historically unique legacy sources are present in the new place; the missing `RNGConfig.luau` remains preserved in the 2026-08-07 archive.
+5. **No binary/build artifact becomes canonical source.** The active project maps repository `src` paths, not this import directory or the incoming `.rbxl`.
 
-The historical 2026-08-07 import (`e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16`) also recorded `1,775` Workspace instances with the same aggregate Workspace class distribution, but only `2,258` declared instances and `290` scripts. The new revision therefore has `+84` declared instances and `+77` scripts while preserving aggregate Workspace population/class counts. This supports the interpretation that Studio retained the authored world while additional repository/runtime material was synced into the place. It does not prove property-by-property equivalence with the historical binary.
+The explicit quarantine record is `games/living-kingdoms/imports/studio-2026-08-10/legacy-runtime-quarantine.json`.
 
-## Reconciliation decision
+## Authored-world material admitted
 
-Use a best-of-both merge:
+The useful bounded current-revision civic evidence has been exhausted without guessing missing properties:
 
-1. **Latest repository source wins for overlapping runtime authority.** Do not replace current combat, enemy, inventory, persistence, expedition, networking, presentation, or bootstrapping code with embedded place copies.
-2. **The supplied place is a checksum-pinned authored-world source revision.** Exact bounded world evidence may be promoted into source-managed held reconstruction contracts.
-3. **Legacy overlapping RPG authority stays inert.** Do not wholesale activate the old `RPGServerBootstrap`, `CombatService`, `EnemyService`, `InventoryService`, `LootService`, `PlayerDataService`, or monetization bootstrap from the place.
-4. **No binary/build artifact becomes canonical source.** The `.rbxl` remains evidence/provenance; Rojo/source files remain canonical.
+- **Central Fountain — PR #371:** exact 11-instance checksum-pinned held reconstruction with parity coverage.
+- **Grand Staircase — PR #377:** exact 35-instance held reconstruction covering corrected 80-stud steps, rails, lanterns, collision/material data, and lights.
+- **Hub Archway — PR #379:** exact 6-instance held reconstruction covering pillars, beam, crystal, and light.
+- **Dungeon Portal — PR #380:** current-revision parity record confirms the already-held portal's supported geometry, lights, attachment, and identity graph. The richer historical UI/particle properties remain preserved rather than being overwritten by the narrower current summary.
 
-## Material admitted in this intake
+`Workspace/WorldPath`, the held quest board, and the held arrival/spawn contract remain valid historical reconstruction inputs. Other Resources, WorldStructures, atmosphere, Terrain, NPC/vendor/quest, and asset-specific details do not have enough complete current-revision property evidence committed to justify additional promotion. They remain partial/hierarchy evidence rather than fabricated source truth.
 
-`Workspace/HubTown/CentralFountain` was admitted first as a bounded coherent civic unit and merged through PR #371:
+## Script reconciliation
 
-- held reconstruction module: `games/living-kingdoms/src/shared/Config/RecoveredCentralFountainConfig.luau`;
-- evidence: `games/living-kingdoms/imports/studio-2026-08-10/central-fountain.review.json`;
-- semantic ownership: `main_world.hub_core.central_fountain` / `main_world.hub_core`;
-- runtime remains disabled and source-held.
+The current place contains 367 embedded scripts versus 290 in the historical 2026-08-07 place. The reconciliation does **not** treat that increase as permission to import an alternate runtime. Current repository source wins wherever responsibilities overlap.
 
-Additional exact supported geometry/light evidence is preserved at `games/living-kingdoms/imports/studio-2026-08-10/hub-civic-geometry-summary.json` for:
+The historical archive remains the preservation source for unique legacy concepts and for the one historically unique source absent from the current place: `ReplicatedStorage/Shared/Config/RNGConfig.luau`.
 
-- `Workspace/HubTown/GrandStaircase` — 35 instances;
-- `Workspace/HubTown/HubArchway` — 6 instances;
-- `Workspace/HubTown/DungeonPortal` — 10 instances, to be used as current-revision parity/supplemental evidence for the already-held portal contract rather than creating duplicate gameplay authority.
+## Validation and completion boundary
 
-These additional groups are preserved but intentionally not promoted in the same change. Future work should continue one coherent group at a time with property-parity regression coverage.
+The source reconciliation is **complete** when this closeout is merged:
 
-## Source preservation record
+- source fingerprint and inventory are pinned;
+- useful current civic evidence is admitted or parity-recorded;
+- overlapping embedded runtime is explicitly quarantined;
+- unique historical source is preserved;
+- current GitHub/Rojo authority remains unambiguous;
+- remaining incomplete property evidence is truthfully classified rather than guessed.
 
-The import directory also contains `revision-manifest.json`, which records the source fingerprint, inventory, historical comparison, and authority policy. The 2026-08-07 preservation bundle remains intact for unique legacy RPG concepts/source and historical authored-world provenance.
+Ordinary Studio/device/play/streaming/performance verification remains **pending** and must not be called VERIFIED until run. Under the build-through testing policy, that pending manual evidence does not hold source development hostage.
 
-## Validation boundary
-
-PR #371 completed Atlas validation successfully before merge. This follow-up intake is inert import/documentation evidence only: it does not alter `default.project.json`, live runtime source, network schema, persistence schema, or operation-place mapping.
-
-Studio runtime evidence is not claimed for this documentation-only preservation pass. Any later model asset or Main World mapping must satisfy the existing Main World creation/activation gates before becoming playable.
+The next source-development work should therefore return to normal Patch 0.5 Main World progression using the admitted held evidence and existing creation/activation gates, rather than continuing a generic RBXL gap chase.
