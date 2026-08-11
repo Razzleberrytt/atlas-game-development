@@ -32,6 +32,13 @@ local mainWorldAnchor = {
 	mutationOwnerId = config.CanonicalLaunchAuthorityOwnerId,
 	runtimeEnabled = false,
 }
+local currentBridgeAnchor = {
+	id = config.CurrentBridgeAnchorId,
+	worldContentId = config.PortalContentId,
+	interactionIntentId = config.InteractionIntentId,
+	mutationOwnerId = config.CanonicalLaunchAuthorityOwnerId,
+	runtimeEnabled = true,
+}
 local destination = {
 	ContentId = config.PortalContentId,
 	Destination = {
@@ -41,7 +48,11 @@ local destination = {
 	RuntimeEnabled = false,
 }
 
-local plan = resolver.resolve(mainWorldAnchor, destination)
+local function resolve(anchor, bridge, target)
+	return resolver.resolve(anchor, bridge, target, config)
+end
+
+local plan = resolve(mainWorldAnchor, currentBridgeAnchor, destination)
 check(plan.status == "HeldCanonicalDelegation")
 check(plan.contentId == config.PortalContentId)
 check(plan.interactionIntentId == config.InteractionIntentId)
@@ -54,17 +65,43 @@ check(plan.consequentialMutationOwnedHere == false)
 
 local runtimeAnchor = table.clone(mainWorldAnchor)
 runtimeAnchor.runtimeEnabled = true
-check(resolver.resolve(runtimeAnchor, destination).reasonId == "HeldInputsRequired")
+check(resolve(runtimeAnchor, currentBridgeAnchor, destination).reasonId == "HeldInputsRequired")
 
 local runtimeDestination = table.clone(destination)
 runtimeDestination.RuntimeEnabled = true
-check(resolver.resolve(mainWorldAnchor, runtimeDestination).reasonId == "HeldInputsRequired")
+check(resolve(mainWorldAnchor, currentBridgeAnchor, runtimeDestination).reasonId == "HeldInputsRequired")
 
-local contentMismatch = table.clone(mainWorldAnchor)
-contentMismatch.worldContentId = "portal.other"
-check(resolver.resolve(contentMismatch, destination).reasonId == "AnchorDestinationContentMismatch")
+local heldBridge = table.clone(currentBridgeAnchor)
+heldBridge.runtimeEnabled = false
+check(resolve(mainWorldAnchor, heldBridge, destination).reasonId == "CurrentBridgeMustBeActive")
 
-local destinationMismatch = {
+local mainWorldIdentityMismatch = table.clone(mainWorldAnchor)
+mainWorldIdentityMismatch.id = "hub.anchor.other"
+check(resolve(mainWorldIdentityMismatch, currentBridgeAnchor, destination).reasonId == "MainWorldAnchorIdentityMismatch")
+
+local bridgeIdentityMismatch = table.clone(currentBridgeAnchor)
+bridgeIdentityMismatch.id = "hub.anchor.other"
+check(resolve(mainWorldAnchor, bridgeIdentityMismatch, destination).reasonId == "CurrentBridgeAnchorIdentityMismatch")
+
+local mainWorldContentMismatch = table.clone(mainWorldAnchor)
+mainWorldContentMismatch.worldContentId = "portal.other"
+check(resolve(mainWorldContentMismatch, currentBridgeAnchor, destination).reasonId == "MainWorldAnchorContentMismatch")
+
+local bridgeContentMismatch = table.clone(currentBridgeAnchor)
+bridgeContentMismatch.worldContentId = "portal.other"
+check(resolve(mainWorldAnchor, bridgeContentMismatch, destination).reasonId == "CurrentBridgeContentMismatch")
+
+local destinationContentMismatch = {
+	ContentId = "portal.other",
+	Destination = {
+		ContentId = "portal.other",
+		LaunchAuthorityOwnerId = config.CanonicalLaunchAuthorityOwnerId,
+	},
+	RuntimeEnabled = false,
+}
+check(resolve(mainWorldAnchor, currentBridgeAnchor, destinationContentMismatch).reasonId == "AnchorDestinationContentMismatch")
+
+local destinationDefinitionMismatch = {
 	ContentId = config.PortalContentId,
 	Destination = {
 		ContentId = "portal.other",
@@ -72,15 +109,41 @@ local destinationMismatch = {
 	},
 	RuntimeEnabled = false,
 }
-check(resolver.resolve(mainWorldAnchor, destinationMismatch).reasonId == "DestinationContentMismatch")
+check(resolve(mainWorldAnchor, currentBridgeAnchor, destinationDefinitionMismatch).reasonId == "DestinationContentMismatch")
+
+local mainWorldIntentMismatch = table.clone(mainWorldAnchor)
+mainWorldIntentMismatch.interactionIntentId = "hub.intent.other"
+check(resolve(mainWorldIntentMismatch, currentBridgeAnchor, destination).reasonId == "MainWorldInteractionIntentMismatch")
+
+local bridgeIntentMismatch = table.clone(currentBridgeAnchor)
+bridgeIntentMismatch.interactionIntentId = "hub.intent.other"
+check(resolve(mainWorldAnchor, bridgeIntentMismatch, destination).reasonId == "CurrentBridgeInteractionIntentMismatch")
 
 local ownerMissing = table.clone(mainWorldAnchor)
 ownerMissing.mutationOwnerId = nil
-check(resolver.resolve(ownerMissing, destination).reasonId == "CanonicalOwnerMissing")
+check(resolve(ownerMissing, currentBridgeAnchor, destination).reasonId == "CanonicalOwnerMissing")
 
-local ownerMismatch = table.clone(mainWorldAnchor)
-ownerMismatch.mutationOwnerId = "OtherOwner"
-check(resolver.resolve(ownerMismatch, destination).reasonId == "CanonicalOwnerMismatch")
+local bridgeOwnerMissing = table.clone(currentBridgeAnchor)
+bridgeOwnerMissing.mutationOwnerId = nil
+check(resolve(mainWorldAnchor, bridgeOwnerMissing, destination).reasonId == "CanonicalOwnerMissing")
+
+local mainWorldOwnerMismatch = table.clone(mainWorldAnchor)
+mainWorldOwnerMismatch.mutationOwnerId = "OtherOwner"
+check(resolve(mainWorldOwnerMismatch, currentBridgeAnchor, destination).reasonId == "MainWorldCanonicalOwnerMismatch")
+
+local bridgeOwnerMismatch = table.clone(currentBridgeAnchor)
+bridgeOwnerMismatch.mutationOwnerId = "OtherOwner"
+check(resolve(mainWorldAnchor, bridgeOwnerMismatch, destination).reasonId == "CurrentBridgeCanonicalOwnerMismatch")
+
+local destinationOwnerMismatch = {
+	ContentId = config.PortalContentId,
+	Destination = {
+		ContentId = config.PortalContentId,
+		LaunchAuthorityOwnerId = "OtherOwner",
+	},
+	RuntimeEnabled = false,
+}
+check(resolve(mainWorldAnchor, currentBridgeAnchor, destinationOwnerMismatch).reasonId == "DestinationCanonicalOwnerMismatch")
 
 check(config.RuntimeEnabled == false)
 check(config.Rules.MainWorldSurfaceOwnsConsequentialMutation == false)
