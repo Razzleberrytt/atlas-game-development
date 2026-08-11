@@ -49,13 +49,18 @@
               "$path": "assets/recovered-world/models/DungeonPortal.model.json"
             }
           }
+        },
+        "Routes": {
+          "$className": "Folder",
+          "PrimaryRoute": {
+            "$path": "assets/visual/world/primary-route/MainWorldPrimaryRoute.model.json"
+          }
         }
       }
     },
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
-        "$className": "StarterPlayerScripts",
         "MainWorldClient": {
           "$path": "src/main-world/client/MainWorldClient.client.luau",
           "$properties": {
