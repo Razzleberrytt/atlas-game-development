@@ -1,15 +1,23 @@
 {
   "schema_version": 1,
   "project": "living-kingdoms",
-  "updated": "2026-08-09",
+  "updated": "2026-08-10",
   "capabilities": [
     {
       "id": "combat-authority",
       "name": "Server-owned combat authority",
       "owner": "server",
       "status": "mature",
-      "extension_points": ["games/living-kingdoms/src/server/Domain", "games/living-kingdoms/src/server/Systems"],
-      "consumers": ["melee", "firearms", "enemy-combat", "boss-combat"],
+      "extension_points": [
+        "games/living-kingdoms/src/server/Domain",
+        "games/living-kingdoms/src/server/Systems"
+      ],
+      "consumers": [
+        "melee",
+        "firearms",
+        "enemy-combat",
+        "boss-combat"
+      ],
       "tests_glob": "games/living-kingdoms/tests/**/*.test.luau",
       "data_driven": false,
       "notes": "Extend existing authority; presentation may vary client-side but consequences remain server-owned."
@@ -19,8 +27,16 @@
       "name": "Expedition lifecycle and replay loop",
       "owner": "server",
       "status": "mature",
-      "extension_points": ["games/living-kingdoms/src/server/expedition-live.server.luau", "games/living-kingdoms/src/server/ExpeditionFoundationBootstrap.server.luau"],
-      "consumers": ["mission-state", "replay", "results", "return-to-hub"],
+      "extension_points": [
+        "games/living-kingdoms/src/server/expedition-live.server.luau",
+        "games/living-kingdoms/src/server/ExpeditionFoundationBootstrap.server.luau"
+      ],
+      "consumers": [
+        "mission-state",
+        "replay",
+        "results",
+        "return-to-hub"
+      ],
       "tests_glob": "games/living-kingdoms/tests/**/*.test.luau",
       "data_driven": false,
       "notes": "Lifecycle changes require ownership/cleanup scrutiny."
@@ -30,8 +46,14 @@
       "name": "Reward and result resolution",
       "owner": "server",
       "status": "active",
-      "extension_points": ["games/living-kingdoms/src/server/expedition-reward-results.server.luau"],
-      "consumers": ["loot", "banking", "debrief"],
+      "extension_points": [
+        "games/living-kingdoms/src/server/expedition-reward-results.server.luau"
+      ],
+      "consumers": [
+        "loot",
+        "banking",
+        "debrief"
+      ],
       "tests_glob": "games/living-kingdoms/tests/**/*.test.luau",
       "data_driven": true,
       "notes": "Prefer item/reward definitions over bespoke reward scripts as Patch 0.3 expands."
@@ -41,8 +63,20 @@
       "name": "Deterministic equipment affixes and build-choice facts",
       "owner": "shared",
       "status": "active",
-      "extension_points": ["games/living-kingdoms/src/shared/Equipment/EquipmentAffixContracts.luau", "games/living-kingdoms/src/shared/Equipment/EquipmentAffixResolver.luau", "games/living-kingdoms/src/shared/Equipment/EquipmentComparisonResolver.luau", "games/living-kingdoms/src/shared/Equipment/EquipmentBuildChoicePresentation.luau", "games/living-kingdoms/src/shared/Config/EquipmentAffixConfig.luau"],
-      "consumers": ["equipment-rewards", "durable-inventory", "loot-comparison", "build-replayability", "reward-presentation"],
+      "extension_points": [
+        "games/living-kingdoms/src/shared/Equipment/EquipmentAffixContracts.luau",
+        "games/living-kingdoms/src/shared/Equipment/EquipmentAffixResolver.luau",
+        "games/living-kingdoms/src/shared/Equipment/EquipmentComparisonResolver.luau",
+        "games/living-kingdoms/src/shared/Equipment/EquipmentBuildChoicePresentation.luau",
+        "games/living-kingdoms/src/shared/Config/EquipmentAffixConfig.luau"
+      ],
+      "consumers": [
+        "equipment-rewards",
+        "durable-inventory",
+        "loot-comparison",
+        "build-replayability",
+        "reward-presentation"
+      ],
       "tests_glob": "games/living-kingdoms/tests/Equipment*.test.luau",
       "data_driven": true,
       "notes": "Generation, comparison, and compact presentation reuse one deterministic metadata seam; runtime effect application and persistence stay with their existing authorities."
@@ -52,8 +86,17 @@
       "name": "Canonical hub interaction registry",
       "owner": "server/shared-contract",
       "status": "prepared",
-      "extension_points": ["games/living-kingdoms/src/server/hub-preparation.server.luau", "docs/specifications/canonical-hub-interaction-registry.md"],
-      "consumers": ["preparation", "vendors", "crafting", "portals", "npc-interactions"],
+      "extension_points": [
+        "games/living-kingdoms/src/server/hub-preparation.server.luau",
+        "docs/specifications/canonical-hub-interaction-registry.md"
+      ],
+      "consumers": [
+        "preparation",
+        "vendors",
+        "crafting",
+        "portals",
+        "npc-interactions"
+      ],
       "tests_glob": "games/living-kingdoms/tests/**/*.test.luau",
       "data_driven": true,
       "notes": "Stable IDs and registries are preferred for Main World growth."
@@ -63,8 +106,15 @@
       "name": "Networking and replicated state delivery",
       "owner": "server",
       "status": "mature",
-      "extension_points": ["games/living-kingdoms/src/server/Networking"],
-      "consumers": ["combat-presentation", "mission-state", "inventory", "co-op"],
+      "extension_points": [
+        "games/living-kingdoms/src/server/Networking"
+      ],
+      "consumers": [
+        "combat-presentation",
+        "mission-state",
+        "inventory",
+        "co-op"
+      ],
       "tests_glob": "games/living-kingdoms/tests/**/*.test.luau",
       "data_driven": false,
       "notes": "Do not introduce parallel authoritative delivery paths."
@@ -74,11 +124,38 @@
       "name": "Repository and content validation",
       "owner": "tooling",
       "status": "mature",
-      "extension_points": ["scripts/validate.py", "scripts/validate_living_kingdoms_layout.py"],
-      "consumers": ["all-source-changes", "ci", "agents"],
+      "extension_points": [
+        "scripts/validate.py",
+        "scripts/validate_living_kingdoms_layout.py"
+      ],
+      "consumers": [
+        "all-source-changes",
+        "ci",
+        "agents"
+      ],
       "tests_glob": "scripts/*.py",
       "data_driven": true,
       "notes": "New deterministic invariants should be added to validation rather than left as prose when practical."
+    },
+    {
+      "id": "main-world-representation",
+      "name": "Main World source representation and BA-014 acceptance scoping",
+      "owner": "shared",
+      "status": "prepared",
+      "extension_points": [
+        "games/living-kingdoms/src/shared/Config/MainWorldRepresentationConfig.luau",
+        "games/living-kingdoms/src/shared/Config/MainWorldAcceptanceMatrixConfig.luau",
+        "games/living-kingdoms/src/shared/World/MainWorldAcceptanceScopeResolver.luau",
+        "games/living-kingdoms/main-world.project.json"
+      ],
+      "consumers": [
+        "hub-core",
+        "primary-route",
+        "studio-evidence-runbook"
+      ],
+      "tests_glob": "games/living-kingdoms/tests/MainWorld*.test.luau",
+      "data_driven": true,
+      "notes": "Admitting an environment family means flipping its projectMappingStatus to Mapped and mapping its targetPath in main-world.project.json; the fixture rejects either half alone. BA-014 run scope is then derived, never hand-maintained. Held: RuntimeEnabled stays false and scoped acceptance never authorizes activation."
     }
   ]
 }
