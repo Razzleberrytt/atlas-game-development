@@ -46,6 +46,7 @@ local recoveredModules = {
 	MainWorldArrival = "RecoveredSpawnLocationConfig.luau",
 	CentralFountain = "RecoveredCentralFountainConfig.luau",
 	GrandStaircase = "RecoveredGrandStaircaseConfig.luau",
+	HubArchway = "RecoveredHubArchwayConfig.luau",
 }
 
 for groupId, moduleFile in recoveredModules do
@@ -60,6 +61,8 @@ check(config.Groups.CentralFountain.evidenceRevision == "AuthoredRevision2026081
 check(config.Groups.CentralFountain.sourcePath == "Workspace/HubTown/CentralFountain")
 check(config.Groups.GrandStaircase.evidenceRevision == "AuthoredRevision20260810")
 check(config.Groups.GrandStaircase.sourcePath == "Workspace/HubTown/GrandStaircase")
+check(config.Groups.HubArchway.evidenceRevision == "AuthoredRevision20260810")
+check(config.Groups.HubArchway.sourcePath == "Workspace/HubTown/HubArchway")
 
 for _, groupId in { "Resources", "WorldStructures" } do
 	local group = config.Groups[groupId]
@@ -126,3 +129,16 @@ check(staircaseConfig.SourceHold == true)
 check(staircaseConfig.Evidence.SourceRbxlSha256 == config.LatestAuthoredRevisionSha256)
 check(staircaseConfig.Evidence.IdentityRows == 35)
 check(staircaseConfig.Evidence.PropertyBackedRows == 35)
+
+local archwayConfig =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RecoveredHubArchwayConfig.luau"), {
+		debugName = "RecoveredHubArchwayConfig",
+		injectGlobals = true,
+	})()
+
+check(archwayConfig.RuntimeEnabled == false)
+check(archwayConfig.SourceHold == true)
+check(archwayConfig.Evidence.SourceRbxlSha256 == config.LatestAuthoredRevisionSha256)
+check(archwayConfig.Evidence.IdentityRows == 6)
+check(archwayConfig.Evidence.PropertyBackedRows == 5)
+check(archwayConfig.Evidence.GeneratedContainerRows == 1)
