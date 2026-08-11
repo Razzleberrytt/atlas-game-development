@@ -1,0 +1,14 @@
+{
+  "assetKey":"world.environment-kit.natural-variation",
+  "version":"ENV-NATURAL-VARIATION-v1",
+  "sourceType":"project-original-source-models",
+  "runtimeMapped":false,
+  "studioApproval":false,
+  "gameplayAuthority":false,
+  "assets":[
+    {"semanticId":"env.tree.corrupted.dead_pine_b","registrySourceModelPath":"Environment/Foliage/DeadPineB","file":"DeadPineB.model.json","minimumPartCount":4},
+    {"semanticId":"env.rock.frontier.boulder_cluster_b","registrySourceModelPath":"Environment/Rocks/BoulderClusterB","file":"BoulderClusterB.model.json","minimumPartCount":3},
+    {"semanticId":"env.root.corrupted.twisted_b","registrySourceModelPath":"Environment/Foliage/TwistedRootB","file":"TwistedRootB.model.json","minimumPartCount":4},
+    {"semanticId":"env.brush.frontier.snag_b","registrySourceModelPath":"Environment/Foliage/BrushSnagB","file":"BrushSnagB.model.json","minimumPartCount":4}
+  ]
+}
