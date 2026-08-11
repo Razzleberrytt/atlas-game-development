@@ -3,7 +3,7 @@
 
 Profiles:
   docs  Documentation/roadmap authority + efficiency-construct checks only.
-  fast  R1 iteration: docs + layout + formatting/lint + all Lune fixtures + Rojo build.
+  fast  R1 iteration: docs + layout + formatting/lint + all Lune fixtures + Rojo builds.
   full  R2/R3/CI: fast plus import/migration/evidence decoder and reconciliation checks.
 
 Humans, coding agents, and CI should call this script instead of duplicating the
@@ -84,6 +84,21 @@ def validate_full_preflight() -> None:
     )
 
 
+def rojo_build(label: str, project: str, output_name: str) -> None:
+    output = Path(tempfile.gettempdir()) / output_name
+    run(
+        label,
+        [
+            "rojo",
+            "build",
+            project,
+            "--output",
+            str(output),
+        ],
+    )
+    print(f"[validate] build artifact: {output}", flush=True)
+
+
 def validate_toolchain_and_game() -> None:
     python_script("repository layout", "scripts/validate_living_kingdoms_layout.py")
     run(
@@ -108,18 +123,16 @@ def validate_toolchain_and_game() -> None:
         )
     print(f"\n[validate] executed {len(fixtures)} Lune fixtures", flush=True)
 
-    output = Path(tempfile.gettempdir()) / "LivingKingdoms.rbxlx"
-    run(
-        "Rojo build",
-        [
-            "rojo",
-            "build",
-            "games/living-kingdoms/default.project.json",
-            "--output",
-            str(output),
-        ],
+    rojo_build(
+        "Rojo build: operation place",
+        "games/living-kingdoms/default.project.json",
+        "LivingKingdoms.rbxlx",
     )
-    print(f"[validate] build artifact: {output}", flush=True)
+    rojo_build(
+        "Rojo build: dedicated Main World",
+        "games/living-kingdoms/main-world.project.json",
+        "LivingKingdomsMainWorld.rbxlx",
+    )
 
 
 def main() -> int:

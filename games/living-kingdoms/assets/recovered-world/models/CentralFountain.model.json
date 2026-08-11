@@ -1,0 +1,196 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {
+      "Name": "FountainBase",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 19.00001335144043, 5.0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "CanCollide": true,
+        "Color": [0.7058823529411765, 0.6862745098039216, 0.6470588235294118],
+        "Material": {"Enum": 784},
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "Shape": {"Enum": 1},
+        "Size": [40.0, 2.0, 40.0]
+      }
+    },
+    {
+      "Name": "FountainCenter",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 34.00001525878906, 5.0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "CanCollide": true,
+        "Color": [0.7843137254901961, 0.7058823529411765, 0.47058823529411764],
+        "Material": {"Enum": 1072},
+        "Reflectance": 0.4000000059604645,
+        "Transparency": 0.0,
+        "Shape": {"Enum": 1},
+        "Size": [10.0, 30.0, 10.0]
+      }
+    },
+    {
+      "Name": "FountainCrystal",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 53.00000762939453, 5.0, 0.6830126643180847, -0.1830126941204071, 0.7071067690849304, 0.4267767071723938, 0.8856455087661743, -0.1830126941204071, -0.5927522778511047, 0.4267766773700714, 0.6830126643180847],
+        "CanCollide": true,
+        "Color": [0.39215686274509803, 0.7843137254901961, 1.0],
+        "Material": {"Enum": 288},
+        "Reflectance": 0.0,
+        "Transparency": 0.0,
+        "Shape": {"Enum": 1},
+        "Size": [8.0, 20.0, 8.0]
+      },
+      "Children": [
+        {
+          "Name": "CrystalGlow",
+          "ClassName": "PointLight",
+          "Properties": {
+            "Brightness": 3.0,
+            "Color": [0.3921568691730499, 0.7843137383460999, 1.0],
+            "Enabled": true,
+            "Range": 20.0,
+            "Shadows": false
+          }
+        },
+        {
+          "Name": "PointLight",
+          "ClassName": "PointLight",
+          "Properties": {
+            "Brightness": 3.0,
+            "Color": [0.3921568691730499, 0.7843137383460999, 1.0],
+            "Enabled": true,
+            "Range": 80.0,
+            "Shadows": false
+          }
+        }
+      ]
+    },
+    {
+      "Name": "FountainWater",
+      "ClassName": "Part",
+      "Properties": {
+        "Anchored": true,
+        "CanQuery": true,
+        "CanTouch": true,
+        "CastShadow": true,
+        "CFrame": [0.0, 20.00001335144043, 5.0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+        "CanCollide": true,
+        "Color": [0.39215686274509803, 0.7058823529411765, 0.8627450980392157],
+        "Material": {"Enum": 1568},
+        "Reflectance": 0.0,
+        "Transparency": 0.30000001192092896,
+        "Shape": {"Enum": 1},
+        "Size": [36.0, 1.0, 36.0]
+      },
+      "Children": [
+        {
+          "Name": "ParticleEmitter",
+          "ClassName": "ParticleEmitter",
+          "Properties": {
+            "Acceleration": [0.0, 0.0, 0.0],
+            "Brightness": 1.0,
+            "Drag": 0.0,
+            "EmissionDirection": {"Enum": 1},
+            "Enabled": true,
+            "FlipbookBlendFrames": true,
+            "FlipbookFramerate": {"NumberRange": [1.0, 1.0]},
+            "FlipbookLayout": {"Enum": 0},
+            "FlipbookMode": {"Enum": 0},
+            "FlipbookSizeX": 1,
+            "FlipbookSizeY": 1,
+            "FlipbookStartRandom": false,
+            "Lifetime": {"NumberRange": [2.0, 4.0]},
+            "LightEmission": 0.0,
+            "LightInfluence": 0.0,
+            "LockedToPart": false,
+            "Orientation": {"Enum": 0},
+            "Rate": 50.0,
+            "RotSpeed": {"NumberRange": [0.0, 0.0]},
+            "Rotation": {"NumberRange": [0.0, 0.0]},
+            "Shape": {"Enum": 0},
+            "ShapeInOut": {"Enum": 0},
+            "ShapePartial": 1.0,
+            "ShapeStyle": {"Enum": 0},
+            "Speed": {"NumberRange": [5.0, 10.0]},
+            "Texture": "rbxassetid://243660364",
+            "TimeScale": 1.0,
+            "VelocityInheritance": 0.0,
+            "WindAffectsDrag": false,
+            "ZOffset": 0.0
+          }
+        },
+        {
+          "Name": "PointLight",
+          "ClassName": "PointLight",
+          "Properties": {
+            "Brightness": 2.0,
+            "Color": [0.3921568691730499, 0.7843137383460999, 1.0],
+            "Enabled": true,
+            "Range": 40.0,
+            "Shadows": false
+          }
+        },
+        {
+          "Name": "WaterParticleAttach",
+          "ClassName": "Attachment",
+          "Properties": {
+            "CFrame": [0.0, 0.0, 0.0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+            "Visible": false
+          },
+          "Children": [
+            {
+              "Name": "WaterSplash",
+              "ClassName": "ParticleEmitter",
+              "Properties": {
+                "Acceleration": [0.0, -8.0, 0.0],
+                "Brightness": 1.0,
+                "Drag": 0.0,
+                "EmissionDirection": {"Enum": 1},
+                "Enabled": true,
+                "FlipbookBlendFrames": true,
+                "FlipbookFramerate": {"NumberRange": [1.0, 1.0]},
+                "FlipbookLayout": {"Enum": 0},
+                "FlipbookMode": {"Enum": 0},
+                "FlipbookSizeX": 1,
+                "FlipbookSizeY": 1,
+                "FlipbookStartRandom": false,
+                "Lifetime": {"NumberRange": [1.0, 2.0]},
+                "LightEmission": 0.0,
+                "LightInfluence": 0.0,
+                "LockedToPart": false,
+                "Orientation": {"Enum": 0},
+                "Rate": 30.0,
+                "RotSpeed": {"NumberRange": [0.0, 0.0]},
+                "Rotation": {"NumberRange": [0.0, 0.0]},
+                "Shape": {"Enum": 0},
+                "ShapeInOut": {"Enum": 0},
+                "ShapePartial": 1.0,
+                "ShapeStyle": {"Enum": 0},
+                "Speed": {"NumberRange": [2.0, 4.0]},
+                "Texture": "rbxassetid://241876674",
+                "TimeScale": 1.0,
+                "VelocityInheritance": 0.0,
+                "WindAffectsDrag": false,
+                "ZOffset": 0.0
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
