@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "assetKey": "visual.weapon.breach-shotgun.model",
+  "visualId": "weapon.visual.breach_shotgun.morrow_v1",
+  "weaponId": "weapon.breach-shotgun",
+  "candidateId": "morrow-breach-shotgun.v2",
+  "status": "source-candidate-not-runtime-approved",
+  "sourceKind": "ProjectOriginal",
+  "sourceLicense": "Original project asset; all project rights retained",
+  "generatorFile": "generate_morrow_breach_shotgun.py",
+  "generatedModelFile": "morrow_breach_shotgun.obj",
+  "animationFile": "morrow_breach_shotgun.animations.json",
+  "format": "Generated OBJ multi-object source; animation curves in companion JSON",
+  "designIntent": "Original frontier breach shotgun with broad receiver, vented heat shield, wood furniture, shell rack, weapon light, and detachable magazine",
+  "orientation": { "forward": "+X", "up": "+Z" },
+  "sourceRootName": "WeaponRoot (integration wrapper)",
+  "robloxModelName": "WeaponPresentation",
+  "minimumComponentMeshCount": 24,
+  "attachmentLocators": {
+    "RightGripAttachment": [-0.30, 0.0, -0.65],
+    "LeftGripAttachment": [1.52, 0.0, -0.12],
+    "Muzzle": [3.92, 0.0, 0.19],
+    "Magazine": [0.40, 0.0, -0.88],
+    "Ejection": [0.22, -0.42, 0.18]
+  },
+  "animationClips": [
+    { "name": "Fire", "durationSeconds": 0.14, "targetNode": "Bolt" },
+    { "name": "Reload", "durationSeconds": 1.55, "targetNode": "Magazine" },
+    { "name": "Empty", "durationSeconds": 0.24, "targetNode": "Bolt" }
+  ],
+  "gameplayAuthority": {
+    "cadence": "server", "ammunition": "server", "reloadAcceptance": "server",
+    "targeting": "server", "hitValidation": "server", "damage": "server"
+  },
+  "studioGate": {
+    "imported": false, "visualReviewPassed": false, "animationImportVerified": false,
+    "isometricReadabilityVerified": false, "performanceVerified": false
+  }
+}
