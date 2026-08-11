@@ -45,6 +45,11 @@ def validate_docs() -> None:
     python_script("roadmap/authority integrity", "scripts/validate_roadmap_authority.py")
     python_script("engineering efficiency construct", "scripts/validate_efficiency_construct.py")
     python_script("Main World CI artifact contract", "scripts/validate_main_world_ci_artifact.py")
+    python_script(
+        "Main World artifact bundle verifier",
+        "scripts/verify_main_world_artifact_bundle.py",
+        "--self-test",
+    )
 
 
 def validate_full_preflight() -> None:
