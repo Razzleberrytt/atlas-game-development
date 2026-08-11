@@ -58,6 +58,17 @@ assert(repeated ~= nil, "same seed should reproduce a secret")
 assert(repeated.HostIndex == chosenPlan.HostIndex, "same seed must reproduce host index")
 assert(repeated.HostRoomId == chosenPlan.HostRoomId, "same seed must reproduce host room")
 assert(repeated.SecretRoomId == chosenPlan.SecretRoomId, "same seed must reproduce secret room")
+assert(repeated.RewardId == chosenPlan.RewardId, "same seed must reproduce secret reward")
+assert(repeated.PlanIdentity == chosenPlan.PlanIdentity, "same seed must reproduce secret plan identity")
+assert(chosenPlan.ConfigVersion == config.Version, "secret plan must record config version")
+assert(
+	string.find(chosenPlan.PlanIdentity, `seed={chosenPlan.Seed}`, 1, true) ~= nil,
+	"secret identity must record the run seed"
+)
+assert(
+	string.find(chosenPlan.PlanIdentity, chosenPlan.SecretRoomId, 1, true) ~= nil,
+	"secret identity must record the selected secret"
+)
 
 local original = makePlan(chosenSeed :: number)
 local beforeLinks = {}
@@ -88,13 +99,24 @@ assert(not duplicateDiscovery and duplicateDiscoveryReason == "AlreadyDiscovered
 
 local claimed, claimReason, amount = resolver.claim(state)
 assert(claimed and claimReason == "RewardClaimed", "first claim should succeed")
-assert(amount == config.Reward.RunCurrencyAmount, "claim amount must use bounded config")
+assert(amount == chosenPlan.RunCurrencyAmount, "claim amount must use the selected secret reward")
 
 local duplicateClaim, duplicateClaimReason, duplicateAmount = resolver.claim(state)
 assert(
 	not duplicateClaim and duplicateClaimReason == "RewardAlreadyClaimed" and duplicateAmount == 0,
 	"reward must not duplicate"
 )
+
+local seenSecretIds = {}
+for seed = 1, 500 do
+	local plan = resolver.plan(makePlan(seed))
+	if plan ~= nil then
+		seenSecretIds[plan.SecretRoomId] = true
+	end
+end
+for _, secret in config.SecretRooms do
+	assert(seenSecretIds[secret.Id] == true, "deterministic seed range must exercise every curated secret")
+end
 
 local noSecretSeed = nil
 for seed = 1, 500 do
