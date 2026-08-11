@@ -1,0 +1,13 @@
+{
+  "assetKey": "enemy.presentation.runner.razor_v1",
+  "version": "RUNNER-RAZOR-v1",
+  "sourceType": "project-original-procedural-blockout",
+  "registryModelPath": "Enemies/Runner/RazorV1",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "minimumPartCount": 14,
+  "requiredParts": ["PelvisCore","TorsoBlade","ChestSpine","HeadForward","UpperArmLeft","UpperArmRight","ForearmLeft","ForearmRight","ClawLeft","ClawRight","ThighLeft","ThighRight","ShinLeft","ShinRight"],
+  "requiredAttachments": ["AttackOrigin", "WeakpointPresentation"],
+  "silhouetteClaims": ["overlong-forearms", "blade-thin-torso", "head-forward-sprint"]
+}
