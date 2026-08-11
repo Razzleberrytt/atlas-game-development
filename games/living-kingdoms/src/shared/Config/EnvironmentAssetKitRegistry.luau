@@ -4,7 +4,7 @@
 -- Final meshes may replace these source paths without changing semantic IDs or gameplay authority.
 
 local Registry = {
-	Version = "ENV-ASSET-KIT-v1",
+	Version = "ENV-ASSET-KIT-v2",
 	Definitions = table.freeze({
 		table.freeze({
 			id = "env.rock.frontier.boulder_a",
@@ -36,6 +36,36 @@ local Registry = {
 			}),
 			sourceModelPath = "Environment/Foliage/CorruptedDeadPineA",
 			footprintStuds = table.freeze({ x = 10, y = 30, z = 10 }),
+			presentationOnly = true,
+			gameplayAuthorityOwnerId = nil,
+		}),
+		table.freeze({
+			id = "env.root.corrupted.fallen_mass_a",
+			family = "Root",
+			variantId = "corrupted.fallen_root_mass.a",
+			biomeIds = table.freeze({ "biome.corrupted_wilderness", "biome.frontier" }),
+			scaleClass = "Large",
+			collisionPolicy = "Simple",
+			streamingGroupId = "main_world.resources",
+			qualityTiers = table.freeze({ "Minimum", "Reduced", "Full" }),
+			sockets = table.freeze({}),
+			sourceModelPath = "Environment/Foliage/FallenRootMassA",
+			footprintStuds = table.freeze({ x = 14, y = 5, z = 11 }),
+			presentationOnly = true,
+			gameplayAuthorityOwnerId = nil,
+		}),
+		table.freeze({
+			id = "env.root.corrupted.stump_cluster_a",
+			family = "Root",
+			variantId = "corrupted.stump_cluster.a",
+			biomeIds = table.freeze({ "biome.corrupted_wilderness" }),
+			scaleClass = "Medium",
+			collisionPolicy = "Simple",
+			streamingGroupId = "main_world.resources",
+			qualityTiers = table.freeze({ "Minimum", "Reduced", "Full" }),
+			sockets = table.freeze({}),
+			sourceModelPath = "Environment/Foliage/CorruptedStumpClusterA",
+			footprintStuds = table.freeze({ x = 8, y = 8, z = 8 }),
 			presentationOnly = true,
 			gameplayAuthorityOwnerId = nil,
 		}),

@@ -25,19 +25,24 @@ local registry = loadModule(
 	"EnvironmentAssetKitRegistry"
 )
 
-check(registry.Version == "ENV-ASSET-KIT-v1")
-check(#registry.Definitions >= 4)
-check(contracts.isValid(registry.Definitions), "starter environment registry must validate")
+check(registry.Version == "ENV-ASSET-KIT-v2")
+check(#registry.Definitions >= 9)
+check(contracts.isValid(registry.Definitions), "expanded environment registry must validate")
 
 local seenIds = {}
 for _, definition in registry.Definitions do
-	check(not seenIds[definition.id], "duplicate starter asset id: " .. definition.id)
+	check(not seenIds[definition.id], "duplicate environment asset id: " .. definition.id)
 	seenIds[definition.id] = true
 	check(definition.presentationOnly == true)
 	check(definition.gameplayAuthorityOwnerId == nil)
 	check(string.sub(definition.id, 1, 4) == "env.")
 	check(string.sub(definition.sourceModelPath, 1, 12) == "Environment/")
 end
+
+check(seenIds["env.tree.corrupted.dead_pine_a"] == true)
+check(seenIds["env.root.corrupted.fallen_mass_a"] == true)
+check(seenIds["env.rock.frontier.boulder_a"] == true)
+check(seenIds["env.root.corrupted.stump_cluster_a"] == true)
 
 local duplicate = table.clone(registry.Definitions)
 table.insert(duplicate, registry.Definitions[1])
