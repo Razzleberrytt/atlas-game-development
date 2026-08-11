@@ -1,0 +1,13 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {"Name":"StoneNorth","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,0.45,-2.4,1,0,0,0,1,0,0,0,1],"Color":[0.24,0.22,0.20],"Material":{"Enum":848},"Size":[2.2,0.9,1.2]}},
+    {"Name":"StoneSouth","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,0.45,2.4,1,0,0,0,1,0,0,0,1],"Color":[0.24,0.22,0.20],"Material":{"Enum":848},"Size":[2.2,0.9,1.2]}},
+    {"Name":"StoneEast","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[2.4,0.45,0,1,0,0,0,1,0,0,0,1],"Color":[0.24,0.22,0.20],"Material":{"Enum":848},"Size":[1.2,0.9,2.2]}},
+    {"Name":"StoneWest","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-2.4,0.45,0,1,0,0,0,1,0,0,0,1],"Color":[0.24,0.22,0.20],"Material":{"Enum":848},"Size":[1.2,0.9,2.2]}},
+    {"Name":"CharredLogA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,0.7,0,0.71,0,0.71,0,1,0,-0.71,0,0.71],"Color":[0.08,0.06,0.05],"Material":{"Enum":528},"Size":[5,0.7,0.7]}},
+    {"Name":"CharredLogB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,0.7,0,0.71,0,-0.71,0,1,0,0.71,0,0.71],"Color":[0.08,0.06,0.05],"Material":{"Enum":528},"Size":[5,0.7,0.7]}},
+    {"Name":"socket.vfx.embers","ClassName":"Attachment","Properties":{"CFrame":[0,0.8,0,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"socket.audio.fire","ClassName":"Attachment","Properties":{"CFrame":[0,0.8,0,1,0,0,0,1,0,0,0,1]}}
+  ]
+}
