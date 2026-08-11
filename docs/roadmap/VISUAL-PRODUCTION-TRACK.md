@@ -20,6 +20,7 @@ Detailed current inventory: `docs/specifications/visual-placeholder-inventory.md
 | VIS-0104 | In progress | Operative/class silhouettes, life-state cues, and carry poses exist. Needs canonical rig/animation, class-action cues, avatar-scale review, and squad performance evidence. |
 | VIS-0105 | In progress — review gate | Cache, relay, extraction, routes, five safe landmarks, and shared world-material language exist. Needs Studio visual/accessibility/performance review before more geometry. |
 | VIS-0106 | Blocked by P9 | Special-enemy and boss package waits for stable encounter contracts. |
+| VIS-FACTORY | Source-prepared (PRs #407–#438) | Four ingestion boundaries plus populated source content — see "Content factory capability" below. Presentation-only; no runtime owner; Studio review still pending. |
 | VIS-0107 | Blocked by canonical assets/P11 | Small cosmetic system waits for canonical fallbacks and persistence ownership. |
 | VIS-0108 | Blocked by P12 | Release-candidate visual, audio, accessibility, and performance closure. |
 
@@ -62,6 +63,35 @@ Source-audited detail of what each in-progress slice has already delivered. Thes
   - Cache: a procedural supply case presents available/consumed state around the unchanged server-owned cache.
   - Routes: paired edge guides on authored segments, capped at 22 parts, with no destination or extraction hints.
   - Relay and extraction: Validated monotonic safe mission snapshots drive client presentation; inconsistent state restores primitive fallbacks.
+
+## Content factory capability
+
+PRs #407–#438 turned repeated visual content from code work into data/model work, which is the
+compounding target for this track. Four ingestion boundaries were specified and populated:
+
+| Boundary | Specification | Registered content |
+|---|---|---|
+| Environment asset kits | `docs/specifications/environment-asset-kit-registry.md` | 32 assets across 4 registry waves, 10 families |
+| Weapon visual skins | `docs/specifications/weapon-visual-skin-content-factory.md` | 8 skin rows |
+| Enemy horror presentation | `docs/specifications/enemy-horror-presentation-factory.md` | 6 role profiles |
+| Crafting presentation | `docs/specifications/crafting-visual-content-factory.md` | 8 rows |
+
+Backing these: **44 source model definitions** under 26 manifests (29 world, 6 enemy, 5 crafting,
+4 gathering).
+
+Standing constraints on this capability:
+
+- every row is presentation-only, and the authority audits fail closed when a row declares a
+  gameplay authority owner;
+- **no `src/` runtime owner consumes these registries.** They are an ingestion boundary, not a
+  second gameplay system. That is the intended state;
+- registration is not production approval and not Studio visual review. The decision gate above
+  still applies — do not add another broad geometry pass before review;
+- final meshes may replace source paths without changing semantic IDs or gameplay ownership.
+
+All 32 environment assets target the `main_world.resources` and `main_world.structures` streaming
+groups, both currently unmapped in the dedicated Main World. Their admission is gated behind the
+BA-014 hub/route evidence pass; see `EXECUTION-DASHBOARD.md`.
 
 ## Dependency rules
 
