@@ -1,0 +1,14 @@
+{
+  "assetKey": "world.environment-kit.corrupted-wilderness",
+  "version": "ENV-WILD-v1",
+  "sourceType": "project-original-procedural",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "assets": [
+    {"semanticId":"env.tree.corrupted.dead_pine_a","file":"CorruptedDeadPineA.model.json","registrySourceModelPath":"Environment/Foliage/CorruptedDeadPineA","minimumPartCount":4},
+    {"semanticId":"env.root.corrupted.fallen_mass_a","file":"FallenRootMassA.model.json","registrySourceModelPath":"Environment/Foliage/FallenRootMassA","minimumPartCount":4},
+    {"semanticId":"env.rock.frontier.boulder_a","file":"FrontierBoulderA.model.json","registrySourceModelPath":"Environment/Rocks/FrontierBoulderA","minimumPartCount":3},
+    {"semanticId":"env.root.corrupted.stump_cluster_a","file":"CorruptedStumpClusterA.model.json","registrySourceModelPath":"Environment/Foliage/CorruptedStumpClusterA","minimumPartCount":4}
+  ]
+}
