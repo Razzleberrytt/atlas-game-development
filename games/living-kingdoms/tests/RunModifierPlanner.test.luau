@@ -86,11 +86,12 @@ for _, override in repeated.IntensityOverrides do
 	assert(override.ModifiedIntensity <= config.MaximumEncounterIntensity, "modifier intensity must respect maximum")
 	assert(definition.EligibleEncounterSlots[override.EncounterSlotId] == true, "override must target eligible slot")
 	assert(
-		override.ModifiedIntensity == math.clamp(
-			override.BaseIntensity + definition.EncounterIntensityDelta,
-			config.MinimumEncounterIntensity,
-			config.MaximumEncounterIntensity
-		),
+		override.ModifiedIntensity
+			== math.clamp(
+				override.BaseIntensity + definition.EncounterIntensityDelta,
+				config.MinimumEncounterIntensity,
+				config.MaximumEncounterIntensity
+			),
 		"override must apply exactly one bounded authored intensity delta"
 	)
 	assert(
