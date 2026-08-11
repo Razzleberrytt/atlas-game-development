@@ -49,7 +49,10 @@ for _, asset in manifest.assets do
 	local definition = registryById[asset.semanticId]
 	check(definition ~= nil, "manifest asset must exist in EnvironmentAssetKitRegistry: " .. asset.semanticId)
 	check(definition.sourceModelPath == asset.registrySourceModelPath, "manifest/registry source path drift")
-	check(definition.streamingGroupId == "main_world.structures", "ruined structure must remain in structure streaming group")
+	check(
+		definition.streamingGroupId == "main_world.structures",
+		"ruined structure must remain in structure streaming group"
+	)
 	check(string.find(asset.file, "..", 1, true) == nil, "asset file may not escape kit root")
 	local model = decodeJson(ROOT .. asset.file)
 	check(model.ClassName == "Model", "environment source file must decode to a Model")
