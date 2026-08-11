@@ -1,0 +1,13 @@
+{
+  "version": "WEAPON-CONCEPT-WAVE1-v1",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "canonicalFirearmBindings": 0,
+  "concepts": [
+    {"id":"weapon.concept.revolver.gravesend_v1","file":"GravesendRevolverV1.model.json","minimumPartCount":4},
+    {"id":"weapon.concept.rifle.widowmaker_lever_v1","file":"WidowmakerLeverRifleV1.model.json","minimumPartCount":5},
+    {"id":"weapon.concept.shotgun.harrow_auto_v1","file":"HarrowAutoShotgunV1.model.json","minimumPartCount":4},
+    {"id":"weapon.concept.carbine.cinder_v1","file":"CinderCarbineV1.model.json","minimumPartCount":5}
+  ]
+}
