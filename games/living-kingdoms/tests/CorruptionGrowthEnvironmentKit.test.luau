@@ -12,20 +12,46 @@ local function check(condition: unknown, message: string?)
 	end
 end
 
-local manifest = serde.decode("json", fs.readFile(ROOT .. "asset-manifest.json"))
-local registry =
-	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/EnvironmentAssetKitRegistry.luau"), {
-		debugName = "EnvironmentAssetKitRegistry",
+local function loadModule(path: string, debugName: string)
+	return luau.load(fs.readFile(path), {
+		debugName = debugName,
 		injectGlobals = true,
 	})()
+end
+
+local manifest = serde.decode("json", fs.readFile(ROOT .. "asset-manifest.json"))
+local baseRegistry = loadModule(
+	"games/living-kingdoms/src/shared/Config/EnvironmentAssetKitRegistry.luau",
+	"EnvironmentAssetKitRegistry"
+)
+local wave2Registry = loadModule(
+	"games/living-kingdoms/src/shared/Config/EnvironmentAssetKitRegistryWave2.luau",
+	"EnvironmentAssetKitRegistryWave2"
+)
+local contracts = loadModule(
+	"games/living-kingdoms/src/shared/World/EnvironmentAssetKitContracts.luau",
+	"EnvironmentAssetKitContracts"
+)
 
 check(manifest.runtimeMapped == false)
 check(manifest.studioApproval == false)
 check(manifest.gameplayAuthority == false)
 check(#manifest.assets == 4)
+check(wave2Registry.Version == "ENV-ASSET-KIT-WAVE2-v2")
+check(#wave2Registry.Definitions == 8)
+
+local combined = {}
+for _, definition in baseRegistry.Definitions do
+	table.insert(combined, definition)
+end
+for _, definition in wave2Registry.Definitions do
+	table.insert(combined, definition)
+end
+check(contracts.isValid(combined), "base + wave-2 environment definitions must compose under canonical contracts")
 
 local byId = {}
-for _, definition in registry.Definitions do
+for _, definition in combined do
+	check(byId[definition.id] == nil, "duplicate environment semantic id: " .. definition.id)
 	byId[definition.id] = definition
 end
 
