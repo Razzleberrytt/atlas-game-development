@@ -85,6 +85,14 @@ local Config = {
 			evidenceRevision = "AuthoredRevision20260810",
 			note = "First Patch 0.5 civic review unit; 11-instance bounded evidence is committed and checksum-pinned.",
 		}),
+		GrandStaircase = table.freeze({
+			sourcePath = "Workspace/HubTown/GrandStaircase",
+			disposition = Disposition.RecoveredHeld,
+			reconstructionModule = "RecoveredGrandStaircaseConfig",
+			newGeometryPromotionAllowed = false,
+			evidenceRevision = "AuthoredRevision20260810",
+			note = "35-instance direct-binary review unit preserves the authored steps, rails, lanterns, and lights behind hold.",
+		}),
 		Resources = table.freeze({
 			sourcePath = "Workspace/Resources",
 			disposition = Disposition.PartialSampleOnly,

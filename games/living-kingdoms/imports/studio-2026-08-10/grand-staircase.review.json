@@ -1,0 +1,92 @@
+{
+  "schemaVersion": "lk-rbxl-review-unit-v1",
+  "source": {
+    "file": "livingkingdoms.rbxl",
+    "sha256": "7cfa9ae257cccc1c048459029f95dfdb83a4e113cbf1ff2f281bc7c9532a695b",
+    "bytes": 1808699
+  },
+  "selector": {
+    "exactPath": "Workspace/HubTown/GrandStaircase",
+    "rootSourceId": 229,
+    "parentSourceId": 118
+  },
+  "counts": {
+    "identityRows": 35,
+    "model": 1,
+    "parts": 24,
+    "pointLights": 10
+  },
+  "sharedProperties": {
+    "stone": {
+      "Anchored": true,
+      "CanCollide": true,
+      "CanQuery": true,
+      "CanTouch": true,
+      "CastShadow": true,
+      "Color3uint8": [160, 155, 145],
+      "Material": 784,
+      "Reflectance": 0.0,
+      "Transparency": 0.0,
+      "shape": 1,
+      "rotation_id": 2
+    },
+    "lantern": {
+      "Anchored": true,
+      "CanCollide": true,
+      "CanQuery": true,
+      "CanTouch": true,
+      "CastShadow": true,
+      "Color3uint8": [255, 200, 100],
+      "Material": 288,
+      "Reflectance": 0.0,
+      "Transparency": 0.0,
+      "shape": 1,
+      "rotation_id": 2
+    },
+    "pointLight": {
+      "Brightness": 2.0,
+      "Color": [1.0, 0.7843137383460999, 0.3921568691730499],
+      "Enabled": true,
+      "Range": 12.0,
+      "Shadows": false
+    }
+  },
+  "parts": [
+    {"sourceId":230,"parentSourceId":229,"name":"Step1","style":"stone","position":[0.0,57.295631408691406,-27.75],"size":[80.0,2.0,8.0]},
+    {"sourceId":231,"parentSourceId":229,"name":"Step2","style":"stone","position":[0.0,59.295631408691406,-19.75],"size":[80.0,2.0,8.0]},
+    {"sourceId":232,"parentSourceId":229,"name":"Step3","style":"stone","position":[0.0,61.295631408691406,-11.75],"size":[80.0,2.0,8.0]},
+    {"sourceId":233,"parentSourceId":229,"name":"Step4","style":"stone","position":[0.0,63.295631408691406,-3.75],"size":[80.0,2.0,8.0]},
+    {"sourceId":234,"parentSourceId":229,"name":"Step5","style":"stone","position":[0.0,65.2956314086914,4.25],"size":[80.0,2.0,8.0]},
+    {"sourceId":235,"parentSourceId":229,"name":"Step6","style":"stone","position":[0.0,67.2956314086914,12.25],"size":[80.0,2.0,8.0]},
+    {"sourceId":236,"parentSourceId":229,"name":"Step7","style":"stone","position":[0.0,69.2956314086914,20.25],"size":[80.0,2.0,8.0]},
+    {"sourceId":237,"parentSourceId":229,"name":"Step8","style":"stone","position":[0.0,71.29562377929688,28.25],"size":[80.0,2.0,8.0]},
+    {"sourceId":238,"parentSourceId":229,"name":"Step9","style":"stone","position":[0.0,73.29562377929688,36.25],"size":[80.0,2.0,8.0]},
+    {"sourceId":239,"parentSourceId":229,"name":"Step10","style":"stone","position":[0.0,75.29562377929688,44.25],"size":[80.0,2.0,8.0]},
+    {"sourceId":240,"parentSourceId":229,"name":"Rail-1","style":"stone","position":[-42.0,66.2956314086914,4.25],"size":[5.0,25.0,85.0]},
+    {"sourceId":241,"parentSourceId":229,"name":"RailGlow-1","style":"stone","position":[-42.0,78.29562377929688,4.25],"size":[2.0,3.0,85.0]},
+    {"sourceId":242,"parentSourceId":229,"name":"Rail1","style":"stone","position":[42.0,66.2956314086914,4.25],"size":[5.0,25.0,85.0]},
+    {"sourceId":243,"parentSourceId":229,"name":"RailGlow1","style":"stone","position":[42.0,78.29562377929688,4.25],"size":[2.0,3.0,85.0]},
+    {"sourceId":244,"parentSourceId":229,"name":"Lantern_L_2","style":"lantern","position":[-3.0,60.295631408691406,-19.75],"size":[0.5,1.5,0.5]},
+    {"sourceId":246,"parentSourceId":229,"name":"Lantern_R_2","style":"lantern","position":[3.0,60.295631408691406,-19.75],"size":[0.5,1.5,0.5]},
+    {"sourceId":248,"parentSourceId":229,"name":"Lantern_L_4","style":"lantern","position":[-3.0,64.2956314086914,-3.75],"size":[0.5,1.5,0.5]},
+    {"sourceId":250,"parentSourceId":229,"name":"Lantern_R_4","style":"lantern","position":[3.0,64.2956314086914,-3.75],"size":[0.5,1.5,0.5]},
+    {"sourceId":252,"parentSourceId":229,"name":"Lantern_L_6","style":"lantern","position":[-3.0,68.2956314086914,12.25],"size":[0.5,1.5,0.5]},
+    {"sourceId":254,"parentSourceId":229,"name":"Lantern_R_6","style":"lantern","position":[3.0,68.2956314086914,12.25],"size":[0.5,1.5,0.5]},
+    {"sourceId":256,"parentSourceId":229,"name":"Lantern_L_8","style":"lantern","position":[-3.0,72.29562377929688,28.25],"size":[0.5,1.5,0.5]},
+    {"sourceId":258,"parentSourceId":229,"name":"Lantern_R_8","style":"lantern","position":[3.0,72.29562377929688,28.25],"size":[0.5,1.5,0.5]},
+    {"sourceId":260,"parentSourceId":229,"name":"Lantern_L_10","style":"lantern","position":[-3.0,76.29562377929688,44.25],"size":[0.5,1.5,0.5]},
+    {"sourceId":262,"parentSourceId":229,"name":"Lantern_R_10","style":"lantern","position":[3.0,76.29562377929688,44.25],"size":[0.5,1.5,0.5]}
+  ],
+  "pointLights": [
+    {"sourceId":245,"parentSourceId":244,"name":"PointLight"},
+    {"sourceId":247,"parentSourceId":246,"name":"PointLight"},
+    {"sourceId":249,"parentSourceId":248,"name":"PointLight"},
+    {"sourceId":251,"parentSourceId":250,"name":"PointLight"},
+    {"sourceId":253,"parentSourceId":252,"name":"PointLight"},
+    {"sourceId":255,"parentSourceId":254,"name":"PointLight"},
+    {"sourceId":257,"parentSourceId":256,"name":"PointLight"},
+    {"sourceId":259,"parentSourceId":258,"name":"PointLight"},
+    {"sourceId":261,"parentSourceId":260,"name":"PointLight"},
+    {"sourceId":263,"parentSourceId":262,"name":"PointLight"}
+  ]
+}
