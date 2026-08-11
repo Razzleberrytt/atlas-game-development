@@ -2,7 +2,17 @@
 
 export type WeaponVisualStatus = "PlannedCustomModel" | "SourceReady" | "ProductionApproved"
 export type WeaponVisualFamily = "Scavenged" | "MilitarySurplus" | "FrontierBuilt" | "Experimental" | "RelicGrade"
-export type WeaponSocketKind = "Grip" | "SupportGrip" | "Muzzle" | "Ejection" | "Magazine" | "Optic" | "Barrel" | "Stock" | "Underbarrel" | "Ornament"
+export type WeaponSocketKind =
+	"Grip"
+	| "SupportGrip"
+	| "Muzzle"
+	| "Ejection"
+	| "Magazine"
+	| "Optic"
+	| "Barrel"
+	| "Stock"
+	| "Underbarrel"
+	| "Ornament"
 
 export type WeaponSocketDefinition = {
 	id: string,
@@ -113,7 +123,10 @@ function Contracts.validate(
 		if not VALID_STATUSES[visual.status] then
 			issue(visual.visualId, "InvalidVisualStatus", "weapon visual status is invalid")
 		end
-		if string.sub(visual.viewModelPath, 1, 8) ~= "Weapons/" or string.sub(visual.worldModelPath, 1, 8) ~= "Weapons/" then
+		if
+			string.sub(visual.viewModelPath, 1, 8) ~= "Weapons/"
+			or string.sub(visual.worldModelPath, 1, 8) ~= "Weapons/"
+		then
 			issue(visual.visualId, "InvalidModelPath", "weapon models must stay under Weapons/")
 		end
 		if visual.animationSetId == "" then
@@ -138,7 +151,11 @@ function Contracts.validate(
 		end
 		for _, kind in { "Grip", "Muzzle", "Magazine", "Ejection" } do
 			if not hasRequiredSocket(visual, kind :: WeaponSocketKind) then
-				issue(visual.visualId, "RequiredSocketMissing", "weapon visual is missing required socket kind: " .. kind)
+				issue(
+					visual.visualId,
+					"RequiredSocketMissing",
+					"weapon visual is missing required socket kind: " .. kind
+				)
 			end
 		end
 	end
@@ -152,7 +169,11 @@ function Contracts.validate(
 			skinById[skin.skinId] = skin
 		end
 		if skin.displayName == "" or skin.materialSetId == "" or skin.paletteId == "" then
-			issue(skin.skinId, "IncompleteSkinPresentation", "weapon skins require display, material-set, and palette ids")
+			issue(
+				skin.skinId,
+				"IncompleteSkinPresentation",
+				"weapon skins require display, material-set, and palette ids"
+			)
 		end
 		if not skin.presentationOnly or skin.gameplayModifiers ~= nil then
 			issue(skin.skinId, "SkinGameplayModifierForbidden", "weapon skins are cosmetic and may not modify gameplay")
