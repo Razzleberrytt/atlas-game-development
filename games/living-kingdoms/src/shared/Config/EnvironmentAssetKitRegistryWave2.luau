@@ -67,7 +67,7 @@ local Definitions = table.freeze({
 	}),
 	table.freeze({
 		id = "env.growth.corruption.resin_cluster_a",
-		family = "Corruption",
+		family = "GroundClutter",
 		variantId = "corruption.resin_cluster.a",
 		biomeIds = table.freeze({ "biome.corrupted_wilderness", "biome.abandoned_industry" }),
 		scaleClass = "Medium",
@@ -82,7 +82,7 @@ local Definitions = table.freeze({
 	}),
 	table.freeze({
 		id = "env.growth.corruption.root_arch_a",
-		family = "Corruption",
+		family = "Root",
 		variantId = "corruption.root_arch.a",
 		biomeIds = table.freeze({ "biome.corrupted_wilderness" }),
 		scaleClass = "Large",
@@ -97,7 +97,7 @@ local Definitions = table.freeze({
 	}),
 	table.freeze({
 		id = "env.growth.corruption.ground_spire_a",
-		family = "Corruption",
+		family = "GroundClutter",
 		variantId = "corruption.ground_spire.a",
 		biomeIds = table.freeze({ "biome.corrupted_wilderness", "biome.abandoned_industry" }),
 		scaleClass = "Large",
@@ -112,7 +112,7 @@ local Definitions = table.freeze({
 	}),
 	table.freeze({
 		id = "env.growth.corruption.spore_lantern_a",
-		family = "Corruption",
+		family = "GroundClutter",
 		variantId = "corruption.spore_lantern.a",
 		biomeIds = table.freeze({ "biome.corrupted_wilderness", "biome.mine" }),
 		scaleClass = "Medium",
