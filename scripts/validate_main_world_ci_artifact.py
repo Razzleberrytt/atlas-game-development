@@ -58,11 +58,14 @@ def main() -> int:
         "/tmp/LivingKingdomsMainWorld.identity.txt",
         "Main World identity manifest",
     )
+    require(workflow, "cd /tmp", "portable Main World checksum working directory")
     require(
         workflow,
-        "sha256sum /tmp/LivingKingdomsMainWorld.rbxlx",
-        "Main World SHA-256 generation",
+        "sha256sum LivingKingdomsMainWorld.rbxlx | tee LivingKingdomsMainWorld.rbxlx.sha256",
+        "portable Main World SHA-256 generation",
     )
+    if "sha256sum /tmp/LivingKingdomsMainWorld.rbxlx" in workflow:
+        raise RuntimeError("Main World checksum sidecar must not embed the CI runner's /tmp path")
     require(workflow, 'commit=${SOURCE_SHA}', "source commit identity record")
     require(
         workflow,
