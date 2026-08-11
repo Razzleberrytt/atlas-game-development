@@ -20,10 +20,8 @@ local staircase = loadConfig(
 	"games/living-kingdoms/src/shared/Config/RecoveredGrandStaircaseConfig.luau",
 	"RecoveredGrandStaircaseConfig"
 )
-local archway = loadConfig(
-	"games/living-kingdoms/src/shared/Config/RecoveredHubArchwayConfig.luau",
-	"RecoveredHubArchwayConfig"
-)
+local archway =
+	loadConfig("games/living-kingdoms/src/shared/Config/RecoveredHubArchwayConfig.luau", "RecoveredHubArchwayConfig")
 
 local expectedSha = "7cfa9ae257cccc1c048459029f95dfdb83a4e113cbf1ff2f281bc7c9532a695b"
 
