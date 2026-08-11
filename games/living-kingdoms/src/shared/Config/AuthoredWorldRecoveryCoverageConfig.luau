@@ -13,7 +13,7 @@ local Disposition = table.freeze({
 })
 
 local Config = {
-	Version = "BA-005-RECOVERY-COVERAGE-v1",
+	Version = "BA-005-RECOVERY-COVERAGE-v2",
 	RuntimeEnabled = false,
 	CoordinateSpaceId = "authored-overworld",
 	SourceRbxlSha256 = "e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16",
@@ -25,6 +25,9 @@ local Config = {
 		FullPropertyArtifactBytes = 1546379,
 		FullPropertyArtifactSha256 = "078a64153fbc1d29409e326c924ba7bb1cd3cbe7137277697955af7c448708ea",
 		RecoveredSourceBundleAuthorsResourceGeometry = false,
+		UpdatedHubTownSourceRbxlSha256 = "7cfa9ae257cccc1c048459029f95dfdb83a4e113cbf1ff2f281bc7c9532a695b",
+		UpdatedHubTownSourceRbxlBytes = 1808699,
+		UpdatedHubTownCivicPropertyRows = 52,
 	}),
 	Groups = table.freeze({
 		WorldPath = table.freeze({
@@ -55,6 +58,13 @@ local Config = {
 			newGeometryPromotionAllowed = false,
 			note = "Single selected instance is property-backed and linked to the held Main World arrival contract.",
 		}),
+		UpdatedHubTownCivicCore = table.freeze({
+			sourcePath = "Workspace/HubTown/{CentralFountain,GrandStaircase,HubArchway}",
+			disposition = Disposition.RecoveredHeld,
+			reconstructionModule = "RecoveredHubTownRevisionConfig",
+			newGeometryPromotionAllowed = true,
+			note = "Checksum-pinned 2026-08-10 RBXL supplies complete supported properties for these three authored civic groups; runtime remains held pending representation admission.",
+		}),
 		Resources = table.freeze({
 			sourcePath = "Workspace/Resources",
 			disposition = Disposition.PartialSampleOnly,
@@ -74,13 +84,13 @@ local Config = {
 			disposition = Disposition.HierarchyOnly,
 			reconstructionModule = nil,
 			newGeometryPromotionAllowed = false,
-			note = "No complete committed property/presentation record exists for either atmosphere group.",
+			note = "No complete committed property/presentation record exists for either atmosphere group in the historical source revision.",
 		}),
 	}),
 	ResumeRequirements = table.freeze({
-		"commit or otherwise reviewably expose the checksum-pinned full property artifact",
-		"or re-extract the target group's complete supported properties from the canonical place source",
-		"then validate one coherent group before adding any new held geometry",
+		"use checksum-pinned 2026-08-10 property evidence for UpdatedHubTownCivicCore",
+		"preserve SourceHold until each recovered group is deliberately admitted to the source-managed representation",
+		"continue re-extracting other target groups from the updated RBXL rather than guessing missing properties",
 	}),
 }
 
