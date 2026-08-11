@@ -1,0 +1,12 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {"Name":"PipeLowerA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-2.4,1.0,0,0.98,0,0.17,0,1,0,-0.17,0,0.98],"Color":[0.26,0.20,0.16],"Material":{"Enum":256},"Size":[2.0,2.0,8.5]}},
+    {"Name":"PipeLowerB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[2.2,1.0,0.5,0.94,0,-0.34,0,1,0,0.34,0,0.94],"Color":[0.24,0.18,0.14],"Material":{"Enum":256},"Size":[2.0,2.0,8.0]}},
+    {"Name":"PipeUpperA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-0.4,2.8,0.1,0.87,0,0.5,0,1,0,-0.5,0,0.87],"Color":[0.28,0.21,0.16],"Material":{"Enum":256},"Size":[1.8,1.8,7.2]}},
+    {"Name":"PipeUpperB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[2.6,2.7,-0.8,0.98,0,0.17,0,1,0,-0.17,0,0.98],"Color":[0.22,0.17,0.13],"Material":{"Enum":256},"Size":[1.6,1.6,6.5]}},
+    {"Name":"SupportTimberA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,0.3,-3.2,1,0,0,0,1,0,0,0,1],"Color":[0.18,0.11,0.07],"Material":{"Enum":256},"Size":[9.0,0.6,0.7]}},
+    {"Name":"SupportTimberB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,0.3,3.2,1,0,0,0,1,0,0,0,1],"Color":[0.17,0.10,0.07],"Material":{"Enum":256},"Size":[9.0,0.6,0.7]}},
+    {"Name":"RustPlate","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-3.4,2.0,2.9,0.94,0.34,0,-0.34,0.94,0,0,0,1],"Color":[0.31,0.19,0.12],"Material":{"Enum":256},"Size":[2.4,0.2,1.5]}}
+  ]
+}

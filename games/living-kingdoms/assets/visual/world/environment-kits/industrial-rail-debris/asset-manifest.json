@@ -1,0 +1,15 @@
+{
+  "assetKey": "world.environment-kit.industrial-rail-debris",
+  "version": "ENV-INDUSTRIAL-RAIL-v1",
+  "sourceType": "project-original-source-models",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "artDirection": ["dark-frontier", "abandoned-industry", "rail-decay"],
+  "assets": [
+    {"semanticId":"env.structure.industry.rail_track_section_a","registrySourceModelPath":"Environment/Industry/RailTrackSectionA","file":"RailTrackSectionA.model.json","role":"repeatable-rail-module","minimumPartCount":6},
+    {"semanticId":"env.structure.industry.broken_rail_bend_a","registrySourceModelPath":"Environment/Industry/BrokenRailBendA","file":"BrokenRailBendA.model.json","role":"damaged-rail-variant","minimumPartCount":6},
+    {"semanticId":"env.prop.industry.signal_post_a","registrySourceModelPath":"Environment/Industry/SignalPostA","file":"SignalPostA.model.json","role":"industrial-landmark-prop","minimumPartCount":6},
+    {"semanticId":"env.prop.industry.collapsed_pipe_stack_a","registrySourceModelPath":"Environment/Industry/CollapsedPipeStackA","file":"CollapsedPipeStackA.model.json","role":"industrial-debris-cluster","minimumPartCount":7}
+  ]
+}

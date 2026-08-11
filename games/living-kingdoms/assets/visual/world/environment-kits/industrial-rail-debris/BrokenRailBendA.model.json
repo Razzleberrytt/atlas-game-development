@@ -1,0 +1,11 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {"Name":"RailLeftBroken","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-2.0,0.5,-2,0.98,0,-0.17,0,1,0,0.17,0,0.98],"Color":[0.25,0.22,0.19],"Material":{"Enum":256},"Size":[0.35,0.35,8]}},
+    {"Name":"RailRightBroken","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[2.0,0.7,1,0.94,0,0.34,0,1,0,-0.34,0,0.94],"Color":[0.27,0.23,0.19],"Material":{"Enum":256},"Size":[0.35,0.35,7]}},
+    {"Name":"TieBrokenA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,0,-4,0.98,0.17,0,-0.17,0.98,0,0,0,1],"Color":[0.18,0.11,0.07],"Material":{"Enum":256},"Size":[5.6,0.3,0.55]}},
+    {"Name":"TieBrokenB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0.5,0.05,1,0.94,-0.34,0,0.34,0.94,0,0,0,1],"Color":[0.17,0.10,0.07],"Material":{"Enum":256},"Size":[5.4,0.3,0.55]}},
+    {"Name":"TieBrokenC","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[1.0,0.15,4,0.87,0.5,0,-0.5,0.87,0,0,0,1],"Color":[0.16,0.10,0.06],"Material":{"Enum":256},"Size":[4.8,0.3,0.5]}},
+    {"Name":"DebrisPlate","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0.8,0.4,2.8,0.94,0.34,0,-0.34,0.94,0,0,0,1],"Color":[0.21,0.20,0.18],"Material":{"Enum":256},"Size":[1.8,0.2,1.2]}}
+  ]
+}
