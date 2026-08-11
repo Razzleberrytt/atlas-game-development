@@ -11,19 +11,27 @@ local function check(condition: unknown, message: string?)
 	end
 end
 
-for _, forbidden in {
-	"RemoteEvent",
-	"RemoteFunction",
-	"TeleportService",
-	"DataStoreService",
-	"HttpService",
-	"ProximityPrompt",
-	"BindToClose",
-	"FireServer",
-	"FireClient",
-} do
-	check(string.find(registrySource, forbidden, 1, true) == nil, "registry contains forbidden runtime surface: " .. forbidden)
-	check(string.find(contractsSource, forbidden, 1, true) == nil, "contracts contain forbidden runtime surface: " .. forbidden)
+for _, forbidden in
+	{
+		"RemoteEvent",
+		"RemoteFunction",
+		"TeleportService",
+		"DataStoreService",
+		"HttpService",
+		"ProximityPrompt",
+		"BindToClose",
+		"FireServer",
+		"FireClient",
+	}
+do
+	check(
+		string.find(registrySource, forbidden, 1, true) == nil,
+		"registry contains forbidden runtime surface: " .. forbidden
+	)
+	check(
+		string.find(contractsSource, forbidden, 1, true) == nil,
+		"contracts contain forbidden runtime surface: " .. forbidden
+	)
 end
 
 check(string.find(contractsSource, "GameplayAuthorityForbidden", 1, true) ~= nil)
