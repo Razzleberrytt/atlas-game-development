@@ -1,4 +1,4 @@
-# Atlas — Execution Dashboard v1.17
+# Atlas — Execution Dashboard v1.18
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-10  
@@ -34,10 +34,13 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 - The first bounded primary-route representation is now source-managed and mapped:
   - PR #396 — `MainWorldPrimaryRouteRenderConfig` plus a 12-Part model derived from route-control/chunk truth and exact recovered WorldPath surface style, with parity/topology regression coverage and no legacy slab resurrection;
   - PR #397 — maps that validated model only at `Workspace/LivingKingdomsMainWorld/Routes/PrimaryRoute`, while keeping runtime activation, place IDs, exact streaming radii, `ModelStreamingMode`, quality-tier behavior, and BA-014 acceptance evidence unset/pending.
-- - The BA-014 run is now executable rather than only defined:
+- The BA-014 run is now executable rather than only defined:
   - PR #399 — operator runbook turning the 31-check definition into a repeatable Studio sequence, recording no outcome;
   - PR #400 — placement parity: BA-011 named a `Routes/Primary` container the built place does not contain, while the project and render contract both map `Routes/PrimaryRoute`. Declared placement is now bound to the dedicated project by fixture in both directions, and each streaming group carries an explicit `projectMappingStatus`;
-  - PR #401 — `MainWorldAcceptanceScopeResolver` derives which checks the mapped build can actually answer: **10 in scope (7 blocking), 21 out of scope** on `resources`/`structures`/`atmosphere` content the place does not contain. A scoped pass authorizes nothing; the full matrix keeps its own gate.
+  - PR #401 — `MainWorldAcceptanceScopeResolver` derives which checks the mapped build can actually answer: **10 in scope (7 blocking), 21 out of scope** on `resources`/`structures`/`atmosphere` content the place does not contain. A scoped pass authorizes nothing; the full matrix keeps its own gate;
+  - PR #403 — repaired `scripts/efficiency.py audit`, which died with `UnicodeEncodeError` on Windows before printing its findings, and stopped six sibling CLIs mangling their output;
+  - PR #404 — `MainWorldBa014RunEvaluator` plus `evaluate-ba014-run.luau` decide a recorded run as INVALID/PARTIAL/FAIL/PASS through the committed contracts, generate the blank run record for the current scope, and keep reporting `activationAcceptable` from the full matrix so a scoped pass cannot read as acceptance.
+- **The BA-014 source chain is complete.** Definition → derived scope → operator runbook → generated run record → mechanical verdict all exist and are regression-covered. What remains is the Studio run itself, which needs a connected Studio/device lane.
 - The dedicated build therefore contains the exact admitted arrival + Central Fountain + Grand Staircase + Hub Archway + Dungeon Portal presentation **plus the bounded 12-Part primary route**. The 189 recovered `WorldPath` slabs remain non-authoritative and unmapped.
 - Other Resources, WorldStructures, atmosphere, Terrain, NPC/vendor/quest, and asset-specific details remain outside active representation when complete current evidence is absent. Do not invent them merely to increase coverage.
 - `AuthoredWorldRecoveryCoverageConfig` remains the admission boundary. Source admission, offline building, and source mapping do not equal runtime activation or acceptance verification.
@@ -52,7 +55,14 @@ The repository-first source chain is complete through a reproducible dedicated b
 
 The first run is a **10-check scoped pass**, not a 31-check pass. Derive the worklist from source rather than from prose — `MainWorldAcceptanceScopeResolver.resolveScope(matrix, MainWorldRepresentationConfig.mappedStreamingGroupIds())` — and use [`../validation/MAIN-WORLD-BA-014-STUDIO-RUNBOOK.md`](../validation/MAIN-WORLD-BA-014-STUDIO-RUNBOOK.md) as the operator sequence. Record results only for in-scope checks; a scoped run that records an out-of-scope result is rejected. Satisfying the scope does **not** promote Patch 0.5 to VERIFIED — it clears the mapped hub/route for the next environment family, and full acceptance stays gated until the remaining families are mapped and their checks recorded.
 
-No Studio/device lane was available on 2026-08-10, so no BA-014 check has been executed and every check remains `NotRun`.
+Record the run and let the contracts decide it — do not decide acceptance by reading the sheet:
+
+```bash
+lune run games/living-kingdoms/tools/evidence/evaluate-ba014-run.luau > run-record.json   # blank, current scope
+lune run games/living-kingdoms/tools/evidence/evaluate-ba014-run.luau run-record.json     # verdict
+```
+
+No Studio/device lane was available on 2026-08-10, so no BA-014 check has been executed and every check remains `NotRun`. **Dependency-safe source preparation for this gate is now exhausted:** the definition, derived scope, runbook, run-record generation, and mechanical verdict all exist and are regression-covered. Further preparation would require guessing BA-014 measurements or instrumenting a runtime that is deliberately held, so the next step is genuinely the Studio run.
 
 Target chain:
 
@@ -165,7 +175,7 @@ A representative Studio/device pass still needs to cover arrival camera/readabil
 | 0.2 combat/readability | BUILT — VERIFICATION PENDING | reusable feedback/reaction contracts |
 | 0.3 loot/builds | BUILT — VERIFICATION PENDING | affix/effect/reward variants are data-first |
 | 0.4 RPG progression | BUILT — VERIFICATION PENDING | bounded rank map + generic entitlement/presentation + reusable owner adapters |
-| **0.5 Main World** | **DEDICATED SOURCE BUILD + BOUNDED PRIMARY ROUTE MAPPED; BA-014 SCOPED AND RUNNABLE, NO CHECK EXECUTED** | measured hub/route evidence → fix failures → gated environment breadth/activation |
+| **0.5 Main World** | **BA-014 SOURCE CHAIN COMPLETE AND REGRESSION-COVERED; NO CHECK EXECUTED — BLOCKED on a connected Studio/device lane** | measured hub/route evidence → fix failures → gated environment breadth/activation |
 | 0.6 systemic replayability | future; do not start before coherent 0.5 Main World progress | combinatorial output from reusable systems |
 | 0.7 persistence | substantial foundations | migration/lifecycle invariants and recovery tests |
 | 0.8 co-op/social | basic foundations | multiplayer coverage over existing owners |
