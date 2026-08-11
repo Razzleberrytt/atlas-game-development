@@ -50,11 +50,7 @@ near(endPoint.position.x, recovered.Route.EndCenter.x, "end.x")
 near(endPoint.position.y, recovered.Route.EndCenter.y, "end.y")
 near(endPoint.position.z, recovered.Route.EndCenter.z, "end.z")
 near(route.Corridor.widthStuds, recovered.Route.SegmentSize.x, "corridor width")
-near(
-	route.Corridor.sourceSurfaceThicknessStuds,
-	recovered.Route.SegmentSize.y,
-	"source surface thickness"
-)
+near(route.Corridor.sourceSurfaceThicknessStuds, recovered.Route.SegmentSize.y, "source surface thickness")
 check(route.Corridor.direction.x == 0.0)
 check(route.Corridor.direction.y == 0.0)
 check(route.Corridor.direction.z == -1.0)
