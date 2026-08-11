@@ -1,0 +1,23 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {"Name":"PelvisCore","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,2.2,0,1,0,0,0,1,0,0,0,1],"Color":[0.20,0.15,0.13],"Material":{"Enum":256},"Size":[2.8,1.2,2.0]}},
+    {"Name":"TorsoMass","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,4.4,0,1,0,0,0,1,0,0,0,1],"Color":[0.25,0.18,0.14],"Material":{"Enum":256},"Size":[4.4,3.5,2.8]}},
+    {"Name":"PressureSacLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":false,"CFrame":[-2.25,4.9,0.25,1,0,0,0,1,0,0,0,1],"Color":[0.55,0.28,0.16],"Material":{"Enum":288},"Transparency":0.32,"Size":[1.7,2.8,1.9]}},
+    {"Name":"PressureSacRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":false,"CFrame":[1.85,4.3,-0.15,1,0,0,0,1,0,0,0,1],"Color":[0.48,0.22,0.15],"Material":{"Enum":288},"Transparency":0.38,"Size":[1.3,2.1,1.5]}},
+    {"Name":"ChestPlate","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,4.6,-1.55,1,0,0,0,1,0,0,0,1],"Color":[0.16,0.13,0.11],"Material":{"Enum":256},"Size":[3.2,2.2,0.45]}},
+    {"Name":"HeadLow","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,6.8,-0.65,1,0,0,0,1,0,0,0,1],"Color":[0.22,0.14,0.12],"Material":{"Enum":256},"Size":[1.7,1.4,1.4]}},
+    {"Name":"ArmLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-2.9,3.9,0,0.94,0.34,0,-0.34,0.94,0,0,0,1],"Color":[0.19,0.13,0.11],"Material":{"Enum":256},"Size":[0.9,3.8,0.9]}},
+    {"Name":"ArmRightHeavy","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[3.15,3.6,0,0.87,-0.5,0,0.5,0.87,0,0,0,1],"Color":[0.18,0.12,0.10],"Material":{"Enum":256},"Size":[1.5,4.4,1.5]}},
+    {"Name":"HandLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-3.55,1.95,0.2,1,0,0,0,1,0,0,0,1],"Color":[0.15,0.10,0.09],"Material":{"Enum":256},"Size":[1.1,0.7,1.2]}},
+    {"Name":"HandRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[4.0,1.4,0.25,1,0,0,0,1,0,0,0,1],"Color":[0.14,0.09,0.08],"Material":{"Enum":256},"Size":[1.8,1.0,1.8]}},
+    {"Name":"LegLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-0.9,0.2,0,1,0,0,0,1,0,0,0,1],"Color":[0.17,0.12,0.10],"Material":{"Enum":256},"Size":[1.1,3.6,1.2]}},
+    {"Name":"LegRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0.9,0.0,0.35,1,0,0,0,1,0,0,0,1],"Color":[0.16,0.11,0.10],"Material":{"Enum":256},"Size":[1.2,3.2,1.3]}},
+    {"Name":"DragMass","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[2.3,1.4,1.0,1,0,0,0,1,0,0,0,1],"Color":[0.27,0.17,0.13],"Material":{"Enum":256},"Size":[2.2,1.4,2.5]}},
+    {"Name":"SpineBulge","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,5.8,1.45,1,0,0,0,1,0,0,0,1],"Color":[0.35,0.21,0.16],"Material":{"Enum":256},"Size":[1.1,2.8,0.9]}},
+    {"Name":"PressureWeakpoint","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":false,"CFrame":[-2.4,5.0,-0.85,1,0,0,0,1,0,0,0,1],"Color":[0.75,0.25,0.14],"Material":{"Enum":288},"Transparency":0.08,"Size":[0.9,1.7,0.35]}},
+    {"Name":"WeakpointPresentation","ClassName":"Attachment","Properties":{"CFrame":[-2.4,5.0,-1.1,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"VfxOrigin","ClassName":"Attachment","Properties":{"CFrame":[-2.2,4.7,-1.3,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"AttackOrigin","ClassName":"Attachment","Properties":{"CFrame":[0,4.2,-2.1,1,0,0,0,1,0,0,0,1]}}
+  ]
+}
