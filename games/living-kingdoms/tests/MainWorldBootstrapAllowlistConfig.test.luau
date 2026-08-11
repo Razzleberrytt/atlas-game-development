@@ -44,16 +44,15 @@ check(responsibilities["durable-player-state-adapter"] == true)
 check(responsibilities["durable-inventory-adapter"] == true)
 
 local excluded = {}
-for _, root in config.ExcludedSourceRoots do
+for _, root in config.ExcludedActiveSourceRoots do
 	excluded[root] = true
 end
 check(excluded["games/living-kingdoms/imports"] == true)
-check(excluded["games/living-kingdoms/legacy-src"] == true)
 check(excluded["games/living-kingdoms/src/server"] == true)
 check(excluded["games/living-kingdoms/src/client"] == true)
 
 check(config.Rules.ExplicitEntryPointsOnly == true)
-check(config.Rules.LegacyRuntimeMayNeverBeMapped == true)
+check(config.Rules.PreservedRuntimeMayNeverBeMapped == true)
 check(config.Rules.OperationRuntimeRootsMayNotBeMappedWholesale == true)
 check(config.Rules.NoPlaceOrUniverseIdsUntilAuthorizedPublishing == true)
 
