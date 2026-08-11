@@ -27,7 +27,7 @@ local Config = {
 		RecoveredSourceBundleAuthorsResourceGeometry = false,
 		UpdatedHubTownSourceRbxlSha256 = "7cfa9ae257cccc1c048459029f95dfdb83a4e113cbf1ff2f281bc7c9532a695b",
 		UpdatedHubTownSourceRbxlBytes = 1808699,
-		UpdatedHubTownCivicPropertyRows = 52,
+		UpdatedCentralFountainPropertyRows = 11,
 	}),
 	Groups = table.freeze({
 		WorldPath = table.freeze({
@@ -58,12 +58,12 @@ local Config = {
 			newGeometryPromotionAllowed = false,
 			note = "Single selected instance is property-backed and linked to the held Main World arrival contract.",
 		}),
-		UpdatedHubTownCivicCore = table.freeze({
-			sourcePath = "Workspace/HubTown/{CentralFountain,GrandStaircase,HubArchway}",
+		UpdatedHubTownCentralFountain = table.freeze({
+			sourcePath = "Workspace/HubTown/CentralFountain",
 			disposition = Disposition.RecoveredHeld,
 			reconstructionModule = "RecoveredHubTownRevisionConfig",
 			newGeometryPromotionAllowed = true,
-			note = "Checksum-pinned 2026-08-10 RBXL supplies complete supported properties for these three authored civic groups; runtime remains held pending representation admission.",
+			note = "Checksum-pinned 2026-08-10 RBXL supplies complete decoder-supported properties for the 11-instance fountain; runtime remains held pending representation admission.",
 		}),
 		Resources = table.freeze({
 			sourcePath = "Workspace/Resources",
@@ -88,9 +88,9 @@ local Config = {
 		}),
 	}),
 	ResumeRequirements = table.freeze({
-		"use checksum-pinned 2026-08-10 property evidence for UpdatedHubTownCivicCore",
+		"use checksum-pinned 2026-08-10 property evidence for UpdatedHubTownCentralFountain",
 		"preserve SourceHold until each recovered group is deliberately admitted to the source-managed representation",
-		"continue re-extracting other target groups from the updated RBXL rather than guessing missing properties",
+		"continue re-extracting GrandStaircase, HubArchway, and other target groups from the updated RBXL rather than guessing missing properties",
 	}),
 }
 
