@@ -15,10 +15,11 @@ local config =
 		injectGlobals = true,
 	})()
 
-check(config.Version == "BA-005-RECOVERY-COVERAGE-v1")
+check(config.Version == "BA-005-RECOVERY-COVERAGE-v2")
 check(config.RuntimeEnabled == false)
 check(config.CoordinateSpaceId == "authored-overworld")
 check(config.SourceRbxlSha256 == "e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16")
+check(config.LatestAuthoredRevisionSha256 == "7cfa9ae257cccc1c048459029f95dfdb83a4e113cbf1ff2f281bc7c9532a695b")
 check(config.Evidence.WorkspaceIdentityRows == 1775)
 check(config.Evidence.DecodedPropertyRows == 1699)
 check(config.Evidence.FullPropertyArtifactCommitted == false)
@@ -26,11 +27,24 @@ check(config.Evidence.FullPropertyArtifactBytes == 1546379)
 check(config.Evidence.FullPropertyArtifactSha256 == "078a64153fbc1d29409e326c924ba7bb1cd3cbe7137277697955af7c448708ea")
 check(config.Evidence.RecoveredSourceBundleAuthorsResourceGeometry == false)
 
+local historical = config.SourceRevisions.HistoricalRecovery
+check(historical.sourceRbxlSha256 == config.SourceRbxlSha256)
+check(historical.workspaceIdentityRows == 1775)
+check(historical.decodedPropertyRows == 1699)
+
+local current = config.SourceRevisions.AuthoredRevision20260810
+check(current.sourceRbxlSha256 == config.LatestAuthoredRevisionSha256)
+check(current.sourceRbxlBytes == 1808699)
+check(current.declaredInstances == 2342)
+check(current.parsedInstances == 2342)
+check(current.reviewEvidenceCommitted == true)
+
 local recoveredModules = {
 	WorldPath = "RecoveredWorldPathConfig.luau",
 	DungeonPortal = "RecoveredDungeonPortalConfig.luau",
 	QuestBoard = "RecoveredQuestBoardConfig.luau",
 	MainWorldArrival = "RecoveredSpawnLocationConfig.luau",
+	CentralFountain = "RecoveredCentralFountainConfig.luau",
 }
 
 for groupId, moduleFile in recoveredModules do
@@ -40,6 +54,9 @@ for groupId, moduleFile in recoveredModules do
 	check(group.newGeometryPromotionAllowed == false)
 	check(fs.isFile("games/living-kingdoms/src/shared/Config/" .. moduleFile))
 end
+
+check(config.Groups.CentralFountain.evidenceRevision == "AuthoredRevision20260810")
+check(config.Groups.CentralFountain.sourcePath == "Workspace/HubTown/CentralFountain")
 
 for _, groupId in { "Resources", "WorldStructures" } do
 	local group = config.Groups[groupId]
@@ -82,3 +99,15 @@ check(#dungeonPortalConfig.Parts == 3)
 check(#dungeonPortalConfig.PointLights == 2)
 check(dungeonPortalConfig.Evidence.PropertyBackedRows == 9)
 check(dungeonPortalConfig.Evidence.IdentityRows == 10)
+
+local fountainConfig =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RecoveredCentralFountainConfig.luau"), {
+		debugName = "RecoveredCentralFountainConfig",
+		injectGlobals = true,
+	})()
+
+check(fountainConfig.RuntimeEnabled == false)
+check(fountainConfig.SourceHold == true)
+check(fountainConfig.Evidence.SourceRbxlSha256 == config.LatestAuthoredRevisionSha256)
+check(fountainConfig.Evidence.IdentityRows == 11)
+check(fountainConfig.Evidence.PropertyBackedRows == 10)
