@@ -3,7 +3,7 @@
 -- Patch 0.5 dedicated Main World bootstrap boundary.
 --
 -- This is an allowlist contract only. Nothing here activates a second place,
--- maps the held world into the operation project, or grants legacy runtime
+-- maps the held world into the operation project, or grants preserved runtime
 -- authority. A future dedicated Rojo project may map only these explicit
 -- bootstrap roots plus canonical Shared modules.
 
@@ -18,16 +18,14 @@ local Config = {
 		EntryPoint = "MainWorldServer.server.luau",
 		AllowedCanonicalOwners = table.freeze({
 			"ExpeditionLobbyService",
-			"PlayerDataService",
-			"InventoryService",
 		}),
-		ForbiddenOwners = table.freeze({
+		AllowedResponsibilities = table.freeze({
+			"expedition-launch-intent",
+			"durable-player-state-adapter",
+			"durable-inventory-adapter",
+		}),
+		ForbiddenOperationOwners = table.freeze({
 			"WorldFoundationService",
-			"RPGServerBootstrap",
-			"CombatService",
-			"EnemyService",
-			"LootService",
-			"MonetizationService",
 		}),
 	}),
 	Client = table.freeze({
