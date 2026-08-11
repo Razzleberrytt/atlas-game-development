@@ -22,7 +22,10 @@ local function loadConfig(name: string)
 end
 
 local function loadModel(name: string)
-	return serde.decode("json", fs.readFile("games/living-kingdoms/assets/recovered-world/models/" .. name .. ".model.json"))
+	return serde.decode(
+		"json",
+		fs.readFile("games/living-kingdoms/assets/recovered-world/models/" .. name .. ".model.json")
+	)
 end
 
 local function flatten(node: any, path: string, output: { any })
@@ -58,9 +61,15 @@ local function checkPart(node: any, definition: any, style: any, label: string)
 	near(properties.Size[1], definition.size.x, label .. ".size.x")
 	near(properties.Size[2], definition.size.y, label .. ".size.y")
 	near(properties.Size[3], definition.size.z, label .. ".size.z")
-	check(properties.CFrame[4] == 1 and properties.CFrame[8] == 1 and properties.CFrame[12] == 1, label .. " rotation drift")
+	check(
+		properties.CFrame[4] == 1 and properties.CFrame[8] == 1 and properties.CFrame[12] == 1,
+		label .. " rotation drift"
+	)
 	check(properties.Anchored == style.anchored, label .. " Anchored drift")
-	check(properties.CanCollide == definition.canCollide or properties.CanCollide == style.canCollide, label .. " CanCollide drift")
+	check(
+		properties.CanCollide == definition.canCollide or properties.CanCollide == style.canCollide,
+		label .. " CanCollide drift"
+	)
 	check(properties.CanQuery == style.canQuery, label .. " CanQuery drift")
 	check(properties.CanTouch == style.canTouch, label .. " CanTouch drift")
 	check(properties.CastShadow == style.castShadow, label .. " CastShadow drift")
