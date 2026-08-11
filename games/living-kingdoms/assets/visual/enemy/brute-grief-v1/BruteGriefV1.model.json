@@ -1,0 +1,24 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {"Name":"PelvisCore","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,2.4,0,1,0,0,0,1,0,0,0,1],"Color":[0.18,0.13,0.11],"Material":{"Enum":256},"Size":[3.6,1.4,2.5]}},
+    {"Name":"TorsoMass","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,5.0,0.4,1,0,0,0,0.94,0.34,0,-0.34,0.94],"Color":[0.22,0.15,0.12],"Material":{"Enum":256},"Size":[5.2,4.2,3.4]}},
+    {"Name":"ShoulderLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-3.0,5.5,0,1,0,0,0,1,0,0,0,1],"Color":[0.20,0.14,0.12],"Material":{"Enum":256},"Size":[1.8,1.8,2.0]}},
+    {"Name":"ShoulderOvergrowthRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[3.45,5.6,0.2,1,0,0,0,1,0,0,0,1],"Color":[0.29,0.17,0.13],"Material":{"Enum":256},"Size":[2.8,2.7,2.7]}},
+    {"Name":"ArmLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-3.5,3.4,0,0.94,0.34,0,-0.34,0.94,0,0,0,1],"Color":[0.17,0.12,0.10],"Material":{"Enum":256},"Size":[1.2,4.5,1.2]}},
+    {"Name":"ArmOvergrowthRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[4.3,3.1,0.15,0.82,-0.57,0,0.57,0.82,0,0,0,1],"Color":[0.31,0.18,0.14],"Material":{"Enum":256},"Size":[2.5,5.4,2.5]}},
+    {"Name":"FistLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-4.2,1.2,0.1,1,0,0,0,1,0,0,0,1],"Color":[0.14,0.10,0.08],"Material":{"Enum":256},"Size":[1.7,1.5,1.8]}},
+    {"Name":"FistRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[5.3,0.9,0.2,1,0,0,0,1,0,0,0,1],"Color":[0.28,0.16,0.12],"Material":{"Enum":256},"Size":[3.0,2.2,3.0]}},
+    {"Name":"LegLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-1.2,0.0,0,1,0,0,0,1,0,0,0,1],"Color":[0.16,0.11,0.09],"Material":{"Enum":256},"Size":[1.5,4.0,1.5]}},
+    {"Name":"LegRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[1.2,-0.1,0.35,1,0,0,0,1,0,0,0,1],"Color":[0.16,0.11,0.09],"Material":{"Enum":256},"Size":[1.6,3.8,1.6]}},
+    {"Name":"HeadLow","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,6.8,-1.35,1,0,0,0,1,0,0,0,1],"Color":[0.19,0.12,0.10],"Material":{"Enum":256},"Size":[2.1,1.5,1.7]}},
+    {"Name":"BackGrowth","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0.6,6.4,2.1,1,0,0,0,1,0,0,0,1],"Color":[0.34,0.20,0.15],"Material":{"Enum":256},"Size":[2.8,3.0,1.8]}},
+    {"Name":"RebarShardA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[1.2,7.6,2.9,0.94,0,0.34,0,1,0,-0.34,0,0.94],"Color":[0.25,0.24,0.22],"Material":{"Enum":256},"Size":[0.25,0.25,3.1]}},
+    {"Name":"RebarShardB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-0.6,6.9,2.8,0.87,0,-0.5,0,1,0,0.5,0,0.87],"Color":[0.22,0.21,0.19],"Material":{"Enum":256},"Size":[0.25,0.25,2.7]}},
+    {"Name":"PlateDebris","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[3.1,6.1,1.4,0.94,0.34,0,-0.34,0.94,0,0,0,1],"Color":[0.23,0.22,0.20],"Material":{"Enum":256},"Size":[1.7,0.35,2.3]}},
+    {"Name":"BackWeakpoint","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":false,"CFrame":[0.4,6.5,3.05,1,0,0,0,1,0,0,0,1],"Color":[0.68,0.16,0.14],"Material":{"Enum":288},"Transparency":0.08,"Size":[1.5,1.8,0.35]}},
+    {"Name":"WeakpointPresentation","ClassName":"Attachment","Properties":{"CFrame":[0.4,6.5,3.3,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"VfxOrigin","ClassName":"Attachment","Properties":{"CFrame":[0.4,6.5,3.45,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"AttackOrigin","ClassName":"Attachment","Properties":{"CFrame":[4.8,1.5,-0.4,1,0,0,0,1,0,0,0,1]}}
+  ]
+}
