@@ -25,6 +25,12 @@
         "$className": "Folder",
         "HubCore": {
           "$className": "Folder",
+          "Arrival": {
+            "$className": "Folder",
+            "SpawnLocation": {
+              "$path": "assets/recovered-world/models/MainWorldArrival.model.json"
+            }
+          },
           "Civic": {
             "$className": "Folder",
             "CentralFountain": {

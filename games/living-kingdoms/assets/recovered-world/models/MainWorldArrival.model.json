@@ -1,0 +1,20 @@
+{
+  "ClassName": "SpawnLocation",
+  "Properties": {
+    "Anchored": true,
+    "CanQuery": true,
+    "CanTouch": true,
+    "CastShadow": true,
+    "CFrame": [0.0, 7.0, 30.0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+    "CanCollide": true,
+    "Color": [1.0, 0.8627450980392157, 0.5882352941176471],
+    "Enabled": true,
+    "Material": {"Enum": 288},
+    "Neutral": true,
+    "Reflectance": 0.0,
+    "Shape": {"Enum": 1},
+    "Size": [6.0, 1.0, 6.0],
+    "TeamColor": {"BrickColor": 194},
+    "Transparency": 0.0
+  }
+}
