@@ -37,8 +37,8 @@ check(manifest.runtimeMapped == false)
 check(manifest.studioApproval == false)
 check(manifest.gameplayAuthority == false)
 check(#manifest.assets == 4)
-check(wave2Registry.Version == "ENV-ASSET-KIT-WAVE2-v1")
-check(#wave2Registry.Definitions == 4)
+check(wave2Registry.Version == "ENV-ASSET-KIT-WAVE2-v2")
+check(#wave2Registry.Definitions == 8)
 
 local combined = {}
 for _, definition in baseRegistry.Definitions do
