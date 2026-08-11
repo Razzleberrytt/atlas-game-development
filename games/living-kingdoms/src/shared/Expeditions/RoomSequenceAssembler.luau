@@ -83,6 +83,18 @@ local function appendNode(nodes: { any }, definition: any, depth: number)
 	table.insert(nodes, node)
 end
 
+local function planIdentity(seed: number, nodes: { any }): string
+	local roomIdentities = {}
+	for _, node in nodes do
+		table.insert(roomIdentities, `{node.RoomId}@{node.RoomVersion}`)
+	end
+
+	return `{Config.DefinitionId}@{Config.DefinitionVersion}|config={Config.Version}|seed={seed}|rooms={table.concat(
+		roomIdentities,
+		","
+	)}`
+end
+
 local RoomSequenceAssembler = {}
 
 function RoomSequenceAssembler.assemble(seed: number): any
@@ -131,11 +143,14 @@ function RoomSequenceAssembler.assemble(seed: number): any
 	local boss = singletonFor(RoleIds.Boss)
 	appendNode(nodes, boss, #nodes)
 	local bossIndex = #nodes
+	local identity = planIdentity(seed, nodes)
 
 	return table.freeze({
 		Seed = seed,
 		DefinitionId = Config.DefinitionId,
 		DefinitionVersion = Config.DefinitionVersion,
+		ConfigVersion = Config.Version,
+		PlanIdentity = identity,
 		Nodes = table.freeze(nodes),
 		EntryIndex = 1,
 		EliteIndex = eliteIndex,

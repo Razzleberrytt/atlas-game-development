@@ -1,7 +1,8 @@
 --!strict
 
 -- VS-0104 deterministic room-plan fixture: reproducibility, bounded variation,
--- role guarantees, unique handcrafted rooms, and entry-to-boss connectivity.
+-- role guarantees, unique handcrafted rooms, entry-to-boss connectivity, and
+-- a stable identity that records enough content metadata to reproduce a run.
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
 
@@ -71,6 +72,13 @@ local function validatePlan(plan: any)
 	assert(plan.Nodes[1].Role == contracts.RoleIds.Entry, "first node must be entry")
 	assert(plan.Nodes[plan.EliteIndex].Role == contracts.RoleIds.Elite, "elite role missing")
 	assert(plan.Nodes[plan.BossIndex].Role == contracts.RoleIds.Boss, "boss role missing")
+	assert(plan.ConfigVersion == config.Version, "plan must expose the exact room config version")
+	assert(type(plan.PlanIdentity) == "string" and #plan.PlanIdentity > 0, "plan identity must be recorded")
+	assert(string.find(plan.PlanIdentity, `seed={plan.Seed}`, 1, true) ~= nil, "plan identity must include the seed")
+	assert(
+		string.find(plan.PlanIdentity, `config={config.Version}`, 1, true) ~= nil,
+		"plan identity must include config version"
+	)
 
 	local combatCount = 0
 	local seenIds = {}
@@ -80,6 +88,10 @@ local function validatePlan(plan: any)
 		assert(node.PreviousIndex == (if index > 1 then index - 1 else nil), "previous link is invalid")
 		assert(node.NextIndex == (if index < #plan.Nodes then index + 1 else nil), "next link is invalid")
 		assert(seenIds[node.RoomId] == nil, "non-repeatable room was selected twice")
+		assert(
+			string.find(plan.PlanIdentity, `{node.RoomId}@{node.RoomVersion}`, 1, true) ~= nil,
+			"plan identity must include every selected room version"
+		)
 		seenIds[node.RoomId] = true
 		if node.Role == contracts.RoleIds.Combat then
 			combatCount += 1
@@ -93,6 +105,11 @@ local repeated = assembler.assemble(12_345)
 validatePlan(first)
 validatePlan(repeated)
 assert(signature(first) == signature(repeated), "same seed must produce the same room plan")
+assert(first.PlanIdentity == repeated.PlanIdentity, "same seed/config must produce the same plan identity")
+assert(
+	first.PlanIdentity ~= assembler.assemble(12_346).PlanIdentity,
+	"different seeds must remain distinguishable even if room selection collides"
+)
 
 local signatures = {}
 for seed = 1, 30 do
