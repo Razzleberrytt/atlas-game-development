@@ -12,10 +12,11 @@ local function check(condition: unknown, message: string?)
 	end
 end
 
-local registry = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/FutureWeaponVisualConceptRegistry.luau"), {
-	debugName = "FutureWeaponVisualConceptRegistry",
-	injectGlobals = true,
-})()
+local registry =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/FutureWeaponVisualConceptRegistry.luau"), {
+		debugName = "FutureWeaponVisualConceptRegistry",
+		injectGlobals = true,
+	})()
 local manifest = serde.decode("json", fs.readFile(ROOT .. "weapon-concept-wave1.manifest.json"))
 
 check(registry.Version == "WEAPON-VISUAL-CONCEPT-v1")
