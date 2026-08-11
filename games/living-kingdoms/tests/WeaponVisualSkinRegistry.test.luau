@@ -30,9 +30,9 @@ local knownWeaponIds = {
 	["weapon.submachine-gun"] = true,
 }
 
-check(registry.Version == "WEAPON-VISUAL-SKIN-v1")
+check(registry.Version == "WEAPON-VISUAL-SKIN-v2")
 check(#registry.Visuals == 5)
-check(#registry.Skins == 3)
+check(#registry.Skins == 12)
 check(#contracts.validate(registry.Visuals, registry.Skins, knownWeaponIds) == 0)
 
 local firearmSource = fs.readFile("games/living-kingdoms/src/shared/Combat/CombatContracts.luau")
@@ -41,6 +41,35 @@ for _, visual in registry.Visuals do
 	check(visual.status == "PlannedCustomModel")
 	check(visual.presentationOnly == true)
 	check(visual.gameplayAuthorityOwnerId == nil)
+	check(#visual.compatibleSkinIds == 12, "every current custom firearm must expose the shared twelve-skin library")
+end
+
+local seenSkinIds = {}
+for _, skin in registry.Skins do
+	check(not seenSkinIds[skin.skinId], "weapon skin ids must be unique")
+	seenSkinIds[skin.skinId] = true
+	check(skin.presentationOnly == true)
+	check(skin.gameplayModifiers == nil)
+	check(#skin.compatibleVisualIds == 5)
+end
+
+for _, requiredSkinId in
+	{
+		"skin.weapon.blackwater_issue",
+		"skin.weapon.frontier_worn",
+		"skin.weapon.corruption_scarred",
+		"skin.weapon.mine_rescue",
+		"skin.weapon.rust_bloom",
+		"skin.weapon.ash_church",
+		"skin.weapon.night_signal",
+		"skin.weapon.marrow_white",
+		"skin.weapon.creek_mud",
+		"skin.weapon.hazard_stripe",
+		"skin.weapon.relic_brass",
+		"skin.weapon.frostbite",
+	}
+do
+	check(seenSkinIds[requiredSkinId] == true, "expanded skin library missing " .. requiredSkinId)
 end
 
 local authorityClaim = table.clone(registry.Visuals[1])
@@ -56,8 +85,7 @@ check(foundAuthorityIssue)
 
 local statSkin = table.clone(registry.Skins[1])
 statSkin.gameplayModifiers = { damage = 1.1 }
-local skinIssues =
-	contracts.validate(registry.Visuals, { statSkin, registry.Skins[2], registry.Skins[3] }, knownWeaponIds)
+local skinIssues = contracts.validate(registry.Visuals, { statSkin }, knownWeaponIds)
 local foundSkinAuthorityIssue = false
 for _, issue in skinIssues do
 	if issue.code == "SkinGameplayModifierForbidden" then
