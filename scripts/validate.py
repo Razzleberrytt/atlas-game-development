@@ -60,6 +60,11 @@ def validate_full_preflight() -> None:
         "--self-test",
     )
     python_script(
+        "RBXL direct review-unit extractor self-test",
+        "scripts/roblox/extract_rbxl_review_unit.py",
+        "--self-test",
+    )
+    python_script(
         "RBXL presentation decoder self-test",
         "scripts/roblox/extract_rbxl_presentation_properties.py",
         "--self-test",
