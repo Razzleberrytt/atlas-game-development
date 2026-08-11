@@ -1,4 +1,4 @@
-# Atlas — Execution Dashboard v1.12
+# Atlas — Execution Dashboard v1.13
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-10  
@@ -13,89 +13,58 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 - **Patch 0.3 — Loot + Build Replayability source pass:** **BUILT — VERIFICATION PENDING**.
 - **Patch 0.4 — RPG Progression source pass:** **BUILT — VERIFICATION PENDING**.
 - Studio/device/play/performance evidence remains a parallel lane; unrun evidence is not a source-development lock and is never called VERIFIED.
-- Patch 0.4 closed with one deliberately small durable Operative Rank map, generic owner-bound unlock eligibility/presentation, and five bounded personal unlocks spanning three existing server consequence owners. It introduced no second save owner and did not turn rare in-run firearms into permanent insertion gear.
-- PR #366 repaired the BA-010 expedition-environment Workspace-listener lifecycle debt and added regression coverage; full validation and the reproducible build are green.
-- **Patch 0.5 — Main World + Environment Expansion:** **BLOCKED — REQUIRED CIVIC PROPERTY EVIDENCE UNAVAILABLE**.
-- BA-010 through BA-014 define the Main World audit, dedicated-place/source boundary, stable interaction registry, production kits/budgets, and unrun acceptance matrix. These are authority/evidence inputs, not permission to dump or activate the recovered world.
-- `MainWorldRepresentationConfig` holds the dedicated Main World boundary, 1:1 authored coordinates, semantic streaming groups, and arrival/return anchor policy.
-- `AuthoredWorldRecoveryCoverageConfig` is the geometry-admission gate. It pins canonical source RBXL SHA256 `e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16`, records the uncommitted historical full property artifact as 1,546,379 bytes with SHA256 `078a64153fbc1d29409e326c924ba7bb1cd3cbe7137277697955af7c448708ea`, and forbids new geometry promotion from incomplete evidence.
-- The hierarchy evidence proves civic candidates exist (`CentralFountain`, `GrandStaircase`, `HubArchway`), but current committed reviewable property evidence does not contain complete supported-property rows for one of those groups. The canonical binary `.rbxl` itself is not present in the repository or retained workflow artifacts inspected during this pass.
-- PR #368 added `scripts/roblox/select_rbxl_subtree_evidence.py`: full decoder JSON → one deterministic, checksum-gated, exact-path review unit.
-- PR #369 added `scripts/roblox/extract_rbxl_review_unit.py`: canonical `.rbxl` → property decoder → bounded subtree review artifact in one command. Full validation and reproducible build are green.
-- Safe code-side preparation for this specific civic-evidence blocker is now exhausted. Do **not** fabricate Central Fountain geometry, relax the admission gate, activate a whole recovered HubTown, or jump to later-patch breadth merely to avoid the blocker.
+- **Patch 0.5 — Main World + Environment Expansion:** **SOURCE-UNBLOCKED — AUTHORED RBXL RECONCILIATION COMPLETE; VERIFICATION PENDING**.
+- The supplied 2026-08-10 `livingkingdoms.rbxl` is pinned as authored-world evidence at SHA-256 `7cfa9ae257cccc1c048459029f95dfdb83a4e113cbf1ff2f281bc7c9532a695b` and 1,808,699 bytes. It contains 2,342 declared instances, 1,775 Workspace instances, and 367 embedded scripts.
+- Current GitHub/Rojo gameplay remains authoritative. The incoming place is not mapped into the active project and its overlapping bootstrap/combat/enemy/inventory/loot/data/monetization runtime is quarantined rather than resurrected.
+- Script reconciliation preserves all historically unique material: 27/28 historically unique source files are present in the new place, while the absent `RNGConfig.luau` remains preserved in the 2026-08-07 archive.
+- The useful bounded civic evidence from the current revision is now exhausted safely:
+  - PR #371 — exact 11-instance Central Fountain held reconstruction;
+  - PR #377 — exact 35-instance Grand Staircase held reconstruction;
+  - PR #379 — exact 6-instance Hub Archway held reconstruction;
+  - PR #380 — current-revision Dungeon Portal parity against the existing held portal contract.
+- Other Resources, WorldStructures, atmosphere, Terrain, NPC/vendor/quest, and asset-specific details remain partial/hierarchy evidence when complete current property rows are not committed. Do not invent them merely to increase recovered-world coverage.
+- `AuthoredWorldRecoveryCoverageConfig` remains the admission boundary. Held authored-world representations stay dormant until the existing dedicated Main World creation/activation gates are satisfied.
 
 ## 2. NOW → NEXT → LATER
 
 ### NOW
 
-**BLOCKED — recover reviewable canonical property evidence for one coherent `main_world.hub_core` civic unit.**
+**Resume ordinary Patch 0.5 Main World progression from the reconciled held evidence.**
 
-Preferred first target remains `Workspace/HubTown/CentralFountain`, because BA-010/BA-013 identify a compact arrival/orientation/adventure-gate composition and the arrival anchor plus DungeonPortal already have bounded held contracts.
+The RBXL intake/gap-chase is no longer the active task. The smallest coherent next capability is to turn the admitted held hub-core evidence into a reviewable **dedicated Main World source representation** without activating duplicate gameplay authority or forcing it into the operation forest.
 
-Resume when **either** of these evidence inputs becomes reviewably available:
-
-1. the canonical binary place whose SHA256 is exactly `e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16`; or
-2. the historical full property decoder artifact whose SHA256 is exactly `078a64153fbc1d29409e326c924ba7bb1cd3cbe7137277697955af7c448708ea`.
-
-Preferred direct resume command when the canonical place is available:
-
-```bash
-python scripts/roblox/extract_rbxl_review_unit.py livingkingdoms.rbxl \
-  --subtree Workspace/HubTown/CentralFountain \
-  --expected-source-sha256 e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16 \
-  --out central-fountain.json
-```
-
-If the historical full decoder JSON is recovered instead:
-
-```bash
-python scripts/roblox/select_rbxl_subtree_evidence.py rbxl-world-properties.json \
-  --subtree Workspace/HubTown/CentralFountain \
-  --expected-source-sha256 e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16 \
-  --out central-fountain.json
-```
-
-After a bounded artifact exists, the target chain is:
+Target chain:
 
 ```text
-checksum-pinned evidence
-→ complete supported-property rows for one coherent civic group
-→ stable main_world.hub_core review-unit identity
-→ held source representation + property-parity regression
-→ reviewable model asset
-→ dedicated Main World mapping/bootstrap only after the existing creation gate is satisfied
+checksum-pinned admitted civic evidence
+→ stable main_world.hub_core semantic composition
+→ dedicated Main World source representation
+→ explicit server/client bootstrap allowlists
+→ reproducible offline build
+→ arrival / preparation / expedition-gate / return semantics
+→ Studio/device/streaming/performance evidence
 ```
 
 Rules:
 
-- do not create or activate the dedicated Main World project merely to make progress;
-- do not map held content into the current operation project or parent recovered content under `LivingKingdomsWorld`;
-- preserve authored-overworld coordinates 1:1; no global translation, rotation, or scale to fit the operation forest;
-- do not guess Terrain voxels, missing properties, asset IDs, NPC/vendor/quest authority, teleport policy, or legacy gameplay behavior;
-- keep `WorldFoundationService` operation-world generation out of the future Main World bootstrap;
-- use stable semantic IDs and semantic streaming groups so gameplay/presentation truth survives a locally absent Instance;
-- never restore all 1,775 recovered rows or a whole `HubTown` / `WorldStructures` root as one production review unit;
-- keep the existing Forward Operations Hub as the temporary bridge until the authored arrival/preparation/launch/return loop is accepted;
-- keep Studio/device/streaming/performance evidence pending until BA-014 is run against a real representative build;
-- because `PLAYABLE-MVP-PATCH-EXECUTION.md` forbids later-patch breadth while a current-patch blocker is known, do not advance to Patch 0.6 simply because this external evidence is missing.
+- do not copy the recovered whole world into the active operation place;
+- preserve authored-overworld coordinates 1:1 unless a later evidence-backed representation contract explicitly says otherwise;
+- do not revive legacy bootstrap/services, duplicate remotes, or model-owned gameplay authority;
+- keep canonical combat, inventory, progression, persistence, expedition, and networking owners in current repository source;
+- do not guess Terrain voxels, missing asset IDs, NPC/vendor/quest behavior, global Lighting ownership, or teleport/session behavior;
+- keep `WorldFoundationService` operation-world generation out of the dedicated Main World bootstrap;
+- use stable semantic IDs and streaming groups so gameplay/presentation truth survives locally absent Instances;
+- keep ordinary Studio/device evidence pending until actually run; pending evidence does not block dependency-safe source work.
 
 ### NEXT
 
-1. once the first civic review artifact exists, validate property parity and create the smallest held source representation for that one coherent group;
-2. preview held arrival + orientation landmark + expedition-gate composition without runtime activation;
-3. establish the authored Main World return/debrief anchor and cold-join/success/failure/replay re-entry semantics before activation;
-4. create the dedicated Main World Rojo project only when the existing gate is satisfied: first property-validated coherent model group + explicit server/client bootstrap allowlists + reproducible offline build;
-5. expand `main_world.hub_core` through stable-ID interaction/service forms while preserving canonical class/loadout/inventory/progression/expedition owners;
-6. replace recovered `WorldPath` slabs with stable route/control data and bounded 64–128-stud render chunks only after the hub core is readable;
-7. admit terrain, structures, props, foliage, lighting, VFX, and audio only through BA-013 kit/budget rules and BA-014 evidence.
-
-Rejected shortcuts remain:
-
-- copying the recovered whole world into the active operation place;
-- treating recovered hierarchy counts or partial samples as property-complete geometry evidence;
-- creating a second gameplay owner inside reconstructed vendors, quest boards, portal models, NPCs, or prompts;
-- inventing Terrain, asset IDs, global Lighting ownership, teleport/session behavior, or streaming radii without required evidence/authority;
-- marking Main World VERIFIED from source-only reconstruction or screenshots without BA-014 device/traversal/streaming/performance evidence.
+1. compose the admitted Central Fountain + Grand Staircase + Hub Archway + held arrival + held Dungeon Portal into the smallest source-managed `main_world.hub_core` representation;
+2. define/verify explicit dedicated Main World server/client bootstrap allowlists and keep legacy runtime/import directories excluded;
+3. produce the reproducible dedicated Main World offline build once the existing creation gate is satisfied;
+4. establish cold-join arrival, expedition launch, success/failure return, debrief, and replay re-entry semantics through existing canonical owners;
+5. preview/readability-check the hub core before expanding environmental breadth;
+6. replace recovered `WorldPath` slabs with stable route/control data and bounded render chunks only after the hub core is coherent;
+7. admit terrain, structures, props, foliage, lighting, VFX, and audio only through the existing production-kit/budget and acceptance rules.
 
 ### LATER
 
@@ -109,8 +78,8 @@ Rejected shortcuts remain:
 ### WIP limit
 
 - one active implementation PR for the current capability;
-- at most one additional non-overlapping feature PR only when the first is externally blocked **and** the additional work remains inside the current patch's blocker-removal/preparation boundary;
-- never duplicate an existing open PR or work currently owned by another active agent.
+- at most one additional non-overlapping feature PR only when the first is externally blocked and the extra work remains inside the current patch;
+- never duplicate an existing open PR or another active agent's work.
 
 ## 3. Compounding-development target
 
@@ -136,22 +105,22 @@ python scripts/effect_routes.py next
 Patch 0.5's evidence/admission flywheel is now:
 
 ```text
-checksum-pinned recovered evidence
-→ direct decoder or existing full decoder output
-→ exact bounded subtree selector
+checksum-pinned authored evidence
+→ bounded coherent review unit
 → stable semantic ID + streaming group
-→ deterministic property-parity validation
+→ deterministic parity/preservation record
 → held source-managed representation
-→ later place mapping only after explicit gates
+→ dedicated-place composition behind explicit bootstrap gates
+→ later activation only after acceptance evidence
 ```
 
-The first admitted hub-core unit should make the second coherent unit cheaper. PRs #368/#369 remove the repeated manual extraction/selection ritual; they do not substitute for the missing canonical evidence itself.
+The RBXL reconciliation work has already paid the one-time extraction/recovery cost for the admitted civic core. Do not repeatedly rediscover or re-import the same geometry.
 
 ## 4. Studio/device evidence lane
 
 The consolidated pass still covers the representative run, replay, keyboard/controller/touch, combat feel/readability, banking/equip, lifecycle, build-choice readability, durable rank/progression presentation, Rally/marker readability, and representative performance.
 
-For Patch 0.5, source admission and held reconstruction do **not** substitute for BA-014. When a representative Main World build exists, BA-014 must cover arrival camera/readability, four-player clearance, traversal/dead travel, interaction visibility, streaming continuity/rebind, quality tiers, performance, memory, and cleanup.
+For Patch 0.5, source admission and held reconstruction do **not** substitute for the Main World acceptance matrix. A representative build must still cover arrival camera/readability, four-player clearance, traversal/dead travel, interaction visibility, streaming continuity/rebind, quality tiers, performance, memory, and cleanup.
 
 - **pass:** promote applicable BUILT — VERIFICATION PENDING work to VERIFIED;
 - **reproducible failure:** make the concrete FIX NOW and preempt expansion;
@@ -166,8 +135,8 @@ For Patch 0.5, source admission and held reconstruction do **not** substitute fo
 | 0.2 combat/readability | BUILT — VERIFICATION PENDING | reusable feedback/reaction contracts |
 | 0.3 loot/builds | BUILT — VERIFICATION PENDING | affix/effect/reward variants are data-first |
 | 0.4 RPG progression | BUILT — VERIFICATION PENDING | bounded rank map + generic entitlement/presentation + reusable owner adapters |
-| **0.5 Main World** | **BLOCKED — CIVIC PROPERTY EVIDENCE** | exact evidence → bounded review unit → reusable admission/reconstruction |
-| 0.6 systemic replayability | future; do not start while 0.5 blocker is known | combinatorial output from reusable systems |
+| **0.5 Main World** | **SOURCE-UNBLOCKED — RBXL RECONCILED; VERIFICATION PENDING** | admitted hub core → dedicated source representation → acceptance evidence |
+| 0.6 systemic replayability | future; do not start before coherent 0.5 hub-core progress | combinatorial output from reusable systems |
 | 0.7 persistence | substantial foundations | migration/lifecycle invariants and recovery tests |
 | 0.8 co-op/social | basic foundations | multiplayer coverage over existing owners |
 | 0.9 content/pipeline | preparation present | mostly data/content + validation |
@@ -181,21 +150,20 @@ When asked to continue:
 2. inspect open PRs, same-capability branches, and active-agent overlap;
 3. read NOW/NEXT;
 4. fix concrete safety/authority/data/runtime/validation failures first;
-5. if NOW is externally blocked, perform only bounded preparation that directly removes or shortens that blocker;
-6. otherwise implement the smallest coherent NOW increment;
-7. prefer existing owners + data/configuration over copied services/controllers/remotes;
-8. add focused regression defense;
-9. run the matching validation profile;
-10. merge successful dependency-safe work;
-11. keep manual evidence pending when not run;
-12. do not jump to later-patch breadth while a current-patch blocker is known;
-13. stop when safe blocker-removal work is exhausted and report the exact external resume condition.
+5. otherwise implement the smallest coherent NOW increment;
+6. prefer existing owners + data/configuration over copied services/controllers/remotes;
+7. add focused regression defense;
+8. run the matching validation profile;
+9. merge successful dependency-safe work;
+10. keep manual evidence pending when not run;
+11. do not jump to later-patch breadth while coherent current-patch work remains;
+12. stop only for a genuine unsafe/unknown dependency and record the exact resume condition.
 
 ## 7. Real stop conditions
 
-Stop expansion and fix/report when continuing would knowingly build on unsafe/false assumptions, including client-authored consequential truth, valuable-state corruption/duplication, competing owners, known lifecycle failure, missing required canonical authority/evidence, irreversible unsafe migration, or automated validation failure.
+Stop expansion and fix/report when continuing would knowingly build on unsafe or false assumptions, including client-authored consequential truth, valuable-state corruption/duplication, competing owners, known lifecycle failure, missing required canonical authority/evidence, irreversible unsafe migration, or automated validation failure.
 
-The current Patch 0.5 civic review-unit blocker is a real stop condition **after** PRs #368/#369: exact extraction/admission tooling exists, but the checksum-pinned canonical source or full exact property artifact is not currently reviewably available.
+The former civic-property-evidence blocker is closed by the checksum-pinned 2026-08-10 intake and PRs #371/#377/#379/#380. Remaining incomplete world-property families are not permission to fabricate them; they simply stay outside the admitted source representation until better evidence exists.
 
 Unrun ordinary Studio/device/play-feel evidence alone is not a stop condition.
 
