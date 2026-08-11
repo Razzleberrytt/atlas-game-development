@@ -29,7 +29,7 @@ check(chunks.StreamingGroupId == route.StreamingGroupId)
 check(chunks.StreamingGroupId == "main_world.primary_route")
 check(chunks.SourceHold == true)
 check(chunks.RuntimeEnabled == false)
-check(chunks.RenderAssetsMapped == false)
+check(chunks.RenderAssetsMapped == true)
 check(chunks.Policy.MinimumChunkSpanStuds == 64.0)
 check(chunks.Policy.MaximumChunkSpanStuds == 128.0)
 check(chunks.Policy.SplitEarlierAtSemanticBeat == true)
@@ -45,7 +45,7 @@ local previousEndSegment = 1
 for index, chunk in chunks.Chunks do
 	check(chunk.id == string.format("main_world.primary_route.chunk.%03d", index))
 	check(chunk.streamingGroupId == chunks.StreamingGroupId)
-	check(chunk.renderAssetMapped == false)
+	check(chunk.renderAssetMapped == true)
 	check(chunk.seamPolicy == chunks.Policy.SeamPolicy)
 	check(chunk.spanStuds >= chunks.Policy.MinimumChunkSpanStuds - 1e-8)
 	check(chunk.spanStuds <= chunks.Policy.MaximumChunkSpanStuds + 1e-8)
@@ -76,5 +76,11 @@ check(chunks.Rules.NoRuntimeRenderingBeforeAssetsAndStreamingEvidence == true)
 check(chunks.Rules.SemanticBeatMaySplitEarlierWithinBudget == true)
 
 local projectSource = fs.readFile("games/living-kingdoms/main-world.project.json")
-check(string.find(projectSource, "main_world.primary_route.chunk", 1, true) == nil)
-check(string.find(projectSource, "Routes", 1, true) == nil, "held route chunks must not imply mapped render assets")
+check(string.find(projectSource, '"Routes"', 1, true) ~= nil, "dedicated Main World must expose route hierarchy")
+check(string.find(projectSource, '"PrimaryRoute"', 1, true) ~= nil, "primary route mapping missing")
+check(
+	string.find(projectSource, "assets/visual/world/primary-route/MainWorldPrimaryRoute.model.json", 1, true) ~= nil,
+	"primary route source asset mapping missing"
+)
+check(string.find(projectSource, "WorldPath", 1, true) == nil, "legacy WorldPath must remain unmapped")
+check(string.find(projectSource, "PathSegment_", 1, true) == nil, "legacy slabs must remain unmapped")

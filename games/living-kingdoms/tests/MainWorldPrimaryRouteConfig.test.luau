@@ -33,7 +33,7 @@ check(route.RuntimeEnabled == false)
 check(route.LegacySegmentInstancesAuthoritative == false)
 check(route.RenderChunksDefined == true)
 check(route.RenderChunkPolicyVersion == "P0.5-MAIN-WORLD-PRIMARY-ROUTE-CHUNKS-v1")
-check(route.RenderAssetsMapped == false)
+check(route.RenderAssetsMapped == true)
 check(route.SourceEvidence.SegmentCount == recovered.Evidence.SegmentCount)
 near(
 	route.SourceEvidence.MaximumCanonicalizationDriftStuds,
@@ -74,5 +74,9 @@ check(route.Rules.LocallyAbsentRenderChunksMustNotChangeRouteTruth == true)
 check(route.Rules.DoNotInferDestinationOrGameplayMeaningFromLegacyGeometry == true)
 
 local projectSource = fs.readFile("games/living-kingdoms/main-world.project.json")
+check(
+	string.find(projectSource, "assets/visual/world/primary-route/MainWorldPrimaryRoute.model.json", 1, true) ~= nil,
+	"bounded primary route render source must be mapped into Main World"
+)
 check(string.find(projectSource, "WorldPath", 1, true) == nil, "legacy WorldPath must not be mapped into Main World")
 check(string.find(projectSource, "PathSegment_", 1, true) == nil, "legacy slabs must not be mapped into Main World")
