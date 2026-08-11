@@ -14,10 +14,11 @@ end
 
 local manifest = serde.decode("json", fs.readFile(ROOT .. "asset-manifest.json"))
 local model = serde.decode("json", fs.readFile(ROOT .. "ScreamerChoirV1.model.json"))
-local registry = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/EnemyHorrorPresentationRegistry.luau"), {
-	debugName = "EnemyHorrorPresentationRegistry",
-	injectGlobals = true,
-})()
+local registry =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/EnemyHorrorPresentationRegistry.luau"), {
+		debugName = "EnemyHorrorPresentationRegistry",
+		injectGlobals = true,
+	})()
 
 local definition = nil
 for _, candidate in registry.Definitions do
