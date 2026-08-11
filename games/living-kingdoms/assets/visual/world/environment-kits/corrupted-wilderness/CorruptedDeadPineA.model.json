@@ -1,0 +1,11 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {"Name":"Trunk","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":true,"CastShadow":true,"CFrame":[0,12,0,1,0,0,0,1,0,0,0,1],"Color":[0.16,0.12,0.10],"Material":{"Enum":528},"Size":[3.5,24,3.5]}},
+    {"Name":"CrownSnag","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":true,"CastShadow":true,"CFrame":[0,25,0,1,0,0,0,1,0,0,0,1],"Color":[0.12,0.09,0.08],"Material":{"Enum":528},"Size":[2.5,7,2.5]}},
+    {"Name":"BranchLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-3.4,20.5,0,0.866,0.5,0,-0.5,0.866,0,0,0,1],"Color":[0.13,0.10,0.08],"Material":{"Enum":528},"Size":[7,1.2,1.2]}},
+    {"Name":"BranchRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[3.1,16.5,0,0.866,-0.5,0,0.5,0.866,0,0,0,1],"Color":[0.13,0.10,0.08],"Material":{"Enum":528},"Size":[6,1,1]}},
+    {"Name":"socket.vfx.canopy","ClassName":"Attachment","Properties":{"CFrame":[0,27,0,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"socket.audio.creak","ClassName":"Attachment","Properties":{"CFrame":[0,14,0,1,0,0,0,1,0,0,0,1]}}
+  ]
+}
