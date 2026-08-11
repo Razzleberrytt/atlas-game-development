@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "assetKey": "visual.weapon.sniper-rifle.model",
+  "visualId": "weapon.visual.sniper_rifle.longwatch_v1",
+  "weaponId": "weapon.sniper-rifle",
+  "candidateId": "longwatch-sniper-rifle.v2",
+  "status": "source-candidate-not-runtime-approved",
+  "sourceKind": "ProjectOriginal",
+  "sourceLicense": "Original project asset; all project rights retained",
+  "generatorFile": "generate_longwatch_sniper_rifle.py",
+  "generatedModelFile": "longwatch_sniper_rifle.obj",
+  "animationFile": "longwatch_sniper_rifle.animations.json",
+  "format": "Generated OBJ multi-object source; animation curves in companion JSON",
+  "designIntent": "Original long-range precision rifle with oversized optic, free-float handguard, adjustable stock, and folded bipod for strong isometric silhouette readability",
+  "orientation": { "forward": "+X", "up": "+Z" },
+  "sourceRootName": "WeaponRoot (integration wrapper)",
+  "robloxModelName": "WeaponPresentation",
+  "minimumComponentMeshCount": 24,
+  "attachmentLocators": {
+    "RightGripAttachment": [-0.36, 0.0, -0.65],
+    "LeftGripAttachment": [1.42, 0.0, -0.09],
+    "Muzzle": [5.72, 0.0, 0.14],
+    "Magazine": [0.35, 0.0, -0.76],
+    "Ejection": [0.20, -0.43, 0.16]
+  },
+  "animationClips": [
+    { "name": "Fire", "durationSeconds": 0.13, "targetNode": "Bolt" },
+    { "name": "Reload", "durationSeconds": 1.45, "targetNode": "Magazine" },
+    { "name": "Empty", "durationSeconds": 0.24, "targetNode": "Bolt" }
+  ],
+  "gameplayAuthority": {
+    "cadence": "server", "ammunition": "server", "reloadAcceptance": "server",
+    "targeting": "server", "hitValidation": "server", "damage": "server"
+  },
+  "studioGate": {
+    "imported": false, "visualReviewPassed": false, "animationImportVerified": false,
+    "isometricReadabilityVerified": false, "performanceVerified": false
+  }
+}
