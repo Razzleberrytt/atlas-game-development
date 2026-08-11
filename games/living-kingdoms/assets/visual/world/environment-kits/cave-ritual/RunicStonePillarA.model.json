@@ -1,0 +1,13 @@
+{
+  "ClassName":"Model",
+  "Children":[
+    {"Name":"Foot","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,0.45,0,1,0,0,0,1,0,0,0,1],"Color":[0.18,0.17,0.16],"Material":{"Enum":1040},"Size":[2.8,0.9,2.8]}},
+    {"Name":"LowerShaft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,2.1,0,0.98,0.17,0,-0.17,0.98,0,0,0,1],"Color":[0.20,0.19,0.18],"Material":{"Enum":1040},"Size":[1.8,3.0,1.8]}},
+    {"Name":"UpperShaft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0.25,4.6,0,0.98,-0.17,0,0.17,0.98,0,0,0,1],"Color":[0.19,0.18,0.17],"Material":{"Enum":1040},"Size":[1.5,2.5,1.5]}},
+    {"Name":"Capstone","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0.4,6.1,0,1,0,0,0,1,0,0,0,1],"Color":[0.16,0.15,0.14],"Material":{"Enum":1040},"Size":[2.2,0.7,2.2]}},
+    {"Name":"RuneStripA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":false,"CFrame":[0,2.6,-0.93,1,0,0,0,1,0,0,0,1],"Color":[0.40,0.07,0.11],"Material":{"Enum":288},"Transparency":0.2,"Size":[0.28,1.4,0.06]}},
+    {"Name":"RuneStripB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":false,"CFrame":[0.25,4.5,-0.78,1,0,0,0,1,0,0,0,1],"Color":[0.44,0.08,0.12],"Material":{"Enum":288},"Transparency":0.2,"Size":[0.28,1.1,0.06]}},
+    {"Name":"RuneVfxSocket","ClassName":"Attachment","Properties":{"CFrame":[0.2,4.2,-0.9,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"HumAudioSocket","ClassName":"Attachment","Properties":{"CFrame":[0,3.0,0,1,0,0,0,1,0,0,0,1]}}
+  ]
+}

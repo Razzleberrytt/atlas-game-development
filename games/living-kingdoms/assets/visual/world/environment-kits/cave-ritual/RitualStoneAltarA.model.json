@@ -1,0 +1,13 @@
+{
+  "ClassName":"Model",
+  "Children":[
+    {"Name":"Base","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,0.5,0,1,0,0,0,1,0,0,0,1],"Color":[0.18,0.17,0.16],"Material":{"Enum":1040},"Size":[6.0,1.0,4.0]}},
+    {"Name":"Pedestal","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,1.5,0,1,0,0,0,1,0,0,0,1],"Color":[0.20,0.18,0.17],"Material":{"Enum":1040},"Size":[4.8,1.2,3.2]}},
+    {"Name":"Slab","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,2.35,0,1,0,0,0,1,0,0,0,1],"Color":[0.23,0.20,0.18],"Material":{"Enum":1040},"Size":[5.5,0.5,3.6]}},
+    {"Name":"RuneInset","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":false,"CFrame":[0,2.62,0,1,0,0,0,1,0,0,0,1],"Color":[0.42,0.08,0.10],"Material":{"Enum":288},"Transparency":0.18,"Size":[2.2,0.08,1.3]}},
+    {"Name":"CandleStoneLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-2.1,2.85,0.9,1,0,0,0,1,0,0,0,1],"Color":[0.17,0.16,0.15],"Material":{"Enum":1040},"Size":[0.5,0.5,0.5]}},
+    {"Name":"CandleStoneRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[2.1,2.85,0.9,1,0,0,0,1,0,0,0,1],"Color":[0.17,0.16,0.15],"Material":{"Enum":1040},"Size":[0.5,0.5,0.5]}},
+    {"Name":"OfferingSocket","ClassName":"Attachment","Properties":{"CFrame":[0,2.75,0,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"RuneVfxSocket","ClassName":"Attachment","Properties":{"CFrame":[0,2.72,-0.4,1,0,0,0,1,0,0,0,1]}}
+  ]
+}
