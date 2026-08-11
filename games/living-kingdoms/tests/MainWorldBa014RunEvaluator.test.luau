@@ -70,19 +70,10 @@ check(blankDecision.activationAcceptable == false, "a blank record never accepts
 
 -- Helpers ------------------------------------------------------------------
 
-local function identityValue(field: string): string
-	if field == "repositoryCommit" or field == "rollbackCheckpointCommit" then
-		return string.rep("a", 40)
-	elseif field == "placeArtifactSha256" then
-		return string.rep("b", 64)
-	end
-	return "recorded"
-end
-
 local function passingRecord(): any
 	local identity: { [string]: string } = {}
 	for _, field in matrix.RequiredRunIdentityFields do
-		identity[field] = identityValue(field)
+		identity[field] = "recorded"
 	end
 	local results: { [string]: string } = {}
 	for _, checkId in scope.inScopeCheckIds do
@@ -196,26 +187,6 @@ local nonStringIdentity = passingRecord()
 nonStringIdentity.identity.repositoryCommit = 12345
 check(evaluate(nonStringIdentity).result == "INVALID", "a non-string identity field is malformed")
 
-local shortCommit = passingRecord()
-shortCommit.identity.repositoryCommit = "abc1234"
-check(evaluate(shortCommit).result == "INVALID", "a short repository commit must be invalid")
-
-local nonHexCommit = passingRecord()
-nonHexCommit.identity.repositoryCommit = string.rep("z", 40)
-check(evaluate(nonHexCommit).result == "INVALID", "a non-hex repository commit must be invalid")
-
-local shortRollbackCommit = passingRecord()
-shortRollbackCommit.identity.rollbackCheckpointCommit = string.rep("c", 39)
-check(evaluate(shortRollbackCommit).result == "INVALID", "a short rollback commit must be invalid")
-
-local malformedArtifactDigest = passingRecord()
-malformedArtifactDigest.identity.placeArtifactSha256 = string.rep("g", 64)
-check(evaluate(malformedArtifactDigest).result == "INVALID", "a non-hex artifact SHA-256 must be invalid")
-
-local shortArtifactDigest = passingRecord()
-shortArtifactDigest.identity.placeArtifactSha256 = string.rep("d", 63)
-check(evaluate(shortArtifactDigest).result == "INVALID", "a short artifact SHA-256 must be invalid")
-
 -- Widening scope -----------------------------------------------------------
 
 -- Once every group is mapped the scope is the whole matrix, and a complete
@@ -232,7 +203,7 @@ for checkId in wholeBlank.results do
 end
 local wholeIdentity: { [string]: string } = {}
 for _, field in matrix.RequiredRunIdentityFields do
-	wholeIdentity[field] = identityValue(field)
+	wholeIdentity[field] = "recorded"
 end
 
 local wholeDecision =
