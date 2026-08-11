@@ -1,0 +1,13 @@
+{
+  "ClassName":"Model",
+  "Children":[
+    {"Name":"Foot","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,0.3,0,1,0,0,0,1,0,0,0,1],"Color":[0.18,0.17,0.16],"Material":{"Enum":1040},"Size":[2.8,0.6,2.8]}},
+    {"Name":"Stem","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,1.25,0,1,0,0,0,1,0,0,0,1],"Color":[0.14,0.14,0.14],"Material":{"Enum":1088},"Size":[0.6,1.6,0.6]}},
+    {"Name":"BowlBase","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,2.15,0,1,0,0,0,1,0,0,0,1],"Color":[0.13,0.13,0.13],"Material":{"Enum":1088},"Size":[2.5,0.45,2.5]}},
+    {"Name":"BowlInset","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":false,"CFrame":[0,2.42,0,1,0,0,0,1,0,0,0,1],"Color":[0.31,0.08,0.06],"Material":{"Enum":288},"Transparency":0.16,"Size":[1.8,0.15,1.8]}},
+    {"Name":"OfferingStoneA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-0.45,2.65,0.2,0.94,0.34,0,-0.34,0.94,0,0,0,1],"Color":[0.22,0.18,0.16],"Material":{"Enum":1040},"Size":[0.55,0.65,0.45]}},
+    {"Name":"OfferingStoneB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0.5,2.62,-0.15,0.94,-0.34,0,0.34,0.94,0,0,0,1],"Color":[0.20,0.17,0.15],"Material":{"Enum":1040},"Size":[0.5,0.6,0.5]}},
+    {"Name":"EmberVfxSocket","ClassName":"Attachment","Properties":{"CFrame":[0,2.65,0,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"FireAudioSocket","ClassName":"Attachment","Properties":{"CFrame":[0,2.2,0,1,0,0,0,1,0,0,0,1]}}
+  ]
+}
