@@ -1,0 +1,127 @@
+--!strict
+
+local sharedVariants = table.freeze({
+	"crafting.variant.frontier_worn",
+	"crafting.variant.mine_grimed",
+	"crafting.variant.corruption_touched",
+})
+
+local Definitions = table.freeze({
+	table.freeze({
+		presentationId = "crafting.presentation.station.field_bench_v1",
+		kind = "Workstation",
+		canonicalRefId = "station.hub.crafting",
+		modelFamilyId = "crafting.model_family.field_bench",
+		modelPath = "Crafting/Stations/FieldBenchV1",
+		status = "PlannedCustomModel",
+		scaleClass = "Station",
+		materialSetId = "crafting.material.wood_steel_canvas",
+		variantIds = sharedVariants,
+		sockets = table.freeze({
+			table.freeze({ id = "socket.ingredient.left", kind = "IngredientDisplay" }),
+			table.freeze({ id = "socket.ingredient.right", kind = "IngredientDisplay" }),
+			table.freeze({ id = "socket.output.center", kind = "OutputDisplay" }),
+			table.freeze({ id = "socket.tool.main", kind = "ToolRest" }),
+			table.freeze({ id = "socket.vfx.work", kind = "VFX" }),
+			table.freeze({ id = "socket.audio.work", kind = "Audio" }),
+		}),
+		presentationOnly = true,
+		gameplayAuthorityOwnerId = nil,
+	}),
+	table.freeze({
+		presentationId = "crafting.presentation.ingredient.scrap_bundle_v1",
+		kind = "Ingredient",
+		canonicalRefId = nil,
+		modelFamilyId = "crafting.model_family.scrap_bundle",
+		modelPath = "Crafting/Ingredients/ScrapBundleV1",
+		status = "PlannedCustomModel",
+		scaleClass = "Handheld",
+		materialSetId = "crafting.material.salvaged_metal",
+		variantIds = sharedVariants,
+		sockets = table.freeze({}),
+		presentationOnly = true,
+		gameplayAuthorityOwnerId = nil,
+	}),
+	table.freeze({
+		presentationId = "crafting.presentation.ingredient.fabric_roll_v1",
+		kind = "Ingredient",
+		canonicalRefId = nil,
+		modelFamilyId = "crafting.model_family.fabric_roll",
+		modelPath = "Crafting/Ingredients/FabricRollV1",
+		status = "PlannedCustomModel",
+		scaleClass = "Handheld",
+		materialSetId = "crafting.material.field_fabric",
+		variantIds = sharedVariants,
+		sockets = table.freeze({}),
+		presentationOnly = true,
+		gameplayAuthorityOwnerId = nil,
+	}),
+	table.freeze({
+		presentationId = "crafting.presentation.tool.hand_tools_v1",
+		kind = "Tool",
+		canonicalRefId = nil,
+		modelFamilyId = "crafting.model_family.hand_tools",
+		modelPath = "Crafting/Tools/HandToolsV1",
+		status = "PlannedCustomModel",
+		scaleClass = "Handheld",
+		materialSetId = "crafting.material.tool_steel_worn_grips",
+		variantIds = sharedVariants,
+		sockets = table.freeze({
+			table.freeze({ id = "socket.snap.workbench", kind = "Snap" }),
+		}),
+		presentationOnly = true,
+		gameplayAuthorityOwnerId = nil,
+	}),
+	table.freeze({
+		presentationId = "crafting.presentation.container.parts_crate_v1",
+		kind = "Container",
+		canonicalRefId = nil,
+		modelFamilyId = "crafting.model_family.parts_crate",
+		modelPath = "Crafting/Containers/PartsCrateV1",
+		status = "PlannedCustomModel",
+		scaleClass = "MediumProp",
+		materialSetId = "crafting.material.wood_steel_canvas",
+		variantIds = sharedVariants,
+		sockets = table.freeze({
+			table.freeze({ id = "socket.snap.floor", kind = "Snap" }),
+		}),
+		presentationOnly = true,
+		gameplayAuthorityOwnerId = nil,
+	}),
+})
+
+local Variants = table.freeze({
+	table.freeze({
+		variantId = "crafting.variant.frontier_worn",
+		displayName = "Frontier Worn",
+		materialSetId = "crafting.material.frontier_worn",
+		paletteId = "crafting.palette.frontier_worn",
+		variantTags = table.freeze({ "weathered", "field-repaired" }),
+		presentationOnly = true,
+		gameplayModifiers = nil,
+	}),
+	table.freeze({
+		variantId = "crafting.variant.mine_grimed",
+		displayName = "Mine Grimed",
+		materialSetId = "crafting.material.mine_grime",
+		paletteId = "crafting.palette.mine_grimed",
+		variantTags = table.freeze({ "coal-dust", "oxidized" }),
+		presentationOnly = true,
+		gameplayModifiers = nil,
+	}),
+	table.freeze({
+		variantId = "crafting.variant.corruption_touched",
+		displayName = "Corruption Touched",
+		materialSetId = "crafting.material.corruption_residue",
+		paletteId = "crafting.palette.corruption_touched",
+		variantTags = table.freeze({ "resin-staining", "unnatural-growth" }),
+		presentationOnly = true,
+		gameplayModifiers = nil,
+	}),
+})
+
+return table.freeze({
+	Version = "CRAFTING-PRESENTATION-v1",
+	Definitions = Definitions,
+	Variants = Variants,
+})
