@@ -91,7 +91,7 @@ local function planIdentity(seed: number, nodes: { any }): string
 
 	return `{Config.DefinitionId}@{Config.DefinitionVersion}|config={Config.Version}|seed={seed}|rooms={table.concat(
 		roomIdentities,
-		"," 
+		","
 	)}`
 end
 
