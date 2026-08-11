@@ -23,7 +23,8 @@ local portal = loadConfig("RecoveredDungeonPortalConfig")
 local composition = loadConfig("MainWorldHubCoreCompositionConfig")
 local bootstrap = loadConfig("MainWorldBootstrapAllowlistConfig")
 local project = serde.decode("json", fs.readFile("games/living-kingdoms/main-world.project.json"))
-local model = serde.decode("json", fs.readFile("games/living-kingdoms/assets/recovered-world/models/MainWorldArrival.model.json"))
+local model =
+	serde.decode("json", fs.readFile("games/living-kingdoms/assets/recovered-world/models/MainWorldArrival.model.json"))
 
 check(lifecycle.Version == "P0.5-MAIN-WORLD-LIFECYCLE-v1")
 check(lifecycle.RuntimeEnabled == false)
