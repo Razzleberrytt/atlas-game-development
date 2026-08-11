@@ -99,21 +99,25 @@ local destinationSource = fs.readFile("games/living-kingdoms/src/shared/Config/P
 local bootstrapSource = fs.readFile("games/living-kingdoms/src/shared/Config/MainWorldBootstrapAllowlistConfig.luau")
 local resolverSource = fs.readFile("games/living-kingdoms/src/shared/World/MainWorldPortalDelegationResolver.luau")
 
-for _, required in {
-	config.MainWorldAnchorId,
-	config.CurrentBridgeAnchorId,
-	config.PortalContentId,
-	config.InteractionIntentId,
-	config.CanonicalLaunchAuthorityOwnerId,
-} do
+for _, required in
+	{
+		config.MainWorldAnchorId,
+		config.CurrentBridgeAnchorId,
+		config.PortalContentId,
+		config.InteractionIntentId,
+		config.CanonicalLaunchAuthorityOwnerId,
+	}
+do
 	check(string.find(hubSource, required, 1, true) ~= nil, "hub registry drift: " .. required)
 end
 
-for _, required in {
-	config.PortalContentId,
-	config.CanonicalLaunchAuthorityOwnerId,
-	"RuntimeEnabled = false",
-} do
+for _, required in
+	{
+		config.PortalContentId,
+		config.CanonicalLaunchAuthorityOwnerId,
+		"RuntimeEnabled = false",
+	}
+do
 	check(string.find(destinationSource, required, 1, true) ~= nil, "destination drift: " .. required)
 end
 
