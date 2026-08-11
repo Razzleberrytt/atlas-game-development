@@ -2,6 +2,7 @@
 
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
+local serde = require("@lune/serde")
 
 local function check(condition: unknown, message: string?)
 	if not condition then
@@ -20,7 +21,7 @@ local recoveredArrival =
 		injectGlobals = true,
 	})()
 
-check(config.Version == "BA-011-v2-arrival-contract-link")
+check(config.Version == "BA-011-v3-mapped-placement-parity")
 check(config.SourceHold == true)
 check(config.RuntimeEnabled == false)
 check(config.PlaceBoundary.Strategy == "dedicated-main-world-place")
@@ -52,6 +53,8 @@ check(config.Rules.DoNotMapHeldContentIntoOperationProject == true)
 check(config.Rules.DoNotCreateOneAtomicModelForEntireWorld == true)
 check(config.Rules.StreamOutNeverMeansGameplayCompletion == true)
 check(config.Rules.LegacyServicesRemainInert == true)
+check(config.Rules.MappedTargetPathMustMatchDedicatedProject == true)
+check(config.Rules.MappedPlacementDoesNotImplyRuntimeActivation == true)
 
 local expectedGroups = {
 	["main_world.hub_core"] = true,
@@ -74,3 +77,72 @@ check(config.streamingGroupForSourcePath("Workspace/Resources/IronOre").id == "m
 check(config.streamingGroupForSourcePath("Workspace/WorldStructures/DestinyMonolith").id == "main_world.structures")
 check(config.streamingGroupForSourcePath("Workspace/WorldClouds/CloudEmitter").id == "main_world.atmosphere")
 check(config.streamingGroupForSourcePath("Workspace/LivingKingdomsWorld") == nil)
+
+-- Declared placement must agree with the dedicated Main World project. This is
+-- the binding that previously did not exist: `main_world.primary_route` claimed
+-- a `Routes/Primary` container while the project mapped `Routes/PrimaryRoute`.
+local projectSource = fs.readFile("games/living-kingdoms/main-world.project.json")
+local project = serde.decode("json", projectSource)
+
+local function nodeAtTargetPath(targetPath: string): any?
+	local cursor: any = project.tree
+	for segment in string.gmatch(targetPath, "[^/]+") do
+		if type(cursor) ~= "table" then
+			return nil
+		end
+		cursor = cursor[segment]
+		if cursor == nil then
+			return nil
+		end
+	end
+	return cursor
+end
+
+local mappedCount = 0
+for _, group in config.StreamingGroups do
+	local node = nodeAtTargetPath(group.targetPath)
+	if group.projectMappingStatus == config.ProjectMappingStatuses.Mapped then
+		mappedCount += 1
+		check(node ~= nil, `mapped group {group.id} has no node at {group.targetPath}`)
+		check(config.isStreamingGroupMapped(group.id) == true, `{group.id} must read as mapped`)
+	else
+		check(
+			group.projectMappingStatus == config.ProjectMappingStatuses.Unmapped,
+			`{group.id} has an unknown mapping status`
+		)
+		-- An unmapped group must be genuinely absent from the place. Admitting
+		-- content without updating this status would otherwise let a later scope
+		-- consumer believe a family is still unrepresented.
+		check(node == nil, `group {group.id} is declared Unmapped but the project maps {group.targetPath}`)
+		check(config.isStreamingGroupMapped(group.id) == false, `{group.id} must read as unmapped`)
+	end
+end
+
+local mappedIds = config.mappedStreamingGroupIds()
+check(#mappedIds == mappedCount, "mappedStreamingGroupIds disagrees with the declared statuses")
+check(mappedIds[1] == "main_world.hub_core", "hub core must be the first mapped group")
+check(mappedIds[2] == "main_world.primary_route", "the bounded primary route must be the second mapped group")
+check(#mappedIds == 2, "only the hub core and bounded primary route are mapped today")
+check(config.isStreamingGroupMapped("main_world.not_a_group") == false, "an unknown group is never mapped")
+
+-- The route group's container is the same one the render contract maps, so the
+-- placement contract and the presentation contract cannot diverge again.
+local renderConfig =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/MainWorldPrimaryRouteRenderConfig.luau"), {
+		debugName = "MainWorldPrimaryRouteRenderConfig",
+		injectGlobals = true,
+	})()
+for _, group in config.StreamingGroups do
+	if group.id == renderConfig.StreamingGroupId then
+		check(
+			group.targetPath == renderConfig.ProjectContainerPath,
+			"BA-011 target path and the route render container path must match"
+		)
+	end
+end
+
+-- Mapping content into the dedicated place is not activation.
+check(config.RuntimeEnabled == false, "source mapping must not flip the held runtime flag")
+check(renderConfig.RuntimeEnabled == false, "the mapped route render contract stays held")
+
+print("MainWorldRepresentationConfig fixture passed")
