@@ -10,10 +10,7 @@ local function check(condition: unknown, message: string?)
 end
 
 local function close(actual: number, expected: number, label: string)
-	check(
-		math.abs(actual - expected) <= 1e-8,
-		string.format("%s mismatch: %.17g ~= %.17g", label, actual, expected)
-	)
+	check(math.abs(actual - expected) <= 1e-8, string.format("%s mismatch: %.17g ~= %.17g", label, actual, expected))
 end
 
 local function checkVector(actual: any, expected: { number }, label: string)
@@ -22,11 +19,10 @@ local function checkVector(actual: any, expected: { number }, label: string)
 	close(actual.z, expected[3], label .. ".z")
 end
 
-local config =
-	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RecoveredGrandStaircaseConfig.luau"), {
-		debugName = "RecoveredGrandStaircaseConfig",
-		injectGlobals = true,
-	})()
+local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RecoveredGrandStaircaseConfig.luau"), {
+	debugName = "RecoveredGrandStaircaseConfig",
+	injectGlobals = true,
+})()
 
 check(config.Version == "P0.5-GRAND-STAIRCASE-v1")
 check(config.SourcePath == "Workspace/HubTown/GrandStaircase")
