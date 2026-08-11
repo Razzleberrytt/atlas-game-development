@@ -1,8 +1,12 @@
 --!strict
 
 -- Production storage adapter for inventory records and atomic session leases.
+-- Studio is intentionally isolated from the production DataStore even when
+-- Studio Access to API Services is enabled: evidence/playtest sessions must not
+-- acquire production leases or mutate/migrate live inventory records.
 
 local DataStoreService = game:GetService("DataStoreService")
+local RunService = game:GetService("RunService")
 
 export type Adapter = {
 	load: (self: Adapter, key: string) -> any,
@@ -28,12 +32,6 @@ local function retryDelay(baseDelay: number, attempt: number): number
 	return math.min(baseDelay * (2 ^ (attempt - 1)), 8)
 end
 
--- An unpublished place has no DataStore access, so `GetDataStore` throws at
--- construction time. Every read/write below is already retried under pcall, but
--- a throw here loads-errors this module and takes the whole inventory,
--- expedition-reward and expedition-result chain down with it. Fall back to a
--- process-local store so Studio sessions stay bootable; a live server always
--- reaches the real DataStore and never takes this path.
 local function createVolatileStore()
 	local values: { [string]: any } = {}
 	local store = {}
@@ -52,6 +50,23 @@ local function createVolatileStore()
 end
 
 local function resolveStore(dataStoreName: string): (any, boolean)
+	-- This check must happen before GetDataStore. Studio API access may be needed
+	-- for unrelated evidence tooling, but it must never opt inventory into the
+	-- production AtlasPlayerInventoryV1 store or atlas-prod lease namespace.
+	if RunService:IsStudio() then
+		warn(
+			string.format(
+				"[AtlasPersistence] Studio session detected; using volatile in-memory storage instead of DataStore %s. "
+					.. "Progress will not persist across Studio sessions.",
+				dataStoreName
+			)
+		)
+		return createVolatileStore(), true
+	end
+
+	-- Live servers use the real store. Keep the existing fail-soft construction
+	-- fallback for unpublished/nonstandard environments where GetDataStore itself
+	-- is unavailable, but never use it as the Studio isolation mechanism.
 	local success, storeOrError = pcall(function()
 		return DataStoreService:GetDataStore(dataStoreName)
 	end)
