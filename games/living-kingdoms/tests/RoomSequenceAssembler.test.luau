@@ -140,7 +140,7 @@ for seed = 1, 30 do
 	for _, node in plan.Nodes do
 		table.insert(encounters, `{node.EncounterSlotId}:{node.EncounterIntensity}`)
 	end
-	encounterSignatures[table.concat(encounters, ">")]= true
+	encounterSignatures[table.concat(encounters, ">")] = true
 end
 
 local variationCount = 0
