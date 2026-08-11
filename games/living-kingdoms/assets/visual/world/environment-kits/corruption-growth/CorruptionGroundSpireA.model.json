@@ -1,0 +1,12 @@
+{
+  "ClassName":"Model",
+  "Children":[
+    {"Name":"BaseMass","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,0.6,0,1,0,0,0,1,0,0,0,1],"Color":[0.18,0.08,0.09],"Material":{"Enum":256},"Size":[4.8,1.2,4.2]}},
+    {"Name":"SpireCore","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[0,3.2,0,0.98,0.17,0,-0.17,0.98,0,0,0,1],"Color":[0.25,0.08,0.10],"Material":{"Enum":256},"Size":[1.5,5.6,1.4]}},
+    {"Name":"SpireForkLeft","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-1.1,4.2,0.1,0.87,0.5,0,-0.5,0.87,0,0,0,1],"Color":[0.23,0.07,0.09],"Material":{"Enum":256},"Size":[0.7,3.2,0.7]}},
+    {"Name":"SpireForkRight","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[1.0,4.5,-0.2,0.87,-0.5,0,0.5,0.87,0,0,0,1],"Color":[0.22,0.07,0.09],"Material":{"Enum":256},"Size":[0.65,2.8,0.65]}},
+    {"Name":"GlowVeinA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":false,"CFrame":[-0.4,3.4,-0.8,0.98,0.17,0,-0.17,0.98,0,0,0,1],"Color":[0.62,0.08,0.16],"Material":{"Enum":288},"Transparency":0.18,"Size":[0.22,4.0,0.22]}},
+    {"Name":"GlowVeinB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":false,"CFrame":[0.45,2.9,-0.75,0.98,-0.17,0,0.17,0.98,0,0,0,1],"Color":[0.54,0.06,0.14],"Material":{"Enum":288},"Transparency":0.25,"Size":[0.2,3.3,0.2]}},
+    {"Name":"VfxSocket","ClassName":"Attachment","Properties":{"CFrame":[0,5.9,0,1,0,0,0,1,0,0,0,1]}}
+  ]
+}
