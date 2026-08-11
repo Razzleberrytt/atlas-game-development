@@ -7,6 +7,8 @@ import json
 import sys
 from pathlib import Path
 
+from _console import use_utf8_output
+
 ROOT = Path(__file__).resolve().parents[1]
 EFFICIENCY = ROOT / "scripts" / "efficiency.py"
 EXTENSION_TOOL = ROOT / "scripts" / "extension_cost.py"
@@ -153,4 +155,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    use_utf8_output()
     raise SystemExit(main())

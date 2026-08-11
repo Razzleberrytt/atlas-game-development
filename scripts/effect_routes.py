@@ -8,6 +8,8 @@ import re
 import sys
 from pathlib import Path
 
+from _console import use_utf8_output
+
 ROOT = Path(__file__).resolve().parents[1]
 ROUTES_PATH = ROOT / "config" / "efficiency" / "effect-owner-routes.json"
 CAPABILITIES_PATH = ROOT / "config" / "efficiency" / "capabilities.json"
@@ -194,4 +196,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    use_utf8_output()
     raise SystemExit(main())

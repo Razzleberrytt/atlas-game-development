@@ -19,6 +19,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from _console import use_utf8_output
+
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACTS = ROOT / "config" / "efficiency" / "extension-contracts.json"
 
@@ -268,4 +270,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    use_utf8_output()
     raise SystemExit(main())

@@ -13,6 +13,8 @@ import subprocess
 from collections import Counter
 from pathlib import Path
 
+from _console import use_utf8_output
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -86,4 +88,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    use_utf8_output()
     raise SystemExit(main())
