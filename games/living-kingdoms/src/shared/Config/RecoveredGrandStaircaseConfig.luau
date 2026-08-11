@@ -21,20 +21,23 @@ local parts = {}
 local lights = {}
 
 for index, y in STEP_Y do
-	table.insert(parts, table.freeze({
-		name = `Step{index}`,
-		sourceId = 229 + index,
-		parent = "GrandStaircase",
-		position = table.freeze({ x = 0.0, y = y, z = -27.75 + 8 * (index - 1) }),
-		rotationId = 2,
-		size = table.freeze({ x = 80.0, y = 2.0, z = 8.0 }),
-		colorBytes = table.freeze({ r = 160, g = 155, b = 145 }),
-		materialEnumValue = 784,
-		shapeEnumValue = 1,
-		canCollide = true,
-		transparency = 0.0,
-		reflectance = 0.0,
-	}))
+	table.insert(
+		parts,
+		table.freeze({
+			name = `Step{index}`,
+			sourceId = 229 + index,
+			parent = "GrandStaircase",
+			position = table.freeze({ x = 0.0, y = y, z = -27.75 + 8 * (index - 1) }),
+			rotationId = 2,
+			size = table.freeze({ x = 80.0, y = 2.0, z = 8.0 }),
+			colorBytes = table.freeze({ r = 160, g = 155, b = 145 }),
+			materialEnumValue = 784,
+			shapeEnumValue = 1,
+			canCollide = true,
+			transparency = 0.0,
+			reflectance = 0.0,
+		})
+	)
 end
 
 local railDefinitions = table.freeze({
@@ -45,20 +48,23 @@ local railDefinitions = table.freeze({
 })
 
 for _, rail in railDefinitions do
-	table.insert(parts, table.freeze({
-		name = rail.name,
-		sourceId = rail.sourceId,
-		parent = "GrandStaircase",
-		position = table.freeze({ x = rail.x, y = rail.y, z = 4.25 }),
-		rotationId = 2,
-		size = table.freeze({ x = rail.sizeX, y = rail.sizeY, z = 85.0 }),
-		colorBytes = table.freeze({ r = 160, g = 155, b = 145 }),
-		materialEnumValue = 784,
-		shapeEnumValue = 1,
-		canCollide = true,
-		transparency = 0.0,
-		reflectance = 0.0,
-	}))
+	table.insert(
+		parts,
+		table.freeze({
+			name = rail.name,
+			sourceId = rail.sourceId,
+			parent = "GrandStaircase",
+			position = table.freeze({ x = rail.x, y = rail.y, z = 4.25 }),
+			rotationId = 2,
+			size = table.freeze({ x = rail.sizeX, y = rail.sizeY, z = 85.0 }),
+			colorBytes = table.freeze({ r = 160, g = 155, b = 145 }),
+			materialEnumValue = 784,
+			shapeEnumValue = 1,
+			canCollide = true,
+			transparency = 0.0,
+			reflectance = 0.0,
+		})
+	)
 end
 
 local lanternStepIndexes = table.freeze({ 2, 4, 6, 8, 10 })
@@ -68,35 +74,43 @@ for pairIndex, stepIndex in lanternStepIndexes do
 	local leftSourceId = 244 + (pairIndex - 1) * 4
 	local rightSourceId = leftSourceId + 2
 
-	for _, lantern in table.freeze({
-		table.freeze({ side = "L", x = -3.0, sourceId = leftSourceId }),
-		table.freeze({ side = "R", x = 3.0, sourceId = rightSourceId }),
-	}) do
+	for _, lantern in
+		table.freeze({
+			table.freeze({ side = "L", x = -3.0, sourceId = leftSourceId }),
+			table.freeze({ side = "R", x = 3.0, sourceId = rightSourceId }),
+		})
+	do
 		local name = `Lantern_{lantern.side}_{stepIndex}`
-		table.insert(parts, table.freeze({
-			name = name,
-			sourceId = lantern.sourceId,
-			parent = "GrandStaircase",
-			position = table.freeze({ x = lantern.x, y = y, z = z }),
-			rotationId = 2,
-			size = table.freeze({ x = 0.5, y = 1.5, z = 0.5 }),
-			colorBytes = table.freeze({ r = 255, g = 200, b = 100 }),
-			materialEnumValue = 288,
-			shapeEnumValue = 1,
-			canCollide = true,
-			transparency = 0.0,
-			reflectance = 0.0,
-		}))
-		table.insert(lights, table.freeze({
-			name = "PointLight",
-			sourceId = lantern.sourceId + 1,
-			parent = name,
-			brightness = 2.0,
-			color = table.freeze({ r = 1.0, g = 0.7843137383460999, b = 0.3921568691730499 }),
-			enabled = true,
-			range = 12.0,
-			shadows = false,
-		}))
+		table.insert(
+			parts,
+			table.freeze({
+				name = name,
+				sourceId = lantern.sourceId,
+				parent = "GrandStaircase",
+				position = table.freeze({ x = lantern.x, y = y, z = z }),
+				rotationId = 2,
+				size = table.freeze({ x = 0.5, y = 1.5, z = 0.5 }),
+				colorBytes = table.freeze({ r = 255, g = 200, b = 100 }),
+				materialEnumValue = 288,
+				shapeEnumValue = 1,
+				canCollide = true,
+				transparency = 0.0,
+				reflectance = 0.0,
+			})
+		)
+		table.insert(
+			lights,
+			table.freeze({
+				name = "PointLight",
+				sourceId = lantern.sourceId + 1,
+				parent = name,
+				brightness = 2.0,
+				color = table.freeze({ r = 1.0, g = 0.7843137383460999, b = 0.3921568691730499 }),
+				enabled = true,
+				range = 12.0,
+				shadows = false,
+			})
+		)
 	end
 end
 
