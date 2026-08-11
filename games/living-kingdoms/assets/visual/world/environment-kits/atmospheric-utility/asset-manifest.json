@@ -1,0 +1,14 @@
+{
+  "assetKey":"world.environment-kit.atmospheric-utility",
+  "version":"ENV-UTILITY-v1",
+  "sourceType":"project-original-source-models",
+  "runtimeMapped":false,
+  "studioApproval":false,
+  "gameplayAuthority":false,
+  "assets":[
+    {"semanticId":"env.prop.industry.hanging_work_lamp_a","registrySourceModelPath":"Environment/Utility/HangingWorkLampA","file":"HangingWorkLampA.model.json","minimumPartCount":3},
+    {"semanticId":"env.prop.industry.broken_floodlight_a","registrySourceModelPath":"Environment/Utility/BrokenFloodlightA","file":"BrokenFloodlightA.model.json","minimumPartCount":3},
+    {"semanticId":"env.prop.industry.generator_shell_a","registrySourceModelPath":"Environment/Utility/GeneratorShellA","file":"GeneratorShellA.model.json","minimumPartCount":3},
+    {"semanticId":"env.prop.frontier.lantern_post_a","registrySourceModelPath":"Environment/Utility/LanternPostA","file":"LanternPostA.model.json","minimumPartCount":3}
+  ]
+}
