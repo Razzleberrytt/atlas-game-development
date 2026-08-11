@@ -29,7 +29,7 @@ local knownCanonicalRefs = {
 	["station.hub.crafting"] = true,
 }
 
-check(registry.Version == "CRAFTING-PRESENTATION-v1")
+check(registry.Version == "CRAFTING-PRESENTATION-v2")
 check(#registry.Definitions == 5)
 check(#registry.Variants == 3)
 check(#contracts.validate(registry.Definitions, registry.Variants, knownCanonicalRefs) == 0)
@@ -37,6 +37,7 @@ check(#contracts.validate(registry.Definitions, registry.Variants, knownCanonica
 local hubSource = fs.readFile("games/living-kingdoms/src/shared/Config/HubInteractionConfig.luau")
 local foundStation = false
 for _, definition in registry.Definitions do
+	check(definition.status == "SourceReady")
 	check(definition.presentationOnly == true)
 	check(definition.gameplayAuthorityOwnerId == nil)
 	check(string.sub(definition.modelPath, 1, 9) == "Crafting/")
@@ -46,7 +47,7 @@ for _, definition in registry.Definitions do
 		check(string.find(hubSource, definition.canonicalRefId, 1, true) ~= nil)
 	end
 end
-check(foundStation, "canonical crafting station requires a planned presentation")
+check(foundStation, "canonical crafting station requires a source-ready presentation")
 
 local authorityClaim = table.clone(registry.Definitions[1])
 authorityClaim.gameplayAuthorityOwnerId = "FakeCraftingService"
