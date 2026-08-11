@@ -69,7 +69,8 @@ function SecretBranchResolver.plan(roomPlan: any): SecretBranchPlan?
 	rollState = nextValue(rollState)
 	local secret = Config.SecretRooms[(rollState % #Config.SecretRooms) + 1]
 	local reward = secret.Reward
-	local identity = `{Config.Version}|seed={roomPlan.Seed}|host={host.RoomId}@{host.Index}|secret={secret.Id}@{secret.Version}|reward={reward.RewardId}@{reward.RewardVersion}`
+	local identity =
+		`{Config.Version}|seed={roomPlan.Seed}|host={host.RoomId}@{host.Index}|secret={secret.Id}@{secret.Version}|reward={reward.RewardId}@{reward.RewardVersion}`
 
 	return table.freeze({
 		Seed = roomPlan.Seed,
