@@ -1,0 +1,35 @@
+{
+  "format_version": 1,
+  "source_revision": {
+    "file": "livingkingdoms.rbxl",
+    "sha256": "7cfa9ae257cccc1c048459029f95dfdb83a4e113cbf1ff2f281bc7c9532a695b",
+    "bytes": 1808699,
+    "evidence": "hub-civic-geometry-summary.json"
+  },
+  "held_contract": {
+    "module": "games/living-kingdoms/src/shared/Config/RecoveredDungeonPortalConfig.luau",
+    "historical_source_sha256": "e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16",
+    "source_path": "Workspace/HubTown/DungeonPortal",
+    "source_hold": true,
+    "runtime_enabled": false
+  },
+  "comparison": {
+    "current_instances": 10,
+    "supported_part_rows": 3,
+    "supported_point_light_rows": 2,
+    "supported_attachment_rows": 1,
+    "identity_only_rows": 3,
+    "part_geometry_material_collision_transparency_parity": true,
+    "point_light_parity": true,
+    "attachment_parity": true,
+    "identity_graph_parity": true,
+    "current_revision_supersedes_richer_historical_presentation_properties": false,
+    "result": "PARITY_CONFIRMED_FOR_COMMITTED_CURRENT_REVISION_EVIDENCE"
+  },
+  "authority": {
+    "canonical_gameplay_owner": "ExpeditionLobbyService",
+    "legacy_gameplay_authority": false,
+    "duplicate_runtime_portal_allowed": false,
+    "note": "The current RBXL confirms the already-held portal geometry/light/attachment identity. It does not replace the richer historical UI/particle presentation evidence and does not activate a second dungeon or expedition authority."
+  }
+}
