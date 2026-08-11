@@ -1,7 +1,7 @@
-# Atlas — Execution Dashboard v1.18
+# Atlas — Execution Dashboard v1.19
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
-**Refreshed:** 2026-08-10  
+**Refreshed:** 2026-08-11  
 **Purpose:** answer quickly: **what is true, what is NOW, what is NEXT, and how do we keep later development cheaper?**
 
 For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range scope use `MASTER-ROADMAP.md`. `MVP-BUILD-THROUGH-TESTING-POLICY.md` controls cadence. Repeated families use `../production/EXTENSION-COST-MODEL.md`; reusable gameplay effects use `../production/EFFECT-OWNER-ROUTING.md`.
@@ -40,7 +40,16 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
   - PR #401 — `MainWorldAcceptanceScopeResolver` derives which checks the mapped build can actually answer: **10 in scope (7 blocking), 21 out of scope** on `resources`/`structures`/`atmosphere` content the place does not contain. A scoped pass authorizes nothing; the full matrix keeps its own gate;
   - PR #403 — repaired `scripts/efficiency.py audit`, which died with `UnicodeEncodeError` on Windows before printing its findings, and stopped six sibling CLIs mangling their output;
   - PR #404 — `MainWorldBa014RunEvaluator` plus `evaluate-ba014-run.luau` decide a recorded run as INVALID/PARTIAL/FAIL/PASS through the committed contracts, generate the blank run record for the current scope, and keep reporting `activationAcceptable` from the full matrix so a scoped pass cannot read as acceptance.
-- **The BA-014 source chain is complete.** Definition → derived scope → operator runbook → generated run record → mechanical verdict all exist and are regression-covered. What remains is the Studio run itself, which needs a connected Studio/device lane.
+- **The BA-014 source chain is complete.** Definition → derived scope → operator runbook → generated run record → mechanical verdict all exist and are regression-covered. What remains is the Studio run itself, against the exact built artifact.
+- **A presentation content-factory capability landed in PRs #407–#438** (24 PRs) and is source-prepared, presentation-only, and gated:
+  - four ingestion boundaries specified — `environment-asset-kit-registry`, `weapon-visual-skin-content-factory`, `enemy-horror-presentation-factory`, `crafting-visual-content-factory`;
+  - **32 registered environment assets** across four registry waves and 10 families (Rock, DeadTree, Root, Brush, GroundClutter, Cave, Camp, Structure, Industrial, Prop), plus 8 weapon skin rows, 6 enemy horror role profiles, and 8 crafting presentation rows;
+  - **44 source model definitions** under 26 manifests (29 world, 6 enemy, 5 crafting, 4 gathering);
+  - fixture count rose 306 → **335**.
+  - No `src/` runtime owner consumes these registries — they are an ingestion boundary, not a second gameplay system, and the authority audits fail closed on any row declaring a gameplay owner. This is the intended state, not an omission.
+- **That content does not widen BA-014 scope.** All 32 environment assets declare `main_world.resources` (18) or `main_world.structures` (14), and both groups remain `projectMappingStatus = "Unmapped"`. Re-deriving the scope on `00ddba5` still yields **10 in scope (7 blocking), 21 out of scope**. The content needed for the next families now exists in source; the *mapping decision* is what stays gated behind the hub/route pass.
+- **First BA-014 run attempt, 2026-08-11: `PARTIAL` — blocked at preflight on place identity.** Preflight steps 1–5 passed (validation green at 335 fixtures; artifact `MainWorld-BA014.rbxlx`, SHA-256 `564b31cb…`, 1,026,674 bytes, from commit `00ddba5`). Step 7 failed: the connected Studio instance exposes a different place, with no `workspace.LivingKingdomsMainWorld`. All 10 in-scope checks recorded `Blocked`; the evaluator returned `PARTIAL` (not `FAIL` — a bridge failure is not a runtime defect) and `activationAcceptable: false`. See [`../production/evidence/2026-08-11-ba014-preflight-place-identity-blocked.md`](../production/evidence/2026-08-11-ba014-preflight-place-identity-blocked.md).
+- The place the bridge exposes is a **deliberately divergent local work stream** holding Studio-Assistant-authored biome content, which the repository owner intends to combine with the GitHub version later. It is not a stale copy of the artifact and must not be treated as one, nor used as a substitute observation source.
 - The dedicated build therefore contains the exact admitted arrival + Central Fountain + Grand Staircase + Hub Archway + Dungeon Portal presentation **plus the bounded 12-Part primary route**. The 189 recovered `WorldPath` slabs remain non-authoritative and unmapped.
 - Other Resources, WorldStructures, atmosphere, Terrain, NPC/vendor/quest, and asset-specific details remain outside active representation when complete current evidence is absent. Do not invent them merely to increase coverage.
 - `AuthoredWorldRecoveryCoverageConfig` remains the admission boundary. Source admission, offline building, and source mapping do not equal runtime activation or acceptance verification.
@@ -62,7 +71,17 @@ lune run games/living-kingdoms/tools/evidence/evaluate-ba014-run.luau > run-reco
 lune run games/living-kingdoms/tools/evidence/evaluate-ba014-run.luau run-record.json     # verdict
 ```
 
-No Studio/device lane was available on 2026-08-10, so no BA-014 check has been executed and every check remains `NotRun`. **Dependency-safe source preparation for this gate is now exhausted:** the definition, derived scope, runbook, run-record generation, and mechanical verdict all exist and are regression-covered. Further preparation would require guessing BA-014 measurements or instrumenting a runtime that is deliberately held, so the next step is genuinely the Studio run.
+No BA-014 check has yet been executed. The 2026-08-11 attempt reached Studio but stopped at preflight because the bridge exposed a different place, so every check is `Blocked` rather than `NotRun` and the gate is unchanged.
+
+**The blocker is now narrower and concretely actionable.** It is no longer "no Studio/device lane exists" — a lane exists and the tooling works end-to-end. The remaining requirement is that the exact artifact be the place the bridge observes:
+
+```text
+build main-world.project.json  →  open THAT artifact in Studio
+→ confirm workspace.LivingKingdomsMainWorld is present
+→ resume runbook §5 from step 2  →  new evidence packet
+```
+
+**Dependency-safe source preparation for this gate remains exhausted.** The definition, derived scope, runbook, run-record generation, and mechanical verdict all exist, are regression-covered, and have now been exercised end-to-end on a real attempt. Further preparation would require guessing BA-014 measurements or instrumenting a runtime that is deliberately held.
 
 Target chain:
 
@@ -98,7 +117,7 @@ Rules:
 
 1. run Studio hub/route readability + streaming evidence on the mapped dedicated build when an actual Studio/device lane is available: arrival camera/readability, four-player clearance, traversal/dead travel, portal interaction visibility, route seams, stream-out/rebind, quality tiers, performance, memory, cleanup;
 2. treat any reproducible BA-014 failure as FIX NOW and repair the smallest source-owned cause before adding environmental breadth;
-3. if BA-014 evidence passes, admit the next smallest evidence-backed environment family through `AuthoredWorldRecoveryCoverageConfig` and existing production-kit/budget rules rather than importing the recovered whole world;
+3. if BA-014 evidence passes, admit the next smallest evidence-backed environment family through `AuthoredWorldRecoveryCoverageConfig` and existing production-kit/budget rules rather than importing the recovered whole world — the registered kit content for `main_world.resources` and `main_world.structures` already exists in source, so this is a bounded mapping decision, not new content authoring. Admitting a group flips its `projectMappingStatus` and automatically widens the derived scope, adding its checks to the next run's worklist;
 4. keep every newly admitted presentation family semantic-ID/addressable and safe when locally absent under streaming;
 5. define inter-place transport only after authorized published place IDs and transport/session policy exist;
 6. activate/publish the dedicated Main World only after creation, authority, transport, streaming, performance, and acceptance gates are genuinely satisfied.
@@ -175,7 +194,8 @@ A representative Studio/device pass still needs to cover arrival camera/readabil
 | 0.2 combat/readability | BUILT — VERIFICATION PENDING | reusable feedback/reaction contracts |
 | 0.3 loot/builds | BUILT — VERIFICATION PENDING | affix/effect/reward variants are data-first |
 | 0.4 RPG progression | BUILT — VERIFICATION PENDING | bounded rank map + generic entitlement/presentation + reusable owner adapters |
-| **0.5 Main World** | **BA-014 SOURCE CHAIN COMPLETE AND REGRESSION-COVERED; NO CHECK EXECUTED — BLOCKED on a connected Studio/device lane** | measured hub/route evidence → fix failures → gated environment breadth/activation |
+| **0.5 Main World** | **BA-014 SOURCE CHAIN COMPLETE AND EXERCISED; NO CHECK EXECUTED — first run `PARTIAL`, BLOCKED on the bridge observing the exact built artifact** | measured hub/route evidence → fix failures → gated environment breadth/activation |
+| Presentation content factory | SOURCE-PREPARED, PRESENTATION-ONLY (32 env assets / 44 source models / 4 boundaries) | registry+model data, no runtime owner; admission still gated by BA-014 |
 | 0.6 systemic replayability | future; do not start before coherent 0.5 Main World progress | combinatorial output from reusable systems |
 | 0.7 persistence | substantial foundations | migration/lifecycle invariants and recovery tests |
 | 0.8 co-op/social | basic foundations | multiplayer coverage over existing owners |

@@ -1,0 +1,29 @@
+{
+  "identity": {
+    "captureDateAndTimezone": "2026-08-11, America/New_York",
+    "deviceProfileId": "",
+    "featureFlagState": "",
+    "graphicsQualityLevel": "",
+    "mainWorldPlaceIdentity": "unpublished — dedicated Main World has no assigned place ID",
+    "operator": "Claude (Cowork)",
+    "placeArtifactSha256": "564b31cbdd45dd9bdd11ec3c1707595dc3effb1d1e6169667a8405ca2b66cf0b",
+    "placeFileName": "MainWorld-BA014.rbxlx",
+    "repositoryCommit": "00ddba56b4cce360b9eed1f82b9e095c07dbd573",
+    "rojoVersion": "7.7.0",
+    "rollbackCheckpointCommit": "00ddba56b4cce360b9eed1f82b9e095c07dbd573",
+    "serverAndClientCount": "",
+    "studioVersion": "0.733.0.7330989"
+  },
+  "results": {
+    "mwam.arrival.character_release_gating": "Blocked",
+    "mwam.arrival.destination_matrix": "Blocked",
+    "mwam.arrival.four_player_simultaneous": "Blocked",
+    "mwam.arrival.orientation_recognition": "Blocked",
+    "mwam.arrival.preparation_reachability": "Blocked",
+    "mwam.arrival.return_debrief_context": "Blocked",
+    "mwam.navigation.core_loop_traversal": "Blocked",
+    "mwam.navigation.dead_travel": "Blocked",
+    "mwam.navigation.multiplayer_congestion": "Blocked",
+    "mwam.visual.fixed_camera_capture_set": "Blocked"
+  }
+}
