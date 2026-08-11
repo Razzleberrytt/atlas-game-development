@@ -15,6 +15,12 @@ local registry = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/
 })()
 
 for _, definition in registry.Definitions do
-	check(string.sub(definition.sourceModelPath, 1, 12) == "Environment/", "environment models must stay under Environment/")
-	check(string.find(definition.sourceModelPath, "..", 1, true) == nil, "environment model path may not escape its source root")
+	check(
+		string.sub(definition.sourceModelPath, 1, 12) == "Environment/",
+		"environment models must stay under Environment/"
+	)
+	check(
+		string.find(definition.sourceModelPath, "..", 1, true) == nil,
+		"environment model path may not escape its source root"
+	)
 end
