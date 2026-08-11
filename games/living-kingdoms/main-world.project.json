@@ -1,0 +1,50 @@
+{
+  "name": "LivingKingdomsMainWorld",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "Shared": {
+        "$className": "Folder",
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "MainWorldServer": {
+        "$path": "src/main-world/server/MainWorldServer.server.luau",
+        "$properties": {
+          "Disabled": false,
+          "RunContext": "Server"
+        }
+      }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "LivingKingdomsMainWorld": {
+        "$className": "Folder",
+        "HubCore": {
+          "$className": "Folder",
+          "Civic": {
+            "$className": "Folder",
+            "CentralFountain": {
+              "$path": "assets/recovered-world/models/CentralFountain.model.json"
+            }
+          }
+        }
+      }
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "MainWorldClient": {
+          "$path": "src/main-world/client/MainWorldClient.client.luau",
+          "$properties": {
+            "Disabled": false
+          }
+        }
+      }
+    }
+  }
+}
