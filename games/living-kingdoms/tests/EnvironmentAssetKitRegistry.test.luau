@@ -39,16 +39,18 @@ for _, definition in registry.Definitions do
 	check(string.sub(definition.sourceModelPath, 1, 12) == "Environment/")
 end
 
-for _, requiredId in {
-	"env.tree.corrupted.dead_pine_a",
-	"env.root.corrupted.fallen_mass_a",
-	"env.rock.frontier.boulder_a",
-	"env.root.corrupted.stump_cluster_a",
-	"env.camp.frontier.abandoned_fire_ring_a",
-	"env.camp.frontier.torn_shelter_a",
-	"env.prop.frontier.supply_crate_stack_a",
-	"env.camp.frontier.hanging_tarp_frame_a",
-} do
+for _, requiredId in
+	{
+		"env.tree.corrupted.dead_pine_a",
+		"env.root.corrupted.fallen_mass_a",
+		"env.rock.frontier.boulder_a",
+		"env.root.corrupted.stump_cluster_a",
+		"env.camp.frontier.abandoned_fire_ring_a",
+		"env.camp.frontier.torn_shelter_a",
+		"env.prop.frontier.supply_crate_stack_a",
+		"env.camp.frontier.hanging_tarp_frame_a",
+	}
+do
 	check(seenIds[requiredId] == true, "expanded environment registry missing " .. requiredId)
 end
 
