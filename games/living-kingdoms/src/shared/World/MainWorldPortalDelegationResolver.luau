@@ -23,6 +23,14 @@ export type DestinationDefinition = {
 	RuntimeEnabled: boolean,
 }
 
+export type DelegationContract = {
+	MainWorldAnchorId: string,
+	CurrentBridgeAnchorId: string,
+	PortalContentId: string,
+	InteractionIntentId: string,
+	CanonicalLaunchAuthorityOwnerId: string,
+}
+
 export type DelegationPlan = {
 	status: "HeldCanonicalDelegation" | "Rejected",
 	contentId: string?,
@@ -51,21 +59,53 @@ local function rejected(reasonId: string): DelegationPlan
 	})
 end
 
-function Resolver.resolve(anchor: AnchorDefinition, destination: DestinationDefinition): DelegationPlan
+function Resolver.resolve(
+	anchor: AnchorDefinition,
+	currentBridgeAnchor: AnchorDefinition,
+	destination: DestinationDefinition,
+	contract: DelegationContract
+): DelegationPlan
 	if anchor.runtimeEnabled or destination.RuntimeEnabled then
 		return rejected("HeldInputsRequired")
 	end
-	if anchor.worldContentId ~= destination.ContentId then
+	if not currentBridgeAnchor.runtimeEnabled then
+		return rejected("CurrentBridgeMustBeActive")
+	end
+	if anchor.id ~= contract.MainWorldAnchorId then
+		return rejected("MainWorldAnchorIdentityMismatch")
+	end
+	if currentBridgeAnchor.id ~= contract.CurrentBridgeAnchorId then
+		return rejected("CurrentBridgeAnchorIdentityMismatch")
+	end
+	if anchor.worldContentId ~= contract.PortalContentId then
+		return rejected("MainWorldAnchorContentMismatch")
+	end
+	if currentBridgeAnchor.worldContentId ~= contract.PortalContentId then
+		return rejected("CurrentBridgeContentMismatch")
+	end
+	if destination.ContentId ~= contract.PortalContentId then
 		return rejected("AnchorDestinationContentMismatch")
 	end
 	if destination.Destination.ContentId ~= destination.ContentId then
 		return rejected("DestinationContentMismatch")
 	end
-	if anchor.mutationOwnerId == nil then
+	if anchor.interactionIntentId ~= contract.InteractionIntentId then
+		return rejected("MainWorldInteractionIntentMismatch")
+	end
+	if currentBridgeAnchor.interactionIntentId ~= contract.InteractionIntentId then
+		return rejected("CurrentBridgeInteractionIntentMismatch")
+	end
+	if anchor.mutationOwnerId == nil or currentBridgeAnchor.mutationOwnerId == nil then
 		return rejected("CanonicalOwnerMissing")
 	end
-	if anchor.mutationOwnerId ~= destination.Destination.LaunchAuthorityOwnerId then
-		return rejected("CanonicalOwnerMismatch")
+	if anchor.mutationOwnerId ~= contract.CanonicalLaunchAuthorityOwnerId then
+		return rejected("MainWorldCanonicalOwnerMismatch")
+	end
+	if currentBridgeAnchor.mutationOwnerId ~= contract.CanonicalLaunchAuthorityOwnerId then
+		return rejected("CurrentBridgeCanonicalOwnerMismatch")
+	end
+	if destination.Destination.LaunchAuthorityOwnerId ~= contract.CanonicalLaunchAuthorityOwnerId then
+		return rejected("DestinationCanonicalOwnerMismatch")
 	end
 
 	return table.freeze({
