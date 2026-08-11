@@ -30,10 +30,8 @@ local function flatten(node: any, path: string, output: { any })
 end
 
 local config = loadConfig("RecoveredDungeonPortalConfig")
-local model = serde.decode(
-	"json",
-	fs.readFile("games/living-kingdoms/assets/recovered-world/models/DungeonPortal.model.json")
-)
+local model =
+	serde.decode("json", fs.readFile("games/living-kingdoms/assets/recovered-world/models/DungeonPortal.model.json"))
 local rows = {}
 flatten(model, "", rows)
 local byPath = {}
