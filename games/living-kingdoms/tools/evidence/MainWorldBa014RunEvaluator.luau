@@ -125,10 +125,7 @@ function Evaluator.evaluate(matrix: any, scopeResolver: any, mappedGroupIds: { s
 		else
 			local expectedHexLength = IDENTITY_HEX_LENGTHS[field]
 			if expectedHexLength ~= nil and not isHexOfLength(recorded, expectedHexLength) then
-				append(
-					invalid,
-					`run identity field {field} must be a {expectedHexLength}-character hexadecimal value`
-				)
+				append(invalid, `run identity field {field} must be a {expectedHexLength}-character hexadecimal value`)
 			end
 		end
 	end
