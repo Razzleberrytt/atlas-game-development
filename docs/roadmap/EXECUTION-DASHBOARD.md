@@ -1,4 +1,4 @@
-# Atlas — Execution Dashboard v1.14
+# Atlas — Execution Dashboard v1.15
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-10  
@@ -13,68 +13,77 @@ For detailed acceptance use `PLAYABLE-MVP-PATCH-EXECUTION.md`. For long-range sc
 - **Patch 0.3 — Loot + Build Replayability source pass:** **BUILT — VERIFICATION PENDING**.
 - **Patch 0.4 — RPG Progression source pass:** **BUILT — VERIFICATION PENDING**.
 - Studio/device/play/performance evidence remains a parallel lane; unrun evidence is not a source-development lock and is never called VERIFIED.
-- **Patch 0.5 — Main World + Environment Expansion:** **DEDICATED SOURCE BUILD ESTABLISHED — HUB CORE MATERIALIZED; VERIFICATION PENDING**.
-- The supplied 2026-08-10 `livingkingdoms.rbxl` is pinned as authored-world evidence at SHA-256 `7cfa9ae257cccc1c048459029f95dfdb83a4e113cbf1ff2f281bc7c9532a695b` and 1,808,699 bytes. It contains 2,342 declared instances, 1,775 Workspace instances, and 367 embedded scripts.
-- Current GitHub/Rojo gameplay remains authoritative. The incoming place is not mapped into the active operation project and its overlapping bootstrap/combat/enemy/inventory/loot/data/monetization runtime remains quarantined rather than resurrected.
-- Script reconciliation preserves all historically unique material: 27/28 historically unique source files are present in the new place, while the absent `RNGConfig.luau` remains preserved in the 2026-08-07 archive.
-- The admitted hub core is now represented in source rather than only held as recovery evidence:
-  - PR #382 — stable `main_world.hub_core` semantic composition;
-  - PR #383 — explicit dedicated Main World server/client bootstrap allowlists with legacy/import runtime excluded;
-  - PR #384 — dedicated `main-world.project.json`, first reviewable model payload, reproducible offline Main World build, and CI build gate;
-  - PR #385 — exact authored arrival spawn plus held `Arrival -> Preparation -> Expedition -> Debrief` lifecycle contract bound to canonical expedition/result owners;
-  - PR #386 — exact Grand Staircase + Hub Archway model payloads and full parity coverage;
-  - PR #387 — exact Dungeon Portal presentation payload and parity/authority coverage under `HubCore/ExpeditionGate`.
+- **Patch 0.5 — Main World + Environment Expansion:** **DEDICATED SOURCE BUILD + SOURCE-SAFE HUB/ROUTE CONTRACTS ESTABLISHED — VERIFICATION PENDING**.
+- The supplied 2026-08-10 `livingkingdoms.rbxl` remains pinned authored-world evidence at SHA-256 `7cfa9ae257cccc1c048459029f95dfdb83a4e113cbf1ff2f281bc7c9532a695b` and 1,808,699 bytes. It contains 2,342 declared instances, 1,775 Workspace instances, and 367 embedded scripts.
+- Current GitHub/Rojo gameplay remains authoritative. Preserved/import runtime remains quarantined; the operation project still does not map the recovered whole world or duplicate gameplay owners.
 - The dedicated Main World remains unpublished and runtime-disabled. No place IDs, teleport policy, duplicate remotes, legacy dungeon authority, or operation-world generator have been introduced.
-- The current dedicated build now contains the exact admitted arrival + Central Fountain + Grand Staircase + Hub Archway + Dungeon Portal presentation. The hub-core source representation creation gate and reproducible offline-build gate are therefore satisfied.
-- Other Resources, WorldStructures, atmosphere, Terrain, NPC/vendor/quest, and asset-specific details remain partial/hierarchy evidence when complete current property rows are not committed. Do not invent them merely to increase recovered-world coverage.
-- `AuthoredWorldRecoveryCoverageConfig` remains the admission boundary. Source admission does not equal runtime activation or acceptance verification.
+- Hub-core creation is complete in source:
+  - PR #382 — stable `main_world.hub_core` semantic composition;
+  - PR #383 — explicit dedicated Main World bootstrap allowlists and anti-resurrection boundary;
+  - PR #384 — dedicated `main-world.project.json`, reproducible offline Main World build, and CI build gate;
+  - PR #385 — exact authored arrival plus held `Arrival -> Preparation -> Expedition -> Debrief` lifecycle contract;
+  - PR #386 — exact Grand Staircase + Hub Archway model payloads and parity coverage;
+  - PR #387 — exact Dungeon Portal presentation payload and authority-preserving parity coverage.
+- Source-safe review/streaming preparation is also established:
+  - PR #389 — machine-readable hub readability contract, stable `main_world.hub_core` streaming identity, and project/source-contract topology validation;
+  - PR #390 — non-blocking semantic presentation resolver with explicit `Present` / `Missing` / `UnknownContentId` states and no `WaitForChild` dependency;
+  - PR #391 — stable `route.world.primary` control truth replacing 189 recovered WorldPath slab Instances as route authority;
+  - PR #392 — BA-013-aligned `main_world.primary_route` chunk descriptors, deterministically covering the route in 12 held 64–128 stud chunks with no render assets mapped;
+  - PR #393 — held Main World expedition-portal delegation contract proving the authored surface delegates to canonical `ExpeditionLobbyService` while owning no eligibility, transport, join/ready/launch grant, or consequential mutation.
+- The dedicated build contains the exact admitted arrival + Central Fountain + Grand Staircase + Hub Archway + Dungeon Portal presentation. Route **control and chunk descriptors exist**, but route render assets remain deliberately unmapped.
+- Other Resources, WorldStructures, atmosphere, Terrain, NPC/vendor/quest, and asset-specific details remain outside active representation when complete current evidence is absent. Do not invent them merely to increase coverage.
+- `AuthoredWorldRecoveryCoverageConfig` remains the admission boundary. Source admission and offline building do not equal runtime activation or acceptance verification.
 
 ## 2. NOW → NEXT → LATER
 
 ### NOW
 
-**Make the dedicated Main World hub core reviewable and robust before expanding environmental breadth.**
+**Advance Patch 0.5 from source-safe planning into the smallest evidence-backed visible expansion without bypassing BA-014 acceptance gates.**
 
-The source-representation/bootstrap/offline-build/lifecycle creation chain is complete. The smallest coherent next capability is source-safe hub-core readability and streaming preparation that does not require inventing missing world data or activating transport.
+The admitted hub core, stable semantic lookup, primary route control data, bounded route chunk descriptors, and held portal delegation path are complete. The next source increment should add only representation that can be derived from existing canonical contracts/production rules and remain independently removable/streamable.
 
 Target chain:
 
 ```text
-checksum-pinned admitted civic evidence
-→ stable main_world.hub_core semantic composition
-→ dedicated Main World source representation
-→ explicit server/client bootstrap allowlists
-→ reproducible offline build
-→ arrival / preparation / expedition-gate / debrief semantics
-→ source-safe readability + streaming/control contracts
-→ Studio/device/streaming/performance evidence
+admitted hub evidence
+→ dedicated source build
+→ semantic/readability/authority contracts
+→ primary-route control truth
+→ bounded held route chunks
+→ smallest source-managed route render representation
+→ Studio streaming/readability/performance evidence
+→ only then broader environment admission / activation
 ```
 
 Rules:
 
-- do not copy the recovered whole world into the active operation place;
-- preserve authored-overworld coordinates 1:1 unless a later evidence-backed representation contract explicitly says otherwise;
+- do not copy the recovered 189 `WorldPath` slabs into the dedicated place;
+- route render representation must consume `route.world.primary` + `main_world.primary_route` chunk truth rather than making Instances authoritative again;
+- stay within BA-013 route chunk authoring targets (64–128 studs, split earlier at semantic beats when justified);
+- exact streaming radii, `ModelStreamingMode`, quality-tier behavior, and performance acceptance remain BA-014 measured concerns; do not guess them;
+- preserve authored-overworld coordinates and recovered corridor width unless an evidence-backed representation contract explicitly changes presentation while retaining control truth;
 - do not revive legacy bootstrap/services, duplicate remotes, or model-owned gameplay authority;
 - keep canonical combat, inventory, progression, persistence, expedition, and networking owners in current repository source;
 - do not guess Terrain voxels, missing asset IDs, NPC/vendor/quest behavior, global Lighting ownership, or teleport/session behavior;
-- keep `WorldFoundationService` operation-world generation out of the dedicated Main World bootstrap;
-- use stable semantic IDs, route/control data, and streaming groups so gameplay/presentation truth survives locally absent Instances;
-- keep the portal's recovered `[G]` text presentation-only until an explicit canonical interaction adapter exists;
-- keep ordinary Studio/device evidence pending until actually run; pending evidence does not block dependency-safe source work.
+- keep `WorldFoundationService` out of the dedicated Main World bootstrap;
+- streamed-out presentation must never change consequential gameplay truth;
+- keep the portal's recovered `[G]` text presentation-only; Main World portal delegation remains held until activation/transport gates are separately satisfied;
+- keep Studio/device evidence pending until actually run.
 
 ### NEXT
 
-1. define machine-readable hub-core readability/clearance/streaming expectations around arrival, civic landmarks, and expedition gate without changing authored coordinates;
-2. add source-level validation for stable semantic IDs, bounded streaming groups, and locally-absent-instance-safe references across the dedicated hub core;
-3. preview/readability-check the hub core in Studio when evidence can actually be run; record arrival camera/readability, four-player clearance, traversal/dead travel, and interaction visibility truth rather than guessing it;
-4. replace recovered `WorldPath` slabs with stable route/control data and bounded render chunks only after the hub core is coherent;
-5. establish an explicit canonical portal interaction adapter only when it can delegate to existing expedition authority without inventing inter-place transport;
-6. admit terrain, structures, props, foliage, lighting, VFX, and audio only through the existing production-kit/budget and acceptance rules;
-7. activate/publish the dedicated Main World only after its separate creation, authority, transport, and acceptance gates are actually satisfied.
+1. define the smallest source-managed primary-route render representation that consumes the existing route/chunk contracts and does not resurrect 189 legacy slab Instances;
+2. add parity/topology regression coverage proving route render chunks preserve control boundaries, corridor truth, stable semantic IDs, and removable presentation ownership;
+3. map only that bounded route representation into the dedicated Main World after its source contract is green;
+4. run Studio hub/route readability + streaming evidence when an actual Studio/device lane is available: arrival camera/readability, four-player clearance, traversal/dead travel, portal interaction visibility, stream-out/rebind, quality tiers, performance, memory, cleanup;
+5. treat any reproducible BA-014 failure as FIX NOW before environmental breadth;
+6. admit terrain, structures, props, foliage, lighting, VFX, and audio only through existing production-kit/budget and evidence rules;
+7. define inter-place transport only after authorized published place IDs and transport/session policy exist;
+8. activate/publish the dedicated Main World only after creation, authority, transport, streaming, performance, and acceptance gates are genuinely satisfied.
 
 ### LATER
 
-- deeper Patch 0.5 Main World environment breadth after the hub core is accepted;
+- deeper Patch 0.5 environment breadth after the first bounded route representation and BA-014 evidence;
 - Patch 0.6 systemic replayability;
 - Patch 0.7 persistence hardening;
 - Patch 0.8 co-op/social/session;
@@ -108,27 +117,26 @@ python scripts/effect_routes.py show <EffectId>
 python scripts/effect_routes.py next
 ```
 
-Patch 0.5's evidence/admission flywheel is now:
+Patch 0.5's source flywheel is now:
 
 ```text
-checksum-pinned authored evidence
-→ bounded coherent review unit
-→ stable semantic ID + streaming group
-→ deterministic parity/preservation record
-→ dedicated source-managed representation
-→ explicit bootstrap boundary
+checksum-pinned evidence
+→ stable semantic/control truth
+→ bounded source representation
+→ explicit ownership + streaming identity
+→ deterministic regression coverage
 → reproducible dedicated-place build
-→ source-safe readability / control / streaming contracts
-→ later activation only after acceptance evidence
+→ measured Studio acceptance
+→ gated activation / broader content
 ```
 
-The RBXL reconciliation work has already paid the one-time extraction/recovery cost for the admitted civic core. Do not repeatedly rediscover or re-import the same geometry.
+The one-time recovery cost has already been paid for the admitted civic core and WorldPath line. Do not repeatedly rediscover or re-import that geometry.
 
 ## 4. Studio/device evidence lane
 
-The consolidated pass still covers the representative run, replay, keyboard/controller/touch, combat feel/readability, banking/equip, lifecycle, build-choice readability, durable rank/progression presentation, Rally/marker readability, and representative performance.
+For Patch 0.5, source admission, source-safe streaming contracts, route-control conversion, and reproducible offline builds do **not** substitute for the Main World acceptance matrix.
 
-For Patch 0.5, source admission and reproducible offline building do **not** substitute for the Main World acceptance matrix. A representative build must still cover arrival camera/readability, four-player clearance, traversal/dead travel, interaction visibility, streaming continuity/rebind, quality tiers, performance, memory, and cleanup.
+A representative Studio/device pass still needs to cover arrival camera/readability, four-player clearance, traversal/dead travel, interaction visibility, streaming continuity/rebind, route seams, quality tiers, representative performance, memory, and cleanup.
 
 - **pass:** promote applicable BUILT — VERIFICATION PENDING work to VERIFIED;
 - **reproducible failure:** make the concrete FIX NOW and preempt expansion;
@@ -143,8 +151,8 @@ For Patch 0.5, source admission and reproducible offline building do **not** sub
 | 0.2 combat/readability | BUILT — VERIFICATION PENDING | reusable feedback/reaction contracts |
 | 0.3 loot/builds | BUILT — VERIFICATION PENDING | affix/effect/reward variants are data-first |
 | 0.4 RPG progression | BUILT — VERIFICATION PENDING | bounded rank map + generic entitlement/presentation + reusable owner adapters |
-| **0.5 Main World** | **DEDICATED SOURCE BUILD ESTABLISHED — HUB CORE MATERIALIZED; VERIFICATION PENDING** | readability/streaming/control contracts → acceptance evidence → gated activation |
-| 0.6 systemic replayability | future; do not start before coherent 0.5 hub-core progress | combinatorial output from reusable systems |
+| **0.5 Main World** | **DEDICATED SOURCE BUILD + SOURCE-SAFE HUB/ROUTE CONTRACTS ESTABLISHED; VERIFICATION PENDING** | bounded route representation → BA-014 evidence → gated environment breadth/activation |
+| 0.6 systemic replayability | future; do not start before coherent 0.5 Main World progress | combinatorial output from reusable systems |
 | 0.7 persistence | substantial foundations | migration/lifecycle invariants and recovery tests |
 | 0.8 co-op/social | basic foundations | multiplayer coverage over existing owners |
 | 0.9 content/pipeline | preparation present | mostly data/content + validation |
@@ -169,10 +177,10 @@ When asked to continue:
 
 ## 7. Real stop conditions
 
-Stop expansion and fix/report when continuing would knowingly build on unsafe or false assumptions, including client-authored consequential truth, valuable-state corruption/duplication, competing owners, known lifecycle failure, missing required canonical authority/evidence, irreversible unsafe migration, or automated validation failure.
+Stop expansion and fix/report when continuing would knowingly build on unsafe or false assumptions, including client-authored consequential truth, valuable-state corruption/duplication, competing owners, known lifecycle failure, missing required canonical authority/evidence, irreversible unsafe migration, automated validation failure, or a representation decision that requires unmeasured BA-014 streaming/performance assumptions.
 
-The former civic-property-evidence blocker and the dedicated source-representation/offline-build creation gates are closed by the checksum-pinned 2026-08-10 intake and PRs #371/#377/#379/#380/#382/#383/#384/#385/#386/#387. Remaining incomplete world-property families are not permission to fabricate them; they simply stay outside the admitted source representation until better evidence exists.
+The former civic-property-evidence blocker, dedicated source-build gate, hub semantic/readability gate, WorldPath control-conversion gate, bounded route-chunk planning gate, and held portal-delegation gate are closed by the checksum-pinned 2026-08-10 intake and PRs #371/#377/#379/#380/#382/#383/#384/#385/#386/#387/#389/#390/#391/#392/#393.
 
-Unrun ordinary Studio/device/play-feel evidence alone is not a stop condition.
+Remaining incomplete world-property families are not permission to fabricate them. Unrun ordinary Studio/device/play-feel evidence alone is not a stop condition when dependency-safe source work remains.
 
 > **Build continuously, route effects to one owner, make repeated variants cheaper, automate recurring friction, and stop only for real blockers.**
