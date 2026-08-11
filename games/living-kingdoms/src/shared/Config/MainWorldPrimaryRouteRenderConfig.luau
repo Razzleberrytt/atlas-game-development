@@ -3,7 +3,8 @@
 -- Patch 0.5 source-managed presentation contract for the primary Main World
 -- route. Geometry is derived from the stable route control + bounded chunk
 -- contracts; recovered WorldPath style is preserved without resurrecting its
--- 189 legacy Parts. The asset remains unmapped/runtime-disabled in this step.
+-- 189 legacy Parts. The asset is mapped into the dedicated unpublished place,
+-- while runtime activation and BA-014 streaming/performance choices stay held.
 
 local Config = {
 	Version = "P0.5-MAIN-WORLD-PRIMARY-ROUTE-RENDER-v1",
@@ -14,8 +15,9 @@ local Config = {
 	StreamingGroupId = "main_world.primary_route",
 	SourceHold = true,
 	RuntimeEnabled = false,
-	RenderAssetMapped = false,
+	RenderAssetMapped = true,
 	ModelAssetPath = "assets/visual/world/primary-route/MainWorldPrimaryRoute.model.json",
+	ProjectContainerPath = "Workspace/LivingKingdomsMainWorld/Routes/PrimaryRoute",
 	ExpectedChunkCount = 12,
 	ExpectedPartCount = 12,
 	Style = table.freeze({
@@ -37,6 +39,7 @@ local Config = {
 		LegacyWorldPathInstancesForbidden = true,
 		PresentationMayBeRemovedWithoutChangingRouteTruth = true,
 		LocallyAbsentPresentationMayNotChangeConsequentialTruth = true,
+		MappingDoesNotImplyRuntimeActivation = true,
 		ExactStreamingRadiiDefined = false,
 		ModelStreamingModeDefined = false,
 		QualityTierBehaviorDefined = false,
