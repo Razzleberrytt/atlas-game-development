@@ -60,7 +60,10 @@ for _, asset in manifest.assets do
 		check(node.ClassName ~= "RemoteEvent" and node.ClassName ~= "RemoteFunction")
 		if node.ClassName == "Part" then
 			partCount += 1
-			check(node.Properties ~= nil and node.Properties.Anchored == true, "gathering source Parts must be anchored")
+			check(
+				node.Properties ~= nil and node.Properties.Anchored == true,
+				"gathering source Parts must be anchored"
+			)
 		elseif node.ClassName == "Attachment" then
 			foundAttachments[node.Name] = true
 		end
