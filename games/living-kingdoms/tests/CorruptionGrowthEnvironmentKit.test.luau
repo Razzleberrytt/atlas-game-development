@@ -4,11 +4,11 @@ local fs = require("@lune/fs")
 local serde = require("@lune/serde")
 local luau = require("@lune/luau")
 
-local ROOT = "games/living-kingdoms/assets/visual/world/environment-kits/industrial-rail-debris/"
+local ROOT = "games/living-kingdoms/assets/visual/world/environment-kits/corruption-growth/"
 
 local function check(condition: unknown, message: string?)
 	if not condition then
-		error(message or "IndustrialRailDebrisEnvironmentKit assertion failed", 2)
+		error(message or "CorruptionGrowthEnvironmentKit assertion failed", 2)
 	end
 end
 
@@ -55,10 +55,12 @@ for _, definition in combined do
 	byId[definition.id] = definition
 end
 
-local signalHasVfxSocket = false
+local resinHasVfxSocket = false
+local sporeHasVfxSocket = false
+local sporeHasAudioSocket = false
 for _, asset in manifest.assets do
 	local definition = byId[asset.semanticId]
-	check(definition ~= nil, "registry missing industrial asset " .. asset.semanticId)
+	check(definition ~= nil, "registry missing corruption growth asset " .. asset.semanticId)
 	check(definition.sourceModelPath == asset.registrySourceModelPath)
 	check(definition.presentationOnly == true)
 	check(definition.gameplayAuthorityOwnerId == nil)
@@ -73,8 +75,14 @@ for _, asset in manifest.assets do
 			partCount += 1
 			check(node.Properties ~= nil and node.Properties.Anchored == true, "environment Parts must be anchored")
 		end
-		if asset.semanticId == "env.prop.industry.signal_post_a" and node.Name == "VfxSocket" then
-			signalHasVfxSocket = node.ClassName == "Attachment"
+		if asset.semanticId == "env.growth.corruption.resin_cluster_a" and node.Name == "VfxSocket" then
+			resinHasVfxSocket = node.ClassName == "Attachment"
+		end
+		if asset.semanticId == "env.growth.corruption.spore_lantern_a" and node.Name == "SporeVfxSocket" then
+			sporeHasVfxSocket = node.ClassName == "Attachment"
+		end
+		if asset.semanticId == "env.growth.corruption.spore_lantern_a" and node.Name == "AudioSocket" then
+			sporeHasAudioSocket = node.ClassName == "Attachment"
 		end
 		for _, child in node.Children or {} do
 			visit(child)
@@ -84,4 +92,6 @@ for _, asset in manifest.assets do
 	check(partCount >= asset.minimumPartCount, asset.semanticId .. " has too few source Parts")
 end
 
-check(signalHasVfxSocket, "signal post must preserve its VFX presentation socket")
+check(resinHasVfxSocket, "resin cluster must preserve its VFX presentation socket")
+check(sporeHasVfxSocket, "spore lantern must preserve its VFX presentation socket")
+check(sporeHasAudioSocket, "spore lantern must preserve its audio presentation socket")
