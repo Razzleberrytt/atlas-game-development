@@ -73,43 +73,55 @@ Server bootstrap completed with no errors:
 [SurvivorController] Native Roblox character controls enabled
 ```
 
-### 5.2 Studio API access gates the entire play-evidence lane
+### 5.2 Studio API access observation — corrected safety interpretation
 
-With Studio API access disabled, `DataStoreService` returned `StudioAccessToApisNotAllowed`,
-`AtlasPersistence` failed the inventory lease, and the server **kicked the player out of its own
-playtest**:
+At the recorded `8544730` build, with Studio API access disabled, `DataStoreService` returned
+`StudioAccessToApisNotAllowed`, `AtlasPersistence` failed the inventory lease, and the server
+**kicked the player out of its own playtest**:
 
 ```
 [AtlasPersistence] failed to load <player>: LeaseStoreFailed
 Server Kick Message: Your inventory is active on another server or could not be loaded safely.
 ```
 
-Enabling **Game Settings → Security → Studio Access to API Services** cleared this. Any future
-Studio play evidence run requires it.
+Enabling **Game Settings → Security → Studio Access to API Services** cleared that observed
+bootstrap failure in this historical run. **That observation must not be interpreted as a safe
+operator prerequisite for the recorded source.** At that time `InventoryLiveService` supplied
+production inventory identity (`AtlasPlayerInventoryV1` / `atlas-prod`) and the adapter would use
+the real DataStore whenever Studio API access made it available. A Studio evidence session could
+therefore acquire a production lease or mutate/migrate live inventory.
 
-### 5.3 Inventory lease is correctly bounded — operator note, not a defect
+Follow-up source hardening makes Studio inventory explicitly process-local/volatile **before**
+any production `GetDataStore` call. Future Studio evidence may enable API access for unrelated
+Studio tooling only when that isolation guard is present in the exact tested artifact. Never use
+this historical packet as permission to connect an older build to production inventory storage.
 
-After a play session is terminated abruptly, the next session is kicked with
-`LeaseHeldByAnotherServer` until the previous lease expires.
+### 5.3 Inventory lease behavior observed on the historical build
 
-This was investigated and is **working as designed**, not a defect.
+After a play session was terminated abruptly, the next session was kicked with
+`LeaseHeldByAnotherServer` until the previous lease expired.
+
+This matched the production lease contract at the observed build:
 `InventorySessionLeaseService` stores `ExpiresAtUnix` and grants acquisition once the stored
-lease has expired; `InventoryLiveService.luau:27` constructs it with a **90-second** duration,
-and the constructor rejects any duration under 30 seconds.
+lease has expired; `InventoryLiveService` constructs it with a **90-second** duration, and the
+constructor rejects any duration under 30 seconds.
 
-Operator consequence: after stopping Play abruptly, **wait ~90 seconds before restarting**, or
-the session is kicked at join. This is transient and self-healing.
+This observation is retained for historical accuracy, but **future Studio runs using the
+Studio-isolated volatile adapter must not be expected to create or wait on production leases**.
+A production-style lease delay seen during Studio after the isolation fix should be investigated
+rather than normalized as an operator wait step.
 
 ### 5.4 Studio MCP `screen_capture` terminates a running play session
 
 `screen_capture` captures the *edit-time* screen and forced Studio back to Edit mode,
-terminating the session mid-run. Combined with §5.3 this costs ~90 seconds per occurrence.
-Do not call it during a play session; drive the in-game camera and read state through
-`execute_luau` instead.
+terminating the session mid-run. In the historical build, that could also leave the observed
+90-second production-style lease active. Do not call it during a play session; drive the in-game
+camera and read state through `execute_luau` instead.
 
 ### 5.5 Arrival spawn ambiguity in this place
 
-Three `SpawnLocation` instances exist at runtime, two enabled:
+Three `SpawnLocation` instances exist at runtime, and the captured state recorded **all three as
+enabled**:
 
 | SpawnLocation | Position | Enabled |
 |---|---|---|
@@ -124,8 +136,13 @@ production spawns" — any place carrying both worlds inherits this ambiguity.
 
 ## 6. Defects found
 
-None confirmed. §5.3 was investigated and found correct by design; §5.2 and §5.4 are
-environment/tooling conditions, not source defects.
+The historical observation exposed one later-confirmed safety defect: enabling Studio API access
+could connect the Studio inventory path to production persistence. That defect is handled by the
+follow-up Studio-only volatile-storage guard; it does not retroactively promote this observation
+into acceptance evidence.
+
+The `screen_capture` behavior in §5.4 remains an environment/tooling condition. The spawn-state
+count in §5.5 is corrected to match the captured table: three present, three enabled.
 
 ## 7. Performance and matrix result
 
@@ -140,10 +157,12 @@ environment/tooling conditions, not source defects.
 - No milestone is promoted. MVP 0.1 and Patches 0.2–0.4 remain **BUILT — VERIFICATION PENDING**.
 - No BA-014 check is recorded; BA-014 requires the dedicated Main World artifact, which this
   place is not (see the 2026-08-11 BA-014 preflight packet).
-- What this does establish: the client bootstrap does **not** stall in this build, the full
-  server owner set mounts cleanly, and the Studio evidence lane is now operable end to end.
-- Required next action for a real acceptance run: pin place identity to a Rojo artifact from a
-  recorded commit, characterize device/graphics profile, then exercise the gameplay loop.
+- What this does establish: the client bootstrap did **not** stall in this observed build and the
+  expected server owner set mounted, but the Studio persistence path required safety hardening
+  before a future gameplay evidence run could be trusted not to touch production inventory.
+- Required next action for a real acceptance run: use an exact artifact containing the
+  Studio-isolated inventory adapter, prove artifact identity, characterize device/graphics
+  profile, then exercise the applicable gameplay/evidence matrix.
 
 ## 9. Attachments
 
