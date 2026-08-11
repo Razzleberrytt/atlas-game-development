@@ -16,7 +16,7 @@ local Config = {
 	LegacySegmentInstancesAuthoritative = false,
 	RenderChunksDefined = true,
 	RenderChunkPolicyVersion = "P0.5-MAIN-WORLD-PRIMARY-ROUTE-CHUNKS-v1",
-	RenderAssetsMapped = false,
+	RenderAssetsMapped = true,
 	ControlPoints = table.freeze({
 		table.freeze({
 			id = "route.world.primary.start",
