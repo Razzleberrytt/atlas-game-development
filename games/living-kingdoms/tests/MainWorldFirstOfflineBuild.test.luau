@@ -87,10 +87,16 @@ check(splash.Lifetime[1] == 1.0 and splash.Lifetime[2] == 2.0)
 
 check(project.name == "LivingKingdomsMainWorld")
 check(project.placeId == nil and project.gameId == nil and project.servePlaceIds == nil)
-check(project.tree.Workspace.LivingKingdomsMainWorld.HubCore.Civic.CentralFountain["$path"] == "assets/recovered-world/models/CentralFountain.model.json")
+check(
+	project.tree.Workspace.LivingKingdomsMainWorld.HubCore.Civic.CentralFountain["$path"]
+		== "assets/recovered-world/models/CentralFountain.model.json"
+)
 check(project.tree.ReplicatedStorage.Shared["$path"] == bootstrap.SharedSourceRoot:gsub("games/living%-kingdoms/", ""))
 check(project.tree.ServerScriptService.MainWorldServer["$path"] == "src/main-world/server/MainWorldServer.server.luau")
-check(project.tree.StarterPlayer.StarterPlayerScripts.MainWorldClient["$path"] == "src/main-world/client/MainWorldClient.client.luau")
+check(
+	project.tree.StarterPlayer.StarterPlayerScripts.MainWorldClient["$path"]
+		== "src/main-world/client/MainWorldClient.client.luau"
+)
 
 local projectText = fs.readFile(projectPath)
 check(string.find(projectText, "legacy%-src", 1) == nil)
