@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "assetKey": "visual.weapon.service-pistol.model",
+  "visualId": "weapon.visual.service_pistol.vigil_v1",
+  "weaponId": "weapon.service-pistol",
+  "candidateId": "vigil-service-pistol.v2",
+  "status": "source-candidate-not-runtime-approved",
+  "sourceKind": "ProjectOriginal",
+  "sourceLicense": "Original project asset; all project rights retained",
+  "generatorFile": "generate_vigil_service_pistol.py",
+  "generatedModelFile": "vigil_service_pistol.obj",
+  "animationFile": "vigil_service_pistol.animations.json",
+  "format": "Generated OBJ multi-object source with vertex colors; animation curves in companion JSON",
+  "designIntent": "Original compact duty sidearm with squared frame, moving slide, accessory light, and readable iron sights; not a replica of a branded real-world firearm",
+  "orientation": {
+    "forward": "+X",
+    "up": "+Z"
+  },
+  "sourceRootName": "WeaponRoot (integration wrapper)",
+  "robloxModelName": "WeaponPresentation",
+  "minimumComponentMeshCount": 20,
+  "attachmentLocators": {
+    "RightGripAttachment": [-0.30, 0.0, -0.62],
+    "Muzzle": [0.86, 0.0, 0.29],
+    "Magazine": [-0.30, 0.0, -0.72],
+    "Ejection": [0.16, -0.28, 0.42]
+  },
+  "animationClips": [
+    { "name": "Fire", "durationSeconds": 0.10, "targetNode": "Bolt" },
+    { "name": "Reload", "durationSeconds": 1.10, "targetNode": "Magazine" },
+    { "name": "Empty", "durationSeconds": 0.18, "targetNode": "Bolt" }
+  ],
+  "gameplayAuthority": {
+    "cadence": "server",
+    "ammunition": "server",
+    "reloadAcceptance": "server",
+    "targeting": "server",
+    "hitValidation": "server",
+    "damage": "server"
+  },
+  "studioGate": {
+    "imported": false,
+    "visualReviewPassed": false,
+    "animationImportVerified": false,
+    "isometricReadabilityVerified": false,
+    "performanceVerified": false
+  }
+}
