@@ -25,8 +25,8 @@ local registry = loadModule(
 	"EnvironmentAssetKitRegistry"
 )
 
-check(registry.Version == "ENV-ASSET-KIT-v3")
-check(#registry.Definitions >= 12)
+check(registry.Version == "ENV-ASSET-KIT-v4")
+check(#registry.Definitions >= 16)
 check(contracts.isValid(registry.Definitions), "expanded environment registry must validate")
 
 local seenIds = {}
@@ -49,6 +49,10 @@ for _, requiredId in
 		"env.camp.frontier.torn_shelter_a",
 		"env.prop.frontier.supply_crate_stack_a",
 		"env.camp.frontier.hanging_tarp_frame_a",
+		"env.structure.frontier.collapsed_shack_corner_a",
+		"env.structure.frontier.boarded_doorway_a",
+		"env.structure.frontier.broken_roof_frame_a",
+		"env.structure.frontier.ruined_window_wall_a",
 	}
 do
 	check(seenIds[requiredId] == true, "expanded environment registry missing " .. requiredId)

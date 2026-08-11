@@ -1,0 +1,12 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {"Name":"PostCorner","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":true,"CastShadow":true,"CFrame":[0,5,0,1,0,0,0,1,0,0,0,1],"Color":[0.18,0.13,0.09],"Material":{"Enum":528},"Size":[0.8,10,0.8]}},
+    {"Name":"WallBeamX","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":true,"CastShadow":true,"CFrame":[4,5,0,1,0,0,0,1,0,0,0,1],"Color":[0.20,0.15,0.10],"Material":{"Enum":528},"Size":[8,0.7,0.7]}},
+    {"Name":"WallBeamZ","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":true,"CastShadow":true,"CFrame":[0,5,4,1,0,0,0,1,0,0,0,1],"Color":[0.20,0.15,0.10],"Material":{"Enum":528},"Size":[0.7,0.7,8]}},
+    {"Name":"BrokenPlankX1","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":true,"CastShadow":true,"CFrame":[3.2,2.2,0,1,0,0,0,1,0,0,0,1],"Color":[0.24,0.18,0.12],"Material":{"Enum":528},"Size":[6.4,1.2,0.35]}},
+    {"Name":"BrokenPlankX2","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[2.4,6.5,0,0.98,0.17,0,-0.17,0.98,0,0,0,1],"Color":[0.21,0.16,0.11],"Material":{"Enum":528},"Size":[4.5,1.0,0.35]}},
+    {"Name":"BrokenPlankZ1","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":true,"CastShadow":true,"CFrame":[0,2.5,3.4,1,0,0,0,1,0,0,0,1],"Color":[0.24,0.18,0.12],"Material":{"Enum":528},"Size":[0.35,1.2,6.8]}},
+    {"Name":"DiagonalBrace","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[2.4,4.8,0,0.78,-0.63,0,0.63,0.78,0,0,0,1],"Color":[0.16,0.12,0.08],"Material":{"Enum":528},"Size":[5.8,0.55,0.55]}}
+  ]
+}

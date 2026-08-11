@@ -1,0 +1,14 @@
+{
+  "assetKey": "world.environment-kit.ruined-frontier",
+  "version": "ENV-RUIN-v1",
+  "sourceType": "project-original-procedural",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "assets": [
+    {"semanticId":"env.structure.frontier.collapsed_shack_corner_a","file":"CollapsedShackCornerA.model.json","registrySourceModelPath":"Environment/Structures/CollapsedShackCornerA","minimumPartCount":7},
+    {"semanticId":"env.structure.frontier.boarded_doorway_a","file":"BoardedDoorwayA.model.json","registrySourceModelPath":"Environment/Structures/BoardedDoorwayA","minimumPartCount":7},
+    {"semanticId":"env.structure.frontier.broken_roof_frame_a","file":"BrokenRoofFrameA.model.json","registrySourceModelPath":"Environment/Structures/BrokenRoofFrameA","minimumPartCount":6},
+    {"semanticId":"env.structure.frontier.ruined_window_wall_a","file":"RuinedWindowWallA.model.json","registrySourceModelPath":"Environment/Structures/RuinedWindowWallA","minimumPartCount":7}
+  ]
+}

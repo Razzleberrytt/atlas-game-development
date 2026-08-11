@@ -1,0 +1,11 @@
+{
+  "ClassName": "Model",
+  "Children": [
+    {"Name":"Ridge","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":true,"CastShadow":true,"CFrame":[0,8,0,1,0,0,0,1,0,0,0,1],"Color":[0.17,0.12,0.08],"Material":{"Enum":528},"Size":[12,0.7,0.7]}},
+    {"Name":"RafterLeftA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":true,"CastShadow":true,"CFrame":[-3,6.2,-2.2,1,0,0,0,0.82,0.57,0,-0.57,0.82],"Color":[0.19,0.14,0.09],"Material":{"Enum":528},"Size":[0.65,0.65,6]}},
+    {"Name":"RafterRightA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":true,"CanQuery":true,"CanTouch":true,"CastShadow":true,"CFrame":[3,6.2,2.2,1,0,0,0,0.82,-0.57,0,0.57,0.82],"Color":[0.19,0.14,0.09],"Material":{"Enum":528},"Size":[0.65,0.65,6]}},
+    {"Name":"RafterLeftBroken","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[2.4,5.9,-2.0,0.98,0.17,0,-0.17,0.98,0,0,0,1],"Color":[0.16,0.11,0.08],"Material":{"Enum":528},"Size":[0.6,0.6,4.5]}},
+    {"Name":"RoofSlatA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[-2.0,6.1,-1.7,1,0,0,0,0.82,0.57,0,-0.57,0.82],"Color":[0.24,0.18,0.12],"Material":{"Enum":528},"Size":[3.4,0.25,4.2]}},
+    {"Name":"RoofSlatB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CastShadow":true,"CFrame":[3.1,6.0,1.7,1,0,0,0,0.82,-0.57,0,0.57,0.82],"Color":[0.20,0.15,0.10],"Material":{"Enum":528},"Size":[2.5,0.25,3.7]}}
+  ]
+}
