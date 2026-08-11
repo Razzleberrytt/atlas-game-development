@@ -24,10 +24,8 @@ local registry = loadModule(
 	"games/living-kingdoms/src/shared/Config/CraftingPresentationRegistry.luau",
 	"CraftingPresentationRegistry"
 )
-local craftingContracts = loadModule(
-	"games/living-kingdoms/src/shared/Crafting/CraftingContracts.luau",
-	"CraftingContracts"
-)
+local craftingContracts =
+	loadModule("games/living-kingdoms/src/shared/Crafting/CraftingContracts.luau", "CraftingContracts")
 
 check(manifest.runtimeMapped == false)
 check(manifest.studioApproval == false)
