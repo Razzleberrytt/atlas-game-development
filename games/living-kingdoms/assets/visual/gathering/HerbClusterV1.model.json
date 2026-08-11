@@ -1,0 +1,14 @@
+{
+  "ClassName":"Model",
+  "Children":[
+    {"Name":"SoilClump","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CFrame":[0,0.15,0,1,0,0,0,1,0,0,0,1],"Color":[0.18,0.12,0.07],"Material":{"Enum":512},"Size":[2.5,0.3,2.0]}},
+    {"Name":"StemA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CFrame":[-0.45,0.95,0,0.98,-0.17,0,0.17,0.98,0,0,0,1],"Color":[0.19,0.34,0.16],"Material":{"Enum":256},"Size":[0.18,1.7,0.18]}},
+    {"Name":"StemB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CFrame":[0.35,0.85,0.2,0.97,0.25,0,-0.25,0.97,0,0,0,1],"Color":[0.16,0.31,0.14],"Material":{"Enum":256},"Size":[0.16,1.5,0.16]}},
+    {"Name":"LeafA","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CFrame":[-0.75,1.35,0,0.87,0.50,0,-0.50,0.87,0,0,0,1],"Color":[0.24,0.42,0.20],"Material":{"Enum":256},"Size":[1.0,0.12,0.45]}},
+    {"Name":"LeafB","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CFrame":[0.65,1.15,0.25,0.87,-0.50,0,0.50,0.87,0,0,0,1],"Color":[0.22,0.39,0.18],"Material":{"Enum":256},"Size":[1.0,0.12,0.45]}},
+    {"Name":"LeafC","ClassName":"Part","Properties":{"Anchored":true,"CanCollide":false,"CanQuery":true,"CanTouch":false,"CFrame":[0,1.55,-0.15,1,0,0,0,1,0,0,0,1],"Color":[0.28,0.46,0.22],"Material":{"Enum":256},"Size":[1.1,0.12,0.5]}},
+    {"Name":"GroundSnap","ClassName":"Attachment","Properties":{"CFrame":[0,0,0,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"GatherVfx","ClassName":"Attachment","Properties":{"CFrame":[0,1.2,0,1,0,0,0,1,0,0,0,1]}},
+    {"Name":"GatherAudio","ClassName":"Attachment","Properties":{"CFrame":[0,0.7,0,1,0,0,0,1,0,0,0,1]}}
+  ]
+}

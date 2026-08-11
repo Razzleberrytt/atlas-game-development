@@ -1,0 +1,15 @@
+{
+  "assetKey": "gathering.presentation.source-models",
+  "version": "GATHERING-SOURCE-MODELS-v1",
+  "sourceType": "project-original-source-models",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "canonicalBindings": false,
+  "assets": [
+    {"presentationId":"gathering.presentation.node.mineral_outcrop_v1","modelPath":"Gathering/Nodes/MineralOutcropV1","file":"MineralOutcropV1.model.json","minimumPartCount":5},
+    {"presentationId":"gathering.presentation.node.salvage_pile_v1","modelPath":"Gathering/Nodes/SalvagePileV1","file":"SalvagePileV1.model.json","minimumPartCount":5},
+    {"presentationId":"gathering.presentation.node.herb_cluster_v1","modelPath":"Gathering/Nodes/HerbClusterV1","file":"HerbClusterV1.model.json","minimumPartCount":6},
+    {"presentationId":"gathering.presentation.node.fallen_timber_v1","modelPath":"Gathering/Nodes/FallenTimberV1","file":"FallenTimberV1.model.json","minimumPartCount":5}
+  ]
+}
