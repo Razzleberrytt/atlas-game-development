@@ -80,26 +80,51 @@ function Factory.create(): WeaponVisualModelRig
 		Enum.Material.SmoothPlastic
 	)
 
-	local magazine, magazineMotor = Builder.motorBox(
+	local magazine, magazineMotor =
+		Builder.motorBox(context, "Magazine", Vector3.new(0.92, 0.66, 0.92), CFrame.new(0.18, 0, -0.92), COLORS.black)
+	Builder.attachBox(
 		context,
-		"Magazine",
-		Vector3.new(0.92, 0.66, 0.92),
-		CFrame.new(0.18, 0, -0.92),
-		COLORS.black
+		magazine,
+		"MagazineBody",
+		Vector3.new(0.84, 0.62, 0.72),
+		CFrame.new(0, 0, -0.46),
+		COLORS.gunmetal
 	)
-	Builder.attachBox(context, magazine, "MagazineBody", Vector3.new(0.84, 0.62, 0.72), CFrame.new(0, 0, -0.46), COLORS.gunmetal)
-	Builder.attachBox(context, magazine, "MagazineRibA", Vector3.new(0.10, 0.68, 0.66), CFrame.new(-0.26, 0, -0.42), COLORS.steel)
-	Builder.attachBox(context, magazine, "MagazineRibB", Vector3.new(0.10, 0.68, 0.66), CFrame.new(0.26, 0, -0.42), COLORS.steel)
-	Builder.attachBox(context, magazine, "MagazineFoot", Vector3.new(0.98, 0.72, 0.14), CFrame.new(0, 0, -0.84), COLORS.amber)
-
-	local bolt, boltMotor = Builder.motorBox(
+	Builder.attachBox(
 		context,
-		"Bolt",
-		Vector3.new(0.62, 0.11, 0.22),
-		CFrame.new(0.12, -0.44, 0.18),
+		magazine,
+		"MagazineRibA",
+		Vector3.new(0.10, 0.68, 0.66),
+		CFrame.new(-0.26, 0, -0.42),
 		COLORS.steel
 	)
-	Builder.attachBox(context, bolt, "ChargingHandle", Vector3.new(0.18, 0.28, 0.14), CFrame.new(0.10, -0.18, 0.08), COLORS.black)
+	Builder.attachBox(
+		context,
+		magazine,
+		"MagazineRibB",
+		Vector3.new(0.10, 0.68, 0.66),
+		CFrame.new(0.26, 0, -0.42),
+		COLORS.steel
+	)
+	Builder.attachBox(
+		context,
+		magazine,
+		"MagazineFoot",
+		Vector3.new(0.98, 0.72, 0.14),
+		CFrame.new(0, 0, -0.84),
+		COLORS.amber
+	)
+
+	local bolt, boltMotor =
+		Builder.motorBox(context, "Bolt", Vector3.new(0.62, 0.11, 0.22), CFrame.new(0.12, -0.44, 0.18), COLORS.steel)
+	Builder.attachBox(
+		context,
+		bolt,
+		"ChargingHandle",
+		Vector3.new(0.18, 0.28, 0.14),
+		CFrame.new(0.10, -0.18, 0.08),
+		COLORS.black
+	)
 
 	Builder.box(context, "TopRail", Vector3.new(1.54, 0.12, 0.10), CFrame.new(0.35, 0, 0.78), COLORS.black)
 	Builder.box(context, "RearSight", Vector3.new(0.24, 0.30, 0.30), CFrame.new(-0.45, 0, 0.82), COLORS.black)
@@ -123,10 +148,22 @@ function Factory.create(): WeaponVisualModelRig
 		COLORS.black
 	)
 
-	Builder.box(context, "IdentityPanel", Vector3.new(0.52, 0.03, 0.30), CFrame.new(0.22, -0.37, 0.08), COLORS.amberBright)
+	Builder.box(
+		context,
+		"IdentityPanel",
+		Vector3.new(0.52, 0.03, 0.30),
+		CFrame.new(0.22, -0.37, 0.08),
+		COLORS.amberBright
+	)
 	Builder.box(context, "HeatStripe", Vector3.new(0.68, 0.04, 0.12), CFrame.new(1.44, -0.40, 0.28), COLORS.amber)
 	Builder.cylinder(context, "RearSlingMount", Vector3.new(0.12, 0.20, 0.20), CFrame.new(-1.08, 0, 0.38), COLORS.steel)
-	Builder.cylinder(context, "FrontSlingMount", Vector3.new(0.12, 0.20, 0.20), CFrame.new(1.74, 0, -0.32), COLORS.steel)
+	Builder.cylinder(
+		context,
+		"FrontSlingMount",
+		Vector3.new(0.12, 0.20, 0.20),
+		CFrame.new(1.74, 0, -0.32),
+		COLORS.steel
+	)
 
 	return Builder.finish(context, {
 		boltMotor = boltMotor,
