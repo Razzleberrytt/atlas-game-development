@@ -1,0 +1,30 @@
+{
+  "assetKey": "enemy.presentation.brute.grief_v1",
+  "version": "BRUTE-GRIEF-v1",
+  "sourceType": "project-original-procedural-blockout",
+  "registryModelPath": "Enemies/Brute/GriefV1",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "minimumPartCount": 16,
+  "requiredParts": [
+    "PelvisCore",
+    "TorsoMass",
+    "ShoulderLeft",
+    "ShoulderOvergrowthRight",
+    "ArmLeft",
+    "ArmOvergrowthRight",
+    "FistLeft",
+    "FistRight",
+    "LegLeft",
+    "LegRight",
+    "HeadLow",
+    "BackGrowth",
+    "RebarShardA",
+    "RebarShardB",
+    "PlateDebris",
+    "BackWeakpoint"
+  ],
+  "requiredAttachments": ["AttackOrigin", "WeakpointPresentation", "VfxOrigin"],
+  "silhouetteClaims": ["one-arm-overgrowth", "embedded-industrial-debris", "forward-hunched-mass"]
+}
