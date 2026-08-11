@@ -70,10 +70,19 @@ check(blankDecision.activationAcceptable == false, "a blank record never accepts
 
 -- Helpers ------------------------------------------------------------------
 
+local function identityValue(field: string): string
+	if field == "repositoryCommit" or field == "rollbackCheckpointCommit" then
+		return string.rep("a", 40)
+	elseif field == "placeArtifactSha256" then
+		return string.rep("b", 64)
+	end
+	return "recorded"
+end
+
 local function passingRecord(): any
 	local identity: { [string]: string } = {}
 	for _, field in matrix.RequiredRunIdentityFields do
-		identity[field] = "recorded"
+		identity[field] = identityValue(field)
 	end
 	local results: { [string]: string } = {}
 	for _, checkId in scope.inScopeCheckIds do
@@ -203,7 +212,7 @@ for checkId in wholeBlank.results do
 end
 local wholeIdentity: { [string]: string } = {}
 for _, field in matrix.RequiredRunIdentityFields do
-	wholeIdentity[field] = "recorded"
+	wholeIdentity[field] = identityValue(field)
 end
 
 local wholeDecision =
