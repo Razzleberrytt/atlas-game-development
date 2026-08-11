@@ -1,0 +1,92 @@
+{
+  "format_version": 1,
+  "source": {
+    "file": "livingkingdoms.rbxl",
+    "sha256": "7cfa9ae257cccc1c048459029f95dfdb83a4e113cbf1ff2f281bc7c9532a695b",
+    "bytes": 1808699,
+    "rbxl_version": 0,
+    "declared_classes": 98,
+    "declared_instances": 2342,
+    "received_on": "2026-08-10",
+    "binary_committed": false
+  },
+  "inventory": {
+    "workspace_instances": 1775,
+    "scripts": 367,
+    "script_class_counts": {
+      "ModuleScript": 344,
+      "Script": 16,
+      "LocalScript": 7
+    },
+    "remote_events": 20,
+    "workspace_class_counts": {
+      "Attachment": 12,
+      "BillboardGui": 4,
+      "Camera": 1,
+      "Clouds": 1,
+      "Fire": 22,
+      "Folder": 14,
+      "Humanoid": 4,
+      "Model": 211,
+      "Part": 1305,
+      "ParticleEmitter": 31,
+      "PointLight": 146,
+      "ProximityPrompt": 1,
+      "Shirt": 1,
+      "SpawnLocation": 2,
+      "SurfaceGui": 2,
+      "Terrain": 1,
+      "TextLabel": 10,
+      "WeldConstraint": 6,
+      "Workspace": 1
+    }
+  },
+  "historical_reconciliation": {
+    "original_import_sha256": "e00fc74dcd9fd7d8a0ba003ba0dc88840a6ee43acba555e7facf260aff586f16",
+    "original_import_bytes": 1639392,
+    "original_declared_instances": 2258,
+    "original_scripts": 290,
+    "original_workspace_instances": 1775,
+    "workspace_instance_count_delta": 0,
+    "workspace_class_count_delta": 0,
+    "declared_instance_delta": 84,
+    "script_delta": 77,
+    "workspace_aggregate_parity": true,
+    "workspace_property_equivalence_claimed": false,
+    "interpretation": "The supplied revision preserves the same aggregate Workspace population/class distribution as the historical authored-world import while containing substantially more non-Workspace runtime/source instances. Exact property equality with the historical binary is not assumed."
+  },
+  "merge_policy": {
+    "canonical_runtime": "latest repository src wins for overlapping gameplay, networking, persistence, presentation, and bootstraps",
+    "authored_world": "checksum-pinned source revision may contribute bounded held reconstruction evidence",
+    "legacy_runtime": "never wholesale activate overlapping RPGServerBootstrap/services from the place",
+    "rojo": "this import directory is inert and is not mapped into the active operation project",
+    "generated_binary": "the RBXL is provenance/evidence only and is not committed as a build artifact"
+  },
+  "admitted": [
+    {
+      "source_path": "Workspace/HubTown/CentralFountain",
+      "status": "held reconstruction merged",
+      "module": "games/living-kingdoms/src/shared/Config/RecoveredCentralFountainConfig.luau",
+      "evidence": "central-fountain.review.json"
+    }
+  ],
+  "preserved_for_next_admission": [
+    {
+      "source_path": "Workspace/HubTown/GrandStaircase",
+      "instances": 35
+    },
+    {
+      "source_path": "Workspace/HubTown/HubArchway",
+      "instances": 6
+    },
+    {
+      "source_path": "Workspace/HubTown/DungeonPortal",
+      "instances": 10,
+      "note": "Use as parity/supplemental evidence for the already-held historical portal contract; do not introduce duplicate gameplay authority."
+    }
+  ],
+  "evidence_files": {
+    "central_fountain": "central-fountain.review.json",
+    "additional_hub_civic_geometry": "hub-civic-geometry-summary.json"
+  }
+}
