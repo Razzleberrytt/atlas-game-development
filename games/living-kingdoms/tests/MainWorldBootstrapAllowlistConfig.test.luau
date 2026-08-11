@@ -10,10 +10,11 @@ local function check(condition: unknown, message: string?)
 	end
 end
 
-local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/MainWorldBootstrapAllowlistConfig.luau"), {
-	debugName = "MainWorldBootstrapAllowlistConfig",
-	injectGlobals = true,
-})()
+local config =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/MainWorldBootstrapAllowlistConfig.luau"), {
+		debugName = "MainWorldBootstrapAllowlistConfig",
+		injectGlobals = true,
+	})()
 
 check(config.Version == "P0.5-MAIN-WORLD-BOOTSTRAP-ALLOWLIST-v1")
 check(config.RuntimeEnabled == false)
@@ -56,6 +57,9 @@ check(fs.isFile("games/living-kingdoms/src/main-world/client/MainWorldClient.cli
 
 local currentProject = serde.decode("json", fs.readFile("games/living-kingdoms/default.project.json"))
 local projectText = serde.encode("json", currentProject)
-check(string.find(projectText, "src/main%-world", 1) == nil, "current operation project must not map Main World bootstrap roots")
+check(
+	string.find(projectText, "src/main%-world", 1) == nil,
+	"current operation project must not map Main World bootstrap roots"
+)
 check(string.find(projectText, "legacy%-src", 1) == nil, "current operation project must not map legacy runtime")
 check(string.find(projectText, "imports", 1, true) == nil, "current operation project must not map imports")
