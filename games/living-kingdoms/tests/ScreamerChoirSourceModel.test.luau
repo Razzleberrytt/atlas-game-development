@@ -46,7 +46,10 @@ local function visit(node)
 	if node.ClassName == "Part" then
 		partCount += 1
 		parts[node.Name] = true
-		check(node.Properties ~= nil and node.Properties.Anchored == true, "held horror blockout Parts must be anchored")
+		check(
+			node.Properties ~= nil and node.Properties.Anchored == true,
+			"held horror blockout Parts must be anchored"
+		)
 	end
 	if node.ClassName == "Attachment" then
 		attachments[node.Name] = true
