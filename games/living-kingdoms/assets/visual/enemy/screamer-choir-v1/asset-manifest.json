@@ -1,0 +1,29 @@
+{
+  "assetKey": "enemy.presentation.screamer.choir_v1",
+  "version": "SCREAMER-CHOIR-v1",
+  "sourceType": "project-original-procedural-blockout",
+  "registryModelPath": "Enemies/Screamer/ChoirV1",
+  "runtimeMapped": false,
+  "studioApproval": false,
+  "gameplayAuthority": false,
+  "minimumPartCount": 15,
+  "requiredParts": [
+    "PelvisCore",
+    "TorsoNarrow",
+    "RibLanternLeft",
+    "RibLanternRight",
+    "NeckLower",
+    "NeckUpper",
+    "HeadBeacon",
+    "ThroatArrayLeft",
+    "ThroatArrayCenter",
+    "ThroatArrayRight",
+    "ArmLeft",
+    "ArmRight",
+    "LegLeft",
+    "LegRight",
+    "ThroatWeakpoint"
+  ],
+  "requiredAttachments": ["AttackOrigin", "WeakpointPresentation", "AudioOrigin", "VfxOrigin"],
+  "silhouetteClaims": ["elongated-neck", "split-throat-array", "lantern-rib-cavity"]
+}
