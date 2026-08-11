@@ -125,11 +125,36 @@ jobs:
         shell: bash
         run: python scripts/validate.py "${{ needs.classify.outputs.profile }}"
 
+      - name: Record Main World artifact identity
+        if: needs.classify.outputs.profile != 'docs'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f /tmp/LivingKingdomsMainWorld.rbxlx
+          sha256sum /tmp/LivingKingdomsMainWorld.rbxlx | tee /tmp/LivingKingdomsMainWorld.rbxlx.sha256
+          {
+            echo "commit=${GITHUB_SHA}"
+            echo "project=games/living-kingdoms/main-world.project.json"
+            echo "artifact=LivingKingdomsMainWorld.rbxlx"
+          } > /tmp/LivingKingdomsMainWorld.identity.txt
+
       - name: Upload reproducible Living Kingdoms build
         if: needs.classify.outputs.profile != 'docs'
         uses: actions/upload-artifact@v4
         with:
           name: living-kingdoms-rbxlx-${{ github.sha }}
           path: /tmp/LivingKingdoms.rbxlx
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload reproducible Living Kingdoms Main World build
+        if: needs.classify.outputs.profile != 'docs'
+        uses: actions/upload-artifact@v4
+        with:
+          name: living-kingdoms-main-world-rbxlx-${{ github.sha }}
+          path: |
+            /tmp/LivingKingdomsMainWorld.rbxlx
+            /tmp/LivingKingdomsMainWorld.rbxlx.sha256
+            /tmp/LivingKingdomsMainWorld.identity.txt
           if-no-files-found: error
           retention-days: 14
