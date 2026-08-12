@@ -79,12 +79,7 @@ end
 local manifest = fs.readFile(manifestPath)
 check(string.find(manifest, '"importId":"studio-2026-08-11-main-world"', 1, true) ~= nil)
 check(
-	string.find(
-		manifest,
-		'"sha256":"e71ff34b2075e2da2314fc4c156b4ae1b1f0f20c42b82c517c2a4b9a7e3e43e1"',
-		1,
-		true
-	) ~= nil
+	string.find(manifest, '"sha256":"e71ff34b2075e2da2314fc4c156b4ae1b1f0f20c42b82c517c2a4b9a7e3e43e1"', 1, true) ~= nil
 )
 check(string.find(manifest, '"instanceCount":884', 1, true) ~= nil)
 check(string.find(manifest, '"componentModelCount":35', 1, true) ~= nil)
