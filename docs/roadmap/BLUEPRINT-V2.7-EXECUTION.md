@@ -1,12 +1,14 @@
 # Blueprint v2.7 Execution Authority
 
-Blueprint v2.7 is the active production authority for Atlas as of 2026-08-07. It supersedes Blueprint v2.3 for execution order, runtime-state rollout, presentation ownership, evidence capture, and promotion decisions.
+Blueprint v2.7 is the active **runtime stabilization and observability authority** for Atlas as of 2026-08-07. It controls the state/presentation rollout, evidence capture, compatibility removal, and promotion decisions for that lane.
 
-This is a **rollout and observability release**, not a gameplay-scope release. It does not claim that the active Roblox Studio place is repaired. It defines how the existing place is instrumented, migrated, soaked, rolled back, and finally accepted.
+For whether unrelated development may proceed while these gates remain open, [`PARALLEL-DEVELOPMENT-POLICY.md`](PARALLEL-DEVELOPMENT-POLICY.md) controls. **v2.7 is not a blanket project freeze.**
+
+This is a rollout and observability release, not a gameplay-scope release. It does not claim that every active Roblox Studio path is repaired. It defines how the affected runtime path is instrumented, migrated, soaked, rolled back, and finally accepted.
 
 ## Release intent
 
-Version 2.7 exists to close the gap between a statically coherent repository and an active place that still shows runtime presentation/network symptoms.
+Version 2.7 exists to close the gap between a statically coherent repository and runtime paths that still require state/presentation proof.
 
 The release must make these facts observable and provable:
 
@@ -18,13 +20,21 @@ The release must make these facts observable and provable:
 6. reset, respawn, late join, streaming, and disconnect return runtime gauges to baseline;
 7. compatibility code is removed only after its replacement has accepted evidence and a rollback checkpoint.
 
-### Explicit non-goals
+### Scope rule
 
-Version 2.7 does not authorize a new biome, class, enemy family, weapon family, dungeon theme, broad progression layer, monetization system, or live-service expansion. It also does not mark any Studio-only gate complete without captured evidence.
+v2.7 does **not** itself promote or verify new biomes, classes, enemy families, weapon families, dungeon themes, progression layers, monetization systems, or live-service systems. Those features may nevertheless be designed, implemented, tested, and merged in parallel under the Parallel Development Policy when their direct dependencies are satisfied.
+
+A v2.7 gate blocks only:
+
+- claiming the affected runtime path accepted/verified;
+- unsafe activation that depends on unresolved behavior;
+- a directly conflicting integration that cannot be isolated.
+
+It does not block source-safe or dependency-safe work elsewhere.
 
 ## Product promise
 
-The product direction remains the same: build one polished, replayable cooperative action-RPG expedition before expanding the world.
+The product direction remains the same: build a polished, replayable cooperative action-RPG expedition while continuing modular development across the broader product.
 
 ```text
 prepare
@@ -48,7 +58,8 @@ When project materials disagree, use this order:
 
 ```text
 accepted runtime evidence / current Roblox platform behavior
-→ BLUEPRINT-V2.7-EXECUTION.md + PRODUCTION-CORE-V2.7.md
+→ PARALLEL-DEVELOPMENT-POLICY.md for scope/parallel-work decisions
+→ BLUEPRINT-V2.7-EXECUTION.md + PRODUCTION-CORE-V2.7.md for the stabilization lane
 → ACTIVE-PLACE-ROLLOUT-V2.7.md + CROSS-SYSTEM-TRACEABILITY-V2.7.md
 → current specialist bibles and accepted specifications
 → docs/architecture/technical-blueprint.md
@@ -59,11 +70,11 @@ Historical closing directives are context, not orders.
 
 ### Conflict rule
 
-1. Identify the authority class: mechanical, replication, presentation, authoring, operational, or historical.
+1. Identify the authority class: mechanical, replication, presentation, authoring, operational, scope, or historical.
 2. Prefer accepted runtime evidence over authored prose.
-3. If both are prose, prefer the newer canonical layer.
+3. For whether unrelated work may proceed, use the Parallel Development Policy.
 4. Do not allow a presentation implementation to acquire mechanical authority merely because it is convenient.
-5. Record material conflict resolutions in `docs/decisions/` and update the Production Core.
+5. Record material conflict resolutions in `docs/decisions/` and update the Production Core when appropriate.
 
 ## Evidence scale
 
@@ -76,24 +87,11 @@ Historical closing directives are context, not orders.
 - **E6** — outside-player fun demonstrated
 - **E7** — live telemetry demonstrated
 
-**Current claimed level: E2.** The accepted pinned-artifact Studio packet is
-[`../production/evidence/2026-08-08-r1-playable-replay-loop.md`](../production/evidence/2026-08-08-r1-playable-replay-loop.md).
-It proves initialization and the R1/replay claims it records; it does not claim E3–E5. A roadmap commit alone cannot promote evidence level.
-
-## Active Studio incidents
-
-The active-place screenshot captured on 2026-08-07 showed two blocking symptoms:
-
-1. `ReplicatedStorage.HordeNetwork.State` invocation-queue exhaustion/discard warnings;
-2. escaped broad blue/yellow `Highlight` presentation.
-
-The screenshot proves symptoms, not exact root causes. The producer scripts, effective listener lifetime, send-rate growth, bad `Adornee`, duplicate ownership, and any `.rbxl`-only code remain facts to measure in the active place.
-
-**2026-08-08 update:** R1 containment passed on the newly pinned CI artifact with zero queue/discard warnings and zero enabled broad Highlight targets. The flat false-color editor view encountered during the run was independently traced to hidden local Studio physics-visualization flags, not gameplay Highlight state. This does not skip CL-002/CL-003 consolidation, R2 readiness, R3 suppression, or later lifecycle matrices.
+**Current claimed level: E2.** The accepted pinned-artifact Studio packet is [`../production/evidence/2026-08-08-r1-playable-replay-loop.md`](../production/evidence/2026-08-08-r1-playable-replay-loop.md). It proves only the claims it records. A roadmap commit alone cannot promote evidence level.
 
 ## Rollout stages
 
-Use one controlled variable at a time:
+Use one controlled variable at a time inside the stabilization lane:
 
 ```text
 R0 — instrument only
@@ -104,7 +102,7 @@ R4 — centralized presentation ownership
 R5 — compatibility-removal candidate
 ```
 
-A stage advances only when its expected counter changes and visible behavior match. A flag is temporary architecture; every flag requires an owner, rollback trigger, evidence gate, and planned removal condition.
+A stage advances only when its expected counter changes and visible behavior match. Parallel work in other lanes may continue while a stage is open.
 
 ## Runtime state contract
 
@@ -122,7 +120,7 @@ Do not rely on a server continuously replaying state until the client happens to
 
 ### Semantic keys
 
-A current fact must have a stable semantic key. Examples:
+A current fact must have a stable semantic key, for example:
 
 ```text
 round.phase
@@ -138,9 +136,7 @@ Independent current facts must not overwrite one another merely because they sha
 
 ### Change tokens
 
-A change token is derived from state mutation, not wall-clock time.
-
-Good tokens include a revision, sequence incremented on mutation, enum + relevant counters, or another deterministic state revision. `os.clock()`, server time, frame number, and a random GUID per publish defeat unchanged-state suppression and are invalid as change tokens.
+A change token is derived from state mutation, not wall-clock time. Wall-clock time, frame number, and random GUID-per-publish tokens defeat unchanged-state suppression and are invalid.
 
 ### Pre-ready retention
 
@@ -150,27 +146,20 @@ If current state must survive before `ClientReady`, retain the latest value by:
 player + remote id + semantic key
 ```
 
-not merely by player + remote. On readiness, reconstruct the current state once, then clear the pending structure.
+On readiness, reconstruct the current state once, then clear the pending structure.
 
 ### Delivery diagnostics
 
-For each semantic key record at minimum:
+Record at minimum:
 
 ```text
 Attempts
 Accepted
 SuppressedUnchanged
-```
-
-For each delivery channel record:
-
-```text
 Sent
 BufferedLatest
 SuppressedBeforeReady
 ```
-
-This separates noisy gameplay producers from readiness problems.
 
 ## Presentation ownership contract
 
@@ -187,17 +176,11 @@ temporary VFX          → scoped pool/effect owner
 animation marker hooks → owning animation/track scope
 ```
 
-Production Highlights may not target `Workspace`, broad map roots, or other oversized containers. Controllers request semantic presentation; they do not each create competing primitives.
-
-Stable semantic targets must survive streaming. A locally missing Instance is not equivalent to gameplay completion.
+Production Highlights may not target `Workspace`, broad map roots, or other oversized containers. Stable semantic targets must survive streaming.
 
 ## Lifecycle contract
 
-Application, character, and operation/round lifetimes are separate scopes.
-
-Reset and respawn acceptance requires counters and presentation-object gauges to return to their named baselines. A controller that reconnects on every round without disconnecting its prior listeners is a blocking defect even when the screen looks correct for one run.
-
-Generation tokens or equivalent cancellation guards must prevent stale asynchronous work from mutating a newer character, run, target, or presentation scope.
+Application, character, and operation/round lifetimes are separate scopes. Reset and respawn acceptance requires counters and presentation-object gauges to return to their named baselines. Generation tokens or equivalent cancellation guards must prevent stale asynchronous work from mutating a newer scope.
 
 ## Required observability
 
@@ -219,30 +202,9 @@ streaming rebind count
 unresolved semantic targets
 ```
 
-Observability must be bounded and removable from production presentation. It may not leak private or security-sensitive data.
-
 ## Cutover ledger
 
-Every legacy producer and effective consumer receives a ledger row:
-
-```text
-legacy call site
-runtime domain
-owner
-semantic key
-change token
-current rate
-post-migration rate
-feature flag
-replacement path
-evidence packet
-rollback checkpoint
-status
-```
-
-Do not use “we think these are all the producers” as a completion condition.
-
-The initial inventory must cover at least round state, objective state, route state, landmark state, and any horde/threat state still carried by `HordeNetwork.State`.
+Every legacy producer and effective consumer receives a ledger row containing call site, runtime domain, owner, semantic key, change token, rates, feature flag, replacement path, evidence packet, rollback checkpoint, and status.
 
 ## Tickets 331–360
 
@@ -291,40 +253,20 @@ The initial inventory must cover at least round state, objective state, route st
 | 354 | Run two-player reset/disconnect matrix. |
 | 355 | Run 100 animation plays and verify listener stability. |
 | 356 | Run ten-minute active network/presentation soak. |
-| 357 | Capture representative client/server MicroProfiler/network evidence. |
+| 357 | Capture representative client/server profiling/network evidence. |
 | 358 | Close all P0/P1 rollout defects and rerun affected matrix. |
 | 359 | Assemble incident closure packet and promotion review. |
-| 360 | Remove compatibility code only for ledger rows with accepted replacement evidence and a retained rollback checkpoint. |
+| 360 | Remove compatibility only for ledger rows with accepted replacement evidence and a retained rollback checkpoint. |
 
 Ticket 360 is a removal gate, not permission to delete every compatibility path at once.
 
 ## Promotion gate
 
-Do not advance because the warning disappears once. Promotion requires captured evidence that:
-
-```text
-all legacy producers/consumers are inventoried
-exactly one intended compatibility listener exists while required
-pre-ready current state is gated/retained intentionally
-semantic publish rate is bounded by change
-unchanged attempts are suppressed
-0 queue/discard warnings occur in accepted normal-play soak
-route and landmark presentation have one owner
-0 broad production Highlight targets exist
-stream-out/rebind preserves semantic truth
-five-reset gauges return to baseline
-three-respawn gauges return to baseline
-late join reconstructs current state
-100 animation plays do not multiply marker listeners
-two-player reset/disconnect attribution and cleanup pass
-compatibility removal has a rollback checkpoint
-```
-
-Only then may the project update its evidence ledger and remove the corresponding compatibility bridge.
+Do not advance the **v2.7 stabilization lane** because a warning disappears once. Promotion requires captured evidence that its applicable invariants hold. Parallel feature work may continue meanwhile, but cannot use unfinished v2.7 evidence as proof of production readiness.
 
 ## Stop conditions
 
-Stop and fix before adding scope when:
+Stop and fix **the affected integration path** when:
 
 - remote queue/discard warnings occur in supported normal play;
 - producer/network rate grows across reset without a gameplay reason;
@@ -337,23 +279,21 @@ Stop and fix before adding scope when:
 - damage, cooldown, loot, inventory, progression, or ownership can be client-authored;
 - low-graphics/mobile presentation loses critical gameplay information.
 
-## What follows accepted rollout evidence
+A stop condition does **not** automatically stop unrelated lanes that do not share the failing dependency. If the work can be isolated safely, continue it under the Parallel Development Policy.
 
-After Tickets 331–360 close with accepted evidence, choose the next dependency from actual failure and retention evidence. The likely sequence remains:
+## Parallel development while rollout remains open
 
-1. accepted durable persistence/value proof;
-2. preparation/outdoor-route integration;
-3. procedural dungeon runtime and boss integration;
-4. outside-player repeat-intention testing.
+While Tickets 331–360 are unfinished, teams/agents may continue high-ROI work across gameplay, RPG, Main World/environment, content factories, progression/persistence preparation, product/business preparation, and developer tooling.
 
-Do not use a cleaner state channel as an excuse to resume broad feature expansion before the integrated loop is trusted.
+Prefer modular, reversible increments. Keep risky activation behind explicit boundaries. Do not create duplicate authorities. Do not relabel unverified work as verified.
 
 ## Companion documents
 
-- [`PRODUCTION-CORE-V2.7.md`](PRODUCTION-CORE-V2.7.md) — daily-use current authority.
+- [`PARALLEL-DEVELOPMENT-POLICY.md`](PARALLEL-DEVELOPMENT-POLICY.md) — controls whether unrelated work may proceed.
+- [`PRODUCTION-CORE-V2.7.md`](PRODUCTION-CORE-V2.7.md) — daily-use runtime stabilization rules.
 - [`ACTIVE-PLACE-ROLLOUT-V2.7.md`](ACTIVE-PLACE-ROLLOUT-V2.7.md) — rollout stages, counters, ledger, rollback, and closure packet.
 - [`CROSS-SYSTEM-TRACEABILITY-V2.7.md`](CROSS-SYSTEM-TRACEABILITY-V2.7.md) — ownership and evidence by player-facing state.
-- [`QUALITY-AUDIT-V2.7.md`](QUALITY-AUDIT-V2.7.md) — static quality facts and the runtime reality boundary.
+- [`QUALITY-AUDIT-V2.7.md`](QUALITY-AUDIT-V2.7.md) — static quality facts and runtime reality boundary.
 - [`README.md`](README.md) — roadmap precedence and historical index.
 
-> Stabilize the old road before closing it. Remove the bridge only when accepted evidence proves nobody still depends on it.
+> Stabilize the affected road rigorously. Keep building everywhere else.
