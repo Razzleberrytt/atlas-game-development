@@ -1,0 +1,96 @@
+{
+  "metadata": {
+    "format_version": 1,
+    "source_file": "livingkingdoms-mainWorld.rbxl",
+    "source_bytes": 3772509,
+    "source_sha256": "e71ff34b2075e2da2314fc4c156b4ae1b1f0f20c42b82c517c2a4b9a7e3e43e1",
+    "rbxl_version": 0,
+    "declared_classes": 81,
+    "declared_instances": 1369,
+    "workspace_main_world_instances": 884,
+    "snapshot_instances": 884,
+    "class_counts": {
+      "Attachment": 4,
+      "Decal": 19,
+      "Folder": 40,
+      "Humanoid": 19,
+      "MeshPart": 199,
+      "Model": 327,
+      "Part": 246,
+      "ParticleEmitter": 4,
+      "PointLight": 19,
+      "Snap": 4,
+      "SpawnLocation": 1,
+      "SurfaceGui": 1,
+      "TextLabel": 1
+    },
+    "reference_properties_preserved_as_evidence": 8,
+    "unsupported_selected_properties": []
+  },
+  "references": [
+    {
+      "source_id": 9,
+      "class": "Snap",
+      "property": "Part0",
+      "target_id": 8,
+      "source_path": "Workspace/LivingKingdomsMainWorld/HubCore/Civic/CentralFountain/FountainBase/Snap",
+      "target_path": "Workspace/LivingKingdomsMainWorld/HubCore/Civic/CentralFountain/FountainBase"
+    },
+    {
+      "source_id": 56,
+      "class": "Snap",
+      "property": "Part0",
+      "target_id": 55,
+      "source_path": "Workspace/LivingKingdomsMainWorld/HubCore/Civic/HubArchway/LeftPillar/Snap",
+      "target_path": "Workspace/LivingKingdomsMainWorld/HubCore/Civic/HubArchway/LeftPillar"
+    },
+    {
+      "source_id": 58,
+      "class": "Snap",
+      "property": "Part0",
+      "target_id": 57,
+      "source_path": "Workspace/LivingKingdomsMainWorld/HubCore/Civic/HubArchway/RightPillar/Snap",
+      "target_path": "Workspace/LivingKingdomsMainWorld/HubCore/Civic/HubArchway/RightPillar"
+    },
+    {
+      "source_id": 66,
+      "class": "Snap",
+      "property": "Part0",
+      "target_id": 64,
+      "source_path": "Workspace/LivingKingdomsMainWorld/HubCore/ExpeditionGate/DungeonPortal/PortalFrame/Snap",
+      "target_path": "Workspace/LivingKingdomsMainWorld/HubCore/ExpeditionGate/DungeonPortal/PortalFrame"
+    },
+    {
+      "source_id": 9,
+      "class": "Snap",
+      "property": "Part1",
+      "target_id": 71,
+      "source_path": "Workspace/LivingKingdomsMainWorld/HubCore/Civic/CentralFountain/FountainBase/Snap",
+      "target_path": "Workspace/LivingKingdomsMainWorld/HubCore/ExpeditionGate/DungeonPortal/PortalSign"
+    },
+    {
+      "source_id": 56,
+      "class": "Snap",
+      "property": "Part1",
+      "target_id": 59,
+      "source_path": "Workspace/LivingKingdomsMainWorld/HubCore/Civic/HubArchway/LeftPillar/Snap",
+      "target_path": "Workspace/LivingKingdomsMainWorld/HubCore/Civic/HubArchway/TopBeam"
+    },
+    {
+      "source_id": 58,
+      "class": "Snap",
+      "property": "Part1",
+      "target_id": 59,
+      "source_path": "Workspace/LivingKingdomsMainWorld/HubCore/Civic/HubArchway/RightPillar/Snap",
+      "target_path": "Workspace/LivingKingdomsMainWorld/HubCore/Civic/HubArchway/TopBeam"
+    },
+    {
+      "source_id": 66,
+      "class": "Snap",
+      "property": "Part1",
+      "target_id": 71,
+      "source_path": "Workspace/LivingKingdomsMainWorld/HubCore/ExpeditionGate/DungeonPortal/PortalFrame/Snap",
+      "target_path": "Workspace/LivingKingdomsMainWorld/HubCore/ExpeditionGate/DungeonPortal/PortalSign"
+    }
+  ]
+}
