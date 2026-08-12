@@ -14,6 +14,15 @@ local function near(actual: number, expected: number, label: string)
 	check(math.abs(actual - expected) <= 1e-8, label .. " mismatch")
 end
 
+local function nearStudioRoundTrip(actual: number, expected: number, label: string)
+	-- Roblox Studio serializes these transform/size values through float32. The
+	-- imported snapshot therefore differs from the source-authored doubles by a
+	-- few ten-thousandths of a stud at the far end of the route. Keep the
+	-- comparison tight enough to catch authored movement while admitting the
+	-- expected engine round-trip quantization.
+	check(math.abs(actual - expected) <= 1e-3, label .. " mismatch")
+end
+
 local function loadConfig(name: string)
 	return luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/" .. name .. ".luau"), {
 		debugName = name,
@@ -137,10 +146,10 @@ for _, sourcePart in model.Children do
 		"imported route anchoring drift: " .. sourcePart.Name
 	)
 	for index, value in sourcePart.Properties.CFrame do
-		near(importedPart.Properties.CFrame[index], value, sourcePart.Name .. ".importedCFrame")
+		nearStudioRoundTrip(importedPart.Properties.CFrame[index], value, sourcePart.Name .. ".importedCFrame")
 	end
 	for index, value in sourcePart.Properties.Size do
-		near(importedPart.Properties.Size[index], value, sourcePart.Name .. ".importedSize")
+		nearStudioRoundTrip(importedPart.Properties.Size[index], value, sourcePart.Name .. ".importedSize")
 	end
 end
 
