@@ -1,14 +1,14 @@
 # Atlas Production Core — Version 2.7
 
-**Purpose:** daily-use canonical reference for implementation, Studio rollout, review, and production decisions. If this file conflicts with an older roadmap checkpoint, this file controls unless accepted runtime evidence or current Roblox behavior says otherwise.
-
+**Purpose:** daily-use canonical reference for runtime implementation, Studio rollout, review, and production decisions.  
 **Release date:** 2026-08-07  
-**Runtime status:** E2 accepted on the pinned R1 CI artifact; E3–E5 remain open.
-**Active queue:** Tickets 331–360 in [`BLUEPRINT-V2.7-EXECUTION.md`](BLUEPRINT-V2.7-EXECUTION.md).
+**Runtime status:** E2 accepted on the pinned R1 CI artifact; E3–E5 remain open.  
+**Runtime stabilization queue:** Tickets 331–360 in [`BLUEPRINT-V2.7-EXECUTION.md`](BLUEPRINT-V2.7-EXECUTION.md).  
+**Parallel-development authority:** [`PARALLEL-DEVELOPMENT-POLICY.md`](PARALLEL-DEVELOPMENT-POLICY.md).
 
 ## 1. North star
 
-Build one polished, replayable cooperative action-RPG expedition before expanding into a large world.
+Build a polished, replayable cooperative action-RPG expedition while continuing modular development across the broader product.
 
 The experience should combine readable combat, meaningful information/positioning decisions, randomized equipment/build identity, discovery, and cooperation. A new player should understand what happened, trust rewards and combat outcomes, and voluntarily begin another run.
 
@@ -18,18 +18,20 @@ Use this precedence:
 
 ```text
 accepted runtime evidence / current platform behavior
-→ Production Core v2.7 + Blueprint v2.7 Execution Authority
+→ Parallel Development Policy for whether work may proceed concurrently
+→ Production Core v2.7 + Blueprint v2.7 for the runtime stabilization lane
 → Active-Place Rollout v2.7 + Cross-System Traceability v2.7
+→ Execution Dashboard for daily task selection
 → current specialist bibles/specifications
 → technical blueprint
 → historical roadmap checkpoints
 ```
 
-Historical documents explain provenance; they do not override current execution order.
+Historical documents explain provenance; they do not override current execution rules.
 
 ## 3. Product laws
 
-1. One polished repeatable loop outranks broad unfinished scope.
+1. One polished repeatable loop remains the primary product target, but parallel source development is allowed.
 2. Combat is intense but readable.
 3. Enemies and objectives create tactical questions, not only damage throughput.
 4. Cooperation adds interactions, recovery, coordination, and information—not only health scaling.
@@ -39,6 +41,7 @@ Historical documents explain provenance; they do not override current execution 
 8. Critical information survives low graphics, reduced motion, streaming, respawn, and reset.
 9. Valuable mutations are deterministic/idempotent where replay is possible.
 10. Runtime evidence outranks confident prose.
+11. Pending evidence controls verification/promotion, not whether unrelated source work may be built.
 
 ## 4. Evidence scale
 
@@ -53,15 +56,15 @@ E6 outside-player fun demonstrated
 E7 live telemetry demonstrated
 ```
 
-**Current claimed level: E2.** The accepted packet is
-[`../production/evidence/2026-08-08-r1-playable-replay-loop.md`](../production/evidence/2026-08-08-r1-playable-replay-loop.md).
-Do not report E3–E5 without their required evidence.
+**Current claimed level: E2.** The accepted packet is [`../production/evidence/2026-08-08-r1-playable-replay-loop.md`](../production/evidence/2026-08-08-r1-playable-replay-loop.md). Do not report E3–E5 without their required evidence.
 
-## 5. Current release blockers
+## 5. Current runtime stabilization blockers
 
-R1 containment is accepted on the pinned artifact: zero queue/discard warnings, zero enabled broad Highlight targets, and a clean initialization/replay boundary. The flat blue/yellow/green editor view encountered during validation was traced to hidden local Studio physics-visualization flags rather than gameplay Highlight presentation.
+R1 containment is accepted on the pinned artifact: zero queue/discard warnings, zero enabled broad Highlight targets, and a clean initialization/replay boundary.
 
-Single-listener consolidation is accepted. Remaining runtime blockers are R2 delayed-ready/current-state delivery, R3 semantic suppression, centralized presentation ownership, and the reset/respawn/late-join/multiplayer/streaming matrices. The transport-agnostic R2 keyed-readiness primitive is source-prepared behind a disabled flag; preserve the R1 checkpoint and activate it only as a separate controlled stage change.
+Remaining v2.7 runtime work includes R2 delayed-ready/current-state delivery, R3 semantic suppression, centralized presentation ownership, and reset/respawn/late-join/multiplayer/streaming matrices.
+
+These are **runtime-lane blockers**, not blanket repository blockers. Other work may proceed under the Parallel Development Policy unless it directly depends on or conflicts with one of these unresolved paths.
 
 ## 6. Runtime state law
 
@@ -141,13 +144,7 @@ A streamed-out Instance is locally unavailable; that is not equivalent to gamepl
 
 ## 8. Lifecycle law
 
-Separate:
-
-- application scope;
-- character scope;
-- operation/round scope.
-
-Every connection and transient presentation object belongs to one scope and is released when that scope ends.
+Separate application, character, and operation/round scopes. Every connection and transient presentation object belongs to one scope and is released when that scope ends.
 
 Use generation tokens or equivalent cancellation guards so stale async work cannot mutate a newer character, round, target, viewmodel, or presentation lease.
 
@@ -162,7 +159,7 @@ R4 centralized presentation ownership
 R5 compatibility-removal candidate
 ```
 
-Change one architectural variable at a time. Advance only after counters and visible behavior match expectations.
+Change one architectural variable at a time **within this runtime lane**. Advance the runtime stage only after counters and visible behavior match expectations. Other lanes may continue concurrently.
 
 ## 10. Rollout flags
 
@@ -179,7 +176,7 @@ RejectBroadHighlightTargets
 EnableSoakAssertions
 ```
 
-Every flag requires an owner, introduction version, expected metric change, rollback trigger, and removal gate. Do not create a permanent flag graveyard.
+Every flag requires an owner, introduction version, expected metric change, rollback trigger, and removal gate.
 
 ## 11. Cutover ledger
 
@@ -202,7 +199,7 @@ status
 
 The ledger is complete only after every producer and effective listener has been identified.
 
-## 12. Active execution queue
+## 12. Runtime stabilization execution queue
 
 ### 331–335 — establish truth
 
@@ -248,28 +245,13 @@ The ledger is complete only after every producer and effective listener has been
 
 ## 13. Promotion gate
 
-Do not promote because one test run looked clean. Require captured facts:
+Do not promote the v2.7 runtime path because one test run looked clean. Require captured facts for the relevant listener/readiness/suppression/presentation/lifecycle invariants.
 
-```text
-all State producers/consumers inventoried
-intended compatibility listener count understood
-pre-ready state intentionally gated/retained
-unchanged state suppressed
-state send rate bounded by semantic change
-0 queue/discard warnings in accepted normal-play soak
-0 broad production Highlight targets
-one presentation owner per migrated primitive
-stream-out/rebind preserves semantic truth
-five-reset gauges return to baseline
-three-respawn gauges return to baseline
-late join reconstructs current state
-100 animation plays do not multiply marker listeners
-two-player reset/disconnect cleanup passes
-```
+Parallel work may be source-complete before this gate closes, but it may not use unfinished v2.7 evidence to claim the runtime path is production-ready.
 
 ## 14. Stop conditions
 
-Stop and fix before adding scope when:
+Stop and fix **the directly affected integration path** when:
 
 - remote queue/discard warnings occur;
 - state rate or connections grow across reset without a gameplay reason;
@@ -282,30 +264,34 @@ Stop and fix before adding scope when:
 - damage, rewards, inventory, progression, or ownership can be client-authored;
 - critical cues disappear on low graphics/mobile.
 
-## 15. Scope protection
+Do not automatically stop unrelated work. If another lane can proceed without sharing the failing dependency, it remains eligible.
 
-Do not use the rollout cleanup as permission to add multiple regions, PvP, raids, housing, unrestricted trading, battle passes, dozens of classes, hundreds of legendary items, vehicles, or other broad expansion.
+## 15. Parallel scope rule
 
-After rollout acceptance, choose the next dependency from evidence. Likely sequence:
+Gameplay, RPG, world/environment, new content families, progression/persistence preparation, monetization/live-service preparation, visuals, and tooling may proceed while v2.7 remains open.
 
-1. durable persistence/value proof;
-2. preparation/outdoor-route integration;
-3. procedural dungeon and boss integration;
-4. outside-player repeat-intention testing.
+The rules are:
+
+- avoid duplicate authority;
+- isolate risky activation;
+- pass applicable automated validation;
+- keep `BUILT — VERIFICATION PENDING` distinct from `VERIFIED`;
+- fix direct regressions when they collide with the path being changed.
+
+The complete governance rules live in [`PARALLEL-DEVELOPMENT-POLICY.md`](PARALLEL-DEVELOPMENT-POLICY.md).
 
 ## 16. Daily review checklist
 
 ```text
 What changed?
-Which runtime owner changed it?
-Which rollout stage is active?
-What did Attempts/Accepted/Suppressed do?
-Did actual sends fall or rise?
-Did connection/presentation gauges return to baseline?
-Did late join/reset/respawn still pass?
+Which owner changed it?
+Does this task directly depend on an unresolved runtime gate?
+Can it be safely isolated and built in parallel?
+What did Attempts/Accepted/Suppressed do if the runtime lane changed?
+Did connection/presentation gauges return to baseline if applicable?
 Did server authority change?
-What evidence packet was updated?
-What is the smallest next dependency?
+What evidence is still pending?
+What is the highest-ROI next task across all available lanes?
 ```
 
-> Instrument first. Migrate one owner at a time. Remove compatibility only when the evidence says the bridge is empty.
+> Instrument the runtime carefully. Build the product continuously.
