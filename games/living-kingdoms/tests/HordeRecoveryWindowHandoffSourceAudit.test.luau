@@ -12,7 +12,8 @@ local hordeSource = fs.readFile("games/living-kingdoms/src/server/Systems/HordeE
 local directorSource = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau")
 
 local processEnemyIndex = string.find(hordeSource, "processEnemy(record, serverTimestamp)", 1, true)
-local pressureReadIndex = string.find(hordeSource, "local pressureState = EnemyDirectorService.readPressureState()", 1, true)
+local pressureReadIndex =
+	string.find(hordeSource, "local pressureState = EnemyDirectorService.readPressureState()", 1, true)
 local recoveryReadIndex = string.find(
 	hordeSource,
 	"local recoveryWindowEndServerTimestamp = pressureState.recoveryWindowEndServerTimestamp",
