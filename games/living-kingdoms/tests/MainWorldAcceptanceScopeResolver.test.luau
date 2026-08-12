@@ -96,8 +96,14 @@ check(
 -- Families with no semantic target in the place cannot be observed yet.
 check(not resolver.isCheckInScope(scope, "mwam.audio.accessibility"), "atmosphere is unmapped")
 check(not resolver.isCheckInScope(scope, "mwam.visual.ambient_ceilings"), "atmosphere is unmapped")
-check(not resolver.isCheckInScope(scope, "mwam.streaming.semantic_group_rebind"), "all-group checks are not yet in scope")
-check(not resolver.isCheckInScope(scope, "mwam.performance.desktop_full_traversal"), "all-group checks are not yet in scope")
+check(
+	not resolver.isCheckInScope(scope, "mwam.streaming.semantic_group_rebind"),
+	"all-group checks are not yet in scope"
+)
+check(
+	not resolver.isCheckInScope(scope, "mwam.performance.desktop_full_traversal"),
+	"all-group checks are not yet in scope"
+)
 check(resolver.isCheckInScope(scope, "mwam.not.a.check") == false, "an unknown check is never in scope")
 
 -- Ordering follows the matrix so a derived worklist reads like the sheet.
