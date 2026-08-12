@@ -88,8 +88,7 @@ check(properties.Enabled == arrival.Spawn.enabled)
 check(properties.Neutral == arrival.Spawn.neutral)
 check(properties.TeamColor.BrickColor == arrival.Spawn.teamColorEnumValue)
 
-check(
-	project.tree.Workspace.LivingKingdomsMainWorld.HubCore.Arrival.SpawnLocation["$path"]
-		== "assets/recovered-world/models/MainWorldArrival.model.json"
-)
+local hubCore = project.tree.Workspace.LivingKingdomsMainWorld.HubCore
+local expectedHubCorePath = "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-HubCore.model.json"
+check(hubCore["$path"] == expectedHubCorePath)
 check(project.placeId == nil and project.gameId == nil and project.servePlaceIds == nil)

@@ -88,10 +88,8 @@ check(splash.Speed.NumberRange[1] == 2.0 and splash.Speed.NumberRange[2] == 4.0)
 
 check(project.name == "LivingKingdomsMainWorld")
 check(project.placeId == nil and project.gameId == nil and project.servePlaceIds == nil)
-check(
-	project.tree.Workspace.LivingKingdomsMainWorld.HubCore.Civic.CentralFountain["$path"]
-		== "assets/recovered-world/models/CentralFountain.model.json"
-)
+local expectedHubCorePath = "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-HubCore.model.json"
+check(project.tree.Workspace.LivingKingdomsMainWorld.HubCore["$path"] == expectedHubCorePath)
 check(project.tree.ReplicatedStorage.Shared["$path"] == bootstrap.SharedSourceRoot:gsub("games/living%-kingdoms/", ""))
 check(project.tree.ServerScriptService.MainWorldServer["$path"] == "src/main-world/server/MainWorldServer.server.luau")
 check(

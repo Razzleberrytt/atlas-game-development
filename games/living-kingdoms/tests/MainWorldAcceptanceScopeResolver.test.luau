@@ -44,8 +44,8 @@ local mappedGroupIds = representation.mappedStreamingGroupIds()
 local scope = resolver.resolveScope(matrix, mappedGroupIds)
 
 -- The mapped build cannot answer the whole matrix, and the resolver must say so.
-check(scope.coversWholeMatrix == false, "only two of five streaming groups are mapped today")
-check(#scope.inScopeCheckIds > 0, "the mapped hub/route build must be able to answer something")
+check(scope.coversWholeMatrix == false, "three of five streaming groups are mapped today")
+check(#scope.inScopeCheckIds > 0, "the mapped hub/route/structures build must be able to answer something")
 check(#scope.outOfScopeCheckIds > 0, "unmapped families must be excluded from the first run")
 check(
 	#scope.inScopeCheckIds + #scope.outOfScopeCheckIds == #matrix.Checks,
@@ -84,16 +84,26 @@ check(
 	resolver.isCheckInScope(scope, "mwam.visual.fixed_camera_capture_set"),
 	"a check naming no streaming group must stay in scope"
 )
--- Hub-core-only and route-only checks are answerable on the mapped build.
+-- Hub-core-only, route-only, and structures-only checks are answerable on the
+-- source-mapped build. Mapping still does not imply that any check has passed.
 check(resolver.isCheckInScope(scope, "mwam.arrival.orientation_recognition"), "hub-core checks are mapped")
 check(resolver.isCheckInScope(scope, "mwam.navigation.dead_travel"), "primary-route checks are mapped")
 check(resolver.isCheckInScope(scope, "mwam.navigation.core_loop_traversal"), "hub-core + route checks are mapped")
--- Families with no content in the place cannot be observed.
+check(
+	resolver.isCheckInScope(scope, "mwam.readability.landmark_recognition_distance"),
+	"structures checks are source-mapped"
+)
+-- Families with no semantic target in the place cannot be observed yet.
 check(not resolver.isCheckInScope(scope, "mwam.audio.accessibility"), "atmosphere is unmapped")
 check(not resolver.isCheckInScope(scope, "mwam.visual.ambient_ceilings"), "atmosphere is unmapped")
-check(not resolver.isCheckInScope(scope, "mwam.readability.landmark_recognition_distance"), "structures are unmapped")
-check(not resolver.isCheckInScope(scope, "mwam.streaming.semantic_group_rebind"), "all-group checks are unmapped")
-check(not resolver.isCheckInScope(scope, "mwam.performance.desktop_full_traversal"), "all-group checks are unmapped")
+check(
+	not resolver.isCheckInScope(scope, "mwam.streaming.semantic_group_rebind"),
+	"all-group checks are not yet in scope"
+)
+check(
+	not resolver.isCheckInScope(scope, "mwam.performance.desktop_full_traversal"),
+	"all-group checks are not yet in scope"
+)
 check(resolver.isCheckInScope(scope, "mwam.not.a.check") == false, "an unknown check is never in scope")
 
 -- Ordering follows the matrix so a derived worklist reads like the sheet.

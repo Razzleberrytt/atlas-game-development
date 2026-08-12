@@ -2,6 +2,7 @@
 
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
+local serde = require("@lune/serde")
 
 local function check(condition: unknown, message: string?)
 	if not condition then
@@ -18,6 +19,15 @@ local function loadConfig(name: string)
 		debugName = name,
 		injectGlobals = true,
 	})()
+end
+
+local function childByName(parent: any, name: string): any?
+	for _, child in parent.Children or {} do
+		if child.Name == name then
+			return child
+		end
+	end
+	return nil
 end
 
 local recovered = loadConfig("RecoveredWorldPathConfig")
@@ -73,10 +83,21 @@ check(route.Rules.RenderChunkPolicyMustBeDefinedBeforeRuntimeRendering == true)
 check(route.Rules.LocallyAbsentRenderChunksMustNotChangeRouteTruth == true)
 check(route.Rules.DoNotInferDestinationOrGameplayMeaningFromLegacyGeometry == true)
 
-local projectSource = fs.readFile("games/living-kingdoms/main-world.project.json")
+local project = serde.decode("json", fs.readFile("games/living-kingdoms/main-world.project.json"))
+local routesPath = "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Routes.model.json"
 check(
-	string.find(projectSource, "assets/visual/world/primary-route/MainWorldPrimaryRoute.model.json", 1, true) ~= nil,
-	"bounded primary route render source must be mapped into Main World"
+	project.tree.Workspace.LivingKingdomsMainWorld.Routes["$path"] == routesPath,
+	"canonical imported Routes snapshot must be mapped into Main World"
 )
-check(string.find(projectSource, "WorldPath", 1, true) == nil, "legacy WorldPath must not be mapped into Main World")
-check(string.find(projectSource, "PathSegment_", 1, true) == nil, "legacy slabs must not be mapped into Main World")
+
+local routesModelSource = fs.readFile("games/living-kingdoms/" .. routesPath)
+local routesModel = serde.decode("json", routesModelSource)
+check(routesModel.ClassName == "Folder", "imported Routes snapshot must preserve its Folder root")
+local primaryRoute = childByName(routesModel, "PrimaryRoute")
+check(primaryRoute ~= nil and primaryRoute.ClassName == "Model", "bounded primary route render source must exist")
+check(#primaryRoute.Children > 0, "bounded primary route render source must contain chunks")
+check(
+	string.find(routesModelSource, "WorldPath", 1, true) == nil,
+	"legacy WorldPath must not be mapped into Main World"
+)
+check(string.find(routesModelSource, "PathSegment_", 1, true) == nil, "legacy slabs must not be mapped into Main World")

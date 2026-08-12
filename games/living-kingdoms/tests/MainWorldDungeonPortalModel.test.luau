@@ -126,8 +126,7 @@ check(config.Evidence.KnownVisualPropertyOmissions == 1)
 check(config.KnownVisualPropertyOmissions[1].propertyName == "FontFace")
 
 local project = serde.decode("json", fs.readFile("games/living-kingdoms/main-world.project.json"))
-check(
-	project.tree.Workspace.LivingKingdomsMainWorld.HubCore.ExpeditionGate.DungeonPortal["$path"]
-		== "assets/recovered-world/models/DungeonPortal.model.json"
-)
+local hubCore = project.tree.Workspace.LivingKingdomsMainWorld.HubCore
+local expectedHubCorePath = "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-HubCore.model.json"
+check(hubCore["$path"] == expectedHubCorePath)
 check(project.placeId == nil and project.gameId == nil and project.servePlaceIds == nil)

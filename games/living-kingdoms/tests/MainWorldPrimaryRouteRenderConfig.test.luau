@@ -14,11 +14,29 @@ local function near(actual: number, expected: number, label: string)
 	check(math.abs(actual - expected) <= 1e-8, label .. " mismatch")
 end
 
+local function nearStudioRoundTrip(actual: number, expected: number, label: string)
+	-- Roblox Studio serializes these transform/size values through float32. The
+	-- imported snapshot therefore differs from the source-authored doubles by a
+	-- few ten-thousandths of a stud at the far end of the route. Keep the
+	-- comparison tight enough to catch authored movement while admitting the
+	-- expected engine round-trip quantization.
+	check(math.abs(actual - expected) <= 1e-3, label .. " mismatch")
+end
+
 local function loadConfig(name: string)
 	return luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/" .. name .. ".luau"), {
 		debugName = name,
 		injectGlobals = true,
 	})()
+end
+
+local function childByName(parent: any, name: string): any?
+	for _, child in parent.Children or {} do
+		if child.Name == name then
+			return child
+		end
+	end
+	return nil
 end
 
 local route = loadConfig("MainWorldPrimaryRouteConfig")
@@ -109,9 +127,32 @@ check(render.Rules.QualityTierBehaviorDefined == false)
 
 local projectSource = fs.readFile("games/living-kingdoms/main-world.project.json")
 local project = serde.decode("json", projectSource)
-local routeMapping = project.tree.Workspace.LivingKingdomsMainWorld.Routes.PrimaryRoute
-check(routeMapping["$path"] == render.ModelAssetPath)
+local routesPath = "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Routes.model.json"
+check(project.tree.Workspace.LivingKingdomsMainWorld.Routes["$path"] == routesPath)
 check(render.ProjectContainerPath == "Workspace/LivingKingdomsMainWorld/Routes/PrimaryRoute")
+
+local importedRoutes = serde.decode("json", fs.readFile("games/living-kingdoms/" .. routesPath))
+local importedPrimaryRoute = childByName(importedRoutes, "PrimaryRoute")
+check(importedPrimaryRoute ~= nil and importedPrimaryRoute.ClassName == "Model")
+check(#importedPrimaryRoute.Children == #model.Children, "imported primary route part count drift")
+for _, sourcePart in model.Children do
+	local importedPart = childByName(importedPrimaryRoute, sourcePart.Name)
+	check(
+		importedPart ~= nil and importedPart.ClassName == sourcePart.ClassName,
+		"imported route part missing: " .. sourcePart.Name
+	)
+	check(
+		importedPart.Properties.Anchored == sourcePart.Properties.Anchored,
+		"imported route anchoring drift: " .. sourcePart.Name
+	)
+	for index, value in sourcePart.Properties.CFrame do
+		nearStudioRoundTrip(importedPart.Properties.CFrame[index], value, sourcePart.Name .. ".importedCFrame")
+	end
+	for index, value in sourcePart.Properties.Size do
+		nearStudioRoundTrip(importedPart.Properties.Size[index], value, sourcePart.Name .. ".importedSize")
+	end
+end
+
 check(project.placeId == nil and project.gameId == nil and project.servePlaceIds == nil)
 check(string.find(projectSource, "WorldPath", 1, true) == nil, "legacy WorldPath must remain unmapped")
 check(string.find(projectSource, "PathSegment_", 1, true) == nil, "legacy route slabs must remain unmapped")

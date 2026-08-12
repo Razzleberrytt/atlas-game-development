@@ -48,5 +48,13 @@ games/living-kingdoms/imports/*/legacy-src/
 games/living-kingdoms/imports/*/workspace-index.json
 games/living-kingdoms/imports/*/workspace-index.partial.json
 
+# Materialized Main World Studio groups. The exact source bytes are tracked as
+# deterministic gzip payloads and hash-verified before these files are written.
+games/living-kingdoms/assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Castle.model.json
+games/living-kingdoms/assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Zones.model.json
+games/living-kingdoms/assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-HubCore.model.json
+games/living-kingdoms/assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Forest.model.json
+games/living-kingdoms/assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-NPCs.model.json
+
 # Keep deliberately tracked Roblox model files by adding a narrow negate rule
 # beside the owning directory and documenting the reason in that directory.
