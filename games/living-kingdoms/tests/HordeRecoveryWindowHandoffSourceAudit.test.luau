@@ -29,7 +29,7 @@ local recoveryDeferIndex = string.find(
 local scheduledDueIndex = string.find(hordeSource, "if serverTimestamp >= nextHordeServerTimestamp then", 1, true)
 
 assertThat(
-	string.find(directorSource, "function Service.readPressureState()", 1, true) ~= nil,
+	string.find(directorSource, "function EnemyDirectorService.readPressureState(): PressureRead", 1, true) ~= nil,
 	"EnemyDirectorService must remain the canonical pressure-state owner"
 )
 assertThat(
