@@ -17,13 +17,20 @@ local function loadConfig(name: string)
 	})()
 end
 
-local function resolveRelativePath(root: any, relativePath: string): any?
+local function resolveSerializedPath(root: any, relativePath: string): any?
 	local cursor = root
 	for segment in string.gmatch(relativePath, "[^/]+") do
-		if type(cursor) ~= "table" then
+		local nextNode = nil
+		for _, child in cursor.Children or {} do
+			if child.Name == segment then
+				nextNode = child
+				break
+			end
+		end
+		if nextNode == nil then
 			return nil
 		end
-		cursor = cursor[segment]
+		cursor = nextNode
 	end
 	return cursor
 end
@@ -32,6 +39,8 @@ local composition = loadConfig("MainWorldHubCoreCompositionConfig")
 local readability = loadConfig("MainWorldHubCoreReadabilityConfig")
 local project = serde.decode("json", fs.readFile("games/living-kingdoms/main-world.project.json"))
 local hubCore = project.tree.Workspace.LivingKingdomsMainWorld.HubCore
+local hubCorePath = "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-HubCore.model.json"
+local hubCoreModel = serde.decode("json", fs.readFile("games/living-kingdoms/" .. hubCorePath))
 
 check(composition.ContentId == "main_world.hub_core")
 check(composition.StreamingGroupId == "main_world.hub_core")
@@ -51,6 +60,9 @@ check(readability.StudioEvidenceRequired == true)
 check(readability.StudioEvidenceStatus == "PENDING")
 check(#readability.Nodes == #composition.Components)
 
+check(hubCore["$path"] == hubCorePath, "HubCore must map the canonical imported Studio snapshot")
+check(hubCoreModel.ClassName == "Folder", "imported HubCore snapshot must preserve its Folder root")
+
 local seenIds = {}
 local seenTargets = {}
 for _, component in composition.Components do
@@ -65,9 +77,8 @@ for _, component in composition.Components do
 	check(node.targetRelativePath == component.targetRelativePath, "target drift: " .. component.id)
 	check(node.instancePresenceRequiredForConsequentialTruth == false, "instance truth coupling: " .. component.id)
 
-	local projectTarget = resolveRelativePath(hubCore, component.targetRelativePath)
-	check(projectTarget ~= nil, "project target missing: " .. component.targetRelativePath)
-	check(type(projectTarget["$path"]) == "string", "project target is not source-managed: " .. component.id)
+	local snapshotTarget = resolveSerializedPath(hubCoreModel, component.targetRelativePath)
+	check(snapshotTarget ~= nil, "imported snapshot target missing: " .. component.targetRelativePath)
 
 	local sourceContract = loadConfig(component.sourceContractModule)
 	check(sourceContract.Version == component.sourceContractVersion, "source contract version drift: " .. component.id)
