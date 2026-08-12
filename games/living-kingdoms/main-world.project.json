@@ -23,39 +23,41 @@
       "$className": "Workspace",
       "LivingKingdomsMainWorld": {
         "$className": "Folder",
-        "HubCore": {
-          "$className": "Folder",
-          "Arrival": {
-            "$className": "Folder",
-            "SpawnLocation": {
-              "$path": "assets/recovered-world/models/MainWorldArrival.model.json"
-            }
-          },
-          "Civic": {
-            "$className": "Folder",
-            "CentralFountain": {
-              "$path": "assets/recovered-world/models/CentralFountain.model.json"
-            },
-            "GrandStaircase": {
-              "$path": "assets/recovered-world/models/GrandStaircase.model.json"
-            },
-            "HubArchway": {
-              "$path": "assets/recovered-world/models/HubArchway.model.json"
-            }
-          },
-          "ExpeditionGate": {
-            "$className": "Folder",
-            "DungeonPortal": {
-              "$path": "assets/recovered-world/models/DungeonPortal.model.json"
-            }
-          }
-        },
-        "Routes": {
-          "$className": "Folder",
-          "PrimaryRoute": {
-            "$path": "assets/visual/world/primary-route/MainWorldPrimaryRoute.model.json"
-          }
-        }
+        "HubCore": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-HubCore.model.json" },
+        "Routes": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Routes.model.json" },
+        "Environment": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Environment.model.json" },
+        "Structures": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Structures.model.json" },
+        "Props": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Props.model.json" },
+        "NPCs": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-NPCs.model.json" },
+        "Dark": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Dark.model.json" },
+        "Village": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Village.model.json" },
+        "Forest": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Forest.model.json" },
+        "Castle": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Castle.model.json" },
+        "Zones": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Zones.model.json" },
+        "Crystal": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Crystal.model.json" },
+        "Beach": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Beach.model.json" },
+        "Volcanic": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Volcanic.model.json" },
+        "Desert": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Desert.model.json" },
+        "Swamp": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Swamp.model.json" },
+        "Snow": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Snow.model.json" },
+        "Jungle": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Jungle.model.json" },
+        "Autumn": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Autumn.model.json" },
+        "Sky": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Sky.model.json" },
+        "Meadow": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Meadow.model.json" },
+        "Mushroom": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Mushroom.model.json" },
+        "Ruins": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Ruins.model.json" },
+        "Ocean": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Ocean.model.json" },
+        "Ice": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Ice.model.json" },
+        "Bamboo": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Bamboo.model.json" },
+        "Geyser": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Geyser.model.json" },
+        "Lavender": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Lavender.model.json" },
+        "Cherry": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Cherry.model.json" },
+        "Tundra": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Tundra.model.json" },
+        "Canyon": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Canyon.model.json" },
+        "Coral": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Coral.model.json" },
+        "Geothermal": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Geothermal.model.json" },
+        "Oasis": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Oasis.model.json" },
+        "CrystalDesert": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-CrystalDesert.model.json" }
       }
     },
     "StarterPlayer": {

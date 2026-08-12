@@ -149,6 +149,10 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
+        python_script(
+            "Main World Studio snapshot materialization",
+            "scripts/roblox/materialize_main_world_studio_snapshot.py",
+        )
         validate_docs()
         if args.profile == "full":
             validate_full_preflight()
