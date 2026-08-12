@@ -30,10 +30,7 @@ assert(not contains(probe, "Stepped"), "probe must not add a stepped-loop sample
 -- The probe reads the canonical director instead of inventing a second crowd
 -- count or pressure owner.
 assert(contains(probe, "EnemyDirectorService.readPressureState()"), "probe must read canonical pressure state")
-assert(
-	contains(probe, "EnemyDirectorService.readEnemyCombatFacts()"),
-	"probe must read canonical combat-fact state"
-)
+assert(contains(probe, "EnemyDirectorService.readEnemyCombatFacts()"), "probe must read canonical combat-fact state")
 assert(contains(director, "function EnemyDirectorService.readPressureState()"), "director pressure read API drifted")
 assert(
 	contains(director, "function EnemyDirectorService.readEnemyCombatFacts()"),
@@ -42,18 +39,20 @@ assert(
 
 -- Repeated explicit samples retain the first useful crowd-pressure summary for
 -- HROI validation without running a hidden background scheduler.
-for _, token in {
-	"sampleCount",
-	"baselineActiveEnemyCount",
-	"baselinePendingSpawnCount",
-	"baselineEscalationLevel",
-	"peakActiveEnemyCount",
-	"peakPendingSpawnCount",
-	"peakEscalationLevel",
-	"averageActiveEnemyCount",
-	"averagePendingSpawnCount",
-	"ResetMetrics",
-} do
+for _, token in
+	{
+		"sampleCount",
+		"baselineActiveEnemyCount",
+		"baselinePendingSpawnCount",
+		"baselineEscalationLevel",
+		"peakActiveEnemyCount",
+		"peakPendingSpawnCount",
+		"peakEscalationLevel",
+		"averageActiveEnemyCount",
+		"averagePendingSpawnCount",
+		"ResetMetrics",
+	}
+do
 	assert(contains(probe, token), "missing retained pressure metric: " .. token)
 end
 
