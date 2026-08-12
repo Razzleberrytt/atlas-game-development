@@ -581,6 +581,11 @@ local function evaluate(serverTimestamp: number)
 	for _, record in enemyRecords do
 		processEnemy(record, serverTimestamp)
 	end
+	local pressureState = EnemyDirectorService.readPressureState()
+	local recoveryWindowEndServerTimestamp = pressureState.recoveryWindowEndServerTimestamp
+	if recoveryWindowEndServerTimestamp ~= nil and recoveryWindowEndServerTimestamp > serverTimestamp then
+		nextHordeServerTimestamp = math.max(nextHordeServerTimestamp, recoveryWindowEndServerTimestamp)
+	end
 	if serverTimestamp >= nextHordeServerTimestamp then
 		spawnHorde(serverTimestamp)
 		nextHordeServerTimestamp = serverTimestamp + currentSpawnInterval(serverTimestamp)
