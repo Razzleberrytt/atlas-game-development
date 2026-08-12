@@ -128,8 +128,14 @@ check(importedPrimaryRoute ~= nil and importedPrimaryRoute.ClassName == "Model")
 check(#importedPrimaryRoute.Children == #model.Children, "imported primary route part count drift")
 for _, sourcePart in model.Children do
 	local importedPart = childByName(importedPrimaryRoute, sourcePart.Name)
-	check(importedPart ~= nil and importedPart.ClassName == sourcePart.ClassName, "imported route part missing: " .. sourcePart.Name)
-	check(importedPart.Properties.Anchored == sourcePart.Properties.Anchored, "imported route anchoring drift: " .. sourcePart.Name)
+	check(
+		importedPart ~= nil and importedPart.ClassName == sourcePart.ClassName,
+		"imported route part missing: " .. sourcePart.Name
+	)
+	check(
+		importedPart.Properties.Anchored == sourcePart.Properties.Anchored,
+		"imported route anchoring drift: " .. sourcePart.Name
+	)
 	for index, value in sourcePart.Properties.CFrame do
 		near(importedPart.Properties.CFrame[index], value, sourcePart.Name .. ".importedCFrame")
 	end
