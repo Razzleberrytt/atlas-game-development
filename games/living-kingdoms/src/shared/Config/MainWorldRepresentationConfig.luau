@@ -7,13 +7,13 @@
 -- enable streaming, or start an authored-overworld runtime.
 
 local Config = {
-	Version = "BA-011-v3-mapped-placement-parity",
+	Version = "BA-011-v4-studio-snapshot-placement-parity",
 	SourceHold = true,
 	RuntimeEnabled = false,
 	PlaceBoundary = table.freeze({
 		Strategy = "dedicated-main-world-place",
 		CurrentOperationProject = "games/living-kingdoms/default.project.json",
-		MainWorldProjectStatus = "not-created-until-reviewable-content-exists",
+		MainWorldProjectStatus = "dedicated-source-project-present-studio-snapshot-mapped",
 		MainWorldPlaceIdStatus = "unassigned",
 		SharedUniverseRequired = true,
 		DedicatedLifecycleRequired = true,
@@ -35,7 +35,7 @@ local Config = {
 		ReviewableModels = table.freeze({
 			Ownership = "source-managed-model-assets",
 			Path = "games/living-kingdoms/assets/recovered-world/models",
-			Status = "create-per-coherent-group-after-property-parity-validation",
+			Status = "coherent-groups-preserved-and-source-mapped",
 		}),
 		Terrain = table.freeze({
 			Ownership = "studio-authored-with-source-manifest",
@@ -48,9 +48,11 @@ local Config = {
 		}),
 	}),
 	-- `projectMappingStatus` records whether the dedicated Main World project
-	-- actually maps the group's `targetPath` today. It is declared here so Luau
-	-- consumers can read mapping truth without parsing the Rojo project, and it
-	-- is bound to `main-world.project.json` by fixture so the two cannot drift.
+	-- source-maps the group's semantic `targetPath` today. A mapped target may be
+	-- a literal Rojo node or a semantic descendant preserved inside one coherent
+	-- whole-group Studio snapshot mapping. It is declared here so Luau consumers
+	-- can read mapping truth without parsing Rojo/model JSON, and fixtures bind it
+	-- back to `main-world.project.json` plus the imported model hierarchy.
 	-- `Mapped` describes source placement only; it never implies runtime
 	-- activation, streaming configuration, or BA-014 acceptance.
 	ProjectMappingStatuses = table.freeze({
@@ -69,8 +71,8 @@ local Config = {
 		table.freeze({
 			id = "main_world.primary_route",
 			sourceRoots = table.freeze({ "Workspace/WorldPath" }),
-			-- The mapped container is the bounded 12-Part route model itself, so
-			-- this is `PrimaryRoute` rather than a separate `Primary` folder.
+			-- `PrimaryRoute` is a semantic descendant of the coherently imported
+			-- `Routes` snapshot rather than a second fine-grained Rojo mapping.
 			targetPath = "Workspace/LivingKingdomsMainWorld/Routes/PrimaryRoute",
 			representation = "route-data-plus-bounded-render-chunks",
 			streamingPolicy = "spatial-chunks",
@@ -90,7 +92,7 @@ local Config = {
 			targetPath = "Workspace/LivingKingdomsMainWorld/Structures",
 			representation = "one-model-per-authored-structure-group",
 			streamingPolicy = "per-structure-never-whole-root-atomic",
-			projectMappingStatus = "Unmapped",
+			projectMappingStatus = "Mapped",
 		}),
 		table.freeze({
 			id = "main_world.atmosphere",
