@@ -96,5 +96,8 @@ check(routesModel.ClassName == "Folder", "imported Routes snapshot must preserve
 local primaryRoute = childByName(routesModel, "PrimaryRoute")
 check(primaryRoute ~= nil and primaryRoute.ClassName == "Model", "bounded primary route render source must exist")
 check(#primaryRoute.Children > 0, "bounded primary route render source must contain chunks")
-check(string.find(routesModelSource, "WorldPath", 1, true) == nil, "legacy WorldPath must not be mapped into Main World")
+check(
+	string.find(routesModelSource, "WorldPath", 1, true) == nil,
+	"legacy WorldPath must not be mapped into Main World"
+)
 check(string.find(routesModelSource, "PathSegment_", 1, true) == nil, "legacy slabs must not be mapped into Main World")
