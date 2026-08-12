@@ -137,7 +137,7 @@ check(archLight.Properties.Enabled == archway.PointLight.enabled)
 check(archLight.Properties.Shadows == archway.PointLight.shadows)
 
 local project = serde.decode("json", fs.readFile("games/living-kingdoms/main-world.project.json"))
-local civic = project.tree.Workspace.LivingKingdomsMainWorld.HubCore.Civic
-check(civic.GrandStaircase["$path"] == "assets/recovered-world/models/GrandStaircase.model.json")
-check(civic.HubArchway["$path"] == "assets/recovered-world/models/HubArchway.model.json")
+local hubCore = project.tree.Workspace.LivingKingdomsMainWorld.HubCore
+local expectedHubCorePath = "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-HubCore.model.json"
+check(hubCore["$path"] == expectedHubCorePath)
 check(project.placeId == nil and project.gameId == nil and project.servePlaceIds == nil)
