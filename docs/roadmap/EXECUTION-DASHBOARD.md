@@ -197,7 +197,7 @@ A representative Studio/device pass still needs to cover arrival camera/readabil
 | **0.5 Main World** | **BA-014 SOURCE CHAIN COMPLETE AND EXERCISED; NO CHECK EXECUTED — first run `PARTIAL`, BLOCKED on the bridge observing the exact built artifact** | measured hub/route evidence → fix failures → gated environment breadth/activation |
 | Presentation content factory | SOURCE-PREPARED, PRESENTATION-ONLY (32 env assets / 44 source models / 4 boundaries) | registry+model data, no runtime owner; admission still gated by BA-014 |
 | 0.6 systemic replayability | BUILT — VERIFICATION PENDING; the 100-item micro-update backlog is complete through rank 97, ranks 98-100 remain GATED on Studio/UX | combinatorial output from reusable systems |
-| 0.7 persistence | substantial foundations; session lifecycle now symmetric (leave releases the resident record, not only the lease) | migration/lifecycle invariants and recovery tests |
+| 0.7 persistence | BUILT — VERIFICATION PENDING for the session lifecycle: single owner, symmetric release, lease decided from the committed update, migration/recovery invariants locked across the supported schema matrix | remaining: durable state beyond inventory, and live multi-server evidence |
 | 0.8 co-op/social | basic foundations | multiplayer coverage over existing owners |
 | 0.9 content/pipeline | preparation present | mostly data/content + validation |
 | RC 1.0 | future | accumulated automation reduces hardening cost |
