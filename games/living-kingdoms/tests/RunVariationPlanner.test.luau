@@ -94,14 +94,20 @@ assert(
 	plan.OptionalObjective ~= nil and plan.OptionalObjective.ObjectiveId == "salvage",
 	"optional objective plan must be composed"
 )
-assert(plan.RunModifier ~= nil and plan.RunModifier.ModifierId == "dense-contacts", "run modifier plan must be composed")
+assert(
+	plan.RunModifier ~= nil and plan.RunModifier.ModifierId == "dense-contacts",
+	"run modifier plan must be composed"
+)
 assert(receivedPlans.Secret == roomPlan, "secret planner must receive the canonical room plan")
 assert(receivedPlans.Objective == roomPlan, "objective planner must receive the canonical room plan")
 assert(receivedPlans.Modifier == roomPlan, "modifier planner must receive the canonical room plan")
 assert(#roomPlan.Nodes == beforeNodeCount, "variation composition must not change room count")
 assert(roomPlan.Nodes[1].RoomId == beforeFirstRoomId, "variation composition must not rewrite room data")
 
-assert(string.find(plan.VariationIdentity, roomPlan.PlanIdentity, 1, true) ~= nil, "identity must include room identity")
+assert(
+	string.find(plan.VariationIdentity, roomPlan.PlanIdentity, 1, true) ~= nil,
+	"identity must include room identity"
+)
 assert(
 	string.find(plan.VariationIdentity, plan.SecretBranch.PlanIdentity, 1, true) ~= nil,
 	"identity must include secret identity"
@@ -126,7 +132,10 @@ assert(
 
 local noSecret = planner.plan(makePlan(2))
 assert(noSecret.SecretBranch == nil, "missing secret must remain explicitly absent")
-assert(string.find(noSecret.VariationIdentity, "|secret=none|", 1, true) ~= nil, "identity must encode absent secret")
+assert(
+	string.find(noSecret.VariationIdentity, "|secret=none|", 1, true) ~= nil,
+	"identity must encode absent secret"
+)
 
 local noObjective = planner.plan(makePlan(3))
 assert(noObjective.OptionalObjective == nil, "missing optional objective must remain explicitly absent")
