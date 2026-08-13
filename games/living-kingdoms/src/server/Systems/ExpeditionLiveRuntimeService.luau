@@ -17,6 +17,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ExpeditionConfig = require(ReplicatedStorage.Shared.Config.ExpeditionConfig)
 local FirstDungeonRewardDecisionConfig = require(ReplicatedStorage.Shared.Config.FirstDungeonRewardDecisionConfig)
 local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.ExpeditionContracts)
+local RunVariationPlanner = require(ReplicatedStorage.Shared.Expeditions.RunVariationPlanner)
 local ExpeditionServerBootstrap = require(script.Parent.ExpeditionServerBootstrap)
 local ExpeditionRoomPlacementService = require(script.Parent.ExpeditionRoomPlacementService)
 local ExpeditionRoomBarrierStateService = require(script.Parent.ExpeditionRoomBarrierStateService)
@@ -33,6 +34,7 @@ export type StartOptions = {
 local Service = {}
 
 local activeBootstrap: any = nil
+local activeRunVariationPlan: any = nil
 local heartbeatConnection: RBXScriptConnection? = nil
 local accumulatedSeconds = 0
 local started = false
@@ -161,6 +163,15 @@ function Service.startExpedition(options: StartOptions?): any
 	end
 
 	local bootstrap = bootstrapOrError
+	local variationOk, variationPlanOrError = pcall(function()
+		return RunVariationPlanner.plan(bootstrap:getRoomPlan())
+	end)
+	if not variationOk then
+		bootstrap:destroy()
+		warn("[ExpeditionLiveRuntime] failed to compose run variation:", variationPlanOrError)
+		return result(false, "RunVariationPlanningFailed", nil)
+	end
+
 	local placement = ExpeditionRoomPlacementService.place(bootstrap:getRoomPlan())
 	if placement.Accepted ~= true then
 		bootstrap:destroy()
@@ -170,6 +181,7 @@ function Service.startExpedition(options: StartOptions?): any
 
 	ExpeditionRoomBarrierStateService.reset()
 	activeBootstrap = bootstrap
+	activeRunVariationPlan = variationPlanOrError
 	driveStep()
 	return result(true, "ExpeditionStarted", activeBootstrap:getSnapshot())
 end
@@ -224,6 +236,7 @@ function Service.stopExpedition(reasonId: string?): any
 	local snapshot = bootstrap:getSnapshot()
 	bootstrap:destroy()
 	activeBootstrap = nil
+	activeRunVariationPlan = nil
 	ExpeditionRoomBarrierStateService.reset()
 	ExpeditionRoomPlacementService.destroy()
 	return result(true, reasonId or "ExpeditionStopped", snapshot)
@@ -243,6 +256,13 @@ function Service.readRoomPlan(): any
 	return activeBootstrap:getRoomPlan()
 end
 
+function Service.readRunVariationPlan(): any
+	if activeBootstrap == nil then
+		return nil
+	end
+	return activeRunVariationPlan
+end
+
 function Service.stop()
 	if not started then
 		return
@@ -253,6 +273,7 @@ function Service.stop()
 		activeBootstrap:destroy()
 		activeBootstrap = nil
 	end
+	activeRunVariationPlan = nil
 	ExpeditionRoomBarrierStateService.reset()
 	ExpeditionRoomPlacementService.destroy()
 end
