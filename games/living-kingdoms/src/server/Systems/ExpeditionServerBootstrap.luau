@@ -85,13 +85,15 @@ local function displayNameForUnit(unit: any): string
 	return "Warden"
 end
 
-local function buildAuthoredWave(context: any, encounter: any, anchor: any): { any }?
-	if encounter == nil or #encounter.Waves ~= 1 then
-		return nil
-	end
+local function buildAuthoredWave(
+	context: any,
+	authoredWave: any,
+	anchor: any,
+	startingOrdinal: number
+): ({ any }, number)
 	local definitions = {}
-	local ordinal = 0
-	for _, unit in encounter.Waves[1].Units do
+	local ordinal = startingOrdinal
+	for _, unit in authoredWave.Units do
 		for _ = 1, unit.Count do
 			ordinal += 1
 			local xOffset, zOffset = deterministicOffset(context.Seed, ordinal + (context.RoomIndex or 0) * 5)
@@ -106,7 +108,41 @@ local function buildAuthoredWave(context: any, encounter: any, anchor: any): { a
 			})
 		end
 	end
-	return definitions
+	return definitions, ordinal
+end
+
+local function buildAuthoredEncounterDefinition(context: any, encounter: any, anchor: any, baseWaveIndex: number): any
+	if encounter == nil or type(encounter.Waves) ~= "table" or #encounter.Waves == 0 then
+		return nil
+	end
+
+	local stages = {}
+	local ordinal = 0
+	for waveIndex, authoredWave in encounter.Waves do
+		local definitions
+		definitions, ordinal = buildAuthoredWave(context, authoredWave, anchor, ordinal)
+		if #definitions == 0 then
+			return nil
+		end
+		table.insert(stages, {
+			WaveIndex = baseWaveIndex + waveIndex - 1,
+			DelayAfterPreviousSeconds = if waveIndex == 1 then 0 else (authoredWave.DelayAfterPreviousSeconds or 0),
+			Wave = definitions,
+		})
+	end
+
+	if #stages == 1 then
+		return {
+			Kind = "Wave",
+			WaveIndex = stages[1].WaveIndex,
+			Wave = stages[1].Wave,
+		}
+	end
+	return {
+		Kind = "WaveSequence",
+		Waves = stages,
+		CompletionDelaySeconds = 0,
+	}
 end
 
 local function buildOutdoorApproachSequence(context: any): any
@@ -220,15 +256,8 @@ local function buildEncounterResolver(rawPlan: any): (any) -> any
 			return nil
 		end
 		local encounter = composedEncounterByRoomId[roomId]
-		local wave = buildAuthoredWave(context, encounter, anchor)
-		if wave == nil or #wave == 0 then
-			return nil
-		end
-		return {
-			Kind = "Wave",
-			WaveIndex = context.RoomIndex or (if context.PhaseId == "Elite" then 90 else 1),
-			Wave = wave,
-		}
+		local baseWaveIndex = context.RoomIndex or (if context.PhaseId == "Elite" then 90 else 1)
+		return buildAuthoredEncounterDefinition(context, encounter, anchor, baseWaveIndex)
 	end
 end
 
