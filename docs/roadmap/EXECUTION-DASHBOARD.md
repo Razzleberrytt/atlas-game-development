@@ -127,8 +127,8 @@ When no Studio/device lane is available, dependency-safe source preparation may 
 ### LATER
 
 - deeper Patch 0.5 environment breadth after the mapped hub/route representation clears BA-014 evidence;
-- Patch 0.6 systemic replayability;
-- Patch 0.7 persistence hardening;
+- Patch 0.6 ranks 98-100 (variation HUD/recap), held for a Studio/UX pass;
+- further Patch 0.7 persistence hardening;
 - Patch 0.8 co-op/social/session;
 - Patch 0.9 content/pipeline expansion;
 - release-candidate hardening.
@@ -196,8 +196,8 @@ A representative Studio/device pass still needs to cover arrival camera/readabil
 | 0.4 RPG progression | BUILT — VERIFICATION PENDING | bounded rank map + generic entitlement/presentation + reusable owner adapters |
 | **0.5 Main World** | **BA-014 SOURCE CHAIN COMPLETE AND EXERCISED; NO CHECK EXECUTED — first run `PARTIAL`, BLOCKED on the bridge observing the exact built artifact** | measured hub/route evidence → fix failures → gated environment breadth/activation |
 | Presentation content factory | SOURCE-PREPARED, PRESENTATION-ONLY (32 env assets / 44 source models / 4 boundaries) | registry+model data, no runtime owner; admission still gated by BA-014 |
-| 0.6 systemic replayability | future; do not start before coherent 0.5 Main World progress | combinatorial output from reusable systems |
-| 0.7 persistence | substantial foundations | migration/lifecycle invariants and recovery tests |
+| 0.6 systemic replayability | BUILT — VERIFICATION PENDING; the 100-item micro-update backlog is complete through rank 97, ranks 98-100 remain GATED on Studio/UX | combinatorial output from reusable systems |
+| 0.7 persistence | substantial foundations; session lifecycle now symmetric (leave releases the resident record, not only the lease) | migration/lifecycle invariants and recovery tests |
 | 0.8 co-op/social | basic foundations | multiplayer coverage over existing owners |
 | 0.9 content/pipeline | preparation present | mostly data/content + validation |
 | RC 1.0 | future | accumulated automation reduces hardening cost |
