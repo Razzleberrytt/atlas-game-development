@@ -116,6 +116,17 @@ assert(result.RecordByRoomId.combat == result.Records[2], "room lookup must reso
 assert(result.OriginalUnitCount == 3, "readback must aggregate original unit count")
 assert(result.AppliedUnitCount == 4, "readback must aggregate applied unit count")
 assert(result.UnitCountDelta == 1, "readback must expose the aggregate composition delta")
+assert(result.SchemaVersion == "P06-COMPOSITION-READBACK-v2", "readback must expose stable schema version")
+assert(result.ModifierSummary == "dense affects 1/2 encounters", "modifier summary must be deterministic")
+assert(result.EncounterSummary == "2 encounters, 4 units (+1 variation)", "encounter summary must be concise")
+assert(
+	result.SeedCommand == 'ExpeditionControl:Invoke("Start", { Seed = 17 })',
+	"seed command must be copy/paste stable"
+)
+assert(
+	string.find(result.CompositionIdentity, "roomPlan=room-plan%7C17", 1, true) ~= nil,
+	"identity must escape delimiter-bearing values"
+)
 assert(result.EncounterCount == 2, "readback must report composed encounter count")
 assert(result.ModifiedEncounterCount == 1, "readback must report modified encounter count")
 assert(

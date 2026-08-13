@@ -89,6 +89,7 @@ type Internal = {
 	SequenceCompletionEligibleAtUnix: number?,
 	CompletionReported: boolean,
 	Destroyed: boolean,
+	DriftWarningIssued: boolean,
 }
 
 local Adapter = {}
@@ -133,7 +134,18 @@ local function startTypedWave(
 			accepted += 1
 		end
 	end
-	return accepted > 0
+	if accepted ~= #wave and not state.DriftWarningIssued then
+		state.DriftWarningIssued = true
+		warn(
+			"[EnemyDirectorEncounterAdapter] composition drift:",
+			compositionIdentity,
+			"expected",
+			#wave,
+			"accepted",
+			accepted
+		)
+	end
+	return accepted == #wave
 end
 
 local function validateWave(waveIndex: unknown, wave: unknown, knownIds: { [string]: boolean }): boolean
@@ -255,6 +267,7 @@ local function startEncounter(state: Internal, context: EncounterContext): boole
 	state.ActiveContext = copyContext(context)
 	state.ActiveKind = definition.Kind
 	state.ActiveCompositionIdentity = definition.CompositionIdentity
+	state.DriftWarningIssued = false
 	state.SawBoss = false
 	state.NextSequenceStageEligibleAtUnix = nil
 	state.SequenceCompletionEligibleAtUnix = nil
@@ -399,6 +412,7 @@ function Adapter.new(director: Director, resolveDefinition: DefinitionResolver):
 			NextSequenceStageEligibleAtUnix = nil,
 			SequenceCompletionEligibleAtUnix = nil,
 			CompletionReported = false,
+			DriftWarningIssued = false,
 			Destroyed = false,
 		} :: Internal,
 		Adapter

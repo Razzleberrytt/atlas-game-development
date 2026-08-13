@@ -31,6 +31,7 @@ export type CompositionRecord = {
 }
 
 export type Readback = {
+	SchemaVersion: string,
 	Seed: number,
 	RoomPlanIdentity: string,
 	VariationIdentity: string,
@@ -45,6 +46,9 @@ export type Readback = {
 	ModifiedEncounterCount: number,
 	UnitCountsByEncounterSlotId: { [string]: UnitCountSummary },
 	UnitCountsByArchetypeId: { [string]: UnitCountSummary },
+	ModifierSummary: string,
+	EncounterSummary: string,
+	SeedCommand: string,
 	CompositionIdentity: string,
 }
 
@@ -55,6 +59,7 @@ export type UnitCountSummary = {
 }
 
 local DebugReadback = {}
+DebugReadback.SchemaVersion = "P06-COMPOSITION-READBACK-v2"
 DebugReadback.FailureReasonIds = table.freeze({
 	DuplicateEncounterSlot = "DuplicateEncounterSlot",
 	CardinalityMismatch = "CardinalityMismatch",
@@ -62,6 +67,14 @@ DebugReadback.FailureReasonIds = table.freeze({
 })
 
 local MAX_COMPOSITION_IDENTITY_LENGTH = 16_384
+
+local function identityValue(value: string): string
+	return (
+		string.gsub(value, "([^%w%._%-])", function(character: string): string
+			return string.format("%%%02X", string.byte(character))
+		end)
+	)
+end
 
 local function addCount(summaryById: { [string]: any }, id: string, originalCount: number, appliedCount: number)
 	local summary = summaryById[id]
@@ -116,6 +129,7 @@ function DebugReadback.build(roomPlan: any): Readback
 	local expectedRoomIds = {}
 	local expectedEncounterCount = 0
 	local seenRoomSlotIds = {}
+	local previousNodeIndex = 0
 	for _, node in roomPlan.Nodes do
 		if type(node.EncounterSlotId) == "string" and type(node.EncounterIntensity) == "number" then
 			assert(
@@ -137,6 +151,8 @@ function DebugReadback.build(roomPlan: any): Readback
 
 		local composed =
 			RunVariationAuthoredEncounterComposer.compose(roomPlan.Seed, encounterRecord, authoredEncounter)
+		assert(composed.NodeIndex > previousNodeIndex, "composition records must remain strictly node-sorted")
+		previousNodeIndex = composed.NodeIndex
 		local roomSlotId = composed.RoomId .. "|" .. composed.EncounterSlotId
 		assert(
 			seenRoomSlotIds[roomSlotId] == nil,
@@ -190,11 +206,17 @@ function DebugReadback.build(roomPlan: any): Readback
 
 	local runModifier = variationPlan.RunModifier
 	local unitCountDelta = appliedUnitCount - originalUnitCount
+	local modifierSummary = if runModifier == nil
+		then "No run modifier"
+		else string.format("%s affects %d/%d encounters", runModifier.ModifierId, modifiedEncounterCount, #records)
+	local encounterSummary =
+		string.format("%d encounters, %d units (%+d variation)", #records, appliedUnitCount, unitCountDelta)
 	local compositionIdentity = string.format(
-		"P06-COMPOSITION-READBACK-v1|seed=%d|roomPlan=%s|variation=%s|units=%d>%d|records=%s",
+		"%s|seed=%d|roomPlan=%s|variation=%s|units=%d>%d|records=%s",
+		DebugReadback.SchemaVersion,
 		roomPlan.Seed,
-		roomPlan.PlanIdentity,
-		variationPlan.VariationIdentity,
+		identityValue(roomPlan.PlanIdentity),
+		identityValue(variationPlan.VariationIdentity),
 		originalUnitCount,
 		appliedUnitCount,
 		table.concat(compositionIdentities, ";")
@@ -204,6 +226,7 @@ function DebugReadback.build(roomPlan: any): Readback
 		DebugReadback.FailureReasonIds.IdentityTooLarge .. ": composition identity exceeds diagnostic bound"
 	)
 	return table.freeze({
+		SchemaVersion = DebugReadback.SchemaVersion,
 		Seed = roomPlan.Seed,
 		RoomPlanIdentity = roomPlan.PlanIdentity,
 		VariationIdentity = variationPlan.VariationIdentity,
@@ -218,6 +241,9 @@ function DebugReadback.build(roomPlan: any): Readback
 		ModifiedEncounterCount = modifiedEncounterCount,
 		UnitCountsByEncounterSlotId = freezeSummaries(unitCountsByEncounterSlotId),
 		UnitCountsByArchetypeId = freezeSummaries(unitCountsByArchetypeId),
+		ModifierSummary = modifierSummary,
+		EncounterSummary = encounterSummary,
+		SeedCommand = string.format('ExpeditionControl:Invoke("Start", { Seed = %d })', roomPlan.Seed),
 		CompositionIdentity = compositionIdentity,
 	})
 end
