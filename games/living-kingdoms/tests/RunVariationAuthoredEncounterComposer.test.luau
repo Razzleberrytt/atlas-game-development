@@ -20,9 +20,8 @@ local contracts = {
 	},
 }
 
-local policy = luau.load(
-	fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationEncounterConsequencePolicy.luau"),
-	{
+local policy =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationEncounterConsequencePolicy.luau"), {
 		debugName = "RunVariationEncounterConsequencePolicy",
 		environment = {
 			script = { Parent = { RoomAssemblyContracts = CONTRACTS_TOKEN } },
@@ -32,22 +31,18 @@ local policy = luau.load(
 			end,
 		},
 		injectGlobals = true,
-	}
-)()
+	})()
 
-local applicator = luau.load(
-	fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationAuthoredWaveApplicator.luau"),
-	{
+local applicator =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationAuthoredWaveApplicator.luau"), {
 		debugName = "RunVariationAuthoredWaveApplicator",
 		injectGlobals = true,
-	}
-)()
+	})()
 
 local POLICY_TOKEN = {}
 local APPLICATOR_TOKEN = {}
-local composer = luau.load(
-	fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationAuthoredEncounterComposer.luau"),
-	{
+local composer =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationAuthoredEncounterComposer.luau"), {
 		debugName = "RunVariationAuthoredEncounterComposer",
 		environment = {
 			script = {
@@ -59,15 +54,14 @@ local composer = luau.load(
 			require = function(token: unknown): any
 				if token == POLICY_TOKEN then
 					return policy
-			elseif token == APPLICATOR_TOKEN then
+				elseif token == APPLICATOR_TOKEN then
 					return applicator
-			end
+				end
 				error("unexpected encounter composer dependency")
 			end,
 		},
 		injectGlobals = true,
-	}
-)()
+	})()
 
 local function record(
 	encounterSlotId: string,
@@ -125,7 +119,10 @@ assert(table.isfrozen(unchanged.Waves[1].Units[1]), "composed authored units mus
 
 local denser = composer.compose(10, record("StandardSquad", 2, 3, true), source)
 assert(denser.SelectedWaveIndex == 2, "seed 10 and node 3 must deterministically select the second wave")
-assert(denser.OriginalUnitCount == 5 and denser.AppliedUnitCount == 6, "denser encounter must add exactly one total unit")
+assert(
+	denser.OriginalUnitCount == 5 and denser.AppliedUnitCount == 6,
+	"denser encounter must add exactly one total unit"
+)
 assert(denser.Waves[1].VariationApplication.UnitCountDelta == 0, "unselected wave must not receive the encounter delta")
 assert(denser.Waves[2].VariationApplication.UnitCountDelta == 1, "selected wave must receive the encounter delta")
 assert(denser.Waves[1].Units[1].Count == 2, "unselected authored wave must remain count-stable")
@@ -143,7 +140,10 @@ assert(alternateSeed.Waves[2].Units[1].Count == 2, "alternate unselected wave mu
 
 local quieter = composer.compose(10, record("StandardSquad", 2, 1, true), source)
 assert(quieter.SelectedWaveIndex == 2, "quieter encounter must use the same deterministic wave selection")
-assert(quieter.OriginalUnitCount == 5 and quieter.AppliedUnitCount == 4, "quieter encounter must remove exactly one total unit")
+assert(
+	quieter.OriginalUnitCount == 5 and quieter.AppliedUnitCount == 4,
+	"quieter encounter must remove exactly one total unit"
+)
 assert(#quieter.Waves[2].Units == 1, "removing a singleton selected group may remove that group from the wave")
 assert(quieter.Waves[2].Units[1].Count == 2, "remaining selected-wave authored group must stay unchanged")
 
@@ -153,7 +153,10 @@ assert(source.Waves[2].Units[2].Count == 1, "composer must not mutate the second
 local contentVariant = twoWaveEncounter()
 contentVariant.Waves[2].Units[2].ArchetypeId = "different-special"
 local variant = composer.compose(10, record("StandardSquad", 2, 3, true), contentVariant)
-assert(variant.CompositionIdentity ~= denser.CompositionIdentity, "composition identity must include authored unit identity")
+assert(
+	variant.CompositionIdentity ~= denser.CompositionIdentity,
+	"composition identity must include authored unit identity"
+)
 
 local bossEncounter = {
 	RoomId = "warden-barracks",
