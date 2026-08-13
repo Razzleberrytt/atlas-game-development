@@ -104,6 +104,7 @@ function Adapter.new(options: Options?): Adapter
 		_keyPrefix = keyPrefix,
 		_maximumAttempts = maximumAttempts,
 		_baseRetryDelaySeconds = baseRetryDelaySeconds,
+		_failedLoadKeys = {},
 	}, Adapter) :: any
 end
 
@@ -121,6 +122,7 @@ function Adapter:load(key: string): any
 			return selfAny._store:GetAsync(qualifiedKey)
 		end)
 		if success then
+			selfAny._failedLoadKeys[qualifiedKey] = nil
 			return value
 		end
 		lastError = value
@@ -128,6 +130,13 @@ function Adapter:load(key: string): any
 			task.wait(retryDelay(selfAny._baseRetryDelaySeconds, attempt))
 		end
 	end
+
+	-- GetAsync returning nil successfully means the key is absent. Exhausting
+	-- retries is different: callers that treat nil as "new player" must never be
+	-- allowed to turn an outage into a blank overwrite. Remember the uncertain
+	-- key and reject record saves until a later successful read establishes
+	-- whether durable state exists.
+	selfAny._failedLoadKeys[qualifiedKey] = true
 	warn(string.format("[AtlasPersistence] load failed for %s: %s", qualifiedKey, tostring(lastError)))
 	return nil
 end
@@ -153,6 +162,18 @@ function Adapter:update(key: string, transform: (any) -> any): (boolean, any)
 end
 
 function Adapter:save(key: string, value: any): boolean
+	local selfAny = self :: any
+	local qualifiedKey = self:_qualifiedKey(key)
+	if selfAny._failedLoadKeys[qualifiedKey] == true then
+		warn(
+			string.format(
+				"[AtlasPersistence] refusing save for %s because its latest load exhausted retries; "
+					.. "a successful read must reconcile durable state first",
+				qualifiedKey
+			)
+		)
+		return false
+	end
 	local success = self:update(key, function()
 		return value
 	end)
