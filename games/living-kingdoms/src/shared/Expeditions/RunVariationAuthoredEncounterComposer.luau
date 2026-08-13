@@ -59,15 +59,7 @@ end
 local function unitSignature(units: { any }): string
 	local parts = {}
 	for _, unit in units do
-		table.insert(
-			parts,
-			string.format(
-				"%s:%s:%d",
-				unit.ArchetypeId,
-				identityValue(unit.HordeRoleId),
-				unit.Count
-			)
-		)
+		table.insert(parts, string.format("%s:%s:%d", unit.ArchetypeId, identityValue(unit.HordeRoleId), unit.Count))
 	end
 	return table.concat(parts, ",")
 end
@@ -134,12 +126,7 @@ function Composer.compose(seed: number, encounterRecord: any, authoredEncounter:
 		table.insert(composedWaves, table.freeze(composedWave))
 		table.insert(
 			identityParts,
-			string.format(
-				"%d[%s|%s]",
-				waveIndex,
-				appliedWave.ApplicationIdentity,
-				unitSignature(appliedWave.Units)
-			)
+			string.format("%d[%s|%s]", waveIndex, appliedWave.ApplicationIdentity, unitSignature(appliedWave.Units))
 		)
 	end
 
