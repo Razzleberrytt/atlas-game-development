@@ -296,6 +296,85 @@ store.data["player:404:inventory"] = {
 local corrupt = serviceModule.new(store):loadPlayer(404, 2200)
 assert(not corrupt.Accepted and corrupt.ReasonId == "InvalidDismantleLedger", "a malformed ledger fails closed")
 
+--[[
+	Patch 0.7 migration invariants. A record is durable across deploys, so the
+	load path is the only place a schema mismatch can be caught. Two directions
+	matter and neither may write: a record from a future deploy must fail closed
+	rather than be silently rewritten at today's schema (which would destroy
+	whatever the newer schema added), and another player's record must never be
+	adopted under the requesting id.
+]]
+local function legacyRecordFor(playerId: number, schemaVersion: any): any
+	return {
+		SchemaVersion = schemaVersion,
+		PlayerId = playerId,
+		InventoryByInstanceId = {
+			migration_item = {
+				InstanceId = "migration_item",
+				DefinitionId = "keeper-relic",
+				DefinitionVersion = "1.0.0",
+				DisplayName = "Keeper Relic",
+				Slot = "Relic",
+				Rarity = "Rare",
+				Power = 18,
+				SourceId = "Boss",
+				RunId = "migration-run",
+				Seed = 79,
+			},
+		},
+		EquippedBySlot = {},
+		AppliedRewardInstanceIds = { migration_item = true },
+		UpdatedAtUnix = 900,
+	}
+end
+
+local futureSchema = contracts.CurrentSchemaVersion + 1
+store.data["player:606:inventory"] = legacyRecordFor(606, futureSchema)
+local savesBeforeFuture = store.saveCount
+local futureLoad = serviceModule.new(store):loadPlayer(606, 2300)
+assert(not futureLoad.Accepted, "a record from a newer deploy must fail closed")
+assert(futureLoad.ReasonId == "UnsupportedSchemaVersion", "an unsupported schema must be named")
+assert(store.saveCount == savesBeforeFuture, "an unsupported schema must never be rewritten at today's schema")
+assert(store.data["player:606:inventory"].SchemaVersion == futureSchema, "the durable record must survive untouched")
+
+store.data["player:607:inventory"] = legacyRecordFor(608, contracts.CurrentSchemaVersion)
+local savesBeforeMismatch = store.saveCount
+local mismatched = serviceModule.new(store):loadPlayer(607, 2300)
+assert(not mismatched.Accepted and mismatched.ReasonId == "PlayerIdMismatch", "another player's record is not adopted")
+assert(store.saveCount == savesBeforeMismatch, "a mismatched record must not be rewritten under the requesting id")
+
+-- Every supported version must migrate forward to exactly one shape, and the
+-- migration must be idempotent: the write-back has to leave the durable record
+-- at the current schema so a rejoin does not migrate a second time.
+for _, supported in contracts.SupportedSchemaVersions do
+	local playerId = 6100 + supported
+	local key = string.format("player:%d:inventory", playerId)
+	store.data[key] = legacyRecordFor(playerId, supported)
+
+	local migrating = serviceModule.new(store)
+	local firstLoad = migrating:loadPlayer(playerId, 2400)
+	assert(firstLoad.Accepted, "every supported schema must load: " .. tostring(supported))
+	assert(
+		firstLoad.Record.SchemaVersion == contracts.CurrentSchemaVersion,
+		"every supported schema must migrate forward: " .. tostring(supported)
+	)
+	assert(
+		firstLoad.Migrated == (supported ~= contracts.CurrentSchemaVersion),
+		"only an older schema may report a migration: " .. tostring(supported)
+	)
+	assert(
+		firstLoad.Record.InventoryByInstanceId.migration_item ~= nil,
+		"migration must preserve owned items: " .. tostring(supported)
+	)
+	assert(
+		store.data[key].SchemaVersion == contracts.CurrentSchemaVersion,
+		"a migration write-back must leave the durable record current: " .. tostring(supported)
+	)
+
+	local secondLoad = serviceModule.new(store):loadPlayer(playerId, 2500)
+	assert(secondLoad.Accepted and not secondLoad.Migrated, "migration must be idempotent: " .. tostring(supported))
+end
+
 -- Patch 0.7 session lifecycle: load is wired to PlayerAdded, so a departing
 -- player's record must be released or every joiner stays resident for the life
 -- of the server and remains readable long after their lease is gone.
