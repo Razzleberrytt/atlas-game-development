@@ -63,7 +63,10 @@ local composer = {
 			Waves = if entry
 				then {}
 				else {
-					{ Units = { { ArchetypeId = "walker", Count = 3 }, { ArchetypeId = "spitter", Count = 1 } } },
+					{
+						Units = { { ArchetypeId = "walker", Count = 3 }, { ArchetypeId = "spitter", Count = 1 } },
+						VariationApplication = { ApplicationIdentity = "wave|combat|1" },
+					},
 				},
 		})
 	end,
@@ -123,6 +126,10 @@ assert(result.UnitCountsByEncounterSlotId.None.UnitCountDelta == 0, "empty slot 
 assert(result.UnitCountsByArchetypeId.walker.UnitCountDelta == 1, "archetype summary must identify changed roster")
 assert(result.UnitCountsByArchetypeId.spitter.UnitCountDelta == 0, "unchanged archetype must remain visible")
 assert(table.isfrozen(result.UnitCountsByArchetypeId.walker), "archetype summaries must be immutable")
+assert(result.Records[1].SelectedWaveIdentity == nil, "zero encounter must not invent a selected wave")
+assert(result.Records[2].SelectedWaveIdentity == "wave|combat|1", "selected wave identity must be disclosed")
+assert(readback.recordForRoom(result, "combat") == result.Records[2], "room lookup helper must resolve live record")
+assert(readback.recordForRoom(result, "missing") == nil, "room lookup helper must preserve absence")
 assert(
 	string.find(result.CompositionIdentity, "composition|entry;composition|combat", 1, true) ~= nil,
 	"readback identity must bind the complete ordered composition"
@@ -152,5 +159,44 @@ local cardinalityOk = pcall(function()
 end)
 assert(not cardinalityOk, "missing authored room records must fail closed")
 view.build = completeView
+
+local noModifierPlanner = planner.plan
+planner.plan = function(plan: any)
+	return { VariationIdentity = `variation|{plan.PlanIdentity}|none`, RunModifier = nil }
+end
+local noModifier = readback.build(roomPlan)
+assert(noModifier.RunModifierId == nil, "no-modifier run must preserve explicit absence")
+assert(noModifier.ModifiedEncounterCount == 1, "fixture composition disclosure must remain independently counted")
+planner.plan = noModifierPlanner
+
+local multiWaveComposer = composer.compose
+composer.compose = function(seed: number, record: any, authored: any)
+	local composed = multiWaveComposer(seed, record, authored)
+	if record.RoomId ~= "combat" then
+		return composed
+	end
+	local copy = table.clone(composed)
+	copy.OriginalUnitCount = 5
+	copy.AppliedUnitCount = 6
+	copy.Waves = {
+		{
+			Units = { { ArchetypeId = "walker", Count = 3 } },
+			VariationApplication = { ApplicationIdentity = "wave|combat|1" },
+		},
+		{
+			Units = { { ArchetypeId = "spitter", Count = 3 } },
+			VariationApplication = { ApplicationIdentity = "wave|combat|2" },
+		},
+	}
+	return copy
+end
+authoredByRoomId.combat.Waves = {
+	{ Units = { { ArchetypeId = "walker", Count = 2 } } },
+	{ Units = { { ArchetypeId = "spitter", Count = 3 } } },
+}
+local multiWave = readback.build(roomPlan)
+assert(multiWave.OriginalUnitCount == 5 and multiWave.AppliedUnitCount == 6, "multi-wave totals must aggregate")
+assert(multiWave.UnitCountsByArchetypeId.walker.UnitCountDelta == 1, "multi-wave archetype delta must aggregate")
+composer.compose = multiWaveComposer
 
 print("Run variation composition debug readback fixture passed")
