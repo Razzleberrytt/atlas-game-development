@@ -34,7 +34,8 @@ control.OnInvoke = function(action: string, payload: any?): any
 	elseif action == "ReadRunVariationEncounterView" then
 		return ExpeditionLiveRuntimeService.readRunVariationEncounterView()
 	elseif action == "ReadRunVariationComposition" then
-		return ExpeditionLiveRuntimeService.readRunVariationComposition()
+		local expectedRunId = if type(payload) == "table" then payload.ExpectedRunId else nil
+		return ExpeditionLiveRuntimeService.readRunVariationComposition(expectedRunId)
 	elseif action == "ReadLastStartFailure" then
 		return ExpeditionLiveRuntimeService.readLastStartFailure()
 	end
