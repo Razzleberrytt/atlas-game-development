@@ -22,6 +22,7 @@ export type CompositionRecord = {
 	BaseIntensity: number,
 	EffectiveIntensity: number,
 	ModifierApplied: boolean,
+	ModifierId: string?,
 	UnitCountDelta: number,
 	SelectedWaveIndex: number?,
 	SelectedWaveIdentity: string?,
@@ -37,6 +38,8 @@ export type Readback = {
 	VariationIdentity: string,
 	RunModifierId: string?,
 	RunModifierPlanIdentity: string?,
+	HasSecretBranch: boolean,
+	HasOptionalObjective: boolean,
 	Records: { CompositionRecord },
 	RecordByRoomId: { [string]: CompositionRecord },
 	OriginalUnitCount: number,
@@ -59,7 +62,7 @@ export type UnitCountSummary = {
 }
 
 local DebugReadback = {}
-DebugReadback.SchemaVersion = "P06-COMPOSITION-READBACK-v2"
+DebugReadback.SchemaVersion = "P06-COMPOSITION-READBACK-v3"
 DebugReadback.FailureReasonIds = table.freeze({
 	DuplicateEncounterSlot = "DuplicateEncounterSlot",
 	CardinalityMismatch = "CardinalityMismatch",
@@ -117,6 +120,7 @@ function DebugReadback.build(roomPlan: any): Readback
 	assert(type(roomPlan.PlanIdentity) == "string" and roomPlan.PlanIdentity ~= "", "room plan identity is required")
 
 	local variationPlan = RunVariationPlanner.plan(roomPlan)
+	local runModifier = variationPlan.RunModifier
 	local encounterView = RunVariationEncounterView.build(roomPlan, variationPlan)
 	local records = {}
 	local recordByRoomId = {}
@@ -173,6 +177,7 @@ function DebugReadback.build(roomPlan: any): Readback
 			BaseIntensity = composed.BaseIntensity,
 			EffectiveIntensity = composed.EffectiveIntensity,
 			ModifierApplied = composed.ModifierApplied,
+			ModifierId = if composed.ModifierApplied and runModifier ~= nil then runModifier.ModifierId else nil,
 			UnitCountDelta = composed.UnitCountDelta,
 			SelectedWaveIndex = composed.SelectedWaveIndex,
 			SelectedWaveIdentity = selectedWaveIdentity,
@@ -204,7 +209,6 @@ function DebugReadback.build(roomPlan: any): Readback
 			.. ": authored encounter and encounter-view cardinality mismatch"
 	)
 
-	local runModifier = variationPlan.RunModifier
 	local unitCountDelta = appliedUnitCount - originalUnitCount
 	local modifierSummary = if runModifier == nil
 		then "No run modifier"
@@ -232,6 +236,8 @@ function DebugReadback.build(roomPlan: any): Readback
 		VariationIdentity = variationPlan.VariationIdentity,
 		RunModifierId = if runModifier ~= nil then runModifier.ModifierId else nil,
 		RunModifierPlanIdentity = if runModifier ~= nil then runModifier.PlanIdentity else nil,
+		HasSecretBranch = variationPlan.SecretBranch ~= nil,
+		HasOptionalObjective = variationPlan.OptionalObjective ~= nil,
 		Records = table.freeze(records),
 		RecordByRoomId = table.freeze(recordByRoomId),
 		OriginalUnitCount = originalUnitCount,
