@@ -46,14 +46,23 @@ def run(label: str, command: list[str]) -> None:
                 cwd=ROOT,
                 check=False,
             )
-            changed = subprocess.run(
-                ["git", "diff", "--name-only"],
+            target = "games/living-kingdoms/tests/ExpeditionRunVariationObservability.test.luau"
+            formatted_diff = subprocess.run(
+                ["git", "diff", "--", target],
                 cwd=ROOT,
                 check=False,
                 capture_output=True,
                 text=True,
-            ).stdout.strip().replace("\n", ", ")
-            print(f"::error title=StyLua changed files::{changed or 'unknown'}")
+            ).stdout
+            useful_lines = [
+                line
+                for line in formatted_diff.splitlines()
+                if (line.startswith("+") or line.startswith("-"))
+                and not line.startswith("+++")
+                and not line.startswith("---")
+            ]
+            summary = " || ".join(useful_lines)[:6000]
+            print(f"::error title=StyLua exact diff::{summary or 'unknown'}")
         raise RuntimeError(f"{label} failed with exit code {result.returncode}")
 
 
