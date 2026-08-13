@@ -51,17 +51,17 @@ Status: `DONE` · `NEXT` · `QUEUED` · `GATED`
 | 41 | DONE | Add modifier ID to encounter debug records | Remove cross-reference work |
 | 42 | DONE | Add secret-branch presence to run summary | Full variation visibility |
 | 43 | DONE | Add optional-objective presence to run summary | Full variation visibility |
-| 44 | NEXT | Add composition duration timing in development mode | Spot expensive planning |
-| 45 | QUEUED | Add maximum composition-time fixture budget | Guard server startup cost |
-| 46 | QUEUED | Cache immutable authored encounter lookup | Reduce repeated indexing |
-| 47 | QUEUED | Centralize composition identity formatting | Lower extension cost |
-| 48 | QUEUED | Centralize variation debug schema | Lower diagnostic drift |
-| 49 | QUEUED | Document Patch 0.6 debug actions | Improve operator speed |
-| 50 | QUEUED | Add debug action source audit | Keep diagnostics server-only |
-| 51 | QUEUED | Add current encounter phase to readback | Improve live triage |
-| 52 | QUEUED | Add current room ID to readback | Improve live triage |
-| 53 | QUEUED | Add active wave index to readback | Improve live triage |
-| 54 | QUEUED | Add remaining authored waves count | Improve pacing diagnosis |
+| 44 | DONE | Add composition duration timing in development mode | Spot expensive planning |
+| 45 | DONE | Add maximum composition-time fixture budget | Guard server startup cost |
+| 46 | DONE | Cache immutable authored encounter lookup | Reduce repeated indexing |
+| 47 | DONE | Centralize composition identity formatting | Lower extension cost |
+| 48 | DONE | Centralize variation debug schema | Lower diagnostic drift |
+| 49 | DONE | Document Patch 0.6 debug actions | Improve operator speed |
+| 50 | DONE | Add debug action source audit | Keep diagnostics server-only |
+| 51 | DONE | Add current encounter phase to readback | Improve live triage |
+| 52 | DONE | Add current room ID to readback | Improve live triage |
+| 53 | DONE | Add active wave index to readback | Improve live triage |
+| 54 | NEXT | Add remaining authored waves count | Improve pacing diagnosis |
 | 55 | QUEUED | Add encountered/completed room counters | Improve run progress diagnosis |
 | 56 | QUEUED | Add no-active-run explicit diagnostic result | Remove nil ambiguity |
 | 57 | QUEUED | Add stopped-service explicit diagnostic result | Remove nil ambiguity |
