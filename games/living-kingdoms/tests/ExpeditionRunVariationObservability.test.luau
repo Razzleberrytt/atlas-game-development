@@ -30,6 +30,7 @@ local plannerReceivedPlan: any = nil
 local encounterViewReceivedPlan: any = nil
 local encounterViewReceivedVariationPlan: any = nil
 local bootstrapDestroyed = false
+local placementDestroyCount = 0
 local activeSnapshot = {
 	RunId = "run-observe-001",
 	PhaseId = "Approach",
@@ -131,9 +132,14 @@ local bootstrap = {
 local placement = {
 	place = function(plan: any): any
 		assert(plan == roomPlan, "room placement must receive the same canonical room plan")
+		if plan.Seed == 996 then
+			return { Accepted = false, ReasonId = "PlacementRejected" }
+		end
 		return { Accepted = true, ReasonId = "Placed" }
 	end,
-	destroy = function() end,
+	destroy = function()
+		placementDestroyCount += 1
+	end,
 }
 local barrier = {
 	reset = function() end,
@@ -248,6 +254,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 assert(service.readRunVariationPlan() == nil, "variation plan must be absent before a run starts")
 assert(service.readRunVariationEncounterView() == nil, "encounter view must be absent before a run starts")
 assert(service.readRunVariationComposition() == nil, "composition readback must be absent before a run starts")
+assert(service.readLastStartFailure() == nil, "failure readback must be absent before a rejected start")
 service.start()
 assert(heartbeatCallback ~= nil, "service start must preserve its bounded heartbeat owner")
 
@@ -277,6 +284,7 @@ assert(
 	"active composition identity must bind run and deterministic composition identities"
 )
 assert(table.isfrozen(activeComposition), "active composition diagnostics must be immutable")
+assert(service.readLastStartFailure() == nil, "successful start must clear prior failure evidence")
 
 local stopped = service.stopExpedition("fixture-stop")
 assert(stopped.Accepted == true, "active expedition must stop")
@@ -284,6 +292,18 @@ assert(bootstrapDestroyed == true, "stopping must still destroy the bootstrap")
 assert(service.readRunVariationPlan() == nil, "stopping must clear variation observability")
 assert(service.readRunVariationEncounterView() == nil, "stopping must clear encounter-view observability")
 assert(service.readRunVariationComposition() == nil, "stopping must clear composition observability")
+
+local placementFailed = service.startExpedition({ Seed = 996, PartySize = 1, RunId = "run-observe-996" })
+assert(
+	placementFailed.Accepted == false and placementFailed.ReasonId == "PlacementRejected",
+	"placement rejection must remain explicit"
+)
+assert(bootstrapDestroyed == true, "placement failure must destroy the half-created bootstrap")
+assert(placementDestroyCount >= 1, "placement failure must clean any partial placement")
+local failureReadback = service.readLastStartFailure()
+assert(failureReadback.ReasonId == "PlacementRejected", "last failure must retain reason")
+assert(failureReadback.RunId == "run-observe-996" and failureReadback.Seed == 996, "failure must retain run inputs")
+assert(table.isfrozen(failureReadback), "failure readback must be immutable")
 
 local compositionFailed = service.startExpedition({ Seed = 997, PartySize = 1, RunId = "run-observe-997" })
 assert(
@@ -335,6 +355,10 @@ assert(
 assert(
 	string.find(liveMountSource, "ExpeditionLiveRuntimeService.readRunVariationComposition()", 1, true) ~= nil,
 	"composition read action must delegate to the canonical live runtime owner"
+)
+assert(
+	string.find(liveMountSource, 'action == "ReadLastStartFailure"', 1, true) ~= nil,
+	"server-only control must expose last start failure"
 )
 
 print("Expedition run variation observability fixture passed")
