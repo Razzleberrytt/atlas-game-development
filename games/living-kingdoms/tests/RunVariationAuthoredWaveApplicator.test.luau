@@ -123,4 +123,40 @@ local empty = applicator.apply(5, { Units = {} }, nonEncounter)
 assert(empty.OriginalUnitCount == 0 and empty.AppliedUnitCount == 0, "zero-unit non-encounter waves must remain empty")
 assert(#empty.Units == 0, "non-encounter application must not invent units")
 
+mustReject(function()
+	applicator.apply(5, { Units = { { ArchetypeId = "walker", Count = 0, HordeRoleId = "basic" } } }, consequence(1, 1))
+end, "zero authored unit counts must fail closed")
+
+mustReject(function()
+	applicator.apply(
+		5,
+		{ Units = { { ArchetypeId = "walker", Count = -2, HordeRoleId = "basic" } } },
+		consequence(1, 1)
+	)
+end, "negative authored unit counts must fail closed")
+
+mustReject(function()
+	applicator.apply(
+		5,
+		{ Units = { { ArchetypeId = "walker", Count = 1.5, HordeRoleId = "basic" } } },
+		consequence(1, 1)
+	)
+end, "fractional authored unit counts must fail closed")
+
+mustReject(function()
+	applicator.apply(5, { Units = { { ArchetypeId = "walker", HordeRoleId = "basic" } } }, consequence(1, 1))
+end, "missing authored unit counts must fail closed")
+
+mustReject(function()
+	applicator.apply(5, { Units = { { ArchetypeId = "", Count = 2, HordeRoleId = "basic" } } }, consequence(1, 1))
+end, "empty authored archetype ids must fail closed")
+
+mustReject(function()
+	applicator.apply(5, { Units = { "walker" } }, consequence(1, 1))
+end, "non-table authored unit groups must fail closed")
+
+mustReject(function()
+	applicator.apply(5, { Units = "walker" }, consequence(1, 1))
+end, "a non-table authored unit list must fail closed")
+
 print("Run variation authored wave applicator fixture passed")

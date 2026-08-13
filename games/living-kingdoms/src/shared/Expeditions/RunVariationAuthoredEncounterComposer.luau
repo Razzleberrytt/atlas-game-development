@@ -88,6 +88,21 @@ function Composer.compose(seed: number, encounterRecord: any, authoredEncounter:
 
 	local consequence = RunVariationEncounterConsequencePolicy.resolve(encounterRecord)
 	local sourceWaves = authoredEncounter.Waves
+	--[[
+		The applicator reads `wave.Units` directly, so a malformed authored wave
+		would surface as an index error naming neither the room nor the wave.
+		Validate the authored shape here, where that identity is still in hand.
+	]]
+	for waveIndex, authoredWave in sourceWaves do
+		assert(
+			type(authoredWave) == "table" and type(authoredWave.Units) == "table",
+			string.format(
+				"authored encounter %s wave %d is missing its unit list",
+				tostring(authoredEncounter.RoomId),
+				waveIndex
+			)
+		)
+	end
 	local waveCount = #sourceWaves
 	local selectedIndex = nil
 	if consequence.UnitCountDelta ~= 0 then

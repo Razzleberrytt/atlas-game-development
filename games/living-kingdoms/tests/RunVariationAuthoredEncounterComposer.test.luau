@@ -226,4 +226,22 @@ mustReject(function()
 	composer.compose(10, record("StandardSquad", 2, 1, true), fragileEncounter)
 end, "selected wave minimum-retention failure must fail closed rather than silently retarget variation")
 
+mustReject(function()
+	local malformed = twoWaveEncounter()
+	malformed.Waves[2] = { Units = "walker" }
+	composer.compose(10, record("StandardSquad", 2, 3, true), malformed)
+end, "an authored wave without a unit list must fail closed")
+
+mustReject(function()
+	local malformed = twoWaveEncounter()
+	malformed.Waves[2] = "walker"
+	composer.compose(10, record("StandardSquad", 2, 3, true), malformed)
+end, "a non-table authored wave must fail closed")
+
+mustReject(function()
+	local malformed = twoWaveEncounter()
+	malformed.Waves[2] = {}
+	composer.compose(10, record("StandardSquad", 2, 3, true), malformed)
+end, "an authored wave missing its unit list must fail closed")
+
 print("Run variation authored encounter composer fixture passed")
