@@ -25,31 +25,31 @@ A real reproducible safety failure may preempt the queue. Missing manual evidenc
 
 Before this 100-task queue began, Patch 0.7 already had: symmetric resident-record release, committed-update lease decisions, supported-schema migration/recovery invariants, single live inventory ownership, and no-blank-overwrite protection after exhausted reads. Those are baseline prerequisites and are not re-counted as tasks below.
 
-## Batch 1 — Production storage must fail closed (#1–#10) — ACTIVE
+## Batch 1 — Storage resolution policy (#1–#10) — DONE
 
-1. **[ACTIVE]** Remove live-server volatile fallback when production DataStore construction fails.
-2. **[ACTIVE]** Add a fail-closed unavailable-store adapter for production construction failure.
-3. **[ACTIVE]** Prove unavailable-store reads exhaust the configured retry budget and disclose failure.
-4. **[ACTIVE]** Prove unavailable-store updates fail without mutating durable state.
-5. **[ACTIVE]** Prove unavailable-store saves fail without accepting a blank/new record.
-6. **[ACTIVE]** Preserve the existing per-key failed-load write guard when the live store is unavailable.
-7. **[ACTIVE]** Preserve Studio-only volatile isolation for play/evidence sessions.
-8. **[ACTIVE]** Prove Studio construction never calls production `GetDataStore`.
-9. **[ACTIVE]** Prove a healthy live environment still binds the real DataStore and persists normally.
-10. **[ACTIVE]** Add one focused resolver-mode fixture covering Studio, healthy live, and unavailable live modes.
+1. **[DONE]** Define explicit `StudioVolatile`, `LiveDurable`, and `LiveUnavailable` storage resolution modes.
+2. **[DONE]** Provide isolated volatile storage for Studio sessions.
+3. **[DONE]** Prove Studio resolution never calls the live DataStore opener.
+4. **[DONE]** Prove separate Studio resolutions cannot share process-local values accidentally.
+5. **[DONE]** Bind healthy live resolution to the exact durable store returned by the opener.
+6. **[DONE]** Prove the live opener executes exactly once per resolution.
+7. **[DONE]** Convert live store-open failure into explicit `LiveUnavailable` mode with a diagnosable reason.
+8. **[DONE]** Make unavailable-store reads reject rather than return a value that can masquerade as missing data.
+9. **[DONE]** Make unavailable-store updates reject without invoking the caller transform.
+10. **[DONE]** Add one deterministic fixture covering Studio, healthy live, unavailable live, nil-store, and malformed-resolution inputs.
 
-## Batch 2 — Explicit read/write outcomes + reconciliation (#11–#20)
+## Batch 2 — Integrate fail-closed storage + explicit outcomes (#11–#20) — ACTIVE
 
-11. Add an explicit storage read result contract (`Found` / `Missing` / `Failed`).
-12. Migrate inventory load logic off ambiguous bare `nil` read semantics.
-13. Return a dedicated `LoadFailed` persistence reason instead of treating outages as corrupt/missing data.
-14. Add an explicit storage update result contract with committed value identity.
-15. Add an explicit storage save result contract instead of bare boolean-only diagnostics.
-16. Record per-key last successful read generation/epoch for reconciliation.
-17. Reject writes derived from a state generation older than the latest successful read.
-18. Add successful reread reconciliation that clears only the matching key's uncertainty state.
-19. Add a fixture for failure → recovery → safe mutation with no stale overwrite.
-20. Add a fixture proving uncertainty on player A cannot block or contaminate player B.
+11. **[ACTIVE]** Route `RobloxInventoryDataStoreAdapter` store selection through `InventoryDataStoreResolutionPolicy`.
+12. **[ACTIVE]** Remove duplicated Studio/live resolution logic from the adapter after integration.
+13. **[ACTIVE]** Add a source audit proving the live inventory adapter consumes the canonical resolution policy.
+14. **[ACTIVE]** Add an explicit storage read result contract (`Found` / `Missing` / `Failed`).
+15. **[ACTIVE]** Migrate inventory persistence load logic off ambiguous bare `nil` read semantics.
+16. **[ACTIVE]** Return a dedicated `LoadFailed` persistence reason with no new-record/migration write after read failure.
+17. **[ACTIVE]** Add an explicit storage update result contract with committed value identity.
+18. **[ACTIVE]** Add an explicit storage save result contract instead of bare boolean-only diagnostics.
+19. **[ACTIVE]** Add a failure → recovery → safe mutation fixture proving stale/blank state never wins.
+20. **[ACTIVE]** Add a fixture proving uncertainty/recovery for player A cannot block or contaminate player B.
 
 ## Batch 3 — Session ownership + lease robustness (#21–#30)
 
@@ -126,7 +126,7 @@ Before this 100-task queue began, Patch 0.7 already had: symmetric resident-reco
 76. Add rejoin-after-unknown-client-response reconciliation fixture.
 77. Add same-player rapid server-hop lease/reload fixture.
 78. Add shutdown with many resident players fixture.
-79. Add shutdown partial-DataStore-outage fixture.
+79. Add shutdown partial-storage-outage fixture.
 80. Add restart/rejoin invariant suite proving durable truth wins over stale process memory.
 
 ## Batch 9 — Automated chaos, diagnostics, and recovery evidence (#81–#90)
