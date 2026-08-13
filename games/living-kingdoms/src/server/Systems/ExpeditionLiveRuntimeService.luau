@@ -30,8 +30,12 @@ local heartbeatConnection: RBXScriptConnection? = nil
 local accumulatedSeconds = 0
 local started = false
 local lastStartFailure: any = nil
+local diagnosticWindowStartedAt = 0
+local diagnosticReadCount = 0
 
 local STEP_INTERVAL_SECONDS = 0.25
+local MAX_DIAGNOSTIC_READS_PER_SECOND = 20
+local DIAGNOSTIC_WINDOW_SECONDS = 1
 local BossRewardDecision = FirstDungeonRewardDecisionConfig.DecisionByRoomId["keeper-core"]
 local PhaseIds, OutcomeIds = Contracts.PhaseIds, Contracts.OutcomeIds
 local developmentMode = false
@@ -76,6 +80,21 @@ local function clearVariationState()
 	activeVariation, activeEncounterView, activeComposition = nil, nil, nil
 end
 
+local function resetDiagnosticRateLimit()
+	diagnosticWindowStartedAt = 0
+	diagnosticReadCount = 0
+end
+
+local function allowDiagnosticRead(nowSeconds: number?): boolean
+	local current = if type(nowSeconds) == "number" then nowSeconds else os.clock()
+	if current < diagnosticWindowStartedAt or current - diagnosticWindowStartedAt >= DIAGNOSTIC_WINDOW_SECONDS then
+		diagnosticWindowStartedAt = current
+		diagnosticReadCount = 0
+	end
+	diagnosticReadCount += 1
+	return diagnosticReadCount <= MAX_DIAGNOSTIC_READS_PER_SECOND
+end
+
 local function cleanupPartial()
 	clearVariationState()
 	ExpeditionRoomBarrierStateService.reset()
@@ -96,26 +115,84 @@ local function bindComposition(runId: string, variation: any, readback: any, dur
 	})
 end
 
+local function isDungeonRoomNode(node: any): boolean
+	return node.Role ~= "Entry" and node.Role ~= "Elite" and node.Role ~= "Boss"
+end
+
+local function runtimeDiagnosticProgress(bootstrap: any): any
+	local roomPlan = bootstrap:getRoomPlan()
+	local context = bootstrap:getActiveEncounterContext()
+	local coordinator = (bootstrap :: any).Coordinator
+	local coordinatorState = if coordinator ~= nil then (coordinator :: any)._state else nil
+	local nextDungeonNodeIndex = if coordinatorState ~= nil and type(coordinatorState.NextDungeonNodeIndex) == "number"
+		then coordinatorState.NextDungeonNodeIndex
+		else 1
+
+	local totalRoomCount = 0
+	local encounteredRoomCount = 0
+	if roomPlan ~= nil and type(roomPlan.Nodes) == "table" then
+		for position, node in roomPlan.Nodes do
+			if isDungeonRoomNode(node) then
+				totalRoomCount += 1
+				if position < nextDungeonNodeIndex then
+					encounteredRoomCount += 1
+				end
+			end
+		end
+	end
+	local completedRoomCount = encounteredRoomCount
+	if context ~= nil and context.PhaseId == "Dungeon" then
+		completedRoomCount = math.max(0, completedRoomCount - 1)
+	end
+
+	local activeWaveIndex = nil
+	local authoredWaveCount = 0
+	local remainingAuthoredWaves = 0
+	local combatAdapter = (bootstrap :: any).CombatAdapter
+	if combatAdapter ~= nil and context ~= nil then
+		local activeKind = (combatAdapter :: any).ActiveKind
+		if activeKind == "WaveSequence" then
+			local stages = (combatAdapter :: any).SequenceStages
+			local stageIndex = (combatAdapter :: any).SequenceStageIndex
+			if type(stages) == "table" and type(stageIndex) == "number" then
+				authoredWaveCount = #stages
+				activeWaveIndex = stageIndex
+				remainingAuthoredWaves = math.max(authoredWaveCount - stageIndex, 0)
+			end
+		elseif activeKind == "Wave" then
+			authoredWaveCount = 1
+			activeWaveIndex = 1
+		end
+	end
+
+	return table.freeze({
+		ActiveWaveIndex = activeWaveIndex,
+		AuthoredWaveCount = authoredWaveCount,
+		RemainingAuthoredWaves = remainingAuthoredWaves,
+		EncounteredRoomCount = encounteredRoomCount,
+		CompletedRoomCount = completedRoomCount,
+		TotalRoomCount = totalRoomCount,
+	})
+end
+
 local function liveCompositionReadback(): any
 	if activeBootstrap == nil or activeComposition == nil then
 		return nil
 	end
 	local snapshot = activeBootstrap:getSnapshot()
 	local context = activeBootstrap:getActiveEncounterContext()
-	local currentRoomId = if context ~= nil then context.RoomId else nil
-	local activeWaveIndex = nil
-	if currentRoomId ~= nil and activeComposition.Composition ~= nil then
-		local record = activeComposition.Composition.RecordByRoomId[currentRoomId]
-		if record ~= nil then
-			activeWaveIndex = record.SelectedWaveIndex
-		end
-	end
+	local progress = runtimeDiagnosticProgress(activeBootstrap)
 	local live = table.clone(activeComposition)
 	live.CurrentEncounterPhaseId = if context ~= nil
 		then context.PhaseId
 		else if snapshot ~= nil then snapshot.PhaseId else nil
-	live.CurrentRoomId = currentRoomId
-	live.ActiveWaveIndex = activeWaveIndex
+	live.CurrentRoomId = if context ~= nil then context.RoomId else nil
+	live.ActiveWaveIndex = progress.ActiveWaveIndex
+	live.AuthoredWaveCount = progress.AuthoredWaveCount
+	live.RemainingAuthoredWaves = progress.RemainingAuthoredWaves
+	live.EncounteredRoomCount = progress.EncounteredRoomCount
+	live.CompletedRoomCount = progress.CompletedRoomCount
+	live.TotalRoomCount = progress.TotalRoomCount
 	return table.freeze(live)
 end
 
@@ -161,6 +238,7 @@ function Service.start()
 	end
 	started = true
 	accumulatedSeconds = 0
+	resetDiagnosticRateLimit()
 	heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
 		accumulatedSeconds += deltaTime
 		if accumulatedSeconds < STEP_INTERVAL_SECONDS then
@@ -179,6 +257,7 @@ function Service.startExpedition(options: StartOptions?): any
 		return result(false, "ExpeditionAlreadyActive", activeBootstrap:getSnapshot())
 	end
 	clearVariationState()
+	resetDiagnosticRateLimit()
 	local requested = options or {}
 	local seed = requested.Seed or defaultSeed()
 	local partySize = requested.PartySize or currentPartySize()
@@ -306,6 +385,7 @@ function Service.stopExpedition(reasonId: string?): any
 	bootstrap:destroy()
 	activeBootstrap = nil
 	clearVariationState()
+	resetDiagnosticRateLimit()
 	ExpeditionRoomBarrierStateService.reset()
 	Placement.destroy()
 	return result(true, reasonId or "ExpeditionStopped", snapshot)
@@ -327,7 +407,26 @@ function Service.readRunVariationEncounterView(): any
 	return if activeBootstrap then activeEncounterView else nil
 end
 
-function Service.readRunVariationComposition(): any
+function Service.readRunVariationComposition(expectedRunId: string?, diagnosticNowSeconds: number?): any
+	if not started then
+		return result(false, "ServiceStopped", nil)
+	end
+	if activeBootstrap == nil or activeComposition == nil then
+		return result(false, "NoActiveExpedition", nil)
+	end
+	local snapshot = activeBootstrap:getSnapshot()
+	if snapshot == nil then
+		return result(false, "NoActiveExpedition", nil)
+	end
+	if type(expectedRunId) ~= "string" or expectedRunId == "" then
+		return result(false, "ExpectedRunIdRequired", snapshot)
+	end
+	if expectedRunId ~= snapshot.RunId then
+		return result(false, "StaleRun", snapshot)
+	end
+	if not allowDiagnosticRead(diagnosticNowSeconds) then
+		return result(false, "DiagnosticRateLimited", snapshot)
+	end
 	return liveCompositionReadback()
 end
 
@@ -346,6 +445,7 @@ function Service.stop()
 		activeBootstrap = nil
 	end
 	clearVariationState()
+	resetDiagnosticRateLimit()
 	ExpeditionRoomBarrierStateService.reset()
 	Placement.destroy()
 end
