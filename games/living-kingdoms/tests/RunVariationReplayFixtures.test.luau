@@ -18,9 +18,10 @@ local secretConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Con
 local objectiveConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/OptionalObjectiveConfig.luau"), {
 	injectGlobals = true,
 })()
-local fixtures = luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationReplayFixtures.luau"), {
-	injectGlobals = true,
-})()
+local fixtures =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationReplayFixtures.luau"), {
+		injectGlobals = true,
+	})()
 
 local function nextValue(value: number): number
 	return (value * 48_271) % 2_147_483_647
