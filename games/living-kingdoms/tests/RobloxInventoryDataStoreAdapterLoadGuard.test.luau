@@ -42,9 +42,8 @@ function runService:IsStudio(): boolean
 end
 
 local warnings = {}
-local adapterModule = luau.load(
-	fs.readFile("games/living-kingdoms/src/server/Systems/RobloxInventoryDataStoreAdapter.luau"),
-	{
+local adapterModule =
+	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/RobloxInventoryDataStoreAdapter.luau"), {
 		debugName = "RobloxInventoryDataStoreAdapter",
 		environment = {
 			game = {
@@ -65,8 +64,7 @@ local adapterModule = luau.load(
 			end,
 		},
 		injectGlobals = true,
-	}
-)()
+	})()
 
 local adapter = adapterModule.new({
 	DataStoreName = "AtlasInventoryLoadGuardTest",
