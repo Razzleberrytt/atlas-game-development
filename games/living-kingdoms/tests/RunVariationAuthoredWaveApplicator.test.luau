@@ -9,13 +9,11 @@ local function assert(condition: unknown, message: string?)
 	end
 end
 
-local applicator = luau.load(
-	fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationAuthoredWaveApplicator.luau"),
-	{
+local applicator =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationAuthoredWaveApplicator.luau"), {
 		debugName = "RunVariationAuthoredWaveApplicator",
 		injectGlobals = true,
-	}
-)()
+	})()
 
 local function consequence(delta: number, minimumRetainedUnits: number): any
 	return {
@@ -57,13 +55,22 @@ assert(repeated.ApplicationIdentity == denser.ApplicationIdentity, "same inputs 
 
 local alternateSeed = applicator.apply(11, sourceWave, consequence(1, 1))
 assert(alternateSeed.SelectedUnitIndex == 1, "adjacent seed must exercise the alternate authored group in this fixture")
-assert(alternateSeed.Units[1].Count == 3 and alternateSeed.Units[2].Count == 1, "alternate deterministic selection must remain bounded")
+assert(
+	alternateSeed.Units[1].Count == 3 and alternateSeed.Units[2].Count == 1,
+	"alternate deterministic selection must remain bounded"
+)
 
 local quieter = applicator.apply(10, sourceWave, consequence(-1, 1))
 assert(quieter.SelectedUnitIndex == 2, "quieter consequence must use the same deterministic group selection")
-assert(quieter.OriginalUnitCount == 3 and quieter.AppliedUnitCount == 2, "quieter consequence must remove exactly one unit")
+assert(
+	quieter.OriginalUnitCount == 3 and quieter.AppliedUnitCount == 2,
+	"quieter consequence must remove exactly one unit"
+)
 assert(#quieter.Units == 1, "removing a singleton authored group may remove that group from the applied wave")
-assert(quieter.Units[1].Count == 2 and quieter.Units[1].HordeRoleId == "basic", "remaining authored group must stay unchanged")
+assert(
+	quieter.Units[1].Count == 2 and quieter.Units[1].HordeRoleId == "basic",
+	"remaining authored group must stay unchanged"
+)
 
 assert(sourceWave.Units[1].Count == 2, "applicator must not mutate the first source group")
 assert(sourceWave.Units[2].Count == 1, "applicator must not mutate the second source group")
