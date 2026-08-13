@@ -11,6 +11,9 @@ local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)
 local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.ExpeditionContracts)
 local RoomPlacementPlanner = require(ReplicatedStorage.Shared.Expeditions.RoomPlacementPlanner)
 local RoomSequenceAssembler = require(ReplicatedStorage.Shared.Expeditions.RoomSequenceAssembler)
+local RunVariationPlanner = require(ReplicatedStorage.Shared.Expeditions.RunVariationPlanner)
+local RunVariationEncounterView = require(ReplicatedStorage.Shared.Expeditions.RunVariationEncounterView)
+local RunVariationAuthoredEncounterComposer = require(ReplicatedStorage.Shared.Expeditions.RunVariationAuthoredEncounterComposer)
 local ExpeditionRuntime = require(script.Parent.ExpeditionRuntime)
 local ExpeditionEncounterCoordinator = require(script.Parent.ExpeditionEncounterCoordinator)
 local EnemyDirectorEncounterAdapter = require(script.Parent.EnemyDirectorEncounterAdapter)
@@ -82,8 +85,7 @@ local function displayNameForUnit(unit: any): string
 	return "Warden"
 end
 
-local function buildAuthoredWave(context: any, roomId: string, anchor: any): { any }?
-	local encounter = FirstDungeonContentConfig.Encounters[roomId]
+local function buildAuthoredWave(context: any, encounter: any, anchor: any): { any }?
 	if encounter == nil or #encounter.Waves ~= 1 then
 		return nil
 	end
@@ -176,6 +178,20 @@ local function buildEncounterResolver(rawPlan: any): (any) -> any
 		placementByRoleId[placement.RoleId] = placement
 	end
 
+	local variationPlan = RunVariationPlanner.plan(rawPlan)
+	local encounterView = RunVariationEncounterView.build(rawPlan, variationPlan)
+	local composedEncounterByRoomId = {}
+	for _, record in encounterView.Records do
+		local authoredEncounter = FirstDungeonContentConfig.Encounters[record.RoomId]
+		if authoredEncounter ~= nil then
+			composedEncounterByRoomId[record.RoomId] = RunVariationAuthoredEncounterComposer.compose(
+				rawPlan.Seed,
+				record,
+				authoredEncounter
+			)
+		end
+	end
+
 	local function placementFor(context: any): any?
 		if context.PhaseId == "Dungeon" and type(context.RoomId) == "string" then
 			return placementByRoomId[context.RoomId]
@@ -203,7 +219,8 @@ local function buildEncounterResolver(rawPlan: any): (any) -> any
 		if type(roomId) ~= "string" then
 			return nil
 		end
-		local wave = buildAuthoredWave(context, roomId, anchor)
+		local encounter = composedEncounterByRoomId[roomId]
+		local wave = buildAuthoredWave(context, encounter, anchor)
 		if wave == nil or #wave == 0 then
 			return nil
 		end
