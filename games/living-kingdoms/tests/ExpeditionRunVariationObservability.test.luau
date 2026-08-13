@@ -219,7 +219,10 @@ assert(bootstrapDestroyed == true, "stopping must still destroy the bootstrap")
 assert(service.readRunVariationPlan() == nil, "stopping must clear variation observability")
 
 local failed = service.startExpedition({ Seed = 999, PartySize = 1, RunId = "run-observe-999" })
-assert(failed.Accepted == false and failed.ReasonId == "RunVariationPlanningFailed", "planner failure must reject creation")
+assert(
+	failed.Accepted == false and failed.ReasonId == "RunVariationPlanningFailed",
+	"planner failure must reject creation"
+)
 assert(bootstrapDestroyed == true, "planner failure must destroy the half-created bootstrap")
 assert(service.readRunVariationPlan() == nil, "planner failure must not publish partial variation state")
 
