@@ -9,26 +9,30 @@ local function has(source: string, text: string): boolean
 	return string.find(source, text, 1, true) ~= nil
 end
 
-for _, field in {
-	"CurrentEncounterPhaseId",
-	"CurrentRoomId",
-	"ActiveWaveIndex",
-	"AuthoredWaveCount",
-	"RemainingAuthoredWaves",
-	"EncounteredRoomCount",
-	"CompletedRoomCount",
-	"TotalRoomCount",
-} do
+for _, field in
+	{
+		"CurrentEncounterPhaseId",
+		"CurrentRoomId",
+		"ActiveWaveIndex",
+		"AuthoredWaveCount",
+		"RemainingAuthoredWaves",
+		"EncounteredRoomCount",
+		"CompletedRoomCount",
+		"TotalRoomCount",
+	}
+do
 	assert(has(serviceSource, field), "missing live diagnostic field: " .. field)
 end
 
-for _, reasonId in {
-	"ServiceStopped",
-	"NoActiveExpedition",
-	"ExpectedRunIdRequired",
-	"StaleRun",
-	"DiagnosticRateLimited",
-} do
+for _, reasonId in
+	{
+		"ServiceStopped",
+		"NoActiveExpedition",
+		"ExpectedRunIdRequired",
+		"StaleRun",
+		"DiagnosticRateLimited",
+	}
+do
 	assert(has(serviceSource, reasonId), "missing diagnostic reason: " .. reasonId)
 end
 
