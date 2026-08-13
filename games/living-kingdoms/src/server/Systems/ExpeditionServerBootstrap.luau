@@ -90,8 +90,7 @@ local function buildAuthoredWave(
 	context: any,
 	authoredWave: any,
 	anchor: any,
-	startingOrdinal: number,
-	compositionIdentity: string
+	startingOrdinal: number
 ): ({ any }, number)
 	local definitions = {}
 	local ordinal = startingOrdinal
@@ -127,7 +126,7 @@ local function buildAuthoredEncounterDefinition(context: any, encounter: any, an
 	local ordinal = 0
 	for waveIndex, authoredWave in encounter.Waves do
 		local definitions
-		definitions, ordinal = buildAuthoredWave(context, authoredWave, anchor, ordinal, encounter.CompositionIdentity)
+		definitions, ordinal = buildAuthoredWave(context, authoredWave, anchor, ordinal)
 		if #definitions == 0 then
 			return nil
 		end
