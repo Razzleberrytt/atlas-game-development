@@ -35,6 +35,8 @@ control.OnInvoke = function(action: string, payload: any?): any
 		return ExpeditionLiveRuntimeService.readRunVariationEncounterView()
 	elseif action == "ReadRunVariationComposition" then
 		return ExpeditionLiveRuntimeService.readRunVariationComposition()
+	elseif action == "ReadLastStartFailure" then
+		return ExpeditionLiveRuntimeService.readLastStartFailure()
 	end
 	return table.freeze({ Accepted = false, ReasonId = "UnknownAction", Snapshot = nil })
 end
