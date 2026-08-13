@@ -62,18 +62,27 @@ function Applicator.apply(seed: number, authoredWave: any, consequence: any): Ap
 	assert(seed > 0, "run seed must be positive")
 	assert(type(authoredWave) == "table" and type(authoredWave.Units) == "table", "authored wave units are required")
 	assert(type(consequence) == "table", "encounter consequence is required")
-	assert(consequence.ApplicationKind == "AuthoredUnitCountDelta", "unsupported encounter consequence application kind")
+	assert(
+		consequence.ApplicationKind == "AuthoredUnitCountDelta",
+		"unsupported encounter consequence application kind"
+	)
 	assert(consequence.AllowNewArchetypes == false, "wave applicator cannot authorize new archetypes")
 	assert(consequence.AllowRewardChanges == false, "wave applicator cannot authorize reward changes")
 	assertInteger(consequence.NodeIndex, "encounter consequence node index must be an integer")
 	assert(consequence.NodeIndex >= 1, "encounter consequence node index must be positive")
-	assert(type(consequence.RoomId) == "string" and consequence.RoomId ~= "", "encounter consequence room id is required")
+	assert(
+		type(consequence.RoomId) == "string" and consequence.RoomId ~= "",
+		"encounter consequence room id is required"
+	)
 	assert(
 		type(consequence.EncounterSlotId) == "string" and consequence.EncounterSlotId ~= "",
 		"encounter consequence slot id is required"
 	)
 	assertInteger(consequence.UnitCountDelta, "encounter consequence unit delta must be an integer")
-	assert(math.abs(consequence.UnitCountDelta) <= 1, "encounter consequence unit delta must stay within one authored unit")
+	assert(
+		math.abs(consequence.UnitCountDelta) <= 1,
+		"encounter consequence unit delta must stay within one authored unit"
+	)
 	assertInteger(consequence.MinimumRetainedUnits, "minimum retained unit count must be an integer")
 	assert(consequence.MinimumRetainedUnits >= 0, "minimum retained unit count cannot be negative")
 
@@ -101,7 +110,10 @@ function Applicator.apply(seed: number, authoredWave: any, consequence: any): Ap
 		end
 	end
 
-	assert(totalUnitCount(appliedUnits) == appliedUnitCount, "applied authored-wave unit count drifted from consequence")
+	assert(
+		totalUnitCount(appliedUnits) == appliedUnitCount,
+		"applied authored-wave unit count drifted from consequence"
+	)
 	local selectedIdentity = if chosenIndex == nil then "none" else tostring(chosenIndex)
 	local identity = string.format(
 		"%s|seed=%d|node=%d|room=%s|slot=%s|delta=%d|selected=%s|count=%d>%d",
