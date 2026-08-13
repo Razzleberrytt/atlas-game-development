@@ -222,6 +222,9 @@ local BOOTSTRAP_ENEMY_CONTRACTS_TOKEN = {}
 local BOOTSTRAP_CONTRACTS_TOKEN = {}
 local BOOTSTRAP_PLANNER_TOKEN = {}
 local BOOTSTRAP_ASSEMBLER_TOKEN = {}
+local BOOTSTRAP_VARIATION_PLANNER_TOKEN = {}
+local BOOTSTRAP_ENCOUNTER_VIEW_TOKEN = {}
+local BOOTSTRAP_ENCOUNTER_COMPOSER_TOKEN = {}
 local BOOTSTRAP_RUNTIME_TOKEN = {}
 local BOOTSTRAP_COORDINATOR_TOKEN = {}
 local BOOTSTRAP_ADAPTER_TOKEN = {}
@@ -251,6 +254,9 @@ local Bootstrap = loadModule("server/Systems/ExpeditionServerBootstrap.luau", "E
 						ExpeditionContracts = BOOTSTRAP_CONTRACTS_TOKEN,
 						RoomPlacementPlanner = BOOTSTRAP_PLANNER_TOKEN,
 						RoomSequenceAssembler = BOOTSTRAP_ASSEMBLER_TOKEN,
+						RunVariationPlanner = BOOTSTRAP_VARIATION_PLANNER_TOKEN,
+						RunVariationEncounterView = BOOTSTRAP_ENCOUNTER_VIEW_TOKEN,
+						RunVariationAuthoredEncounterComposer = BOOTSTRAP_ENCOUNTER_COMPOSER_TOKEN,
 					},
 				},
 			}
@@ -283,6 +289,33 @@ local Bootstrap = loadModule("server/Systems/ExpeditionServerBootstrap.luau", "E
 		end
 		if token == BOOTSTRAP_ASSEMBLER_TOKEN then
 			return roomSequenceAssembler
+		end
+		if token == BOOTSTRAP_VARIATION_PLANNER_TOKEN then
+			return {
+				plan = function(_roomPlan: any)
+					return {}
+				end,
+			}
+		end
+		if token == BOOTSTRAP_ENCOUNTER_VIEW_TOKEN then
+			return {
+				build = function(roomPlan: any, _variationPlan: any)
+					local records = {}
+					for _, node in roomPlan.Nodes do
+						if firstDungeonContentConfig.Encounters[node.RoomId] ~= nil then
+							table.insert(records, { RoomId = node.RoomId })
+						end
+					end
+					return { Records = records }
+				end,
+			}
+		end
+		if token == BOOTSTRAP_ENCOUNTER_COMPOSER_TOKEN then
+			return {
+				compose = function(_seed: number, _record: any, authoredEncounter: any)
+					return authoredEncounter
+				end,
+			}
 		end
 		if token == BOOTSTRAP_RUNTIME_TOKEN then
 			return expeditionRuntime
