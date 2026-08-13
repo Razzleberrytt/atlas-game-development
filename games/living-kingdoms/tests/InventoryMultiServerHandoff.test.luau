@@ -36,22 +36,32 @@ local function deepCopy(value: any): any
 	return copy
 end
 
-local sharedStore = { data = {}, updateCount = 0, loadCount = 0 }
+local storageResults =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/StorageResultContracts.luau"), {
+		debugName = "StorageResultContracts",
+		injectGlobals = true,
+	})()
+
+local sharedStore = { data = {}, updateCount = 0, readCount = 0 }
 function sharedStore:update(key: string, transform: (any) -> any): (boolean, any)
 	self.updateCount += 1
 	local nextValue = transform(deepCopy(self.data[key]))
 	self.data[key] = deepCopy(nextValue)
 	return true, deepCopy(nextValue)
 end
-function sharedStore:load(key: string): any
-	self.loadCount += 1
-	return deepCopy(self.data[key])
+function sharedStore:read(key: string): any
+	self.readCount += 1
+	local value = deepCopy(self.data[key])
+	if value == nil then
+		return storageResults.missing()
+	end
+	return storageResults.found(value)
 end
-function sharedStore:save(key: string, value: any): boolean
-	local ok = self:update(key, function()
+function sharedStore:write(key: string, value: any): any
+	local _, committed = self:update(key, function()
 		return value
 	end)
-	return ok
+	return storageResults.committed(committed)
 end
 
 -- Shared pure dependencies --------------------------------------------------
@@ -137,10 +147,14 @@ local function newServer(jobId: string): any
 		injectGlobals = true,
 	})()
 
-	local CONTRACTS_TOKEN, DISMANTLE_TOKEN = {}, {}
+	local CONTRACTS_TOKEN, DISMANTLE_TOKEN, STORAGE_RESULTS_TOKEN = {}, {}, {}
 	local persistenceReplicatedStorage = {
 		Shared = {
-			Persistence = { PlayerInventoryContracts = CONTRACTS_TOKEN, InventoryDismantleResolver = DISMANTLE_TOKEN },
+			Persistence = {
+				PlayerInventoryContracts = CONTRACTS_TOKEN,
+				InventoryDismantleResolver = DISMANTLE_TOKEN,
+				StorageResultContracts = STORAGE_RESULTS_TOKEN,
+			},
 			Equipment = { EquipmentRewardContracts = EQUIPMENT_TOKEN, EquipmentAffixContracts = AFFIX_TOKEN },
 		},
 	}
@@ -161,6 +175,8 @@ local function newServer(jobId: string): any
 					return affixContracts
 				elseif token == DISMANTLE_TOKEN then
 					return dismantleResolver
+				elseif token == STORAGE_RESULTS_TOKEN then
+					return storageResults
 				end
 				error("unexpected persistence dependency")
 			end,

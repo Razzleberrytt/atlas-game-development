@@ -8,9 +8,9 @@
 
 	  1. RobloxInventoryDataStoreAdapter remembers a key whose read exhausted its
 	     retries and refuses to save it until a later read succeeds;
-	  2. PlayerInventoryPersistenceService treats a nil read as a new player, so
-	     it tries to write a blank record -- which (1) must refuse, turning the
-	     outage into a rejected load rather than a blank overwrite;
+	  2. PlayerInventoryPersistenceService branches on the read status, so a
+	     Failed read is refused as LoadFailed before a blank record is ever
+	     built -- (1) remains the backstop if that check is ever bypassed;
 	  3. InventoryLiveService must release the session lease it just acquired,
 	     or a failed load would leave the player's lease squatting on this
 	     server until it expired, locked out of every other server.
@@ -120,6 +120,18 @@ local inventorySnapshot =
 		injectGlobals = true,
 	})()
 
+local storageResults =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/StorageResultContracts.luau"), {
+		debugName = "StorageResultContracts",
+		injectGlobals = true,
+	})()
+
+local resolutionPolicy =
+	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/InventoryDataStoreResolutionPolicy.luau"), {
+		debugName = "InventoryDataStoreResolutionPolicy",
+		injectGlobals = true,
+	})()
+
 local ADAPTER_SOURCE = fs.readFile("games/living-kingdoms/src/server/Systems/RobloxInventoryDataStoreAdapter.luau")
 local LEASE_SOURCE = fs.readFile("games/living-kingdoms/src/server/Systems/InventorySessionLeaseService.luau")
 local PERSISTENCE_SOURCE =
@@ -132,6 +144,7 @@ local LIVE_SOURCE = fs.readFile("games/living-kingdoms/src/server/Systems/Invent
 	so the read-outage guard under test is the production one.
 ]]
 local function newServer(jobId: string): any
+	local POLICY_TOKEN, ADAPTER_RESULTS_TOKEN = {}, {}
 	local adapterModule = luau.load(ADAPTER_SOURCE, {
 		debugName = "RobloxInventoryDataStoreAdapter:" .. jobId,
 		environment = {
@@ -143,6 +156,10 @@ local function newServer(jobId: string): any
 								return fakeStore
 							end,
 						}
+					elseif name == "ReplicatedStorage" then
+						return {
+							Shared = { Persistence = { StorageResultContracts = ADAPTER_RESULTS_TOKEN } },
+						}
 					end
 					return {
 						IsStudio = function(): boolean
@@ -151,6 +168,15 @@ local function newServer(jobId: string): any
 					}
 				end,
 			},
+			script = { Parent = { InventoryDataStoreResolutionPolicy = POLICY_TOKEN } },
+			require = function(token: unknown): any
+				if token == POLICY_TOKEN then
+					return resolutionPolicy
+				elseif token == ADAPTER_RESULTS_TOKEN then
+					return storageResults
+				end
+				error("unexpected adapter dependency")
+			end,
 			task = { wait = function() end },
 			warn = function() end,
 		},
@@ -163,7 +189,7 @@ local function newServer(jobId: string): any
 		injectGlobals = true,
 	})()
 
-	local CONTRACTS_TOKEN, DISMANTLE_TOKEN = {}, {}
+	local CONTRACTS_TOKEN, DISMANTLE_TOKEN, STORAGE_RESULTS_TOKEN = {}, {}, {}
 	local persistenceService = luau.load(PERSISTENCE_SOURCE, {
 		debugName = "PlayerInventoryPersistenceService:" .. jobId,
 		environment = {
@@ -174,6 +200,7 @@ local function newServer(jobId: string): any
 							Persistence = {
 								PlayerInventoryContracts = CONTRACTS_TOKEN,
 								InventoryDismantleResolver = DISMANTLE_TOKEN,
+								StorageResultContracts = STORAGE_RESULTS_TOKEN,
 							},
 							Equipment = {
 								EquipmentRewardContracts = EQUIPMENT_TOKEN,
@@ -192,6 +219,8 @@ local function newServer(jobId: string): any
 					return affixContracts
 				elseif token == DISMANTLE_TOKEN then
 					return dismantleResolver
+				elseif token == STORAGE_RESULTS_TOKEN then
+					return storageResults
 				end
 				error("unexpected persistence dependency")
 			end,
@@ -301,7 +330,7 @@ fakeStore.failReads = true
 
 local outageLoad = bravo.loadPlayer(PLAYER, 1100)
 check(not outageLoad.Accepted, "a read outage must refuse the load rather than invent a new player")
-check(outageLoad.ReasonId == "SaveFailed", "the refusal must come from the blocked blank write, not a silent success")
+check(outageLoad.ReasonId == "LoadFailed", "a failed read must be named as such, not borrowed from the write path")
 check(bravo.getRecord(PLAYER) == nil, "a refused load must leave no resident record to serve or write from")
 
 --[[
@@ -344,6 +373,52 @@ check(
 		and durable[INVENTORY_KEY].InventoryByInstanceId.item_after_outage_guid ~= nil,
 	"a post-recovery write must extend durable truth rather than replace it"
 )
+
+--[[
+	Task #19: failure -> recovery -> safe mutation. Durable truth must win over
+	the blank state the outage briefly made plausible, and the recovered record
+	must accept new work without resurrecting it.
+]]
+local afterRecovery = bravo.getRecord(PLAYER)
+check(afterRecovery ~= nil, "the recovered server holds a resident record")
+check(afterRecovery.InventoryByInstanceId.item_outage_guid ~= nil, "recovery kept the pre-outage item")
+check(afterRecovery.InventoryByInstanceId.item_after_outage_guid ~= nil, "recovery kept the post-outage grant")
+check(
+	afterRecovery.SchemaVersion == contracts.CurrentSchemaVersion,
+	"a record recovered through an outage must still be at the current schema"
+)
+
+--[[
+	Task #20: the uncertainty guard is per key. One player's outage must not
+	quarantine another player's writes, or a single unlucky read would spread
+	into a server-wide persistence stall.
+]]
+local OTHER_PLAYER = 5151
+local OTHER_KEY = "atlas-prod:player:5151:inventory"
+local delta = newServer("job-delta-00000000")
+
+check(delta.loadPlayer(OTHER_PLAYER, 1200).Accepted, "the second player loads while the store is healthy")
+fakeStore.failReads = true
+local contaminated = delta.loadPlayer(PLAYER, 1210)
+check(not contaminated.Accepted, "the first player's read fails during the outage")
+fakeStore.failReads = false
+
+local otherReward = table.clone(reward)
+otherReward.InstanceId = "item_other_player_guid"
+otherReward.GrantId = "reward:run-750:Elite"
+otherReward.RunId = "run-750"
+local otherWrite = delta.applyReward(OTHER_PLAYER, otherReward, 1220)
+check(otherWrite.Accepted, "an unrelated player's write must not be blocked by another player's failed read")
+check(
+	durable[OTHER_KEY].InventoryByInstanceId.item_other_player_guid ~= nil,
+	"the unrelated player's write must reach their own durable record"
+)
+check(
+	durable[INVENTORY_KEY].InventoryByInstanceId.item_other_player_guid == nil,
+	"one player's write must never land in another player's record"
+)
+delta.releasePlayer(OTHER_PLAYER)
+delta.destroy()
 
 bravo.releasePlayer(PLAYER)
 alpha.destroy()
