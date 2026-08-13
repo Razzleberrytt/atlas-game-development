@@ -34,35 +34,6 @@ def run(label: str, command: list[str]) -> None:
         )
     result = subprocess.run(command, cwd=ROOT, check=False)
     if result.returncode != 0:
-        print(f"::error title=Atlas validation stage::{label} failed with exit code {result.returncode}")
-        if label == "Luau formatting":
-            subprocess.run(
-                [
-                    "stylua",
-                    "games/living-kingdoms/src",
-                    "games/living-kingdoms/tests",
-                    "games/living-kingdoms/tools",
-                ],
-                cwd=ROOT,
-                check=False,
-            )
-            target = "games/living-kingdoms/tests/ExpeditionRunVariationObservability.test.luau"
-            formatted_diff = subprocess.run(
-                ["git", "diff", "--", target],
-                cwd=ROOT,
-                check=False,
-                capture_output=True,
-                text=True,
-            ).stdout
-            useful_lines = [
-                line
-                for line in formatted_diff.splitlines()
-                if (line.startswith("+") or line.startswith("-"))
-                and not line.startswith("+++")
-                and not line.startswith("---")
-            ]
-            summary = " || ".join(useful_lines)[:6000]
-            print(f"::error title=StyLua exact diff::{summary or 'unknown'}")
         raise RuntimeError(f"{label} failed with exit code {result.returncode}")
 
 
