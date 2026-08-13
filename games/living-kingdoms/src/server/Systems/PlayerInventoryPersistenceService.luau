@@ -30,6 +30,7 @@ export type Service = {
 		nowUnix: number
 	) -> MutationResult,
 	getRecord: (self: Service, playerId: number) -> PlayerInventoryRecord?,
+	releasePlayer: (self: Service, playerId: number) -> any,
 	destroy: (self: Service) -> (),
 }
 
@@ -484,6 +485,34 @@ function Service:dismantle(
 		ReasonId = resolution.ReasonId,
 		Outcome = resolution.Outcome,
 		Record = cloneRecord(durable),
+	})
+end
+
+--[[
+	Drops one player's in-memory record. Load is wired to PlayerAdded, so without
+	a symmetric release every player who ever joined stays resident for the life
+	of the server, and a departed player's inventory remains readable through
+	getRecord long after their session lease was released.
+
+	This deliberately writes nothing. Every mutation path already saves before it
+	updates memory, so the store is current by construction; saving on release
+	would risk overwriting a newer record written by whichever server acquired
+	the lease next.
+]]
+function Service:releasePlayer(playerId: number): any
+	local selfAny = self :: any
+	if selfAny._destroyed then
+		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Released = false })
+	end
+	if not isInteger(playerId) or playerId <= 0 then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidReleaseRequest", Released = false })
+	end
+	local held = selfAny._records[playerId] ~= nil
+	selfAny._records[playerId] = nil
+	return table.freeze({
+		Accepted = true,
+		ReasonId = if held then "RecordReleased" else "NoRecordHeld",
+		Released = held,
 	})
 end
 

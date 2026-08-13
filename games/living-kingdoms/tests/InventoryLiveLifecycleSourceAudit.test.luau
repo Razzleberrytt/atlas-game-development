@@ -27,6 +27,21 @@ assert(contains("InventoryLiveService.destroy()"), "shutdown must release all re
 assert(contains("if loaded.Accepted ~= true then"), "snapshot disclosure must fail closed when inventory load fails")
 assert(contains("loadedPlayerIds[player.UserId] = true"), "only successfully loaded players may enter renewal tracking")
 
+-- Patch 0.7: the lease and the resident record must fall together on leave.
+-- Releasing only the lease left every departed player resident for the life of
+-- the server and still readable through getRecord.
+local liveServiceSource = fs.readFile("games/living-kingdoms/src/server/Systems/InventoryLiveService.luau")
+
+local function liveServiceContains(needle: string): boolean
+	return string.find(liveServiceSource, needle, 1, true) ~= nil
+end
+
+assert(
+	liveServiceContains("persistence:releasePlayer(playerId)"),
+	"releasing a player must drop the resident inventory record, not only the session lease"
+)
+assert(liveServiceContains("persistence:destroy()"), "shutdown must drop every resident inventory record")
+
 assert(not contains("FireAllClients"), "owner inventory state must never be broadcast")
 assert(not contains("requestedOwnerId: number"), "client payload must not gain an owner identity field")
 

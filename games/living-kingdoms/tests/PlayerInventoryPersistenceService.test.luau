@@ -110,7 +110,7 @@ local function deepCopy(value: any): any
 	return copy
 end
 
-local store = { data = {}, failSaves = false }
+local store = { data = {}, failSaves = false, saveCount = 0 }
 function store:load(key: string)
 	return deepCopy(self.data[key])
 end
@@ -118,6 +118,7 @@ function store:save(key: string, value: any): boolean
 	if self.failSaves then
 		return false
 	end
+	self.saveCount += 1
 	self.data[key] = deepCopy(value)
 	return true
 end
@@ -294,6 +295,50 @@ store.data["player:404:inventory"] = {
 }
 local corrupt = serviceModule.new(store):loadPlayer(404, 2200)
 assert(not corrupt.Accepted and corrupt.ReasonId == "InvalidDismantleLedger", "a malformed ledger fails closed")
+
+-- Patch 0.7 session lifecycle: load is wired to PlayerAdded, so a departing
+-- player's record must be released or every joiner stays resident for the life
+-- of the server and remains readable long after their lease is gone.
+local lifecycle = serviceModule.new(store)
+local lifecycleLoad = lifecycle:loadPlayer(101, 3000)
+assert(lifecycleLoad.Accepted, "the lifecycle player loads")
+assert(lifecycle:getRecord(101) ~= nil, "a loaded player is resident")
+
+local savesBeforeRelease = store.saveCount
+local releasedRecord = lifecycle:releasePlayer(101)
+assert(releasedRecord.Accepted and releasedRecord.Released == true, "releasing a resident player is accepted")
+assert(releasedRecord.ReasonId == "RecordReleased", "releasing a resident player reports the release")
+assert(lifecycle:getRecord(101) == nil, "a released player must not stay resident")
+assert(store.saveCount == savesBeforeRelease, "releasing a record must not write to the store")
+
+local releasedAgain = lifecycle:releasePlayer(101)
+assert(releasedAgain.Accepted and releasedAgain.Released == false, "a repeated release is accepted and writes nothing")
+assert(releasedAgain.ReasonId == "NoRecordHeld", "a repeated release reports that no record was held")
+
+local releaseUnknown = lifecycle:releasePlayer(999)
+assert(releaseUnknown.Accepted and releaseUnknown.Released == false, "releasing an unknown player is safe")
+
+for _, invalid in { 0, -1, 1.5, "101" } do
+	local rejected = lifecycle:releasePlayer(invalid :: any)
+	assert(not rejected.Accepted and rejected.ReasonId == "InvalidReleaseRequest", "a malformed release fails closed")
+end
+
+-- A released player must not be mutable until they load again, and the reload
+-- must come from the store rather than from a stale resident copy.
+local staleMutation = lifecycle:applyReward(101, spare, 3100)
+assert(not staleMutation.Accepted and staleMutation.ReasonId == "PlayerNotLoaded", "a released player is not mutable")
+
+local rejoinedAfterRelease = lifecycle:loadPlayer(101, 3200)
+assert(rejoinedAfterRelease.Accepted, "a released player can rejoin")
+assert(
+	rejoinedAfterRelease.Record.InventoryByInstanceId[spare.InstanceId] == nil,
+	"a rejoin must reload durable truth rather than a stale resident record"
+)
+assert(lifecycle:getRecord(101) ~= nil, "a rejoined player is resident again")
+lifecycle:destroy()
+
+local destroyedRelease = lifecycle:releasePlayer(101)
+assert(not destroyedRelease.Accepted and destroyedRelease.ReasonId == "ServiceDestroyed", "a destroyed service refuses")
 
 service:destroy()
 assert(service:getRecord(101) == nil, "destroyed service should disclose no record")

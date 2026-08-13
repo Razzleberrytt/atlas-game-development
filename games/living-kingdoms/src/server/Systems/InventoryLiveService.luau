@@ -75,7 +75,16 @@ function Service.releasePlayer(playerId: number): any
 		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed" })
 	end
 	recentDismantleRequests[playerId] = nil
-	return leases:release(playerId)
+	local released = leases:release(playerId)
+	--[[
+		The lease and the resident record have to fall together. Releasing only
+		the lease left the departed player's inventory resident for the life of
+		the server and still readable through getRecord. Order matters: the lease
+		goes first so no mutation can be authorized against a record that is
+		about to be dropped.
+	]]
+	persistence:releasePlayer(playerId)
+	return released
 end
 
 function Service.applyReward(playerId: number, reward: any, nowUnix: number): any
