@@ -6,12 +6,21 @@
 -- acquire production leases or mutate/migrate live inventory records.
 
 local DataStoreService = game:GetService("DataStoreService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local ResolutionPolicy = require(script.Parent.InventoryDataStoreResolutionPolicy)
+local StorageResults = require(ReplicatedStorage.Shared.Persistence.StorageResultContracts)
+
+export type ReadResult = StorageResults.ReadResult
+export type WriteResult = StorageResults.WriteResult
+
 export type Adapter = {
-	load: (self: Adapter, key: string) -> any,
-	save: (self: Adapter, key: string, value: any) -> boolean,
+	read: (self: Adapter, key: string) -> ReadResult,
+	write: (self: Adapter, key: string, value: any) -> WriteResult,
+	commit: (self: Adapter, key: string, transform: (any) -> any) -> WriteResult,
 	update: (self: Adapter, key: string, transform: (any) -> any) -> (boolean, any),
+	storageMode: (self: Adapter) -> string,
 }
 
 export type Options = {
@@ -32,28 +41,26 @@ local function retryDelay(baseDelay: number, attempt: number): number
 	return math.min(baseDelay * (2 ^ (attempt - 1)), 8)
 end
 
-local function createVolatileStore()
-	local values: { [string]: any } = {}
-	local store = {}
+--[[
+	Store selection belongs to InventoryDataStoreResolutionPolicy, which is pure
+	and directly testable. The Studio check must still happen before GetDataStore
+	-- Studio API access may be needed for unrelated evidence tooling, but it
+	must never opt inventory into the production AtlasPlayerInventoryV1 store or
+	the atlas-prod lease namespace -- and the policy encodes that ordering.
 
-	function store:GetAsync(key: string): any
-		return values[key]
-	end
+	Note what the policy deliberately changed: a live server whose GetDataStore
+	call fails no longer falls soft to a volatile store. Doing so let a published
+	server run a whole session on storage that silently evaporates, which is the
+	worst outcome a persistence layer can produce. It now gets a store that
+	throws, so reads exhaust their retries, the write guard engages, and the load
+	is refused rather than answered with fiction.
+]]
+local function resolveStore(dataStoreName: string): (any, boolean, string?)
+	local resolution = ResolutionPolicy.resolve(RunService:IsStudio(), function()
+		return DataStoreService:GetDataStore(dataStoreName)
+	end)
 
-	function store:UpdateAsync(key: string, transform: (any) -> any): any
-		local updated = transform(values[key])
-		values[key] = updated
-		return updated
-	end
-
-	return store
-end
-
-local function resolveStore(dataStoreName: string): (any, boolean)
-	-- This check must happen before GetDataStore. Studio API access may be needed
-	-- for unrelated evidence tooling, but it must never opt inventory into the
-	-- production AtlasPlayerInventoryV1 store or atlas-prod lease namespace.
-	if RunService:IsStudio() then
+	if resolution.Mode == "StudioVolatile" then
 		warn(
 			string.format(
 				"[AtlasPersistence] Studio session detected; using volatile in-memory storage instead of DataStore %s. "
@@ -61,27 +68,17 @@ local function resolveStore(dataStoreName: string): (any, boolean)
 				dataStoreName
 			)
 		)
-		return createVolatileStore(), true
+	elseif resolution.Mode == "LiveUnavailable" then
+		warn(
+			string.format(
+				"[AtlasPersistence] DataStore %s is unavailable (%s); inventory reads and writes will fail closed.",
+				dataStoreName,
+				tostring(resolution.Reason)
+			)
+		)
 	end
 
-	-- Live servers use the real store. Keep the existing fail-soft construction
-	-- fallback for unpublished/nonstandard environments where GetDataStore itself
-	-- is unavailable, but never use it as the Studio isolation mechanism.
-	local success, storeOrError = pcall(function()
-		return DataStoreService:GetDataStore(dataStoreName)
-	end)
-	if success then
-		return storeOrError, false
-	end
-	warn(
-		string.format(
-			"[AtlasPersistence] DataStore %s is unavailable (%s); using a volatile in-memory store. "
-				.. "Progress will not persist across sessions.",
-			dataStoreName,
-			tostring(storeOrError)
-		)
-	)
-	return createVolatileStore(), true
+	return resolution.Store, resolution.Mode ~= "LiveDurable", resolution.Mode
 end
 
 function Adapter.new(options: Options?): Adapter
@@ -96,11 +93,12 @@ function Adapter.new(options: Options?): Adapter
 	assertPositiveInteger(maximumAttempts, "MaximumAttempts")
 	assert(type(baseRetryDelaySeconds) == "number" and baseRetryDelaySeconds >= 0, "invalid retry delay")
 
-	local store, isVolatile = resolveStore(dataStoreName)
+	local store, isVolatile, storageMode = resolveStore(dataStoreName)
 
 	return setmetatable({
 		_store = store,
 		_isVolatile = isVolatile,
+		_storageMode = storageMode,
 		_keyPrefix = keyPrefix,
 		_maximumAttempts = maximumAttempts,
 		_baseRetryDelaySeconds = baseRetryDelaySeconds,
@@ -113,7 +111,18 @@ function Adapter:_qualifiedKey(key: string): string
 	return string.format("%s:%s", (self :: any)._keyPrefix, key)
 end
 
-function Adapter:load(key: string): any
+function Adapter:storageMode(): string
+	return (self :: any)._storageMode
+end
+
+--[[
+	GetAsync returning nil successfully means the key is absent -- Missing.
+	Exhausting retries means we do not know -- Failed. Collapsing both to a bare
+	nil is what let an outage read as "new player" and overwrite a real record,
+	so the two are separate statuses here and the uncertain key is remembered:
+	writes stay refused until a later successful read reconciles durable state.
+]]
+function Adapter:read(key: string): ReadResult
 	local selfAny = self :: any
 	local qualifiedKey = self:_qualifiedKey(key)
 	local lastError: any = nil
@@ -123,7 +132,10 @@ function Adapter:load(key: string): any
 		end)
 		if success then
 			selfAny._failedLoadKeys[qualifiedKey] = nil
-			return value
+			if value == nil then
+				return StorageResults.missing()
+			end
+			return StorageResults.found(value)
 		end
 		lastError = value
 		if attempt < selfAny._maximumAttempts then
@@ -131,14 +143,9 @@ function Adapter:load(key: string): any
 		end
 	end
 
-	-- GetAsync returning nil successfully means the key is absent. Exhausting
-	-- retries is different: callers that treat nil as "new player" must never be
-	-- allowed to turn an outage into a blank overwrite. Remember the uncertain
-	-- key and reject record saves until a later successful read establishes
-	-- whether durable state exists.
 	selfAny._failedLoadKeys[qualifiedKey] = true
-	warn(string.format("[AtlasPersistence] load failed for %s: %s", qualifiedKey, tostring(lastError)))
-	return nil
+	warn(string.format("[AtlasPersistence] read failed for %s: %s", qualifiedKey, tostring(lastError)))
+	return StorageResults.readFailed(lastError)
 end
 
 function Adapter:update(key: string, transform: (any) -> any): (boolean, any)
@@ -161,23 +168,35 @@ function Adapter:update(key: string, transform: (any) -> any): (boolean, any)
 	return false, nil
 end
 
-function Adapter:save(key: string, value: any): boolean
+--[[
+	Committed carries the value the store actually holds after the transform,
+	not the value the caller offered, so a later comparison is made against
+	committed identity rather than intent.
+]]
+function Adapter:commit(key: string, transform: (any) -> any): WriteResult
 	local selfAny = self :: any
 	local qualifiedKey = self:_qualifiedKey(key)
 	if selfAny._failedLoadKeys[qualifiedKey] == true then
 		warn(
 			string.format(
-				"[AtlasPersistence] refusing save for %s because its latest load exhausted retries; "
+				"[AtlasPersistence] refusing write for %s because its latest read exhausted retries; "
 					.. "a successful read must reconcile durable state first",
 				qualifiedKey
 			)
 		)
-		return false
+		return StorageResults.writeFailed("UnreconciledRead")
 	end
-	local success = self:update(key, function()
+	local ok, value = self:update(key, transform)
+	if not ok then
+		return StorageResults.writeFailed("StorageUpdateFailed")
+	end
+	return StorageResults.committed(value)
+end
+
+function Adapter:write(key: string, value: any): WriteResult
+	return self:commit(key, function()
 		return value
 	end)
-	return success
 end
 
 return table.freeze(Adapter)

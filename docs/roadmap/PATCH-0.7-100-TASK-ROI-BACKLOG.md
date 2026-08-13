@@ -38,20 +38,20 @@ Before this 100-task queue began, Patch 0.7 already had: symmetric resident-reco
 9. **[DONE]** Make unavailable-store updates reject without invoking the caller transform.
 10. **[DONE]** Add one deterministic fixture covering Studio, healthy live, unavailable live, nil-store, and malformed-resolution inputs.
 
-## Batch 2 — Integrate fail-closed storage + explicit outcomes (#11–#20) — ACTIVE
+## Batch 2 — Integrate fail-closed storage + explicit outcomes (#11–#20) — DONE
 
-11. **[ACTIVE]** Route `RobloxInventoryDataStoreAdapter` store selection through `InventoryDataStoreResolutionPolicy`.
-12. **[ACTIVE]** Remove duplicated Studio/live resolution logic from the adapter after integration.
-13. **[ACTIVE]** Add a source audit proving the live inventory adapter consumes the canonical resolution policy.
-14. **[ACTIVE]** Add an explicit storage read result contract (`Found` / `Missing` / `Failed`).
-15. **[ACTIVE]** Migrate inventory persistence load logic off ambiguous bare `nil` read semantics.
-16. **[ACTIVE]** Return a dedicated `LoadFailed` persistence reason with no new-record/migration write after read failure.
-17. **[ACTIVE]** Add an explicit storage update result contract with committed value identity.
-18. **[ACTIVE]** Add an explicit storage save result contract instead of bare boolean-only diagnostics.
-19. **[ACTIVE]** Add a failure → recovery → safe mutation fixture proving stale/blank state never wins.
-20. **[ACTIVE]** Add a fixture proving uncertainty/recovery for player A cannot block or contaminate player B.
+11. **[DONE]** Route `RobloxInventoryDataStoreAdapter` store selection through `InventoryDataStoreResolutionPolicy`.
+12. **[DONE]** Remove duplicated Studio/live resolution logic from the adapter after integration.
+13. **[DONE]** Add a source audit proving the live inventory adapter consumes the canonical resolution policy.
+14. **[DONE]** Add an explicit storage read result contract (`Found` / `Missing` / `Failed`).
+15. **[DONE]** Migrate inventory persistence load logic off ambiguous bare `nil` read semantics.
+16. **[DONE]** Return a dedicated `LoadFailed` persistence reason with no new-record/migration write after read failure.
+17. **[DONE]** Add an explicit storage update result contract with committed value identity.
+18. **[DONE]** Add an explicit storage save result contract instead of bare boolean-only diagnostics.
+19. **[DONE]** Add a failure → recovery → safe mutation fixture proving stale/blank state never wins.
+20. **[DONE]** Add a fixture proving uncertainty/recovery for player A cannot block or contaminate player B.
 
-## Batch 3 — Session ownership + lease robustness (#21–#30)
+## Batch 3 — Session ownership + lease robustness (#21–#30) — ACTIVE
 
 21. Add lease record structural validation before acquire/renew decisions.
 22. Fail closed on malformed live rival lease records instead of silently replacing them.

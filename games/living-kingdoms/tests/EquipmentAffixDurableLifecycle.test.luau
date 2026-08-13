@@ -50,6 +50,12 @@ local RUN_MODIFIER_TOKEN = {}
 local AFFIX_MODIFIER_TOKEN = {}
 local INVENTORY_CONTRACTS_TOKEN = {}
 local DISMANTLE_TOKEN = {}
+local STORAGE_RESULTS_TOKEN = {}
+local storageResults =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/StorageResultContracts.luau"), {
+		debugName = "StorageResultContracts",
+		injectGlobals = true,
+	})()
 
 local affixContracts =
 	luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentAffixContracts.luau"), {
@@ -266,6 +272,7 @@ local replicatedStorage = {
 		Persistence = {
 			PlayerInventoryContracts = INVENTORY_CONTRACTS_TOKEN,
 			InventoryDismantleResolver = DISMANTLE_TOKEN,
+			StorageResultContracts = STORAGE_RESULTS_TOKEN,
 		},
 	},
 }
@@ -285,6 +292,8 @@ local function requireProductionToken(token: unknown)
 		return inventoryContracts
 	elseif token == DISMANTLE_TOKEN then
 		return dismantleResolver
+	elseif token == STORAGE_RESULTS_TOKEN then
+		return storageResults
 	end
 	error("unexpected production dependency", 2)
 end
@@ -399,12 +408,16 @@ local function assertAffixesEqual(expected, actual, label: string)
 end
 
 local store = { data = {} }
-function store:load(key: string)
-	return deepCopy(self.data[key])
+function store:read(key: string): any
+	local value = deepCopy(self.data[key])
+	if value == nil then
+		return storageResults.missing()
+	end
+	return storageResults.found(value)
 end
-function store:save(key: string, value: any): boolean
+function store:write(key: string, value: any): any
 	self.data[key] = deepCopy(value)
-	return true
+	return storageResults.committed(deepCopy(value))
 end
 
 local playerId = 8_080

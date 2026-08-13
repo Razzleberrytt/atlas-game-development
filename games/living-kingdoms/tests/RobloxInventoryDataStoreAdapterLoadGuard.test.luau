@@ -41,6 +41,18 @@ function runService:IsStudio(): boolean
 	return false
 end
 
+local POLICY_TOKEN, RESULTS_TOKEN = {}, {}
+local storageResults =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/StorageResultContracts.luau"), {
+		debugName = "StorageResultContracts",
+		injectGlobals = true,
+	})()
+local resolutionPolicy =
+	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/InventoryDataStoreResolutionPolicy.luau"), {
+		debugName = "InventoryDataStoreResolutionPolicy",
+		injectGlobals = true,
+	})()
+
 local warnings = {}
 local adapterModule =
 	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/RobloxInventoryDataStoreAdapter.luau"), {
@@ -52,10 +64,21 @@ local adapterModule =
 						return dataStoreService
 					elseif name == "RunService" then
 						return runService
+					elseif name == "ReplicatedStorage" then
+						return { Shared = { Persistence = { StorageResultContracts = RESULTS_TOKEN } } }
 					end
 					error("unexpected service: " .. name)
 				end,
 			},
+			script = { Parent = { InventoryDataStoreResolutionPolicy = POLICY_TOKEN } },
+			require = function(token: unknown): any
+				if token == POLICY_TOKEN then
+					return resolutionPolicy
+				elseif token == RESULTS_TOKEN then
+					return storageResults
+				end
+				error("unexpected adapter dependency")
+			end,
 			task = {
 				wait = function(_seconds: number) end,
 			},
@@ -74,30 +97,34 @@ local adapter = adapterModule.new({
 })
 local key = "player:101:inventory"
 
-local failedLoad = adapter:load(key)
-assert(failedLoad == nil, "an exhausted read still returns nil to the legacy load caller")
+local failedLoad = adapter:read(key)
+assert(failedLoad.Status == "Failed", "an exhausted read must report Failed rather than a bare nil")
+assert(failedLoad.Value == nil, "a failed read must disclose no value")
 assert(fakeStore.getCalls == 2, "the load path must exhaust its configured retry budget")
 
 local attemptedBlank = { Marker = "blank" }
 local savesBeforeGuard = fakeStore.updateCalls
-local guardedSave = adapter:save(key, attemptedBlank)
-assert(not guardedSave, "a save after an uncertain load must fail closed")
+local guardedSave = adapter:write(key, attemptedBlank)
+assert(guardedSave.Status == "Failed", "a write after an uncertain read must fail closed")
+assert(guardedSave.Reason == "UnreconciledRead", "the refusal must name the unreconciled read")
 assert(fakeStore.updateCalls == savesBeforeGuard, "the guarded save must not reach UpdateAsync")
 assert(fakeStore.value.Marker == "durable", "the durable record must survive the read outage untouched")
 
 fakeStore.failReads = false
-local reconciled = adapter:load(key)
-assert(reconciled.Marker == "durable", "a successful reread must recover durable truth")
-local savedAfterReconcile = adapter:save(key, { Marker = "updated" })
-assert(savedAfterReconcile, "a successful reread must clear the write guard")
+local reconciled = adapter:read(key)
+assert(reconciled.Status == "Found", "a successful reread of a present key must report Found")
+assert(reconciled.Value.Marker == "durable", "a successful reread must recover durable truth")
+local savedAfterReconcile = adapter:write(key, { Marker = "updated" })
+assert(savedAfterReconcile.Status == "Committed", "a successful reread must clear the write guard")
+assert(savedAfterReconcile.Value.Marker == "updated", "a committed write must carry the stored value")
 assert(fakeStore.updateCalls == savesBeforeGuard + 1, "the reconciled save must reach UpdateAsync exactly once")
 assert(fakeStore.value.Marker == "updated", "the reconciled save must persist the requested record")
 
 fakeStore.value = nil
-local missing = adapter:load("player:202:inventory")
-assert(missing == nil, "a successful read of an absent key must remain distinguishable by the cleared guard")
-local created = adapter:save("player:202:inventory", { Marker = "new" })
-assert(created, "a genuinely absent key must still allow first-record creation")
+local missing = adapter:read("player:202:inventory")
+assert(missing.Status == "Missing", "an absent key must read as Missing, never as Failed")
+local created = adapter:write("player:202:inventory", { Marker = "new" })
+assert(created.Status == "Committed", "a genuinely absent key must still allow first-record creation")
 assert(fakeStore.value.Marker == "new", "first-record creation must persist after a successful missing-key read")
 assert(#warnings >= 2, "the exhausted load and guarded save should remain observable")
 

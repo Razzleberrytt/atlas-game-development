@@ -6,6 +6,7 @@ local Contracts = require(ReplicatedStorage.Shared.Persistence.PlayerInventoryCo
 local InventoryDismantleResolver = require(ReplicatedStorage.Shared.Persistence.InventoryDismantleResolver)
 local EquipmentContracts = require(ReplicatedStorage.Shared.Equipment.EquipmentRewardContracts)
 local EquipmentAffixContracts = require(ReplicatedStorage.Shared.Equipment.EquipmentAffixContracts)
+local StorageResults = require(ReplicatedStorage.Shared.Persistence.StorageResultContracts)
 
 export type EquipmentReward = EquipmentContracts.EquipmentReward
 export type EquipmentAffixRoll = EquipmentContracts.EquipmentAffixRoll
@@ -15,8 +16,8 @@ export type LoadResult = Contracts.LoadResult
 export type MutationResult = Contracts.MutationResult
 
 export type Store = {
-	load: (self: Store, key: string) -> any,
-	save: (self: Store, key: string, value: any) -> boolean,
+	read: (self: Store, key: string) -> StorageResults.ReadResult,
+	write: (self: Store, key: string, value: any) -> StorageResults.WriteResult,
 }
 
 export type Service = {
@@ -277,7 +278,7 @@ end
 
 function Service.new(store: Store): Service
 	assert(
-		type(store) == "table" and type(store.load) == "function" and type(store.save) == "function",
+		type(store) == "table" and type(store.read) == "function" and type(store.write) == "function",
 		"invalid store"
 	)
 	return setmetatable({ _store = store, _records = {}, _destroyed = false }, Service) :: any
@@ -291,11 +292,26 @@ function Service:loadPlayer(playerId: number, nowUnix: number): LoadResult
 	if not isInteger(playerId) or playerId <= 0 or type(nowUnix) ~= "number" or nowUnix < 0 then
 		return table.freeze({ Accepted = false, ReasonId = "InvalidLoadRequest", Record = nil, Migrated = false })
 	end
-	local normalized, migrated, reasonId = normalizeRecord(selfAny._store:load(keyFor(playerId)), playerId, nowUnix)
+	--[[
+		A failed read is not an absent record. Treating it as one would build a
+		blank record and try to persist it, so the read status is checked before
+		normalization rather than relying on a downstream write guard to catch
+		the consequence -- and the caller gets LoadFailed, which names what
+		actually went wrong, instead of a SaveFailed that misdescribes it.
+	]]
+	local readResult = selfAny._store:read(keyFor(playerId))
+	if readResult.Status == StorageResults.ReadStatuses.Failed then
+		return table.freeze({ Accepted = false, ReasonId = "LoadFailed", Record = nil, Migrated = false })
+	end
+
+	local normalized, migrated, reasonId = normalizeRecord(readResult.Value, playerId, nowUnix)
 	if normalized == nil then
 		return table.freeze({ Accepted = false, ReasonId = reasonId, Record = nil, Migrated = false })
 	end
-	if migrated and not selfAny._store:save(keyFor(playerId), normalized) then
+	if
+		migrated
+		and selfAny._store:write(keyFor(playerId), normalized).Status ~= StorageResults.WriteStatuses.Committed
+	then
 		return table.freeze({ Accepted = false, ReasonId = "SaveFailed", Record = nil, Migrated = false })
 	end
 	selfAny._records[playerId] = normalized
@@ -340,7 +356,7 @@ function Service:applyReward(playerId: number, reward: EquipmentReward, nowUnix:
 	nextRecord.InventoryByInstanceId[normalized.InstanceId] = normalized
 	nextRecord.AppliedRewardInstanceIds[normalized.InstanceId] = true
 	nextRecord.AppliedRewardGrantIds[normalized.GrantId] = true
-	if not selfAny._store:save(keyFor(playerId), nextRecord) then
+	if selfAny._store:write(keyFor(playerId), nextRecord).Status ~= StorageResults.WriteStatuses.Committed then
 		return result(false, "SaveFailed", cloneRecord(record))
 	end
 	selfAny._records[playerId] = nextRecord
@@ -390,7 +406,7 @@ function Service:equip(playerId: number, slotId: EquipmentSlotId, instanceId: st
 		nextRecord.AppliedDismantleTransactions[transactionId] = outcome
 	end
 	nextRecord.EquippedBySlot[slotId] = instanceId
-	if not selfAny._store:save(keyFor(playerId), nextRecord) then
+	if selfAny._store:write(keyFor(playerId), nextRecord).Status ~= StorageResults.WriteStatuses.Committed then
 		return result(false, "SaveFailed", cloneRecord(record))
 	end
 	selfAny._records[playerId] = nextRecord
@@ -471,7 +487,7 @@ function Service:dismantle(
 	end
 	durable.AppliedDismantleTransactions[transactionId] = resolution.Outcome
 
-	if not selfAny._store:save(keyFor(playerId), durable) then
+	if selfAny._store:write(keyFor(playerId), durable).Status ~= StorageResults.WriteStatuses.Committed then
 		return table.freeze({
 			Accepted = false,
 			ReasonId = "SaveFailed",

@@ -20,14 +20,16 @@ Older manual Studio/device/play gates are historical evidence instructions, not 
 - Patch 0.6's non-manual micro-update queue is complete through rank 97; its remaining historical UI/manual rows do not occupy execution priority.
 - **Patch 0.7 — Durable Persistence + Valuable State Hardening is the current source patch.**
 - Patch 0.7 entered the 100-task ranked program with an existing baseline: one canonical live inventory owner, symmetric resident-record release, committed-update lease decisions, supported-schema migration/recovery invariants, and no-blank-overwrite protection after exhausted reads.
-- **Batch 1 (#1–#10) is DONE:** canonical storage resolution now distinguishes `StudioVolatile`, `LiveDurable`, and `LiveUnavailable`, with deterministic coverage for isolation, exact durable-store binding, unavailable-store rejection, and malformed inputs.
+- **Batches 1–2 (#1–#20) are DONE.** Batch 1: canonical storage resolution now distinguishes `StudioVolatile`, `LiveDurable`, and `LiveUnavailable`, with deterministic coverage for isolation, exact durable-store binding, unavailable-store rejection, and malformed inputs.
 - Manual facts such as game feel, visual readability, real-device ergonomics, live memory/performance, or publishing behavior may remain **UNMEASURED** without stopping source work.
+
+- **Batch 2 (#11–#20) is DONE:** the live adapter now selects its store through that policy with no duplicate resolution logic, a live store that cannot be opened fails closed instead of falling soft to volatile, and storage outcomes are explicit — `Found`/`Missing`/`Failed` reads and `Committed`/`Failed` writes carrying committed value identity. Persistence branches on read status before normalizing, so an outage returns `LoadFailed` rather than borrowing `SaveFailed`.
 
 ## NOW
 
-**Execute Patch 0.7 Batch 2, tasks #11–#20, from `PATCH-0.7-100-TASK-ROI-BACKLOG.md`.**
+**Execute Patch 0.7 Batch 3, tasks #21–#30, from `PATCH-0.7-100-TASK-ROI-BACKLOG.md`.**
 
-Batch 2 integrates the storage-resolution policy into the live adapter and replaces ambiguous bare `nil` / boolean persistence outcomes with explicit read/update/save results and reconciliation tests.
+Batch 3 hardens session ownership and lease concurrency/lifecycle behaviour.
 
 Required merge gate:
 
@@ -41,9 +43,9 @@ CI equivalent is accepted as the canonical automated result.
 
 After Batch 2 is automated-green and merged:
 
-1. mark #11–#20 DONE;
-2. activate #21–#30;
-3. harden session ownership and lease concurrency/lifecycle behavior;
+1. mark #21–#30 DONE;
+2. activate #31–#40;
+3. harden valuable mutation idempotency;
 4. continue in exact 10-task batches through all 100 Patch 0.7 tasks.
 
 A concrete data-loss, duplication, authority, migration, or deterministic validation defect may preempt the queue. Missing manual testing may not.
@@ -53,8 +55,8 @@ A concrete data-loss, duplication, authority, migration, or deterministic valida
 | Batch | Tasks | Focus | Status |
 |---|---:|---|---|
 | 1 | 1–10 | storage resolution policy | DONE |
-| 2 | 11–20 | integrate fail-closed storage + explicit outcomes | ACTIVE |
-| 3 | 21–30 | session ownership + lease robustness | queued |
+| 2 | 11–20 | integrate fail-closed storage + explicit outcomes | DONE |
+| 3 | 21–30 | session ownership + lease robustness | ACTIVE |
 | 4 | 31–40 | valuable mutation idempotency | queued |
 | 5 | 41–50 | migration, quarantine, recovery | queued |
 | 6 | 51–60 | capacity, overflow, retention | queued |

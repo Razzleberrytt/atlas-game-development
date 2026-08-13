@@ -38,8 +38,15 @@ local contracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Persis
 	injectGlobals = true,
 })()
 
+local storageResults =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/StorageResultContracts.luau"), {
+		debugName = "StorageResultContracts",
+		injectGlobals = true,
+	})()
+
 local CONTRACTS_TOKEN = {}
 local DISMANTLE_TOKEN = {}
+local STORAGE_RESULTS_TOKEN = {}
 local RESOLVER_CONTRACTS_TOKEN = {}
 local RESOLVER_EQUIPMENT_TOKEN = {}
 local dismantleResolver =
@@ -66,7 +73,11 @@ local dismantleResolver =
 	})()
 local replicatedStorage = {
 	Shared = {
-		Persistence = { PlayerInventoryContracts = CONTRACTS_TOKEN, InventoryDismantleResolver = DISMANTLE_TOKEN },
+		Persistence = {
+			PlayerInventoryContracts = CONTRACTS_TOKEN,
+			InventoryDismantleResolver = DISMANTLE_TOKEN,
+			StorageResultContracts = STORAGE_RESULTS_TOKEN,
+		},
 		Equipment = { EquipmentRewardContracts = EQUIPMENT_TOKEN, EquipmentAffixContracts = AFFIX_TOKEN },
 	},
 }
@@ -93,6 +104,9 @@ local serviceModule =
 				if token == DISMANTLE_TOKEN then
 					return dismantleResolver
 				end
+				if token == STORAGE_RESULTS_TOKEN then
+					return storageResults
+				end
 				error("unexpected persistence dependency")
 			end,
 		},
@@ -110,17 +124,24 @@ local function deepCopy(value: any): any
 	return copy
 end
 
-local store = { data = {}, failSaves = false, saveCount = 0 }
-function store:load(key: string)
-	return deepCopy(self.data[key])
+local store = { data = {}, failSaves = false, failReads = false, saveCount = 0 }
+function store:read(key: string): any
+	if self.failReads then
+		return storageResults.readFailed("simulated read outage")
+	end
+	local value = deepCopy(self.data[key])
+	if value == nil then
+		return storageResults.missing()
+	end
+	return storageResults.found(value)
 end
-function store:save(key: string, value: any): boolean
+function store:write(key: string, value: any): any
 	if self.failSaves then
-		return false
+		return storageResults.writeFailed("simulated write failure")
 	end
 	self.saveCount += 1
 	self.data[key] = deepCopy(value)
-	return true
+	return storageResults.committed(deepCopy(value))
 end
 
 local reward = {
