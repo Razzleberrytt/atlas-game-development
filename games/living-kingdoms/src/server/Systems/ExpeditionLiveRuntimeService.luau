@@ -43,6 +43,7 @@ local activeRunVariationComposition: any = nil
 local heartbeatConnection: RBXScriptConnection? = nil
 local accumulatedSeconds = 0
 local started = false
+local lastStartFailure: any = nil
 
 local STEP_INTERVAL_SECONDS = 0.25
 local BOSS_REWARD_ROOM_ID = "keeper-core"
@@ -52,6 +53,11 @@ local OutcomeIds = ExpeditionContracts.OutcomeIds
 
 local function result(accepted: boolean, reasonId: string, snapshot: any?)
 	return table.freeze({ Accepted = accepted, ReasonId = reasonId, Snapshot = snapshot })
+end
+
+local function startFailure(reasonId: string, runId: string?, seed: number?): any
+	lastStartFailure = table.freeze({ ReasonId = reasonId, RunId = runId, Seed = seed })
+	return result(false, reasonId, nil)
 end
 
 local function nowUnix(): number
@@ -160,17 +166,17 @@ function Service.startExpedition(options: StartOptions?): any
 	local definition = ExpeditionConfig.Definitions.FirstExpedition
 
 	if not validInteger(seed) or seed < limits.MinimumSeed or seed > limits.MaximumSeed then
-		return result(false, "InvalidSeed", nil)
+		return startFailure("InvalidSeed", runId, seed)
 	end
 	if
 		not validInteger(partySize)
 		or partySize < definition.MinimumPlayers
 		or partySize > definition.MaximumPlayers
 	then
-		return result(false, "InvalidPartySize", nil)
+		return startFailure("InvalidPartySize", runId, seed)
 	end
 	if type(runId) ~= "string" or #runId < 8 or #runId > 96 then
-		return result(false, "InvalidRunId", nil)
+		return startFailure("InvalidRunId", runId, seed)
 	end
 
 	local ok, bootstrapOrError = pcall(function()
@@ -183,7 +189,7 @@ function Service.startExpedition(options: StartOptions?): any
 	end)
 	if not ok then
 		warn("[ExpeditionLiveRuntime] failed to create expedition:", bootstrapOrError)
-		return result(false, "ExpeditionCreationFailed", nil)
+		return startFailure("ExpeditionCreationFailed", runId, seed)
 	end
 
 	local bootstrap = bootstrapOrError
@@ -194,7 +200,7 @@ function Service.startExpedition(options: StartOptions?): any
 	if not variationOk then
 		bootstrap:destroy()
 		warn("[ExpeditionLiveRuntime] failed to compose run variation:", variationPlanOrError)
-		return result(false, "RunVariationPlanningFailed", nil)
+		return startFailure("RunVariationPlanningFailed", runId, seed)
 	end
 
 	local encounterViewOk, encounterViewOrError = pcall(function()
@@ -203,7 +209,7 @@ function Service.startExpedition(options: StartOptions?): any
 	if not encounterViewOk then
 		bootstrap:destroy()
 		warn("[ExpeditionLiveRuntime] failed to compose run variation encounter view:", encounterViewOrError)
-		return result(false, "RunVariationEncounterViewFailed", nil)
+		return startFailure("RunVariationEncounterViewFailed", runId, seed)
 	end
 
 	local compositionOk, compositionOrError = pcall(function()
@@ -214,7 +220,7 @@ function Service.startExpedition(options: StartOptions?): any
 		bootstrap:destroy()
 		clearRunVariationState()
 		warn("[ExpeditionLiveRuntime] failed to compose run variation readback:", compositionOrError)
-		return result(false, "RunVariationCompositionFailed", nil)
+		return startFailure("RunVariationCompositionFailed", runId, seed)
 	end
 
 	local placement = ExpeditionRoomPlacementService.place(roomPlan)
@@ -222,7 +228,8 @@ function Service.startExpedition(options: StartOptions?): any
 		bootstrap:destroy()
 		clearRunVariationState()
 		warn("[ExpeditionLiveRuntime] failed to place expedition rooms:", placement.ReasonId)
-		return result(false, placement.ReasonId, nil)
+		ExpeditionRoomPlacementService.destroy()
+		return startFailure(placement.ReasonId, runId, seed)
 	end
 
 	ExpeditionRoomBarrierStateService.reset()
@@ -230,6 +237,7 @@ function Service.startExpedition(options: StartOptions?): any
 	activeRunVariationPlan = variationPlanOrError
 	activeRunVariationEncounterView = encounterViewOrError
 	activeRunVariationComposition = compositionOrError
+	lastStartFailure = nil
 	driveStep()
 	return result(true, "ExpeditionStarted", activeBootstrap:getSnapshot())
 end
@@ -323,6 +331,10 @@ function Service.readRunVariationComposition(): any
 		return nil
 	end
 	return activeRunVariationComposition
+end
+
+function Service.readLastStartFailure(): any
+	return lastStartFailure
 end
 
 function Service.stop()
