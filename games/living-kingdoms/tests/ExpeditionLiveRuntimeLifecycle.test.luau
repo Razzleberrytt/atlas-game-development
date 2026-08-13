@@ -48,6 +48,7 @@ local definition = expeditionConfig.Definitions.FirstExpedition
 
 local createdBootstrapCount = 0
 local destroyedBootstrapCount = 0
+local steppedCount = 0
 local placementAccepted = true
 local barrierResetCount = 0
 local placementDestroyCount = 0
@@ -90,6 +91,7 @@ local bootstrapStub = {
 				return nil
 			end,
 			step = function(): any
+				steppedCount += 1
 				return { Accepted = false, ReasonId = "PhaseMinimumDuration" }
 			end,
 			destroy = function()
@@ -370,8 +372,73 @@ check(destroyedBootstrapCount == destroyedBefore, "a refused repeat launch must 
 check(placementDestroyCount == placementDestroyBefore, "a refused repeat launch must not tear down placed rooms")
 check(barrierResetCount > 0, "launching must reset encounter barrier state")
 
-service.stopExpedition("FixtureComplete")
+-- Rank 89: heartbeat catch-up pacing -----------------------------------------
+
+local function beat(deltaTime: number): number
+	local before = steppedCount
+	local callback = heartbeatCallback
+	check(callback ~= nil, "the heartbeat must stay bound while the service runs");
+	(callback :: (number) -> ())(deltaTime)
+	return steppedCount - before
+end
+
+check(beat(0.1) == 0, "a partial interval must not step")
+check(beat(0.1) == 0, "two partial intervals below the step interval must not step")
+check(beat(0.1) == 1, "crossing the step interval must step exactly once")
+--[[
+	Rank 87 regression: the third beat left 0.05s of credit. Zeroing the
+	accumulator instead of carrying the remainder would make this 0.2s beat fall
+	short and silently stretch the expedition cadence.
+]]
+check(beat(0.2) == 1, "the carried remainder must complete the next step")
+check(beat(0.24) == 0, "the remainder must not manufacture an extra step")
+check(beat(0.01) == 1, "an exact interval boundary must step once")
+
+-- Rank 88 regression: a long hitch may only be repaid up to the catch-up cap.
+check(beat(1) == 4, "a one-second hitch must run the full four-step catch-up")
+check(beat(0.25) == 1, "a full catch-up must leave no residual credit")
+check(beat(60) == 4, "a long stall must stay capped at the catch-up bound")
+check(beat(0.24) == 0, "an abandoned backlog must not carry into the next beat")
+check(beat(0.01) == 1, "pacing must resume normally after an abandoned backlog")
+
+local ignoredSteps = beat(0) + beat(-5)
+check(ignoredSteps == 0, "non-positive heartbeat deltas must be ignored")
+
+-- Rank 84: repeated expedition stop ------------------------------------------
+
+local destroyedBeforeStop = destroyedBootstrapCount
+local firstStop = service.stopExpedition("FixtureComplete")
+check(firstStop.Accepted == true and firstStop.ReasonId == "FixtureComplete", "the first stop must be accepted")
+check(firstStop.Snapshot ~= nil, "the first stop must report the stopped run")
+check(destroyedBootstrapCount == destroyedBeforeStop + 1, "the first stop must destroy exactly one expedition")
+
+local secondStop = service.stopExpedition("FixtureComplete")
+check(
+	secondStop.Accepted == false and secondStop.ReasonId == "NoActiveExpedition",
+	"a repeated stop must report no active expedition"
+)
+check(destroyedBootstrapCount == destroyedBeforeStop + 1, "a repeated stop must not destroy anything a second time")
+check(service.readSnapshot() == nil, "a stopped expedition must not leave a readable snapshot")
+check(service.readRunVariationPlan() == nil, "a stopped expedition must clear variation state")
+check(
+	service.readRunVariationComposition("expedition:first-run").ReasonId == "NoActiveExpedition",
+	"a stopped expedition must refuse composition reads"
+)
+
+-- Rank 85: repeated service start --------------------------------------------
+
+local connectsBefore = heartbeatConnectCount
+service.start()
+service.start()
+check(heartbeatConnectCount == connectsBefore, "restarting an already-started service must not rebind the heartbeat")
+
+-- Rank 86: repeated service stop ---------------------------------------------
+
 service.stop()
 check(heartbeatDisconnectCount == 1, "stopping the service must release the heartbeat")
+check(heartbeatCallback == nil, "a stopped service must not retain a heartbeat callback")
+service.stop()
+check(heartbeatDisconnectCount == 1, "a repeated service stop must not disconnect a second time")
+check(service.startExpedition({ Seed = 421337 }).ReasonId == "ServiceStopped", "a stopped service must refuse launches")
 
 print("Expedition live runtime lifecycle fixture passed")
