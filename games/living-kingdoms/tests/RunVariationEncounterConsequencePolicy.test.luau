@@ -20,9 +20,8 @@ local contracts = {
 	},
 }
 
-local policy = luau.load(
-	fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationEncounterConsequencePolicy.luau"),
-	{
+local policy =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationEncounterConsequencePolicy.luau"), {
 		debugName = "RunVariationEncounterConsequencePolicy",
 		environment = {
 			script = {
@@ -38,8 +37,7 @@ local policy = luau.load(
 			end,
 		},
 		injectGlobals = true,
-	}
-)()
+	})()
 
 local function record(
 	encounterSlotId: string,
