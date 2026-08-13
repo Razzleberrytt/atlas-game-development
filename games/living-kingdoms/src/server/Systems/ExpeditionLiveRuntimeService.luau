@@ -124,7 +124,8 @@ local function runtimeDiagnosticProgress(bootstrap: any): any
 	local context = bootstrap:getActiveEncounterContext()
 	local coordinator = (bootstrap :: any).Coordinator
 	local coordinatorState = if coordinator ~= nil then (coordinator :: any)._state else nil
-	local nextDungeonNodeIndex = if coordinatorState ~= nil and type(coordinatorState.NextDungeonNodeIndex) == "number"
+	local nextDungeonNodeIndex = if coordinatorState ~= nil
+			and type(coordinatorState.NextDungeonNodeIndex) == "number"
 		then coordinatorState.NextDungeonNodeIndex
 		else 1
 
