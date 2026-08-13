@@ -9,13 +9,11 @@ local function assert(condition: unknown, message: string?)
 	end
 end
 
-local policy = luau.load(
-	fs.readFile("games/living-kingdoms/src/server/Systems/InventoryDataStoreResolutionPolicy.luau"),
-	{
+local policy =
+	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/InventoryDataStoreResolutionPolicy.luau"), {
 		debugName = "InventoryDataStoreResolutionPolicy",
 		injectGlobals = true,
-	}
-)()
+	})()
 
 -- Studio must never even attempt to open the live store.
 local studioOpenCalls = 0
@@ -74,7 +72,10 @@ local unavailable = policy.resolve(false, function()
 end)
 assert(unavailable.Mode == "LiveUnavailable", "a failed live opener must select unavailable mode")
 assert(type(unavailable.Reason) == "string", "unavailable mode must preserve an observable reason")
-assert(string.find(unavailable.Reason, "simulated open failure", 1, true) ~= nil, "the failure reason must remain diagnosable")
+assert(
+	string.find(unavailable.Reason, "simulated open failure", 1, true) ~= nil,
+	"the failure reason must remain diagnosable"
+)
 
 local readOk = pcall(function()
 	unavailable.Store:GetAsync("player:101:inventory")
