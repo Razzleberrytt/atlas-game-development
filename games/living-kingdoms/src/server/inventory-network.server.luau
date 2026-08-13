@@ -70,10 +70,21 @@ local function reconcileEquipmentEffects(player: Player)
 	OperativeLifeService.reconcileMovementSpeed(player)
 end
 
+--[[
+	A player whose inventory could not be leased must not keep playing. Their
+	session would run against no durable record: rewards would be refused, and
+	whichever server does hold the lease owns the truth they would be diverging
+	from. Kicking is the safe outcome, and it is the policy the retired
+	ExpeditionFoundationBootstrap lifecycle enforced before this script became
+	the single owner.
+]]
 local function loadPlayer(player: Player)
 	local loaded = InventoryLiveService.loadPlayer(player.UserId, os.time())
 	if loaded.Accepted ~= true then
 		warn(string.format("[InventoryNetwork] inventory load rejected for %d: %s", player.UserId, loaded.ReasonId))
+		if player.Parent == Players then
+			player:Kick("Your inventory is active on another server or could not be loaded safely. Please rejoin.")
+		end
 		return
 	end
 	if player.Parent ~= Players then
@@ -161,6 +172,12 @@ local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
 	renewalAccumulatorSeconds = 0
 	local nowUnix = os.time()
 	for _, player in Players:GetPlayers() do
+		--[[
+			Only loaded players are renewed. A player who never loaded has no
+			lease to renew, so renewing everyone present would report LeaseNotOwned
+			for them and -- under the kick policy below -- eject a player for a
+			lease they were never granted.
+		]]
 		if loadedPlayerIds[player.UserId] then
 			local renewed = InventoryLiveService.renewPlayer(player.UserId, nowUnix)
 			if renewed.Accepted ~= true then
@@ -171,6 +188,16 @@ local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
 						renewed.ReasonId
 					)
 				)
+				--[[
+					A lost lease means another server now owns this inventory.
+					Continuing would let this session mutate a record it no
+					longer holds, so the session ends here.
+				]]
+				loadedPlayerIds[player.UserId] = nil
+				InventoryLiveService.releasePlayer(player.UserId)
+				if player.Parent == Players then
+					player:Kick("Your inventory session could no longer be protected. Please rejoin.")
+				end
 			end
 		end
 	end

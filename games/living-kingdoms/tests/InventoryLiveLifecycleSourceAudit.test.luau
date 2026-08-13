@@ -42,6 +42,29 @@ assert(
 )
 assert(liveServiceContains("persistence:destroy()"), "shutdown must drop every resident inventory record")
 
+--[[
+	Single owner. ExpeditionFoundationBootstrap ran a second copy of this whole
+	lifecycle -- both scripts are mounted, so every join cost two DataStore reads
+	and two lease acquisitions, and every renewal tick cost two UpdateAsync
+	writes per player, under two different failure policies.
+]]
+local foundationSource = fs.readFile("games/living-kingdoms/src/server/ExpeditionFoundationBootstrap.server.luau")
+
+for _, forbidden in { "Players.PlayerAdded", "Players.PlayerRemoving", "RunService.Heartbeat", "InventoryLiveService" } do
+	assert(
+		string.find(foundationSource, forbidden, 1, true) == nil,
+		"the inventory session lifecycle has exactly one owner; ExpeditionFoundationBootstrap must not rebind "
+			.. forbidden
+	)
+end
+
+-- The kick policy moved here with the lifecycle and must not be quietly dropped.
+assert(contains("player:Kick("), "a player whose inventory cannot be leased must not keep playing")
+assert(
+	contains("if loadedPlayerIds[player.UserId] then"),
+	"only loaded players may be renewed, or the kick policy ejects players who never held a lease"
+)
+
 assert(not contains("FireAllClients"), "owner inventory state must never be broadcast")
 assert(not contains("requestedOwnerId: number"), "client payload must not gain an owner identity field")
 
