@@ -7,6 +7,7 @@ local bossState = { exists = false, isAlive = false, isDefeated = false }
 local stoodDown = 0
 local pressureWaveIndexes = {}
 local spawnRequests = {}
+local rejectNextSpawn = false
 
 local director = {
 	spawnAuthoredWave = function(waveIndex: number, definitions: { any }): number
@@ -16,6 +17,9 @@ local director = {
 	end,
 	spawnEnemy = function(request: any): any
 		table.insert(spawnRequests, request)
+		if rejectNextSpawn then
+			return { didSpawn = false, wasDeferred = false, rejectionReasonId = "FixtureRejected" }
+		end
 		table.insert(liveFacts, { entityId = request.entityId, isAlive = true })
 		return { didSpawn = true, wasDeferred = false, rejectionReasonId = nil }
 	end,
@@ -145,6 +149,10 @@ adapter.cancel(context("wrong-token", "Dungeon"), "Wrong")
 assert(adapter:getActiveToken() == "wave-token")
 adapter.cancel(context("wave-token", "Dungeon"), "CoordinatorAdvanced")
 assert(adapter:getActiveToken() == nil and stoodDown == 1)
+
+rejectNextSpawn = true
+assert(adapter.start(context("drift-token", "Dungeon")) == false, "spawn-count drift must reject encounter start")
+rejectNextSpawn = false
 
 liveFacts = {}
 assert(adapter.start(context("sequence-token", "Approach")) == true)
