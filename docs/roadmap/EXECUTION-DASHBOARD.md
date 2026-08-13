@@ -25,11 +25,13 @@ Older manual Studio/device/play gates are historical evidence instructions, not 
 
 - **Batch 2 (#11–#20) is DONE:** the live adapter now selects its store through that policy with no duplicate resolution logic, a live store that cannot be opened fails closed instead of falling soft to volatile, and storage outcomes are explicit — `Found`/`Missing`/`Failed` reads and `Committed`/`Failed` writes carrying committed value identity. Persistence branches on read status before normalizing, so an outage returns `LoadFailed` rather than borrowing `SaveFailed`.
 
+- **Batch 3 (#21–#30) is DONE:** lease records are structurally validated, an unparseable rival lease is honoured rather than silently overwritten, records carry an owner generation that survives a recycled JobId, and shutdown release now aggregates its outcome with bounded retry so a lease that survives shutdown is observable instead of invisible.
+
 ## NOW
 
-**Execute Patch 0.7 Batch 3, tasks #21–#30, from `PATCH-0.7-100-TASK-ROI-BACKLOG.md`.**
+**Execute Patch 0.7 Batch 4, tasks #31–#40, from `PATCH-0.7-100-TASK-ROI-BACKLOG.md`.**
 
-Batch 3 hardens session ownership and lease concurrency/lifecycle behaviour.
+Batch 4 hardens idempotency for valuable mutations.
 
 Required merge gate:
 
@@ -43,9 +45,9 @@ CI equivalent is accepted as the canonical automated result.
 
 After Batch 2 is automated-green and merged:
 
-1. mark #21–#30 DONE;
-2. activate #31–#40;
-3. harden valuable mutation idempotency;
+1. mark #31–#40 DONE;
+2. activate #41–#50;
+3. harden migration, quarantine, and recovery;
 4. continue in exact 10-task batches through all 100 Patch 0.7 tasks.
 
 A concrete data-loss, duplication, authority, migration, or deterministic validation defect may preempt the queue. Missing manual testing may not.
@@ -56,8 +58,8 @@ A concrete data-loss, duplication, authority, migration, or deterministic valida
 |---|---:|---|---|
 | 1 | 1–10 | storage resolution policy | DONE |
 | 2 | 11–20 | integrate fail-closed storage + explicit outcomes | DONE |
-| 3 | 21–30 | session ownership + lease robustness | ACTIVE |
-| 4 | 31–40 | valuable mutation idempotency | queued |
+| 3 | 21–30 | session ownership + lease robustness | DONE |
+| 4 | 31–40 | valuable mutation idempotency | ACTIVE |
 | 5 | 41–50 | migration, quarantine, recovery | queued |
 | 6 | 51–60 | capacity, overflow, retention | queued |
 | 7 | 61–70 | durable progression/currency/unlocks | queued |

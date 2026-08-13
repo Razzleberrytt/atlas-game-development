@@ -51,20 +51,20 @@ Before this 100-task queue began, Patch 0.7 already had: symmetric resident-reco
 19. **[DONE]** Add a failure → recovery → safe mutation fixture proving stale/blank state never wins.
 20. **[DONE]** Add a fixture proving uncertainty/recovery for player A cannot block or contaminate player B.
 
-## Batch 3 — Session ownership + lease robustness (#21–#30) — ACTIVE
+## Batch 3 — Session ownership + lease robustness (#21–#30) — DONE
 
-21. Add lease record structural validation before acquire/renew decisions.
-22. Fail closed on malformed live rival lease records instead of silently replacing them.
-23. Add lease owner generation identity to distinguish recycled server/job identities.
-24. Add deterministic acquire contention fixture with two simulated servers.
-25. Add deterministic renew/lost-lease contention fixture.
-26. Add deterministic release-after-loss fixture.
-27. Add lease-expiry boundary tests at `expiry - ε`, `expiry`, and `expiry + ε` semantics.
-28. Add shutdown release result aggregation so unresolved durable leases are observable.
-29. Add bounded retry/reconciliation behavior for failed shutdown lease release.
-30. Add automated multi-player lease isolation fixture across many keys.
+21. **[DONE]** Add lease record structural validation before acquire/renew decisions.
+22. **[DONE]** Fail closed on malformed live rival lease records instead of silently replacing them.
+23. **[DONE]** Add lease owner generation identity to distinguish recycled server/job identities.
+24. **[DONE]** Add deterministic acquire contention fixture with two simulated servers.
+25. **[DONE]** Add deterministic renew/lost-lease contention fixture.
+26. **[DONE]** Add deterministic release-after-loss fixture.
+27. **[DONE]** Add lease-expiry boundary tests at `expiry - ε`, `expiry`, and `expiry + ε` semantics.
+28. **[DONE]** Add shutdown release result aggregation so unresolved durable leases are observable.
+29. **[DONE]** Add bounded retry/reconciliation behavior for failed shutdown lease release.
+30. **[DONE]** Add automated multi-player lease isolation fixture across many keys.
 
-## Batch 4 — Valuable mutation idempotency (#31–#40)
+## Batch 4 — Valuable mutation idempotency (#31–#40) — ACTIVE
 
 31. Define one canonical durable mutation transaction-id contract.
 32. Require transaction identity for every valuable reward grant path.
