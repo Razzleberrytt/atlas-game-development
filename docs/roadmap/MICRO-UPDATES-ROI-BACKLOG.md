@@ -61,17 +61,17 @@ Status: `DONE` · `NEXT` · `QUEUED` · `GATED`
 | 51 | DONE | Add current encounter phase to readback | Improve live triage |
 | 52 | DONE | Add current room ID to readback | Improve live triage |
 | 53 | DONE | Add active wave index to readback | Improve live triage |
-| 54 | NEXT | Add remaining authored waves count | Improve pacing diagnosis |
-| 55 | QUEUED | Add encountered/completed room counters | Improve run progress diagnosis |
-| 56 | QUEUED | Add no-active-run explicit diagnostic result | Remove nil ambiguity |
-| 57 | QUEUED | Add stopped-service explicit diagnostic result | Remove nil ambiguity |
-| 58 | QUEUED | Add stale-run readback rejection | Prevent cross-run inspection mistakes |
-| 59 | QUEUED | Bind debug action to expected run ID | Safer internal tooling |
-| 60 | QUEUED | Rate-limit internal diagnostic requests | Bound accidental churn |
-| 61 | QUEUED | Add deterministic dense-contact fixture seeds | Faster balance QA |
-| 62 | QUEUED | Add deterministic quiet-contact fixture seeds | Faster balance QA |
-| 63 | QUEUED | Add deterministic no-variation fixture seeds | Baseline comparison |
-| 64 | QUEUED | Add boss immutability composition audit | Protect authored climax |
+| 54 | DONE | Add remaining authored waves count | Improve pacing diagnosis |
+| 55 | DONE | Add encountered/completed room counters | Improve run progress diagnosis |
+| 56 | DONE | Add no-active-run explicit diagnostic result | Remove nil ambiguity |
+| 57 | DONE | Add stopped-service explicit diagnostic result | Remove nil ambiguity |
+| 58 | DONE | Add stale-run readback rejection | Prevent cross-run inspection mistakes |
+| 59 | DONE | Bind debug action to expected run ID | Safer internal tooling |
+| 60 | DONE | Rate-limit internal diagnostic requests | Bound accidental churn |
+| 61 | DONE | Add deterministic dense-contact fixture seeds | Faster balance QA |
+| 62 | DONE | Add deterministic quiet-contact fixture seeds | Faster balance QA |
+| 63 | DONE | Add deterministic no-variation fixture seeds | Baseline comparison |
+| 64 | NEXT | Add boss immutability composition audit | Protect authored climax |
 | 65 | QUEUED | Add empty-room immutability composition audit | Protect navigation rooms |
 | 66 | QUEUED | Add minimum-retained-units diagnostic detail | Faster failure diagnosis |
 | 67 | QUEUED | Add selected unit-group index to readback | Explain count changes |
