@@ -33,6 +33,8 @@ control.OnInvoke = function(action: string, payload: any?): any
 		return ExpeditionLiveRuntimeService.readRunVariationPlan()
 	elseif action == "ReadRunVariationEncounterView" then
 		return ExpeditionLiveRuntimeService.readRunVariationEncounterView()
+	elseif action == "ReadRunVariationComposition" then
+		return ExpeditionLiveRuntimeService.readRunVariationComposition()
 	end
 	return table.freeze({ Accepted = false, ReasonId = "UnknownAction", Snapshot = nil })
 end
