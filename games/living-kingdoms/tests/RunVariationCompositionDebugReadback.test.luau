@@ -15,8 +15,13 @@ local VIEW_TOKEN = {}
 local COMPOSER_TOKEN = {}
 
 local authoredByRoomId = {
-	entry = { RoomId = "entry" },
-	combat = { RoomId = "combat" },
+	entry = { RoomId = "entry", Waves = {} },
+	combat = {
+		RoomId = "combat",
+		Waves = {
+			{ Units = { { ArchetypeId = "walker", Count = 2 }, { ArchetypeId = "spitter", Count = 1 } } },
+		},
+	},
 }
 
 local planner = {
@@ -55,6 +60,11 @@ local composer = {
 			OriginalUnitCount = if entry then 0 else 3,
 			AppliedUnitCount = if entry then 0 else 4,
 			CompositionIdentity = `composition|{record.RoomId}`,
+			Waves = if entry
+				then {}
+				else {
+					{ Units = { { ArchetypeId = "walker", Count = 3 }, { ArchetypeId = "spitter", Count = 1 } } },
+				},
 		})
 	end,
 }
@@ -87,7 +97,14 @@ local readback =
 		injectGlobals = true,
 	})()
 
-local roomPlan = { Seed = 17, PlanIdentity = "room-plan|17" }
+local roomPlan = {
+	Seed = 17,
+	PlanIdentity = "room-plan|17",
+	Nodes = {
+		{ RoomId = "entry", EncounterSlotId = "None", EncounterIntensity = 0 },
+		{ RoomId = "combat", EncounterSlotId = "StandardSquad", EncounterIntensity = 2 },
+	},
+}
 local result = readback.build(roomPlan)
 
 assert(#result.Records == 2, "readback must retain ordered composition records")
@@ -96,6 +113,16 @@ assert(result.RecordByRoomId.combat == result.Records[2], "room lookup must reso
 assert(result.OriginalUnitCount == 3, "readback must aggregate original unit count")
 assert(result.AppliedUnitCount == 4, "readback must aggregate applied unit count")
 assert(result.UnitCountDelta == 1, "readback must expose the aggregate composition delta")
+assert(result.EncounterCount == 2, "readback must report composed encounter count")
+assert(result.ModifiedEncounterCount == 1, "readback must report modified encounter count")
+assert(
+	result.UnitCountsByEncounterSlotId.StandardSquad.UnitCountDelta == 1,
+	"slot summary must expose concentrated pressure delta"
+)
+assert(result.UnitCountsByEncounterSlotId.None.UnitCountDelta == 0, "empty slot summary must remain stable")
+assert(result.UnitCountsByArchetypeId.walker.UnitCountDelta == 1, "archetype summary must identify changed roster")
+assert(result.UnitCountsByArchetypeId.spitter.UnitCountDelta == 0, "unchanged archetype must remain visible")
+assert(table.isfrozen(result.UnitCountsByArchetypeId.walker), "archetype summaries must be immutable")
 assert(
 	string.find(result.CompositionIdentity, "composition|entry;composition|combat", 1, true) ~= nil,
 	"readback identity must bind the complete ordered composition"
@@ -115,5 +142,15 @@ local ok = pcall(function()
 end)
 assert(not ok, "duplicate room identities must fail closed")
 view.build = duplicateView
+
+local completeView = view.build
+view.build = function(_roomPlan: any, _variationPlan: any)
+	return { Records = { { RoomId = "combat" } } }
+end
+local cardinalityOk = pcall(function()
+	readback.build(roomPlan)
+end)
+assert(not cardinalityOk, "missing authored room records must fail closed")
+view.build = completeView
 
 print("Run variation composition debug readback fixture passed")
