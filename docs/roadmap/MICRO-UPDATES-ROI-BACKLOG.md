@@ -41,17 +41,17 @@ Status: `DONE` · `NEXT` · `QUEUED` · `GATED`
 | 31 | DONE | Add run seed copy/paste debug command | Quicker reproduction |
 | 32 | DONE | Add last-start failure readback | Diagnose rejected launches |
 | 33 | DONE | Add placement failure cleanup regression | Prevent orphaned state |
-| 34 | NEXT | Add variation planning failure cleanup regression | Prevent stale bootstrap state |
-| 35 | QUEUED | Add encounter-view failure cleanup regression | Prevent partial active runs |
-| 36 | QUEUED | Reset barrier state on creation failures | Avoid cross-run leakage |
-| 37 | QUEUED | Validate run ID normalization | More stable telemetry keys |
-| 38 | QUEUED | Reject whitespace-only run IDs | Close malformed diagnostic identity |
-| 39 | QUEUED | Add active seed to server debug response | Faster replay setup |
-| 40 | QUEUED | Add room-plan identity to server debug response | Faster source comparison |
-| 41 | QUEUED | Add modifier ID to encounter debug records | Remove cross-reference work |
-| 42 | QUEUED | Add secret-branch presence to run summary | Full variation visibility |
-| 43 | QUEUED | Add optional-objective presence to run summary | Full variation visibility |
-| 44 | QUEUED | Add composition duration timing in development mode | Spot expensive planning |
+| 34 | DONE | Add variation planning failure cleanup regression | Prevent stale bootstrap state |
+| 35 | DONE | Add encounter-view failure cleanup regression | Prevent partial active runs |
+| 36 | DONE | Reset barrier state on creation failures | Avoid cross-run leakage |
+| 37 | DONE | Validate run ID normalization | More stable telemetry keys |
+| 38 | DONE | Reject whitespace-only run IDs | Close malformed diagnostic identity |
+| 39 | DONE | Add active seed to server debug response | Faster replay setup |
+| 40 | DONE | Add room-plan identity to server debug response | Faster source comparison |
+| 41 | DONE | Add modifier ID to encounter debug records | Remove cross-reference work |
+| 42 | DONE | Add secret-branch presence to run summary | Full variation visibility |
+| 43 | DONE | Add optional-objective presence to run summary | Full variation visibility |
+| 44 | NEXT | Add composition duration timing in development mode | Spot expensive planning |
 | 45 | QUEUED | Add maximum composition-time fixture budget | Guard server startup cost |
 | 46 | QUEUED | Cache immutable authored encounter lookup | Reduce repeated indexing |
 | 47 | QUEUED | Centralize composition identity formatting | Lower extension cost |
