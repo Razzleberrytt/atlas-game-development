@@ -258,4 +258,48 @@ check(
 )
 planner.plan = originalPlanner
 check(table.isfrozen(result) and table.isfrozen(result.RecordByRoomId), "readback must remain immutable")
+
+local function auditImmutable(value: any, path: string)
+	if type(value) ~= "table" then
+		return
+	end
+	check(table.isfrozen(value), string.format("readback table %s must be immutable", path))
+	for key, nested in value do
+		auditImmutable(nested, string.format("%s.%s", path, tostring(key)))
+	end
+end
+auditImmutable(result, "readback")
+
+local function snapshot(value: any): any
+	if type(value) ~= "table" then
+		return value
+	end
+	local copy = {}
+	for key, nested in value do
+		copy[key] = snapshot(nested)
+	end
+	return copy
+end
+
+local function matchesSnapshot(value: any, expected: any, path: string)
+	if type(expected) ~= "table" then
+		check(value == expected, string.format("readback mutated caller-owned input at %s", path))
+		return
+	end
+	check(type(value) == "table", string.format("readback replaced caller-owned table at %s", path))
+	for key, nested in expected do
+		matchesSnapshot(value[key], nested, string.format("%s.%s", path, tostring(key)))
+	end
+	for key in value do
+		check(
+			expected[key] ~= nil,
+			string.format("readback added a key to caller-owned input at %s.%s", path, tostring(key))
+		)
+	end
+end
+
+local planSnapshot = snapshot(plan)
+readback.build(plan)
+matchesSnapshot(plan, planSnapshot, "plan")
+
 print("Run variation composition debug readback fixture passed")

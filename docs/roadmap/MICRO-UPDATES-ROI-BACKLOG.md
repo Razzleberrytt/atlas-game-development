@@ -81,12 +81,12 @@ Status: `DONE` · `NEXT` · `QUEUED` · `GATED`
 | 71 | DONE | Add content source IDs to record | Trace spawn/reward ownership |
 | 72 | DONE | Audit reward source remains unchanged | Protect economy authority |
 | 73 | DONE | Audit spawn source remains unchanged | Protect enemy authority |
-| 74 | NEXT | Add immutable nested readback audit | Prevent diagnostic mutation |
-| 75 | QUEUED | Copy caller-owned room plan inputs in debug fixtures | Guard purity |
-| 76 | QUEUED | Add malformed node index rejection | Fail fast on corrupted plans |
-| 77 | QUEUED | Add missing room ID rejection | Fail fast on corrupted plans |
-| 78 | QUEUED | Add missing encounter slot rejection | Fail fast on corrupted content |
-| 79 | QUEUED | Add invalid intensity rejection | Fail fast on corrupted content |
+| 74 | DONE | Add immutable nested readback audit | Prevent diagnostic mutation |
+| 75 | DONE | Copy caller-owned room plan inputs in debug fixtures | Guard purity |
+| 76 | DONE | Add malformed node index rejection | Fail fast on corrupted plans |
+| 77 | DONE | Add missing room ID rejection | Fail fast on corrupted plans |
+| 78 | DONE | Add missing encounter slot rejection | Fail fast on corrupted content |
+| 79 | NEXT | Add invalid intensity rejection | Fail fast on corrupted content |
 | 80 | QUEUED | Add invalid unit count rejection | Fail fast on corrupted content |
 | 81 | QUEUED | Add seed boundary fixtures | Protect runtime limits |
 | 82 | QUEUED | Add party-size boundary fixtures | Protect launch validation |

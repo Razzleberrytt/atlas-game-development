@@ -27,6 +27,33 @@ export type EncounterView = {
 
 local RunVariationEncounterView = {}
 
+--[[
+	A corrupted room-plan node must fail the build instead of silently dropping an
+	encounter. The record loop below only emits a record when both encounter fields
+	are present, so a node carrying an intensity without a slot (or a slot without
+	an intensity) would otherwise disappear from every downstream composition,
+	spawn, and diagnostic without a single error.
+]]
+local function assertNodeShape(node: any, seenIndices: { [number]: boolean })
+	assert(type(node) == "table", "room plan node must be a table")
+	assert(
+		type(node.Index) == "number" and node.Index % 1 == 0 and node.Index > 0,
+		"room plan node has a malformed node index"
+	)
+	assert(seenIndices[node.Index] == nil, "room plan node index is duplicated")
+	seenIndices[node.Index] = true
+	assert(type(node.RoomId) == "string" and node.RoomId ~= "", "room plan node is missing a room id")
+
+	if node.EncounterSlotId == nil and node.EncounterIntensity == nil then
+		return
+	end
+	assert(
+		type(node.EncounterSlotId) == "string" and node.EncounterSlotId ~= "",
+		"room plan encounter node is missing an encounter slot id"
+	)
+	assert(type(node.EncounterIntensity) == "number", "room plan encounter node is missing an encounter intensity")
+end
+
 local function modifierOverrideByNode(variationPlan: any): { [number]: any }
 	local byNode = {}
 	local modifier = variationPlan.RunModifier
@@ -57,8 +84,10 @@ function RunVariationEncounterView.build(roomPlan: any, variationPlan: any): Enc
 
 	local overridesByNode = modifierOverrideByNode(variationPlan)
 	local records = {}
+	local seenIndices = {}
 	for _, node in roomPlan.Nodes do
-		if type(node.EncounterSlotId) == "string" and type(node.EncounterIntensity) == "number" then
+		assertNodeShape(node, seenIndices)
+		if node.EncounterSlotId ~= nil then
 			local override = overridesByNode[node.Index]
 			local effectiveIntensity = node.EncounterIntensity
 			local modifierApplied = false
