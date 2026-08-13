@@ -14,6 +14,7 @@ local REWARD_CONFIG_TOKEN = {}
 local CONTRACTS_TOKEN = {}
 local VARIATION_PLANNER_TOKEN = {}
 local ENCOUNTER_VIEW_TOKEN = {}
+local COMPOSITION_READBACK_TOKEN = {}
 local BOOTSTRAP_TOKEN = {}
 local PLACEMENT_TOKEN = {}
 local BARRIER_TOKEN = {}
@@ -24,6 +25,7 @@ local RUN_BUILD_TOKEN = {}
 local roomPlan: any = nil
 local variationPlan: any = nil
 local encounterView: any = nil
+local compositionReadback: any = nil
 local plannerReceivedPlan: any = nil
 local encounterViewReceivedPlan: any = nil
 local encounterViewReceivedVariationPlan: any = nil
@@ -80,6 +82,20 @@ local encounterViewBuilder = {
 			Records = table.freeze({}),
 		})
 		return encounterView
+	end,
+}
+
+local compositionReadbackBuilder = {
+	build = function(plan: any): any
+		if plan.Seed == 997 then
+			error("intentional composition readback failure")
+		end
+		compositionReadback = table.freeze({
+			Seed = plan.Seed,
+			RoomPlanIdentity = plan.PlanIdentity,
+			CompositionIdentity = "composition:" .. plan.PlanIdentity,
+		})
+		return compositionReadback
 	end,
 }
 
@@ -166,6 +182,7 @@ local replicatedStorage = {
 			ExpeditionContracts = CONTRACTS_TOKEN,
 			RunVariationPlanner = VARIATION_PLANNER_TOKEN,
 			RunVariationEncounterView = ENCOUNTER_VIEW_TOKEN,
+			RunVariationCompositionDebugReadback = COMPOSITION_READBACK_TOKEN,
 		},
 	},
 }
@@ -207,6 +224,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return variationPlanner
 			elseif token == ENCOUNTER_VIEW_TOKEN then
 				return encounterViewBuilder
+			elseif token == COMPOSITION_READBACK_TOKEN then
+				return compositionReadbackBuilder
 			elseif token == BOOTSTRAP_TOKEN then
 				return bootstrap
 			elseif token == PLACEMENT_TOKEN then
@@ -228,6 +247,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 
 assert(service.readRunVariationPlan() == nil, "variation plan must be absent before a run starts")
 assert(service.readRunVariationEncounterView() == nil, "encounter view must be absent before a run starts")
+assert(service.readRunVariationComposition() == nil, "composition readback must be absent before a run starts")
 service.start()
 assert(heartbeatCallback ~= nil, "service start must preserve its bounded heartbeat owner")
 
@@ -247,12 +267,31 @@ assert(
 assert(variationPlan.Seed == 321, "variation plan must retain the authoritative run seed")
 assert(encounterView.Seed == 321, "encounter view must retain the authoritative run seed")
 assert(service.readRoomPlan() == roomPlan, "existing room-plan read must remain unchanged")
+local activeComposition = service.readRunVariationComposition()
+assert(activeComposition ~= nil, "server read must expose active composition diagnostics")
+assert(activeComposition.RunId == "run-observe-001", "composition diagnostics must bind to the active run")
+assert(activeComposition.Composition == compositionReadback, "active diagnostics must retain the pure readback")
+assert(
+	activeComposition.ActiveCompositionIdentity
+		== "P06-ACTIVE-COMPOSITION-v1|run=run-observe-001|composition=composition:room-plan:321",
+	"active composition identity must bind run and deterministic composition identities"
+)
+assert(table.isfrozen(activeComposition), "active composition diagnostics must be immutable")
 
 local stopped = service.stopExpedition("fixture-stop")
 assert(stopped.Accepted == true, "active expedition must stop")
 assert(bootstrapDestroyed == true, "stopping must still destroy the bootstrap")
 assert(service.readRunVariationPlan() == nil, "stopping must clear variation observability")
 assert(service.readRunVariationEncounterView() == nil, "stopping must clear encounter-view observability")
+assert(service.readRunVariationComposition() == nil, "stopping must clear composition observability")
+
+local compositionFailed = service.startExpedition({ Seed = 997, PartySize = 1, RunId = "run-observe-997" })
+assert(
+	compositionFailed.Accepted == false and compositionFailed.ReasonId == "RunVariationCompositionFailed",
+	"composition failure must reject creation"
+)
+assert(bootstrapDestroyed == true, "composition failure must destroy the half-created bootstrap")
+assert(service.readRunVariationComposition() == nil, "composition failure must not publish stale diagnostics")
 
 local encounterViewFailed = service.startExpedition({ Seed = 998, PartySize = 1, RunId = "run-observe-998" })
 assert(
@@ -278,6 +317,7 @@ assert(service.readRunVariationEncounterView() == nil, "planner failure must not
 service.stop()
 assert(service.readRunVariationPlan() == nil, "service shutdown must leave no variation state")
 assert(service.readRunVariationEncounterView() == nil, "service shutdown must leave no encounter-view state")
+assert(service.readRunVariationComposition() == nil, "service shutdown must leave no composition state")
 
 local liveMountSource = fs.readFile("games/living-kingdoms/src/server/expedition-live.server.luau")
 assert(
@@ -287,6 +327,14 @@ assert(
 assert(
 	string.find(liveMountSource, "ExpeditionLiveRuntimeService.readRunVariationEncounterView()", 1, true) ~= nil,
 	"encounter view read action must delegate to the canonical live runtime owner"
+)
+assert(
+	string.find(liveMountSource, 'action == "ReadRunVariationComposition"', 1, true) ~= nil,
+	"server-only ExpeditionControl must expose the composition read action"
+)
+assert(
+	string.find(liveMountSource, "ExpeditionLiveRuntimeService.readRunVariationComposition()", 1, true) ~= nil,
+	"composition read action must delegate to the canonical live runtime owner"
 )
 
 print("Expedition run variation observability fixture passed")

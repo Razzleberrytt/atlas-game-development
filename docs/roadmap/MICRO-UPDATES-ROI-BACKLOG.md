@@ -2,7 +2,7 @@
 
 **Status:** active ranked micro-update queue  
 **Updated:** 2026-08-13  
-**Scoring rule:** player value and defect prevention first, then dependency removal, reuse, effort, and verification cost. Re-rank after each three-item pass when repository truth changes.
+**Scoring rule:** player value and defect prevention first, then dependency removal, reuse, effort, and verification cost. Re-rank after each five-item pass when repository truth changes.
 
 Status: `DONE` · `NEXT` · `QUEUED` · `GATED`
 
@@ -11,12 +11,12 @@ Status: `DONE` · `NEXT` · `QUEUED` · `GATED`
 | 1 | DONE | Add room-ID lookup to composition debug readback | Faster live mismatch diagnosis |
 | 2 | DONE | Add aggregate original/applied/delta unit totals | Immediate balance visibility |
 | 3 | DONE | Add deterministic whole-composition identity | Reliable replay comparison |
-| 4 | NEXT | Mount composition readback in the server-only live runtime | Observe actual active composition |
-| 5 | NEXT | Add server-only `ReadRunVariationComposition` action | Make diagnostics reachable without client authority |
-| 6 | NEXT | Clear composition readback on every stop/failure path | Prevent stale-run diagnostics |
-| 7 | QUEUED | Regression-test live readback lifecycle | Lock start/read/stop behavior |
-| 8 | QUEUED | Bind readback identity to active run ID | Distinguish concurrent/replayed runs |
-| 9 | QUEUED | Report composed encounter count | Spot missing rooms instantly |
+| 4 | DONE | Mount composition readback in the server-only live runtime | Observe actual active composition |
+| 5 | DONE | Add server-only `ReadRunVariationComposition` action | Make diagnostics reachable without client authority |
+| 6 | DONE | Clear composition readback on every stop/failure path | Prevent stale-run diagnostics |
+| 7 | DONE | Regression-test live readback lifecycle | Lock start/read/stop behavior |
+| 8 | DONE | Bind readback identity to active run ID | Distinguish concurrent/replayed runs |
+| 9 | NEXT | Report composed encounter count | Spot missing rooms instantly |
 | 10 | QUEUED | Report modified encounter count | Quantify modifier reach |
 | 11 | QUEUED | Add per-slot aggregate unit deltas | Find pressure concentration |
 | 12 | QUEUED | Add per-archetype aggregate unit deltas | Detect roster skew |
@@ -111,4 +111,4 @@ Status: `DONE` · `NEXT` · `QUEUED` · `GATED`
 
 ## Pass rule
 
-Implement ranks in groups of three when they remain dependency-safe. Each pass must use the smallest truthful risk tier, add focused regression coverage, run the required validation profile, and leave Studio-only claims as **BUILT — VERIFICATION PENDING**.
+Implement ranks in groups of five when they remain dependency-safe. Each pass must use the smallest truthful risk tier, add focused regression coverage, run the required validation profile, and leave Studio-only claims as **BUILT — VERIFICATION PENDING**.
