@@ -118,4 +118,54 @@ local okOverride = pcall(function()
 end)
 check(okOverride == false, "drifted modifier override must fail closed")
 
+local baselineVariation = {
+	Seed = 321,
+	RoomPlanIdentity = "room-plan:321",
+	VariationIdentity = "variation:corrupt-plan",
+	RunModifier = nil,
+}
+
+local function mustRejectNodes(nodes: { any }, message: string)
+	local ok = pcall(function()
+		View.build({ Seed = 321, PlanIdentity = "room-plan:321", Nodes = nodes }, baselineVariation)
+	end)
+	check(ok == false, message)
+end
+
+mustRejectNodes({
+	{ RoomId = "entry", EncounterSlotId = "none", EncounterIntensity = 0 },
+}, "missing node index must fail closed")
+mustRejectNodes({
+	{ Index = 1.5, RoomId = "entry", EncounterSlotId = "none", EncounterIntensity = 0 },
+}, "fractional node index must fail closed")
+mustRejectNodes({
+	{ Index = 0, RoomId = "entry", EncounterSlotId = "none", EncounterIntensity = 0 },
+}, "non-positive node index must fail closed")
+mustRejectNodes({
+	{ Index = 1, RoomId = "entry", EncounterSlotId = "none", EncounterIntensity = 0 },
+	{ Index = 1, RoomId = "combat-a", EncounterSlotId = "standard", EncounterIntensity = 2 },
+}, "duplicate node index must fail closed")
+mustRejectNodes({
+	{ Index = 1, EncounterSlotId = "none", EncounterIntensity = 0 },
+}, "missing room id must fail closed")
+mustRejectNodes({
+	{ Index = 1, RoomId = "", EncounterSlotId = "none", EncounterIntensity = 0 },
+}, "empty room id must fail closed")
+mustRejectNodes({
+	{ Index = 1, RoomId = "combat-a", EncounterIntensity = 2 },
+}, "encounter node without a slot id must fail closed")
+mustRejectNodes({
+	{ Index = 1, RoomId = "combat-a", EncounterSlotId = "", EncounterIntensity = 2 },
+}, "encounter node with an empty slot id must fail closed")
+mustRejectNodes({
+	{ Index = 1, RoomId = "combat-a", EncounterSlotId = "standard" },
+}, "encounter node without an intensity must fail closed")
+
+local nonEncounterView = View.build({
+	Seed = 321,
+	PlanIdentity = "room-plan:321",
+	Nodes = { { Index = 1, RoomId = "corridor", Role = "Transit" } },
+}, baselineVariation)
+check(#nonEncounterView.Records == 0, "a node without encounter fields must remain a valid non-encounter room")
+
 print("Run variation encounter view fixture passed")
