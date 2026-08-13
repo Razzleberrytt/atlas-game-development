@@ -21,17 +21,17 @@ Status: `DONE` · `NEXT` · `QUEUED` · `GATED`
 | 11 | DONE | Add per-slot aggregate unit deltas | Find pressure concentration |
 | 12 | DONE | Add per-archetype aggregate unit deltas | Detect roster skew |
 | 13 | DONE | Fail closed on authored encounter/view cardinality mismatch | Prevent partial composition |
-| 14 | NEXT | Fail closed on duplicate encounter slot within a room | Prevent ambiguous spawning |
-| 15 | QUEUED | Validate composition identity during runtime bootstrap | Catch drift before play |
-| 16 | QUEUED | Add zero-encounter readback coverage | Protect noncombat rooms |
-| 17 | QUEUED | Add no-modifier readback coverage | Protect baseline runs |
-| 18 | QUEUED | Add multi-wave aggregate regression fixture | Protect current Patch 0.6 path |
-| 19 | QUEUED | Add composition failure reason IDs | Faster actionable logs |
-| 20 | QUEUED | Bound diagnostic string sizes | Avoid oversized debug payloads |
-| 21 | QUEUED | Add active-room composition lookup | Support room-scoped debugging |
-| 22 | QUEUED | Expose selected-wave identity in active context | Trace wave choice quickly |
-| 23 | QUEUED | Bind spawned wave to composition identity | Prove runtime uses planned content |
-| 24 | QUEUED | Audit spawned unit totals against composition | Detect runtime plan drift |
+| 14 | DONE | Fail closed on duplicate encounter slot within a room | Prevent ambiguous spawning |
+| 15 | DONE | Validate composition identity during runtime bootstrap | Catch drift before play |
+| 16 | DONE | Add zero-encounter readback coverage | Protect noncombat rooms |
+| 17 | DONE | Add no-modifier readback coverage | Protect baseline runs |
+| 18 | DONE | Add multi-wave aggregate regression fixture | Protect current Patch 0.6 path |
+| 19 | DONE | Add composition failure reason IDs | Faster actionable logs |
+| 20 | DONE | Bound diagnostic string sizes | Avoid oversized debug payloads |
+| 21 | DONE | Add active-room composition lookup | Support room-scoped debugging |
+| 22 | DONE | Expose selected-wave identity in active context | Trace wave choice quickly |
+| 23 | DONE | Bind spawned wave to composition identity | Prove runtime uses planned content |
+| 24 | NEXT | Audit spawned unit totals against composition | Detect runtime plan drift |
 | 25 | QUEUED | Add one-shot warning for composition drift | Surface defects without log spam |
 | 26 | QUEUED | Add deterministic modifier summary text | Easier QA screenshots |
 | 27 | QUEUED | Add encounter intensity summary text | Easier balance review |

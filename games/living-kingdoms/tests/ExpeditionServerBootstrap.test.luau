@@ -313,7 +313,9 @@ local Bootstrap = loadModule("server/Systems/ExpeditionServerBootstrap.luau", "E
 		if token == BOOTSTRAP_ENCOUNTER_COMPOSER_TOKEN then
 			return {
 				compose = function(_seed: number, _record: any, authoredEncounter: any)
-					return authoredEncounter
+					local composed = table.clone(authoredEncounter)
+					composed.CompositionIdentity = "P06-AUTHORED-ENCOUNTER-COMPOSER-v1|fixture"
+					return composed
 				end,
 			}
 		end

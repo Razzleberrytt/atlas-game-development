@@ -53,6 +53,7 @@ local adapter = Adapter.new(director, function(encounterContext: any): any
 	if encounterContext.PhaseId == "Approach" then
 		return {
 			Kind = "WaveSequence",
+			CompositionIdentity = "composition|approach",
 			CompletionDelaySeconds = 3,
 			Waves = {
 				{
@@ -90,6 +91,7 @@ local adapter = Adapter.new(director, function(encounterContext: any): any
 	end
 	return {
 		Kind = "Wave",
+		CompositionIdentity = "composition|dungeon",
 		WaveIndex = encounterContext.RoomIndex or 1,
 		Wave = {
 			{
@@ -123,6 +125,7 @@ assert(#spawnRequests == 2, "every typed authored definition must reach spawnEne
 assert(spawnRequests[1].archetypeId == "enemy.exclusion_walker")
 assert(spawnRequests[1].hordeRoleId == "horde.role.runner")
 assert(spawnRequests[1].spawnSourceId == "AuthoredWave")
+assert(spawnRequests[1].compositionIdentity == "composition|dungeon")
 assert(spawnRequests[1].isHordePulse == true)
 assert(spawnRequests[2].archetypeId == "enemy.blight_spitter")
 assert(spawnRequests[2].hordeRoleId == nil)
@@ -157,6 +160,7 @@ local nextStageStarted, nextStageReason = adapter:pollCompletion(106)
 assert(nextStageStarted == false and nextStageReason == "SequenceWaveStarted")
 assert(pressureWaveIndexes[#pressureWaveIndexes] == 12, "sequence must preserve the next authored pressure index")
 assert(spawnRequests[#spawnRequests].entityId == "sequence-token:approach:2")
+assert(spawnRequests[#spawnRequests].compositionIdentity == "composition|approach")
 local secondStagePending, secondStagePendingReason = adapter:pollCompletion(107)
 assert(secondStagePending == false and secondStagePendingReason == "EncounterInProgress")
 liveFacts = { { entityId = "unrelated-enemy", isAlive = true } }

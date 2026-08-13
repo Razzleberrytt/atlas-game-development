@@ -62,6 +62,7 @@ export type EncounterDefinition = {
 	CompletionDelaySeconds: number?,
 	BossPosition: { x: number, y: number, z: number }?,
 	FloodlightsRestored: boolean?,
+	CompositionIdentity: string?,
 }
 export type DefinitionResolver = (context: EncounterContext) -> EncounterDefinition?
 export type Adapter = {
@@ -77,6 +78,7 @@ type Internal = {
 	ResolveDefinition: DefinitionResolver,
 	ActiveContext: EncounterContext?,
 	ActiveKind: ("Wave" | "WaveSequence" | "Boss")?,
+	ActiveCompositionIdentity: string?,
 	TrackedEntityIds: { [string]: boolean },
 	SawTrackedEntity: boolean,
 	SawBoss: boolean,
@@ -104,7 +106,12 @@ local function copyContext(context: EncounterContext): EncounterContext
 	})
 end
 
-local function startTypedWave(state: Internal, waveIndex: number, wave: { WaveDefinition }): boolean
+local function startTypedWave(
+	state: Internal,
+	waveIndex: number,
+	wave: { WaveDefinition },
+	compositionIdentity: string
+): boolean
 	-- Preserve the director's existing authored-wave escalation/recovery side
 	-- effects, but do not let that legacy helper mint generic walkers for typed
 	-- First Descent definitions.
@@ -120,6 +127,7 @@ local function startTypedWave(state: Internal, waveIndex: number, wave: { WaveDe
 			position = { x = enemy.x, y = enemy.y, z = enemy.z },
 			isHordePulse = enemy.hordeRoleId ~= nil,
 			hordeRoleId = enemy.hordeRoleId,
+			compositionIdentity = compositionIdentity,
 		})
 		if spawnResult.didSpawn or spawnResult.wasDeferred then
 			accepted += 1
@@ -147,12 +155,17 @@ local function validateWave(waveIndex: unknown, wave: unknown, knownIds: { [stri
 	return true
 end
 
-local function beginWave(state: Internal, waveIndex: number, wave: { WaveDefinition }): boolean
+local function beginWave(
+	state: Internal,
+	waveIndex: number,
+	wave: { WaveDefinition },
+	compositionIdentity: string
+): boolean
 	local tracked = {}
 	for _, enemy in wave do
 		tracked[enemy.id] = true
 	end
-	if not startTypedWave(state, waveIndex, wave) then
+	if not startTypedWave(state, waveIndex, wave, compositionIdentity) then
 		return false
 	end
 	state.TrackedEntityIds = tracked
@@ -185,14 +198,22 @@ local function startEncounter(state: Internal, context: EncounterContext): boole
 
 	local knownIds = {}
 	if definition.Kind == "Wave" then
+		local compositionIdentity = definition.CompositionIdentity
+		if type(compositionIdentity) ~= "string" or compositionIdentity == "" then
+			return false
+		end
 		local waveIndex, wave = definition.WaveIndex, definition.Wave
 		if not validateWave(waveIndex, wave, knownIds) then
 			return false
 		end
-		if not beginWave(state, waveIndex :: number, wave :: { WaveDefinition }) then
+		if not beginWave(state, waveIndex :: number, wave :: { WaveDefinition }, compositionIdentity) then
 			return false
 		end
 	elseif definition.Kind == "WaveSequence" then
+		local compositionIdentity = definition.CompositionIdentity
+		if type(compositionIdentity) ~= "string" or compositionIdentity == "" then
+			return false
+		end
 		local stages = definition.Waves
 		local completionDelaySeconds = definition.CompletionDelaySeconds or 0
 		if type(stages) ~= "table" or #stages == 0 then
@@ -213,7 +234,7 @@ local function startEncounter(state: Internal, context: EncounterContext): boole
 			end
 		end
 		local firstStage = stages[1]
-		if not beginWave(state, firstStage.WaveIndex, firstStage.Wave) then
+		if not beginWave(state, firstStage.WaveIndex, firstStage.Wave, compositionIdentity) then
 			return false
 		end
 		state.SequenceStages = stages
@@ -233,6 +254,7 @@ local function startEncounter(state: Internal, context: EncounterContext): boole
 
 	state.ActiveContext = copyContext(context)
 	state.ActiveKind = definition.Kind
+	state.ActiveCompositionIdentity = definition.CompositionIdentity
 	state.SawBoss = false
 	state.NextSequenceStageEligibleAtUnix = nil
 	state.SequenceCompletionEligibleAtUnix = nil
@@ -261,7 +283,11 @@ local function pollWaveSequence(state: Internal, nowUnix: number?): (boolean, st
 		if nowUnix < state.NextSequenceStageEligibleAtUnix then
 			return false, "SequenceRecovery"
 		end
-		if not beginWave(state, nextStage.WaveIndex, nextStage.Wave) then
+		local compositionIdentity = state.ActiveCompositionIdentity
+		if type(compositionIdentity) ~= "string" or compositionIdentity == "" then
+			return false, "CompositionIdentityMissing"
+		end
+		if not beginWave(state, nextStage.WaveIndex, nextStage.Wave, compositionIdentity) then
 			return false, "SequenceWaveStartRejected"
 		end
 		state.SequenceStageIndex = nextStageIndex

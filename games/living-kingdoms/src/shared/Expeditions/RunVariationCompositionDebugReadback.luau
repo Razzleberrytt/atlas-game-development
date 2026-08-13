@@ -24,6 +24,7 @@ export type CompositionRecord = {
 	ModifierApplied: boolean,
 	UnitCountDelta: number,
 	SelectedWaveIndex: number?,
+	SelectedWaveIdentity: string?,
 	OriginalUnitCount: number,
 	AppliedUnitCount: number,
 	CompositionIdentity: string,
@@ -54,6 +55,13 @@ export type UnitCountSummary = {
 }
 
 local DebugReadback = {}
+DebugReadback.FailureReasonIds = table.freeze({
+	DuplicateEncounterSlot = "DuplicateEncounterSlot",
+	CardinalityMismatch = "CardinalityMismatch",
+	IdentityTooLarge = "IdentityTooLarge",
+})
+
+local MAX_COMPOSITION_IDENTITY_LENGTH = 16_384
 
 local function addCount(summaryById: { [string]: any }, id: string, originalCount: number, appliedCount: number)
 	local summary = summaryById[id]
@@ -107,6 +115,7 @@ function DebugReadback.build(roomPlan: any): Readback
 	local unitCountsByArchetypeId = {}
 	local expectedRoomIds = {}
 	local expectedEncounterCount = 0
+	local seenRoomSlotIds = {}
 	for _, node in roomPlan.Nodes do
 		if type(node.EncounterSlotId) == "string" and type(node.EncounterIntensity) == "number" then
 			assert(
@@ -128,6 +137,18 @@ function DebugReadback.build(roomPlan: any): Readback
 
 		local composed =
 			RunVariationAuthoredEncounterComposer.compose(roomPlan.Seed, encounterRecord, authoredEncounter)
+		local roomSlotId = composed.RoomId .. "|" .. composed.EncounterSlotId
+		assert(
+			seenRoomSlotIds[roomSlotId] == nil,
+			DebugReadback.FailureReasonIds.DuplicateEncounterSlot .. ": duplicate room encounter slot"
+		)
+		seenRoomSlotIds[roomSlotId] = true
+		local selectedWaveIdentity = nil
+		if composed.SelectedWaveIndex ~= nil then
+			local selectedWave = composed.Waves[composed.SelectedWaveIndex]
+			assert(selectedWave ~= nil, "selected composed wave is required")
+			selectedWaveIdentity = selectedWave.VariationApplication.ApplicationIdentity
+		end
 
 		local record = table.freeze({
 			NodeIndex = composed.NodeIndex,
@@ -138,6 +159,7 @@ function DebugReadback.build(roomPlan: any): Readback
 			ModifierApplied = composed.ModifierApplied,
 			UnitCountDelta = composed.UnitCountDelta,
 			SelectedWaveIndex = composed.SelectedWaveIndex,
+			SelectedWaveIdentity = selectedWaveIdentity,
 			OriginalUnitCount = composed.OriginalUnitCount,
 			AppliedUnitCount = composed.AppliedUnitCount,
 			CompositionIdentity = composed.CompositionIdentity,
@@ -160,7 +182,11 @@ function DebugReadback.build(roomPlan: any): Readback
 		countArchetypes(unitCountsByArchetypeId, authoredEncounter.Waves, "OriginalUnitCount")
 		countArchetypes(unitCountsByArchetypeId, composed.Waves, "AppliedUnitCount")
 	end
-	assert(#records == expectedEncounterCount, "authored encounter and encounter-view cardinality mismatch")
+	assert(
+		#records == expectedEncounterCount,
+		DebugReadback.FailureReasonIds.CardinalityMismatch
+			.. ": authored encounter and encounter-view cardinality mismatch"
+	)
 
 	local runModifier = variationPlan.RunModifier
 	local unitCountDelta = appliedUnitCount - originalUnitCount
@@ -172,6 +198,10 @@ function DebugReadback.build(roomPlan: any): Readback
 		originalUnitCount,
 		appliedUnitCount,
 		table.concat(compositionIdentities, ";")
+	)
+	assert(
+		#compositionIdentity <= MAX_COMPOSITION_IDENTITY_LENGTH,
+		DebugReadback.FailureReasonIds.IdentityTooLarge .. ": composition identity exceeds diagnostic bound"
 	)
 	return table.freeze({
 		Seed = roomPlan.Seed,
@@ -190,6 +220,12 @@ function DebugReadback.build(roomPlan: any): Readback
 		UnitCountsByArchetypeId = freezeSummaries(unitCountsByArchetypeId),
 		CompositionIdentity = compositionIdentity,
 	})
+end
+
+function DebugReadback.recordForRoom(readback: Readback, roomId: string): CompositionRecord?
+	assert(type(readback) == "table" and type(readback.RecordByRoomId) == "table", "readback is required")
+	assert(type(roomId) == "string" and roomId ~= "", "room id is required")
+	return readback.RecordByRoomId[roomId]
 end
 
 return table.freeze(DebugReadback)
