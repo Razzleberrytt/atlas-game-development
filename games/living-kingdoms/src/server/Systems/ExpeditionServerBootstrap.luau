@@ -13,7 +13,8 @@ local RoomPlacementPlanner = require(ReplicatedStorage.Shared.Expeditions.RoomPl
 local RoomSequenceAssembler = require(ReplicatedStorage.Shared.Expeditions.RoomSequenceAssembler)
 local RunVariationPlanner = require(ReplicatedStorage.Shared.Expeditions.RunVariationPlanner)
 local RunVariationEncounterView = require(ReplicatedStorage.Shared.Expeditions.RunVariationEncounterView)
-local RunVariationAuthoredEncounterComposer = require(ReplicatedStorage.Shared.Expeditions.RunVariationAuthoredEncounterComposer)
+local RunVariationAuthoredEncounterComposer =
+	require(ReplicatedStorage.Shared.Expeditions.RunVariationAuthoredEncounterComposer)
 local ExpeditionRuntime = require(script.Parent.ExpeditionRuntime)
 local ExpeditionEncounterCoordinator = require(script.Parent.ExpeditionEncounterCoordinator)
 local EnemyDirectorEncounterAdapter = require(script.Parent.EnemyDirectorEncounterAdapter)
@@ -220,11 +221,8 @@ local function buildEncounterResolver(rawPlan: any): (any) -> any
 	for _, record in encounterView.Records do
 		local authoredEncounter = FirstDungeonContentConfig.Encounters[record.RoomId]
 		if authoredEncounter ~= nil then
-			composedEncounterByRoomId[record.RoomId] = RunVariationAuthoredEncounterComposer.compose(
-				rawPlan.Seed,
-				record,
-				authoredEncounter
-			)
+			composedEncounterByRoomId[record.RoomId] =
+				RunVariationAuthoredEncounterComposer.compose(rawPlan.Seed, record, authoredEncounter)
 		end
 	end
 
