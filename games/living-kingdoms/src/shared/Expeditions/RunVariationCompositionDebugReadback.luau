@@ -71,7 +71,10 @@ local function auditComposition(composed: any, authored: any)
 		assert(composed.BaseIntensity == 0 and composed.EffectiveIntensity == 0, "empty room intensity must stay zero")
 		assert(composed.UnitCountDelta == 0, "empty room unit count cannot vary")
 		assert(composed.SelectedWaveIndex == nil, "empty room cannot select a variation wave")
-		assert(composed.OriginalUnitCount == 0 and composed.AppliedUnitCount == 0, "empty room must remain without units")
+		assert(
+			composed.OriginalUnitCount == 0 and composed.AppliedUnitCount == 0,
+			"empty room must remain without units"
+		)
 		assert(#composed.Waves == 0, "empty room must remain without waves")
 	end
 end
