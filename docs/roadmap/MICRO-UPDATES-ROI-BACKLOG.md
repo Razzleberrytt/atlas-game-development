@@ -71,17 +71,17 @@ Status: `DONE` · `NEXT` · `QUEUED` · `GATED`
 | 61 | DONE | Add deterministic dense-contact fixture seeds | Faster balance QA |
 | 62 | DONE | Add deterministic quiet-contact fixture seeds | Faster balance QA |
 | 63 | DONE | Add deterministic no-variation fixture seeds | Baseline comparison |
-| 64 | NEXT | Add boss immutability composition audit | Protect authored climax |
-| 65 | QUEUED | Add empty-room immutability composition audit | Protect navigation rooms |
-| 66 | QUEUED | Add minimum-retained-units diagnostic detail | Faster failure diagnosis |
-| 67 | QUEUED | Add selected unit-group index to readback | Explain count changes |
-| 68 | QUEUED | Add selected archetype ID to readback | Explain roster changes |
-| 69 | QUEUED | Add per-wave original/applied totals | Explain multi-wave changes |
-| 70 | QUEUED | Add per-wave identity to record | Pinpoint replay drift |
-| 71 | QUEUED | Add content source IDs to record | Trace spawn/reward ownership |
-| 72 | QUEUED | Audit reward source remains unchanged | Protect economy authority |
-| 73 | QUEUED | Audit spawn source remains unchanged | Protect enemy authority |
-| 74 | QUEUED | Add immutable nested readback audit | Prevent diagnostic mutation |
+| 64 | DONE | Add boss immutability composition audit | Protect authored climax |
+| 65 | DONE | Add empty-room immutability composition audit | Protect navigation rooms |
+| 66 | DONE | Add minimum-retained-units diagnostic detail | Faster failure diagnosis |
+| 67 | DONE | Add selected unit-group index to readback | Explain count changes |
+| 68 | DONE | Add selected archetype ID to readback | Explain roster changes |
+| 69 | DONE | Add per-wave original/applied totals | Explain multi-wave changes |
+| 70 | DONE | Add per-wave identity to record | Pinpoint replay drift |
+| 71 | DONE | Add content source IDs to record | Trace spawn/reward ownership |
+| 72 | DONE | Audit reward source remains unchanged | Protect economy authority |
+| 73 | DONE | Audit spawn source remains unchanged | Protect enemy authority |
+| 74 | NEXT | Add immutable nested readback audit | Prevent diagnostic mutation |
 | 75 | QUEUED | Copy caller-owned room plan inputs in debug fixtures | Guard purity |
 | 76 | QUEUED | Add malformed node index rejection | Fail fast on corrupted plans |
 | 77 | QUEUED | Add missing room ID rejection | Fail fast on corrupted plans |

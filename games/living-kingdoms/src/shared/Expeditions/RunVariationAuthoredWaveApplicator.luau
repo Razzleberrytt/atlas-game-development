@@ -20,6 +20,7 @@ export type AppliedWave = {
 	OriginalUnitCount: number,
 	AppliedUnitCount: number,
 	SelectedUnitIndex: number?,
+	SelectedArchetypeId: string?,
 	Units: { any },
 }
 
@@ -99,6 +100,7 @@ function Applicator.apply(seed: number, authoredWave: any, consequence: any): Ap
 	end
 
 	local chosenIndex = if delta == 0 then nil else selectedIndex(seed, consequence.NodeIndex, #sourceUnits)
+	local selectedArchetypeId = if chosenIndex == nil then nil else sourceUnits[chosenIndex].ArchetypeId
 	local appliedUnits = {}
 	for index, unit in sourceUnits do
 		local nextCount = unit.Count
@@ -138,6 +140,7 @@ function Applicator.apply(seed: number, authoredWave: any, consequence: any): Ap
 		OriginalUnitCount = originalUnitCount,
 		AppliedUnitCount = appliedUnitCount,
 		SelectedUnitIndex = chosenIndex,
+		SelectedArchetypeId = selectedArchetypeId,
 		Units = table.freeze(appliedUnits),
 	})
 end

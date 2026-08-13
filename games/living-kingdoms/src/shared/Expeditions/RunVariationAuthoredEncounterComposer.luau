@@ -25,6 +25,7 @@ export type ComposedEncounter = {
 	SpawnSourceId: string?,
 	RewardSourceId: string?,
 	UnitCountDelta: number,
+	MinimumRetainedUnits: number,
 	SelectedWaveIndex: number?,
 	OriginalUnitCount: number,
 	AppliedUnitCount: number,
@@ -114,6 +115,7 @@ function Composer.compose(seed: number, encounterRecord: any, authoredEncounter:
 			OriginalUnitCount = appliedWave.OriginalUnitCount,
 			AppliedUnitCount = appliedWave.AppliedUnitCount,
 			SelectedUnitIndex = appliedWave.SelectedUnitIndex,
+			SelectedArchetypeId = appliedWave.SelectedArchetypeId,
 		})
 		table.insert(composedWaves, table.freeze(composedWave))
 		table.insert(
@@ -159,6 +161,7 @@ function Composer.compose(seed: number, encounterRecord: any, authoredEncounter:
 		SpawnSourceId = authoredEncounter.SpawnSourceId,
 		RewardSourceId = authoredEncounter.RewardSourceId,
 		UnitCountDelta = consequence.UnitCountDelta,
+		MinimumRetainedUnits = consequence.MinimumRetainedUnits,
 		SelectedWaveIndex = selectedIndex,
 		OriginalUnitCount = originalUnitCount,
 		AppliedUnitCount = appliedUnitCount,

@@ -51,6 +51,62 @@ local function freezeCounts(byId: { [string]: any }): { [string]: any }
 	return table.freeze(result)
 end
 
+local function auditComposition(composed: any, authored: any)
+	assert(composed.SpawnSourceId == authored.SpawnSourceId, "composition must preserve authored spawn source")
+	assert(composed.RewardSourceId == authored.RewardSourceId, "composition must preserve authored reward source")
+	assert(
+		composed.AppliedUnitCount >= composed.MinimumRetainedUnits,
+		"composition must preserve the minimum retained authored-unit count"
+	)
+
+	if composed.EncounterSlotId == "BossEncounter" then
+		assert(composed.BaseIntensity == composed.EffectiveIntensity, "boss composition intensity must remain authored")
+		assert(composed.UnitCountDelta == 0, "boss composition unit count cannot vary")
+		assert(composed.SelectedWaveIndex == nil, "boss composition cannot select a variation wave")
+		assert(composed.OriginalUnitCount == composed.AppliedUnitCount, "boss composition count must remain authored")
+		for _, wave in composed.Waves do
+			assert(wave.VariationApplication.UnitCountDelta == 0, "boss authored waves cannot be varied")
+		end
+	elseif composed.EncounterSlotId == "None" then
+		assert(composed.BaseIntensity == 0 and composed.EffectiveIntensity == 0, "empty room intensity must stay zero")
+		assert(composed.UnitCountDelta == 0, "empty room unit count cannot vary")
+		assert(composed.SelectedWaveIndex == nil, "empty room cannot select a variation wave")
+		assert(
+			composed.OriginalUnitCount == 0 and composed.AppliedUnitCount == 0,
+			"empty room must remain without units"
+		)
+		assert(#composed.Waves == 0, "empty room must remain without waves")
+	end
+end
+
+local function buildWaveDiagnostics(composed: any): ({ any }, number?, string?, string?)
+	local diagnostics = {}
+	local selectedUnitGroupIndex = nil
+	local selectedArchetypeId = nil
+	local selectedWaveIdentity = nil
+
+	for waveIndex, wave in composed.Waves do
+		local application = wave.VariationApplication
+		local diagnostic = table.freeze({
+			WaveIndex = waveIndex,
+			OriginalUnitCount = application.OriginalUnitCount,
+			AppliedUnitCount = application.AppliedUnitCount,
+			UnitCountDelta = application.UnitCountDelta,
+			WaveIdentity = application.ApplicationIdentity,
+			SelectedUnitGroupIndex = application.SelectedUnitIndex,
+			SelectedArchetypeId = application.SelectedArchetypeId,
+		})
+		table.insert(diagnostics, diagnostic)
+		if waveIndex == composed.SelectedWaveIndex then
+			selectedWaveIdentity = diagnostic.WaveIdentity
+			selectedUnitGroupIndex = diagnostic.SelectedUnitGroupIndex
+			selectedArchetypeId = diagnostic.SelectedArchetypeId
+		end
+	end
+
+	return table.freeze(diagnostics), selectedUnitGroupIndex, selectedArchetypeId, selectedWaveIdentity
+end
+
 function DebugReadback.build(roomPlan: any): any
 	assert(type(roomPlan) == "table", "room plan is required")
 	assert(type(roomPlan.Seed) == "number" and roomPlan.Seed % 1 == 0 and roomPlan.Seed > 0, "invalid room plan seed")
@@ -96,13 +152,10 @@ function DebugReadback.build(roomPlan: any): any
 			"duplicate room encounter slot"
 		)
 		seenSlots[slotKey] = true
+		auditComposition(composed, authored)
 
-		local selectedWaveIdentity = nil
-		if composed.SelectedWaveIndex ~= nil then
-			local wave = composed.Waves[composed.SelectedWaveIndex]
-			assert(wave ~= nil, "selected composed wave is required")
-			selectedWaveIdentity = wave.VariationApplication.ApplicationIdentity
-		end
+		local waveDiagnostics, selectedUnitGroupIndex, selectedArchetypeId, selectedWaveIdentity =
+			buildWaveDiagnostics(composed)
 
 		local record = table.freeze({
 			NodeIndex = composed.NodeIndex,
@@ -113,10 +166,16 @@ function DebugReadback.build(roomPlan: any): any
 			ModifierApplied = composed.ModifierApplied,
 			ModifierId = if composed.ModifierApplied and modifier ~= nil then modifier.ModifierId else nil,
 			UnitCountDelta = composed.UnitCountDelta,
+			MinimumRetainedUnits = composed.MinimumRetainedUnits,
 			SelectedWaveIndex = composed.SelectedWaveIndex,
 			SelectedWaveIdentity = selectedWaveIdentity,
+			SelectedUnitGroupIndex = selectedUnitGroupIndex,
+			SelectedArchetypeId = selectedArchetypeId,
 			OriginalUnitCount = composed.OriginalUnitCount,
 			AppliedUnitCount = composed.AppliedUnitCount,
+			SpawnSourceId = composed.SpawnSourceId,
+			RewardSourceId = composed.RewardSourceId,
+			WaveDiagnostics = waveDiagnostics,
 			CompositionIdentity = composed.CompositionIdentity,
 		})
 		assert(byRoom[composed.RoomId] == nil, "debug readback requires unique composed room ids")
