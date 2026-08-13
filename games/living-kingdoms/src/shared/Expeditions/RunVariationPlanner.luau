@@ -31,7 +31,10 @@ local function componentIdentity(component: any?): string
 	if component == nil then
 		return "none"
 	end
-	assert(type(component.PlanIdentity) == "string" and component.PlanIdentity ~= "", "component plan identity is required")
+	assert(
+		type(component.PlanIdentity) == "string" and component.PlanIdentity ~= "",
+		"component plan identity is required"
+	)
 	return component.PlanIdentity
 end
 
