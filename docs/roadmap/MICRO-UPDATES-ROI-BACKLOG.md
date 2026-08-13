@@ -31,17 +31,17 @@ Status: `DONE` · `NEXT` · `QUEUED` · `GATED`
 | 21 | DONE | Add active-room composition lookup | Support room-scoped debugging |
 | 22 | DONE | Expose selected-wave identity in active context | Trace wave choice quickly |
 | 23 | DONE | Bind spawned wave to composition identity | Prove runtime uses planned content |
-| 24 | NEXT | Audit spawned unit totals against composition | Detect runtime plan drift |
-| 25 | QUEUED | Add one-shot warning for composition drift | Surface defects without log spam |
-| 26 | QUEUED | Add deterministic modifier summary text | Easier QA screenshots |
-| 27 | QUEUED | Add encounter intensity summary text | Easier balance review |
-| 28 | QUEUED | Add readback schema version constant | Safer future tooling |
-| 29 | QUEUED | Add identity escaping for delimiter-bearing IDs | Prevent ambiguous signatures |
-| 30 | QUEUED | Add stable record sorting assertion | Preserve reproducible replay |
-| 31 | QUEUED | Add run seed copy/paste debug command | Quicker reproduction |
-| 32 | QUEUED | Add last-start failure readback | Diagnose rejected launches |
-| 33 | QUEUED | Add placement failure cleanup regression | Prevent orphaned state |
-| 34 | QUEUED | Add variation planning failure cleanup regression | Prevent stale bootstrap state |
+| 24 | DONE | Audit spawned unit totals against composition | Detect runtime plan drift |
+| 25 | DONE | Add one-shot warning for composition drift | Surface defects without log spam |
+| 26 | DONE | Add deterministic modifier summary text | Easier QA screenshots |
+| 27 | DONE | Add encounter intensity summary text | Easier balance review |
+| 28 | DONE | Add readback schema version constant | Safer future tooling |
+| 29 | DONE | Add identity escaping for delimiter-bearing IDs | Prevent ambiguous signatures |
+| 30 | DONE | Add stable record sorting assertion | Preserve reproducible replay |
+| 31 | DONE | Add run seed copy/paste debug command | Quicker reproduction |
+| 32 | DONE | Add last-start failure readback | Diagnose rejected launches |
+| 33 | DONE | Add placement failure cleanup regression | Prevent orphaned state |
+| 34 | NEXT | Add variation planning failure cleanup regression | Prevent stale bootstrap state |
 | 35 | QUEUED | Add encounter-view failure cleanup regression | Prevent partial active runs |
 | 36 | QUEUED | Reset barrier state on creation failures | Avoid cross-run leakage |
 | 37 | QUEUED | Validate run ID normalization | More stable telemetry keys |
