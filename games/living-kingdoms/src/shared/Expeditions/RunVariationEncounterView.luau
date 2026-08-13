@@ -50,7 +50,10 @@ function RunVariationEncounterView.build(roomPlan: any, variationPlan: any): Enc
 	assert(type(roomPlan.Nodes) == "table", "room plan nodes are required")
 	assert(variationPlan.Seed == roomPlan.Seed, "variation seed must match room plan seed")
 	assert(variationPlan.RoomPlanIdentity == roomPlan.PlanIdentity, "variation room identity must match room plan")
-	assert(type(variationPlan.VariationIdentity) == "string" and variationPlan.VariationIdentity ~= "", "variation identity is required")
+	assert(
+		type(variationPlan.VariationIdentity) == "string" and variationPlan.VariationIdentity ~= "",
+		"variation identity is required"
+	)
 
 	local overridesByNode = modifierOverrideByNode(variationPlan)
 	local records = {}
@@ -61,8 +64,14 @@ function RunVariationEncounterView.build(roomPlan: any, variationPlan: any): Enc
 			local modifierApplied = false
 			if override ~= nil then
 				assert(override.RoomId == node.RoomId, "run modifier override room mismatch")
-				assert(override.EncounterSlotId == node.EncounterSlotId, "run modifier override encounter slot mismatch")
-				assert(override.BaseIntensity == node.EncounterIntensity, "run modifier override base intensity mismatch")
+				assert(
+					override.EncounterSlotId == node.EncounterSlotId,
+					"run modifier override encounter slot mismatch"
+				)
+				assert(
+					override.BaseIntensity == node.EncounterIntensity,
+					"run modifier override base intensity mismatch"
+				)
 				assert(type(override.ModifiedIntensity) == "number", "run modifier modified intensity is required")
 				effectiveIntensity = override.ModifiedIntensity
 				modifierApplied = true
