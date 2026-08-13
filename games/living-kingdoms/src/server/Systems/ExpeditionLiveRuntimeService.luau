@@ -34,6 +34,7 @@ local diagnosticWindowStartedAt = 0
 local diagnosticReadCount = 0
 
 local STEP_INTERVAL_SECONDS = 0.25
+local MAX_CATCHUP_STEPS_PER_HEARTBEAT = 4
 local MAX_DIAGNOSTIC_READS_PER_SECOND = 20
 local DIAGNOSTIC_WINDOW_SECONDS = 1
 local BossRewardDecision = FirstDungeonRewardDecisionConfig.DecisionByRoomId["keeper-core"]
@@ -241,12 +242,28 @@ function Service.start()
 	accumulatedSeconds = 0
 	resetDiagnosticRateLimit()
 	heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
-		accumulatedSeconds += deltaTime
-		if accumulatedSeconds < STEP_INTERVAL_SECONDS then
+		if type(deltaTime) ~= "number" or deltaTime <= 0 then
 			return
 		end
-		accumulatedSeconds = 0
-		driveStep()
+		accumulatedSeconds += deltaTime
+		--[[
+			Carry the remainder instead of zeroing it. Zeroing dropped every
+			fraction of a step, so a server running below 4 FPS drifted the
+			expedition cadence slower than STEP_INTERVAL_SECONDS without any
+			signal. Catch-up is capped so a single long hitch cannot queue an
+			unbounded burst of steps into one frame; a backlog past the cap is
+			abandoned rather than repaid, which keeps a stalled server from
+			spiralling.
+		]]
+		local steps = 0
+		while accumulatedSeconds >= STEP_INTERVAL_SECONDS and steps < MAX_CATCHUP_STEPS_PER_HEARTBEAT do
+			accumulatedSeconds -= STEP_INTERVAL_SECONDS
+			steps += 1
+			driveStep()
+		end
+		if accumulatedSeconds >= STEP_INTERVAL_SECONDS then
+			accumulatedSeconds = 0
+		end
 	end)
 end
 

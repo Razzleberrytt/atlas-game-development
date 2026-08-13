@@ -91,13 +91,13 @@ Status: `DONE` · `NEXT` · `QUEUED` · `GATED`
 | 81 | DONE | Add seed boundary fixtures | Protect runtime limits |
 | 82 | DONE | Add party-size boundary fixtures | Protect launch validation |
 | 83 | DONE | Add repeated start idempotency fixture | Prevent duplicate runs |
-| 84 | NEXT | Add repeated stop idempotency fixture | Prevent cleanup errors |
-| 85 | QUEUED | Add repeated service start fixture | Prevent duplicate heartbeat |
-| 86 | QUEUED | Add repeated service stop fixture | Prevent connection leaks |
-| 87 | QUEUED | Preserve step remainder instead of dropping excess delta | More stable low-FPS cadence |
-| 88 | QUEUED | Cap catch-up steps per heartbeat | Prevent frame spirals |
-| 89 | QUEUED | Add heartbeat catch-up regression | Protect server pacing |
-| 90 | QUEUED | Add active-run cleanup after terminal outcome | Reduce stale runtime time |
+| 84 | DONE | Add repeated stop idempotency fixture | Prevent cleanup errors |
+| 85 | DONE | Add repeated service start fixture | Prevent duplicate heartbeat |
+| 86 | DONE | Add repeated service stop fixture | Prevent connection leaks |
+| 87 | DONE | Preserve step remainder instead of dropping excess delta | More stable low-FPS cadence |
+| 88 | DONE | Cap catch-up steps per heartbeat | Prevent frame spirals |
+| 89 | DONE | Add heartbeat catch-up regression | Protect server pacing |
+| 90 | NEXT | Add active-run cleanup after terminal outcome | Reduce stale runtime time |
 | 91 | QUEUED | Add terminal composition summary snapshot | Improve completed-run review |
 | 92 | QUEUED | Add outcome ID to terminal summary | Improve completed-run review |
 | 93 | QUEUED | Add elapsed run seconds to terminal summary | Improve pacing review |
