@@ -31,6 +31,8 @@ control.OnInvoke = function(action: string, payload: any?): any
 		return ExpeditionLiveRuntimeService.readRoomPlan()
 	elseif action == "ReadRunVariationPlan" then
 		return ExpeditionLiveRuntimeService.readRunVariationPlan()
+	elseif action == "ReadRunVariationEncounterView" then
+		return ExpeditionLiveRuntimeService.readRunVariationEncounterView()
 	end
 	return table.freeze({ Accepted = false, ReasonId = "UnknownAction", Snapshot = nil })
 end

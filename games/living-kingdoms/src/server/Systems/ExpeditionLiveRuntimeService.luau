@@ -18,6 +18,7 @@ local ExpeditionConfig = require(ReplicatedStorage.Shared.Config.ExpeditionConfi
 local FirstDungeonRewardDecisionConfig = require(ReplicatedStorage.Shared.Config.FirstDungeonRewardDecisionConfig)
 local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.ExpeditionContracts)
 local RunVariationPlanner = require(ReplicatedStorage.Shared.Expeditions.RunVariationPlanner)
+local RunVariationEncounterView = require(ReplicatedStorage.Shared.Expeditions.RunVariationEncounterView)
 local ExpeditionServerBootstrap = require(script.Parent.ExpeditionServerBootstrap)
 local ExpeditionRoomPlacementService = require(script.Parent.ExpeditionRoomPlacementService)
 local ExpeditionRoomBarrierStateService = require(script.Parent.ExpeditionRoomBarrierStateService)
@@ -35,6 +36,7 @@ local Service = {}
 
 local activeBootstrap: any = nil
 local activeRunVariationPlan: any = nil
+local activeRunVariationEncounterView: any = nil
 local heartbeatConnection: RBXScriptConnection? = nil
 local accumulatedSeconds = 0
 local started = false
@@ -163,8 +165,9 @@ function Service.startExpedition(options: StartOptions?): any
 	end
 
 	local bootstrap = bootstrapOrError
+	local roomPlan = bootstrap:getRoomPlan()
 	local variationOk, variationPlanOrError = pcall(function()
-		return RunVariationPlanner.plan(bootstrap:getRoomPlan())
+		return RunVariationPlanner.plan(roomPlan)
 	end)
 	if not variationOk then
 		bootstrap:destroy()
@@ -172,7 +175,16 @@ function Service.startExpedition(options: StartOptions?): any
 		return result(false, "RunVariationPlanningFailed", nil)
 	end
 
-	local placement = ExpeditionRoomPlacementService.place(bootstrap:getRoomPlan())
+	local encounterViewOk, encounterViewOrError = pcall(function()
+		return RunVariationEncounterView.build(roomPlan, variationPlanOrError)
+	end)
+	if not encounterViewOk then
+		bootstrap:destroy()
+		warn("[ExpeditionLiveRuntime] failed to compose run variation encounter view:", encounterViewOrError)
+		return result(false, "RunVariationEncounterViewFailed", nil)
+	end
+
+	local placement = ExpeditionRoomPlacementService.place(roomPlan)
 	if placement.Accepted ~= true then
 		bootstrap:destroy()
 		warn("[ExpeditionLiveRuntime] failed to place expedition rooms:", placement.ReasonId)
@@ -182,6 +194,7 @@ function Service.startExpedition(options: StartOptions?): any
 	ExpeditionRoomBarrierStateService.reset()
 	activeBootstrap = bootstrap
 	activeRunVariationPlan = variationPlanOrError
+	activeRunVariationEncounterView = encounterViewOrError
 	driveStep()
 	return result(true, "ExpeditionStarted", activeBootstrap:getSnapshot())
 end
@@ -237,6 +250,7 @@ function Service.stopExpedition(reasonId: string?): any
 	bootstrap:destroy()
 	activeBootstrap = nil
 	activeRunVariationPlan = nil
+	activeRunVariationEncounterView = nil
 	ExpeditionRoomBarrierStateService.reset()
 	ExpeditionRoomPlacementService.destroy()
 	return result(true, reasonId or "ExpeditionStopped", snapshot)
@@ -263,6 +277,13 @@ function Service.readRunVariationPlan(): any
 	return activeRunVariationPlan
 end
 
+function Service.readRunVariationEncounterView(): any
+	if activeBootstrap == nil then
+		return nil
+	end
+	return activeRunVariationEncounterView
+end
+
 function Service.stop()
 	if not started then
 		return
@@ -274,6 +295,7 @@ function Service.stop()
 		activeBootstrap = nil
 	end
 	activeRunVariationPlan = nil
+	activeRunVariationEncounterView = nil
 	ExpeditionRoomBarrierStateService.reset()
 	ExpeditionRoomPlacementService.destroy()
 end

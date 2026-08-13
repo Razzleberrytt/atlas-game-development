@@ -13,6 +13,7 @@ local CONFIG_TOKEN = {}
 local REWARD_CONFIG_TOKEN = {}
 local CONTRACTS_TOKEN = {}
 local VARIATION_PLANNER_TOKEN = {}
+local ENCOUNTER_VIEW_TOKEN = {}
 local BOOTSTRAP_TOKEN = {}
 local PLACEMENT_TOKEN = {}
 local BARRIER_TOKEN = {}
@@ -22,7 +23,10 @@ local RUN_BUILD_TOKEN = {}
 
 local roomPlan: any = nil
 local variationPlan: any = nil
+local encounterView: any = nil
 local plannerReceivedPlan: any = nil
+local encounterViewReceivedPlan: any = nil
+local encounterViewReceivedVariationPlan: any = nil
 local bootstrapDestroyed = false
 local activeSnapshot = {
 	RunId = "run-observe-001",
@@ -59,6 +63,23 @@ local variationPlanner = {
 			VariationIdentity = "variation:" .. plan.PlanIdentity,
 		})
 		return variationPlan
+	end,
+}
+
+local encounterViewBuilder = {
+	build = function(plan: any, composedVariationPlan: any): any
+		encounterViewReceivedPlan = plan
+		encounterViewReceivedVariationPlan = composedVariationPlan
+		if plan.Seed == 998 then
+			error("intentional encounter-view failure")
+		end
+		encounterView = table.freeze({
+			Seed = plan.Seed,
+			RoomPlanIdentity = plan.PlanIdentity,
+			VariationIdentity = composedVariationPlan.VariationIdentity,
+			Records = table.freeze({}),
+		})
+		return encounterView
 	end,
 }
 
@@ -144,6 +165,7 @@ local replicatedStorage = {
 		Expeditions = {
 			ExpeditionContracts = CONTRACTS_TOKEN,
 			RunVariationPlanner = VARIATION_PLANNER_TOKEN,
+			RunVariationEncounterView = ENCOUNTER_VIEW_TOKEN,
 		},
 	},
 }
@@ -183,6 +205,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return contracts
 			elseif token == VARIATION_PLANNER_TOKEN then
 				return variationPlanner
+			elseif token == ENCOUNTER_VIEW_TOKEN then
+				return encounterViewBuilder
 			elseif token == BOOTSTRAP_TOKEN then
 				return bootstrap
 			elseif token == PLACEMENT_TOKEN then
@@ -203,20 +227,44 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 })()
 
 assert(service.readRunVariationPlan() == nil, "variation plan must be absent before a run starts")
+assert(service.readRunVariationEncounterView() == nil, "encounter view must be absent before a run starts")
 service.start()
 assert(heartbeatCallback ~= nil, "service start must preserve its bounded heartbeat owner")
 
 local started = service.startExpedition({ Seed = 321, PartySize = 1, RunId = "run-observe-001" })
 assert(started.Accepted == true, "valid expedition must start")
 assert(plannerReceivedPlan == roomPlan, "planner must receive the exact canonical room plan")
+assert(encounterViewReceivedPlan == roomPlan, "encounter view must receive the exact canonical room plan")
+assert(
+	encounterViewReceivedVariationPlan == variationPlan,
+	"encounter view must receive the exact composed run variation plan"
+)
 assert(service.readRunVariationPlan() == variationPlan, "server read must expose the composed variation plan")
+assert(
+	service.readRunVariationEncounterView() == encounterView,
+	"server read must expose the composed run variation encounter view"
+)
 assert(variationPlan.Seed == 321, "variation plan must retain the authoritative run seed")
+assert(encounterView.Seed == 321, "encounter view must retain the authoritative run seed")
 assert(service.readRoomPlan() == roomPlan, "existing room-plan read must remain unchanged")
 
 local stopped = service.stopExpedition("fixture-stop")
 assert(stopped.Accepted == true, "active expedition must stop")
 assert(bootstrapDestroyed == true, "stopping must still destroy the bootstrap")
 assert(service.readRunVariationPlan() == nil, "stopping must clear variation observability")
+assert(service.readRunVariationEncounterView() == nil, "stopping must clear encounter-view observability")
+
+local encounterViewFailed = service.startExpedition({ Seed = 998, PartySize = 1, RunId = "run-observe-998" })
+assert(
+	encounterViewFailed.Accepted == false and encounterViewFailed.ReasonId == "RunVariationEncounterViewFailed",
+	"encounter-view failure must reject creation"
+)
+assert(bootstrapDestroyed == true, "encounter-view failure must destroy the half-created bootstrap")
+assert(service.readRunVariationPlan() == nil, "encounter-view failure must not publish partial variation state")
+assert(
+	service.readRunVariationEncounterView() == nil,
+	"encounter-view failure must not publish partial encounter-view state"
+)
 
 local failed = service.startExpedition({ Seed = 999, PartySize = 1, RunId = "run-observe-999" })
 assert(
@@ -225,8 +273,20 @@ assert(
 )
 assert(bootstrapDestroyed == true, "planner failure must destroy the half-created bootstrap")
 assert(service.readRunVariationPlan() == nil, "planner failure must not publish partial variation state")
+assert(service.readRunVariationEncounterView() == nil, "planner failure must not publish encounter-view state")
 
 service.stop()
 assert(service.readRunVariationPlan() == nil, "service shutdown must leave no variation state")
+assert(service.readRunVariationEncounterView() == nil, "service shutdown must leave no encounter-view state")
+
+local liveMountSource = fs.readFile("games/living-kingdoms/src/server/expedition-live.server.luau")
+assert(
+	string.find(liveMountSource, 'action == "ReadRunVariationEncounterView"', 1, true) ~= nil,
+	"server-only ExpeditionControl must expose the encounter view read action"
+)
+assert(
+	string.find(liveMountSource, "ExpeditionLiveRuntimeService.readRunVariationEncounterView()", 1, true) ~= nil,
+	"encounter view read action must delegate to the canonical live runtime owner"
+)
 
 print("Expedition run variation observability fixture passed")
