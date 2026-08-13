@@ -190,7 +190,10 @@ check(
 	"central identity escaping drift"
 )
 check(readback.recordForRoom(result, "combat") == result.Records[2], "room helper drift")
-check(table.isfrozen(combat.WaveDiagnostics) and table.isfrozen(combat.WaveDiagnostics[1]), "wave diagnostics must be immutable")
+check(
+	table.isfrozen(combat.WaveDiagnostics) and table.isfrozen(combat.WaveDiagnostics[1]),
+	"wave diagnostics must be immutable"
+)
 
 local started = os.clock()
 for _ = 1, 100 do
