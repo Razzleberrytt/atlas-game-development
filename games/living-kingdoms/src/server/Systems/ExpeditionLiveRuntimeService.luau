@@ -14,7 +14,7 @@ local CompositionReadback = require(ReplicatedStorage.Shared.Expeditions.RunVari
 local DebugSchema = require(ReplicatedStorage.Shared.Expeditions.RunVariationDebugSchema)
 local Bootstrap = require(script.Parent.ExpeditionServerBootstrap)
 local Placement = require(script.Parent.ExpeditionRoomPlacementService)
-local Barrier = require(script.Parent.ExpeditionRoomBarrierStateService)
+local ExpeditionRoomBarrierStateService = require(script.Parent.ExpeditionRoomBarrierStateService)
 local RewardResolver = require(script.Parent.ExpeditionBossRewardTransitionResolver)
 local EnemyDirector = require(script.Parent.EnemyDirectorService)
 local RunBuild = require(script.Parent.RunBuildService)
@@ -78,7 +78,7 @@ end
 
 local function cleanupPartial()
 	clearVariationState()
-	Barrier.reset()
+	ExpeditionRoomBarrierStateService.reset()
 	Placement.destroy()
 end
 
@@ -142,7 +142,7 @@ local function driveStep()
 	local previous = bootstrap:getSnapshot()
 	local stepResult = bootstrap:step(nowUnix())
 	local current = bootstrap:getSnapshot()
-	Barrier.update(bootstrap:getActiveEncounterContext())
+	ExpeditionRoomBarrierStateService.update(bootstrap:getActiveEncounterContext())
 	if stepResult.Accepted == true then
 		offerBossReward(previous, current)
 	elseif
@@ -249,12 +249,12 @@ function Service.startExpedition(options: StartOptions?): any
 	if placement.Accepted ~= true then
 		bootstrap:destroy()
 		clearVariationState()
-		Barrier.reset()
+		ExpeditionRoomBarrierStateService.reset()
 		Placement.destroy()
 		warn("[ExpeditionLiveRuntime] failed to place expedition rooms:", placement.ReasonId)
 		return startFailure(placement.ReasonId, runId, seed)
 	end
-	Barrier.reset()
+	ExpeditionRoomBarrierStateService.reset()
 	activeBootstrap, activeVariation, activeEncounterView, activeComposition =
 		bootstrap, variationOrError, viewOrError, compositionOrError
 	lastStartFailure = nil
@@ -305,7 +305,7 @@ function Service.stopExpedition(reasonId: string?): any
 	bootstrap:destroy()
 	activeBootstrap = nil
 	clearVariationState()
-	Barrier.reset()
+	ExpeditionRoomBarrierStateService.reset()
 	Placement.destroy()
 	return result(true, reasonId or "ExpeditionStopped", snapshot)
 end
@@ -345,7 +345,7 @@ function Service.stop()
 		activeBootstrap = nil
 	end
 	clearVariationState()
-	Barrier.reset()
+	ExpeditionRoomBarrierStateService.reset()
 	Placement.destroy()
 end
 
