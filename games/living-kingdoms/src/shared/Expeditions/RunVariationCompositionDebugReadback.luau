@@ -36,6 +36,11 @@ export type Readback = {
 	RunModifierId: string?,
 	RunModifierPlanIdentity: string?,
 	Records: { CompositionRecord },
+	RecordByRoomId: { [string]: CompositionRecord },
+	OriginalUnitCount: number,
+	AppliedUnitCount: number,
+	UnitCountDelta: number,
+	CompositionIdentity: string,
 }
 
 local DebugReadback = {}
@@ -48,36 +53,50 @@ function DebugReadback.build(roomPlan: any): Readback
 	local variationPlan = RunVariationPlanner.plan(roomPlan)
 	local encounterView = RunVariationEncounterView.build(roomPlan, variationPlan)
 	local records = {}
+	local recordByRoomId = {}
+	local compositionIdentities = {}
+	local originalUnitCount = 0
+	local appliedUnitCount = 0
 
 	for _, encounterRecord in encounterView.Records do
 		local authoredEncounter = FirstDungeonContentConfig.Encounters[encounterRecord.RoomId]
 		assert(authoredEncounter ~= nil, "debug readback requires authored encounter content")
 
-		local composed = RunVariationAuthoredEncounterComposer.compose(
-			roomPlan.Seed,
-			encounterRecord,
-			authoredEncounter
-		)
+		local composed =
+			RunVariationAuthoredEncounterComposer.compose(roomPlan.Seed, encounterRecord, authoredEncounter)
 
-		table.insert(
-			records,
-			table.freeze({
-				NodeIndex = composed.NodeIndex,
-				RoomId = composed.RoomId,
-				EncounterSlotId = composed.EncounterSlotId,
-				BaseIntensity = composed.BaseIntensity,
-				EffectiveIntensity = composed.EffectiveIntensity,
-				ModifierApplied = composed.ModifierApplied,
-				UnitCountDelta = composed.UnitCountDelta,
-				SelectedWaveIndex = composed.SelectedWaveIndex,
-				OriginalUnitCount = composed.OriginalUnitCount,
-				AppliedUnitCount = composed.AppliedUnitCount,
-				CompositionIdentity = composed.CompositionIdentity,
-			})
-		)
+		local record = table.freeze({
+			NodeIndex = composed.NodeIndex,
+			RoomId = composed.RoomId,
+			EncounterSlotId = composed.EncounterSlotId,
+			BaseIntensity = composed.BaseIntensity,
+			EffectiveIntensity = composed.EffectiveIntensity,
+			ModifierApplied = composed.ModifierApplied,
+			UnitCountDelta = composed.UnitCountDelta,
+			SelectedWaveIndex = composed.SelectedWaveIndex,
+			OriginalUnitCount = composed.OriginalUnitCount,
+			AppliedUnitCount = composed.AppliedUnitCount,
+			CompositionIdentity = composed.CompositionIdentity,
+		})
+		assert(recordByRoomId[composed.RoomId] == nil, "debug readback requires unique composed room ids")
+		table.insert(records, record)
+		recordByRoomId[composed.RoomId] = record
+		table.insert(compositionIdentities, composed.CompositionIdentity)
+		originalUnitCount += composed.OriginalUnitCount
+		appliedUnitCount += composed.AppliedUnitCount
 	end
 
 	local runModifier = variationPlan.RunModifier
+	local unitCountDelta = appliedUnitCount - originalUnitCount
+	local compositionIdentity = string.format(
+		"P06-COMPOSITION-READBACK-v1|seed=%d|roomPlan=%s|variation=%s|units=%d>%d|records=%s",
+		roomPlan.Seed,
+		roomPlan.PlanIdentity,
+		variationPlan.VariationIdentity,
+		originalUnitCount,
+		appliedUnitCount,
+		table.concat(compositionIdentities, ";")
+	)
 	return table.freeze({
 		Seed = roomPlan.Seed,
 		RoomPlanIdentity = roomPlan.PlanIdentity,
@@ -85,6 +104,11 @@ function DebugReadback.build(roomPlan: any): Readback
 		RunModifierId = if runModifier ~= nil then runModifier.ModifierId else nil,
 		RunModifierPlanIdentity = if runModifier ~= nil then runModifier.PlanIdentity else nil,
 		Records = table.freeze(records),
+		RecordByRoomId = table.freeze(recordByRoomId),
+		OriginalUnitCount = originalUnitCount,
+		AppliedUnitCount = appliedUnitCount,
+		UnitCountDelta = unitCountDelta,
+		CompositionIdentity = compositionIdentity,
 	})
 end
 
