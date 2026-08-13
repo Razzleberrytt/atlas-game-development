@@ -12,42 +12,30 @@ The only game is `games/living-kingdoms/`. Task prompts often say bare `src/serv
 
 All tools are pinned in `rokit.toml` (rojo 7.7.0, selene 0.31.0, stylua 2.5.2, lune 0.10.4) and resolve from PATH via `~/.rokit/bin`. **Run everything from the repository root** — `selene.toml`/`stylua.toml` live there and every Lune fixture reads source via repo-root-relative `fs.readFile("games/living-kingdoms/src/...")` paths.
 
+`scripts/validate.py` is the gate. CI calls exactly this and nothing else, so a green run here is the same evidence CI produces — do not hand-assemble an equivalent command list.
+
 ```bash
-# Full gate set, in CI order (.github/workflows/luau-validation.yml)
-python scripts/validate_living_kingdoms_layout.py
-python scripts/verify_studio_import_package.py
-python scripts/validate_migration_manifests.py
-python scripts/roblox/extract_rbxl_world_properties.py --self-test
-python scripts/roblox/extract_rbxl_presentation_properties.py --self-test
-python scripts/roblox/extract_rbxl_billboard_properties.py --self-test
-python scripts/validate_reextracted_property_evidence.py
-python scripts/validate_reextracted_presentation_evidence.py
-
-stylua --check games/living-kingdoms/src games/living-kingdoms/tests games/living-kingdoms/tools
-selene games/living-kingdoms/src
-
-find games/living-kingdoms/tests -type f -name '*.test.luau' -print0 | sort -z | xargs -0 -n1 lune run
-
-rojo build games/living-kingdoms/default.project.json --output /tmp/LivingKingdoms.rbxlx
+python scripts/validate.py full   # what CI runs
+python scripts/validate.py fast   # same minus the import/migration/evidence decoders
+python scripts/validate.py docs   # roadmap authority + efficiency construct only
 ```
 
-Run one fixture:
+`fast`/`full` run, in order: repository layout, StyLua, Selene, **every** `*.test.luau` fixture, then Rojo builds of both `default.project.json` and `main-world.project.json`.
+
+**Do not sweep the fixtures by hand.** Every profile first runs `scripts/roblox/materialize_main_world_studio_snapshot.py`, which unpacks five large Main World model groups into `assets/recovered-world/models/main-world-studio-2026-08-11/`. Those five files are gitignored build output generated from packed source in git. Without that step `MainWorldStudioSnapshotSourceAudit` and `MainWorldHubCoreReadabilityConfig` fail on a clean checkout — which looks exactly like a red `main` and is not.
+
+Targeted iteration while writing one fixture (run the full profile before you claim a gate):
 
 ```bash
 lune run games/living-kingdoms/tests/BraceResolver.test.luau
-```
-
-Windows/PowerShell equivalent of the fixture sweep:
-
-```powershell
-Get-ChildItem games/living-kingdoms/tests -Recurse -Filter *.test.luau | Sort-Object Name | ForEach-Object { lune run $_.FullName }
+stylua games/living-kingdoms/src games/living-kingdoms/tests games/living-kingdoms/tools
 ```
 
 Scope notes: StyLua covers `src`, `tests`, `tools`. **Selene covers `src` only** — it downloads the Roblox API dump from `setup.rbxcdn.com`, so it is CI-only in network-blocked sandboxes.
 
 ## Test architecture
 
-Roughly 200 `*.test.luau` fixtures sit flat under `games/living-kingdoms/tests/` (no subdirectories). They are plain Lune scripts that `error()` on failure — there is no test framework, no runner config, and no `describe`/`it`. `scripts/validate_living_kingdoms_layout.py` prints the authoritative current source/fixture counts if you need exact numbers.
+Roughly 355 `*.test.luau` fixtures sit flat under `games/living-kingdoms/tests/` (no subdirectories). They are plain Lune scripts that `error()` on failure — there is no test framework, no runner config, and no `describe`/`it`. `scripts/validate_living_kingdoms_layout.py` prints the authoritative current source/fixture counts if you need exact numbers.
 
 A bare `require("../src/...")` cannot load any module that touches `game:GetService`. The working pattern is `luau.load(fs.readFile(path), { environment = { game = <stub>, require = <token dispatcher>, script = <fake tree> } })` — dependencies are handed in as sentinel tokens and the injected `require` asserts it only ever sees expected ones. `tests/ExpeditionRuntime.test.luau` is the reference for a multi-module graph; `tests/BraceResolver.test.luau` for a single resolver.
 
