@@ -19,6 +19,8 @@ local FirstDungeonRewardDecisionConfig = require(ReplicatedStorage.Shared.Config
 local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.ExpeditionContracts)
 local RunVariationPlanner = require(ReplicatedStorage.Shared.Expeditions.RunVariationPlanner)
 local RunVariationEncounterView = require(ReplicatedStorage.Shared.Expeditions.RunVariationEncounterView)
+local RunVariationCompositionDebugReadback =
+	require(ReplicatedStorage.Shared.Expeditions.RunVariationCompositionDebugReadback)
 local ExpeditionServerBootstrap = require(script.Parent.ExpeditionServerBootstrap)
 local ExpeditionRoomPlacementService = require(script.Parent.ExpeditionRoomPlacementService)
 local ExpeditionRoomBarrierStateService = require(script.Parent.ExpeditionRoomBarrierStateService)
@@ -37,6 +39,7 @@ local Service = {}
 local activeBootstrap: any = nil
 local activeRunVariationPlan: any = nil
 local activeRunVariationEncounterView: any = nil
+local activeRunVariationComposition: any = nil
 local heartbeatConnection: RBXScriptConnection? = nil
 local accumulatedSeconds = 0
 local started = false
@@ -68,6 +71,22 @@ end
 
 local function validInteger(value: any): boolean
 	return type(value) == "number" and value % 1 == 0
+end
+
+local function clearRunVariationState()
+	activeRunVariationPlan = nil
+	activeRunVariationEncounterView = nil
+	activeRunVariationComposition = nil
+end
+
+local function bindCompositionToRun(runId: string, readback: any): any
+	local activeIdentity =
+		string.format("P06-ACTIVE-COMPOSITION-v1|run=%s|composition=%s", runId, readback.CompositionIdentity)
+	return table.freeze({
+		RunId = runId,
+		ActiveCompositionIdentity = activeIdentity,
+		Composition = readback,
+	})
 end
 
 local function disconnectHeartbeat()
@@ -129,6 +148,9 @@ function Service.startExpedition(options: StartOptions?): any
 	if activeBootstrap ~= nil then
 		return result(false, "ExpeditionAlreadyActive", activeBootstrap:getSnapshot())
 	end
+	-- No inactive diagnostic state may survive into any validation or creation
+	-- failure path for the next run attempt.
+	clearRunVariationState()
 
 	local requested = options or {}
 	local seed = requested.Seed or defaultSeed()
@@ -184,9 +206,21 @@ function Service.startExpedition(options: StartOptions?): any
 		return result(false, "RunVariationEncounterViewFailed", nil)
 	end
 
+	local compositionOk, compositionOrError = pcall(function()
+		local readback = RunVariationCompositionDebugReadback.build(roomPlan)
+		return bindCompositionToRun(runId, readback)
+	end)
+	if not compositionOk then
+		bootstrap:destroy()
+		clearRunVariationState()
+		warn("[ExpeditionLiveRuntime] failed to compose run variation readback:", compositionOrError)
+		return result(false, "RunVariationCompositionFailed", nil)
+	end
+
 	local placement = ExpeditionRoomPlacementService.place(roomPlan)
 	if placement.Accepted ~= true then
 		bootstrap:destroy()
+		clearRunVariationState()
 		warn("[ExpeditionLiveRuntime] failed to place expedition rooms:", placement.ReasonId)
 		return result(false, placement.ReasonId, nil)
 	end
@@ -195,6 +229,7 @@ function Service.startExpedition(options: StartOptions?): any
 	activeBootstrap = bootstrap
 	activeRunVariationPlan = variationPlanOrError
 	activeRunVariationEncounterView = encounterViewOrError
+	activeRunVariationComposition = compositionOrError
 	driveStep()
 	return result(true, "ExpeditionStarted", activeBootstrap:getSnapshot())
 end
@@ -249,8 +284,7 @@ function Service.stopExpedition(reasonId: string?): any
 	local snapshot = bootstrap:getSnapshot()
 	bootstrap:destroy()
 	activeBootstrap = nil
-	activeRunVariationPlan = nil
-	activeRunVariationEncounterView = nil
+	clearRunVariationState()
 	ExpeditionRoomBarrierStateService.reset()
 	ExpeditionRoomPlacementService.destroy()
 	return result(true, reasonId or "ExpeditionStopped", snapshot)
@@ -284,6 +318,13 @@ function Service.readRunVariationEncounterView(): any
 	return activeRunVariationEncounterView
 end
 
+function Service.readRunVariationComposition(): any
+	if activeBootstrap == nil then
+		return nil
+	end
+	return activeRunVariationComposition
+end
+
 function Service.stop()
 	if not started then
 		return
@@ -294,8 +335,7 @@ function Service.stop()
 		activeBootstrap:destroy()
 		activeBootstrap = nil
 	end
-	activeRunVariationPlan = nil
-	activeRunVariationEncounterView = nil
+	clearRunVariationState()
 	ExpeditionRoomBarrierStateService.reset()
 	ExpeditionRoomPlacementService.destroy()
 end
