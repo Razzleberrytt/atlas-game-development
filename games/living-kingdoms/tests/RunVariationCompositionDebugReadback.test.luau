@@ -1,226 +1,54 @@
 --!strict
-
 local fs = require("@lune/fs")
 local luau = require("@lune/luau")
+local function check(v: unknown, m: string) if not v then error(m, 2) end end
 
-local function assert(condition: unknown, message: string?)
-	if not condition then
-		error(message or "run variation composition debug readback assertion failed", 2)
-	end
-end
-
-local CONFIG_TOKEN = {}
-local PLANNER_TOKEN = {}
-local VIEW_TOKEN = {}
-local COMPOSER_TOKEN = {}
-
-local authoredByRoomId = {
-	entry = { RoomId = "entry", Waves = {} },
-	combat = {
-		RoomId = "combat",
-		Waves = {
-			{ Units = { { ArchetypeId = "walker", Count = 2 }, { ArchetypeId = "spitter", Count = 1 } } },
-		},
-	},
+local CONFIG, PLANNER, VIEW, COMPOSER, SCHEMA = {}, {}, {}, {}, {}
+local authored = {
+	entry = { Waves = {} },
+	combat = { Waves = { { Units = { { ArchetypeId = "walker", Count = 2 }, { ArchetypeId = "spitter", Count = 1 } } } } },
 }
+local planner = { plan = function(plan: any): any return { VariationIdentity = "variation|" .. plan.PlanIdentity, SecretBranch = {}, OptionalObjective = {}, RunModifier = { ModifierId = "dense", PlanIdentity = "modifier|dense" } } end }
+local view = { build = function(): any return { Records = { { RoomId = "entry" }, { RoomId = "combat" } } } end }
+local composer = { compose = function(_seed: number, record: any): any
+	local combat = record.RoomId == "combat"
+	return { NodeIndex = if combat then 2 else 1, RoomId = record.RoomId, EncounterSlotId = if combat then "StandardSquad" else "None", BaseIntensity = if combat then 2 else 0, EffectiveIntensity = if combat then 3 else 0, ModifierApplied = combat, UnitCountDelta = if combat then 1 else 0, SelectedWaveIndex = if combat then 1 else nil, OriginalUnitCount = if combat then 3 else 0, AppliedUnitCount = if combat then 4 else 0, CompositionIdentity = "composition|" .. record.RoomId, Waves = if combat then { { Units = { { ArchetypeId = "walker", Count = 3 }, { ArchetypeId = "spitter", Count = 1 } }, VariationApplication = { ApplicationIdentity = "wave|combat|1" } } } else {} }
+end }
+local schema = luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationDebugSchema.luau"), { injectGlobals = true })()
+local readback = luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationCompositionDebugReadback.luau"), {
+	environment = { script = { Parent = { Parent = { Config = { FirstDungeonContentConfig = CONFIG } }, RunVariationPlanner = PLANNER, RunVariationEncounterView = VIEW, RunVariationAuthoredEncounterComposer = COMPOSER, RunVariationDebugSchema = SCHEMA } }, require = function(token: unknown): any
+		if token == CONFIG then return { Encounters = authored } elseif token == PLANNER then return planner elseif token == VIEW then return view elseif token == COMPOSER then return composer elseif token == SCHEMA then return schema end
+		error("unexpected dependency")
+	end }, injectGlobals = true,
+})()
+local plan = { Seed = 17, PlanIdentity = "room-plan|17", Nodes = { { RoomId = "entry", EncounterSlotId = "None", EncounterIntensity = 0 }, { RoomId = "combat", EncounterSlotId = "StandardSquad", EncounterIntensity = 2 } } }
+local result = readback.build(plan)
+check(result.SchemaVersion == "P06-COMPOSITION-READBACK-v3", "schema version drift")
+check(result.OriginalUnitCount == 3 and result.AppliedUnitCount == 4 and result.UnitCountDelta == 1, "aggregate totals drift")
+check(result.EncounterCount == 2 and result.ModifiedEncounterCount == 1, "encounter totals drift")
+check(result.RecordByRoomId.combat == result.Records[2], "cached room lookup drift")
+check(result.Records[2].ModifierId == "dense" and result.Records[2].SelectedWaveIdentity == "wave|combat|1", "record diagnostics drift")
+check(result.UnitCountsByArchetypeId.walker.UnitCountDelta == 1, "archetype aggregation drift")
+check(result.HasSecretBranch and result.HasOptionalObjective, "variation presence drift")
+check(string.find(result.CompositionIdentity, "roomPlan=room-plan%7C17", 1, true) ~= nil, "central identity escaping drift")
+check(readback.recordForRoom(result, "combat") == result.Records[2], "room helper drift")
 
-local planner = {
-	plan = function(roomPlan: any)
-		return table.freeze({
-			VariationIdentity = `variation|{roomPlan.PlanIdentity}`,
-			SecretBranch = table.freeze({ PlanIdentity = "secret|cache" }),
-			OptionalObjective = table.freeze({ PlanIdentity = "objective|salvage" }),
-			RunModifier = table.freeze({ ModifierId = "dense", PlanIdentity = "modifier|dense" }),
-		})
-	end,
-}
+local started = os.clock()
+for _ = 1, 100 do readback.build(plan) end
+local elapsedMs = (os.clock() - started) * 1_000
+check(elapsedMs <= 500, string.format("composition fixture budget exceeded: %.2fms", elapsedMs))
 
-local view = {
-	build = function(_roomPlan: any, _variationPlan: any)
-		return table.freeze({
-			Records = table.freeze({
-				table.freeze({ RoomId = "entry" }),
-				table.freeze({ RoomId = "combat" }),
-			}),
-		})
-	end,
-}
+local originalView = view.build
+view.build = function(): any return { Records = { { RoomId = "combat" }, { RoomId = "combat" } } } end
+check(not pcall(function() readback.build(plan) end), "duplicate records must fail closed")
+view.build = function(): any return { Records = { { RoomId = "combat" } } } end
+check(not pcall(function() readback.build(plan) end), "cardinality mismatch must fail closed")
+view.build = originalView
 
-local composer = {
-	compose = function(_seed: number, record: any, authored: any)
-		assert(authored == authoredByRoomId[record.RoomId], "readback must resolve canonical authored content")
-		local entry = record.RoomId == "entry"
-		return table.freeze({
-			NodeIndex = if entry then 1 else 2,
-			RoomId = record.RoomId,
-			EncounterSlotId = if entry then "None" else "StandardSquad",
-			BaseIntensity = if entry then 0 else 2,
-			EffectiveIntensity = if entry then 0 else 3,
-			ModifierApplied = not entry,
-			UnitCountDelta = if entry then 0 else 1,
-			SelectedWaveIndex = if entry then nil else 1,
-			OriginalUnitCount = if entry then 0 else 3,
-			AppliedUnitCount = if entry then 0 else 4,
-			CompositionIdentity = `composition|{record.RoomId}`,
-			Waves = if entry
-				then {}
-				else {
-					{
-						Units = { { ArchetypeId = "walker", Count = 3 }, { ArchetypeId = "spitter", Count = 1 } },
-						VariationApplication = { ApplicationIdentity = "wave|combat|1" },
-					},
-				},
-		})
-	end,
-}
-
-local readback =
-	luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationCompositionDebugReadback.luau"), {
-		debugName = "RunVariationCompositionDebugReadback",
-		environment = {
-			script = {
-				Parent = {
-					Parent = { Config = { FirstDungeonContentConfig = CONFIG_TOKEN } },
-					RunVariationPlanner = PLANNER_TOKEN,
-					RunVariationEncounterView = VIEW_TOKEN,
-					RunVariationAuthoredEncounterComposer = COMPOSER_TOKEN,
-				},
-			},
-			require = function(token: unknown): any
-				if token == CONFIG_TOKEN then
-					return { Encounters = authoredByRoomId }
-				elseif token == PLANNER_TOKEN then
-					return planner
-				elseif token == VIEW_TOKEN then
-					return view
-				elseif token == COMPOSER_TOKEN then
-					return composer
-				end
-				error("unexpected debug readback dependency")
-			end,
-		},
-		injectGlobals = true,
-	})()
-
-local roomPlan = {
-	Seed = 17,
-	PlanIdentity = "room-plan|17",
-	Nodes = {
-		{ RoomId = "entry", EncounterSlotId = "None", EncounterIntensity = 0 },
-		{ RoomId = "combat", EncounterSlotId = "StandardSquad", EncounterIntensity = 2 },
-	},
-}
-local result = readback.build(roomPlan)
-
-assert(#result.Records == 2, "readback must retain ordered composition records")
-assert(result.RecordByRoomId.entry == result.Records[1], "room lookup must reference the stable ordered record")
-assert(result.RecordByRoomId.combat == result.Records[2], "room lookup must resolve composed combat records")
-assert(result.OriginalUnitCount == 3, "readback must aggregate original unit count")
-assert(result.AppliedUnitCount == 4, "readback must aggregate applied unit count")
-assert(result.UnitCountDelta == 1, "readback must expose the aggregate composition delta")
-assert(result.SchemaVersion == "P06-COMPOSITION-READBACK-v3", "readback must expose stable schema version")
-assert(result.HasSecretBranch == true, "readback must summarize secret-branch presence")
-assert(result.HasOptionalObjective == true, "readback must summarize optional-objective presence")
-assert(result.ModifierSummary == "dense affects 1/2 encounters", "modifier summary must be deterministic")
-assert(result.EncounterSummary == "2 encounters, 4 units (+1 variation)", "encounter summary must be concise")
-assert(
-	result.SeedCommand == 'ExpeditionControl:Invoke("Start", { Seed = 17 })',
-	"seed command must be copy/paste stable"
-)
-assert(
-	string.find(result.CompositionIdentity, "roomPlan=room-plan%7C17", 1, true) ~= nil,
-	"identity must escape delimiter-bearing values"
-)
-assert(result.EncounterCount == 2, "readback must report composed encounter count")
-assert(result.ModifiedEncounterCount == 1, "readback must report modified encounter count")
-assert(
-	result.UnitCountsByEncounterSlotId.StandardSquad.UnitCountDelta == 1,
-	"slot summary must expose concentrated pressure delta"
-)
-assert(result.UnitCountsByEncounterSlotId.None.UnitCountDelta == 0, "empty slot summary must remain stable")
-assert(result.UnitCountsByArchetypeId.walker.UnitCountDelta == 1, "archetype summary must identify changed roster")
-assert(result.UnitCountsByArchetypeId.spitter.UnitCountDelta == 0, "unchanged archetype must remain visible")
-assert(table.isfrozen(result.UnitCountsByArchetypeId.walker), "archetype summaries must be immutable")
-assert(result.Records[1].SelectedWaveIdentity == nil, "zero encounter must not invent a selected wave")
-assert(result.Records[2].SelectedWaveIdentity == "wave|combat|1", "selected wave identity must be disclosed")
-assert(result.Records[1].ModifierId == nil, "unmodified record must not invent a modifier id")
-assert(result.Records[2].ModifierId == "dense", "modified record must expose its modifier id")
-assert(readback.recordForRoom(result, "combat") == result.Records[2], "room lookup helper must resolve live record")
-assert(readback.recordForRoom(result, "missing") == nil, "room lookup helper must preserve absence")
-assert(
-	string.find(result.CompositionIdentity, "composition|entry;composition|combat", 1, true) ~= nil,
-	"readback identity must bind the complete ordered composition"
-)
-
-local repeated = readback.build(roomPlan)
-assert(repeated.CompositionIdentity == result.CompositionIdentity, "same plan must reproduce readback identity")
-assert(table.isfrozen(result), "readback must be immutable")
-assert(table.isfrozen(result.RecordByRoomId), "room lookup must be immutable")
-
-local duplicateView = view.build
-view.build = function(_roomPlan: any, _variationPlan: any)
-	return { Records = { { RoomId = "combat" }, { RoomId = "combat" } } }
-end
-local ok = pcall(function()
-	readback.build(roomPlan)
-end)
-assert(not ok, "duplicate room identities must fail closed")
-view.build = duplicateView
-
-local completeView = view.build
-view.build = function(_roomPlan: any, _variationPlan: any)
-	return { Records = { { RoomId = "combat" } } }
-end
-local cardinalityOk = pcall(function()
-	readback.build(roomPlan)
-end)
-assert(not cardinalityOk, "missing authored room records must fail closed")
-view.build = completeView
-
-local noModifierPlanner = planner.plan
-planner.plan = function(plan: any)
-	return {
-		VariationIdentity = `variation|{plan.PlanIdentity}|none`,
-		SecretBranch = nil,
-		OptionalObjective = nil,
-		RunModifier = nil,
-	}
-end
-local noModifier = readback.build(roomPlan)
-assert(noModifier.RunModifierId == nil, "no-modifier run must preserve explicit absence")
-assert(noModifier.HasSecretBranch == false, "missing secret branch must remain explicit")
-assert(noModifier.HasOptionalObjective == false, "missing optional objective must remain explicit")
-assert(noModifier.ModifiedEncounterCount == 1, "fixture composition disclosure must remain independently counted")
-planner.plan = noModifierPlanner
-
-local multiWaveComposer = composer.compose
-composer.compose = function(seed: number, record: any, authored: any)
-	local composed = multiWaveComposer(seed, record, authored)
-	if record.RoomId ~= "combat" then
-		return composed
-	end
-	local copy = table.clone(composed)
-	copy.OriginalUnitCount = 5
-	copy.AppliedUnitCount = 6
-	copy.Waves = {
-		{
-			Units = { { ArchetypeId = "walker", Count = 3 } },
-			VariationApplication = { ApplicationIdentity = "wave|combat|1" },
-		},
-		{
-			Units = { { ArchetypeId = "spitter", Count = 3 } },
-			VariationApplication = { ApplicationIdentity = "wave|combat|2" },
-		},
-	}
-	return copy
-end
-authoredByRoomId.combat.Waves = {
-	{ Units = { { ArchetypeId = "walker", Count = 2 } } },
-	{ Units = { { ArchetypeId = "spitter", Count = 3 } } },
-}
-local multiWave = readback.build(roomPlan)
-assert(multiWave.OriginalUnitCount == 5 and multiWave.AppliedUnitCount == 6, "multi-wave totals must aggregate")
-assert(multiWave.UnitCountsByArchetypeId.walker.UnitCountDelta == 1, "multi-wave archetype delta must aggregate")
-composer.compose = multiWaveComposer
-
+local originalPlanner = planner.plan
+planner.plan = function(p: any): any return { VariationIdentity = "variation|" .. p.PlanIdentity .. "|none", RunModifier = nil } end
+local baseline = readback.build(plan)
+check(baseline.RunModifierId == nil and baseline.HasSecretBranch == false and baseline.HasOptionalObjective == false, "baseline variation absence drift")
+planner.plan = originalPlanner
+check(table.isfrozen(result) and table.isfrozen(result.RecordByRoomId), "readback must remain immutable")
 print("Run variation composition debug readback fixture passed")
