@@ -132,10 +132,7 @@ assert(
 
 local noSecret = planner.plan(makePlan(2))
 assert(noSecret.SecretBranch == nil, "missing secret must remain explicitly absent")
-assert(
-	string.find(noSecret.VariationIdentity, "|secret=none|", 1, true) ~= nil,
-	"identity must encode absent secret"
-)
+assert(string.find(noSecret.VariationIdentity, "|secret=none|", 1, true) ~= nil, "identity must encode absent secret")
 
 local noObjective = planner.plan(makePlan(3))
 assert(noObjective.OptionalObjective == nil, "missing optional objective must remain explicitly absent")
