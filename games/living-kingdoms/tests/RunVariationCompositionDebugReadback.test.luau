@@ -59,7 +59,8 @@ local composer = {
 }
 local schemaSource = fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationDebugSchema.luau")
 local schema = luau.load(schemaSource, { injectGlobals = true })()
-local readbackSource = fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationCompositionDebugReadback.luau")
+local readbackSource =
+	fs.readFile("games/living-kingdoms/src/shared/Expeditions/RunVariationCompositionDebugReadback.luau")
 local readback = luau.load(readbackSource, {
 	environment = {
 		script = {

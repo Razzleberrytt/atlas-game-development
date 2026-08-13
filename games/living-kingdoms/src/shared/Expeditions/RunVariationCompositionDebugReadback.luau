@@ -82,14 +82,8 @@ end
 
 function DebugReadback.build(roomPlan: any): Readback
 	assert(type(roomPlan) == "table", "room plan is required")
-	assert(
-		type(roomPlan.Seed) == "number" and roomPlan.Seed % 1 == 0 and roomPlan.Seed > 0,
-		"invalid room plan seed"
-	)
-	assert(
-		type(roomPlan.PlanIdentity) == "string" and roomPlan.PlanIdentity ~= "",
-		"room plan identity is required"
-	)
+	assert(type(roomPlan.Seed) == "number" and roomPlan.Seed % 1 == 0 and roomPlan.Seed > 0, "invalid room plan seed")
+	assert(type(roomPlan.PlanIdentity) == "string" and roomPlan.PlanIdentity ~= "", "room plan identity is required")
 
 	local variation = Planner.plan(roomPlan)
 	local modifier = variation.RunModifier
@@ -109,18 +103,12 @@ function DebugReadback.build(roomPlan: any): Readback
 	for _, encounterRecord in view.Records do
 		local authored = AuthoredByRoomId[encounterRecord.RoomId]
 		assert(authored ~= nil, "debug readback requires authored encounter content")
-		assert(
-			expectedRooms[encounterRecord.RoomId] == true,
-			"encounter view contains an unauthored room-plan record"
-		)
+		assert(expectedRooms[encounterRecord.RoomId] == true, "encounter view contains an unauthored room-plan record")
 		local composed = Composer.compose(roomPlan.Seed, encounterRecord, authored)
 		assert(composed.NodeIndex > previousNodeIndex, "composition records must remain strictly node-sorted")
 		previousNodeIndex = composed.NodeIndex
 		local slotKey = composed.RoomId .. "|" .. composed.EncounterSlotId
-		assert(
-			seenSlots[slotKey] == nil,
-			Schema.FailureReasonIds.DuplicateEncounterSlot .. ": duplicate room encounter slot"
-		)
+		assert(seenSlots[slotKey] == nil, Schema.FailureReasonIds.DuplicateEncounterSlot .. ": duplicate room encounter slot")
 		seenSlots[slotKey] = true
 		local waveIdentity = nil
 		if composed.SelectedWaveIndex ~= nil then
@@ -156,10 +144,7 @@ function DebugReadback.build(roomPlan: any): Readback
 		addArchetypes(byArchetype, authored.Waves, "OriginalUnitCount")
 		addArchetypes(byArchetype, composed.Waves, "AppliedUnitCount")
 	end
-	assert(
-		#records == expectedCount,
-		Schema.FailureReasonIds.CardinalityMismatch .. ": authored encounter and encounter-view cardinality mismatch"
-	)
+	assert(#records == expectedCount, Schema.FailureReasonIds.CardinalityMismatch .. ": authored encounter and encounter-view cardinality mismatch")
 
 	local delta = appliedTotal - originalTotal
 	local identity = Schema.formatCompositionIdentity(
@@ -170,10 +155,7 @@ function DebugReadback.build(roomPlan: any): Readback
 		appliedTotal,
 		identities
 	)
-	assert(
-		#identity <= Schema.MaximumCompositionIdentityLength,
-		Schema.FailureReasonIds.IdentityTooLarge .. ": composition identity exceeds diagnostic bound"
-	)
+	assert(#identity <= Schema.MaximumCompositionIdentityLength, Schema.FailureReasonIds.IdentityTooLarge .. ": composition identity exceeds diagnostic bound")
 	return table.freeze({
 		SchemaVersion = Schema.CompositionReadbackVersion,
 		Seed = roomPlan.Seed,
