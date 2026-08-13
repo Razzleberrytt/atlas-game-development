@@ -67,7 +67,10 @@ function Policy.resolve(record: any): Consequence
 		assert(record.ModifierApplied == false, "non-encounter rooms cannot apply run modifiers")
 		minimumRetainedUnits = 0
 	elseif slotId == EncounterSlotIds.BossEncounter then
-		assertPressureIntensity(record.BaseIntensity, "boss base intensity must stay within the authored pressure range")
+		assertPressureIntensity(
+			record.BaseIntensity,
+			"boss base intensity must stay within the authored pressure range"
+		)
 		assertPressureIntensity(
 			record.EffectiveIntensity,
 			"boss effective intensity must stay within the authored pressure range"
@@ -75,7 +78,10 @@ function Policy.resolve(record: any): Consequence
 		assert(record.EffectiveIntensity == record.BaseIntensity, "boss encounter intensity cannot be modified")
 		assert(record.ModifierApplied == false, "boss encounter modifiers are not authorized")
 	elseif ADJUSTABLE_SLOT_IDS[slotId] == true then
-		assertPressureIntensity(record.BaseIntensity, "encounter base intensity must stay within the authored pressure range")
+		assertPressureIntensity(
+			record.BaseIntensity,
+			"encounter base intensity must stay within the authored pressure range"
+		)
 		assertPressureIntensity(
 			record.EffectiveIntensity,
 			"encounter effective intensity must stay within the authored pressure range"
