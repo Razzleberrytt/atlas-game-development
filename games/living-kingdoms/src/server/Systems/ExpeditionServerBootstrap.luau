@@ -90,7 +90,8 @@ local function buildAuthoredWave(
 	context: any,
 	authoredWave: any,
 	anchor: any,
-	startingOrdinal: number
+	startingOrdinal: number,
+	compositionIdentity: string
 ): ({ any }, number)
 	local definitions = {}
 	local ordinal = startingOrdinal
@@ -118,10 +119,15 @@ local function buildAuthoredEncounterDefinition(context: any, encounter: any, an
 	end
 
 	local stages = {}
+	assert(
+		type(encounter.CompositionIdentity) == "string"
+			and string.find(encounter.CompositionIdentity, "P06-AUTHORED-ENCOUNTER-COMPOSER-v1", 1, true) == 1,
+		"runtime authored encounter requires a validated composition identity"
+	)
 	local ordinal = 0
 	for waveIndex, authoredWave in encounter.Waves do
 		local definitions
-		definitions, ordinal = buildAuthoredWave(context, authoredWave, anchor, ordinal)
+		definitions, ordinal = buildAuthoredWave(context, authoredWave, anchor, ordinal, encounter.CompositionIdentity)
 		if #definitions == 0 then
 			return nil
 		end
@@ -135,12 +141,14 @@ local function buildAuthoredEncounterDefinition(context: any, encounter: any, an
 	if #stages == 1 then
 		return {
 			Kind = "Wave",
+			CompositionIdentity = encounter.CompositionIdentity,
 			WaveIndex = stages[1].WaveIndex,
 			Wave = stages[1].Wave,
 		}
 	end
 	return {
 		Kind = "WaveSequence",
+		CompositionIdentity = encounter.CompositionIdentity,
 		Waves = stages,
 		CompletionDelaySeconds = 0,
 	}
@@ -201,6 +209,7 @@ local function buildOutdoorApproachSequence(context: any): any
 	assert(#stages >= 1, "authored outdoor approach requires at least one live wave stage")
 	return {
 		Kind = "WaveSequence",
+		CompositionIdentity = string.format("P06-OUTDOOR-AUTHORED-v1|run=%s|seed=%d", context.RunId, context.Seed),
 		Waves = stages,
 		CompletionDelaySeconds = previousBeatRecoverySeconds,
 	}
