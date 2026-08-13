@@ -31,6 +31,7 @@ local encounterViewReceivedPlan: any = nil
 local encounterViewReceivedVariationPlan: any = nil
 local bootstrapDestroyed = false
 local placementDestroyCount = 0
+local barrierResetCount = 0
 local activeSnapshot = {
 	RunId = "run-observe-001",
 	PhaseId = "Approach",
@@ -64,6 +65,8 @@ local variationPlanner = {
 			Seed = plan.Seed,
 			RoomPlanIdentity = plan.PlanIdentity,
 			VariationIdentity = "variation:" .. plan.PlanIdentity,
+			SecretBranch = table.freeze({ PlanIdentity = "secret:test" }),
+			OptionalObjective = table.freeze({ PlanIdentity = "objective:test" }),
 		})
 		return variationPlan
 	end,
@@ -94,6 +97,7 @@ local compositionReadbackBuilder = {
 		compositionReadback = table.freeze({
 			Seed = plan.Seed,
 			RoomPlanIdentity = plan.PlanIdentity,
+			RunModifierId = "dense-test",
 			CompositionIdentity = "composition:" .. plan.PlanIdentity,
 		})
 		return compositionReadback
@@ -102,6 +106,9 @@ local compositionReadbackBuilder = {
 
 local bootstrap = {
 	new = function(_director: any, parameters: any): any
+		if parameters.Seed == 995 then
+			error("intentional bootstrap creation failure")
+		end
 		roomPlan = {
 			Seed = parameters.Seed,
 			PlanIdentity = "room-plan:" .. tostring(parameters.Seed),
@@ -142,7 +149,9 @@ local placement = {
 	end,
 }
 local barrier = {
-	reset = function() end,
+	reset = function()
+		barrierResetCount += 1
+	end,
 	update = function(_context: any) end,
 }
 local rewardResolver = {
@@ -277,6 +286,11 @@ assert(service.readRoomPlan() == roomPlan, "existing room-plan read must remain 
 local activeComposition = service.readRunVariationComposition()
 assert(activeComposition ~= nil, "server read must expose active composition diagnostics")
 assert(activeComposition.RunId == "run-observe-001", "composition diagnostics must bind to the active run")
+assert(activeComposition.Seed == 321, "active diagnostics must expose the replay seed")
+assert(activeComposition.RoomPlanIdentity == roomPlan.PlanIdentity, "active diagnostics must expose room identity")
+assert(activeComposition.RunModifierId == "dense-test", "active diagnostics must expose modifier id")
+assert(activeComposition.HasSecretBranch == true, "active diagnostics must summarize secret presence")
+assert(activeComposition.HasOptionalObjective == true, "active diagnostics must summarize objective presence")
 assert(activeComposition.Composition == compositionReadback, "active diagnostics must retain the pure readback")
 assert(
 	activeComposition.ActiveCompositionIdentity
@@ -292,6 +306,26 @@ assert(bootstrapDestroyed == true, "stopping must still destroy the bootstrap")
 assert(service.readRunVariationPlan() == nil, "stopping must clear variation observability")
 assert(service.readRunVariationEncounterView() == nil, "stopping must clear encounter-view observability")
 assert(service.readRunVariationComposition() == nil, "stopping must clear composition observability")
+
+local normalized = service.startExpedition({ Seed = 322, PartySize = 1, RunId = "  run-observe-002  " })
+assert(normalized.Accepted == true, "trimmed valid run id must start")
+assert(service.readSnapshot().RunId == "run-observe-001", "fixture snapshot remains canonical")
+assert(service.readRunVariationComposition().RunId == "run-observe-002", "run id must normalize before binding")
+service.stopExpedition("normalized-stop")
+
+local whitespaceRun = service.startExpedition({ Seed = 323, PartySize = 1, RunId = "          " })
+assert(whitespaceRun.Accepted == false and whitespaceRun.ReasonId == "InvalidRunId", "blank run id must reject")
+assert(service.readLastStartFailure().RunId == "", "failure evidence must retain the normalized run id")
+
+local cleanupBeforeCreationFailure = placementDestroyCount
+local resetsBeforeCreationFailure = barrierResetCount
+local creationFailed = service.startExpedition({ Seed = 995, PartySize = 1, RunId = "run-observe-995" })
+assert(
+	creationFailed.Accepted == false and creationFailed.ReasonId == "ExpeditionCreationFailed",
+	"bootstrap creation failure must reject explicitly"
+)
+assert(placementDestroyCount == cleanupBeforeCreationFailure + 1, "creation failure must clear placement state")
+assert(barrierResetCount == resetsBeforeCreationFailure + 1, "creation failure must reset barrier state")
 
 local placementFailed = service.startExpedition({ Seed = 996, PartySize = 1, RunId = "run-observe-996" })
 assert(
@@ -312,6 +346,7 @@ assert(
 )
 assert(bootstrapDestroyed == true, "composition failure must destroy the half-created bootstrap")
 assert(service.readRunVariationComposition() == nil, "composition failure must not publish stale diagnostics")
+local resetsBeforeEncounterFailure = barrierResetCount
 
 local encounterViewFailed = service.startExpedition({ Seed = 998, PartySize = 1, RunId = "run-observe-998" })
 assert(
@@ -324,6 +359,9 @@ assert(
 	service.readRunVariationEncounterView() == nil,
 	"encounter-view failure must not publish partial encounter-view state"
 )
+assert(barrierResetCount == resetsBeforeEncounterFailure + 1, "encounter-view failure must reset barrier state")
+local cleanupBeforePlanningFailure = placementDestroyCount
+local resetsBeforePlanningFailure = barrierResetCount
 
 local failed = service.startExpedition({ Seed = 999, PartySize = 1, RunId = "run-observe-999" })
 assert(
@@ -333,6 +371,8 @@ assert(
 assert(bootstrapDestroyed == true, "planner failure must destroy the half-created bootstrap")
 assert(service.readRunVariationPlan() == nil, "planner failure must not publish partial variation state")
 assert(service.readRunVariationEncounterView() == nil, "planner failure must not publish encounter-view state")
+assert(placementDestroyCount == cleanupBeforePlanningFailure + 1, "planner failure must clear placement state")
+assert(barrierResetCount == resetsBeforePlanningFailure + 1, "planner failure must reset barrier state")
 
 service.stop()
 assert(service.readRunVariationPlan() == nil, "service shutdown must leave no variation state")

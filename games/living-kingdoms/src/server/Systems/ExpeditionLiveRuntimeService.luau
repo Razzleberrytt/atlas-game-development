@@ -55,7 +55,7 @@ local function result(accepted: boolean, reasonId: string, snapshot: any?)
 	return table.freeze({ Accepted = accepted, ReasonId = reasonId, Snapshot = snapshot })
 end
 
-local function startFailure(reasonId: string, runId: string?, seed: number?): any
+local function startFailure(reasonId: string, runId: any, seed: any): any
 	lastStartFailure = table.freeze({ ReasonId = reasonId, RunId = runId, Seed = seed })
 	return result(false, reasonId, nil)
 end
@@ -85,11 +85,23 @@ local function clearRunVariationState()
 	activeRunVariationComposition = nil
 end
 
-local function bindCompositionToRun(runId: string, readback: any): any
+local function normalizeRunId(runId: any): any
+	if type(runId) ~= "string" then
+		return runId
+	end
+	return string.match(runId, "^%s*(.-)%s*$")
+end
+
+local function bindCompositionToRun(runId: string, variationPlan: any, readback: any): any
 	local activeIdentity =
 		string.format("P06-ACTIVE-COMPOSITION-v1|run=%s|composition=%s", runId, readback.CompositionIdentity)
 	return table.freeze({
 		RunId = runId,
+		Seed = readback.Seed,
+		RoomPlanIdentity = readback.RoomPlanIdentity,
+		RunModifierId = readback.RunModifierId,
+		HasSecretBranch = variationPlan.SecretBranch ~= nil,
+		HasOptionalObjective = variationPlan.OptionalObjective ~= nil,
 		ActiveCompositionIdentity = activeIdentity,
 		Composition = readback,
 	})
@@ -161,7 +173,7 @@ function Service.startExpedition(options: StartOptions?): any
 	local requested = options or {}
 	local seed = requested.Seed or defaultSeed()
 	local partySize = requested.PartySize or currentPartySize()
-	local runId = requested.RunId or ("expedition:" .. HttpService:GenerateGUID(false))
+	local runId = normalizeRunId(requested.RunId or ("expedition:" .. HttpService:GenerateGUID(false)))
 	local limits = ExpeditionConfig.RuntimeLimits
 	local definition = ExpeditionConfig.Definitions.FirstExpedition
 
@@ -188,6 +200,9 @@ function Service.startExpedition(options: StartOptions?): any
 		})
 	end)
 	if not ok then
+		clearRunVariationState()
+		ExpeditionRoomBarrierStateService.reset()
+		ExpeditionRoomPlacementService.destroy()
 		warn("[ExpeditionLiveRuntime] failed to create expedition:", bootstrapOrError)
 		return startFailure("ExpeditionCreationFailed", runId, seed)
 	end
@@ -199,6 +214,9 @@ function Service.startExpedition(options: StartOptions?): any
 	end)
 	if not variationOk then
 		bootstrap:destroy()
+		clearRunVariationState()
+		ExpeditionRoomBarrierStateService.reset()
+		ExpeditionRoomPlacementService.destroy()
 		warn("[ExpeditionLiveRuntime] failed to compose run variation:", variationPlanOrError)
 		return startFailure("RunVariationPlanningFailed", runId, seed)
 	end
@@ -208,17 +226,22 @@ function Service.startExpedition(options: StartOptions?): any
 	end)
 	if not encounterViewOk then
 		bootstrap:destroy()
+		clearRunVariationState()
+		ExpeditionRoomBarrierStateService.reset()
+		ExpeditionRoomPlacementService.destroy()
 		warn("[ExpeditionLiveRuntime] failed to compose run variation encounter view:", encounterViewOrError)
 		return startFailure("RunVariationEncounterViewFailed", runId, seed)
 	end
 
 	local compositionOk, compositionOrError = pcall(function()
 		local readback = RunVariationCompositionDebugReadback.build(roomPlan)
-		return bindCompositionToRun(runId, readback)
+		return bindCompositionToRun(runId, variationPlanOrError, readback)
 	end)
 	if not compositionOk then
 		bootstrap:destroy()
 		clearRunVariationState()
+		ExpeditionRoomBarrierStateService.reset()
+		ExpeditionRoomPlacementService.destroy()
 		warn("[ExpeditionLiveRuntime] failed to compose run variation readback:", compositionOrError)
 		return startFailure("RunVariationCompositionFailed", runId, seed)
 	end
@@ -227,6 +250,7 @@ function Service.startExpedition(options: StartOptions?): any
 	if placement.Accepted ~= true then
 		bootstrap:destroy()
 		clearRunVariationState()
+		ExpeditionRoomBarrierStateService.reset()
 		warn("[ExpeditionLiveRuntime] failed to place expedition rooms:", placement.ReasonId)
 		ExpeditionRoomPlacementService.destroy()
 		return startFailure(placement.ReasonId, runId, seed)

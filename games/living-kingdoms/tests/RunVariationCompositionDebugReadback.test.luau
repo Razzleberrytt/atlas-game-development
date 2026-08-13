@@ -28,6 +28,8 @@ local planner = {
 	plan = function(roomPlan: any)
 		return table.freeze({
 			VariationIdentity = `variation|{roomPlan.PlanIdentity}`,
+			SecretBranch = table.freeze({ PlanIdentity = "secret|cache" }),
+			OptionalObjective = table.freeze({ PlanIdentity = "objective|salvage" }),
 			RunModifier = table.freeze({ ModifierId = "dense", PlanIdentity = "modifier|dense" }),
 		})
 	end,
@@ -116,7 +118,9 @@ assert(result.RecordByRoomId.combat == result.Records[2], "room lookup must reso
 assert(result.OriginalUnitCount == 3, "readback must aggregate original unit count")
 assert(result.AppliedUnitCount == 4, "readback must aggregate applied unit count")
 assert(result.UnitCountDelta == 1, "readback must expose the aggregate composition delta")
-assert(result.SchemaVersion == "P06-COMPOSITION-READBACK-v2", "readback must expose stable schema version")
+assert(result.SchemaVersion == "P06-COMPOSITION-READBACK-v3", "readback must expose stable schema version")
+assert(result.HasSecretBranch == true, "readback must summarize secret-branch presence")
+assert(result.HasOptionalObjective == true, "readback must summarize optional-objective presence")
 assert(result.ModifierSummary == "dense affects 1/2 encounters", "modifier summary must be deterministic")
 assert(result.EncounterSummary == "2 encounters, 4 units (+1 variation)", "encounter summary must be concise")
 assert(
@@ -139,6 +143,8 @@ assert(result.UnitCountsByArchetypeId.spitter.UnitCountDelta == 0, "unchanged ar
 assert(table.isfrozen(result.UnitCountsByArchetypeId.walker), "archetype summaries must be immutable")
 assert(result.Records[1].SelectedWaveIdentity == nil, "zero encounter must not invent a selected wave")
 assert(result.Records[2].SelectedWaveIdentity == "wave|combat|1", "selected wave identity must be disclosed")
+assert(result.Records[1].ModifierId == nil, "unmodified record must not invent a modifier id")
+assert(result.Records[2].ModifierId == "dense", "modified record must expose its modifier id")
 assert(readback.recordForRoom(result, "combat") == result.Records[2], "room lookup helper must resolve live record")
 assert(readback.recordForRoom(result, "missing") == nil, "room lookup helper must preserve absence")
 assert(
@@ -173,10 +179,17 @@ view.build = completeView
 
 local noModifierPlanner = planner.plan
 planner.plan = function(plan: any)
-	return { VariationIdentity = `variation|{plan.PlanIdentity}|none`, RunModifier = nil }
+	return {
+		VariationIdentity = `variation|{plan.PlanIdentity}|none`,
+		SecretBranch = nil,
+		OptionalObjective = nil,
+		RunModifier = nil,
+	}
 end
 local noModifier = readback.build(roomPlan)
 assert(noModifier.RunModifierId == nil, "no-modifier run must preserve explicit absence")
+assert(noModifier.HasSecretBranch == false, "missing secret branch must remain explicit")
+assert(noModifier.HasOptionalObjective == false, "missing optional objective must remain explicit")
 assert(noModifier.ModifiedEncounterCount == 1, "fixture composition disclosure must remain independently counted")
 planner.plan = noModifierPlanner
 
