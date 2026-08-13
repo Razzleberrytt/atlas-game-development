@@ -6,7 +6,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ExpeditionConfig = require(ReplicatedStorage.Shared.Config.ExpeditionConfig)
-local RewardConfig = require(ReplicatedStorage.Shared.Config.FirstDungeonRewardDecisionConfig)
+local FirstDungeonRewardDecisionConfig = require(ReplicatedStorage.Shared.Config.FirstDungeonRewardDecisionConfig)
 local Contracts = require(ReplicatedStorage.Shared.Expeditions.ExpeditionContracts)
 local VariationPlanner = require(ReplicatedStorage.Shared.Expeditions.RunVariationPlanner)
 local EncounterView = require(ReplicatedStorage.Shared.Expeditions.RunVariationEncounterView)
@@ -15,9 +15,9 @@ local DebugSchema = require(ReplicatedStorage.Shared.Expeditions.RunVariationDeb
 local Bootstrap = require(script.Parent.ExpeditionServerBootstrap)
 local Placement = require(script.Parent.ExpeditionRoomPlacementService)
 local ExpeditionRoomBarrierStateService = require(script.Parent.ExpeditionRoomBarrierStateService)
-local RewardResolver = require(script.Parent.ExpeditionBossRewardTransitionResolver)
+local ExpeditionBossRewardTransitionResolver = require(script.Parent.ExpeditionBossRewardTransitionResolver)
 local EnemyDirector = require(script.Parent.EnemyDirectorService)
-local RunBuild = require(script.Parent.RunBuildService)
+local RunBuildService = require(script.Parent.RunBuildService)
 
 export type StartOptions = { Seed: number?, PartySize: number?, RunId: string? }
 
@@ -32,7 +32,7 @@ local started = false
 local lastStartFailure: any = nil
 
 local STEP_INTERVAL_SECONDS = 0.25
-local BossRewardDecision = RewardConfig.DecisionByRoomId["keeper-core"]
+local BossRewardDecision = FirstDungeonRewardDecisionConfig.DecisionByRoomId["keeper-core"]
 local PhaseIds, OutcomeIds = Contracts.PhaseIds, Contracts.OutcomeIds
 local developmentMode = false
 pcall(function()
@@ -128,9 +128,9 @@ local function disconnectHeartbeat()
 end
 
 local function offerBossReward(previousSnapshot: any?, currentSnapshot: any?)
-	local rewardEvent = RewardResolver.resolve(previousSnapshot, currentSnapshot, BossRewardDecision)
+	local rewardEvent = ExpeditionBossRewardTransitionResolver.resolve(previousSnapshot, currentSnapshot, BossRewardDecision)
 	if rewardEvent ~= nil then
-		RunBuild.offerRelicRewardToParticipants(rewardEvent.EventId, rewardEvent.SourceId)
+		RunBuildService.offerRelicRewardToParticipants(rewardEvent.EventId, rewardEvent.SourceId)
 	end
 end
 
