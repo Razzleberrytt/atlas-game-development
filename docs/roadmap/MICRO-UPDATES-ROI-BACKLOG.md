@@ -16,12 +16,12 @@ Status: `DONE` · `NEXT` · `QUEUED` · `GATED`
 | 6 | DONE | Clear composition readback on every stop/failure path | Prevent stale-run diagnostics |
 | 7 | DONE | Regression-test live readback lifecycle | Lock start/read/stop behavior |
 | 8 | DONE | Bind readback identity to active run ID | Distinguish concurrent/replayed runs |
-| 9 | NEXT | Report composed encounter count | Spot missing rooms instantly |
-| 10 | QUEUED | Report modified encounter count | Quantify modifier reach |
-| 11 | QUEUED | Add per-slot aggregate unit deltas | Find pressure concentration |
-| 12 | QUEUED | Add per-archetype aggregate unit deltas | Detect roster skew |
-| 13 | QUEUED | Fail closed on authored encounter/view cardinality mismatch | Prevent partial composition |
-| 14 | QUEUED | Fail closed on duplicate encounter slot within a room | Prevent ambiguous spawning |
+| 9 | DONE | Report composed encounter count | Spot missing rooms instantly |
+| 10 | DONE | Report modified encounter count | Quantify modifier reach |
+| 11 | DONE | Add per-slot aggregate unit deltas | Find pressure concentration |
+| 12 | DONE | Add per-archetype aggregate unit deltas | Detect roster skew |
+| 13 | DONE | Fail closed on authored encounter/view cardinality mismatch | Prevent partial composition |
+| 14 | NEXT | Fail closed on duplicate encounter slot within a room | Prevent ambiguous spawning |
 | 15 | QUEUED | Validate composition identity during runtime bootstrap | Catch drift before play |
 | 16 | QUEUED | Add zero-encounter readback coverage | Protect noncombat rooms |
 | 17 | QUEUED | Add no-modifier readback coverage | Protect baseline runs |
