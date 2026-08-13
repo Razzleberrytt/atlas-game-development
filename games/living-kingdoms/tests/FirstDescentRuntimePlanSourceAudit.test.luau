@@ -22,7 +22,18 @@ assert(
 assert(contains(bootstrap, "RoomPlacementPlanner.plan(rawPlan)"), "combat must use the physical-room layout planner")
 assert(contains(bootstrap, "placementByRoomId[context.RoomId]"), "dungeon combat must anchor to room identity")
 assert(contains(bootstrap, "placementByRoleId[context.PhaseId]"), "elite and boss phases must anchor to planned rooms")
-assert(contains(bootstrap, "FirstDungeonContentConfig.Encounters[roomId]"), "BA-032 encounter content must be live")
+assert(
+	contains(bootstrap, "FirstDungeonContentConfig.Encounters[record.RoomId]"),
+	"BA-032 authored encounter content must feed variation composition"
+)
+assert(
+	contains(bootstrap, "RunVariationAuthoredEncounterComposer.compose"),
+	"the live First Descent bridge must apply the deterministic variation composition"
+)
+assert(
+	contains(bootstrap, "composedEncounterByRoomId[roomId]"),
+	"runtime encounter lookup must consume the composed room-local encounter"
+)
 assert(contains(bootstrap, "unit.ArchetypeId"), "authored archetype identity must reach the runtime definition")
 assert(contains(bootstrap, "unit.HordeRoleId"), "authored walker role identity must reach the runtime definition")
 assert(contains(bootstrap, "SpecialEnemyConfig.BlightSpitter.DisplayName"), "Spitter identity must remain special")
