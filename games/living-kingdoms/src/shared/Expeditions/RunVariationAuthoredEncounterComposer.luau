@@ -12,8 +12,7 @@
 ]]
 
 local RunVariationAuthoredWaveApplicator = require(script.Parent.RunVariationAuthoredWaveApplicator)
-local RunVariationEncounterConsequencePolicy =
-	require(script.Parent.RunVariationEncounterConsequencePolicy)
+local RunVariationEncounterConsequencePolicy = require(script.Parent.RunVariationEncounterConsequencePolicy)
 
 export type ComposedEncounter = {
 	Seed: number,
@@ -75,14 +74,8 @@ function Composer.compose(seed: number, encounterRecord: any, authoredEncounter:
 	assert(seed > 0, "run seed must be positive")
 	assert(type(encounterRecord) == "table", "encounter intensity record is required")
 	assert(type(authoredEncounter) == "table", "authored encounter is required")
-	assert(
-		type(authoredEncounter.Waves) == "table",
-		"authored encounter waves are required"
-	)
-	assert(
-		authoredEncounter.RoomId == encounterRecord.RoomId,
-		"authored encounter room must match encounter record"
-	)
+	assert(type(authoredEncounter.Waves) == "table", "authored encounter waves are required")
+	assert(authoredEncounter.RoomId == encounterRecord.RoomId, "authored encounter room must match encounter record")
 	assert(
 		authoredEncounter.EncounterSlotId == encounterRecord.EncounterSlotId,
 		"authored encounter slot must match encounter record"
@@ -109,8 +102,7 @@ function Composer.compose(seed: number, encounterRecord: any, authoredEncounter:
 
 	for waveIndex, authoredWave in sourceWaves do
 		local waveConsequence = if waveIndex == selectedIndex then consequence else unchangedConsequence
-		local appliedWave =
-			RunVariationAuthoredWaveApplicator.apply(seed, authoredWave, waveConsequence)
+		local appliedWave = RunVariationAuthoredWaveApplicator.apply(seed, authoredWave, waveConsequence)
 		originalUnitCount += appliedWave.OriginalUnitCount
 		appliedUnitCount += appliedWave.AppliedUnitCount
 
