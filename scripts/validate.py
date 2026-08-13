@@ -35,6 +35,25 @@ def run(label: str, command: list[str]) -> None:
     result = subprocess.run(command, cwd=ROOT, check=False)
     if result.returncode != 0:
         print(f"::error title=Atlas validation stage::{label} failed with exit code {result.returncode}")
+        if label == "Luau formatting":
+            subprocess.run(
+                [
+                    "stylua",
+                    "games/living-kingdoms/src",
+                    "games/living-kingdoms/tests",
+                    "games/living-kingdoms/tools",
+                ],
+                cwd=ROOT,
+                check=False,
+            )
+            changed = subprocess.run(
+                ["git", "diff", "--name-only"],
+                cwd=ROOT,
+                check=False,
+                capture_output=True,
+                text=True,
+            ).stdout.strip().replace("\n", ", ")
+            print(f"::error title=StyLua changed files::{changed or 'unknown'}")
         raise RuntimeError(f"{label} failed with exit code {result.returncode}")
 
 
