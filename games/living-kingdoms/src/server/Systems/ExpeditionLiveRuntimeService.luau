@@ -30,6 +30,7 @@ local heartbeatConnection: RBXScriptConnection? = nil
 local accumulatedSeconds = 0
 local started = false
 local lastStartFailure: any = nil
+local lastRunSummary: any = nil
 local diagnosticWindowStartedAt = 0
 local diagnosticReadCount = 0
 
@@ -198,6 +199,57 @@ local function liveCompositionReadback(): any
 	return table.freeze(live)
 end
 
+--[[
+	A terminal run stays readable so the lobby return flow can consume it, so the
+	completed-run facts have to be captured while the composition and variation
+	state are still bound. Capture is one-shot per run id: later steps must not
+	rewrite an outcome that was already committed.
+]]
+local function captureTerminalRunSummary(bootstrap: any, snapshot: any)
+	if snapshot == nil or activeComposition == nil then
+		return
+	end
+	if snapshot.OutcomeId == OutcomeIds.InProgress then
+		return
+	end
+	if lastRunSummary ~= nil and lastRunSummary.RunId == snapshot.RunId then
+		return
+	end
+
+	local progress = runtimeDiagnosticProgress(bootstrap)
+	local composition = activeComposition.Composition
+	local secretBranch = if activeVariation ~= nil then activeVariation.SecretBranch else nil
+	local optionalObjective = if activeVariation ~= nil then activeVariation.OptionalObjective else nil
+	local elapsedSeconds = if type(snapshot.StartedAtUnix) == "number"
+		then math.max(0, nowUnix() - snapshot.StartedAtUnix)
+		else nil
+
+	lastRunSummary = table.freeze({
+		SchemaVersion = DebugSchema.TerminalRunSummaryVersion,
+		RunId = snapshot.RunId,
+		Seed = snapshot.Seed,
+		PartySize = snapshot.PartySize,
+		OutcomeId = snapshot.OutcomeId,
+		PhaseId = snapshot.PhaseId,
+		ElapsedSeconds = elapsedSeconds,
+		EncounteredRoomCount = progress.EncounteredRoomCount,
+		CompletedRoomCount = progress.CompletedRoomCount,
+		TotalRoomCount = progress.TotalRoomCount,
+		RoomPlanIdentity = activeComposition.RoomPlanIdentity,
+		CompositionIdentity = activeComposition.ActiveCompositionIdentity,
+		RunModifierId = activeComposition.RunModifierId,
+		EncounterCount = if composition ~= nil then composition.EncounterCount else nil,
+		ModifiedEncounterCount = if composition ~= nil then composition.ModifiedEncounterCount else nil,
+		AppliedUnitCount = if composition ~= nil then composition.AppliedUnitCount else nil,
+		UnitCountDelta = if composition ~= nil then composition.UnitCountDelta else nil,
+		HasOptionalObjective = optionalObjective ~= nil,
+		OptionalObjectiveId = if optionalObjective ~= nil then optionalObjective.ObjectiveId else nil,
+		HasSecretBranch = secretBranch ~= nil,
+		SecretRoomId = if secretBranch ~= nil then secretBranch.SecretRoomId else nil,
+		SecretDiscovered = snapshot.SecretDiscovered == true,
+	})
+end
+
 local function disconnectHeartbeat()
 	if heartbeatConnection ~= nil then
 		heartbeatConnection:Disconnect()
@@ -220,6 +272,16 @@ local function driveStep()
 		return
 	end
 	local previous = bootstrap:getSnapshot()
+	--[[
+		Once a run reaches a terminal outcome it keeps no work to do, but the
+		snapshot deliberately stays readable until the lobby consumes it. Stop
+		stepping the coordinator and re-evaluating barriers every interval while
+		the party sits on the results screen.
+	]]
+	if previous ~= nil and previous.OutcomeId ~= OutcomeIds.InProgress then
+		captureTerminalRunSummary(bootstrap, previous)
+		return
+	end
 	local stepResult = bootstrap:step(nowUnix())
 	local current = bootstrap:getSnapshot()
 	ExpeditionRoomBarrierStateService.update(bootstrap:getActiveEncounterContext())
@@ -232,6 +294,7 @@ local function driveStep()
 	then
 		warn("[ExpeditionLiveRuntime] step rejected:", stepResult.ReasonId)
 	end
+	captureTerminalRunSummary(bootstrap, current)
 end
 
 function Service.start()
@@ -356,6 +419,7 @@ function Service.startExpedition(options: StartOptions?): any
 	activeBootstrap, activeVariation, activeEncounterView, activeComposition =
 		bootstrap, variationOrError, viewOrError, compositionOrError
 	lastStartFailure = nil
+	lastRunSummary = nil
 	driveStep()
 	return result(true, "ExpeditionStarted", activeBootstrap:getSnapshot())
 end
@@ -452,11 +516,21 @@ function Service.readLastStartFailure(): any
 	return lastStartFailure
 end
 
+--[[
+	Survives stopExpedition on purpose: the lobby stops the run before anything
+	reviews it, so clearing the summary there would erase the completed-run facts
+	before they could be read. The next accepted launch clears it.
+]]
+function Service.readLastRunSummary(): any
+	return lastRunSummary
+end
+
 function Service.stop()
 	if not started then
 		return
 	end
 	started = false
+	lastRunSummary = nil
 	disconnectHeartbeat()
 	if activeBootstrap ~= nil then
 		activeBootstrap:destroy()

@@ -97,14 +97,14 @@ Status: `DONE` · `NEXT` · `QUEUED` · `GATED`
 | 87 | DONE | Preserve step remainder instead of dropping excess delta | More stable low-FPS cadence |
 | 88 | DONE | Cap catch-up steps per heartbeat | Prevent frame spirals |
 | 89 | DONE | Add heartbeat catch-up regression | Protect server pacing |
-| 90 | NEXT | Add active-run cleanup after terminal outcome | Reduce stale runtime time |
-| 91 | QUEUED | Add terminal composition summary snapshot | Improve completed-run review |
-| 92 | QUEUED | Add outcome ID to terminal summary | Improve completed-run review |
-| 93 | QUEUED | Add elapsed run seconds to terminal summary | Improve pacing review |
-| 94 | QUEUED | Add rooms completed to terminal summary | Improve funnel review |
-| 95 | QUEUED | Add modifier outcome correlation fields | Support later balancing |
-| 96 | QUEUED | Add optional objective outcome field | Support later balancing |
-| 97 | QUEUED | Add secret discovery outcome field | Support later balancing |
+| 90 | DONE | Add active-run cleanup after terminal outcome | Reduce stale runtime time |
+| 91 | DONE | Add terminal composition summary snapshot | Improve completed-run review |
+| 92 | DONE | Add outcome ID to terminal summary | Improve completed-run review |
+| 93 | DONE | Add elapsed run seconds to terminal summary | Improve pacing review |
+| 94 | DONE | Add rooms completed to terminal summary | Improve funnel review |
+| 95 | DONE | Add modifier outcome correlation fields | Support later balancing |
+| 96 | DONE | Add optional objective outcome field | Support later balancing |
+| 97 | DONE | Add secret discovery outcome field | Support later balancing |
 | 98 | GATED | Show run modifier on player HUD | Player clarity; needs UI/Studio verification |
 | 99 | GATED | Show optional objective variation on HUD | Player clarity; needs UI/Studio verification |
 | 100 | GATED | Show post-run variation recap | Replay motivation; needs UX/Studio verification |
