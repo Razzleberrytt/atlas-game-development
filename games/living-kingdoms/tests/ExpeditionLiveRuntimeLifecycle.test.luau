@@ -65,6 +65,8 @@ local function newRoomPlan(seed: number): any
 	}
 end
 
+local activeSnapshot: any = nil
+
 local bootstrapStub = {
 	new = function(_director: any, options: any): any
 		createdBootstrapCount += 1
@@ -73,13 +75,15 @@ local bootstrapStub = {
 			RunId = options.RunId,
 			Seed = options.Seed,
 			PartySize = options.PartySize,
+			StartedAtUnix = options.StartedAtUnix,
 			PhaseId = contracts.PhaseIds.Approach,
 			OutcomeId = contracts.OutcomeIds.InProgress,
 			SecretDiscovered = false,
 		}
+		activeSnapshot = snapshot
 		return {
 			Runtime = nil,
-			Coordinator = nil,
+			Coordinator = { _state = { NextDungeonNodeIndex = 3 } },
 			CombatAdapter = nil,
 			getRoomPlan = function(): any
 				return roomPlan
@@ -120,15 +124,21 @@ local barrierStub = {
 	update = function() end,
 }
 
+local plannedSecretBranch: any = nil
+local plannedOptionalObjective: any = nil
+local plannedRunModifierId: string? = nil
+
 local variationPlannerStub = {
 	plan = function(roomPlan: any): any
 		return {
 			Seed = roomPlan.Seed,
 			RoomPlanIdentity = roomPlan.PlanIdentity,
 			VariationIdentity = "variation|" .. roomPlan.PlanIdentity,
-			SecretBranch = nil,
-			OptionalObjective = nil,
-			RunModifier = nil,
+			SecretBranch = plannedSecretBranch,
+			OptionalObjective = plannedOptionalObjective,
+			RunModifier = if plannedRunModifierId == nil
+				then nil
+				else { ModifierId = plannedRunModifierId, PlanIdentity = "modifier|" .. plannedRunModifierId },
 		}
 	end,
 }
@@ -144,8 +154,12 @@ local compositionReadbackStub = {
 		return {
 			Seed = roomPlan.Seed,
 			RoomPlanIdentity = roomPlan.PlanIdentity,
-			RunModifierId = nil,
+			RunModifierId = plannedRunModifierId,
 			CompositionIdentity = "composition|" .. roomPlan.PlanIdentity,
+			EncounterCount = 3,
+			ModifiedEncounterCount = if plannedRunModifierId == nil then 0 else 2,
+			AppliedUnitCount = 9,
+			UnitCountDelta = 1,
 		}
 	end,
 }
@@ -155,6 +169,7 @@ local heartbeatConnectCount = 0
 local heartbeatDisconnectCount = 0
 local connectedPlayers = { {} }
 local studioMode = false
+local serverTimeNow = 1_700_000_000
 
 -- Module environment ---------------------------------------------------------
 
@@ -258,7 +273,7 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 		},
 		workspace = {
 			GetServerTimeNow = function(): number
-				return 1_700_000_000
+				return serverTimeNow
 			end,
 		},
 		warn = function() end,
@@ -424,6 +439,88 @@ check(
 	service.readRunVariationComposition("expedition:first-run").ReasonId == "NoActiveExpedition",
 	"a stopped expedition must refuse composition reads"
 )
+
+-- Ranks 90-97: terminal run summary ------------------------------------------
+
+check(service.readLastRunSummary() == nil, "no run summary may exist before a run reaches a terminal outcome")
+
+plannedRunModifierId = "dense-contact"
+plannedOptionalObjective = { ObjectiveId = "clear-the-cistern", PlanIdentity = "objective|clear-the-cistern" }
+plannedSecretBranch = { SecretRoomId = "sunken-vault", PlanIdentity = "secret|sunken-vault" }
+
+local terminalRun = startWith({ Seed = 4242, RunId = "expedition:terminal-run" })
+check(terminalRun.Accepted == true, "the terminal-summary run must launch")
+check(service.readLastRunSummary() == nil, "an accepted launch must clear any earlier run summary")
+
+local stepsBeforeTerminal = steppedCount
+check(beat(0.25) == 1, "an in-progress run must keep stepping")
+check(steppedCount == stepsBeforeTerminal + 1, "an in-progress run must advance exactly one step")
+
+serverTimeNow += 137
+activeSnapshot.OutcomeId = contracts.OutcomeIds.Completed
+activeSnapshot.PhaseId = contracts.PhaseIds.Results
+activeSnapshot.SecretDiscovered = true
+
+local stepsAtTerminal = steppedCount
+beat(0.25)
+-- Rank 90: a finished run must stop consuming per-interval runtime work.
+check(steppedCount == stepsAtTerminal, "a terminal run must stop stepping the coordinator")
+beat(1)
+check(steppedCount == stepsAtTerminal, "a terminal run must stay stopped across later heartbeats")
+
+local summary = service.readLastRunSummary()
+check(summary ~= nil, "a terminal outcome must produce a run summary")
+check(table.isfrozen(summary), "the terminal run summary must be immutable")
+check(summary.SchemaVersion == debugSchema.TerminalRunSummaryVersion, "run summary schema version drift")
+check(summary.RunId == "expedition:terminal-run" and summary.Seed == 4242, "run summary identity drift")
+-- Rank 92
+check(summary.OutcomeId == contracts.OutcomeIds.Completed, "run summary must record the terminal outcome")
+check(summary.PhaseId == contracts.PhaseIds.Results, "run summary must record the terminal phase")
+-- Rank 93
+check(summary.ElapsedSeconds == 137, "run summary must record elapsed run seconds")
+-- Rank 94
+check(summary.TotalRoomCount == 1, "run summary must record the dungeon room total")
+check(summary.EncounteredRoomCount == 1 and summary.CompletedRoomCount == 1, "run summary must record room progress")
+-- Rank 91
+check(summary.RoomPlanIdentity == "room-plan|4242", "run summary must bind the room plan identity")
+check(
+	string.find(summary.CompositionIdentity, "composition%7Croom-plan%7C4242", 1, true) ~= nil,
+	"run summary must bind the active composition identity"
+)
+-- Rank 95
+check(summary.RunModifierId == "dense-contact", "run summary must record the run modifier")
+check(
+	summary.EncounterCount == 3 and summary.ModifiedEncounterCount == 2,
+	"run summary must correlate modifier reach with encounter count"
+)
+check(summary.AppliedUnitCount == 9 and summary.UnitCountDelta == 1, "run summary must record composed pressure")
+-- Rank 96
+check(summary.HasOptionalObjective == true, "run summary must record optional objective presence")
+check(summary.OptionalObjectiveId == "clear-the-cistern", "run summary must record the optional objective id")
+-- Rank 97
+check(summary.HasSecretBranch == true, "run summary must record secret branch presence")
+check(summary.SecretRoomId == "sunken-vault", "run summary must record the planned secret room")
+check(summary.SecretDiscovered == true, "run summary must record whether the secret was discovered")
+
+activeSnapshot.OutcomeId = contracts.OutcomeIds.Failed
+beat(0.25)
+check(service.readLastRunSummary() == summary, "a committed run summary must not be rewritten by later steps")
+
+local terminalStop = service.stopExpedition("ReturnedToLobby")
+check(terminalStop.Accepted == true, "the lobby must still be able to stop a terminal run")
+check(service.readLastRunSummary() == summary, "the run summary must survive the stop that ends the run")
+
+plannedRunModifierId = nil
+plannedOptionalObjective = nil
+plannedSecretBranch = nil
+
+-- Rank 33/34 companion: a rejected placement must leave no active run behind.
+placementAccepted = false
+local placementFailure = startWith({ Seed = 4243, RunId = "expedition:placement-failure" })
+check(placementFailure.Accepted == false, "a rejected placement must refuse the launch")
+check(service.readSnapshot() == nil, "a rejected placement must not leave an active run")
+check(service.readRunVariationPlan() == nil, "a rejected placement must not leave variation state")
+placementAccepted = true
 
 -- Rank 85: repeated service start --------------------------------------------
 

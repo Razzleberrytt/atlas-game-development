@@ -4,6 +4,7 @@ local Schema = {}
 
 Schema.CompositionReadbackVersion = "P06-COMPOSITION-READBACK-v3"
 Schema.ActiveCompositionVersion = "P06-ACTIVE-COMPOSITION-v2"
+Schema.TerminalRunSummaryVersion = "P06-TERMINAL-RUN-SUMMARY-v1"
 Schema.MaximumCompositionIdentityLength = 16_384
 Schema.FailureReasonIds = table.freeze({
 	DuplicateEncounterSlot = "DuplicateEncounterSlot",
