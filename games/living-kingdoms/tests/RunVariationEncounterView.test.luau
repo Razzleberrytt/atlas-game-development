@@ -160,6 +160,41 @@ mustRejectNodes({
 mustRejectNodes({
 	{ Index = 1, RoomId = "combat-a", EncounterSlotId = "standard" },
 }, "encounter node without an intensity must fail closed")
+mustRejectNodes({
+	{ Index = 1, RoomId = "combat-a", EncounterSlotId = "standard", EncounterIntensity = 2.5 },
+}, "fractional encounter intensity must fail closed")
+mustRejectNodes({
+	{ Index = 1, RoomId = "combat-a", EncounterSlotId = "standard", EncounterIntensity = -1 },
+}, "negative encounter intensity must fail closed")
+mustRejectNodes({
+	{ Index = 1, RoomId = "combat-a", EncounterSlotId = "standard", EncounterIntensity = "2" },
+}, "non-numeric encounter intensity must fail closed")
+
+local function mustRejectModifiedIntensity(modifiedIntensity: any, message: string)
+	local ok = pcall(function()
+		View.build(roomPlan, {
+			Seed = 321,
+			RoomPlanIdentity = "room-plan:321",
+			VariationIdentity = "variation:bad-intensity",
+			RunModifier = {
+				IntensityOverrides = {
+					{
+						NodeIndex = 3,
+						RoomId = "combat-b",
+						EncounterSlotId = "standard",
+						BaseIntensity = 3,
+						ModifiedIntensity = modifiedIntensity,
+					},
+				},
+			},
+		})
+	end)
+	check(ok == false, message)
+end
+
+mustRejectModifiedIntensity(3.5, "fractional modified intensity must fail closed")
+mustRejectModifiedIntensity(-1, "negative modified intensity must fail closed")
+mustRejectModifiedIntensity(nil, "missing modified intensity must fail closed")
 
 local nonEncounterView = View.build({
 	Seed = 321,

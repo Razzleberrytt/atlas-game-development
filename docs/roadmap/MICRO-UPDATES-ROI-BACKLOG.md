@@ -86,12 +86,12 @@ Status: `DONE` · `NEXT` · `QUEUED` · `GATED`
 | 76 | DONE | Add malformed node index rejection | Fail fast on corrupted plans |
 | 77 | DONE | Add missing room ID rejection | Fail fast on corrupted plans |
 | 78 | DONE | Add missing encounter slot rejection | Fail fast on corrupted content |
-| 79 | NEXT | Add invalid intensity rejection | Fail fast on corrupted content |
-| 80 | QUEUED | Add invalid unit count rejection | Fail fast on corrupted content |
-| 81 | QUEUED | Add seed boundary fixtures | Protect runtime limits |
-| 82 | QUEUED | Add party-size boundary fixtures | Protect launch validation |
-| 83 | QUEUED | Add repeated start idempotency fixture | Prevent duplicate runs |
-| 84 | QUEUED | Add repeated stop idempotency fixture | Prevent cleanup errors |
+| 79 | DONE | Add invalid intensity rejection | Fail fast on corrupted content |
+| 80 | DONE | Add invalid unit count rejection | Fail fast on corrupted content |
+| 81 | DONE | Add seed boundary fixtures | Protect runtime limits |
+| 82 | DONE | Add party-size boundary fixtures | Protect launch validation |
+| 83 | DONE | Add repeated start idempotency fixture | Prevent duplicate runs |
+| 84 | NEXT | Add repeated stop idempotency fixture | Prevent cleanup errors |
 | 85 | QUEUED | Add repeated service start fixture | Prevent duplicate heartbeat |
 | 86 | QUEUED | Add repeated service stop fixture | Prevent connection leaks |
 | 87 | QUEUED | Preserve step remainder instead of dropping excess delta | More stable low-FPS cadence |

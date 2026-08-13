@@ -27,6 +27,10 @@ export type EncounterView = {
 
 local RunVariationEncounterView = {}
 
+local function assertIntensity(value: any, message: string)
+	assert(type(value) == "number" and value % 1 == 0 and value >= 0, message)
+end
+
 --[[
 	A corrupted room-plan node must fail the build instead of silently dropping an
 	encounter. The record loop below only emits a record when both encounter fields
@@ -51,7 +55,7 @@ local function assertNodeShape(node: any, seenIndices: { [number]: boolean })
 		type(node.EncounterSlotId) == "string" and node.EncounterSlotId ~= "",
 		"room plan encounter node is missing an encounter slot id"
 	)
-	assert(type(node.EncounterIntensity) == "number", "room plan encounter node is missing an encounter intensity")
+	assertIntensity(node.EncounterIntensity, "room plan encounter node has an invalid encounter intensity")
 end
 
 local function modifierOverrideByNode(variationPlan: any): { [number]: any }
@@ -101,7 +105,7 @@ function RunVariationEncounterView.build(roomPlan: any, variationPlan: any): Enc
 					override.BaseIntensity == node.EncounterIntensity,
 					"run modifier override base intensity mismatch"
 				)
-				assert(type(override.ModifiedIntensity) == "number", "run modifier modified intensity is required")
+				assertIntensity(override.ModifiedIntensity, "run modifier modified intensity is invalid")
 				effectiveIntensity = override.ModifiedIntensity
 				modifierApplied = true
 			end
