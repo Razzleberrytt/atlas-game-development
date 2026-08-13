@@ -60,6 +60,18 @@ function Service:acquire(playerId: number, nowUnix: number): any
 	local blocked = false
 	local nextExpiry = nowUnix + selfAny._duration
 	local ok, value = selfAny._store:update(keyFor(playerId), function(current)
+		--[[
+			The transform may run more than once for a single update: the store
+			adapter retries a failed attempt with this same closure, and
+			UpdateAsync itself re-runs the transform when the key changes under
+			contention. Only the final invocation describes what was written, so
+			the decision flags reset here instead of accumulating. Letting a
+			stale `blocked` survive into a successful acquisition would report
+			LeaseHeldByAnotherServer while this server silently squatted the
+			lease it had just written, untracked and unreleased until expiry.
+		]]
+		acquired = false
+		blocked = false
 		if
 			type(current) == "table"
 			and type(current.OwnerId) == "string"
@@ -105,6 +117,10 @@ function Service:renew(playerId: number, nowUnix: number): any
 	local renewed = false
 	local nextExpiry = nowUnix + selfAny._duration
 	local ok, value = selfAny._store:update(keyFor(playerId), function(current)
+		-- Same retry contract as acquire. A lost renewal is already caught by the
+		-- owner check on the returned value below; resetting here keeps the flag
+		-- from being the thing that has to be right.
+		renewed = false
 		if type(current) ~= "table" or current.OwnerId ~= selfAny._ownerId then
 			return current
 		end
@@ -138,6 +154,8 @@ function Service:release(playerId: number): any
 
 	local released = false
 	local ok = selfAny._store:update(keyFor(playerId), function(current)
+		-- Same retry contract as acquire/renew; only the final invocation counts.
+		released = false
 		if type(current) == "table" and current.OwnerId == selfAny._ownerId then
 			released = true
 			return nil
