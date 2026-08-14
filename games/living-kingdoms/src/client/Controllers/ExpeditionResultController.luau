@@ -114,13 +114,8 @@ local function createGui()
 		if viewport.X <= 0 or viewport.Y <= 0 then
 			return
 		end
-		panelScale.Scale = ResponsivePanelScale.calculate(
-			viewport.X,
-			viewport.Y,
-			PANEL_WIDTH,
-			PANEL_HEIGHT,
-			PANEL_VIEWPORT_MARGIN
-		)
+		panelScale.Scale =
+			ResponsivePanelScale.calculate(viewport.X, viewport.Y, PANEL_WIDTH, PANEL_HEIGHT, PANEL_VIEWPORT_MARGIN)
 	end
 	updatePanelScale()
 	scaleConnection = backdrop:GetPropertyChangedSignal("AbsoluteSize"):Connect(updatePanelScale)
