@@ -51,9 +51,16 @@ local AFFIX_MODIFIER_TOKEN = {}
 local INVENTORY_CONTRACTS_TOKEN = {}
 local DISMANTLE_TOKEN = {}
 local STORAGE_RESULTS_TOKEN = {}
+local DURABLE_MUTATION_TOKEN = {}
 local storageResults =
 	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/StorageResultContracts.luau"), {
 		debugName = "StorageResultContracts",
+		injectGlobals = true,
+	})()
+
+local durableMutation =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/DurableMutationContracts.luau"), {
+		debugName = "DurableMutationContracts",
 		injectGlobals = true,
 	})()
 
@@ -273,6 +280,7 @@ local replicatedStorage = {
 			PlayerInventoryContracts = INVENTORY_CONTRACTS_TOKEN,
 			InventoryDismantleResolver = DISMANTLE_TOKEN,
 			StorageResultContracts = STORAGE_RESULTS_TOKEN,
+			DurableMutationContracts = DURABLE_MUTATION_TOKEN,
 		},
 	},
 }
@@ -292,6 +300,8 @@ local function requireProductionToken(token: unknown)
 		return inventoryContracts
 	elseif token == DISMANTLE_TOKEN then
 		return dismantleResolver
+	elseif token == DURABLE_MUTATION_TOKEN then
+		return durableMutation
 	elseif token == STORAGE_RESULTS_TOKEN then
 		return storageResults
 	end

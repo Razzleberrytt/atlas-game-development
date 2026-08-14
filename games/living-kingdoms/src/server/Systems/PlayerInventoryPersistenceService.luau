@@ -7,6 +7,7 @@ local InventoryDismantleResolver = require(ReplicatedStorage.Shared.Persistence.
 local EquipmentContracts = require(ReplicatedStorage.Shared.Equipment.EquipmentRewardContracts)
 local EquipmentAffixContracts = require(ReplicatedStorage.Shared.Equipment.EquipmentAffixContracts)
 local StorageResults = require(ReplicatedStorage.Shared.Persistence.StorageResultContracts)
+local DurableMutation = require(ReplicatedStorage.Shared.Persistence.DurableMutationContracts)
 
 export type EquipmentReward = EquipmentContracts.EquipmentReward
 export type EquipmentAffixRoll = EquipmentContracts.EquipmentAffixRoll
@@ -170,6 +171,7 @@ local function newRecord(playerId: number, nowUnix: number): PlayerInventoryReco
 		AppliedRewardInstanceIds = {},
 		AppliedRewardGrantIds = {},
 		AppliedDismantleTransactions = {},
+		AppliedRewardContentSignatures = {},
 		UpdatedAtUnix = nowUnix,
 	}
 end
@@ -185,6 +187,7 @@ local function cloneRecord(record: PlayerInventoryRecord): PlayerInventoryRecord
 	local instances = table.clone(record.AppliedRewardInstanceIds)
 	local grants = table.clone(record.AppliedRewardGrantIds)
 	local dismantles = table.clone(record.AppliedDismantleTransactions or {})
+	local signatures = table.clone(record.AppliedRewardContentSignatures or {})
 	return table.freeze({
 		SchemaVersion = record.SchemaVersion,
 		PlayerId = record.PlayerId,
@@ -193,6 +196,7 @@ local function cloneRecord(record: PlayerInventoryRecord): PlayerInventoryRecord
 		AppliedRewardInstanceIds = table.freeze(instances),
 		AppliedRewardGrantIds = table.freeze(grants),
 		AppliedDismantleTransactions = table.freeze(dismantles),
+		AppliedRewardContentSignatures = table.freeze(signatures),
 		UpdatedAtUnix = record.UpdatedAtUnix,
 	})
 end
@@ -252,7 +256,21 @@ local function normalizeRecord(raw: any, playerId: number, nowUnix: number): (Pl
 		if type(outcome.InstanceId) ~= "string" or type(outcome.SalvagedDefinitionId) ~= "string" then
 			return nil, false, "InvalidDismantleLedger"
 		end
-		if type(outcome.SalvagedRarity) ~= "string" or type(outcome.SalvagedPower) ~= "number" then
+		--[[
+			A replayed dismantle is answered from this record, not from the item,
+			which no longer exists. A structurally incomplete outcome would answer
+			the replay with nonsense, so every field a replay discloses is checked
+			rather than merely typed.
+		]]
+		if
+			not DurableMutation.isValidTransactionId(transactionId)
+			or #outcome.InstanceId < 8
+			or #outcome.SalvagedDefinitionId < 1
+			or type(outcome.SalvagedRarity) ~= "string"
+			or not isKnownValue(VALID_RARITIES, outcome.SalvagedRarity)
+			or not isInteger(outcome.SalvagedPower)
+			or outcome.SalvagedPower < 0
+		then
 			return nil, false, "InvalidDismantleLedger"
 		end
 		record.AppliedDismantleTransactions[transactionId] = table.freeze({
@@ -261,6 +279,22 @@ local function normalizeRecord(raw: any, playerId: number, nowUnix: number): (Pl
 			SalvagedRarity = outcome.SalvagedRarity,
 			SalvagedPower = outcome.SalvagedPower,
 		})
+	end
+	--[[
+		Schema 4 added per-grant content identity. Records saved at 1-3 have none:
+		their grants are known to have happened but not what they were, so a
+		repeat of one of those ids can only be treated as a replay. That is the
+		safe direction -- it preserves today's behaviour for historical grants
+		while new grants gain conflict detection.
+	]]
+	for grantId, signature in raw.AppliedRewardContentSignatures or {} do
+		if type(grantId) ~= "string" or not DurableMutation.isValidContentIdentity(signature) then
+			return nil, false, "InvalidRewardSignatureLedger"
+		end
+		if record.AppliedRewardGrantIds[grantId] ~= true then
+			return nil, false, "InvalidRewardSignatureLedger"
+		end
+		record.AppliedRewardContentSignatures[grantId] = signature
 	end
 	for slotId, instanceId in raw.EquippedBySlot or {} do
 		local reward = record.InventoryByInstanceId[instanceId]
@@ -331,7 +365,23 @@ function Service:applyReward(playerId: number, reward: EquipmentReward, nowUnix:
 	if normalized == nil or type(nowUnix) ~= "number" or nowUnix < record.UpdatedAtUnix then
 		return result(false, "InvalidReward", cloneRecord(record))
 	end
-	if record.AppliedRewardGrantIds[normalized.GrantId] or record.AppliedRewardInstanceIds[normalized.InstanceId] then
+	--[[
+		A repeat of a grant id is either a retry of the same grant or a different
+		grant wearing a used id, and those need opposite answers. The ledger used
+		to record only that an id had been used, so the second case was reported
+		as the first and the differing reward was discarded without a signal.
+
+		Historical grants carry no recorded signature, so they can only be treated
+		as replays -- the safe direction, and exactly what happened before.
+	]]
+	if record.AppliedRewardGrantIds[normalized.GrantId] then
+		local knownSignature = record.AppliedRewardContentSignatures[normalized.GrantId]
+		if knownSignature ~= nil and knownSignature ~= normalized.ContentSignature then
+			return result(false, "RewardGrantConflict", cloneRecord(record))
+		end
+		return result(false, "RewardAlreadyApplied", cloneRecord(record))
+	end
+	if record.AppliedRewardInstanceIds[normalized.InstanceId] then
 		return result(false, "RewardAlreadyApplied", cloneRecord(record))
 	end
 
@@ -353,9 +403,25 @@ function Service:applyReward(playerId: number, reward: EquipmentReward, nowUnix:
 	for transactionId, outcome in record.AppliedDismantleTransactions do
 		nextRecord.AppliedDismantleTransactions[transactionId] = outcome
 	end
+	for grantId, signature in record.AppliedRewardContentSignatures do
+		nextRecord.AppliedRewardContentSignatures[grantId] = signature
+	end
 	nextRecord.InventoryByInstanceId[normalized.InstanceId] = normalized
 	nextRecord.AppliedRewardInstanceIds[normalized.InstanceId] = true
 	nextRecord.AppliedRewardGrantIds[normalized.GrantId] = true
+	nextRecord.AppliedRewardContentSignatures[normalized.GrantId] = normalized.ContentSignature
+
+	--[[
+		Ledgers only grow. A record past the bound would eventually stop saving
+		at the DataStore size limit, losing the inventory rather than just the
+		ledger, so the write is refused here where it can still be reported.
+	]]
+	if
+		DurableMutation.exceedsBound(nextRecord.AppliedRewardGrantIds)
+		or DurableMutation.exceedsBound(nextRecord.AppliedDismantleTransactions)
+	then
+		return result(false, "MutationLedgerBoundExceeded", cloneRecord(record))
+	end
 	if selfAny._store:write(keyFor(playerId), nextRecord).Status ~= StorageResults.WriteStatuses.Committed then
 		return result(false, "SaveFailed", cloneRecord(record))
 	end
@@ -404,6 +470,9 @@ function Service:equip(playerId: number, slotId: EquipmentSlotId, instanceId: st
 	-- an already-applied dismantle replay into a second destruction.
 	for transactionId, outcome in record.AppliedDismantleTransactions do
 		nextRecord.AppliedDismantleTransactions[transactionId] = outcome
+	end
+	for grantId, signature in record.AppliedRewardContentSignatures do
+		nextRecord.AppliedRewardContentSignatures[grantId] = signature
 	end
 	nextRecord.EquippedBySlot[slotId] = instanceId
 	if selfAny._store:write(keyFor(playerId), nextRecord).Status ~= StorageResults.WriteStatuses.Committed then
@@ -484,6 +553,13 @@ function Service:dismantle(
 	end
 	for id, outcome in nextRecord.AppliedDismantleTransactions do
 		durable.AppliedDismantleTransactions[id] = outcome
+	end
+	--[[
+		Destroying an item must not erase the record that its grant was already
+		applied, or the same reward could be granted again after a dismantle.
+	]]
+	for grantId, signature in record.AppliedRewardContentSignatures do
+		durable.AppliedRewardContentSignatures[grantId] = signature
 	end
 	durable.AppliedDismantleTransactions[transactionId] = resolution.Outcome
 

@@ -64,20 +64,20 @@ Before this 100-task queue began, Patch 0.7 already had: symmetric resident-reco
 29. **[DONE]** Add bounded retry/reconciliation behavior for failed shutdown lease release.
 30. **[DONE]** Add automated multi-player lease isolation fixture across many keys.
 
-## Batch 4 — Valuable mutation idempotency (#31–#40) — ACTIVE
+## Batch 4 — Valuable mutation idempotency (#31–#40) — DONE
 
-31. Define one canonical durable mutation transaction-id contract.
-32. Require transaction identity for every valuable reward grant path.
-33. Persist equip transaction identity or prove equip is naturally idempotent under exact replay.
-34. Strengthen dismantle transaction ledger validation with complete outcome shape checks.
-35. Reject transaction-id reuse with conflicting payload/content identity.
-36. Add reward retry fixture for same grant + different instance GUID.
-37. Add reward conflict fixture for same transaction + different content signature.
-38. Add dismantle retry fixture across release/rejoin.
-39. Add mutation ledger retention policy and bound.
-40. Add cross-mutation ledger audit proving reward/equip/dismantle cannot erase each other's replay protection.
+31. **[DONE]** Define one canonical durable mutation transaction-id contract.
+32. **[DONE]** Require transaction identity for every valuable reward grant path.
+33. **[DONE]** Persist equip transaction identity or prove equip is naturally idempotent under exact replay.
+34. **[DONE]** Strengthen dismantle transaction ledger validation with complete outcome shape checks.
+35. **[DONE]** Reject transaction-id reuse with conflicting payload/content identity.
+36. **[DONE]** Add reward retry fixture for same grant + different instance GUID.
+37. **[DONE]** Add reward conflict fixture for same transaction + different content signature.
+38. **[DONE]** Add dismantle retry fixture across release/rejoin.
+39. **[DONE]** Add mutation ledger retention policy and bound.
+40. **[DONE]** Add cross-mutation ledger audit proving reward/equip/dismantle cannot erase each other's replay protection.
 
-## Batch 5 — Migration, quarantine, and recovery (#41–#50)
+## Batch 5 — Migration, quarantine, and recovery (#41–#50) — ACTIVE
 
 41. Define current-to-next schema migration authoring contract.
 42. Require sequential migration steps rather than arbitrary direct jumps.
