@@ -14,6 +14,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	unbounded wait here would hold every controller after it forever.
 ]]
 local NETWORK_WAIT_SECONDS = 20
+local TOAST_MAX_WIDTH = 460
+local TOAST_HEIGHT = 42
+local TOAST_HORIZONTAL_MARGIN = 16
 
 local Controller = {}
 local player = Players.LocalPlayer
@@ -69,7 +72,7 @@ local function createPresentation()
 	toast.Name = "ContextToast"
 	toast.AnchorPoint = Vector2.new(0.5, 0)
 	toast.Position = UDim2.new(0.5, 0, 0, 72)
-	toast.Size = UDim2.fromOffset(460, 42)
+	toast.Size = UDim2.new(1, -TOAST_HORIZONTAL_MARGIN * 2, 0, TOAST_HEIGHT)
 	toast.BackgroundColor3 = Color3.fromRGB(10, 13, 15)
 	toast.BackgroundTransparency = 0.16
 	toast.BorderSizePixel = 0
@@ -79,6 +82,10 @@ local function createPresentation()
 	toast.TextWrapped = true
 	toast.Visible = false
 	toast.Parent = created
+
+	local sizeConstraint = Instance.new("UISizeConstraint")
+	sizeConstraint.MaxSize = Vector2.new(TOAST_MAX_WIDTH, TOAST_HEIGHT)
+	sizeConstraint.Parent = toast
 
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 7)
