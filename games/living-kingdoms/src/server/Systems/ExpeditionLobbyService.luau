@@ -3,6 +3,10 @@
 -- Server-owned lobby state for a bounded expedition party. Clients may request
 -- ready changes through a narrow validated bridge, but only this service decides
 -- when the party is launchable.
+--
+-- Snapshots carry a monotonic Revision so presentation layers can discard stale
+-- state delivered out of order. Revisions advance only when authoritative lobby
+-- truth changes; rejected and idempotent requests do not manufacture updates.
 
 export type Service = {
 	join: (self: Service, playerId: number) -> any,
@@ -24,6 +28,10 @@ local function result(accepted: boolean, reasonId: string, snapshot: any?)
 	return table.freeze({ Accepted = accepted, ReasonId = reasonId, Snapshot = snapshot })
 end
 
+local function advanceRevision(selfAny: any)
+	selfAny._revision += 1
+end
+
 local function copySnapshot(selfAny: any): any
 	local members = {}
 	for playerId, member in selfAny._members do
@@ -40,6 +48,7 @@ local function copySnapshot(selfAny: any): any
 		end
 	end
 	return table.freeze({
+		Revision = selfAny._revision,
 		Members = table.freeze(members),
 		MemberCount = #members,
 		MinimumPlayers = selfAny._minimumPlayers,
@@ -63,6 +72,7 @@ function Service.new(minimumPlayers: number, maximumPlayers: number): Service
 		_maximumPlayers = maximumPlayers,
 		_members = {},
 		_launchPending = false,
+		_revision = 0,
 		_destroyed = false,
 	}, Service) :: any
 end
@@ -89,6 +99,7 @@ function Service:join(playerId: number): any
 		return result(false, "LobbyFull", copySnapshot(selfAny))
 	end
 	selfAny._members[playerId] = { Ready = false }
+	advanceRevision(selfAny)
 	return result(true, "PlayerJoined", copySnapshot(selfAny))
 end
 
@@ -102,6 +113,7 @@ function Service:leave(playerId: number): any
 	end
 	selfAny._members[playerId] = nil
 	selfAny._launchPending = false
+	advanceRevision(selfAny)
 	return result(true, "PlayerLeft", copySnapshot(selfAny))
 end
 
@@ -120,10 +132,15 @@ function Service:setReady(playerId: number, ready: boolean): any
 	if selfAny._launchPending then
 		return result(false, "LaunchPending", copySnapshot(selfAny))
 	end
+	if member.Ready == ready then
+		return result(true, if ready then "PlayerAlreadyReady" else "PlayerAlreadyUnready", copySnapshot(selfAny))
+	end
 	member.Ready = ready
+	advanceRevision(selfAny)
 	local snapshot = copySnapshot(selfAny)
 	if snapshot.AllReady then
 		selfAny._launchPending = true
+		advanceRevision(selfAny)
 		snapshot = copySnapshot(selfAny)
 	end
 	return result(true, if ready then "PlayerReady" else "PlayerUnready", snapshot)
@@ -145,12 +162,13 @@ function Service:consumeLaunch(): any
 	if not selfAny._launchPending then
 		return result(false, "LaunchNotReady", copySnapshot(selfAny))
 	end
-	local snapshot = copySnapshot(selfAny)
+	local launchSnapshot = copySnapshot(selfAny)
 	selfAny._launchPending = false
 	for _, member in selfAny._members do
 		member.Ready = false
 	end
-	return result(true, "LaunchConsumed", snapshot)
+	advanceRevision(selfAny)
+	return result(true, "LaunchConsumed", launchSnapshot)
 end
 
 function Service:destroy()
