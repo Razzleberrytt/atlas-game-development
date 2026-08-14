@@ -214,12 +214,23 @@ function Resolver.resolve(config: ProgressionConfig, appliedRewardGrantIds: unkn
 		return rejected("InvalidGrantLedger")
 	end
 
+	--[[
+		The ledger is a set: PlayerInventoryContracts declares
+		AppliedRewardGrantIds as { [string]: boolean }, and persistence stores
+		grantId -> true. Iterating it for values yielded booleans, so every
+		non-empty ledger was rejected as malformed and progression died for
+		exactly the players who had earned something. An empty ledger iterates
+		zero times, which is why a fresh account looked fine.
+
+		Grant ids are the keys. Values are validated the same way persistence
+		validates them on load, so the two owners agree on what a ledger is.
+	]]
 	local completedRunIds = {}
-	for _, rawGrantId in appliedRewardGrantIds :: any do
-		if type(rawGrantId) ~= "string" then
+	for grantId, applied in appliedRewardGrantIds :: any do
+		if type(grantId) ~= "string" or applied ~= true then
 			return rejected("InvalidGrantLedger")
 		end
-		local runId = completedRunId(config, rawGrantId)
+		local runId = completedRunId(config, grantId)
 		if runId ~= nil then
 			completedRunIds[runId] = true
 		end

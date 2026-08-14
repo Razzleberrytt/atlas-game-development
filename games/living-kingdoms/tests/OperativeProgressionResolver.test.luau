@@ -28,6 +28,21 @@ local function elite(runId: string): string
 	return string.format("reward:%s:Elite", runId)
 end
 
+--[[
+	The canonical durable shape. PlayerInventoryContracts declares
+	AppliedRewardGrantIds as { [string]: boolean } and persistence stores
+	grantId -> true, so every ledger here is built as a set. This fixture used to
+	pass arrays of grant-id strings -- a shape production never produces -- which
+	is why it stayed green while every non-empty real ledger was rejected.
+]]
+local function ledger(grantIds: { any }): { [any]: boolean }
+	local durable = {}
+	for _, grantId in grantIds do
+		durable[grantId] = true
+	end
+	return durable
+end
+
 assertThat(config.Version == "PATCH-0.4-OPERATIVE-RANK-v1", "operative progression config version must be stable")
 assertThat(#config.Ranks == 5, "initial progression map should stay deliberately small")
 assertThat(config.Ranks[1].RequiredCompletedExpeditions == 0, "rank one must be available immediately")
@@ -41,24 +56,30 @@ assertThat(fresh.NextRank == 2 and fresh.NextRankId == "Delver", "fresh operativ
 assertThat(fresh.CompletedExpeditionsToNextRank == 1, "first durable rank should be one clear away")
 assertThat(not fresh.IsMaximumRank, "fresh operative must not be maximum rank")
 
-local firstClear = resolver.resolve(config, {
-	elite("expedition:alpha"),
-	boss("expedition:alpha"),
-})
+local firstClear = resolver.resolve(
+	config,
+	ledger({
+		elite("expedition:alpha"),
+		boss("expedition:alpha"),
+	})
+)
 assertThat(firstClear.Accepted, "banked first clear must resolve")
 assertThat(firstClear.CompletedExpeditions == 1, "Elite and Boss rewards from one run must count as one completion")
 assertThat(firstClear.Rank == 2 and firstClear.RankId == "Delver", "one clear should promote to Delver")
 assertThat(firstClear.CompletedExpeditionsToNextRank == 2, "Delver should see two clears to Pathfinder")
 
-local duplicateAndNoise = resolver.resolve(config, {
-	boss("expedition:alpha"),
-	boss("expedition:alpha"),
-	elite("expedition:alpha"),
-	"reward:expedition:alpha:BossExtra",
-	"not-a-reward:expedition:beta:Boss",
-	boss("expedition:beta"),
-	boss("expedition:gamma"),
-})
+local duplicateAndNoise = resolver.resolve(
+	config,
+	ledger({
+		boss("expedition:alpha"),
+		boss("expedition:alpha"),
+		elite("expedition:alpha"),
+		"reward:expedition:alpha:BossExtra",
+		"not-a-reward:expedition:beta:Boss",
+		boss("expedition:beta"),
+		boss("expedition:gamma"),
+	})
+)
 assertThat(duplicateAndNoise.Accepted, "valid string ledger with unrelated grants must resolve")
 assertThat(duplicateAndNoise.CompletedExpeditions == 3, "duplicate and non-Boss identities must not inflate clears")
 assertThat(duplicateAndNoise.Rank == 3 and duplicateAndNoise.RankId == "Pathfinder", "three clears should promote")
@@ -69,7 +90,7 @@ local sixClears = {}
 for index = 1, 6 do
 	table.insert(sixClears, boss("expedition:run:" .. tostring(index)))
 end
-local veteran = resolver.resolve(config, sixClears)
+local veteran = resolver.resolve(config, ledger(sixClears))
 assertThat(veteran.Accepted and veteran.RankId == "Veteran", "six unique Boss grants should resolve Veteran")
 assertThat(veteran.CompletedExpeditionsToNextRank == 4, "Veteran should be four clears from Vanguard")
 
@@ -77,7 +98,7 @@ local tenClears = {}
 for index = 1, 10 do
 	table.insert(tenClears, boss("expedition:run:" .. tostring(index)))
 end
-local vanguard = resolver.resolve(config, tenClears)
+local vanguard = resolver.resolve(config, ledger(tenClears))
 assertThat(vanguard.Accepted, "maximum rank ledger must resolve")
 assertThat(vanguard.CompletedExpeditions == 10, "maximum-rank clear count must remain visible")
 assertThat(vanguard.Rank == 5 and vanguard.RankId == "Vanguard", "ten clears should reach Vanguard")
@@ -91,13 +112,13 @@ local beyondCap = table.clone(tenClears)
 for index = 11, 15 do
 	table.insert(beyondCap, boss("expedition:run:" .. tostring(index)))
 end
-local capped = resolver.resolve(config, beyondCap)
+local capped = resolver.resolve(config, ledger(beyondCap))
 assertThat(
 	capped.Rank == 5 and capped.CompletedExpeditions == 15,
 	"rank cap must not discard lifetime completion truth"
 )
 
-local malformedLedger = resolver.resolve(config, { boss("expedition:alpha"), 42 })
+local malformedLedger = resolver.resolve(config, ledger({ boss("expedition:alpha"), 42 }))
 assertThat(not malformedLedger.Accepted, "non-string durable grant identity must fail closed")
 assertThat(malformedLedger.ReasonId == "InvalidGrantLedger", "malformed ledger reason must be stable")
 
@@ -170,7 +191,7 @@ local rankOnlyConfig = {
 	CompletedExpeditionSourceId = config.CompletedExpeditionSourceId,
 	Ranks = config.Ranks,
 }
-local rankOnly = resolver.resolve(rankOnlyConfig, { boss("expedition:alpha") })
+local rankOnly = resolver.resolve(rankOnlyConfig, ledger({ boss("expedition:alpha") }))
 assertThat(rankOnly.Accepted and rankOnly.Rank == 2, "a partial runtime may resolve rank without unlocks")
 assertThat(rankOnly.TotalUnlockCount == 0 and #rankOnly.Unlocks == 0, "an unlock-free config discloses no unlocks")
 
