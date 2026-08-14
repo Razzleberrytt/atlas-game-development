@@ -27,7 +27,10 @@ local service = module.new(store, "server-owner-finite-time", 90)
 for _, invalidNow in { 0 / 0, math.huge, -math.huge } do
 	local callsBefore = store.updateCalls
 	local outcome = service:acquire(101, invalidNow)
-	assert(not outcome.Accepted and outcome.ReasonId == "InvalidAcquireRequest", "non-finite acquire time must be rejected")
+	assert(
+		not outcome.Accepted and outcome.ReasonId == "InvalidAcquireRequest",
+		"non-finite acquire time must be rejected"
+	)
 	assert(store.updateCalls == callsBefore, "invalid acquire must not touch durable storage")
 	assert(store.data["player:101:lease"] == nil, "invalid acquire must not write a lease")
 end
@@ -53,8 +56,14 @@ for _, field in { "ExpiresAtUnix", "AcquiredAtUnix", "RenewedAtUnix" } do
 	}
 	store.data["player:202:lease"][field] = math.huge
 	local outcome = rival:acquire(202, 1000)
-	assert(not outcome.Accepted and outcome.ReasonId == "LeaseRecordMalformed", "infinite persisted lease fields must fail closed: " .. field)
-	assert(store.data["player:202:lease"][field] == math.huge, "malformed persisted lease must not be rewritten: " .. field)
+	assert(
+		not outcome.Accepted and outcome.ReasonId == "LeaseRecordMalformed",
+		"infinite persisted lease fields must fail closed: " .. field
+	)
+	assert(
+		store.data["player:202:lease"][field] == math.huge,
+		"malformed persisted lease must not be rewritten: " .. field
+	)
 end
 
 service:destroy()
