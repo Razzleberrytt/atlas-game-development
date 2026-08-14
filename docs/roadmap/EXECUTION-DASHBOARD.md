@@ -40,11 +40,21 @@ Older manual Studio/device/play gates are historical evidence instructions, not 
 
 - **Batch 9 (#81–#83, #85, #89, #90) is DONE:** deterministic one-shot fault injection for reads, commits, and transform retries; a reason-classification audit that reads the reasons out of the sources rather than a hand-kept list; a pure record invariant checker for duplicate items, missing ledgers, invalid equips and ownership drift; and a `persistence-hardening` validation profile. **#84, #86–#88 are DEFERRED, not done.**
 
+- **Batch 10 (#91–#100) is DONE:** `docs/production/PATCH-0.7-ACCEPTANCE-MATRIX.json` carries 40 rows — 34 satisfied and bound to 16 automated fixtures, 6 deferred with recorded reasons. `scripts/validate_patch_07_acceptance.py` runs inside `validate.py` and checks the binding in both directions, so a row cannot claim a fixture that does not exist or that nothing runs, and the profile cannot run a fixture no row claims.
+
+## Patch 0.7 status
+
+**AUTOMATED ACCEPTANCE COMPLETE for the 34 satisfied rows. Not complete as 100/100.**
+
+86 of the 100 ranked tasks are implemented and covered. **14 are deferred, not done**, each with its reason recorded in the backlog and the matrix: a durable overflow bucket (#54–#57) for a capacity limit the game does not have, separate durable progression/unlock/currency records (#64–#69) that would be a second authority over derived facts or a currency no gameplay reads, and latency injection, diagnostic counters, and randomised stress (#84, #86–#88) that would add surfaces nothing consumes.
+
+Calling that 100/100 would misreport what was built. The durable-state work Patch 0.7 set out to harden is done and machine-checked; the deferred rows are recorded as open design decisions rather than closed ones.
+
 ## NOW
 
-**Execute Patch 0.7 Batch 10, tasks #91–#100, from `PATCH-0.7-100-TASK-ROI-BACKLOG.md`.**
+**Patch 0.7 durable-state hardening is complete. Choose the next patch, or revisit a deferred row if a design decision now requires it.**
 
-Batch 10 binds the machine-readable Patch 0.7 acceptance matrix.
+Manual play/Studio evidence for experiential facts remains **UNMEASURED** and does not hold source progression.
 
 Required merge gate:
 
@@ -78,7 +88,7 @@ A concrete data-loss, duplication, authority, migration, or deterministic valida
 | 7 | 61–70 | durable progression/currency/unlocks | DONE (64–69 deferred) |
 | 8 | 71–80 | disconnect/rejoin/crash/shutdown correctness | DONE |
 | 9 | 81–90 | automated chaos + diagnostics | DONE (84, 86–88 deferred) |
-| 10 | 91–100 | machine-readable Patch 0.7 acceptance | ACTIVE |
+| 10 | 91–100 | machine-readable Patch 0.7 acceptance | DONE |
 
 ## Manual evidence backlog
 

@@ -1,0 +1,340 @@
+{
+  "matrixId": "patch-0.7-durable-persistence-acceptance",
+  "version": "1.0.0",
+  "purpose": "Machine-readable Patch 0.7 acceptance. Every Satisfied row must name at least one automated fixture that holds it; every Deferred row must carry the reason it was not built.",
+  "rows": [
+    {
+      "id": "storage.resolution",
+      "statement": "Store selection is canonical, and a live store that cannot be opened fails closed rather than falling soft to volatile storage.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventoryStorageContractSourceAudit",
+        "StudioInventoryPersistenceIsolation"
+      ]
+    },
+    {
+      "id": "storage.studio-isolation",
+      "statement": "Studio never reaches production inventory storage, and never opens the production DataStore even to discard it.",
+      "status": "Satisfied",
+      "fixtures": [
+        "StudioInventoryPersistenceIsolation"
+      ]
+    },
+    {
+      "id": "storage.explicit-reads",
+      "statement": "An absent record and a failed read are distinguishable, so an outage cannot be mistaken for a new player.",
+      "status": "Satisfied",
+      "fixtures": [
+        "RobloxInventoryDataStoreAdapterLoadGuard",
+        "InventoryReadOutageRecovery"
+      ]
+    },
+    {
+      "id": "storage.explicit-writes",
+      "statement": "A write reports committed or failed, and a committed write carries the value the store actually holds.",
+      "status": "Satisfied",
+      "fixtures": [
+        "RobloxInventoryDataStoreAdapterLoadGuard",
+        "PlayerInventoryPersistenceService"
+      ]
+    },
+    {
+      "id": "storage.no-blank-overwrite",
+      "statement": "A read that exhausted its retries blocks writes to that key until a later read reconciles it.",
+      "status": "Satisfied",
+      "fixtures": [
+        "RobloxInventoryDataStoreAdapterLoadGuard",
+        "InventoryReadOutageRecovery"
+      ]
+    },
+    {
+      "id": "storage.size-budget",
+      "statement": "A record over the durable byte budget is refused before submission rather than failing at the platform limit forever after.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventoryRecordCapacity",
+        "PlayerInventoryPersistenceService"
+      ]
+    },
+    {
+      "id": "lease.single-writer",
+      "statement": "A second server can neither load nor mutate a player under a live lease, and its refused write never reaches the durable record.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventoryMultiServerHandoff",
+        "InventorySessionLeaseService"
+      ]
+    },
+    {
+      "id": "lease.committed-decision",
+      "statement": "An acquisition is decided by the committed update, not by a flag left over from a retried transform.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventorySessionLeaseService"
+      ]
+    },
+    {
+      "id": "lease.malformed-fails-closed",
+      "statement": "An unparseable lease record is honoured rather than silently overwritten.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventorySessionLeaseService"
+      ]
+    },
+    {
+      "id": "lease.expiry-boundary",
+      "statement": "A lease holds until its expiry and is takeable at it, so no instant exists where two servers believe they may write.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventorySessionLeaseService",
+        "InventoryMultiServerHandoff"
+      ]
+    },
+    {
+      "id": "lease.shutdown-observable",
+      "statement": "Shutdown reports which leases it released and which survived, so a partial outage is distinguishable from a clean close.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventorySessionLeaseService",
+        "InventoryLifecycleFaultMatrix"
+      ]
+    },
+    {
+      "id": "session.symmetric-release",
+      "statement": "Leaving releases both the lease and the resident record, so no departed player stays resident or readable.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventoryLiveLifecycleSourceAudit",
+        "PlayerInventoryPersistenceService"
+      ]
+    },
+    {
+      "id": "session.single-owner",
+      "statement": "Exactly one script owns the inventory session lifecycle.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventoryLiveLifecycleSourceAudit"
+      ]
+    },
+    {
+      "id": "session.kick-on-unleased",
+      "statement": "A player whose inventory cannot be leased does not keep playing.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventoryLiveLifecycleSourceAudit"
+      ]
+    },
+    {
+      "id": "mutation.replay-vs-conflict",
+      "statement": "A repeated grant id reads as a replay when the content matches and as a conflict when it does not.",
+      "status": "Satisfied",
+      "fixtures": [
+        "PlayerInventoryPersistenceService"
+      ]
+    },
+    {
+      "id": "mutation.dismantle-replay",
+      "statement": "A replayed dismantle is answered from the ledger with the original outcome, across a release and rejoin.",
+      "status": "Satisfied",
+      "fixtures": [
+        "PlayerInventoryPersistenceService",
+        "InventoryLifecycleFaultMatrix"
+      ]
+    },
+    {
+      "id": "mutation.cross-protection",
+      "statement": "No valuable mutation erases another's replay protection; a destroyed reward stays ungrantable.",
+      "status": "Satisfied",
+      "fixtures": [
+        "PlayerInventoryPersistenceService",
+        "InventoryLifecycleFaultMatrix"
+      ]
+    },
+    {
+      "id": "mutation.ledger-bound",
+      "statement": "Durable ledgers are bounded where the bound can still be reported.",
+      "status": "Satisfied",
+      "fixtures": [
+        "PlayerInventoryPersistenceService",
+        "InventoryRecordCapacity"
+      ]
+    },
+    {
+      "id": "mutation.single-authority",
+      "statement": "Every durable mutation passes through the canonical owner, and no client-authored value reaches durable state.",
+      "status": "Satisfied",
+      "fixtures": [
+        "DurableMutationAuthoritySourceAudit"
+      ]
+    },
+    {
+      "id": "migration.authored-steps",
+      "statement": "Migrations are authored as single-version steps forming an unbroken chain to the current schema.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventoryMigrationMatrix"
+      ]
+    },
+    {
+      "id": "migration.step-diagnostics",
+      "statement": "A migration reports which steps it took.",
+      "status": "Satisfied",
+      "fixtures": [
+        "PlayerInventoryPersistenceService",
+        "InventoryMigrationMatrix"
+      ]
+    },
+    {
+      "id": "migration.no-downgrade",
+      "statement": "A record from a newer deploy is refused and preserved, never rewritten at an older schema.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventoryMigrationMatrix",
+        "PlayerInventoryPersistenceService"
+      ]
+    },
+    {
+      "id": "migration.matrix",
+      "statement": "Every supported source schema migrates forward, preserves owned items, and is idempotent on reload.",
+      "status": "Satisfied",
+      "fixtures": [
+        "PlayerInventoryPersistenceService",
+        "InventoryMigrationMatrix"
+      ]
+    },
+    {
+      "id": "migration.race",
+      "statement": "A migration write-back refuses to clobber a record that changed since the read.",
+      "status": "Satisfied",
+      "fixtures": [
+        "PlayerInventoryPersistenceService"
+      ]
+    },
+    {
+      "id": "recovery.quarantine",
+      "statement": "An unparseable record is copied to a derived key and the source is never rewritten.",
+      "status": "Satisfied",
+      "fixtures": [
+        "PlayerInventoryPersistenceService",
+        "InventoryMigrationMatrix"
+      ]
+    },
+    {
+      "id": "recovery.classification",
+      "statement": "Every persistence failure reason is classified, and only genuine damage may quarantine.",
+      "status": "Satisfied",
+      "fixtures": [
+        "PersistenceReasonClassificationAudit",
+        "InventoryMigrationMatrix"
+      ]
+    },
+    {
+      "id": "recovery.invariants",
+      "statement": "A record is checkable for duplicate items, missing ledgers, invalid equips, and ownership drift.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventoryInvariantChecker"
+      ]
+    },
+    {
+      "id": "lifecycle.interrupted-writes",
+      "statement": "Reward, dismantle, and migration writes interrupted mid-flight leave neither durable state nor memory changed, and retry safely.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventoryLifecycleFaultMatrix"
+      ]
+    },
+    {
+      "id": "lifecycle.crash",
+      "statement": "A crash before the durable commit loses the mutation; a crash after it survives. Both resolve to durable truth on the next load.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventoryLifecycleFaultMatrix"
+      ]
+    },
+    {
+      "id": "lifecycle.server-hop",
+      "statement": "A player hopping servers sees the same durable record, and no released server retains it or can still write.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventoryLifecycleFaultMatrix",
+        "InventoryMultiServerHandoff"
+      ]
+    },
+    {
+      "id": "lifecycle.shutdown",
+      "statement": "Shutdown accounts for every resident player, cleanly and during a partial storage outage.",
+      "status": "Satisfied",
+      "fixtures": [
+        "InventoryLifecycleFaultMatrix",
+        "InventorySessionLeaseService"
+      ]
+    },
+    {
+      "id": "projection.derived",
+      "statement": "Progression and unlocks are a projection of the durable ledger, not a second authority, and a persistence-written ledger is readable by the resolver.",
+      "status": "Satisfied",
+      "fixtures": [
+        "OperativeProgressionLedgerShape"
+      ]
+    },
+    {
+      "id": "projection.source-binding",
+      "statement": "A progression snapshot carries an identity derived from the ledger it was projected from, by content rather than iteration order.",
+      "status": "Satisfied",
+      "fixtures": [
+        "OperativeProgressionLedgerShape"
+      ]
+    },
+    {
+      "id": "equipment.durable-lifecycle",
+      "statement": "Generated equipment survives persistence, reconnect, equip, and live effect application.",
+      "status": "Satisfied",
+      "fixtures": [
+        "EquipmentAffixDurableLifecycle"
+      ]
+    },
+    {
+      "id": "capacity.overflow-bucket",
+      "statement": "Durable overflow bucket for excess rewards (#54-#57).",
+      "status": "Deferred",
+      "fixtures": [],
+      "note": "No durable inventory capacity limit exists; the only capacity concept is the run-scoped survival pack. Building a second durable authority for excess that cannot occur would be speculative."
+    },
+    {
+      "id": "value.separate-progression-record",
+      "statement": "Separate durable progression/unlock records with their own transaction identity (#64-#65, #67-#68).",
+      "status": "Deferred",
+      "fixtures": [],
+      "note": "Progression and unlocks are derived from the grant ledger. A separate record would be a second authority over the same facts, free to diverge - the failure projection.source-binding exists to prevent."
+    },
+    {
+      "id": "value.durable-currency",
+      "statement": "Durable currency contract and atomic currency mutation identity (#66, #69).",
+      "status": "Deferred",
+      "fixtures": [],
+      "note": "No durable currency exists. RunCurrencyAmount is run-scoped by name and by use, so there is no qualifying currency and no durable mutation to make atomic."
+    },
+    {
+      "id": "chaos.latency-injection",
+      "statement": "Configurable latency injection (#84).",
+      "status": "Deferred",
+      "fixtures": [],
+      "note": "No persistence path measures elapsed time; every fixture is already free of real waiting, so the injector would have nothing to affect."
+    },
+    {
+      "id": "chaos.diagnostic-counters",
+      "statement": "Server-only persistence diagnostic snapshot and outcome counters (#86-#87).",
+      "status": "Deferred",
+      "fixtures": [],
+      "note": "Nothing reads persistence counters yet. An unread telemetry surface is cost without a consumer; revisit when an operator surface consumes them."
+    },
+    {
+      "id": "chaos.random-stress",
+      "statement": "Seedable randomised multi-server stress simulation (#88).",
+      "status": "Deferred",
+      "fixtures": [],
+      "note": "The deterministic fault matrix already drives the same paths across servers with named reproducible scenarios; a randomised sweep would trade legibility for coverage already held."
+    }
+  ]
+}
