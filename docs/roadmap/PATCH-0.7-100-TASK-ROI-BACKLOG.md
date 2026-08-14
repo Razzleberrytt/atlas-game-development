@@ -77,20 +77,20 @@ Before this 100-task queue began, Patch 0.7 already had: symmetric resident-reco
 39. **[DONE]** Add mutation ledger retention policy and bound.
 40. **[DONE]** Add cross-mutation ledger audit proving reward/equip/dismantle cannot erase each other's replay protection.
 
-## Batch 5 — Migration, quarantine, and recovery (#41–#50) — ACTIVE
+## Batch 5 — Migration, quarantine, and recovery (#41–#50) — DONE
 
-41. Define current-to-next schema migration authoring contract.
-42. Require sequential migration steps rather than arbitrary direct jumps.
-43. Add migration step identity/version diagnostics.
-44. Add malformed-record quarantine result that never rewrites the source record.
-45. Add recoverable-vs-unrecoverable corruption classification.
-46. Add recovery copy/backup contract before any destructive repair.
-47. Add migration write-back compare/reconciliation protection against concurrent newer data.
-48. Add migration failure fixture at every supported source schema.
-49. Add future-schema downgrade protection fixture with unknown extra fields.
-50. Add automated migration matrix runner used by the canonical full validator.
+41. **[DONE]** Define current-to-next schema migration authoring contract.
+42. **[DONE]** Require sequential migration steps rather than arbitrary direct jumps.
+43. **[DONE]** Add migration step identity/version diagnostics.
+44. **[DONE]** Add malformed-record quarantine result that never rewrites the source record.
+45. **[DONE]** Add recoverable-vs-unrecoverable corruption classification.
+46. **[DONE]** Add recovery copy/backup contract before any destructive repair.
+47. **[DONE]** Add migration write-back compare/reconciliation protection against concurrent newer data.
+48. **[DONE]** Add migration failure fixture at every supported source schema.
+49. **[DONE]** Add future-schema downgrade protection fixture with unknown extra fields.
+50. **[DONE]** Add automated migration matrix runner used by the canonical full validator.
 
-## Batch 6 — Capacity, overflow, and retention (#51–#60)
+## Batch 6 — Capacity, overflow, and retention (#51–#60) — ACTIVE
 
 51. Define durable inventory capacity contract from measured serialized-size budget.
 52. Add deterministic record-size estimator for inventory payloads.

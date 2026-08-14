@@ -8,6 +8,8 @@ local EquipmentContracts = require(ReplicatedStorage.Shared.Equipment.EquipmentR
 local EquipmentAffixContracts = require(ReplicatedStorage.Shared.Equipment.EquipmentAffixContracts)
 local StorageResults = require(ReplicatedStorage.Shared.Persistence.StorageResultContracts)
 local DurableMutation = require(ReplicatedStorage.Shared.Persistence.DurableMutationContracts)
+local MigrationSteps = require(ReplicatedStorage.Shared.Persistence.InventoryMigrationSteps)
+local Recovery = require(ReplicatedStorage.Shared.Persistence.InventoryRecoveryContracts)
 
 export type EquipmentReward = EquipmentContracts.EquipmentReward
 export type EquipmentAffixRoll = EquipmentContracts.EquipmentAffixRoll
@@ -19,6 +21,7 @@ export type MutationResult = Contracts.MutationResult
 export type Store = {
 	read: (self: Store, key: string) -> StorageResults.ReadResult,
 	write: (self: Store, key: string, value: any) -> StorageResults.WriteResult,
+	commit: (self: Store, key: string, transform: (any) -> any) -> StorageResults.WriteResult,
 }
 
 export type Service = {
@@ -312,7 +315,10 @@ end
 
 function Service.new(store: Store): Service
 	assert(
-		type(store) == "table" and type(store.read) == "function" and type(store.write) == "function",
+		type(store) == "table"
+			and type(store.read) == "function"
+			and type(store.write) == "function"
+			and type(store.commit) == "function",
 		"invalid store"
 	)
 	return setmetatable({ _store = store, _records = {}, _destroyed = false }, Service) :: any
@@ -338,18 +344,113 @@ function Service:loadPlayer(playerId: number, nowUnix: number): LoadResult
 		return table.freeze({ Accepted = false, ReasonId = "LoadFailed", Record = nil, Migrated = false })
 	end
 
+	local key = keyFor(playerId)
+	local sourceSchema = if type(readResult.Value) == "table" then readResult.Value.SchemaVersion else nil
 	local normalized, migrated, reasonId = normalizeRecord(readResult.Value, playerId, nowUnix)
 	if normalized == nil then
-		return table.freeze({ Accepted = false, ReasonId = reasonId, Record = nil, Migrated = false })
+		--[[
+			A record we cannot parse is copied aside before the caller is told. The
+			source is never rewritten: whatever is wrong with it, it is still the
+			only durable state this player has, and a repair that guessed would
+			destroy the evidence needed to do the repair properly.
+		]]
+		self:_quarantine(key, reasonId, nowUnix, readResult.Value)
+		return table.freeze({
+			Accepted = false,
+			ReasonId = reasonId,
+			Record = nil,
+			Migrated = false,
+			Classification = Recovery.classify(reasonId),
+		})
 	end
-	if
-		migrated
-		and selfAny._store:write(keyFor(playerId), normalized).Status ~= StorageResults.WriteStatuses.Committed
-	then
-		return table.freeze({ Accepted = false, ReasonId = "SaveFailed", Record = nil, Migrated = false })
+
+	--[[
+		Migration is planned rather than assumed, so the jump taken is recorded and
+		an unauthored one is refused instead of silently performed.
+	]]
+	local plan = MigrationSteps.plan(sourceSchema or CURRENT_SCHEMA, CURRENT_SCHEMA)
+	if not plan.Accepted then
+		self:_quarantine(key, plan.ReasonId, nowUnix, readResult.Value)
+		return table.freeze({
+			Accepted = false,
+			ReasonId = plan.ReasonId,
+			Record = nil,
+			Migrated = false,
+			Classification = Recovery.classify(plan.ReasonId),
+		})
 	end
+
+	if migrated then
+		--[[
+			The write-back must not clobber a record that changed since the read.
+			Committing through a transform lets the store's own value be compared
+			at commit time, so a newer record wins instead of being overwritten by
+			one derived from a stale read.
+		]]
+		local reconciled = true
+		local write = selfAny._store:commit(key, function(current: any): any
+			if current ~= nil and type(current) == "table" and current.UpdatedAtUnix ~= nil then
+				if
+					type(readResult.Value) ~= "table"
+					or current.UpdatedAtUnix ~= readResult.Value.UpdatedAtUnix
+					or current.SchemaVersion ~= sourceSchema
+				then
+					reconciled = false
+					return current
+				end
+			end
+			reconciled = true
+			return normalized
+		end)
+		if not reconciled then
+			return table.freeze({
+				Accepted = false,
+				ReasonId = "MigrationRaceDetected",
+				Record = nil,
+				Migrated = false,
+				Classification = Recovery.Classifications.Transient,
+			})
+		end
+		if write.Status ~= StorageResults.WriteStatuses.Committed then
+			return table.freeze({
+				Accepted = false,
+				ReasonId = "SaveFailed",
+				Record = nil,
+				Migrated = false,
+				Classification = Recovery.Classifications.Transient,
+			})
+		end
+	end
+
 	selfAny._records[playerId] = normalized
-	return table.freeze({ Accepted = true, ReasonId = reasonId, Record = cloneRecord(normalized), Migrated = migrated })
+	return table.freeze({
+		Accepted = true,
+		ReasonId = reasonId,
+		Record = cloneRecord(normalized),
+		Migrated = migrated,
+		MigrationStepIds = plan.StepIds,
+	})
+end
+
+--[[
+	Quarantine copies the damaged payload to a derived key and leaves the source
+	untouched. A failure to quarantine is deliberately not fatal: the load has
+	already failed, and losing the diagnostic copy is strictly better than turning
+	a diagnosable failure into an unexplained one.
+]]
+function Service:_quarantine(sourceKey: string, reasonId: string, nowUnix: number, payload: any)
+	local selfAny = self :: any
+	if payload == nil or Recovery.isRecoverable(reasonId) then
+		return
+	end
+	local quarantineKey = Recovery.quarantineKeyFor(sourceKey, math.floor(nowUnix))
+	local envelope = Recovery.quarantineEnvelope(sourceKey, reasonId, math.floor(nowUnix), payload)
+	local ok = pcall(function()
+		selfAny._store:write(quarantineKey, envelope)
+	end)
+	if not ok then
+		warn(string.format("[AtlasPersistence] failed to quarantine %s (%s)", sourceKey, reasonId))
+	end
 end
 
 function Service:applyReward(playerId: number, reward: EquipmentReward, nowUnix: number): MutationResult

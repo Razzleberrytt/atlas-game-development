@@ -49,11 +49,30 @@ local durableMutation =
 		debugName = "DurableMutationContracts",
 		injectGlobals = true,
 	})()
+local MIGRATION_CONTRACTS_TOKEN = {}
+local migrationSteps =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryMigrationSteps.luau"), {
+		debugName = "InventoryMigrationSteps",
+		environment = {
+			script = { Parent = { PlayerInventoryContracts = MIGRATION_CONTRACTS_TOKEN } },
+			require = function(): any
+				return contracts
+			end,
+		},
+		injectGlobals = true,
+	})()
+local recoveryContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryRecoveryContracts.luau"), {
+		debugName = "InventoryRecoveryContracts",
+		injectGlobals = true,
+	})()
 
 local CONTRACTS_TOKEN = {}
 local DISMANTLE_TOKEN = {}
 local STORAGE_RESULTS_TOKEN = {}
 local DURABLE_MUTATION_TOKEN = {}
+local MIGRATION_STEPS_TOKEN = {}
+local RECOVERY_TOKEN = {}
 local RESOLVER_CONTRACTS_TOKEN = {}
 local RESOLVER_EQUIPMENT_TOKEN = {}
 local dismantleResolver =
@@ -85,6 +104,8 @@ local replicatedStorage = {
 			InventoryDismantleResolver = DISMANTLE_TOKEN,
 			StorageResultContracts = STORAGE_RESULTS_TOKEN,
 			DurableMutationContracts = DURABLE_MUTATION_TOKEN,
+			InventoryMigrationSteps = MIGRATION_STEPS_TOKEN,
+			InventoryRecoveryContracts = RECOVERY_TOKEN,
 		},
 		Equipment = { EquipmentRewardContracts = EQUIPMENT_TOKEN, EquipmentAffixContracts = AFFIX_TOKEN },
 	},
@@ -117,6 +138,12 @@ local serviceModule =
 				end
 				if token == DURABLE_MUTATION_TOKEN then
 					return durableMutation
+				end
+				if token == MIGRATION_STEPS_TOKEN then
+					return migrationSteps
+				end
+				if token == RECOVERY_TOKEN then
+					return recoveryContracts
 				end
 				error("unexpected persistence dependency")
 			end,
@@ -153,6 +180,12 @@ function store:write(key: string, value: any): any
 	self.saveCount += 1
 	self.data[key] = deepCopy(value)
 	return storageResults.committed(deepCopy(value))
+end
+
+function store:commit(key: string, transform: (any) -> any): any
+	local nextValue = transform(deepCopy(self.data[key]))
+	self.data[key] = deepCopy(nextValue)
+	return storageResults.committed(deepCopy(nextValue))
 end
 
 local reward = {
@@ -366,14 +399,32 @@ local savesBeforeFuture = store.saveCount
 local futureLoad = serviceModule.new(store):loadPlayer(606, 2300)
 assert(not futureLoad.Accepted, "a record from a newer deploy must fail closed")
 assert(futureLoad.ReasonId == "UnsupportedSchemaVersion", "an unsupported schema must be named")
-assert(store.saveCount == savesBeforeFuture, "an unsupported schema must never be rewritten at today's schema")
+--[[
+	Quarantine copies the damaged payload to a derived key, so a write does
+	happen -- just never to the source. That distinction is the invariant.
+]]
+assert(store.saveCount > savesBeforeFuture, "an unrecoverable record must be quarantined for diagnosis")
 assert(store.data["player:606:inventory"].SchemaVersion == futureSchema, "the durable record must survive untouched")
+local quarantinedFuture = nil
+for key, value in store.data do
+	if string.find(key, "quarantine:player:606:inventory", 1, true) == 1 then
+		quarantinedFuture = value
+	end
+end
+assert(quarantinedFuture ~= nil, "the damaged record must be copied to a derived quarantine key")
+assert(quarantinedFuture.SourceKey == "player:606:inventory", "the quarantine envelope must name its source")
+assert(quarantinedFuture.ReasonId == "UnsupportedSchemaVersion", "the quarantine envelope must record why")
+assert(quarantinedFuture.Classification == "Corrupt", "an unsupported schema is not a transient failure")
+assert(quarantinedFuture.Payload.SchemaVersion == futureSchema, "the quarantined payload must be the damaged record")
 
 store.data["player:607:inventory"] = legacyRecordFor(608, contracts.CurrentSchemaVersion)
 local savesBeforeMismatch = store.saveCount
 local mismatched = serviceModule.new(store):loadPlayer(607, 2300)
 assert(not mismatched.Accepted and mismatched.ReasonId == "PlayerIdMismatch", "another player's record is not adopted")
-assert(store.saveCount == savesBeforeMismatch, "a mismatched record must not be rewritten under the requesting id")
+assert(
+	store.data["player:607:inventory"].PlayerId == 608,
+	"a mismatched record must not be rewritten under the requesting id"
+)
 
 -- Every supported version must migrate forward to exactly one shape, and the
 -- migration must be idempotent: the write-back has to leave the durable record
@@ -583,5 +634,108 @@ for index = 1, durableMutation.MaximumLedgerEntries + 1 do
 	overBound["grant:" .. tostring(index)] = true
 end
 assert(durableMutation.exceedsBound(overBound), "a ledger past the bound must be detectable")
+
+--[[
+	Batch 5 #48/#49. A record from a newer deploy carries state this build cannot
+	describe. It must be refused and preserved, never rewritten at today's schema
+	-- a downgrade write would discard exactly the fields this build could not
+	see.
+]]
+local futureWithExtras = {
+	SchemaVersion = contracts.CurrentSchemaVersion + 1,
+	PlayerId = 8181,
+	InventoryByInstanceId = {},
+	EquippedBySlot = {},
+	AppliedRewardInstanceIds = {},
+	AppliedRewardGrantIds = {},
+	AppliedDismantleTransactions = {},
+	AppliedRewardContentSignatures = {},
+	SeasonalCurrencyBalances = { embers = 12 },
+	FutureOnlyLedger = { ["txn-future"] = true },
+	UpdatedAtUnix = 900,
+}
+store.data["player:8181:inventory"] = futureWithExtras
+local futureLoad = serviceModule.new(store):loadPlayer(8181, 6000)
+assert(not futureLoad.Accepted, "a newer-deploy record must be refused")
+assert(futureLoad.ReasonId == "UnsupportedSchemaVersion", "the refusal must name the schema")
+assert(futureLoad.Classification == "Corrupt", "an unreadable newer record is not a transient failure")
+local stillThere = store.data["player:8181:inventory"]
+assert(stillThere.SchemaVersion == contracts.CurrentSchemaVersion + 1, "the source schema must be untouched")
+assert(stillThere.SeasonalCurrencyBalances.embers == 12, "unknown newer fields must survive the refusal")
+assert(stillThere.FutureOnlyLedger["txn-future"] == true, "every unknown newer ledger must survive the refusal")
+
+-- Migration step identity is reported so an operator can tell 1 -> 4 from 3 -> 4.
+store.data["player:8282:inventory"] = {
+	SchemaVersion = 1,
+	PlayerId = 8282,
+	InventoryByInstanceId = {},
+	EquippedBySlot = {},
+	AppliedRewardInstanceIds = {},
+	UpdatedAtUnix = 900,
+}
+local steppedLoad = serviceModule.new(store):loadPlayer(8282, 6100)
+assert(steppedLoad.Accepted and steppedLoad.Migrated, "a schema-one record migrates")
+assert(steppedLoad.MigrationStepIds ~= nil, "a migration must report which steps it took")
+assert(
+	#steppedLoad.MigrationStepIds == contracts.CurrentSchemaVersion - 1,
+	"a schema-one record must cross every intermediate version"
+)
+assert(steppedLoad.MigrationStepIds[1] == "inventory-1-to-2-grant-index", "steps must be reported in order")
+
+--[[
+	#47: the migration write-back must not clobber a record that changed since
+	the read. A newer record wins rather than being overwritten by one derived
+	from a stale read.
+]]
+local raceStore = { data = {}, saveCount = 0 }
+function raceStore:read(key: string): any
+	local value = deepCopy(self.data[key])
+	if value == nil then
+		return storageResults.missing()
+	end
+	return storageResults.found(value)
+end
+function raceStore:write(key: string, value: any): any
+	self.data[key] = deepCopy(value)
+	return storageResults.committed(deepCopy(value))
+end
+function raceStore:commit(key: string, transform: (any) -> any): any
+	-- Another server lands a newer record between this read and this commit.
+	if key == "player:8383:inventory" and not self.raced then
+		self.raced = true
+		self.data[key] = {
+			SchemaVersion = contracts.CurrentSchemaVersion,
+			PlayerId = 8383,
+			InventoryByInstanceId = {},
+			EquippedBySlot = {},
+			AppliedRewardInstanceIds = {},
+			AppliedRewardGrantIds = {},
+			AppliedDismantleTransactions = {},
+			AppliedRewardContentSignatures = {},
+			UpdatedAtUnix = 9999,
+		}
+	end
+	local nextValue = transform(deepCopy(self.data[key]))
+	self.data[key] = deepCopy(nextValue)
+	return storageResults.committed(deepCopy(nextValue))
+end
+
+raceStore.data["player:8383:inventory"] = {
+	SchemaVersion = 2,
+	PlayerId = 8383,
+	InventoryByInstanceId = {},
+	EquippedBySlot = {},
+	AppliedRewardInstanceIds = {},
+	AppliedRewardGrantIds = {},
+	UpdatedAtUnix = 900,
+}
+local raced = serviceModule.new(raceStore):loadPlayer(8383, 6200)
+assert(not raced.Accepted, "a migration that lost a race must not report success")
+assert(raced.ReasonId == "MigrationRaceDetected", "the race must be named")
+assert(raceStore.data["player:8383:inventory"].UpdatedAtUnix == 9999, "the newer record must survive the race")
+assert(
+	raceStore.data["player:8383:inventory"].SchemaVersion == contracts.CurrentSchemaVersion,
+	"the newer record must keep its own schema, not the migrating server's rewrite"
+)
 
 print("PlayerInventoryPersistenceService.test.luau passed")

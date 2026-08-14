@@ -70,6 +70,12 @@ function sharedStore:write(key: string, value: any): any
 	return storageResults.committed(committed)
 end
 
+function sharedStore:commit(key: string, transform: (any) -> any): any
+	local nextValue = transform(deepCopy(self.data[key]))
+	self.data[key] = deepCopy(nextValue)
+	return storageResults.committed(deepCopy(nextValue))
+end
+
 -- Shared pure dependencies --------------------------------------------------
 
 local EQUIPMENT_TOKEN, AFFIX_TOKEN = {}, {}
@@ -90,6 +96,24 @@ local contracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Persis
 	},
 	injectGlobals = true,
 })()
+
+local MIGRATION_CONTRACTS_TOKEN = {}
+local migrationSteps =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryMigrationSteps.luau"), {
+		debugName = "InventoryMigrationSteps",
+		environment = {
+			script = { Parent = { PlayerInventoryContracts = MIGRATION_CONTRACTS_TOKEN } },
+			require = function(): any
+				return contracts
+			end,
+		},
+		injectGlobals = true,
+	})()
+local recoveryContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryRecoveryContracts.luau"), {
+		debugName = "InventoryRecoveryContracts",
+		injectGlobals = true,
+	})()
 
 local RESOLVER_CONTRACTS_TOKEN, RESOLVER_EQUIPMENT_TOKEN = {}, {}
 local dismantleResolver =
@@ -153,7 +177,8 @@ local function newServer(jobId: string): any
 		injectGlobals = true,
 	})()
 
-	local CONTRACTS_TOKEN, DISMANTLE_TOKEN, STORAGE_RESULTS_TOKEN, DURABLE_MUTATION_TOKEN = {}, {}, {}, {}
+	local CONTRACTS_TOKEN, DISMANTLE_TOKEN, STORAGE_RESULTS_TOKEN, DURABLE_MUTATION_TOKEN, MIGRATION_STEPS_TOKEN, RECOVERY_TOKEN =
+		{}, {}, {}, {}, {}, {}
 	local persistenceReplicatedStorage = {
 		Shared = {
 			Persistence = {
@@ -161,6 +186,8 @@ local function newServer(jobId: string): any
 				InventoryDismantleResolver = DISMANTLE_TOKEN,
 				StorageResultContracts = STORAGE_RESULTS_TOKEN,
 				DurableMutationContracts = DURABLE_MUTATION_TOKEN,
+				InventoryMigrationSteps = MIGRATION_STEPS_TOKEN,
+				InventoryRecoveryContracts = RECOVERY_TOKEN,
 			},
 			Equipment = { EquipmentRewardContracts = EQUIPMENT_TOKEN, EquipmentAffixContracts = AFFIX_TOKEN },
 		},
@@ -182,6 +209,10 @@ local function newServer(jobId: string): any
 					return affixContracts
 				elseif token == DISMANTLE_TOKEN then
 					return dismantleResolver
+				elseif token == MIGRATION_STEPS_TOKEN then
+					return migrationSteps
+				elseif token == RECOVERY_TOKEN then
+					return recoveryContracts
 				elseif token == DURABLE_MUTATION_TOKEN then
 					return durableMutation
 				elseif token == STORAGE_RESULTS_TOKEN then
@@ -189,6 +220,12 @@ local function newServer(jobId: string): any
 				end
 				if token == DURABLE_MUTATION_TOKEN then
 					return durableMutation
+				end
+				if token == MIGRATION_STEPS_TOKEN then
+					return migrationSteps
+				end
+				if token == RECOVERY_TOKEN then
+					return recoveryContracts
 				end
 				error("unexpected persistence dependency")
 			end,
