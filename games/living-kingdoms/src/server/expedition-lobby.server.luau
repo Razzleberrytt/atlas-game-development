@@ -14,6 +14,7 @@ local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.Expedit
 local DurableStartingLoadoutService = require(Systems.DurableStartingLoadoutService)
 local ExpeditionLobbyService = require(Systems.ExpeditionLobbyService)
 local ExpeditionLiveRuntimeService = require(Systems.ExpeditionLiveRuntimeService)
+local ExpeditionRunRosterService = require(Systems.ExpeditionRunRosterService)
 local OperationLifecycleService = require(Systems.OperationLifecycleService)
 local MissionDirectorService = require(Systems.MissionDirectorService)
 local HordeExperienceService = require(Systems.HordeExperienceService)
@@ -61,6 +62,7 @@ local function sanitizedSnapshot(): any
 		)
 	end
 	return table.freeze({
+		Revision = snapshot.Revision,
 		Members = table.freeze(members),
 		MemberCount = snapshot.MemberCount,
 		MinimumPlayers = snapshot.MinimumPlayers,
@@ -104,6 +106,14 @@ local function applyDurableStartingLoadouts(members: { any })
 			)
 		end
 	end
+end
+
+local function participantUserIds(members: { any }): { number }
+	local userIds = {}
+	for _, member in members do
+		table.insert(userIds, member.PlayerId)
+	end
+	return userIds
 end
 
 local function attemptLaunch()
@@ -153,6 +163,15 @@ local function attemptLaunch()
 	})
 	if launch.Accepted ~= true then
 		warn("[ExpeditionLobby] launch rejected:", launch.ReasonId)
+	else
+		local runId = if launch.Snapshot ~= nil then launch.Snapshot.RunId else nil
+		local roster = if type(runId) == "string"
+			then ExpeditionRunRosterService.bind(runId, participantUserIds(consumed.Snapshot.Members))
+			else nil
+		if roster == nil or roster.Accepted ~= true then
+			warn("[ExpeditionLobby] run roster binding rejected")
+			ExpeditionLiveRuntimeService.stopExpedition("RosterBindingFailed")
+		end
 	end
 	launchInFlight = false
 	broadcast()
