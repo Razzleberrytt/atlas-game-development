@@ -120,20 +120,20 @@ Before this 100-task queue began, Patch 0.7 already had: symmetric resident-reco
 
 > **#64–#69 deferred, not done.** See `../production/PATCH-0.7-DURABLE-VALUE-DOMAINS.md`. Operative rank and unlocks are a deterministic projection of the durable grant ledger, not stored state; a separate durable record for them would be a second authority over the same facts, free to disagree with the ledger it came from — the exact divergence #70 exists to prevent. No durable currency exists (`RunCurrencyAmount` is run-scoped by name and use), so #66 has no qualifying currency and #67–#69 have no durable mutations to make atomic. The binding that actually protects these domains is #70, which is done.
 
-## Batch 8 — Disconnect, rejoin, crash, and shutdown correctness (#71–#80) — ACTIVE
+## Batch 8 — Disconnect, rejoin, crash, and shutdown correctness (#71–#80) — DONE
 
-71. Add disconnect-during-reward-write deterministic simulation.
-72. Add disconnect-during-dismantle-write deterministic simulation.
-73. Add disconnect-during-migration deterministic simulation.
-74. Add server-crash-before-memory-commit simulation.
-75. Add server-crash-after-durable-commit simulation.
-76. Add rejoin-after-unknown-client-response reconciliation fixture.
-77. Add same-player rapid server-hop lease/reload fixture.
-78. Add shutdown with many resident players fixture.
-79. Add shutdown partial-storage-outage fixture.
-80. Add restart/rejoin invariant suite proving durable truth wins over stale process memory.
+71. **[DONE]** Add disconnect-during-reward-write deterministic simulation.
+72. **[DONE]** Add disconnect-during-dismantle-write deterministic simulation.
+73. **[DONE]** Add disconnect-during-migration deterministic simulation.
+74. **[DONE]** Add server-crash-before-memory-commit simulation.
+75. **[DONE]** Add server-crash-after-durable-commit simulation.
+76. **[DONE]** Add rejoin-after-unknown-client-response reconciliation fixture.
+77. **[DONE]** Add same-player rapid server-hop lease/reload fixture.
+78. **[DONE]** Add shutdown with many resident players fixture.
+79. **[DONE]** Add shutdown partial-storage-outage fixture.
+80. **[DONE]** Add restart/rejoin invariant suite proving durable truth wins over stale process memory.
 
-## Batch 9 — Automated chaos, diagnostics, and recovery evidence (#81–#90)
+## Batch 9 — Automated chaos, diagnostics, and recovery evidence (#81–#90) — ACTIVE
 
 81. Add deterministic fault-injection store wrapper for read failures.
 82. Add deterministic fault-injection store wrapper for update failures.

@@ -240,14 +240,21 @@ function Service.dismantleOwnedItem(
 	return outcome
 end
 
-function Service.destroy()
+--[[
+	Returns what shutdown actually achieved. The lease service reports which
+	leases survived release, and discarding that here would put the observability
+	one layer out of reach of the only caller that runs at shutdown -- leaving a
+	partial outage indistinguishable from a clean close.
+]]
+function Service.destroy(): any
 	if destroyed then
-		return
+		return table.freeze({ Requested = 0, Released = 0, Unresolved = 0, UnresolvedPlayerIds = table.freeze({}) })
 	end
-	leases:releaseAll()
+	local summary = leases:releaseAll()
 	persistence:destroy()
 	leases:destroy()
 	destroyed = true
+	return summary
 end
 
 return table.freeze(Service)

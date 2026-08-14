@@ -36,11 +36,13 @@ Older manual Studio/device/play gates are historical evidence instructions, not 
 
 - **Batch 7 (#61–#63, #70) is DONE:** every per-player service was surveyed for a durable path and the result recorded in `../production/PATCH-0.7-DURABLE-VALUE-DOMAINS.md`. Everything durable is account-scoped; everything in memory is run- or session-scoped by design. Progression snapshots now carry an identity derived from the ledger they were projected from, so a stale projection is detectable. **#64–#69 are DEFERRED, not done** — they would create a second authority over derived facts, or a currency no gameplay reads.
 
+- **Batch 8 (#71–#80) is DONE:** a deterministic fault matrix interrupts reward writes, dismantle writes, and migrations mid-flight, crashes a server before and after the durable commit, hops one player across five servers, and shuts down both cleanly and during a partial storage outage — asserting each time that durable truth wins over stale process memory. `InventoryLiveService.destroy` now returns the shutdown summary, so a partial outage is distinguishable from a clean close.
+
 ## NOW
 
-**Execute Patch 0.7 Batch 8, tasks #71–#80, from `PATCH-0.7-100-TASK-ROI-BACKLOG.md`.**
+**Execute Patch 0.7 Batch 9, tasks #81–#90, from `PATCH-0.7-100-TASK-ROI-BACKLOG.md`.**
 
-Batch 8 hardens disconnect, rejoin, crash, and shutdown correctness.
+Batch 9 adds automated chaos, diagnostics, and recovery evidence.
 
 Required merge gate:
 
@@ -54,9 +56,9 @@ CI equivalent is accepted as the canonical automated result.
 
 After Batch 2 is automated-green and merged:
 
-1. mark #71–#80 DONE;
-2. activate #81–#90;
-3. add automated chaos and diagnostics;
+1. mark #81–#90 DONE;
+2. activate #91–#100;
+3. bind the machine-readable acceptance matrix;
 4. continue in exact 10-task batches through all 100 Patch 0.7 tasks.
 
 A concrete data-loss, duplication, authority, migration, or deterministic validation defect may preempt the queue. Missing manual testing may not.
@@ -72,8 +74,8 @@ A concrete data-loss, duplication, authority, migration, or deterministic valida
 | 5 | 41–50 | migration, quarantine, recovery | DONE |
 | 6 | 51–60 | capacity, overflow, retention | DONE (54–57 deferred) |
 | 7 | 61–70 | durable progression/currency/unlocks | DONE (64–69 deferred) |
-| 8 | 71–80 | disconnect/rejoin/crash/shutdown correctness | ACTIVE |
-| 9 | 81–90 | automated chaos + diagnostics | queued |
+| 8 | 71–80 | disconnect/rejoin/crash/shutdown correctness | DONE |
+| 9 | 81–90 | automated chaos + diagnostics | ACTIVE |
 | 10 | 91–100 | machine-readable Patch 0.7 acceptance | queued |
 
 ## Manual evidence backlog
