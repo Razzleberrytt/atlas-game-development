@@ -14,18 +14,73 @@ local contracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipm
 	injectGlobals = true,
 })()
 
+--[[
+	The affix config reads the reward roster to know which definitions an affix
+	may apply to, so the real reward config is built here -- with the real
+	firearm roster behind it -- rather than stubbed. A stub could not disagree
+	with the config it is meant to constrain.
+]]
+local COMBAT_TOKEN, REWARD_CONTRACTS_TOKEN, FIREARM_TOKEN = {}, {}, {}
+local combatContracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/Combat/CombatContracts.luau"), {
+	debugName = "CombatContracts",
+	injectGlobals = true,
+})()
+local rewardContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentRewardContracts.luau"), {
+		debugName = "EquipmentRewardContracts",
+		injectGlobals = true,
+	})()
+local firearmConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/FirearmConfig.luau"), {
+	debugName = "FirearmConfig",
+	environment = {
+		script = { Parent = { Parent = { Combat = { CombatContracts = COMBAT_TOKEN } } } },
+		require = function(): any
+			return combatContracts
+		end,
+	},
+	injectGlobals = true,
+})()
+local rewardConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/EquipmentRewardConfig.luau"), {
+	debugName = "EquipmentRewardConfig",
+	environment = {
+		script = {
+			Parent = {
+				FirearmConfig = FIREARM_TOKEN,
+				Parent = {
+					Equipment = { EquipmentRewardContracts = REWARD_CONTRACTS_TOKEN },
+					Combat = { CombatContracts = COMBAT_TOKEN },
+				},
+			},
+		},
+		require = function(token: unknown): any
+			if token == COMBAT_TOKEN then
+				return combatContracts
+			elseif token == FIREARM_TOKEN then
+				return firearmConfig
+			end
+			return rewardContracts
+		end,
+	},
+	injectGlobals = true,
+})()
+
 local CONTRACTS_TOKEN = {}
+local REWARD_CONFIG_TOKEN = {}
 local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/EquipmentAffixConfig.luau"), {
 	debugName = "EquipmentAffixConfig",
 	environment = {
 		script = {
 			Parent = {
+				EquipmentRewardConfig = REWARD_CONFIG_TOKEN,
 				Parent = {
 					Equipment = { EquipmentAffixContracts = CONTRACTS_TOKEN },
 				},
 			},
 		},
 		require = function(token: unknown)
+			if token == REWARD_CONFIG_TOKEN then
+				return rewardConfig
+			end
 			assertThat(token == CONTRACTS_TOKEN, "unexpected affix-config dependency")
 			return contracts
 		end,
@@ -83,8 +138,14 @@ local function compatibleIds(slot: string, tags: { string }): { [string]: boolea
 	return ids
 end
 
-assertThat(config.Version == "PATCH-0.3-AFFIX-v2", "affix config version must be stable")
-assertThat(#config.Definitions == 16, "v2 should expose sixteen bounded authored affixes")
+--[[
+	The version and count are pinned so an affix cannot be added or removed by
+	accident. Patch 0.9 deliberately expanded the roster from sixteen to
+	twenty-four across the new armor and relic archetypes, so the pin moves with
+	that decision rather than being deleted.
+]]
+assertThat(config.Version == "PATCH-0.9-AFFIX-v4-gear-archetypes", "affix config version must be stable")
+assertThat(#config.Definitions == 24, "v4 should expose twenty-four bounded authored affixes")
 assertThat(config.AffixCountByRarity.Common == 1, "common items should roll one affix")
 assertThat(config.AffixCountByRarity.Uncommon == 1, "uncommon items should roll one affix")
 assertThat(config.AffixCountByRarity.Rare == 2, "rare items should roll two affixes")

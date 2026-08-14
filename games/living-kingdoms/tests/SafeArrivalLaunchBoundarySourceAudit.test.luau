@@ -87,11 +87,22 @@ assert(
 	consumedLaunch ~= nil and missionArm ~= nil and hordeArm ~= nil and startExpedition ~= nil,
 	"attemptLaunch must consume the lobby launch, arm both pressure owners, then start the expedition runtime"
 )
+--[[
+	The guarantee stated above -- only a deliberate launch may release pressure,
+	never server boot -- is unchanged, and the consumed-launch ordering still
+	protects it.
+
+	The clause requiring arming before the runtime start has deliberately
+	inverted. Arming first meant a rejected launch left both pressure owners
+	running with no expedition to belong to, and neither exposes a disarm.
+]]
 assert(
-	(consumedLaunch :: number) < (missionArm :: number)
-		and (missionArm :: number) < (hordeArm :: number)
-		and (hordeArm :: number) < (startExpedition :: number),
-	"pressure must only arm after a server-validated lobby launch, before the expedition runtime starts"
+	(consumedLaunch :: number) < (missionArm :: number) and (missionArm :: number) < (hordeArm :: number),
+	"pressure must only arm inside a server-validated consumed lobby launch"
+)
+assert(
+	(startExpedition :: number) < (missionArm :: number),
+	"pressure must arm only once the expedition runtime is live, so a rejected launch leaves nothing running"
 )
 
 print("SafeArrivalLaunchBoundarySourceAudit: mission/horde pressure gating and lobby launch wiring passed")

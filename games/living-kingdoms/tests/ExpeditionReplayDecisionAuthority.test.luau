@@ -40,7 +40,22 @@ local pressureAt = string.find(lobby, "MissionDirectorService.armPressure()", 1,
 local startAt = string.find(lobby, "ExpeditionLiveRuntimeService.startExpedition", 1, true)
 assert(prepareAt ~= nil and pressureAt ~= nil and startAt ~= nil, "deliberate launch handoff tokens must exist")
 assert((prepareAt :: number) < (pressureAt :: number), "fresh-run preparation must happen before pressure is armed")
-assert((pressureAt :: number) < (startAt :: number), "pressure arming must remain immediately upstream of launch")
+--[[
+	This used to require arming immediately upstream of the launch call. The
+	guarantee it protects is that pressure belongs to a deliberate launch rather
+	than to server boot, and that still holds: arming sits inside the consumed
+	launch path after fresh-run preparation.
+
+	The ordering it pinned has deliberately inverted. Arming before the launch
+	meant a rejected launch -- or a failed roster binding, which stops the
+	expedition again -- left the mission clock and horde pressure running with no
+	run to belong to, and neither owner exposes a way to put that back. Arming
+	only once the run is live is strictly stronger.
+]]
+assert(
+	(startAt :: number) < (pressureAt :: number),
+	"pressure must be armed only once the run is live, so a rejected launch leaves nothing running"
+)
 
 assert(
 	string.find(lobby, "ExpeditionLiveRuntimeService.readSnapshot() ~= nil", 1, true) ~= nil,

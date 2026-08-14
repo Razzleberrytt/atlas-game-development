@@ -41,7 +41,8 @@ local function applyDecision(snapshot: any)
 	votedForReturn = ownVote == "ReturnToPreparation"
 	if votedForReturn and decision.ResolvedDecisionId == "Undecided" then
 		button.Active = false
-		button.Text = string.format("WAITING FOR SQUAD  %d/%d", decision.ReturnVotes or 0, decision.ParticipantCount or 0)
+		button.Text =
+			string.format("WAITING FOR SQUAD  %d/%d", decision.ReturnVotes or 0, decision.ParticipantCount or 0)
 	elseif not requestInFlight then
 		button.Active = true
 		button.Text = "RETURN TO LOBBY"

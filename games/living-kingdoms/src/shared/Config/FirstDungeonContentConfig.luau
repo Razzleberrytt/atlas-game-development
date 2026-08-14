@@ -118,30 +118,48 @@ assert(
 assert(#FirstDungeonContentConfig.RoomSequence == 7, "the verification route must remain a short seven-room run")
 
 local roomDefinitions = {}
-for _, definition in RoomAssemblyConfig.Rooms do roomDefinitions[definition.Id] = definition end
+for _, definition in RoomAssemblyConfig.Rooms do
+	roomDefinitions[definition.Id] = definition
+end
 
 local knownEnemyArchetypeIds = {}
-for _, archetypeId in EnemyArchetypeIds do knownEnemyArchetypeIds[archetypeId] = true end
+for _, archetypeId in EnemyArchetypeIds do
+	knownEnemyArchetypeIds[archetypeId] = true
+end
 local knownHordeRoleIds = {}
-for _, role in HordeRoles do knownHordeRoleIds[role.Id] = true end
+for _, role in HordeRoles do
+	knownHordeRoleIds[role.Id] = true
+end
 
 local function validateEncounter(definition: any, content: any)
 	assert(content ~= nil, "every room in the assembly pool requires authored encounter content: " .. definition.Id)
 	assert(content.RoomId == definition.Id, "encounter content room identity must match its room definition")
-	assert(content.EncounterSlotId == definition.EncounterSlotId, "encounter content must honor the room encounter slot")
+	assert(
+		content.EncounterSlotId == definition.EncounterSlotId,
+		"encounter content must honor the room encounter slot"
+	)
 	assert(content.EncounterIntensity == definition.EncounterIntensity, "encounter content must honor room intensity")
-	assert(content.RewardSourceId == definition.RewardSourceId, "encounter content must preserve the room reward source")
+	assert(
+		content.RewardSourceId == definition.RewardSourceId,
+		"encounter content must preserve the room reward source"
+	)
 	if content.EncounterSlotId == EncounterSlotIds.None then
 		assert(#content.Waves == 0, "non-encounter rooms cannot author enemy waves")
 		assert(content.SpawnSourceId == nil, "non-encounter rooms cannot declare an authored-wave source")
 	else
 		assert(#content.Waves >= 1, "encounter rooms require at least one authored wave")
-		assert(content.SpawnSourceId == EnemySpawnSourceIds.AuthoredWave, "dungeon combat must use the canonical authored-wave source")
+		assert(
+			content.SpawnSourceId == EnemySpawnSourceIds.AuthoredWave,
+			"dungeon combat must use the canonical authored-wave source"
+		)
 	end
 	for _, authoredWave in content.Waves do
 		assert(#authoredWave.Units >= 1, "authored dungeon waves cannot be empty")
 		for _, authoredUnit in authoredWave.Units do
-			assert(knownEnemyArchetypeIds[authoredUnit.ArchetypeId] == true, "unknown enemy archetype in dungeon content")
+			assert(
+				knownEnemyArchetypeIds[authoredUnit.ArchetypeId] == true,
+				"unknown enemy archetype in dungeon content"
+			)
 			assert(authoredUnit.Count >= 1 and authoredUnit.Count % 1 == 0, "enemy counts must be positive integers")
 			if authoredUnit.ArchetypeId == EnemyArchetypeIds.ExclusionWalker then
 				assert(
@@ -172,11 +190,20 @@ for index, roomId in FirstDungeonContentConfig.RoomSequence do
 	local definition = roomDefinitions[roomId]
 	assert(definition ~= nil, "canonical dungeon content references an unknown room: " .. roomId)
 	if index == 1 then
-		assert(definition.Role == RoomAssemblyContracts.RoleIds.Entry, "the canonical dungeon must begin at the safe entry")
+		assert(
+			definition.Role == RoomAssemblyContracts.RoleIds.Entry,
+			"the canonical dungeon must begin at the safe entry"
+		)
 	elseif index == #FirstDungeonContentConfig.RoomSequence - 1 then
-		assert(definition.Role == RoomAssemblyContracts.RoleIds.Elite, "the canonical dungeon must stage an elite before its boss")
+		assert(
+			definition.Role == RoomAssemblyContracts.RoleIds.Elite,
+			"the canonical dungeon must stage an elite before its boss"
+		)
 	elseif index == #FirstDungeonContentConfig.RoomSequence then
-		assert(definition.Role == RoomAssemblyContracts.RoleIds.Boss, "the canonical dungeon must terminate in the boss room")
+		assert(
+			definition.Role == RoomAssemblyContracts.RoleIds.Boss,
+			"the canonical dungeon must terminate in the boss room"
+		)
 	end
 end
 

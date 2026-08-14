@@ -34,7 +34,10 @@ local firstReady = lobby:setReady(10, true)
 assert(firstReady.Accepted and firstReady.ReasonId == "PlayerReady", "player 10 should ready")
 local repeatedReady = lobby:setReady(10, true)
 assert(repeatedReady.Accepted and repeatedReady.ReasonId == "PlayerAlreadyReady", "same readiness should be idempotent")
-assert(repeatedReady.Snapshot.Revision == firstReady.Snapshot.Revision, "idempotent readiness must not advance revision")
+assert(
+	repeatedReady.Snapshot.Revision == firstReady.Snapshot.Revision,
+	"idempotent readiness must not advance revision"
+)
 assert(lobby:setReady(20, true).Accepted, "player 20 should ready")
 local finalReady = lobby:setReady(30, true)
 assert(
@@ -47,7 +50,10 @@ assert(not lobby:join(40).Accepted, "membership must freeze while launch is pend
 local launch = lobby:consumeLaunch()
 assert(launch.Accepted and launch.Snapshot.MemberCount == 3, "launch should consume frozen party")
 assert(launch.Snapshot.LaunchPending, "consumed launch should preserve the exact launched snapshot")
-assert(lobby:readSnapshot().Revision == launch.Snapshot.Revision + 1, "launch reset should advance authoritative revision")
+assert(
+	lobby:readSnapshot().Revision == launch.Snapshot.Revision + 1,
+	"launch reset should advance authoritative revision"
+)
 assert(not lobby:consumeLaunch().Accepted, "launch cannot be consumed twice")
 assert(not lobby:readSnapshot().AllReady, "ready state should reset after launch")
 
@@ -55,7 +61,10 @@ assert(lobby:leave(20).Accepted, "members should be removable")
 assert(lobby:readSnapshot().MemberCount == 2, "leave should update count")
 
 local reconnect = lobby:join(20)
-assert(reconnect.Accepted and not reconnect.Snapshot.Members[2].Ready, "pre-launch reconnect should rejoin cleanly as unready")
+assert(
+	reconnect.Accepted and not reconnect.Snapshot.Members[2].Ready,
+	"pre-launch reconnect should rejoin cleanly as unready"
+)
 
 local bounded = module.new(1, 2)
 assert(bounded:join(1).Accepted and bounded:join(2).Accepted, "bounded lobby should fill")
@@ -63,4 +72,26 @@ assert(not bounded:join(3).Accepted and bounded:join(3).ReasonId == "LobbyFull",
 
 lobby:destroy()
 assert(lobby:readSnapshot() == nil, "destroyed lobby should disclose no state")
+
+--[[
+	A member leaving a launch-pending party disarms the launch, which is correct:
+	the party that armed it no longer exists. What must not happen is the lobby
+	becoming permanently unlaunchable, because a lobby that can never launch is
+	indistinguishable from the game being broken.
+]]
+local stranded = module.new(1, 4)
+assert(stranded:join(41).Accepted and stranded:join(42).Accepted, "two members join the strand-case lobby")
+assert(stranded:setReady(41, true).Accepted and stranded:setReady(42, true).Accepted, "both members ready")
+assert(stranded:readSnapshot().LaunchPending, "the pair arms a launch")
+
+assert(stranded:leave(42).Accepted, "one member leaves while the launch is armed")
+assert(not stranded:readSnapshot().LaunchPending, "the departed party's launch must be disarmed")
+assert(stranded:readSnapshot().MemberCount == 1, "the remaining member is still present")
+
+-- Re-arming must be reachable, or this lobby would sit unlaunchable forever.
+assert(stranded:setReady(41, false).Accepted, "the remaining member may clear their readiness")
+assert(stranded:setReady(41, true).Accepted, "the remaining member may ready again")
+assert(stranded:readSnapshot().LaunchPending, "the remaining party must be able to arm a launch again")
+assert(stranded:consumeLaunch().Accepted, "the re-armed launch must be consumable")
+
 print("ExpeditionLobbyService.test.luau passed")
