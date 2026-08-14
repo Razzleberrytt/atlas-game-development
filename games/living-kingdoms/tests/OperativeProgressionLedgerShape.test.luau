@@ -54,6 +54,23 @@ local durableMutation =
 		debugName = "DurableMutationContracts",
 		injectGlobals = true,
 	})()
+local MIGRATION_CONTRACTS_TOKEN = {}
+local migrationSteps =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryMigrationSteps.luau"), {
+		debugName = "InventoryMigrationSteps",
+		environment = {
+			script = { Parent = { PlayerInventoryContracts = MIGRATION_CONTRACTS_TOKEN } },
+			require = function(): any
+				return contracts
+			end,
+		},
+		injectGlobals = true,
+	})()
+local recoveryContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryRecoveryContracts.luau"), {
+		debugName = "InventoryRecoveryContracts",
+		injectGlobals = true,
+	})()
 
 local RESOLVER_CONTRACTS_TOKEN, RESOLVER_EQUIPMENT_TOKEN = {}, {}
 local dismantleResolver =
@@ -76,7 +93,8 @@ local dismantleResolver =
 		injectGlobals = true,
 	})()
 
-local CONTRACTS_TOKEN, DISMANTLE_TOKEN, RESULTS_TOKEN, DURABLE_MUTATION_TOKEN = {}, {}, {}, {}
+local CONTRACTS_TOKEN, DISMANTLE_TOKEN, RESULTS_TOKEN, DURABLE_MUTATION_TOKEN, MIGRATION_STEPS_TOKEN, RECOVERY_TOKEN =
+	{}, {}, {}, {}, {}, {}
 local persistenceModule =
 	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/PlayerInventoryPersistenceService.luau"), {
 		debugName = "PlayerInventoryPersistenceService",
@@ -90,6 +108,8 @@ local persistenceModule =
 								InventoryDismantleResolver = DISMANTLE_TOKEN,
 								StorageResultContracts = RESULTS_TOKEN,
 								DurableMutationContracts = DURABLE_MUTATION_TOKEN,
+								InventoryMigrationSteps = MIGRATION_STEPS_TOKEN,
+								InventoryRecoveryContracts = RECOVERY_TOKEN,
 							},
 							Equipment = {
 								EquipmentRewardContracts = EQUIPMENT_TOKEN,
@@ -108,6 +128,10 @@ local persistenceModule =
 					return { EffectIds = { DamagePercent = "DamagePercent" } }
 				elseif token == DISMANTLE_TOKEN then
 					return dismantleResolver
+				elseif token == MIGRATION_STEPS_TOKEN then
+					return migrationSteps
+				elseif token == RECOVERY_TOKEN then
+					return recoveryContracts
 				elseif token == DURABLE_MUTATION_TOKEN then
 					return durableMutation
 				elseif token == RESULTS_TOKEN then
@@ -159,6 +183,12 @@ end
 function store:write(key: string, value: any): any
 	self.data[key] = deepCopy(value)
 	return storageResults.committed(deepCopy(value))
+end
+
+function store:commit(key: string, transform: (any) -> any): any
+	local nextValue = transform(deepCopy(self.data[key]))
+	self.data[key] = deepCopy(nextValue)
+	return storageResults.committed(deepCopy(nextValue))
 end
 
 local PLAYER = 9090

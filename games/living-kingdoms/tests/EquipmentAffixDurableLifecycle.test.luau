@@ -52,6 +52,8 @@ local INVENTORY_CONTRACTS_TOKEN = {}
 local DISMANTLE_TOKEN = {}
 local STORAGE_RESULTS_TOKEN = {}
 local DURABLE_MUTATION_TOKEN = {}
+local MIGRATION_STEPS_TOKEN = {}
+local RECOVERY_TOKEN = {}
 local storageResults =
 	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/StorageResultContracts.luau"), {
 		debugName = "StorageResultContracts",
@@ -234,6 +236,23 @@ local inventoryContracts =
 		},
 		injectGlobals = true,
 	})()
+local MIGRATION_CONTRACTS_TOKEN = {}
+local migrationSteps =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryMigrationSteps.luau"), {
+		debugName = "InventoryMigrationSteps",
+		environment = {
+			script = { Parent = { PlayerInventoryContracts = MIGRATION_CONTRACTS_TOKEN } },
+			require = function(): any
+				return inventoryContracts
+			end,
+		},
+		injectGlobals = true,
+	})()
+local recoveryContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryRecoveryContracts.luau"), {
+		debugName = "InventoryRecoveryContracts",
+		injectGlobals = true,
+	})()
 
 local dismantleResolver =
 	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryDismantleResolver.luau"), {
@@ -281,6 +300,8 @@ local replicatedStorage = {
 			InventoryDismantleResolver = DISMANTLE_TOKEN,
 			StorageResultContracts = STORAGE_RESULTS_TOKEN,
 			DurableMutationContracts = DURABLE_MUTATION_TOKEN,
+			InventoryMigrationSteps = MIGRATION_STEPS_TOKEN,
+			InventoryRecoveryContracts = RECOVERY_TOKEN,
 		},
 	},
 }
@@ -300,6 +321,10 @@ local function requireProductionToken(token: unknown)
 		return inventoryContracts
 	elseif token == DISMANTLE_TOKEN then
 		return dismantleResolver
+	elseif token == MIGRATION_STEPS_TOKEN then
+		return migrationSteps
+	elseif token == RECOVERY_TOKEN then
+		return recoveryContracts
 	elseif token == DURABLE_MUTATION_TOKEN then
 		return durableMutation
 	elseif token == STORAGE_RESULTS_TOKEN then
@@ -428,6 +453,12 @@ end
 function store:write(key: string, value: any): any
 	self.data[key] = deepCopy(value)
 	return storageResults.committed(deepCopy(value))
+end
+
+function store:commit(key: string, transform: (any) -> any): any
+	local nextValue = transform(deepCopy(self.data[key]))
+	self.data[key] = deepCopy(nextValue)
+	return storageResults.committed(deepCopy(nextValue))
 end
 
 local playerId = 8_080
