@@ -13,8 +13,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	unbounded wait here would hold every controller after it forever.
 ]]
 local NETWORK_WAIT_SECONDS = 20
+local PANEL_WIDTH = 680
+local PANEL_HEIGHT = 430
+local PANEL_VIEWPORT_MARGIN = 24
 
 local InterfaceTheme = require(script.Parent.Parent.UI.InterfaceTheme)
+local ResponsivePanelScale = require(script.Parent.Parent.Presentation.ResponsivePanelScale)
 
 local Controller = {}
 local localPlayer = Players.LocalPlayer
@@ -24,6 +28,7 @@ local readState = network:WaitForChild("ReadState") :: RemoteFunction
 
 local started = false
 local connection: RBXScriptConnection? = nil
+local scaleConnection: RBXScriptConnection? = nil
 local gui: ScreenGui? = nil
 local headline: TextLabel? = nil
 local summary: TextLabel? = nil
@@ -94,12 +99,31 @@ local function createGui()
 	screen.Parent = playerGui
 	gui = screen
 
-	InterfaceTheme.backdrop(screen)
+	local backdrop = InterfaceTheme.backdrop(screen)
 	local panel = InterfaceTheme.panel(screen, "ResultPanel")
 	panel.AnchorPoint = Vector2.new(0.5, 0.5)
 	panel.Position = UDim2.fromScale(0.5, 0.5)
-	panel.Size = UDim2.fromOffset(680, 430)
+	panel.Size = UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT)
 	InterfaceTheme.padding(panel, InterfaceTheme.Spacing.XLarge)
+
+	local panelScale = Instance.new("UIScale")
+	panelScale.Name = "ResponsiveScale"
+	panelScale.Parent = panel
+	local function updatePanelScale()
+		local viewport = backdrop.AbsoluteSize
+		if viewport.X <= 0 or viewport.Y <= 0 then
+			return
+		end
+		panelScale.Scale = ResponsivePanelScale.calculate(
+			viewport.X,
+			viewport.Y,
+			PANEL_WIDTH,
+			PANEL_HEIGHT,
+			PANEL_VIEWPORT_MARGIN
+		)
+	end
+	updatePanelScale()
+	scaleConnection = backdrop:GetPropertyChangedSignal("AbsoluteSize"):Connect(updatePanelScale)
 
 	local layout = Instance.new("UIListLayout")
 	layout.Padding = UDim.new(0, InterfaceTheme.Spacing.Medium)
@@ -233,6 +257,10 @@ function Controller.stop()
 	if connection then
 		connection:Disconnect()
 		connection = nil
+	end
+	if scaleConnection then
+		scaleConnection:Disconnect()
+		scaleConnection = nil
 	end
 	if gui then
 		gui:Destroy()
