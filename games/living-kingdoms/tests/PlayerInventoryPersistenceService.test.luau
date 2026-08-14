@@ -66,6 +66,11 @@ local recoveryContracts =
 		debugName = "InventoryRecoveryContracts",
 		injectGlobals = true,
 	})()
+local capacityContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryCapacityContracts.luau"), {
+		debugName = "InventoryCapacityContracts",
+		injectGlobals = true,
+	})()
 
 local CONTRACTS_TOKEN = {}
 local DISMANTLE_TOKEN = {}
@@ -73,6 +78,7 @@ local STORAGE_RESULTS_TOKEN = {}
 local DURABLE_MUTATION_TOKEN = {}
 local MIGRATION_STEPS_TOKEN = {}
 local RECOVERY_TOKEN = {}
+local CAPACITY_TOKEN = {}
 local RESOLVER_CONTRACTS_TOKEN = {}
 local RESOLVER_EQUIPMENT_TOKEN = {}
 local dismantleResolver =
@@ -106,6 +112,7 @@ local replicatedStorage = {
 			DurableMutationContracts = DURABLE_MUTATION_TOKEN,
 			InventoryMigrationSteps = MIGRATION_STEPS_TOKEN,
 			InventoryRecoveryContracts = RECOVERY_TOKEN,
+			InventoryCapacityContracts = CAPACITY_TOKEN,
 		},
 		Equipment = { EquipmentRewardContracts = EQUIPMENT_TOKEN, EquipmentAffixContracts = AFFIX_TOKEN },
 	},
@@ -144,6 +151,9 @@ local serviceModule =
 				end
 				if token == RECOVERY_TOKEN then
 					return recoveryContracts
+				end
+				if token == CAPACITY_TOKEN then
+					return capacityContracts
 				end
 				error("unexpected persistence dependency")
 			end,
@@ -736,6 +746,85 @@ assert(raceStore.data["player:8383:inventory"].UpdatedAtUnix == 9999, "the newer
 assert(
 	raceStore.data["player:8383:inventory"].SchemaVersion == contracts.CurrentSchemaVersion,
 	"the newer record must keep its own schema, not the migrating server's rewrite"
+)
+
+--[[
+	Batch 6 #53. An oversized record is refused before submission. Left to the
+	DataStore it would not save a truncated version -- it would not save at all,
+	and every later mutation would fail the same way while the player kept
+	playing.
+]]
+local sizeStore = { data = {}, saveCount = 0 }
+function sizeStore:read(key: string): any
+	local value = deepCopy(self.data[key])
+	if value == nil then
+		return storageResults.missing()
+	end
+	return storageResults.found(value)
+end
+function sizeStore:write(key: string, value: any): any
+	self.saveCount += 1
+	self.data[key] = deepCopy(value)
+	return storageResults.committed(deepCopy(value))
+end
+function sizeStore:commit(key: string, transform: (any) -> any): any
+	local nextValue = transform(deepCopy(self.data[key]))
+	self.data[key] = deepCopy(nextValue)
+	return storageResults.committed(deepCopy(nextValue))
+end
+
+local sizeService = serviceModule.new(sizeStore)
+local SIZE_PLAYER = 8484
+assert(sizeService:loadPlayer(SIZE_PLAYER, 7000).Accepted, "the size player loads")
+
+-- A reward whose display name alone blows the budget.
+local oversized = {
+	InstanceId = "item_oversized_guid",
+	GrantId = "reward:expedition:size:Boss",
+	ContentSignature = "v1|oversized",
+	DefinitionId = "keeper-relic",
+	DefinitionVersion = "1.0.0",
+	DisplayName = string.rep("z", capacityContracts.SafeRecordByteLimit + 1_024),
+	Slot = "Relic",
+	Rarity = "Rare",
+	Power = 18,
+	Affixes = {},
+	SourceId = "Boss",
+	RunId = "expedition:size",
+	Seed = 41,
+}
+local savesBeforeOversized = sizeStore.saveCount
+local oversizedGrant = sizeService:applyReward(SIZE_PLAYER, oversized, 7010)
+assert(not oversizedGrant.Accepted, "an oversized record must be refused")
+assert(
+	oversizedGrant.ReasonId == "RecordSizeExceeded",
+	"the refusal must name the size budget, not a generic save failure"
+)
+assert(sizeStore.saveCount == savesBeforeOversized, "a refused oversized write must never reach the store")
+assert(
+	sizeService:getRecord(SIZE_PLAYER).InventoryByInstanceId.item_oversized_guid == nil,
+	"a refused oversized write must not mutate memory either"
+)
+
+-- A normal reward still writes on the same service afterwards.
+local normalAfterOversized = {
+	InstanceId = "item_normal_after_guid",
+	GrantId = "reward:expedition:size2:Elite",
+	ContentSignature = "v1|warden-rifle|Uncommon|12",
+	DefinitionId = "warden-rifle",
+	DefinitionVersion = "1.0.0",
+	DisplayName = "Warden Rifle",
+	Slot = "Primary",
+	Rarity = "Uncommon",
+	Power = 12,
+	Affixes = {},
+	SourceId = "Elite",
+	RunId = "expedition:size2",
+	Seed = 42,
+}
+assert(
+	sizeService:applyReward(SIZE_PLAYER, normalAfterOversized, 7020).Accepted,
+	"a refused oversized write must not poison later normal writes"
 )
 
 print("PlayerInventoryPersistenceService.test.luau passed")

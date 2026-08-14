@@ -10,6 +10,7 @@ local StorageResults = require(ReplicatedStorage.Shared.Persistence.StorageResul
 local DurableMutation = require(ReplicatedStorage.Shared.Persistence.DurableMutationContracts)
 local MigrationSteps = require(ReplicatedStorage.Shared.Persistence.InventoryMigrationSteps)
 local Recovery = require(ReplicatedStorage.Shared.Persistence.InventoryRecoveryContracts)
+local Capacity = require(ReplicatedStorage.Shared.Persistence.InventoryCapacityContracts)
 
 export type EquipmentReward = EquipmentContracts.EquipmentReward
 export type EquipmentAffixRoll = EquipmentContracts.EquipmentAffixRoll
@@ -313,6 +314,34 @@ local function result(accepted: boolean, reasonId: string, record: PlayerInvento
 	return table.freeze({ Accepted = accepted, ReasonId = reasonId, Record = record })
 end
 
+--[[
+	Every durable write passes through here. A record over the budget does not
+	save a truncated version -- it does not save at all, and every later mutation
+	fails the same way while the player keeps playing. Refusing before submission
+	turns that into one reportable condition instead of silent permanent loss.
+]]
+local function guardedWrite(store: any, key: string, record: PlayerInventoryRecord): (boolean, string)
+	local classification, bytes = Capacity.classify(record)
+	if classification == Capacity.SizeClassifications.Exceeded then
+		warn(
+			string.format(
+				"[AtlasPersistence] refusing write for %s: estimated %d bytes exceeds the %d byte budget",
+				key,
+				bytes,
+				Capacity.SafeRecordByteLimit
+			)
+		)
+		return false, "RecordSizeExceeded"
+	end
+	if classification == Capacity.SizeClassifications.Approaching then
+		warn(string.format("[AtlasPersistence] %s is approaching the record budget at %d bytes", key, bytes))
+	end
+	if store:write(key, record).Status ~= StorageResults.WriteStatuses.Committed then
+		return false, "SaveFailed"
+	end
+	return true, "Committed"
+end
+
 function Service.new(store: Store): Service
 	assert(
 		type(store) == "table"
@@ -523,8 +552,9 @@ function Service:applyReward(playerId: number, reward: EquipmentReward, nowUnix:
 	then
 		return result(false, "MutationLedgerBoundExceeded", cloneRecord(record))
 	end
-	if selfAny._store:write(keyFor(playerId), nextRecord).Status ~= StorageResults.WriteStatuses.Committed then
-		return result(false, "SaveFailed", cloneRecord(record))
+	local written, writeReason = guardedWrite(selfAny._store, keyFor(playerId), nextRecord)
+	if not written then
+		return result(false, writeReason, cloneRecord(record))
 	end
 	selfAny._records[playerId] = nextRecord
 	return result(true, "RewardApplied", cloneRecord(nextRecord))
@@ -576,8 +606,9 @@ function Service:equip(playerId: number, slotId: EquipmentSlotId, instanceId: st
 		nextRecord.AppliedRewardContentSignatures[grantId] = signature
 	end
 	nextRecord.EquippedBySlot[slotId] = instanceId
-	if selfAny._store:write(keyFor(playerId), nextRecord).Status ~= StorageResults.WriteStatuses.Committed then
-		return result(false, "SaveFailed", cloneRecord(record))
+	local written, writeReason = guardedWrite(selfAny._store, keyFor(playerId), nextRecord)
+	if not written then
+		return result(false, writeReason, cloneRecord(record))
 	end
 	selfAny._records[playerId] = nextRecord
 	return result(true, "ItemEquipped", cloneRecord(nextRecord))
@@ -664,10 +695,11 @@ function Service:dismantle(
 	end
 	durable.AppliedDismantleTransactions[transactionId] = resolution.Outcome
 
-	if selfAny._store:write(keyFor(playerId), durable).Status ~= StorageResults.WriteStatuses.Committed then
+	local written, writeReason = guardedWrite(selfAny._store, keyFor(playerId), durable)
+	if not written then
 		return table.freeze({
 			Accepted = false,
-			ReasonId = "SaveFailed",
+			ReasonId = writeReason,
 			Outcome = nil,
 			Record = if record then cloneRecord(record) else nil,
 		})

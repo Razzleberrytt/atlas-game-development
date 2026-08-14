@@ -90,20 +90,22 @@ Before this 100-task queue began, Patch 0.7 already had: symmetric resident-reco
 49. **[DONE]** Add future-schema downgrade protection fixture with unknown extra fields.
 50. **[DONE]** Add automated migration matrix runner used by the canonical full validator.
 
-## Batch 6 — Capacity, overflow, and retention (#51–#60) — ACTIVE
+## Batch 6 — Capacity, overflow, and retention (#51–#60) — DONE (54–57 DEFERRED, see note)
 
-51. Define durable inventory capacity contract from measured serialized-size budget.
-52. Add deterministic record-size estimator for inventory payloads.
-53. Reject writes that exceed hard safe record size before DataStore submission.
-54. Add durable overflow/recovery bucket contract for excess rewards.
-55. Make reward grant atomic between inventory capacity and overflow destination.
-56. Add overflow replay/idempotency ledger.
-57. Add overflow claim/recovery mutation path under session lease.
-58. Add capacity-edge fixtures at below/equal/above thresholds.
-59. Add ledger compaction policy that preserves replay safety.
-60. Add archival policy for obsolete transaction history without permitting replay.
+51. **[DONE]** Define durable inventory capacity contract from measured serialized-size budget.
+52. **[DONE]** Add deterministic record-size estimator for inventory payloads.
+53. **[DONE]** Reject writes that exceed hard safe record size before DataStore submission.
+54. **[DEFERRED]** Add durable overflow/recovery bucket contract for excess rewards.
+55. **[DEFERRED]** Make reward grant atomic between inventory capacity and overflow destination.
+56. **[DEFERRED]** Add overflow replay/idempotency ledger.
+57. **[DEFERRED]** Add overflow claim/recovery mutation path under session lease.
+58. **[DONE]** Add capacity-edge fixtures at below/equal/above thresholds.
+59. **[DONE]** Add ledger compaction policy that preserves replay safety.
+60. **[DONE]** Add archival policy for obsolete transaction history without permitting replay.
 
-## Batch 7 — Expand valuable durable state safely (#61–#70)
+> **#54–#57 deferred, not done.** An overflow bucket presupposes a durable inventory capacity limit. The game has no such limit: the only capacity concept is the run-scoped survival pack in `RPGMenuController`, and durable gear is unbounded by design. Building a second durable authority with a claim path, its own idempotency ledger, and its own lease interaction — for excess that cannot currently exist — would be speculative expansion. The real hazard behind these rows, a record growing until it stops saving, is covered by #51–#53 and the ledger bound from #39. Revisit when a durable capacity limit is actually designed.
+
+## Batch 7 — Expand valuable durable state safely (#61–#70) — ACTIVE
 
 61. Inventory all player-value domains that currently survive only in memory.
 62. Rank those domains by player loss impact and product value.
