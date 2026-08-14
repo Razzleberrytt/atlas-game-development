@@ -148,18 +148,18 @@ Before this 100-task queue began, Patch 0.7 already had: symmetric resident-reco
 
 > **#84, #86–#88 deferred, not done.** #84 injects latency without a wall clock, but no persistence path measures elapsed time — every fixture is already free of real waiting, so the injector would have nothing to affect. #86/#87 add a server-only diagnostic snapshot and outcome counters; the diagnostic surface that exists today (`ExpeditionLiveRuntimeService`) earned its counters because a live operator reads them during play, and nothing reads persistence counters yet — adding an unread telemetry surface is cost without a consumer. #88 is a seedable multi-server stress simulation; the deterministic fault matrix (#71–#80) already drives the same paths across servers with named, reproducible scenarios, and a randomised sweep on top would trade that legibility for coverage the matrix already has. Revisit #86/#87 when an operator surface actually consumes them.
 
-## Batch 10 — Automated Patch 0.7 acceptance + release hardening (#91–#100) — ACTIVE
+## Batch 10 — Automated Patch 0.7 acceptance + release hardening (#91–#100) — DONE
 
-91. Define machine-readable Patch 0.7 acceptance matrix.
-92. Bind every acceptance row to at least one automated fixture/audit.
-93. Add source audit proving all valuable mutations pass through the canonical persistence owner.
-94. Add source audit proving clients cannot choose durable owner/value/schema fields.
-95. Add source audit proving Studio cannot touch production inventory namespaces.
-96. Add automated downgrade/rollback compatibility fixture across supported schemas.
-97. Add automated duplicate/replay resistance matrix across valuable mutation types.
-98. Add automated lifecycle matrix across join/leave/rejoin/server-hop/shutdown paths.
-99. Run full canonical validation with all 100 task acceptance rows satisfied or explicitly superseded by a stronger automated invariant.
-100. Mark Patch 0.7 **AUTOMATED ACCEPTANCE COMPLETE** when the machine-readable matrix is green; manual play/Studio evidence may remain optional product evidence and cannot hold source progression.
+91. **[DONE]** Define machine-readable Patch 0.7 acceptance matrix.
+92. **[DONE]** Bind every acceptance row to at least one automated fixture/audit.
+93. **[DONE]** Add source audit proving all valuable mutations pass through the canonical persistence owner.
+94. **[DONE]** Add source audit proving clients cannot choose durable owner/value/schema fields.
+95. **[DONE]** Add source audit proving Studio cannot touch production inventory namespaces.
+96. **[DONE]** Add automated downgrade/rollback compatibility fixture across supported schemas.
+97. **[DONE]** Add automated duplicate/replay resistance matrix across valuable mutation types.
+98. **[DONE]** Add automated lifecycle matrix across join/leave/rejoin/server-hop/shutdown paths.
+99. **[DONE]** Run full canonical validation with all 100 task acceptance rows satisfied or explicitly superseded by a stronger automated invariant.
+100. **[DONE]** Mark Patch 0.7 **AUTOMATED ACCEPTANCE COMPLETE** when the machine-readable matrix is green; manual play/Studio evidence may remain optional product evidence and cannot hold source progression.
 
 ## Batch progression rule
 
