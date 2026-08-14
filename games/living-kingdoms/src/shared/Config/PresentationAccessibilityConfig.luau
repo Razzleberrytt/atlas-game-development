@@ -1,12 +1,16 @@
 --!strict
 
 --[[
-	HROI-0104 accessibility levels for client-local combat presentation. Camera
-	shake and blood intensity are personal comfort settings: every level scales
-	only cosmetic feedback that already reacts to replicated server-confirmed
-	facts. No level can change damage, health, death, targeting, XP, loot,
-	threat, or any other consequential gameplay fact, and no level reveals
-	information a full-intensity client would not receive.
+	RC 1.0 production-readiness accessibility baseline for client-local combat
+	presentation. Every setting scales only cosmetic feedback that already reacts
+	to replicated/server-confirmed facts. No level changes damage, health, death,
+	targeting, XP, loot, threat, or information disclosure.
+
+	The baseline deliberately covers more than the original shake/blood pair:
+	players can also reduce flash intensity and floating combat text without
+	changing gameplay truth. All settings use the same bounded three-level model
+	so adding a new comfort surface is a data change plus a consumer hookup rather
+	than another settings authority.
 ]]
 
 local LevelIds = table.freeze({
@@ -18,14 +22,14 @@ local LevelIds = table.freeze({
 local SettingIds = table.freeze({
 	CameraShake = "presentation.setting.camera-shake",
 	Blood = "presentation.setting.blood",
+	FlashIntensity = "presentation.setting.flash-intensity",
+	FloatingCombatText = "presentation.setting.floating-combat-text",
 })
 
 local PresentationAccessibilityConfig = {
-	Version = "HROI-0104-access-v1",
+	Version = "RC-1.0-access-v2",
 	LevelIds = LevelIds,
 	SettingIds = SettingIds,
-	-- Cycle order for the settings panel: each activation advances one step and
-	-- wraps, so every level is reachable from every other with at most two taps.
 	LevelOrder = table.freeze({ LevelIds.Full, LevelIds.Reduced, LevelIds.Off }),
 	LevelDisplayNames = table.freeze({
 		[LevelIds.Full] = "FULL",
@@ -50,6 +54,22 @@ local PresentationAccessibilityConfig = {
 				[LevelIds.Off] = 0,
 			}),
 		}),
+		[SettingIds.FlashIntensity] = table.freeze({
+			DisplayName = "FLASH INTENSITY",
+			Scales = table.freeze({
+				[LevelIds.Full] = 1,
+				[LevelIds.Reduced] = 0.35,
+				[LevelIds.Off] = 0,
+			}),
+		}),
+		[SettingIds.FloatingCombatText] = table.freeze({
+			DisplayName = "FLOATING COMBAT TEXT",
+			Scales = table.freeze({
+				[LevelIds.Full] = 1,
+				[LevelIds.Reduced] = 0.55,
+				[LevelIds.Off] = 0,
+			}),
+		}),
 	}),
 }
 
@@ -68,10 +88,7 @@ assert(
 	PresentationAccessibilityConfig.LevelDisplayNames[PresentationAccessibilityConfig.DefaultLevelId] ~= nil,
 	"the default level must be a known level"
 )
-assert(
-	PresentationAccessibilityConfig.DefaultLevelId == LevelIds.Full,
-	"new players must start at full intensity so reviews judge the authored presentation"
-)
+assert(PresentationAccessibilityConfig.DefaultLevelId == LevelIds.Full, "new players must start at authored presentation intensity")
 for settingId, setting in PresentationAccessibilityConfig.Settings do
 	assert(#setting.DisplayName > 0, settingId .. " requires a readable display name")
 	assert(setting.Scales[LevelIds.Full] == 1, settingId .. " full intensity must be exactly the authored presentation")

@@ -1,12 +1,12 @@
 --!strict
 
 --[[
-	HROI-0104 accessibility settings panel. One small fixed FX button opens a
-	panel with one text-labeled cycle button per comfort setting (camera shake,
-	blood). Everything is client-local presentation preference: the controller
-	creates no remote, sends no request, reads no gameplay state, and runs no
-	per-frame work. Labels carry the full setting name and level as text so the
-	control never depends on color or audio alone.
+	RC 1.0 accessibility settings panel. The panel renders the canonical comfort
+	catalog instead of hand-maintaining a second list, so newly approved settings
+	cannot exist in config while remaining unreachable to players.
+
+	Everything remains client-local presentation preference: no remotes, gameplay
+	state, or per-frame work. Every control exposes setting name and level in text.
 ]]
 
 local Players = game:GetService("Players")
@@ -18,6 +18,8 @@ local PresentationAccessibilityState = require(script.Parent.Parent.Presentation
 local SETTING_ORDER = table.freeze({
 	PresentationAccessibilityConfig.SettingIds.CameraShake,
 	PresentationAccessibilityConfig.SettingIds.Blood,
+	PresentationAccessibilityConfig.SettingIds.FlashIntensity,
+	PresentationAccessibilityConfig.SettingIds.FloatingCombatText,
 })
 
 local Controller = {}
@@ -30,18 +32,12 @@ local disconnectStateListener: (() -> ())? = nil
 local settingButtons: { [string]: TextButton } = {}
 
 local function settingButtonText(settingId: string): string
-	return string.format(
-		"%s: %s",
-		PresentationAccessibilityState.getDisplayName(settingId),
-		PresentationAccessibilityState.getLevelDisplayName(settingId)
-	)
+	return string.format("%s: %s", PresentationAccessibilityState.getDisplayName(settingId), PresentationAccessibilityState.getLevelDisplayName(settingId))
 end
 
 local function refreshButton(settingId: string)
 	local button = settingButtons[settingId]
-	if button ~= nil then
-		button.Text = settingButtonText(settingId)
-	end
+	if button ~= nil then button.Text = settingButtonText(settingId) end
 end
 
 local function createSettingButton(parent: Instance, settingId: string, order: number): TextButton
@@ -65,13 +61,9 @@ local function createSettingButton(parent: Instance, settingId: string, order: n
 end
 
 function Controller.start()
-	if started then
-		return
-	end
+	if started then return end
 	started = true
-
 	local playerGui = localPlayer:WaitForChild("PlayerGui")
-
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "PresentationSettings"
 	gui.ResetOnSpawn = false
@@ -101,7 +93,7 @@ function Controller.start()
 	settingsPanel.Name = "Panel"
 	settingsPanel.AnchorPoint = Vector2.new(0, 1)
 	settingsPanel.Position = UDim2.new(0, 12, 1, -52)
-	settingsPanel.Size = UDim2.fromOffset(228, 118)
+	settingsPanel.Size = UDim2.fromOffset(260, 196)
 	settingsPanel.BackgroundColor3 = Color3.fromRGB(16, 13, 15)
 	settingsPanel.BackgroundTransparency = 0.08
 	settingsPanel.BorderSizePixel = 0
@@ -134,49 +126,32 @@ function Controller.start()
 	title.Text = "PRESENTATION COMFORT"
 	title.Parent = settingsPanel
 
+	local seen: { [string]: boolean } = {}
 	for order, settingId in SETTING_ORDER do
+		assert(PresentationAccessibilityConfig.Settings[settingId] ~= nil, "settings panel references unknown comfort setting")
+		assert(not seen[settingId], "settings panel cannot repeat a comfort setting")
+		seen[settingId] = true
 		local button = createSettingButton(settingsPanel, settingId, order)
 		settingButtons[settingId] = button
-		table.insert(
-			buttonConnections,
-			button.Activated:Connect(function()
-				PresentationAccessibilityState.cycle(settingId)
-			end)
-		)
+		table.insert(buttonConnections, button.Activated:Connect(function() PresentationAccessibilityState.cycle(settingId) end))
+	end
+	for settingId in PresentationAccessibilityConfig.Settings do
+		assert(seen[settingId] == true, "configured comfort setting is unreachable from the settings panel: " .. settingId)
 	end
 
-	table.insert(
-		buttonConnections,
-		toggleButton.Activated:Connect(function()
-			settingsPanel.Visible = not settingsPanel.Visible
-		end)
-	)
-
-	disconnectStateListener = PresentationAccessibilityState.onChanged(function(settingId, _levelId)
-		refreshButton(settingId)
-	end)
-
+	table.insert(buttonConnections, toggleButton.Activated:Connect(function() settingsPanel.Visible = not settingsPanel.Visible end))
+	disconnectStateListener = PresentationAccessibilityState.onChanged(function(settingId, _levelId) refreshButton(settingId) end)
 	gui.Parent = playerGui
 end
 
 function Controller.stop()
-	if not started then
-		return
-	end
+	if not started then return end
 	started = false
-	for _, connection in buttonConnections do
-		connection:Disconnect()
-	end
+	for _, connection in buttonConnections do connection:Disconnect() end
 	table.clear(buttonConnections)
-	if disconnectStateListener ~= nil then
-		disconnectStateListener()
-		disconnectStateListener = nil
-	end
+	if disconnectStateListener ~= nil then disconnectStateListener() disconnectStateListener = nil end
 	table.clear(settingButtons)
-	if screenGui ~= nil then
-		screenGui:Destroy()
-		screenGui = nil
-	end
+	if screenGui ~= nil then screenGui:Destroy() screenGui = nil end
 end
 
 return Controller
