@@ -1,13 +1,15 @@
 --!strict
 
 --[[
-	VS-0107 bounded first-slice equipment pool and source-specific reward rules.
-	Power is intentionally narrow. Boss rewards improve odds and floor rather than
-	introducing an unbounded tier jump that would make elite rewards irrelevant.
+	VS-0107 bounded equipment pool and source-specific reward rules.
+	Patch 0.9 expands only combat identities that already have authoritative
+	firearm definitions. Power remains intentionally narrow: content breadth may
+	grow without introducing an unbounded tier jump.
 ]]
 
 local CombatContracts = require(script.Parent.Parent.Combat.CombatContracts)
 local Contracts = require(script.Parent.Parent.Equipment.EquipmentRewardContracts)
+local FirearmConfig = require(script.Parent.FirearmConfig)
 local SlotIds = Contracts.SlotIds
 local RarityIds = Contracts.RarityIds
 local SourceIds = Contracts.SourceIds
@@ -43,7 +45,7 @@ local function item(
 end
 
 local EquipmentRewardConfig = {
-	Version = "VS-0107-v1",
+	Version = "PATCH-0.9-v2-durable-weapon-variety",
 	Definitions = table.freeze({
 		item(
 			"frontier-rifle",
@@ -64,6 +66,26 @@ local EquipmentRewardConfig = {
 			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare },
 			{ "shotgun", "close-range" },
 			WeaponIds.BreachShotgun
+		),
+		item(
+			"blackwater-support-lmg",
+			"Blackwater Support LMG",
+			SlotIds.Primary,
+			8,
+			14,
+			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare },
+			{ "lmg", "sustained-fire", "support" },
+			WeaponIds.LightMachineGun
+		),
+		item(
+			"razor-compact-smg",
+			"Razor Compact SMG",
+			SlotIds.Primary,
+			8,
+			14,
+			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare },
+			{ "smg", "close-range", "horde-control" },
+			WeaponIds.SubmachineGun
 		),
 		item(
 			"warden-sidearm",
@@ -117,6 +139,7 @@ local EquipmentRewardConfig = {
 }
 
 local ids = {}
+local rewardWeaponIds = {}
 for _, definition in EquipmentRewardConfig.Definitions do
 	assert(ids[definition.Id] == nil, "equipment definition IDs must be unique")
 	ids[definition.Id] = true
@@ -126,26 +149,24 @@ for _, definition in EquipmentRewardConfig.Definitions do
 	)
 	assert(#definition.AllowedRarities >= 1, "equipment requires at least one rarity")
 
-	-- A weapon slot that drives no weapon would equip and change nothing, and a
-	-- weapon on armor would have no runtime meaning. Both are authoring errors.
 	local drivesWeapon = definition.Slot == SlotIds.Primary or definition.Slot == SlotIds.Secondary
 	if drivesWeapon then
 		assert(type(definition.WeaponId) == "string", definition.Id .. " must name the weapon it equips")
+		assert(FirearmConfig.isKnownWeaponId(definition.WeaponId), definition.Id .. " names an unknown firearm definition")
+		rewardWeaponIds[definition.WeaponId] = true
 	else
 		assert(definition.WeaponId == nil, definition.Id .. " occupies a non-weapon slot and must name no weapon")
 	end
 end
 
--- Every authored weapon link must resolve to a real combat weapon id.
-local knownWeaponIds = {}
-for _, weaponId in WeaponIds do
-	knownWeaponIds[weaponId] = true
+-- Patch 0.9 authoring invariant: every firearm deliberately exposed as an
+-- in-run discovery must have a durable equipment representation. This prevents
+-- a proven combat identity from becoming a one-run-only dead end when content
+-- authors expand the discoverable roster.
+for _, weaponId in FirearmConfig.DiscoverableWeaponIds do
+	assert(rewardWeaponIds[weaponId] == true, "discoverable firearm lacks durable reward representation: " .. weaponId)
 end
-for _, definition in EquipmentRewardConfig.Definitions do
-	if definition.WeaponId ~= nil then
-		assert(knownWeaponIds[definition.WeaponId] == true, definition.Id .. " names an unknown weapon")
-	end
-end
+assert(rewardWeaponIds[FirearmConfig.ServicePistol.WeaponId] == true, "opening pistol needs a durable sidearm representation")
 
 for sourceId, source in EquipmentRewardConfig.Sources do
 	assert(source.MinimumPower >= 1 and source.MaximumPower >= source.MinimumPower, "invalid source power bounds")
