@@ -13,7 +13,7 @@ local controllerSource =
 local bootstrapSource = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 
 assertThat(
-	controllerSource:find('WaitForChild("OperativeProgressionNetwork")', 1, true) ~= nil,
+	controllerSource:find('WaitForChild("OperativeProgressionNetwork"', 1, true) ~= nil,
 	"presentation must consume the dedicated server-owned durable progression read surface"
 )
 assertThat(

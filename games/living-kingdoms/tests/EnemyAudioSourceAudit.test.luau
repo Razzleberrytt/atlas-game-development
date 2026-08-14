@@ -162,7 +162,12 @@ do
 end
 
 assertThat(contains(bootstrap, "EnemyAudioController.start()"), "client bootstrap must start hostile audio")
-local _, startCount = string.gsub(bootstrap, "EnemyAudioController.start()", "")
+--[[
+	Escaped, because this counts occurrences with a Lua pattern: unescaped, the
+	`.` matched any character and `()` was an empty capture, so it counted more
+	than the call it meant to count. The guarantee is one actual start call.
+]]
+local _, startCount = string.gsub(bootstrap, "EnemyAudioController%.start%(%)", "")
 assertThat(startCount == 1, "hostile audio must start exactly once")
 
 assertThat(

@@ -8,6 +8,14 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+--[[
+	Bounded so a network folder the server has not created yet fails this one
+	controller instead of stalling the whole client bootstrap. The bootstrap
+	requires controllers in a deliberate order with no isolation, so an
+	unbounded wait here would hold every controller after it forever.
+]]
+local NETWORK_WAIT_SECONDS = 20
 local Workspace = game:GetService("Workspace")
 
 local Contracts = require(ReplicatedStorage.Shared.Combat.AmmunitionCachePresentationContracts)
@@ -36,7 +44,7 @@ local descendantRemovingConnection: RBXScriptConnection? = nil
 local consumedCacheIds: { [string]: boolean } = {}
 local bindingsByCacheId: { [string]: CacheBinding } = {}
 
-local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
+local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork", NETWORK_WAIT_SECONDS)
 local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: RemoteEvent
 
 local function isNonEmptyString(value: unknown): boolean

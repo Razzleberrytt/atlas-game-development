@@ -145,7 +145,7 @@ do
 		listener.name .. " must not bind State directly"
 	)
 	assertThat(
-		not contains(listener.source, 'WaitForChild("HordeNetwork")'),
+		not contains(listener.source, 'WaitForChild("HordeNetwork"'),
 		listener.name .. " must not own HordeNetwork transport"
 	)
 	assertThat(
@@ -169,10 +169,10 @@ local earlyListenerPath = "games/living-kingdoms/src/client/State/HordeStateEarl
 for _, path in luauFilesUnder("games/living-kingdoms/src/client", {}) do
 	local source = fs.readFile(path)
 	if path == earlyListenerPath then
-		assertThat(contains(source, 'WaitForChild("HordeNetwork")'), "bridge must own HordeNetwork transport")
+		assertThat(contains(source, 'WaitForChild("HordeNetwork"'), "bridge must own HordeNetwork transport")
 	else
 		assertThat(
-			not contains(source, 'WaitForChild("HordeNetwork")'),
+			not contains(source, 'WaitForChild("HordeNetwork"'),
 			"only HordeStateEarlyListener may resolve HordeNetwork transport: " .. path
 		)
 	end

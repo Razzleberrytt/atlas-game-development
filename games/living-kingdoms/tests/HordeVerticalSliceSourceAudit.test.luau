@@ -234,7 +234,7 @@ assertThat(
 	"environment ambience must consume horde threat through the application bridge"
 )
 assertThat(
-	not contains(ambience, 'WaitForChild("HordeNetwork")'),
+	not contains(ambience, 'WaitForChild("HordeNetwork"'),
 	"environment ambience must not own HordeNetwork transport"
 )
 for _, required in { "KILL CHAIN", "SLAUGHTER", "MASSACRE", "ANNIHILATION", "APOCALYPSE" } do

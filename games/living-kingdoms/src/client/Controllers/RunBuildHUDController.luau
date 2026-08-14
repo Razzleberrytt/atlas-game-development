@@ -16,6 +16,14 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+--[[
+	Bounded so a network folder the server has not created yet fails this one
+	controller instead of stalling the whole client bootstrap. The bootstrap
+	requires controllers in a deliberate order with no isolation, so an
+	unbounded wait here would hold every controller after it forever.
+]]
+local NETWORK_WAIT_SECONDS = 20
 local GuiService = game:GetService("GuiService")
 local UserInputService = game:GetService("UserInputService")
 
@@ -100,7 +108,7 @@ local function choiceSubtitleText(familyId: string, tokens: { string }): string
 	return "Temporary expedition power. Select a relic to choose it."
 end
 
-local runBuildNetwork = ReplicatedStorage:WaitForChild("RunBuildNetwork")
+local runBuildNetwork = ReplicatedStorage:WaitForChild("RunBuildNetwork", NETWORK_WAIT_SECONDS)
 local stateRemote = runBuildNetwork:WaitForChild("State") :: RemoteEvent
 local readStateRemote = runBuildNetwork:WaitForChild("ReadState") :: RemoteFunction
 local submitChoiceRemote = runBuildNetwork:WaitForChild("SubmitRelicChoice") :: RemoteEvent

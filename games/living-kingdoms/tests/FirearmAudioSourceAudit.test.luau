@@ -123,7 +123,7 @@ do
 end
 
 assertThat(contains(bootstrap, "WeaponAudioController.start()"), "client bootstrap must start firearm audio")
-local _, startCount = string.gsub(bootstrap, "WeaponAudioController.start()", "")
+local _, startCount = string.gsub(bootstrap, "WeaponAudioController%.start%(%)", "")
 assertThat(startCount == 1, "firearm audio must start exactly once")
 
 assertThat(

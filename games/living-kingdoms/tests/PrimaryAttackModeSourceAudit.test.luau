@@ -112,12 +112,22 @@ assert(
 	contains(weapon, "fireIntentRemote:FireServer(isFiring, direction)"),
 	"existing firearm authority path must remain intact"
 )
+--[[
+	The guarantee is order, not adjacency: the mode router must start after the
+	firearm controller so initial melee mode can safely take ownership. The
+	bootstrap now isolates each controller step, so the two calls are no longer
+	neighbouring lines while the ordering they encode is unchanged.
+]]
+local firearmStartAt = string.find(clientBootstrap, "WeaponController.start()", 1, true)
+local modeRouterStartAt = string.find(clientBootstrap, "PrimaryAttackModeController.start()", 1, true)
 assert(
-	contains(clientBootstrap, "WeaponController.start()\nPrimaryAttackModeController.start()"),
+	firearmStartAt ~= nil and modeRouterStartAt ~= nil and firearmStartAt < modeRouterStartAt,
 	"mode router must start after the firearm controller so initial melee mode can safely take ownership"
 )
+local firearmPresentationAt = string.find(clientBootstrap, "WeaponPresentationController.start()", 1, true)
+local meleePresentationAt = string.find(clientBootstrap, "MeleePresentationController.start()", 1, true)
 assert(
-	contains(clientBootstrap, "WeaponPresentationController.start()\nMeleePresentationController.start()"),
+	firearmPresentationAt ~= nil and meleePresentationAt ~= nil and firearmPresentationAt < meleePresentationAt,
 	"melee presentation must reconcile after firearm presentation starts"
 )
 assert(

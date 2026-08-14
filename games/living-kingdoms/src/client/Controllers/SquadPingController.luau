@@ -5,6 +5,14 @@
 local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+--[[
+	Bounded so a network folder the server has not created yet fails this one
+	controller instead of stalling the whole client bootstrap. The bootstrap
+	requires controllers in a deliberate order with no isolation, so an
+	unbounded wait here would hold every controller after it forever.
+]]
+local NETWORK_WAIT_SECONDS = 20
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
@@ -25,7 +33,7 @@ type Marker = {
 
 local Controller = {}
 local localPlayer = Players.LocalPlayer
-local network = ReplicatedStorage:WaitForChild("SquadPingNetwork")
+local network = ReplicatedStorage:WaitForChild("SquadPingNetwork", NETWORK_WAIT_SECONDS)
 local intentRemote = network:WaitForChild("Intent") :: RemoteEvent
 local stateRemote = network:WaitForChild("State") :: RemoteEvent
 

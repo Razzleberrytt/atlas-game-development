@@ -157,7 +157,12 @@ do
 	assertThat(string.find(resolver, required, 1, true) ~= nil, "Walker pose resolver missing: " .. required)
 end
 
-local requireIndex = string.find(bootstrap, "local EnemyPresentationController = require", 1, true)
+--[[
+	The guarantee is that the controller is required before it is started. The
+	binding is no longer written as a bare `local X = require(...)` because the
+	bootstrap now isolates each controller, so this holds the require itself.
+]]
+local requireIndex = string.find(bootstrap, "require(script.Controllers.EnemyPresentationController)", 1, true)
 local startIndex = string.find(bootstrap, "EnemyPresentationController.start()", 1, true)
 assertThat(
 	requireIndex ~= nil and startIndex ~= nil and requireIndex < startIndex,

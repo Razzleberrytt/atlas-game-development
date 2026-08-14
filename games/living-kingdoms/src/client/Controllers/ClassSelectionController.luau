@@ -10,13 +10,21 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+--[[
+	Bounded so a network folder the server has not created yet fails this one
+	controller instead of stalling the whole client bootstrap. The bootstrap
+	requires controllers in a deliberate order with no isolation, so an
+	unbounded wait here would hold every controller after it forever.
+]]
+local NETWORK_WAIT_SECONDS = 20
+
 local ClassContracts = require(ReplicatedStorage.Shared.Classes.ClassContracts)
 local ClassConfig = require(ReplicatedStorage.Shared.Config.ClassConfig)
 
 local SelectionStateIds = ClassContracts.ClassSelectionStateIds
 
 local localPlayer = Players.LocalPlayer
-local classNetwork = ReplicatedStorage:WaitForChild("ClassNetwork")
+local classNetwork = ReplicatedStorage:WaitForChild("ClassNetwork", NETWORK_WAIT_SECONDS)
 local selectionIntentRemote = classNetwork:WaitForChild("SelectionIntent") :: RemoteEvent
 local stateRemote = classNetwork:WaitForChild("State") :: RemoteEvent
 local readStateFunction = classNetwork:WaitForChild("ReadState") :: RemoteFunction

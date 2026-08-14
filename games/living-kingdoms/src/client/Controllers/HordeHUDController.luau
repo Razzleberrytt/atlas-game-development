@@ -8,6 +8,14 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+--[[
+	Bounded so a network folder the server has not created yet fails this one
+	controller instead of stalling the whole client bootstrap. The bootstrap
+	requires controllers in a deliberate order with no isolation, so an
+	unbounded wait here would hold every controller after it forever.
+]]
+local NETWORK_WAIT_SECONDS = 20
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
@@ -27,7 +35,7 @@ local localPlayer = Players.LocalPlayer
 
 -- Progression is owned by RunProgressionService. The combat HUD only renders its
 -- published snapshot and submits one offered upgrade ID back to it.
-local progressionNetwork = ReplicatedStorage:WaitForChild("ProgressionNetwork")
+local progressionNetwork = ReplicatedStorage:WaitForChild("ProgressionNetwork", NETWORK_WAIT_SECONDS)
 local progressionStateRemote = progressionNetwork:WaitForChild("State") :: RemoteEvent
 local progressionReadStateRemote = progressionNetwork:WaitForChild("ReadState") :: RemoteFunction
 local progressionChooseUpgradeRemote = progressionNetwork:WaitForChild("ChooseUpgrade") :: RemoteEvent

@@ -114,10 +114,7 @@ assertThat(config.MaximumRememberedShotIds <= 256, "damage text deduplication me
 assertThat(config.BrutalDamageMultiplier > config.HotDamageMultiplier, "damage color thresholds are not monotonic")
 
 assertThat(
-	contains(
-		bootstrapSource,
-		"local FloatingDamageTextController = require(script.Controllers.FloatingDamageTextController)"
-	),
+	contains(bootstrapSource, "require(script.Controllers.FloatingDamageTextController)"),
 	"client bootstrap does not require floating damage text"
 )
 assertThat(

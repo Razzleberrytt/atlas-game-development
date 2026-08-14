@@ -11,6 +11,14 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+--[[
+	Bounded so a network folder the server has not created yet fails this one
+	controller instead of stalling the whole client bootstrap. The bootstrap
+	requires controllers in a deliberate order with no isolation, so an
+	unbounded wait here would hold every controller after it forever.
+]]
+local NETWORK_WAIT_SECONDS = 20
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
@@ -49,7 +57,7 @@ local localSwingStartedAtClock: number? = nil
 local localHitConfirmedAtClock: number? = nil
 local localImpactConfirmedAtClock: number? = nil
 local localHitWasKill = false
-local meleeNetwork = ReplicatedStorage:WaitForChild("MeleeNetwork")
+local meleeNetwork = ReplicatedStorage:WaitForChild("MeleeNetwork", NETWORK_WAIT_SECONDS)
 local presentationRemote = meleeNetwork:WaitForChild("Presentation") :: RemoteEvent
 
 local function shouldPresentMelee(player: Player): boolean
