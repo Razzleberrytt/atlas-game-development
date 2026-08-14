@@ -89,6 +89,23 @@ local function isMember(playerId: number): boolean
 	return false
 end
 
+local function activeRunParticipant(playerId: number): boolean
+	local expedition = ExpeditionLiveRuntimeService.readSnapshot()
+	if expedition == nil then
+		return false
+	end
+	local roster = ExpeditionRunRosterService.read(expedition.RunId)
+	if roster == nil then
+		return false
+	end
+	for _, participantUserId in roster.ParticipantUserIds do
+		if participantUserId == playerId then
+			return true
+		end
+	end
+	return false
+end
+
 local function applyDurableStartingLoadouts(members: { any })
 	for _, member in members do
 		local player = Players:GetPlayerByUserId(member.PlayerId)
@@ -136,8 +153,6 @@ local function attemptLaunch()
 		return
 	end
 
-	-- The lifecycle owner never chooses to replay. It only prepares a fresh run
-	-- after this lobby has consumed a deliberate ready-state launch.
 	if not OperationLifecycleService.prepareForLaunch() then
 		warn("[ExpeditionLobby] lifecycle preparation rejected")
 		launchInFlight = false
@@ -145,18 +160,10 @@ local function attemptLaunch()
 		return
 	end
 
-	-- Replay reset deliberately clears all temporary power first. Only after that
-	-- clean boundary do we apply a durable owner-equipped weapon from persistence.
-	-- A player with no saved weapon remains on the Field Hatchet opening path.
 	applyDurableStartingLoadouts(consumed.Snapshot.Members)
-
-	-- The player has now deliberately left safe arrival; release the mission
-	-- clock and horde pressure that stayed dormant since server boot.
 	MissionDirectorService.armPressure()
 	HordeExperienceService.armPressure()
 
-	-- MVP 0.1 deliberately runs the authored First Descent seed so the complete
-	-- route is reproducible during build-through and the consolidated Studio pass.
 	local launch = ExpeditionLiveRuntimeService.startExpedition({
 		PartySize = consumed.Snapshot.MemberCount,
 		Seed = FirstDungeonContentConfig.CanonicalSeed,
@@ -206,13 +213,20 @@ request.OnServerInvoke = function(player: Player, action: any, payload: any): an
 		return response(false, "InvalidAction")
 	end
 
+	local activeExpedition = ExpeditionLiveRuntimeService.readSnapshot()
 	local result
 	if action == "Join" then
+		if activeExpedition ~= nil and not activeRunParticipant(player.UserId) then
+			return response(false, "LateJoinClosed")
+		end
 		result = lobby:join(player.UserId)
 	elseif action == "Leave" then
+		if activeExpedition ~= nil then
+			return response(false, "ActiveExpeditionMembershipLocked")
+		end
 		result = lobby:leave(player.UserId)
 	elseif action == "SetReady" then
-		if ExpeditionLiveRuntimeService.readSnapshot() ~= nil then
+		if activeExpedition ~= nil then
 			return response(false, "ExpeditionActive")
 		end
 		local ready = if type(payload) == "table" then payload.Ready else nil
@@ -233,6 +247,9 @@ readState.OnServerInvoke = function(_player: Player): any
 end
 
 Players.PlayerRemoving:Connect(function(player)
+	-- Disconnect removes the presentation/lobby member so a returning run
+	-- participant has a clean reconnect path. The immutable run roster is not
+	-- mutated, preserving reward credit and active-run identity.
 	lobby:leave(player.UserId)
 	broadcast()
 end)
