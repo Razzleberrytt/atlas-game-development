@@ -50,6 +50,20 @@ Older manual Studio/device/play gates are historical evidence instructions, not 
 
 Calling that 100/100 would misreport what was built. The durable-state work Patch 0.7 set out to harden is done and machine-checked; the deferred rows are recorded as open design decisions rather than closed ones.
 
+## Ranked task backlogs
+
+Each patch now has a ranked 10-task-batch backlog. **These sit under their acceptance documents, not beside them** — an acceptance doc decides whether a patch answered its exit question; a backlog ranks the hardening, verification, and deferral-closing work underneath that decision.
+
+| Backlog | Authority it sits under |
+|---|---|
+| `PATCH-0.7-100-TASK-ROI-BACKLOG.md` | complete: 86 done, 14 deferred with reasons |
+| `PATCH-0.8-100-TASK-HARDENING-BACKLOG.md` | `PATCH-0.8-ACCEPTANCE.md` |
+| `PATCH-0.9-100-TASK-HARDENING-BACKLOG.md` | `PATCH-0.9-ACCEPTANCE.md`, `PATCH-0.9-CONTENT-PIPELINE.md` |
+| `RC-1.0-100-TASK-BACKLOG.md` | none yet — RC acceptance is written by row #91 of that backlog |
+| `PATCH-0.1-0.7-REVISION-BACKLOG.md` | the accepted patches themselves; it reopens none of them |
+
+Two properties hold across all of them. A row that should not be built is **DEFERRED with its reason**, never quietly completed. A row whose answer is experiential is **UNMEASURED**, which is a boundary of what automation can say and not a gap in the work — roughly forty of the RC 1.0 rows are of that kind, because RC is the first exit question a green gate cannot answer.
+
 ## NOW
 
 **Patch 0.7 durable-state hardening is complete. Choose the next patch, or revisit a deferred row if a design decision now requires it.**
