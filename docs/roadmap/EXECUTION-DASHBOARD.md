@@ -38,11 +38,13 @@ Older manual Studio/device/play gates are historical evidence instructions, not 
 
 - **Batch 8 (#71–#80) is DONE:** a deterministic fault matrix interrupts reward writes, dismantle writes, and migrations mid-flight, crashes a server before and after the durable commit, hops one player across five servers, and shuts down both cleanly and during a partial storage outage — asserting each time that durable truth wins over stale process memory. `InventoryLiveService.destroy` now returns the shutdown summary, so a partial outage is distinguishable from a clean close.
 
+- **Batch 9 (#81–#83, #85, #89, #90) is DONE:** deterministic one-shot fault injection for reads, commits, and transform retries; a reason-classification audit that reads the reasons out of the sources rather than a hand-kept list; a pure record invariant checker for duplicate items, missing ledgers, invalid equips and ownership drift; and a `persistence-hardening` validation profile. **#84, #86–#88 are DEFERRED, not done.**
+
 ## NOW
 
-**Execute Patch 0.7 Batch 9, tasks #81–#90, from `PATCH-0.7-100-TASK-ROI-BACKLOG.md`.**
+**Execute Patch 0.7 Batch 10, tasks #91–#100, from `PATCH-0.7-100-TASK-ROI-BACKLOG.md`.**
 
-Batch 9 adds automated chaos, diagnostics, and recovery evidence.
+Batch 10 binds the machine-readable Patch 0.7 acceptance matrix.
 
 Required merge gate:
 
@@ -75,8 +77,8 @@ A concrete data-loss, duplication, authority, migration, or deterministic valida
 | 6 | 51–60 | capacity, overflow, retention | DONE (54–57 deferred) |
 | 7 | 61–70 | durable progression/currency/unlocks | DONE (64–69 deferred) |
 | 8 | 71–80 | disconnect/rejoin/crash/shutdown correctness | DONE |
-| 9 | 81–90 | automated chaos + diagnostics | ACTIVE |
-| 10 | 91–100 | machine-readable Patch 0.7 acceptance | queued |
+| 9 | 81–90 | automated chaos + diagnostics | DONE (84, 86–88 deferred) |
+| 10 | 91–100 | machine-readable Patch 0.7 acceptance | ACTIVE |
 
 ## Manual evidence backlog
 

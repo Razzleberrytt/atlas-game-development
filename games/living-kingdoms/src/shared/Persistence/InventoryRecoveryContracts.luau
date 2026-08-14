@@ -14,12 +14,13 @@
 	with it, it is still the only thing the player has.
 ]]
 
-export type Classification = "Transient" | "Corrupt"
+export type Classification = "Transient" | "Operational" | "Corrupt"
 
 local InventoryRecoveryContracts = {}
 
 InventoryRecoveryContracts.Classifications = table.freeze({
 	Transient = "Transient" :: Classification,
+	Operational = "Operational" :: Classification,
 	Corrupt = "Corrupt" :: Classification,
 })
 
@@ -34,6 +35,53 @@ local TRANSIENT_REASON_IDS = table.freeze({
 	SaveFailed = true,
 	StorageUpdateFailed = true,
 	UnreconciledRead = true,
+	LeaseStoreFailed = true,
+	LeaseLost = true,
+	--[[
+		A lost migration race is entirely retryable: another server simply wrote
+		first, and the next load reads what it wrote. Classing it as corruption
+		would tell a caller not to retry the one thing that fixes it.
+	]]
+	MigrationRaceDetected = true,
+})
+
+--[[
+	Operational reasons are ordinary refusals: the request was understood and
+	declined, or a bound was reached. Retrying the same request will fail the
+	same way, but nothing is damaged. Folding these into either other class
+	would be wrong in both directions -- a caller would either retry forever or
+	quarantine a perfectly good record because a player asked for something twice.
+]]
+local OPERATIONAL_REASON_IDS = table.freeze({
+	ServiceDestroyed = true,
+	PlayerNotLoaded = true,
+	InventoryNotLoaded = true,
+	InvalidLoadRequest = true,
+	InvalidReleaseRequest = true,
+	InvalidEquipRequest = true,
+	InvalidDismantleRequest = true,
+	InvalidAcquireRequest = true,
+	InvalidRenewRequest = true,
+	InvalidPlayerIdentity = true,
+	LeaseNotOwned = true,
+	LeaseHeldByAnotherServer = true,
+	LeaseAlreadyHeld = true,
+	DismantleRateLimited = true,
+	RateLimited = true,
+	StaleDismantleRequest = true,
+	NoActiveExpedition = true,
+	InvalidCandidateItem = true,
+	InvalidReward = true,
+	ItemNotOwned = true,
+	ItemEquipped = true,
+	SlotMismatch = true,
+	CrossPlayerInventoryAccess = true,
+	SessionLeaseRequired = true,
+	RewardAlreadyApplied = true,
+	RewardGrantConflict = true,
+	TransactionAlreadyApplied = true,
+	RecordSizeExceeded = true,
+	MutationLedgerBoundExceeded = true,
 })
 
 local CORRUPT_REASON_IDS = table.freeze({
@@ -48,11 +96,23 @@ local CORRUPT_REASON_IDS = table.freeze({
 	EquippedItemMismatch = true,
 	SchemaDowngradeNotAuthored = true,
 	MissingMigrationStep = true,
+	--[[
+		A record whose stored owner is not the player who asked for it is damage,
+		not a refusal: something wrote the wrong identity into durable state.
+	]]
+	InventoryOwnerMismatch = true,
+	LeaseRecordMalformed = true,
 })
 
 function InventoryRecoveryContracts.classify(reasonId: any): Classification
-	if type(reasonId) == "string" and TRANSIENT_REASON_IDS[reasonId] == true then
+	if type(reasonId) ~= "string" then
+		return InventoryRecoveryContracts.Classifications.Corrupt
+	end
+	if TRANSIENT_REASON_IDS[reasonId] == true then
 		return InventoryRecoveryContracts.Classifications.Transient
+	end
+	if OPERATIONAL_REASON_IDS[reasonId] == true then
+		return InventoryRecoveryContracts.Classifications.Operational
 	end
 	return InventoryRecoveryContracts.Classifications.Corrupt
 end
@@ -63,7 +123,11 @@ end
 
 function InventoryRecoveryContracts.isClassified(reasonId: any): boolean
 	return type(reasonId) == "string"
-		and (TRANSIENT_REASON_IDS[reasonId] == true or CORRUPT_REASON_IDS[reasonId] == true)
+		and (
+			TRANSIENT_REASON_IDS[reasonId] == true
+			or OPERATIONAL_REASON_IDS[reasonId] == true
+			or CORRUPT_REASON_IDS[reasonId] == true
+		)
 end
 
 --[[

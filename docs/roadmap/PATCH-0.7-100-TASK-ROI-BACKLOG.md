@@ -133,20 +133,22 @@ Before this 100-task queue began, Patch 0.7 already had: symmetric resident-reco
 79. **[DONE]** Add shutdown partial-storage-outage fixture.
 80. **[DONE]** Add restart/rejoin invariant suite proving durable truth wins over stale process memory.
 
-## Batch 9 — Automated chaos, diagnostics, and recovery evidence (#81–#90) — ACTIVE
+## Batch 9 — Automated chaos, diagnostics, and recovery evidence (#81–#90) — DONE (84, 86–88 DEFERRED, see note)
 
-81. Add deterministic fault-injection store wrapper for read failures.
-82. Add deterministic fault-injection store wrapper for update failures.
-83. Add transform-retry fault injection with state changes between invocations.
-84. Add configurable latency injection without real wall-clock waiting.
-85. Add persistence reason-id/schema audit so failures remain machine diagnosable.
-86. Add server-only persistence diagnostic snapshot with no client authority.
-87. Add counters for read/write/retry/reconcile/quarantine outcomes.
-88. Add automated seedable multi-server persistence stress simulation.
-89. Add invariant checker for duplicate items, missing ledgers, invalid equips, and ownership drift.
-90. Add one canonical `persistence-hardening` validation profile consumed by `scripts/validate.py full`.
+81. **[DONE]** Add deterministic fault-injection store wrapper for read failures.
+82. **[DONE]** Add deterministic fault-injection store wrapper for update failures.
+83. **[DONE]** Add transform-retry fault injection with state changes between invocations.
+84. **[DEFERRED]** Add configurable latency injection without real wall-clock waiting.
+85. **[DONE]** Add persistence reason-id/schema audit so failures remain machine diagnosable.
+86. **[DEFERRED]** Add server-only persistence diagnostic snapshot with no client authority.
+87. **[DEFERRED]** Add counters for read/write/retry/reconcile/quarantine outcomes.
+88. **[DEFERRED]** Add automated seedable multi-server persistence stress simulation.
+89. **[DONE]** Add invariant checker for duplicate items, missing ledgers, invalid equips, and ownership drift.
+90. **[DONE]** Add one canonical `persistence-hardening` validation profile consumed by `scripts/validate.py full`.
 
-## Batch 10 — Automated Patch 0.7 acceptance + release hardening (#91–#100)
+> **#84, #86–#88 deferred, not done.** #84 injects latency without a wall clock, but no persistence path measures elapsed time — every fixture is already free of real waiting, so the injector would have nothing to affect. #86/#87 add a server-only diagnostic snapshot and outcome counters; the diagnostic surface that exists today (`ExpeditionLiveRuntimeService`) earned its counters because a live operator reads them during play, and nothing reads persistence counters yet — adding an unread telemetry surface is cost without a consumer. #88 is a seedable multi-server stress simulation; the deterministic fault matrix (#71–#80) already drives the same paths across servers with named, reproducible scenarios, and a randomised sweep on top would trade that legibility for coverage the matrix already has. Revisit #86/#87 when an operator surface actually consumes them.
+
+## Batch 10 — Automated Patch 0.7 acceptance + release hardening (#91–#100) — ACTIVE
 
 91. Define machine-readable Patch 0.7 acceptance matrix.
 92. Bind every acceptance row to at least one automated fixture/audit.
