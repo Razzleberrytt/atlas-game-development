@@ -269,4 +269,41 @@ check(
 	"progression must survive a reload rather than resetting to a fresh account"
 )
 
+--[[
+	#70 cross-domain binding. Progression is a projection, not a second record,
+	so the only way it can be wrong is by being computed from a ledger other than
+	the one the caller believes it holds. The snapshot carries an identity derived
+	from its source so a stale projection is detectable rather than plausible.
+]]
+check(earned.SourceLedgerIdentity ~= nil, "a projection must name the ledger it was derived from")
+check(
+	fresh.SourceLedgerIdentity ~= earned.SourceLedgerIdentity,
+	"a ledger that gained a grant must produce a different projection identity"
+)
+check(
+	earned.SourceLedgerIdentity ~= veteran.SourceLedgerIdentity,
+	"a ledger that gained five more grants must produce a different projection identity"
+)
+
+local recomputed = progressionResolver.resolve(progressionConfig, persistence:getRecord(PLAYER).AppliedRewardGrantIds)
+check(
+	recomputed.SourceLedgerIdentity == veteran.SourceLedgerIdentity,
+	"an unchanged ledger must reproduce the same projection identity"
+)
+check(recomputed.Rank == veteran.Rank, "an unchanged ledger must reproduce the same rank")
+
+--[[
+	The identity must follow the ledger's content, not its iteration order --
+	Luau hash order is not stable, so an order-sensitive identity would report
+	drift that never happened.
+]]
+local shuffled = {}
+for grantId in veteranLedger do
+	shuffled[grantId] = true
+end
+check(
+	progressionResolver.resolve(progressionConfig, shuffled).SourceLedgerIdentity == veteran.SourceLedgerIdentity,
+	"the projection identity must depend on ledger content, not iteration order"
+)
+
 print("OperativeProgressionLedgerShape: persistence-written ledgers resolve through the real progression resolver")

@@ -34,11 +34,13 @@ Older manual Studio/device/play gates are historical evidence instructions, not 
 
 - **Batch 6 (#51–#53, #58–#60) is DONE:** durable records carry a byte budget under the DataStore ceiling, estimated deterministically and pessimistically, and an oversized write is refused before submission rather than failing silently at the platform limit forever after. **#54–#57 are DEFERRED, not done** — an overflow bucket presupposes a durable inventory capacity the game does not have.
 
+- **Batch 7 (#61–#63, #70) is DONE:** every per-player service was surveyed for a durable path and the result recorded in `../production/PATCH-0.7-DURABLE-VALUE-DOMAINS.md`. Everything durable is account-scoped; everything in memory is run- or session-scoped by design. Progression snapshots now carry an identity derived from the ledger they were projected from, so a stale projection is detectable. **#64–#69 are DEFERRED, not done** — they would create a second authority over derived facts, or a currency no gameplay reads.
+
 ## NOW
 
-**Execute Patch 0.7 Batch 7, tasks #61–#70, from `PATCH-0.7-100-TASK-ROI-BACKLOG.md`.**
+**Execute Patch 0.7 Batch 8, tasks #71–#80, from `PATCH-0.7-100-TASK-ROI-BACKLOG.md`.**
 
-Batch 7 expands valuable durable state safely.
+Batch 8 hardens disconnect, rejoin, crash, and shutdown correctness.
 
 Required merge gate:
 
@@ -52,9 +54,9 @@ CI equivalent is accepted as the canonical automated result.
 
 After Batch 2 is automated-green and merged:
 
-1. mark #61–#70 DONE;
-2. activate #71–#80;
-3. harden disconnect/rejoin/crash/shutdown correctness;
+1. mark #71–#80 DONE;
+2. activate #81–#90;
+3. add automated chaos and diagnostics;
 4. continue in exact 10-task batches through all 100 Patch 0.7 tasks.
 
 A concrete data-loss, duplication, authority, migration, or deterministic validation defect may preempt the queue. Missing manual testing may not.
@@ -69,8 +71,8 @@ A concrete data-loss, duplication, authority, migration, or deterministic valida
 | 4 | 31–40 | valuable mutation idempotency | DONE |
 | 5 | 41–50 | migration, quarantine, recovery | DONE |
 | 6 | 51–60 | capacity, overflow, retention | DONE (54–57 deferred) |
-| 7 | 61–70 | durable progression/currency/unlocks | ACTIVE |
-| 8 | 71–80 | disconnect/rejoin/crash/shutdown correctness | queued |
+| 7 | 61–70 | durable progression/currency/unlocks | DONE (64–69 deferred) |
+| 8 | 71–80 | disconnect/rejoin/crash/shutdown correctness | ACTIVE |
 | 9 | 81–90 | automated chaos + diagnostics | queued |
 | 10 | 91–100 | machine-readable Patch 0.7 acceptance | queued |
 

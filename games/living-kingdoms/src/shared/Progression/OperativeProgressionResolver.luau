@@ -225,16 +225,27 @@ function Resolver.resolve(config: ProgressionConfig, appliedRewardGrantIds: unkn
 		Grant ids are the keys. Values are validated the same way persistence
 		validates them on load, so the two owners agree on what a ledger is.
 	]]
+	--[[
+		#70 cross-domain binding. Progression is a projection of the durable grant
+		ledger, not a second record, so the only way it can be wrong is by being
+		computed from a ledger that is not the one the caller thinks it holds.
+		Deriving an identity from the source here lets a consumer detect a stale
+		or mismatched projection instead of trusting a rank that was correct for
+		some other ledger.
+	]]
+	local sourceGrantIds = {}
 	local completedRunIds = {}
 	for grantId, applied in appliedRewardGrantIds :: any do
 		if type(grantId) ~= "string" or applied ~= true then
 			return rejected("InvalidGrantLedger")
 		end
+		table.insert(sourceGrantIds, grantId)
 		local runId = completedRunId(config, grantId)
 		if runId ~= nil then
 			completedRunIds[runId] = true
 		end
 	end
+	table.sort(sourceGrantIds)
 
 	local completedExpeditions = 0
 	for _ in completedRunIds do
@@ -257,6 +268,12 @@ function Resolver.resolve(config: ProgressionConfig, appliedRewardGrantIds: unkn
 	return table.freeze({
 		Accepted = true,
 		ReasonId = "ProgressionResolved",
+		SourceLedgerIdentity = string.format(
+			"%s|grants=%d|%s",
+			config.Version,
+			#sourceGrantIds,
+			table.concat(sourceGrantIds, ";")
+		),
 		CompletedExpeditions = completedExpeditions,
 		Rank = current.Rank,
 		RankId = current.Id,

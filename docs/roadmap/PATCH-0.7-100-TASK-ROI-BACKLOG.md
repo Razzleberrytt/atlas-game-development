@@ -105,20 +105,22 @@ Before this 100-task queue began, Patch 0.7 already had: symmetric resident-reco
 
 > **#54–#57 deferred, not done.** An overflow bucket presupposes a durable inventory capacity limit. The game has no such limit: the only capacity concept is the run-scoped survival pack in `RPGMenuController`, and durable gear is unbounded by design. Building a second durable authority with a claim path, its own idempotency ledger, and its own lease interaction — for excess that cannot currently exist — would be speculative expansion. The real hazard behind these rows, a record growing until it stops saving, is covered by #51–#53 and the ledger bound from #39. Revisit when a durable capacity limit is actually designed.
 
-## Batch 7 — Expand valuable durable state safely (#61–#70) — ACTIVE
+## Batch 7 — Expand valuable durable state safely (#61–#70) — DONE (64–69 DEFERRED, see note)
 
-61. Inventory all player-value domains that currently survive only in memory.
-62. Rank those domains by player loss impact and product value.
-63. Define canonical account-vs-character ownership boundary.
-64. Add durable progression record contract using the hardened storage primitives.
-65. Add durable unlock record contract.
-66. Add durable currency contract only for currencies already proven necessary by gameplay.
-67. Add atomic progression mutation transaction identity.
-68. Add atomic unlock mutation transaction identity.
-69. Add atomic currency mutation transaction identity.
-70. Add cross-domain snapshot/version contract so inventory/progression/unlocks cannot silently diverge.
+61. **[DONE]** Inventory all player-value domains that currently survive only in memory.
+62. **[DONE]** Rank those domains by player loss impact and product value.
+63. **[DONE]** Define canonical account-vs-character ownership boundary.
+64. **[DEFERRED]** Add durable progression record contract using the hardened storage primitives.
+65. **[DEFERRED]** Add durable unlock record contract.
+66. **[DEFERRED]** Add durable currency contract only for currencies already proven necessary by gameplay.
+67. **[DEFERRED]** Add atomic progression mutation transaction identity.
+68. **[DEFERRED]** Add atomic unlock mutation transaction identity.
+69. **[DEFERRED]** Add atomic currency mutation transaction identity.
+70. **[DONE]** Add cross-domain snapshot/version contract so inventory/progression/unlocks cannot silently diverge.
 
-## Batch 8 — Disconnect, rejoin, crash, and shutdown correctness (#71–#80)
+> **#64–#69 deferred, not done.** See `../production/PATCH-0.7-DURABLE-VALUE-DOMAINS.md`. Operative rank and unlocks are a deterministic projection of the durable grant ledger, not stored state; a separate durable record for them would be a second authority over the same facts, free to disagree with the ledger it came from — the exact divergence #70 exists to prevent. No durable currency exists (`RunCurrencyAmount` is run-scoped by name and use), so #66 has no qualifying currency and #67–#69 have no durable mutations to make atomic. The binding that actually protects these domains is #70, which is done.
+
+## Batch 8 — Disconnect, rejoin, crash, and shutdown correctness (#71–#80) — ACTIVE
 
 71. Add disconnect-during-reward-write deterministic simulation.
 72. Add disconnect-during-dismantle-write deterministic simulation.
