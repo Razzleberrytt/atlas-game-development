@@ -74,6 +74,10 @@ local function isPositiveInteger(value: any): boolean
 	return type(value) == "number" and value == value and value % 1 == 0 and value > 0
 end
 
+local function isFiniteNonnegativeNumber(value: any): boolean
+	return type(value) == "number" and value == value and value >= 0 and value < math.huge
+end
+
 local function isIdentifier(value: any): boolean
 	return type(value) == "string" and #value >= 1 and #value <= 128
 end
@@ -159,7 +163,7 @@ function InventoryDismantleResolver.resolve(request: DismantleRequest, state: Di
 	if not isIdentifier(request.InstanceId) or not isIdentifier(request.TransactionId) then
 		return reject("InvalidDismantleRequest")
 	end
-	if type(request.NowUnix) ~= "number" or request.NowUnix ~= request.NowUnix or request.NowUnix < 0 then
+	if not isFiniteNonnegativeNumber(request.NowUnix) then
 		return reject("InvalidDismantleRequest")
 	end
 
