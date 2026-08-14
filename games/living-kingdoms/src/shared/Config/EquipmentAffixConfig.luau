@@ -1,11 +1,12 @@
 --!strict
 
--- Patch 0.3 affix pool. Values stay intentionally narrow until play data
--- justifies larger bands. Compatibility is authored from stable equipment slot
--- and tag vocabulary so replayed loot creates role-aware build choices without
--- introducing a second reward or balance authority.
+-- Patch 0.9 expands the proven affix pool without adding a second modifier
+-- authority. Compatibility remains authored from stable equipment slot/tag
+-- vocabulary and every role-specific tag is checked against the live durable
+-- equipment catalog so impossible rolls cannot accumulate as dead content.
 
 local Contracts = require(script.Parent.Parent.Equipment.EquipmentAffixContracts)
+local EquipmentRewardConfig = require(script.Parent.EquipmentRewardConfig)
 local EffectIds = Contracts.EffectIds
 
 local function affix(
@@ -30,7 +31,7 @@ local function affix(
 end
 
 local Config = {
-	Version = "PATCH-0.3-AFFIX-v2",
+	Version = "PATCH-0.9-AFFIX-v3-role-variety",
 	AffixCountByRarity = table.freeze({
 		Common = 1,
 		Uncommon = 1,
@@ -46,6 +47,10 @@ local Config = {
 		affix("measured-cycle", "Measured Cycle", EffectIds.ReloadSpeedPercent, 6, 11, { "Primary" }, { "precision" }),
 		affix("breacher", "Breacher", EffectIds.DamagePercent, 5, 9, { "Primary" }, { "close-range" }),
 		affix("slam-loader", "Slam Loader", EffectIds.ReloadSpeedPercent, 6, 12, { "Primary" }, { "close-range" }),
+		affix("suppressive", "Suppressive", EffectIds.DamagePercent, 4, 7, { "Primary" }, { "sustained-fire" }),
+		affix("belt-fed", "Belt Fed", EffectIds.ReloadSpeedPercent, 7, 12, { "Primary" }, { "support" }),
+		affix("crowd-cutter", "Crowd Cutter", EffectIds.DamagePercent, 4, 8, { "Primary" }, { "horde-control" }),
+		affix("hot-swap", "Hot Swap", EffectIds.ReloadSpeedPercent, 6, 11, { "Primary" }, { "smg" }),
 
 		-- The sidearm gets its own reliable fallback identity instead of drawing
 		-- exclusively from the generic weapon pair.
@@ -71,6 +76,13 @@ for _, effectId in EffectIds do
 	validEffects[effectId] = true
 end
 
+local catalogTags = {}
+for _, itemDefinition in EquipmentRewardConfig.Definitions do
+	for _, tag in itemDefinition.Tags do
+		catalogTags[tag] = true
+	end
+end
+
 local seenIds = {}
 for _, definition in Config.Definitions do
 	assert(type(definition.Id) == "string" and #definition.Id > 0, "affix requires a stable ID")
@@ -86,6 +98,38 @@ for _, definition in Config.Definitions do
 		definition.Id .. " has invalid value bounds"
 	)
 	assert(#definition.AllowedSlots >= 1, definition.Id .. " must allow at least one slot")
+	for _, requiredTag in definition.RequiredTags do
+		assert(catalogTags[requiredTag] == true, definition.Id .. " requires a tag no durable item owns: " .. requiredTag)
+	end
+end
+
+-- Every durable weapon should have at least one role-aware affix in addition to
+-- the broad generic pair. This turns adding a new weapon into an authoring
+-- checklist enforced by code rather than a convention authors can forget.
+for _, itemDefinition in EquipmentRewardConfig.Definitions do
+	if itemDefinition.Slot == "Primary" or itemDefinition.Slot == "Secondary" then
+		local hasRoleAffix = false
+		for _, definition in Config.Definitions do
+			if #definition.RequiredTags > 0 then
+				local slotAllowed = false
+				for _, slot in definition.AllowedSlots do
+					if slot == itemDefinition.Slot then slotAllowed = true break end
+				end
+				if slotAllowed then
+					local allTags = true
+					for _, requiredTag in definition.RequiredTags do
+						local found = false
+						for _, itemTag in itemDefinition.Tags do
+							if itemTag == requiredTag then found = true break end
+						end
+						if not found then allTags = false break end
+					end
+					if allTags then hasRoleAffix = true break end
+				end
+			end
+		end
+		assert(hasRoleAffix, itemDefinition.Id .. " must have at least one role-aware affix")
+	end
 end
 
 for rarityId, count in Config.AffixCountByRarity do
