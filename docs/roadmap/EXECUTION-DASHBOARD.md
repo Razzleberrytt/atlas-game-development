@@ -50,9 +50,19 @@ Older manual Studio/device/play gates are historical evidence instructions, not 
 
 Calling that 100/100 would misreport what was built. The durable-state work Patch 0.7 set out to harden is done and machine-checked; the deferred rows are recorded as open design decisions rather than closed ones.
 
+## Patch 0.8 — Co-op / Social / Session
+
+Ranked task authority: `PATCH-0.8-100-TASK-ROI-BACKLOG.md`. Rows #51–#100 are deliberately not pre-written: Patch 0.7 showed that enumerating fifty rows in advance produces speculative work, so they will be ranked from what Batches 1–5 actually expose.
+
+Patch 0.8's exit question — *is playing with other people easier, clearer and more fun?* — is experiential and cannot be automated. The backlog ranks the authority, lifecycle, and session-correctness half, where real defects live. Feel and readability stay **UNMEASURED**.
+
+- **Batch 1 (#1–#10) is DONE:** two live defects fixed in the launch sequence. `launchInFlight` is a latch with no `pcall` anywhere in the sequence, so any error between setting it and the end left it set for the life of the server — the lobby could never launch again. And mission/horde pressure were armed *before* the expedition started, so a rejected launch left both running with no run to belong to, with no disarm on either owner. Lobby lifecycle is now covered end to end, including the case where a member leaving a launch-pending party could have stranded the lobby.
+
 ## NOW
 
-**Patch 0.7 durable-state hardening is complete. Choose the next patch, or revisit a deferred row if a design decision now requires it.**
+**Execute Patch 0.8 Batch 2, tasks #11–#20, from `PATCH-0.8-100-TASK-ROI-BACKLOG.md`.**
+
+Batch 2 covers session membership and reconnect.
 
 Manual play/Studio evidence for experiential facts remains **UNMEASURED** and does not hold source progression.
 

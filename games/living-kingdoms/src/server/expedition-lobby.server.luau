@@ -135,26 +135,46 @@ local function attemptLaunch()
 		return
 	end
 
-	-- Replay reset deliberately clears all temporary power first. Only after that
-	-- clean boundary do we apply a durable owner-equipped weapon from persistence.
-	-- A player with no saved weapon remains on the Field Hatchet opening path.
-	applyDurableStartingLoadouts(consumed.Snapshot.Members)
+	--[[
+		Everything from here is wrapped, because launchInFlight is a latch. The
+		handled early returns above each release it, but an error between them and
+		the end would leave it set for the lifetime of the server -- and a latched
+		launchInFlight means this lobby can never launch again. A bricked server is
+		a far worse outcome than a rejected launch.
+	]]
+	local ok, launchError = pcall(function()
+		-- Replay reset deliberately clears all temporary power first. Only after
+		-- that clean boundary do we apply a durable owner-equipped weapon from
+		-- persistence. A player with no saved weapon remains on the Field Hatchet
+		-- opening path.
+		applyDurableStartingLoadouts(consumed.Snapshot.Members)
 
-	-- The player has now deliberately left safe arrival; release the mission
-	-- clock and horde pressure that stayed dormant since server boot.
-	MissionDirectorService.armPressure()
-	HordeExperienceService.armPressure()
+		-- MVP 0.1 deliberately runs the authored First Descent seed so the
+		-- complete route is reproducible during build-through and the
+		-- consolidated Studio pass.
+		local launch = ExpeditionLiveRuntimeService.startExpedition({
+			PartySize = consumed.Snapshot.MemberCount,
+			Seed = FirstDungeonContentConfig.CanonicalSeed,
+		})
+		if launch.Accepted ~= true then
+			warn("[ExpeditionLobby] launch rejected:", launch.ReasonId)
+			return
+		end
 
-	-- MVP 0.1 deliberately runs the authored First Descent seed so the complete
-	-- route is reproducible during build-through and the consolidated Studio pass.
-	local launch = ExpeditionLiveRuntimeService.startExpedition({
-		PartySize = consumed.Snapshot.MemberCount,
-		Seed = FirstDungeonContentConfig.CanonicalSeed,
-	})
-	if launch.Accepted ~= true then
-		warn("[ExpeditionLobby] launch rejected:", launch.ReasonId)
-	end
+		--[[
+			Pressure is armed only once the run is actually live. Arming it before
+			the launch meant a rejected launch left the mission clock and horde
+			pressure running with no expedition to belong to, and neither owner
+			exposes a way to put that back.
+		]]
+		MissionDirectorService.armPressure()
+		HordeExperienceService.armPressure()
+	end)
+
 	launchInFlight = false
+	if not ok then
+		warn("[ExpeditionLobby] launch sequence failed:", launchError)
+	end
 	broadcast()
 end
 

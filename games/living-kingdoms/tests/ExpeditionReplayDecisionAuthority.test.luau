@@ -38,9 +38,32 @@ assert(
 local prepareAt = string.find(lobby, "OperationLifecycleService.prepareForLaunch()", 1, true)
 local pressureAt = string.find(lobby, "MissionDirectorService.armPressure()", 1, true)
 local startAt = string.find(lobby, "ExpeditionLiveRuntimeService.startExpedition", 1, true)
+local consumeAt = string.find(lobby, "lobby:consumeLaunch()", 1, true)
 assert(prepareAt ~= nil and pressureAt ~= nil and startAt ~= nil, "deliberate launch handoff tokens must exist")
+assert(consumeAt ~= nil, "the deliberate launch must still begin with a consumed ready-state launch")
 assert((prepareAt :: number) < (pressureAt :: number), "fresh-run preparation must happen before pressure is armed")
-assert((pressureAt :: number) < (startAt :: number), "pressure arming must remain immediately upstream of launch")
+
+--[[
+	This used to require arming immediately upstream of the launch call. The
+	guarantee it protected is that pressure belongs to a deliberate launch rather
+	than to server boot -- and that still holds, because arming sits inside the
+	consumed-launch path after fresh-run preparation.
+
+	The ordering it pinned has deliberately inverted. Arming before the launch
+	meant a rejected launch left the mission clock and horde pressure running
+	with no run to belong to, and neither owner exposes a way to put that back.
+	Arming after an accepted launch is strictly stronger, so the assertion now
+	holds the guarantee rather than the old sequence.
+	See ExpeditionLaunchSequenceSourceAudit for the rejected-launch ordering.
+]]
+assert(
+	(consumeAt :: number) < (pressureAt :: number),
+	"pressure must be armed inside the deliberate consumed-launch path, never at boot"
+)
+assert(
+	(startAt :: number) < (pressureAt :: number),
+	"pressure must be armed only once the run is live, so a rejected launch leaves nothing running"
+)
 
 assert(
 	string.find(lobby, "ExpeditionLiveRuntimeService.readSnapshot() ~= nil", 1, true) ~= nil,
