@@ -125,6 +125,7 @@ local function recordWithoutItem(
 		AppliedRewardInstanceIds = table.freeze(table.clone(record.AppliedRewardInstanceIds)),
 		AppliedRewardGrantIds = table.freeze(table.clone(record.AppliedRewardGrantIds)),
 		AppliedDismantleTransactions = table.freeze(table.clone(record.AppliedDismantleTransactions or {})),
+		AppliedRewardContentSignatures = table.freeze(table.clone(record.AppliedRewardContentSignatures or {})),
 		UpdatedAtUnix = nowUnix,
 	})
 end
