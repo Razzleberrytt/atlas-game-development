@@ -91,11 +91,31 @@ local combatContracts = luau.load(fs.readFile("games/living-kingdoms/src/shared/
 	injectGlobals = true,
 })()
 
+--[[
+	The reward config validates its weapon ids against FirearmConfig, so the real
+	one is loaded rather than stubbed: a stub would let a reward reference a
+	weapon that does not exist and still pass.
+]]
+local FIREARM_CONFIG_TOKEN = {}
+local AFFIX_REWARD_CONFIG_TOKEN = {}
+local FIREARM_COMBAT_TOKEN = {}
+local firearmConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/FirearmConfig.luau"), {
+	debugName = "FirearmConfig",
+	environment = {
+		script = { Parent = { Parent = { Combat = { CombatContracts = FIREARM_COMBAT_TOKEN } } } },
+		require = function(): any
+			return combatContracts
+		end,
+	},
+	injectGlobals = true,
+})()
+
 local rewardConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/EquipmentRewardConfig.luau"), {
 	debugName = "EquipmentRewardConfig",
 	environment = {
 		script = {
 			Parent = {
+				FirearmConfig = FIREARM_CONFIG_TOKEN,
 				Parent = {
 					Equipment = { EquipmentRewardContracts = REWARD_CONTRACTS_TOKEN },
 					Combat = { CombatContracts = COMBAT_CONTRACTS_TOKEN },
@@ -105,6 +125,9 @@ local rewardConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Con
 		require = function(token: unknown)
 			if token == COMBAT_CONTRACTS_TOKEN then
 				return combatContracts
+			end
+			if token == FIREARM_CONFIG_TOKEN then
+				return firearmConfig
 			end
 			assertThat(token == REWARD_CONTRACTS_TOKEN, "unexpected reward-config dependency")
 			return rewardContracts
@@ -118,12 +141,21 @@ local affixConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Conf
 	environment = {
 		script = {
 			Parent = {
+				EquipmentRewardConfig = AFFIX_REWARD_CONFIG_TOKEN,
 				Parent = {
 					Equipment = { EquipmentAffixContracts = AFFIX_CONTRACTS_TOKEN },
 				},
 			},
 		},
 		require = function(token: unknown)
+			--[[
+				The affix config reads the reward roster to know which definitions
+				an affix may apply to, so it gets the real one that was just built
+				rather than a stub that could not disagree with it.
+			]]
+			if token == AFFIX_REWARD_CONFIG_TOKEN then
+				return rewardConfig
+			end
 			assertThat(token == AFFIX_CONTRACTS_TOKEN, "unexpected affix-config dependency")
 			return affixContracts
 		end,

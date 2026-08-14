@@ -25,6 +25,19 @@ assert(
 )
 assert(string.find(source, "payload.Seed", 1, true) == nil, "clients must not supply expedition seeds through lobby")
 assert(string.find(source, '["Seed"]', 1, true) == nil, "clients must not supply expedition seed fields through lobby")
-assert(string.find(source, "RunId =", 1, true) == nil, "clients must not supply run IDs through lobby")
+--[[
+	The guarantee is that a client cannot supply a run id. The old pattern banned
+	the substring "RunId =" outright, which also caught the server's own
+	terminal-decision bookkeeping -- state derived from the live expedition, not
+	from any payload. Ban the client sources instead, and require the server's
+	run id to come from the expedition snapshot.
+]]
+assert(string.find(source, "payload.RunId", 1, true) == nil, "clients must not supply run IDs through lobby")
+assert(string.find(source, '["RunId"]', 1, true) == nil, "clients must not supply run ID fields through lobby")
+assert(string.find(source, "RunId = payload", 1, true) == nil, "no lobby field may be filled from a client run ID")
+assert(
+	string.find(source, "terminalDecisionRunId = expedition.RunId", 1, true) ~= nil,
+	"the server's run identity must come from the live expedition, not from a request"
+)
 
 print("ExpeditionLobbyNetworkBoundary.test.luau passed")

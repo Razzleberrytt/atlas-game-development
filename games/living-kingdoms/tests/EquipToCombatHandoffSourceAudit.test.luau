@@ -27,7 +27,16 @@ local equipmentConfig = fs.readFile("games/living-kingdoms/src/shared/Config/Equ
 assert(contains(equipmentConfig, "WeaponId = weaponId"), "definitions must carry an authored weapon link")
 assert(contains(equipmentConfig, "must name the weapon it equips"), "weapon slots must assert a weapon link")
 assert(contains(equipmentConfig, "must name no weapon"), "non-weapon slots must assert the absence of a link")
-assert(contains(equipmentConfig, "names an unknown weapon"), "authored links must resolve to a real weapon")
+--[[
+	The guarantee is that an authored weapon link resolves to a real weapon. It
+	is now checked against FirearmConfig rather than a local table, which is
+	strictly stronger, so the token follows the check rather than the old wording.
+]]
+assert(
+	contains(equipmentConfig, "FirearmConfig.isKnownWeaponId(definition.WeaponId)"),
+	"authored links must resolve against the canonical firearm roster"
+)
+assert(contains(equipmentConfig, "names an unknown firearm definition"), "an unresolved link must say so")
 
 -- Prevent combat refill exploits: equipping must route ammunition through the
 -- conservation resolver instead of handing over a fresh magazine.

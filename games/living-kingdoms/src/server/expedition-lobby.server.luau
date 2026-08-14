@@ -63,11 +63,14 @@ local function sanitizedSnapshot(): any
 	local members = {}
 	for _, member in snapshot.Members do
 		local player = Players:GetPlayerByUserId(member.PlayerId)
-		table.insert(members, table.freeze({
-			PlayerId = member.PlayerId,
-			DisplayName = if player then player.DisplayName else ("Player " .. tostring(member.PlayerId)),
-			Ready = member.Ready,
-		}))
+		table.insert(
+			members,
+			table.freeze({
+				PlayerId = member.PlayerId,
+				DisplayName = if player then player.DisplayName else ("Player " .. tostring(member.PlayerId)),
+				Ready = member.Ready,
+			})
+		)
 	end
 	local decision = if terminalDecision ~= nil then terminalDecision:readSnapshot() else nil
 	return table.freeze({
@@ -124,7 +127,13 @@ local function applyDurableStartingLoadouts(members: { any })
 		end
 		local result = DurableStartingLoadoutService.applyForPlayer(player)
 		if result.Accepted ~= true and result.ReasonId ~= "NoEquippedDurableWeapon" then
-			warn(string.format("[ExpeditionLobby] durable starting loadout rejected for %d: %s", member.PlayerId, result.ReasonId))
+			warn(
+				string.format(
+					"[ExpeditionLobby] durable starting loadout rejected for %d: %s",
+					member.PlayerId,
+					result.ReasonId
+				)
+			)
 		end
 	end
 end
@@ -163,18 +172,26 @@ local function attemptLaunch()
 		return
 	end
 
-	destroyTerminalDecision()
-	applyDurableStartingLoadouts(consumed.Snapshot.Members)
-	MissionDirectorService.armPressure()
-	HordeExperienceService.armPressure()
+	--[[
+		Everything from here is wrapped, because launchInFlight is a latch. The
+		handled early returns above each release it, but an error between them and
+		the end would leave it set for the lifetime of the server -- and a latched
+		launchInFlight means this lobby can never launch again. A bricked server is
+		a far worse outcome than a rejected launch.
+	]]
+	local ok, launchError = pcall(function()
+		destroyTerminalDecision()
+		applyDurableStartingLoadouts(consumed.Snapshot.Members)
 
-	local launch = ExpeditionLiveRuntimeService.startExpedition({
-		PartySize = consumed.Snapshot.MemberCount,
-		Seed = FirstDungeonContentConfig.CanonicalSeed,
-	})
-	if launch.Accepted ~= true then
-		warn("[ExpeditionLobby] launch rejected:", launch.ReasonId)
-	else
+		local launch = ExpeditionLiveRuntimeService.startExpedition({
+			PartySize = consumed.Snapshot.MemberCount,
+			Seed = FirstDungeonContentConfig.CanonicalSeed,
+		})
+		if launch.Accepted ~= true then
+			warn("[ExpeditionLobby] launch rejected:", launch.ReasonId)
+			return
+		end
+
 		local runId = if launch.Snapshot ~= nil then launch.Snapshot.RunId else nil
 		local roster = if type(runId) == "string"
 			then ExpeditionRunRosterService.bind(runId, participantUserIds(consumed.Snapshot.Members))
@@ -182,9 +199,24 @@ local function attemptLaunch()
 		if roster == nil or roster.Accepted ~= true then
 			warn("[ExpeditionLobby] run roster binding rejected")
 			ExpeditionLiveRuntimeService.stopExpedition("RosterBindingFailed")
+			return
 		end
-	end
+
+		--[[
+			Pressure is armed only once the run is live and its roster is bound.
+			Arming it earlier meant a rejected launch -- or a failed roster binding,
+			which stops the expedition again -- left the mission clock and horde
+			pressure running with no run to belong to, and neither owner exposes a
+			way to put that back.
+		]]
+		MissionDirectorService.armPressure()
+		HordeExperienceService.armPressure()
+	end)
+
 	launchInFlight = false
+	if not ok then
+		warn("[ExpeditionLobby] launch sequence failed:", launchError)
+	end
 	broadcast()
 end
 

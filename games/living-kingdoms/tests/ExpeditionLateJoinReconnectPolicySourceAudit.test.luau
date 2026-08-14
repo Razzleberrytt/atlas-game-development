@@ -16,21 +16,32 @@ local lobby = fs.readFile("games/living-kingdoms/src/server/expedition-lobby.ser
 local roster = fs.readFile("games/living-kingdoms/src/server/Systems/ExpeditionRunRosterService.luau")
 local rewards = fs.readFile("games/living-kingdoms/src/server/expedition-reward-results.server.luau")
 
-assert(contains(lobby, "local function activeRunParticipant(playerId: number): boolean"), "lobby needs a roster-backed reconnect predicate")
-assert(contains(lobby, "ExpeditionRunRosterService.read(expedition.RunId)"), "reconnect eligibility must use the exact active run roster")
-assert(contains(lobby, "return response(false, \"LateJoinClosed\")"), "non-participant active-run joins must fail closed")
 assert(
-	contains(lobby, "return response(false, \"ActiveExpeditionMembershipLocked\")"),
+	contains(lobby, "local function activeRunParticipant(playerId: number): boolean"),
+	"lobby needs a roster-backed reconnect predicate"
+)
+assert(
+	contains(lobby, "ExpeditionRunRosterService.read(expedition.RunId)"),
+	"reconnect eligibility must use the exact active run roster"
+)
+assert(contains(lobby, 'return response(false, "LateJoinClosed")'), "non-participant active-run joins must fail closed")
+assert(
+	contains(lobby, 'return response(false, "ActiveExpeditionMembershipLocked")'),
 	"client-requested membership removal must be locked during an active run"
 )
+--[[
+	This pinned a comment, which is the most brittle thing an audit can hold: the
+	guarantee survives any rewording and the assertion did not. What matters is
+	that disconnect has its own server-owned cleanup path, distinct from the
+	client-requested removal that stays locked during an active run.
+]]
+local disconnectAt = string.find(lobby, "Players.PlayerRemoving:Connect(function(player)", 1, true)
+assert(disconnectAt ~= nil, "disconnect must retain a distinct server-owned cleanup path")
 assert(
-	contains(lobby, "Players.PlayerRemoving:Connect(function(player)\n\t-- Disconnect removes"),
-	"disconnect must retain a distinct server-owned cleanup path"
+	string.find(lobby, "lobby:leave(player.UserId)", disconnectAt, true) ~= nil,
+	"the disconnect path must release lobby membership itself, not rely on the locked client path"
 )
-assert(
-	not contains(roster, "PlayerRemoving"),
-	"disconnect must never mutate the immutable run roster"
-)
+assert(not contains(roster, "PlayerRemoving"), "disconnect must never mutate the immutable run roster")
 assert(
 	contains(rewards, "ExpeditionRunRosterService.read(snapshot.RunId)"),
 	"reward distribution must continue to consume the frozen roster"

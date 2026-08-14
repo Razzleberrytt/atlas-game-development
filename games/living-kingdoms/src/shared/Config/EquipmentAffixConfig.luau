@@ -9,7 +9,15 @@ local Contracts = require(script.Parent.Parent.Equipment.EquipmentAffixContracts
 local EquipmentRewardConfig = require(script.Parent.EquipmentRewardConfig)
 local EffectIds = Contracts.EffectIds
 
-local function affix(id: string, displayName: string, effectId: string, minimumValue: number, maximumValue: number, allowedSlots: { string }, requiredTags: { string })
+local function affix(
+	id: string,
+	displayName: string,
+	effectId: string,
+	minimumValue: number,
+	maximumValue: number,
+	allowedSlots: { string },
+	requiredTags: { string }
+)
 	return table.freeze({
 		Id = id,
 		Version = "1.0.0",
@@ -58,10 +66,14 @@ local Config = {
 }
 
 local validEffects = {}
-for _, effectId in EffectIds do validEffects[effectId] = true end
+for _, effectId in EffectIds do
+	validEffects[effectId] = true
+end
 local catalogTags = {}
 for _, itemDefinition in EquipmentRewardConfig.Definitions do
-	for _, tag in itemDefinition.Tags do catalogTags[tag] = true end
+	for _, tag in itemDefinition.Tags do
+		catalogTags[tag] = true
+	end
 end
 
 local seenIds = {}
@@ -70,10 +82,20 @@ for _, definition in Config.Definitions do
 	assert(seenIds[definition.Id] == nil, "affix IDs must be unique")
 	seenIds[definition.Id] = true
 	assert(validEffects[definition.EffectId] == true, definition.Id .. " uses an unknown effect")
-	assert(type(definition.MinimumValue) == "number" and definition.MinimumValue % 1 == 0 and definition.MaximumValue % 1 == 0 and definition.MinimumValue > 0 and definition.MaximumValue >= definition.MinimumValue, definition.Id .. " has invalid value bounds")
+	assert(
+		type(definition.MinimumValue) == "number"
+			and definition.MinimumValue % 1 == 0
+			and definition.MaximumValue % 1 == 0
+			and definition.MinimumValue > 0
+			and definition.MaximumValue >= definition.MinimumValue,
+		definition.Id .. " has invalid value bounds"
+	)
 	assert(#definition.AllowedSlots >= 1, definition.Id .. " must allow at least one slot")
 	for _, requiredTag in definition.RequiredTags do
-		assert(catalogTags[requiredTag] == true, definition.Id .. " requires a tag no durable item owns: " .. requiredTag)
+		assert(
+			catalogTags[requiredTag] == true,
+			definition.Id .. " requires a tag no durable item owns: " .. requiredTag
+		)
 	end
 end
 
@@ -82,18 +104,29 @@ local function hasRoleAwareAffix(itemDefinition: any): boolean
 		if #definition.RequiredTags > 0 then
 			local slotAllowed = false
 			for _, slot in definition.AllowedSlots do
-				if slot == itemDefinition.Slot then slotAllowed = true break end
+				if slot == itemDefinition.Slot then
+					slotAllowed = true
+					break
+				end
 			end
 			if slotAllowed then
 				local allTags = true
 				for _, requiredTag in definition.RequiredTags do
 					local found = false
 					for _, itemTag in itemDefinition.Tags do
-						if itemTag == requiredTag then found = true break end
+						if itemTag == requiredTag then
+							found = true
+							break
+						end
 					end
-					if not found then allTags = false break end
+					if not found then
+						allTags = false
+						break
+					end
 				end
-				if allTags then return true end
+				if allTags then
+					return true
+				end
 			end
 		end
 	end
@@ -108,7 +141,10 @@ for _, itemDefinition in EquipmentRewardConfig.Definitions do
 end
 
 for rarityId, count in Config.AffixCountByRarity do
-	assert(type(rarityId) == "string" and type(count) == "number" and count % 1 == 0 and count >= 0 and count <= 3, "rarity affix counts must be bounded integers")
+	assert(
+		type(rarityId) == "string" and type(count) == "number" and count % 1 == 0 and count >= 0 and count <= 3,
+		"rarity affix counts must be bounded integers"
+	)
 end
 
 return table.freeze(Config)

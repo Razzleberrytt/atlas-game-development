@@ -18,7 +18,10 @@ local service = module.new({ 202, 101, 202 })
 local initial = service:readSnapshot()
 assert(initial.Revision == 0, "new party decision should begin at revision zero")
 assert(initial.ParticipantCount == 2 and initial.ResolvedDecisionId == "Undecided", "participants should deduplicate")
-assert(initial.ParticipantUserIds[1] == 101 and initial.ParticipantUserIds[2] == 202, "participants should be deterministic")
+assert(
+	initial.ParticipantUserIds[1] == 101 and initial.ParticipantUserIds[2] == 202,
+	"participants should be deterministic"
+)
 assert(not service:cast(999, "Replay").Accepted, "outsiders cannot vote")
 assert(not service:cast(101, "Anything").Accepted, "invalid decisions fail")
 local firstVote = service:cast(101, "Replay")
@@ -30,7 +33,10 @@ local split = service:cast(202, "ReturnToPreparation")
 assert(split.Accepted and split.Snapshot.ResolvedDecisionId == "Undecided", "split vote remains unresolved")
 local resolved = service:cast(202, "Replay")
 assert(resolved.Accepted and resolved.ReasonId == "VoteChanged", "changing an existing vote should be explicit")
-assert(resolved.Snapshot.Revision == 3 and resolved.Snapshot.ResolvedDecisionId == "Replay", "unanimous replay resolves")
+assert(
+	resolved.Snapshot.Revision == 3 and resolved.Snapshot.ResolvedDecisionId == "Replay",
+	"unanimous replay resolves"
+)
 assert(not service:removeParticipant(101).Accepted, "resolved decisions are immutable")
 service:destroy()
 assert(service:readSnapshot() == nil, "destroyed service discloses no state")
@@ -42,7 +48,10 @@ local removed = disconnectService:removeParticipant(3)
 assert(removed.Accepted and removed.Snapshot.ParticipantCount == 2, "disconnect should shrink active participant set")
 assert(removed.ReasonId == "ResolvedAfterParticipantRemoved", "disconnect-driven resolution should be explicit")
 assert(removed.Snapshot.Revision == 3, "disconnect should advance revision exactly once")
-assert(removed.Snapshot.ParticipantUserIds[1] == 1 and removed.Snapshot.ParticipantUserIds[2] == 2, "disconnect snapshot should expose remaining participants")
+assert(
+	removed.Snapshot.ParticipantUserIds[1] == 1 and removed.Snapshot.ParticipantUserIds[2] == 2,
+	"disconnect snapshot should expose remaining participants"
+)
 assert(removed.Snapshot.ResolvedDecisionId == "Replay", "remaining unanimous votes should resolve")
 
 local emptyService = module.new({ 10 })

@@ -3,7 +3,9 @@
 local fs = require("@lune/fs")
 
 local function assert(condition: unknown, message: string?)
-	if not condition then error(message or "Patch 0.9 gear archetype audit failed", 2) end
+	if not condition then
+		error(message or "Patch 0.9 gear archetype audit failed", 2)
+	end
 end
 local function contains(source: string, token: string): boolean
 	return string.find(source, token, 1, true) ~= nil
@@ -21,9 +23,15 @@ assert(contains(affixes, '"skirmisher"'), "mobility armor needs a role-specific 
 assert(contains(affixes, '"flex-weave"'), "mobility armor needs a second bounded role roll")
 assert(contains(affixes, '"surge-tuned"'), "offensive relic needs a role-specific power roll")
 assert(contains(affixes, '"rapid-channel"'), "offensive relic needs a role-specific haste roll")
-assert(contains(affixes, "for _, itemDefinition in EquipmentRewardConfig.Definitions do\n\tassert(hasRoleAwareAffix"), "every durable item must be differentiated")
+assert(
+	contains(affixes, "for _, itemDefinition in EquipmentRewardConfig.Definitions do\n\tassert(hasRoleAwareAffix"),
+	"every durable item must be differentiated"
+)
 assert(contains(modifiers, "movementSpeedMultiplier"), "armor movement affixes must reach an existing runtime modifier")
 assert(contains(modifiers, "abilityPowerMultiplier"), "relic power affixes must reach an existing runtime modifier")
-assert(contains(modifiers, "abilityCooldownDurationMultiplier"), "relic haste affixes must reach an existing runtime modifier")
+assert(
+	contains(modifiers, "abilityCooldownDurationMultiplier"),
+	"relic haste affixes must reach an existing runtime modifier"
+)
 
 print("Patch09GearArchetypeCoverageSourceAudit.test.luau passed")
