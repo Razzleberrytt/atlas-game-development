@@ -14,6 +14,7 @@ local ExpeditionContracts = require(ReplicatedStorage.Shared.Expeditions.Expedit
 local DurableStartingLoadoutService = require(Systems.DurableStartingLoadoutService)
 local ExpeditionLobbyService = require(Systems.ExpeditionLobbyService)
 local ExpeditionLiveRuntimeService = require(Systems.ExpeditionLiveRuntimeService)
+local ExpeditionPartyDecisionService = require(Systems.ExpeditionPartyDecisionService)
 local ExpeditionRunRosterService = require(Systems.ExpeditionRunRosterService)
 local OperationLifecycleService = require(Systems.OperationLifecycleService)
 local MissionDirectorService = require(Systems.MissionDirectorService)
@@ -43,6 +44,16 @@ readState.Parent = network
 local definition = ExpeditionConfig.Definitions.FirstExpedition
 local lobby = ExpeditionLobbyService.new(definition.MinimumPlayers, definition.MaximumPlayers)
 local launchInFlight = false
+local terminalDecision: any = nil
+local terminalDecisionRunId: string? = nil
+
+local function destroyTerminalDecision()
+	if terminalDecision ~= nil then
+		terminalDecision:destroy()
+	end
+	terminalDecision = nil
+	terminalDecisionRunId = nil
+end
 
 local function sanitizedSnapshot(): any
 	local snapshot = lobby:readSnapshot()
@@ -52,15 +63,13 @@ local function sanitizedSnapshot(): any
 	local members = {}
 	for _, member in snapshot.Members do
 		local player = Players:GetPlayerByUserId(member.PlayerId)
-		table.insert(
-			members,
-			table.freeze({
-				PlayerId = member.PlayerId,
-				DisplayName = if player then player.DisplayName else ("Player " .. tostring(member.PlayerId)),
-				Ready = member.Ready,
-			})
-		)
+		table.insert(members, table.freeze({
+			PlayerId = member.PlayerId,
+			DisplayName = if player then player.DisplayName else ("Player " .. tostring(member.PlayerId)),
+			Ready = member.Ready,
+		}))
 	end
+	local decision = if terminalDecision ~= nil then terminalDecision:readSnapshot() else nil
 	return table.freeze({
 		Revision = snapshot.Revision,
 		Members = table.freeze(members),
@@ -69,6 +78,7 @@ local function sanitizedSnapshot(): any
 		MaximumPlayers = snapshot.MaximumPlayers,
 		AllReady = snapshot.AllReady,
 		LaunchPending = snapshot.LaunchPending,
+		TerminalDecision = decision,
 	})
 end
 
@@ -114,13 +124,7 @@ local function applyDurableStartingLoadouts(members: { any })
 		end
 		local result = DurableStartingLoadoutService.applyForPlayer(player)
 		if result.Accepted ~= true and result.ReasonId ~= "NoEquippedDurableWeapon" then
-			warn(
-				string.format(
-					"[ExpeditionLobby] durable starting loadout rejected for %d: %s",
-					member.PlayerId,
-					result.ReasonId
-				)
-			)
+			warn(string.format("[ExpeditionLobby] durable starting loadout rejected for %d: %s", member.PlayerId, result.ReasonId))
 		end
 	end
 end
@@ -152,7 +156,6 @@ local function attemptLaunch()
 		broadcast()
 		return
 	end
-
 	if not OperationLifecycleService.prepareForLaunch() then
 		warn("[ExpeditionLobby] lifecycle preparation rejected")
 		launchInFlight = false
@@ -160,6 +163,7 @@ local function attemptLaunch()
 		return
 	end
 
+	destroyTerminalDecision()
 	applyDurableStartingLoadouts(consumed.Snapshot.Members)
 	MissionDirectorService.armPressure()
 	HordeExperienceService.armPressure()
@@ -188,8 +192,44 @@ local function response(accepted: boolean, reasonId: string): any
 	return table.freeze({ Accepted = accepted, ReasonId = reasonId, Snapshot = sanitizedSnapshot() })
 end
 
+local function ensureTerminalDecision(expedition: any, requestingPlayerId: number): any
+	if terminalDecision ~= nil and terminalDecisionRunId == expedition.RunId then
+		return terminalDecision
+	end
+	destroyTerminalDecision()
+	local roster = ExpeditionRunRosterService.read(expedition.RunId)
+	if roster == nil then
+		return nil
+	end
+	local connected = {}
+	for _, participantUserId in roster.ParticipantUserIds do
+		if Players:GetPlayerByUserId(participantUserId) ~= nil then
+			table.insert(connected, participantUserId)
+		end
+	end
+	if #connected == 0 then
+		table.insert(connected, requestingPlayerId)
+	end
+	terminalDecision = ExpeditionPartyDecisionService.new(connected)
+	terminalDecisionRunId = expedition.RunId
+	return terminalDecision
+end
+
+local function completeReturnIfResolved(decisionSnapshot: any): any?
+	if decisionSnapshot == nil or decisionSnapshot.ResolvedDecisionId ~= "ReturnToPreparation" then
+		return nil
+	end
+	local stopped = ExpeditionLiveRuntimeService.stopExpedition("ReturnedToLobby")
+	if stopped.Accepted ~= true then
+		return response(false, stopped.ReasonId)
+	end
+	destroyTerminalDecision()
+	broadcast()
+	return response(true, "ReturnedToLobby")
+end
+
 local function returnToLobby(player: Player): any
-	if not isMember(player.UserId) then
+	if not isMember(player.UserId) and not activeRunParticipant(player.UserId) then
 		return response(false, "PlayerNotJoined")
 	end
 	local expedition = ExpeditionLiveRuntimeService.readSnapshot()
@@ -199,20 +239,26 @@ local function returnToLobby(player: Player): any
 	if expedition.OutcomeId == ExpeditionContracts.OutcomeIds.InProgress then
 		return response(false, "RunStillInProgress")
 	end
-
-	local stopped = ExpeditionLiveRuntimeService.stopExpedition("ReturnedToLobby")
-	if stopped.Accepted ~= true then
-		return response(false, stopped.ReasonId)
+	local decision = ensureTerminalDecision(expedition, player.UserId)
+	if decision == nil then
+		return response(false, "RunRosterUnavailable")
+	end
+	local vote = decision:cast(player.UserId, "ReturnToPreparation")
+	if vote.Accepted ~= true then
+		return response(false, vote.ReasonId)
+	end
+	local completed = completeReturnIfResolved(vote.Snapshot)
+	if completed ~= nil then
+		return completed
 	end
 	broadcast()
-	return response(true, "ReturnedToLobby")
+	return response(true, "AwaitingPartyReturn")
 end
 
 request.OnServerInvoke = function(player: Player, action: any, payload: any): any
 	if type(action) ~= "string" then
 		return response(false, "InvalidAction")
 	end
-
 	local activeExpedition = ExpeditionLiveRuntimeService.readSnapshot()
 	local result
 	if action == "Join" then
@@ -236,7 +282,6 @@ request.OnServerInvoke = function(player: Player, action: any, payload: any): an
 	else
 		return response(false, "UnknownAction")
 	end
-
 	broadcast()
 	attemptLaunch()
 	return response(result.Accepted == true, result.ReasonId)
@@ -247,14 +292,18 @@ readState.OnServerInvoke = function(_player: Player): any
 end
 
 Players.PlayerRemoving:Connect(function(player)
-	-- Disconnect removes the presentation/lobby member so a returning run
-	-- participant has a clean reconnect path. The immutable run roster is not
-	-- mutated, preserving reward credit and active-run identity.
 	lobby:leave(player.UserId)
+	if terminalDecision ~= nil then
+		local removed = terminalDecision:removeParticipant(player.UserId)
+		if removed.Accepted == true then
+			completeReturnIfResolved(removed.Snapshot)
+		end
+	end
 	broadcast()
 end)
 
 game:BindToClose(function()
+	destroyTerminalDecision()
 	lobby:destroy()
 end)
 
