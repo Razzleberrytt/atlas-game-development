@@ -9,12 +9,9 @@ local function assertContains(token: string, message: string)
 end
 
 assertContains("ResponsivePanelScale", "lobby must use the shared responsive panel scale helper")
-assertContains("Instance.new(\"UIScale\")", "lobby must scale its fixed-design panel")
+assertContains('Instance.new("UIScale")', "lobby must scale its fixed-design panel")
 assertContains("ViewportProbe", "lobby must measure the rendered viewport")
-assertContains(
-	"GetPropertyChangedSignal(\"AbsoluteSize\")",
-	"lobby must react when viewport dimensions change"
-)
+assertContains('GetPropertyChangedSignal("AbsoluteSize")', "lobby must react when viewport dimensions change")
 assertContains("PANEL_VIEWPORT_MARGIN", "lobby must retain a viewport safety margin")
 
 print("ExpeditionLobbyResponsiveSource.test.luau passed")
