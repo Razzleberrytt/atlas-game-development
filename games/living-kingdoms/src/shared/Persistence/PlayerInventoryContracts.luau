@@ -23,6 +23,12 @@ export type PlayerInventoryRecord = {
 	AppliedRewardGrantIds: { [string]: boolean },
 	-- Schema 3. Idempotency ledger for dismantle, keyed by transaction id.
 	AppliedDismantleTransactions: { [string]: DismantleOutcome },
+	--[[
+		Schema 4. Content identity per applied grant. AppliedRewardGrantIds can
+		only say an id was used; this says what it was used for, so a repeat with
+		different content reads as a conflict instead of a successful retry.
+	]]
+	AppliedRewardContentSignatures: { [string]: string },
 	UpdatedAtUnix: number,
 }
 
@@ -44,7 +50,7 @@ export type MutationResult = {
 	load and migrate forward; dropping one strands live inventories, so this list
 	only ever grows until a migration is proven to have retired a version.
 ]]
-local SupportedSchemaVersions = table.freeze({ 1, 2, 3 })
+local SupportedSchemaVersions = table.freeze({ 1, 2, 3, 4 })
 
 local function isSupportedSchemaVersion(value: any): boolean
 	for _, supported in SupportedSchemaVersions do
@@ -56,7 +62,7 @@ local function isSupportedSchemaVersion(value: any): boolean
 end
 
 return table.freeze({
-	CurrentSchemaVersion = 3,
+	CurrentSchemaVersion = 4,
 	SupportedSchemaVersions = SupportedSchemaVersions,
 	isSupportedSchemaVersion = isSupportedSchemaVersion,
 })

@@ -49,6 +49,12 @@ local storageResults =
 		injectGlobals = true,
 	})()
 
+local durableMutation =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/DurableMutationContracts.luau"), {
+		debugName = "DurableMutationContracts",
+		injectGlobals = true,
+	})()
+
 local RESOLVER_CONTRACTS_TOKEN, RESOLVER_EQUIPMENT_TOKEN = {}, {}
 local dismantleResolver =
 	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryDismantleResolver.luau"), {
@@ -70,7 +76,7 @@ local dismantleResolver =
 		injectGlobals = true,
 	})()
 
-local CONTRACTS_TOKEN, DISMANTLE_TOKEN, RESULTS_TOKEN = {}, {}, {}
+local CONTRACTS_TOKEN, DISMANTLE_TOKEN, RESULTS_TOKEN, DURABLE_MUTATION_TOKEN = {}, {}, {}, {}
 local persistenceModule =
 	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/PlayerInventoryPersistenceService.luau"), {
 		debugName = "PlayerInventoryPersistenceService",
@@ -83,6 +89,7 @@ local persistenceModule =
 								PlayerInventoryContracts = CONTRACTS_TOKEN,
 								InventoryDismantleResolver = DISMANTLE_TOKEN,
 								StorageResultContracts = RESULTS_TOKEN,
+								DurableMutationContracts = DURABLE_MUTATION_TOKEN,
 							},
 							Equipment = {
 								EquipmentRewardContracts = EQUIPMENT_TOKEN,
@@ -101,6 +108,8 @@ local persistenceModule =
 					return { EffectIds = { DamagePercent = "DamagePercent" } }
 				elseif token == DISMANTLE_TOKEN then
 					return dismantleResolver
+				elseif token == DURABLE_MUTATION_TOKEN then
+					return durableMutation
 				elseif token == RESULTS_TOKEN then
 					return storageResults
 				end

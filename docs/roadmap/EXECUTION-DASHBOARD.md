@@ -27,11 +27,14 @@ Older manual Studio/device/play gates are historical evidence instructions, not 
 
 - **Batch 3 (#21–#30) is DONE:** lease records are structurally validated, an unparseable rival lease is honoured rather than silently overwritten, records carry an owner generation that survives a recycled JobId, and shutdown release now aggregates its outcome with bounded retry so a lease that survives shutdown is observable instead of invisible.
 
+- **Batch 4 (#31–#40) is DONE:** schema 4 records per-grant content identity, so a repeated grant id reads as `RewardAlreadyApplied` only when the content matches and as `RewardGrantConflict` when it does not. Equip is proven idempotent under exact replay, dismantle replay survives release/rejoin, neither mutation erases the other's replay protection, and durable ledgers are bounded where the bound can still be reported.
+- **A live defect was found and fixed alongside Batch 4:** `OperativeProgressionResolver` iterated the durable grant ledger for values, but the ledger is a set keyed by grant id, so every non-empty ledger was rejected as malformed and operative rank/unlocks were dead for exactly the players who had earned something. Both owners' fixtures were green because the resolver's fed it a shape persistence never writes.
+
 ## NOW
 
-**Execute Patch 0.7 Batch 4, tasks #31–#40, from `PATCH-0.7-100-TASK-ROI-BACKLOG.md`.**
+**Execute Patch 0.7 Batch 5, tasks #41–#50, from `PATCH-0.7-100-TASK-ROI-BACKLOG.md`.**
 
-Batch 4 hardens idempotency for valuable mutations.
+Batch 5 hardens migration, quarantine, and recovery.
 
 Required merge gate:
 
@@ -45,9 +48,9 @@ CI equivalent is accepted as the canonical automated result.
 
 After Batch 2 is automated-green and merged:
 
-1. mark #31–#40 DONE;
-2. activate #41–#50;
-3. harden migration, quarantine, and recovery;
+1. mark #41–#50 DONE;
+2. activate #51–#60;
+3. harden capacity, overflow, and retention;
 4. continue in exact 10-task batches through all 100 Patch 0.7 tasks.
 
 A concrete data-loss, duplication, authority, migration, or deterministic validation defect may preempt the queue. Missing manual testing may not.
@@ -59,8 +62,8 @@ A concrete data-loss, duplication, authority, migration, or deterministic valida
 | 1 | 1–10 | storage resolution policy | DONE |
 | 2 | 11–20 | integrate fail-closed storage + explicit outcomes | DONE |
 | 3 | 21–30 | session ownership + lease robustness | DONE |
-| 4 | 31–40 | valuable mutation idempotency | ACTIVE |
-| 5 | 41–50 | migration, quarantine, recovery | queued |
+| 4 | 31–40 | valuable mutation idempotency | DONE |
+| 5 | 41–50 | migration, quarantine, recovery | ACTIVE |
 | 6 | 51–60 | capacity, overflow, retention | queued |
 | 7 | 61–70 | durable progression/currency/unlocks | queued |
 | 8 | 71–80 | disconnect/rejoin/crash/shutdown correctness | queued |

@@ -44,9 +44,16 @@ local storageResults =
 		injectGlobals = true,
 	})()
 
+local durableMutation =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/DurableMutationContracts.luau"), {
+		debugName = "DurableMutationContracts",
+		injectGlobals = true,
+	})()
+
 local CONTRACTS_TOKEN = {}
 local DISMANTLE_TOKEN = {}
 local STORAGE_RESULTS_TOKEN = {}
+local DURABLE_MUTATION_TOKEN = {}
 local RESOLVER_CONTRACTS_TOKEN = {}
 local RESOLVER_EQUIPMENT_TOKEN = {}
 local dismantleResolver =
@@ -77,6 +84,7 @@ local replicatedStorage = {
 			PlayerInventoryContracts = CONTRACTS_TOKEN,
 			InventoryDismantleResolver = DISMANTLE_TOKEN,
 			StorageResultContracts = STORAGE_RESULTS_TOKEN,
+			DurableMutationContracts = DURABLE_MUTATION_TOKEN,
 		},
 		Equipment = { EquipmentRewardContracts = EQUIPMENT_TOKEN, EquipmentAffixContracts = AFFIX_TOKEN },
 	},
@@ -106,6 +114,9 @@ local serviceModule =
 				end
 				if token == STORAGE_RESULTS_TOKEN then
 					return storageResults
+				end
+				if token == DURABLE_MUTATION_TOKEN then
+					return durableMutation
 				end
 				error("unexpected persistence dependency")
 			end,
@@ -442,5 +453,135 @@ assert(not destroyedRelease.Accepted and destroyedRelease.ReasonId == "ServiceDe
 
 service:destroy()
 assert(service:getRecord(101) == nil, "destroyed service should disclose no record")
+
+--[[
+	Patch 0.7 Batch 4. A repeat of a grant id is either a retry of the same grant
+	or a different grant wearing a used id. The ledger used to record only that an
+	id had been used, so the second case was answered as the first and the
+	differing reward was discarded with no signal.
+]]
+local mutation = serviceModule.new(store)
+local MUT_PLAYER = 7070
+assert(mutation:loadPlayer(MUT_PLAYER, 5000).Accepted, "the mutation player loads")
+
+local function grant(instanceSuffix: string, signature: string): any
+	return {
+		InstanceId = "item_" .. instanceSuffix .. "_guid",
+		GrantId = "reward:expedition:mut:Boss",
+		ContentSignature = signature,
+		DefinitionId = "keeper-relic",
+		DefinitionVersion = "1.0.0",
+		DisplayName = "Keeper Relic",
+		Slot = "Relic",
+		Rarity = "Rare",
+		Power = 18,
+		Affixes = {},
+		SourceId = "Boss",
+		RunId = "expedition:mut",
+		Seed = 41,
+	}
+end
+
+local firstGrant = mutation:applyReward(MUT_PLAYER, grant("first", "v1|keeper-relic|Rare|18"), 5010)
+assert(firstGrant.Accepted, "the first grant is applied")
+assert(
+	firstGrant.Record.AppliedRewardContentSignatures["reward:expedition:mut:Boss"] == "v1|keeper-relic|Rare|18",
+	"an applied grant must record the content it was applied for"
+)
+
+-- #36: a retry of the same grant, with a fresh instance GUID, is still a retry.
+local retry = mutation:applyReward(MUT_PLAYER, grant("second", "v1|keeper-relic|Rare|18"), 5020)
+assert(not retry.Accepted, "a retried grant must not apply twice")
+assert(retry.ReasonId == "RewardAlreadyApplied", "an identical retry must read as a replay")
+assert(retry.Record.InventoryByInstanceId.item_second_guid == nil, "a retry must not add a second copy")
+
+-- #37: the same grant id carrying different content is a conflict, not a replay.
+local conflict = mutation:applyReward(MUT_PLAYER, grant("third", "v2|keeper-relic|Legendary|99"), 5030)
+assert(not conflict.Accepted, "a conflicting grant must not apply")
+assert(conflict.ReasonId == "RewardGrantConflict", "differing content under a used grant id must be named a conflict")
+assert(conflict.Record.InventoryByInstanceId.item_third_guid == nil, "a conflicting grant must not be stored")
+
+-- #33: equip is naturally idempotent under exact replay -- the same slot and
+-- instance twice leaves one binding and no ledger movement.
+local equipFirst = mutation:equip(MUT_PLAYER, "Relic", "item_first_guid", 5040)
+assert(equipFirst.Accepted, "the item equips")
+local equipReplay = mutation:equip(MUT_PLAYER, "Relic", "item_first_guid", 5050)
+assert(equipReplay.Accepted, "an exact equip replay stays accepted")
+assert(equipReplay.Record.EquippedBySlot.Relic == "item_first_guid", "an equip replay leaves the same binding")
+assert(
+	equipReplay.Record.AppliedRewardContentSignatures["reward:expedition:mut:Boss"] == "v1|keeper-relic|Rare|18",
+	"equipping must not disturb reward replay protection"
+)
+
+-- #38/#40: destroying an item must not erase the record that its grant was
+-- already applied, or the same reward could be granted again after a dismantle.
+local dismantled = mutation:dismantle(MUT_PLAYER, "item_first_guid", "txn-mut-1", 5060, true, {})
+assert(not dismantled.Accepted and dismantled.ReasonId == "ItemEquipped", "an equipped item is protected")
+
+local spareGrant = {
+	InstanceId = "item_spare_mut_guid",
+	GrantId = "reward:expedition:mut2:Elite",
+	ContentSignature = "v1|warden-rifle|Uncommon|12",
+	DefinitionId = "warden-rifle",
+	DefinitionVersion = "1.0.0",
+	DisplayName = "Warden Rifle",
+	Slot = "Primary",
+	Rarity = "Uncommon",
+	Power = 12,
+	Affixes = {},
+	SourceId = "Elite",
+	RunId = "expedition:mut2",
+	Seed = 42,
+}
+assert(mutation:applyReward(MUT_PLAYER, spareGrant, 5070).Accepted, "the spare grant applies")
+local spareDismantle = mutation:dismantle(MUT_PLAYER, "item_spare_mut_guid", "txn-mut-2", 5080, true, {})
+assert(spareDismantle.Accepted and spareDismantle.ReasonId == "ItemDismantled", "the spare item is destroyed")
+assert(
+	spareDismantle.Record.AppliedRewardGrantIds["reward:expedition:mut2:Elite"] == true,
+	"a dismantle must not erase the grant ledger entry that prevents a re-grant"
+)
+assert(
+	spareDismantle.Record.AppliedRewardContentSignatures["reward:expedition:mut2:Elite"] ~= nil,
+	"a dismantle must not erase the content identity that distinguishes replay from conflict"
+)
+
+local regrant = mutation:applyReward(MUT_PLAYER, spareGrant, 5090)
+assert(not regrant.Accepted, "a destroyed reward must not be grantable again")
+assert(regrant.ReasonId == "RewardAlreadyApplied", "the re-grant must still read as a replay after a dismantle")
+
+-- #38: the dismantle replay survives a release and rejoin.
+mutation:releasePlayer(MUT_PLAYER)
+local rejoinedMutation = serviceModule.new(store)
+assert(rejoinedMutation:loadPlayer(MUT_PLAYER, 5100).Accepted, "the player rejoins")
+local replayedDismantle = rejoinedMutation:dismantle(MUT_PLAYER, "item_spare_mut_guid", "txn-mut-2", 5110, true, {})
+assert(replayedDismantle.Accepted, "a replayed dismantle is accepted after a rejoin")
+assert(replayedDismantle.ReasonId == "TransactionAlreadyApplied", "the replay must be recognised across a rejoin")
+assert(replayedDismantle.Outcome.InstanceId == "item_spare_mut_guid", "the original outcome answers the replay")
+
+-- #35: a signature ledger entry without its grant id is incoherent and fails closed.
+store.data["player:7171:inventory"] = {
+	SchemaVersion = contracts.CurrentSchemaVersion,
+	PlayerId = 7171,
+	InventoryByInstanceId = {},
+	EquippedBySlot = {},
+	AppliedRewardInstanceIds = {},
+	AppliedRewardGrantIds = {},
+	AppliedDismantleTransactions = {},
+	AppliedRewardContentSignatures = { ["reward:orphan:Boss"] = "v1|orphan" },
+	UpdatedAtUnix = 900,
+}
+local orphanSignature = serviceModule.new(store):loadPlayer(7171, 5200)
+assert(not orphanSignature.Accepted, "a signature without its grant must fail closed")
+assert(orphanSignature.ReasonId == "InvalidRewardSignatureLedger", "the orphaned signature reason must be stable")
+
+-- #39: the ledger bound is enforced where it can still be reported, rather than
+-- at the DataStore size limit where the whole record stops saving.
+assert(durableMutation.MaximumLedgerEntries >= 1_024, "the ledger bound must leave room for a long-lived account")
+assert(durableMutation.exceedsBound({}) == false, "an empty ledger is within bound")
+local overBound = {}
+for index = 1, durableMutation.MaximumLedgerEntries + 1 do
+	overBound["grant:" .. tostring(index)] = true
+end
+assert(durableMutation.exceedsBound(overBound), "a ledger past the bound must be detectable")
 
 print("PlayerInventoryPersistenceService.test.luau passed")

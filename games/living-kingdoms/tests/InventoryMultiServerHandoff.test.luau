@@ -42,6 +42,12 @@ local storageResults =
 		injectGlobals = true,
 	})()
 
+local durableMutation =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/DurableMutationContracts.luau"), {
+		debugName = "DurableMutationContracts",
+		injectGlobals = true,
+	})()
+
 local sharedStore = { data = {}, updateCount = 0, readCount = 0 }
 function sharedStore:update(key: string, transform: (any) -> any): (boolean, any)
 	self.updateCount += 1
@@ -147,13 +153,14 @@ local function newServer(jobId: string): any
 		injectGlobals = true,
 	})()
 
-	local CONTRACTS_TOKEN, DISMANTLE_TOKEN, STORAGE_RESULTS_TOKEN = {}, {}, {}
+	local CONTRACTS_TOKEN, DISMANTLE_TOKEN, STORAGE_RESULTS_TOKEN, DURABLE_MUTATION_TOKEN = {}, {}, {}, {}
 	local persistenceReplicatedStorage = {
 		Shared = {
 			Persistence = {
 				PlayerInventoryContracts = CONTRACTS_TOKEN,
 				InventoryDismantleResolver = DISMANTLE_TOKEN,
 				StorageResultContracts = STORAGE_RESULTS_TOKEN,
+				DurableMutationContracts = DURABLE_MUTATION_TOKEN,
 			},
 			Equipment = { EquipmentRewardContracts = EQUIPMENT_TOKEN, EquipmentAffixContracts = AFFIX_TOKEN },
 		},
@@ -175,8 +182,13 @@ local function newServer(jobId: string): any
 					return affixContracts
 				elseif token == DISMANTLE_TOKEN then
 					return dismantleResolver
+				elseif token == DURABLE_MUTATION_TOKEN then
+					return durableMutation
 				elseif token == STORAGE_RESULTS_TOKEN then
 					return storageResults
+				end
+				if token == DURABLE_MUTATION_TOKEN then
+					return durableMutation
 				end
 				error("unexpected persistence dependency")
 			end,
