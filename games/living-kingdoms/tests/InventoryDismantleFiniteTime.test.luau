@@ -80,6 +80,24 @@ local record = {
 	UpdatedAtUnix = 1_700_000_000,
 }
 
+local valid = Resolver.resolve({
+	RequesterId = 4242,
+	OwnerId = 4242,
+	InstanceId = "item_spare",
+	TransactionId = "txn-signature-ledger",
+	NowUnix = 1_700_000_100,
+}, {
+	Record = record,
+	HasSessionLease = true,
+	AppliedTransactions = {},
+	RecentRequestTimestamps = {},
+})
+assert(valid.Accepted and valid.NextRecord ~= nil, "finite dismantle should produce a next record")
+assert(
+	valid.NextRecord.AppliedRewardContentSignatures[reward.GrantId] == reward.ContentSignature,
+	"dismantle must preserve reward content signatures"
+)
+
 for _, invalidNow in { 0 / 0, math.huge, -math.huge } do
 	local outcome = Resolver.resolve({
 		RequesterId = 4242,
