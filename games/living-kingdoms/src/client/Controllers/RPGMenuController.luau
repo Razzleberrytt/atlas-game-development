@@ -2,6 +2,14 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+--[[
+	Bounded so a network folder the server has not created yet fails this one
+	controller instead of stalling the whole client bootstrap. The bootstrap
+	requires controllers in a deliberate order with no isolation, so an
+	unbounded wait here would hold every controller after it forever.
+]]
+local NETWORK_WAIT_SECONDS = 20
 local UserInputService = game:GetService("UserInputService")
 
 local ActiveInputDeviceFamily = require(script.Parent.Parent.State.ActiveInputDeviceFamily)
@@ -17,9 +25,9 @@ local EquipmentBuildChoicePresentation = require(ReplicatedStorage.Shared.Equipm
 
 local Controller = {}
 local player = Players.LocalPlayer
-local survivalNetwork = ReplicatedStorage:WaitForChild("SurvivalNetwork")
-local progressionNetwork = ReplicatedStorage:WaitForChild("ProgressionNetwork")
-local inventoryNetwork = ReplicatedStorage:WaitForChild("InventoryNetwork")
+local survivalNetwork = ReplicatedStorage:WaitForChild("SurvivalNetwork", NETWORK_WAIT_SECONDS)
+local progressionNetwork = ReplicatedStorage:WaitForChild("ProgressionNetwork", NETWORK_WAIT_SECONDS)
+local inventoryNetwork = ReplicatedStorage:WaitForChild("InventoryNetwork", NETWORK_WAIT_SECONDS)
 local survivalStateRemote = survivalNetwork:WaitForChild("State") :: RemoteEvent
 local survivalReadState = survivalNetwork:WaitForChild("ReadState") :: RemoteFunction
 local progressionStateRemote = progressionNetwork:WaitForChild("State") :: RemoteEvent

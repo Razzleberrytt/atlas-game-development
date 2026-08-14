@@ -22,6 +22,14 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+--[[
+	Bounded so a network folder the server has not created yet fails this one
+	controller instead of stalling the whole client bootstrap. The bootstrap
+	requires controllers in a deliberate order with no isolation, so an
+	unbounded wait here would hold every controller after it forever.
+]]
+local NETWORK_WAIT_SECONDS = 20
+
 local MatchResultConfig = require(ReplicatedStorage.Shared.Config.MatchResultConfig)
 local MatchResultContracts = require(ReplicatedStorage.Shared.Mission.MatchResultContracts)
 local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
@@ -47,7 +55,7 @@ local nextActionLabel: TextLabel? = nil
 local hasDisplayedResult = false
 
 local localPlayer = Players.LocalPlayer
-local missionNetwork = ReplicatedStorage:WaitForChild("MissionNetwork")
+local missionNetwork = ReplicatedStorage:WaitForChild("MissionNetwork", NETWORK_WAIT_SECONDS)
 local resultRemote = missionNetwork:WaitForChild("Result") :: RemoteEvent
 
 local function onMissionPhaseChanged()

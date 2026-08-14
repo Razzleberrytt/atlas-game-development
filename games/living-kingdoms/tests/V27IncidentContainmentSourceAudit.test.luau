@@ -33,7 +33,7 @@ assertThat(
 
 local listenerStart = string.find(bootstrap, "HordeStateEarlyListener.start()", 1, true)
 local guardStart = string.find(bootstrap, "BroadHighlightGuardController.start()", 1, true)
-local firstGameplayRequire = string.find(bootstrap, "local CameraController = require", 1, true)
+local firstGameplayRequire = string.find(bootstrap, "require(script.Controllers.CameraController)", 1, true)
 assertThat(listenerStart ~= nil, "early Horde State listener must start")
 assertThat(guardStart ~= nil, "broad Highlight guard must start")
 assertThat(firstGameplayRequire ~= nil, "client bootstrap must retain gameplay controller graph")
@@ -46,7 +46,7 @@ assertThat(
 	"Highlight guard must bind before presentation/gameplay controllers are required"
 )
 
-assertThat(contains(listener, 'WaitForChild("HordeNetwork")'), "early listener must bind canonical HordeNetwork")
+assertThat(contains(listener, 'WaitForChild("HordeNetwork"'), "early listener must bind canonical HordeNetwork")
 assertThat(contains(listener, 'WaitForChild("State")'), "early listener must bind canonical State remote")
 assertThat(
 	contains(listener, "stateRemote.OnClientEvent:Connect(onState)"),

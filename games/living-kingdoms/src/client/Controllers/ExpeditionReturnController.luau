@@ -7,12 +7,20 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+--[[
+	Bounded so a network folder the server has not created yet fails this one
+	controller instead of stalling the whole client bootstrap. The bootstrap
+	requires controllers in a deliberate order with no isolation, so an
+	unbounded wait here would hold every controller after it forever.
+]]
+local NETWORK_WAIT_SECONDS = 20
+
 local Controller = {}
 local player = Players.LocalPlayer
-local resultNetwork = ReplicatedStorage:WaitForChild("ExpeditionResultNetwork")
+local resultNetwork = ReplicatedStorage:WaitForChild("ExpeditionResultNetwork", NETWORK_WAIT_SECONDS)
 local resultState = resultNetwork:WaitForChild("State") :: RemoteEvent
 local resultRead = resultNetwork:WaitForChild("ReadState") :: RemoteFunction
-local lobbyNetwork = ReplicatedStorage:WaitForChild("ExpeditionLobbyNetwork")
+local lobbyNetwork = ReplicatedStorage:WaitForChild("ExpeditionLobbyNetwork", NETWORK_WAIT_SECONDS)
 local lobbyRequest = lobbyNetwork:WaitForChild("Request") :: RemoteFunction
 local lobbyState = lobbyNetwork:WaitForChild("State") :: RemoteEvent
 

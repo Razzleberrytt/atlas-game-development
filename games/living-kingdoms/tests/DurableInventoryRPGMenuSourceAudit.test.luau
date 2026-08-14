@@ -9,7 +9,7 @@ local function contains(needle: string): boolean
 end
 
 assert(
-	contains('ReplicatedStorage:WaitForChild("InventoryNetwork")'),
+	contains('ReplicatedStorage:WaitForChild("InventoryNetwork"'),
 	"RPG menu must consume the owner inventory network"
 )
 assert(contains('inventoryNetwork:WaitForChild("ReadOwnInventory")'), "RPG menu must read the sanitized owner snapshot")

@@ -12,6 +12,14 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+--[[
+	Bounded so a network folder the server has not created yet fails this one
+	controller instead of stalling the whole client bootstrap. The bootstrap
+	requires controllers in a deliberate order with no isolation, so an
+	unbounded wait here would hold every controller after it forever.
+]]
+local NETWORK_WAIT_SECONDS = 20
 local SoundService = game:GetService("SoundService")
 local Workspace = game:GetService("Workspace")
 
@@ -50,7 +58,7 @@ local reloadSoundOperativeEntityId: string? = nil
 local lastKnownLoadedRounds: number? = nil
 local lastEmptyCueClock = -math.huge
 
-local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
+local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork", NETWORK_WAIT_SECONDS)
 local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: RemoteEvent
 
 local function isNonEmptyString(value: unknown): boolean

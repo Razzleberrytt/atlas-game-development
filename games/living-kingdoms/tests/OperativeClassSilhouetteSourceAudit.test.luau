@@ -81,7 +81,7 @@ do
 	)
 end
 
-local requireIndex = string.find(bootstrap, "local ClassSilhouetteController = require", 1, true)
+local requireIndex = string.find(bootstrap, "require(script.Controllers.ClassSilhouetteController)", 1, true)
 local startIndex = string.find(bootstrap, "ClassSilhouetteController.start()", 1, true)
 assertThat(
 	requireIndex ~= nil and startIndex ~= nil and requireIndex < startIndex,

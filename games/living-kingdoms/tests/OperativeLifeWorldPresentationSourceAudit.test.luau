@@ -75,7 +75,8 @@ do
 	assert(string.find(resolver, required, 1, true) ~= nil, "life cue resolver missing: " .. required)
 end
 
-local requireIndex = string.find(bootstrap, "local OperativeLifeWorldPresentationController = require", 1, true)
+local requireIndex =
+	string.find(bootstrap, "require(script.Controllers.OperativeLifeWorldPresentationController)", 1, true)
 local startIndex = string.find(bootstrap, "OperativeLifeWorldPresentationController.start()", 1, true)
 assert(
 	requireIndex ~= nil and startIndex ~= nil and requireIndex < startIndex,

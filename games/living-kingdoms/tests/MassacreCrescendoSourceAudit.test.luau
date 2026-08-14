@@ -38,7 +38,7 @@ assert(not contains(server, "MassacreCrescendoConfig"), "server must not depend 
 
 assert(contains(controller, "streakExpiresServerTimestamp"))
 assert(contains(controller, "HordeStateEarlyListener.subscribe(onState)"))
-assert(not contains(controller, 'WaitForChild("HordeNetwork")'), "crescendo must not own HordeNetwork transport")
+assert(not contains(controller, 'WaitForChild("HordeNetwork"'), "crescendo must not own HordeNetwork transport")
 assert(contains(controller, "tierForStreak"))
 assert(contains(controller, "StingerMinimumIntervalSeconds"))
 assert(contains(controller, "GroupTransparency"))

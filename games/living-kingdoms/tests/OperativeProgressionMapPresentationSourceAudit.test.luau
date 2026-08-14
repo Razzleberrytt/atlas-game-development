@@ -17,7 +17,7 @@ assertThat(
 	"durable progression map must consume the canonical authored rank config"
 )
 assertThat(
-	presentationSource:find('WaitForChild("OperativeProgressionNetwork")', 1, true) ~= nil,
+	presentationSource:find('WaitForChild("OperativeProgressionNetwork"', 1, true) ~= nil,
 	"durable progression map must consume the server-owned progression surface"
 )
 assertThat(

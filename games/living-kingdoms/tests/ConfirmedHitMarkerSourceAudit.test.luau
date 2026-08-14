@@ -93,10 +93,7 @@ assertThat(config.getPatternPresentation("LinePierce").Title == "LINE PIERCE", "
 assertThat(config.getPatternPresentation("SingleTarget") == nil, "ordinary hits must not receive pattern punctuation")
 
 assertThat(
-	contains(
-		bootstrapSource,
-		"local ConfirmedHitMarkerController = require(script.Controllers.ConfirmedHitMarkerController)"
-	),
+	contains(bootstrapSource, "require(script.Controllers.ConfirmedHitMarkerController)"),
 	"client bootstrap does not require confirmed hit marker"
 )
 assertThat(

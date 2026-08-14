@@ -7,11 +7,19 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+--[[
+	Bounded so a network folder the server has not created yet fails this one
+	controller instead of stalling the whole client bootstrap. The bootstrap
+	requires controllers in a deliberate order with no isolation, so an
+	unbounded wait here would hold every controller after it forever.
+]]
+local NETWORK_WAIT_SECONDS = 20
+
 local Controller = {}
 local player = Players.LocalPlayer
-local progressionNetwork = ReplicatedStorage:WaitForChild("OperativeProgressionNetwork")
+local progressionNetwork = ReplicatedStorage:WaitForChild("OperativeProgressionNetwork", NETWORK_WAIT_SECONDS)
 local progressionReadState = progressionNetwork:WaitForChild("ReadState") :: RemoteFunction
-local inventoryNetwork = ReplicatedStorage:WaitForChild("InventoryNetwork")
+local inventoryNetwork = ReplicatedStorage:WaitForChild("InventoryNetwork", NETWORK_WAIT_SECONDS)
 local inventoryStateRemote = inventoryNetwork:WaitForChild("State") :: RemoteEvent
 
 local started = false

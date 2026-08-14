@@ -50,7 +50,7 @@ do
 end
 
 assert(
-	contains(bootstrap, "local OperativeHelmetController = require(script.Controllers.OperativeHelmetController)"),
+	contains(bootstrap, "require(script.Controllers.OperativeHelmetController)"),
 	"helmet controller is not required by client bootstrap"
 )
 assert(contains(bootstrap, "OperativeHelmetController.start()"), "helmet controller is not started")

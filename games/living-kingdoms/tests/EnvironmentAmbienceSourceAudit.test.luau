@@ -17,7 +17,7 @@ check(
 	"mood must subscribe to disclosed horde state through the application bridge"
 )
 check(
-	string.find(controller, 'WaitForChild("HordeNetwork")', 1, true) == nil,
+	string.find(controller, 'WaitForChild("HordeNetwork"', 1, true) == nil,
 	"mood must not own HordeNetwork transport"
 )
 check(
