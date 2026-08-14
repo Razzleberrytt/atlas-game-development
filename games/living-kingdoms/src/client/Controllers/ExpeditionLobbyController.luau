@@ -13,6 +13,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	unbounded wait here would hold every controller after it forever.
 ]]
 local NETWORK_WAIT_SECONDS = 20
+local PANEL_WIDTH = 390
+local PANEL_HEIGHT = 330
+local PANEL_VIEWPORT_MARGIN = 24
+
+local ResponsivePanelScale = require(script.Parent.Parent.Presentation.ResponsivePanelScale)
 
 local Controller = {}
 local player = Players.LocalPlayer
@@ -23,6 +28,7 @@ local readState = network:WaitForChild("ReadState") :: RemoteFunction
 
 local started = false
 local connection: RBXScriptConnection? = nil
+local scaleConnection: RBXScriptConnection? = nil
 local gui: ScreenGui? = nil
 local statusLabel: TextLabel? = nil
 local membersLabel: TextLabel? = nil
@@ -89,16 +95,37 @@ local function createGui()
 	screen.Parent = player:WaitForChild("PlayerGui")
 	gui = screen
 
+	local viewportProbe = Instance.new("Frame")
+	viewportProbe.Name = "ViewportProbe"
+	viewportProbe.Size = UDim2.fromScale(1, 1)
+	viewportProbe.BackgroundTransparency = 1
+	viewportProbe.BorderSizePixel = 0
+	viewportProbe.Parent = screen
+
 	local panel = Instance.new("Frame")
 	panel.AnchorPoint = Vector2.new(0, 0.5)
-	panel.Position = UDim2.new(0, 24, 0.5, 0)
-	panel.Size = UDim2.fromOffset(390, 330)
+	panel.Position = UDim2.new(0, PANEL_VIEWPORT_MARGIN, 0.5, 0)
+	panel.Size = UDim2.fromOffset(PANEL_WIDTH, PANEL_HEIGHT)
 	panel.BackgroundColor3 = Color3.fromRGB(18, 25, 32)
 	panel.BackgroundTransparency = 0.08
 	panel.Parent = screen
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 12)
 	corner.Parent = panel
+
+	local panelScale = Instance.new("UIScale")
+	panelScale.Name = "ResponsiveScale"
+	panelScale.Parent = panel
+	local function updatePanelScale()
+		local viewport = viewportProbe.AbsoluteSize
+		if viewport.X <= 0 or viewport.Y <= 0 then
+			return
+		end
+		panelScale.Scale =
+			ResponsivePanelScale.calculate(viewport.X, viewport.Y, PANEL_WIDTH, PANEL_HEIGHT, PANEL_VIEWPORT_MARGIN)
+	end
+	updatePanelScale()
+	scaleConnection = viewportProbe:GetPropertyChangedSignal("AbsoluteSize"):Connect(updatePanelScale)
 
 	local title = createLabel(panel, UDim2.new(1, -32, 0, 36), UDim2.fromOffset(16, 14), 22)
 	title.Font = Enum.Font.GothamBold
@@ -204,6 +231,10 @@ function Controller.stop()
 	if connection then
 		connection:Disconnect()
 		connection = nil
+	end
+	if scaleConnection then
+		scaleConnection:Disconnect()
+		scaleConnection = nil
 	end
 	if gui then
 		gui:Destroy()
