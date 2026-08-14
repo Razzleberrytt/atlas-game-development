@@ -26,6 +26,14 @@ local function validPlayerId(playerId: number): boolean
 	return type(playerId) == "number" and playerId % 1 == 0 and playerId > 0
 end
 
+local function isFiniteNumber(value: any): boolean
+	return type(value) == "number" and value == value and value > -math.huge and value < math.huge
+end
+
+local function validNowUnix(nowUnix: number): boolean
+	return isFiniteNumber(nowUnix) and nowUnix >= 0
+end
+
 local function keyFor(playerId: number): string
 	return string.format("player:%d:lease", playerId)
 end
@@ -42,10 +50,9 @@ local function isWellFormedLease(current: any): boolean
 	return type(current) == "table"
 		and type(current.OwnerId) == "string"
 		and current.OwnerId ~= ""
-		and type(current.ExpiresAtUnix) == "number"
-		and current.ExpiresAtUnix == current.ExpiresAtUnix
-		and type(current.AcquiredAtUnix) == "number"
-		and type(current.RenewedAtUnix) == "number"
+		and isFiniteNumber(current.ExpiresAtUnix)
+		and isFiniteNumber(current.AcquiredAtUnix)
+		and isFiniteNumber(current.RenewedAtUnix)
 end
 
 function Service.new(store: Store, ownerId: string, leaseDurationSeconds: number): Service
@@ -79,7 +86,7 @@ function Service:acquire(playerId: number, nowUnix: number): any
 	if selfAny._destroyed then
 		return result(false, "ServiceDestroyed", nil)
 	end
-	if not validPlayerId(playerId) or type(nowUnix) ~= "number" or nowUnix < 0 then
+	if not validPlayerId(playerId) or not validNowUnix(nowUnix) then
 		return result(false, "InvalidAcquireRequest", nil)
 	end
 
@@ -154,7 +161,7 @@ function Service:renew(playerId: number, nowUnix: number): any
 	if selfAny._destroyed then
 		return result(false, "ServiceDestroyed", nil)
 	end
-	if not validPlayerId(playerId) or type(nowUnix) ~= "number" or nowUnix < 0 then
+	if not validPlayerId(playerId) or not validNowUnix(nowUnix) then
 		return result(false, "InvalidRenewRequest", nil)
 	end
 	if selfAny._leases[playerId] == nil then
