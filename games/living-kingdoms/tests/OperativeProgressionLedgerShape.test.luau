@@ -71,6 +71,11 @@ local recoveryContracts =
 		debugName = "InventoryRecoveryContracts",
 		injectGlobals = true,
 	})()
+local capacityContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryCapacityContracts.luau"), {
+		debugName = "InventoryCapacityContracts",
+		injectGlobals = true,
+	})()
 
 local RESOLVER_CONTRACTS_TOKEN, RESOLVER_EQUIPMENT_TOKEN = {}, {}
 local dismantleResolver =
@@ -110,6 +115,7 @@ local persistenceModule =
 								DurableMutationContracts = DURABLE_MUTATION_TOKEN,
 								InventoryMigrationSteps = MIGRATION_STEPS_TOKEN,
 								InventoryRecoveryContracts = RECOVERY_TOKEN,
+								InventoryCapacityContracts = CAPACITY_TOKEN,
 							},
 							Equipment = {
 								EquipmentRewardContracts = EQUIPMENT_TOKEN,
@@ -130,6 +136,8 @@ local persistenceModule =
 					return dismantleResolver
 				elseif token == MIGRATION_STEPS_TOKEN then
 					return migrationSteps
+				elseif token == CAPACITY_TOKEN then
+					return capacityContracts
 				elseif token == RECOVERY_TOKEN then
 					return recoveryContracts
 				elseif token == DURABLE_MUTATION_TOKEN then

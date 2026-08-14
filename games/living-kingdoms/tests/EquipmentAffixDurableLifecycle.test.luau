@@ -54,6 +54,7 @@ local STORAGE_RESULTS_TOKEN = {}
 local DURABLE_MUTATION_TOKEN = {}
 local MIGRATION_STEPS_TOKEN = {}
 local RECOVERY_TOKEN = {}
+local CAPACITY_TOKEN = {}
 local storageResults =
 	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/StorageResultContracts.luau"), {
 		debugName = "StorageResultContracts",
@@ -253,6 +254,11 @@ local recoveryContracts =
 		debugName = "InventoryRecoveryContracts",
 		injectGlobals = true,
 	})()
+local capacityContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryCapacityContracts.luau"), {
+		debugName = "InventoryCapacityContracts",
+		injectGlobals = true,
+	})()
 
 local dismantleResolver =
 	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryDismantleResolver.luau"), {
@@ -302,6 +308,7 @@ local replicatedStorage = {
 			DurableMutationContracts = DURABLE_MUTATION_TOKEN,
 			InventoryMigrationSteps = MIGRATION_STEPS_TOKEN,
 			InventoryRecoveryContracts = RECOVERY_TOKEN,
+			InventoryCapacityContracts = CAPACITY_TOKEN,
 		},
 	},
 }
@@ -323,6 +330,8 @@ local function requireProductionToken(token: unknown)
 		return dismantleResolver
 	elseif token == MIGRATION_STEPS_TOKEN then
 		return migrationSteps
+	elseif token == CAPACITY_TOKEN then
+		return capacityContracts
 	elseif token == RECOVERY_TOKEN then
 		return recoveryContracts
 	elseif token == DURABLE_MUTATION_TOKEN then

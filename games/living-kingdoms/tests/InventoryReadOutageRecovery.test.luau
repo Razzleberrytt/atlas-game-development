@@ -148,6 +148,11 @@ local recoveryContracts =
 		debugName = "InventoryRecoveryContracts",
 		injectGlobals = true,
 	})()
+local capacityContracts =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryCapacityContracts.luau"), {
+		debugName = "InventoryCapacityContracts",
+		injectGlobals = true,
+	})()
 
 local resolutionPolicy =
 	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/InventoryDataStoreResolutionPolicy.luau"), {
@@ -228,6 +233,7 @@ local function newServer(jobId: string): any
 								DurableMutationContracts = DURABLE_MUTATION_TOKEN,
 								InventoryMigrationSteps = MIGRATION_STEPS_TOKEN,
 								InventoryRecoveryContracts = RECOVERY_TOKEN,
+								InventoryCapacityContracts = CAPACITY_TOKEN,
 							},
 							Equipment = {
 								EquipmentRewardContracts = EQUIPMENT_TOKEN,
@@ -248,6 +254,8 @@ local function newServer(jobId: string): any
 					return dismantleResolver
 				elseif token == MIGRATION_STEPS_TOKEN then
 					return migrationSteps
+				elseif token == CAPACITY_TOKEN then
+					return capacityContracts
 				elseif token == RECOVERY_TOKEN then
 					return recoveryContracts
 				elseif token == DURABLE_MUTATION_TOKEN then
@@ -263,6 +271,9 @@ local function newServer(jobId: string): any
 				end
 				if token == RECOVERY_TOKEN then
 					return recoveryContracts
+				end
+				if token == CAPACITY_TOKEN then
+					return capacityContracts
 				end
 				error("unexpected persistence dependency")
 			end,
