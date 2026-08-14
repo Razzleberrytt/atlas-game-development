@@ -13,6 +13,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 	unbounded wait here would hold every controller after it forever.
 ]]
 local NETWORK_WAIT_SECONDS = 20
+local PANEL_MAX_WIDTH = 520
+local PANEL_HEIGHT = 132
+local PANEL_HORIZONTAL_MARGIN = 16
 
 local InterfaceTheme = require(script.Parent.Parent.UI.InterfaceTheme)
 
@@ -76,8 +79,12 @@ local function createGui()
 	local panel = InterfaceTheme.panel(gui, "ExpeditionPanel")
 	panel.AnchorPoint = Vector2.new(0.5, 0)
 	panel.Position = UDim2.fromScale(0.5, 0.025)
-	panel.Size = UDim2.fromOffset(520, 132)
+	panel.Size = UDim2.new(1, -PANEL_HORIZONTAL_MARGIN * 2, 0, PANEL_HEIGHT)
 	InterfaceTheme.padding(panel, InterfaceTheme.Spacing.Medium)
+
+	local sizeConstraint = Instance.new("UISizeConstraint")
+	sizeConstraint.MaxSize = Vector2.new(PANEL_MAX_WIDTH, PANEL_HEIGHT)
+	sizeConstraint.Parent = panel
 
 	local layout = Instance.new("UIListLayout")
 	layout.FillDirection = Enum.FillDirection.Vertical
