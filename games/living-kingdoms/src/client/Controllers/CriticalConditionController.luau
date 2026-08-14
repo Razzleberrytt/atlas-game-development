@@ -14,6 +14,10 @@ local Workspace = game:GetService("Workspace")
 
 local CriticalConditionConfig = require(ReplicatedStorage.Shared.Config.CriticalConditionConfig)
 
+local WARNING_MAX_WIDTH = 620
+local WARNING_HEIGHT = 42
+local WARNING_HORIZONTAL_MARGIN = 16
+
 local Controller = {}
 local localPlayer = Players.LocalPlayer
 
@@ -85,7 +89,7 @@ local function createPresentation()
 	warning.Name = "CriticalWarning"
 	warning.AnchorPoint = Vector2.new(0.5, 0.5)
 	warning.Position = UDim2.fromScale(0.5, 0.64)
-	warning.Size = UDim2.fromOffset(620, 42)
+	warning.Size = UDim2.new(1, -WARNING_HORIZONTAL_MARGIN * 2, 0, WARNING_HEIGHT)
 	warning.BackgroundTransparency = 1
 	warning.BorderSizePixel = 0
 	warning.Font = Enum.Font.GothamBlack
@@ -95,12 +99,17 @@ local function createPresentation()
 	warning.TextStrokeColor3 = Color3.fromRGB(25, 0, 2)
 	warning.TextStrokeTransparency = 0.18
 	warning.TextTransparency = 1
+	warning.TextWrapped = true
 	warning.TextXAlignment = Enum.TextXAlignment.Center
 	warning.TextYAlignment = Enum.TextYAlignment.Center
 	warning.Visible = false
 	warning.ZIndex = 2
 	warning.Parent = gui
 	warningLabel = warning
+
+	local sizeConstraint = Instance.new("UISizeConstraint")
+	sizeConstraint.MaxSize = Vector2.new(WARNING_MAX_WIDTH, WARNING_HEIGHT)
+	sizeConstraint.Parent = warning
 
 	gui.Parent = localPlayer:WaitForChild("PlayerGui")
 	screenGui = gui
