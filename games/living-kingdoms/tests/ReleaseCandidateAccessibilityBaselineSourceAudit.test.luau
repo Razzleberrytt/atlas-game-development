@@ -3,7 +3,9 @@
 local fs = require("@lune/fs")
 
 local function assertThat(condition: unknown, message: string)
-	if not condition then error(message, 2) end
+	if not condition then
+		error(message, 2)
+	end
 end
 
 local function contains(source: string, token: string): boolean
@@ -23,8 +25,14 @@ for _, level in { "Full", "Reduced", "Off" } do
 	assertThat(contains(config, level), "RC comfort level model is missing " .. level)
 end
 
-assertThat(contains(panel, "configured comfort setting is unreachable"), "panel must fail when config grows without a reachable control")
-assertThat(contains(state, "PresentationAccessibilityConfig.Settings"), "state must derive its setting catalog from config")
+assertThat(
+	contains(panel, "configured comfort setting is unreachable"),
+	"panel must fail when config grows without a reachable control"
+)
+assertThat(
+	contains(state, "PresentationAccessibilityConfig.Settings"),
+	"state must derive its setting catalog from config"
+)
 assertThat(not contains(state, "FireServer"), "comfort state must remain client-local")
 assertThat(not contains(panel, "FireServer"), "comfort panel must own no gameplay/network authority")
 

@@ -88,7 +88,10 @@ assert(
 	PresentationAccessibilityConfig.LevelDisplayNames[PresentationAccessibilityConfig.DefaultLevelId] ~= nil,
 	"the default level must be a known level"
 )
-assert(PresentationAccessibilityConfig.DefaultLevelId == LevelIds.Full, "new players must start at authored presentation intensity")
+assert(
+	PresentationAccessibilityConfig.DefaultLevelId == LevelIds.Full,
+	"new players must start at authored presentation intensity"
+)
 for settingId, setting in PresentationAccessibilityConfig.Settings do
 	assert(#setting.DisplayName > 0, settingId .. " requires a readable display name")
 	assert(setting.Scales[LevelIds.Full] == 1, settingId .. " full intensity must be exactly the authored presentation")

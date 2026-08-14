@@ -32,12 +32,18 @@ local disconnectStateListener: (() -> ())? = nil
 local settingButtons: { [string]: TextButton } = {}
 
 local function settingButtonText(settingId: string): string
-	return string.format("%s: %s", PresentationAccessibilityState.getDisplayName(settingId), PresentationAccessibilityState.getLevelDisplayName(settingId))
+	return string.format(
+		"%s: %s",
+		PresentationAccessibilityState.getDisplayName(settingId),
+		PresentationAccessibilityState.getLevelDisplayName(settingId)
+	)
 end
 
 local function refreshButton(settingId: string)
 	local button = settingButtons[settingId]
-	if button ~= nil then button.Text = settingButtonText(settingId) end
+	if button ~= nil then
+		button.Text = settingButtonText(settingId)
+	end
 end
 
 local function createSettingButton(parent: Instance, settingId: string, order: number): TextButton
@@ -61,7 +67,9 @@ local function createSettingButton(parent: Instance, settingId: string, order: n
 end
 
 function Controller.start()
-	if started then return end
+	if started then
+		return
+	end
 	started = true
 	local playerGui = localPlayer:WaitForChild("PlayerGui")
 	local gui = Instance.new("ScreenGui")
@@ -128,30 +136,58 @@ function Controller.start()
 
 	local seen: { [string]: boolean } = {}
 	for order, settingId in SETTING_ORDER do
-		assert(PresentationAccessibilityConfig.Settings[settingId] ~= nil, "settings panel references unknown comfort setting")
+		assert(
+			PresentationAccessibilityConfig.Settings[settingId] ~= nil,
+			"settings panel references unknown comfort setting"
+		)
 		assert(not seen[settingId], "settings panel cannot repeat a comfort setting")
 		seen[settingId] = true
 		local button = createSettingButton(settingsPanel, settingId, order)
 		settingButtons[settingId] = button
-		table.insert(buttonConnections, button.Activated:Connect(function() PresentationAccessibilityState.cycle(settingId) end))
+		table.insert(
+			buttonConnections,
+			button.Activated:Connect(function()
+				PresentationAccessibilityState.cycle(settingId)
+			end)
+		)
 	end
 	for settingId in PresentationAccessibilityConfig.Settings do
-		assert(seen[settingId] == true, "configured comfort setting is unreachable from the settings panel: " .. settingId)
+		assert(
+			seen[settingId] == true,
+			"configured comfort setting is unreachable from the settings panel: " .. settingId
+		)
 	end
 
-	table.insert(buttonConnections, toggleButton.Activated:Connect(function() settingsPanel.Visible = not settingsPanel.Visible end))
-	disconnectStateListener = PresentationAccessibilityState.onChanged(function(settingId, _levelId) refreshButton(settingId) end)
+	table.insert(
+		buttonConnections,
+		toggleButton.Activated:Connect(function()
+			settingsPanel.Visible = not settingsPanel.Visible
+		end)
+	)
+	disconnectStateListener = PresentationAccessibilityState.onChanged(function(settingId, _levelId)
+		refreshButton(settingId)
+	end)
 	gui.Parent = playerGui
 end
 
 function Controller.stop()
-	if not started then return end
+	if not started then
+		return
+	end
 	started = false
-	for _, connection in buttonConnections do connection:Disconnect() end
+	for _, connection in buttonConnections do
+		connection:Disconnect()
+	end
 	table.clear(buttonConnections)
-	if disconnectStateListener ~= nil then disconnectStateListener() disconnectStateListener = nil end
+	if disconnectStateListener ~= nil then
+		disconnectStateListener()
+		disconnectStateListener = nil
+	end
 	table.clear(settingButtons)
-	if screenGui ~= nil then screenGui:Destroy() screenGui = nil end
+	if screenGui ~= nil then
+		screenGui:Destroy()
+		screenGui = nil
+	end
 end
 
 return Controller

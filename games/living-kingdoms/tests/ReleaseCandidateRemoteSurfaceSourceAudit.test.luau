@@ -13,7 +13,9 @@
 local fs = require("@lune/fs")
 
 local function assertThat(condition: unknown, message: string)
-	if not condition then error(message, 2) end
+	if not condition then
+		error(message, 2)
+	end
 end
 
 local function contains(source: string, token: string): boolean
@@ -35,11 +37,17 @@ local expectedIntentNames = {
 }
 
 for _, remoteName in expectedIntentNames do
-	assertThat(contains(bootstrap, '"' .. remoteName .. '"'), "RC remote inventory is missing declared intent: " .. remoteName)
+	assertThat(
+		contains(bootstrap, '"' .. remoteName .. '"'),
+		"RC remote inventory is missing declared intent: " .. remoteName
+	)
 end
 
 for _, disclosureName in { "CombatPresentation", "State", "Result" } do
-	assertThat(contains(bootstrap, '"' .. disclosureName .. '"'), "RC audit expects the existing disclosure surface: " .. disclosureName)
+	assertThat(
+		contains(bootstrap, '"' .. disclosureName .. '"'),
+		"RC audit expects the existing disclosure surface: " .. disclosureName
+	)
 end
 
 assertThat(contains(bootstrap, "server-to-client disclosure only"), "mission disclosure boundary must remain explicit")
