@@ -1,10 +1,9 @@
 --!strict
 
 --[[
-	VS-0107 bounded equipment pool and source-specific reward rules.
-	Patch 0.9 expands only combat identities that already have authoritative
-	firearm definitions. Power remains intentionally narrow: content breadth may
-	grow without introducing an unbounded tier jump.
+	Bounded durable equipment pool and source-specific reward rules.
+	Patch 0.9 expands proven weapon, armor, and relic identities while keeping
+	power bands narrow and routing all combat consequences through existing owners.
 ]]
 
 local CombatContracts = require(script.Parent.Parent.Combat.CombatContracts)
@@ -15,12 +14,6 @@ local RarityIds = Contracts.RarityIds
 local SourceIds = Contracts.SourceIds
 local WeaponIds = CombatContracts.WeaponIds
 
---[[
-	`WeaponId` is the authored link from an equipment definition to the combat
-	weapon it drives when equipped. It lives on the definition rather than in a
-	handoff service so that adding an item cannot silently produce something that
-	equips but changes nothing. Armor and relic slots carry no weapon.
-]]
 local function item(
 	id: string,
 	displayName: string,
@@ -45,76 +38,26 @@ local function item(
 end
 
 local EquipmentRewardConfig = {
-	Version = "PATCH-0.9-v2-durable-weapon-variety",
+	Version = "PATCH-0.9-v3-gear-archetypes",
 	Definitions = table.freeze({
-		item(
-			"frontier-rifle",
-			"Frontier Rifle",
-			SlotIds.Primary,
-			8,
-			14,
-			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare },
-			{ "rifle", "precision" },
-			WeaponIds.SniperRifle
-		),
-		item(
-			"breach-shotgun",
-			"Breach Shotgun",
-			SlotIds.Primary,
-			8,
-			14,
-			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare },
-			{ "shotgun", "close-range" },
-			WeaponIds.BreachShotgun
-		),
-		item(
-			"blackwater-support-lmg",
-			"Blackwater Support LMG",
-			SlotIds.Primary,
-			8,
-			14,
-			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare },
-			{ "lmg", "sustained-fire", "support" },
-			WeaponIds.LightMachineGun
-		),
-		item(
-			"razor-compact-smg",
-			"Razor Compact SMG",
-			SlotIds.Primary,
-			8,
-			14,
-			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare },
-			{ "smg", "close-range", "horde-control" },
-			WeaponIds.SubmachineGun
-		),
-		item(
-			"warden-sidearm",
-			"Warden Sidearm",
-			SlotIds.Secondary,
-			7,
-			12,
-			{ RarityIds.Common, RarityIds.Uncommon },
-			{ "sidearm", "reliable" },
-			WeaponIds.ServicePistol
-		),
-		item(
-			"delver-plate",
-			"Delver Plate",
-			SlotIds.Armor,
-			8,
-			14,
-			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare },
-			{ "armor", "survival" }
-		),
-		item(
-			"keeper-sigil",
-			"Keeper Sigil",
-			SlotIds.Relic,
-			10,
-			15,
-			{ RarityIds.Uncommon, RarityIds.Rare },
-			{ "relic", "ability" }
-		),
+		item("frontier-rifle", "Frontier Rifle", SlotIds.Primary, 8, 14,
+			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare }, { "rifle", "precision" }, WeaponIds.SniperRifle),
+		item("breach-shotgun", "Breach Shotgun", SlotIds.Primary, 8, 14,
+			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare }, { "shotgun", "close-range" }, WeaponIds.BreachShotgun),
+		item("blackwater-support-lmg", "Blackwater Support LMG", SlotIds.Primary, 8, 14,
+			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare }, { "lmg", "sustained-fire", "support" }, WeaponIds.LightMachineGun),
+		item("razor-compact-smg", "Razor Compact SMG", SlotIds.Primary, 8, 14,
+			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare }, { "smg", "close-range", "horde-control" }, WeaponIds.SubmachineGun),
+		item("warden-sidearm", "Warden Sidearm", SlotIds.Secondary, 7, 12,
+			{ RarityIds.Common, RarityIds.Uncommon }, { "sidearm", "reliable" }, WeaponIds.ServicePistol),
+		item("delver-plate", "Delver Plate", SlotIds.Armor, 8, 14,
+			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare }, { "armor", "survival" }, nil),
+		item("scout-harness", "Scout Harness", SlotIds.Armor, 7, 13,
+			{ RarityIds.Common, RarityIds.Uncommon, RarityIds.Rare }, { "armor", "mobility" }, nil),
+		item("keeper-sigil", "Keeper Sigil", SlotIds.Relic, 10, 15,
+			{ RarityIds.Uncommon, RarityIds.Rare }, { "relic", "ability" }, nil),
+		item("storm-catalyst", "Storm Catalyst", SlotIds.Relic, 9, 15,
+			{ RarityIds.Uncommon, RarityIds.Rare }, { "relic", "ability", "offense" }, nil),
 	}),
 	Sources = table.freeze({
 		[SourceIds.Elite] = table.freeze({
@@ -143,11 +86,9 @@ local rewardWeaponIds = {}
 for _, definition in EquipmentRewardConfig.Definitions do
 	assert(ids[definition.Id] == nil, "equipment definition IDs must be unique")
 	ids[definition.Id] = true
-	assert(
-		definition.MinimumPower >= 1 and definition.MaximumPower >= definition.MinimumPower,
-		"invalid equipment power bounds"
-	)
+	assert(definition.MinimumPower >= 1 and definition.MaximumPower >= definition.MinimumPower, "invalid equipment power bounds")
 	assert(#definition.AllowedRarities >= 1, "equipment requires at least one rarity")
+	assert(#definition.Tags >= 1, definition.Id .. " requires at least one authoring tag")
 
 	local drivesWeapon = definition.Slot == SlotIds.Primary or definition.Slot == SlotIds.Secondary
 	if drivesWeapon then
@@ -159,10 +100,6 @@ for _, definition in EquipmentRewardConfig.Definitions do
 	end
 end
 
--- Patch 0.9 authoring invariant: every firearm deliberately exposed as an
--- in-run discovery must have a durable equipment representation. This prevents
--- a proven combat identity from becoming a one-run-only dead end when content
--- authors expand the discoverable roster.
 for _, weaponId in FirearmConfig.DiscoverableWeaponIds do
 	assert(rewardWeaponIds[weaponId] == true, "discoverable firearm lacks durable reward representation: " .. weaponId)
 end
@@ -172,10 +109,7 @@ for sourceId, source in EquipmentRewardConfig.Sources do
 	assert(source.MinimumPower >= 1 and source.MaximumPower >= source.MinimumPower, "invalid source power bounds")
 	local total = 0
 	for _, weight in source.RarityWeights do
-		assert(
-			type(weight) == "number" and weight >= 0 and weight % 1 == 0,
-			"rarity weights must be nonnegative integers"
-		)
+		assert(type(weight) == "number" and weight >= 0 and weight % 1 == 0, "rarity weights must be nonnegative integers")
 		total += weight
 	end
 	assert(total == 100, sourceId .. " rarity weights must total 100")
