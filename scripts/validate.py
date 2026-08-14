@@ -6,6 +6,13 @@ Profiles:
   fast  R1 iteration: docs + layout + formatting/lint + all Lune fixtures + Rojo builds.
   full  R2/R3/CI: fast plus import/migration/evidence decoder and reconciliation checks.
 
+  persistence-hardening
+        Patch 0.7 durable-state suite only. A focused subset of the same
+        fixtures `fast`/`full` run, for iterating on persistence without paying
+        for the whole sweep. It is a filter, never a substitute: `full` remains
+        the merge gate, and this profile deliberately cannot pass anything
+        `full` would fail.
+
 Humans, coding agents, and CI should call this script instead of duplicating the
 validation command list elsewhere.
 """
@@ -92,6 +99,42 @@ def validate_full_preflight() -> None:
     )
 
 
+PERSISTENCE_HARDENING_FIXTURES = (
+    "PlayerInventoryPersistenceService",
+    "InventorySessionLeaseService",
+    "InventoryMultiServerHandoff",
+    "InventoryReadOutageRecovery",
+    "InventoryLifecycleFaultMatrix",
+    "InventoryMigrationMatrix",
+    "InventoryRecordCapacity",
+    "InventoryInvariantChecker",
+    "InventoryStorageContractSourceAudit",
+    "InventoryLiveLifecycleSourceAudit",
+    "StudioInventoryPersistenceIsolation",
+    "RobloxInventoryDataStoreAdapterLoadGuard",
+    "PersistenceReasonClassificationAudit",
+    "OperativeProgressionLedgerShape",
+    "EquipmentAffixDurableLifecycle",
+)
+
+
+def validate_persistence_hardening() -> None:
+    """Patch 0.7 durable-state suite: a filter over the same fixtures, never a substitute."""
+    fixtures = []
+    for name in PERSISTENCE_HARDENING_FIXTURES:
+        path = GAME / "tests" / f"{name}.test.luau"
+        if not path.exists():
+            raise RuntimeError(f"persistence-hardening fixture is missing: {path}")
+        fixtures.append(path)
+    for fixture in fixtures:
+        run(
+            f"Persistence fixture: {fixture.relative_to(ROOT)}",
+            ["lune", "run", str(fixture.relative_to(ROOT))],
+        )
+    print("")
+    print(f"[validate] executed {len(fixtures)} persistence-hardening fixtures", flush=True)
+
+
 def rojo_build(label: str, project: str, output_name: str) -> None:
     output = Path(tempfile.gettempdir()) / output_name
     run(
@@ -145,7 +188,7 @@ def validate_toolchain_and_game() -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("profile", choices=("docs", "fast", "full"))
+    parser.add_argument("profile", choices=("docs", "fast", "full", "persistence-hardening"))
     args = parser.parse_args()
 
     try:
@@ -153,6 +196,11 @@ def main() -> int:
             "Main World Studio snapshot materialization",
             "scripts/roblox/materialize_main_world_studio_snapshot.py",
         )
+        if args.profile == "persistence-hardening":
+            validate_persistence_hardening()
+            print("")
+            print(f"[validate] OK — profile={args.profile}")
+            return 0
         validate_docs()
         if args.profile == "full":
             validate_full_preflight()
