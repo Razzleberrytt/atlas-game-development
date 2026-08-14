@@ -2,6 +2,8 @@
 
 -- Server-owned terminal party decision. Every active frozen participant may cast
 -- one current vote; the party resolves only when all remaining participants agree.
+-- Snapshots carry a monotonic Revision and deterministic ParticipantUserIds so
+-- clients can reconcile disconnect-driven state changes without guessing.
 
 export type Service = {
 	cast: (self: Service, playerId: number, decisionId: string) -> any,
@@ -14,10 +16,18 @@ local VALID = { Replay = true, ReturnToPreparation = true }
 local Service = {}
 Service.__index = Service
 
+local function advanceRevision(selfAny: any)
+	selfAny._revision += 1
+end
+
 local function snapshot(selfAny: any): any
 	local votes = {}
+	local participantUserIds = {}
 	local replay = 0
 	local returned = 0
+	for _, playerId in selfAny._participants do
+		table.insert(participantUserIds, playerId)
+	end
 	for playerId, decisionId in selfAny._votes do
 		votes[playerId] = decisionId
 		if decisionId == "Replay" then
@@ -35,7 +45,9 @@ local function snapshot(selfAny: any): any
 		resolved = "ReturnToPreparation"
 	end
 	return table.freeze({
+		Revision = selfAny._revision,
 		ParticipantCount = participantCount,
+		ParticipantUserIds = table.freeze(participantUserIds),
 		VoteCount = replay + returned,
 		ReplayVotes = replay,
 		ReturnVotes = returned,
@@ -61,7 +73,7 @@ function Service.new(participantUserIds: { number }): Service
 	end
 	table.sort(participants)
 	return setmetatable(
-		{ _participants = participants, _participantSet = seen, _votes = {}, _destroyed = false },
+		{ _participants = participants, _participantSet = seen, _votes = {}, _revision = 0, _destroyed = false },
 		Service
 	) :: any
 end
@@ -80,8 +92,13 @@ function Service:cast(playerId: number, decisionId: string): any
 	if snapshot(selfAny).ResolvedDecisionId ~= "Undecided" then
 		return result(false, "DecisionResolved", snapshot(selfAny))
 	end
+	local previousDecisionId = selfAny._votes[playerId]
+	if previousDecisionId == decisionId then
+		return result(true, "VoteUnchanged", snapshot(selfAny))
+	end
 	selfAny._votes[playerId] = decisionId
-	return result(true, "VoteRecorded", snapshot(selfAny))
+	advanceRevision(selfAny)
+	return result(true, if previousDecisionId == nil then "VoteRecorded" else "VoteChanged", snapshot(selfAny))
 end
 
 function Service:removeParticipant(playerId: number): any
@@ -103,7 +120,15 @@ function Service:removeParticipant(playerId: number): any
 			break
 		end
 	end
-	return result(true, if #selfAny._participants == 0 then "PartyEmpty" else "ParticipantRemoved", snapshot(selfAny))
+	advanceRevision(selfAny)
+	local current = snapshot(selfAny)
+	if current.ParticipantCount == 0 then
+		return result(true, "PartyEmpty", current)
+	end
+	if current.ResolvedDecisionId ~= "Undecided" then
+		return result(true, "ResolvedAfterParticipantRemoved", current)
+	end
+	return result(true, "ParticipantRemoved", current)
 end
 
 function Service:readSnapshot(): any

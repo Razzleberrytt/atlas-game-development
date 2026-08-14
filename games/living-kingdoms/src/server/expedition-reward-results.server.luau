@@ -1,9 +1,9 @@
 --!strict
 
 -- Server-owned reward/result integration for the first expedition slice.
--- It observes authoritative runtime snapshots, freezes the run participant roster,
--- claims each reward source once, persists rewards idempotently, and publishes
--- only a sanitized read-only debrief.
+-- It observes authoritative runtime snapshots, reads the exact launch-time run
+-- roster, claims each reward source once, persists rewards idempotently, and
+-- publishes only a sanitized read-only debrief.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,6 +18,7 @@ local EquipmentRewardService = require(script.Parent.Systems.EquipmentRewardServ
 local ExpeditionLiveRuntimeService = require(script.Parent.Systems.ExpeditionLiveRuntimeService)
 local ExpeditionResultService = require(script.Parent.Systems.ExpeditionResultService)
 local ExpeditionRewardDistributionService = require(script.Parent.Systems.ExpeditionRewardDistributionService)
+local ExpeditionRunRosterService = require(script.Parent.Systems.ExpeditionRunRosterService)
 local InventoryLiveService = require(script.Parent.Systems.InventoryLiveService)
 
 local existing = ReplicatedStorage:FindFirstChild("ExpeditionResultNetwork")
@@ -117,30 +118,38 @@ local function broadcastIfChanged(summary: any)
 	stateRemote:FireAllClients(summary)
 end
 
-local function captureParticipants(partySize: number): { number }
-	local players = Players:GetPlayers()
-	table.sort(players, function(left, right)
-		return left.UserId < right.UserId
-	end)
-	local participantUserIds = {}
-	for index = 1, math.min(partySize, #players) do
-		table.insert(participantUserIds, players[index].UserId)
-	end
-	return participantUserIds
-end
-
-local function ensureRun(snapshot: any)
+local function ensureRun(snapshot: any): boolean
 	if activeRunId == snapshot.RunId then
-		return
+		return true
 	end
+
+	-- Fail closed until the launch owner has bound the exact consumed lobby
+	-- roster. Reconstructing participants from Players would make late joins and
+	-- disconnect timing capable of changing who receives durable rewards.
+	local roster = ExpeditionRunRosterService.read(snapshot.RunId)
+	if roster == nil then
+		return false
+	end
+	if roster.ParticipantCount ~= snapshot.PartySize then
+		warn(
+			string.format(
+				"[ExpeditionRewardResults] roster size mismatch for %s: runtime=%d roster=%d",
+				snapshot.RunId,
+				snapshot.PartySize,
+				roster.ParticipantCount
+			)
+		)
+		return false
+	end
+
 	destroyOwners()
 	activeRunId = snapshot.RunId
 	rewardService = EquipmentRewardService.new(snapshot.RunId, snapshot.Seed)
 	resultService = ExpeditionResultService.new()
-	distributionService =
-		ExpeditionRewardDistributionService.new(InventoryLiveService, captureParticipants(snapshot.PartySize))
+	distributionService = ExpeditionRewardDistributionService.new(InventoryLiveService, roster.ParticipantUserIds)
 	lastSafeSummary = nil
 	lastSignature = ""
+	return true
 end
 
 local function claimIfReached(snapshot: any)
@@ -209,7 +218,9 @@ local function step()
 	if snapshot == nil then
 		return
 	end
-	ensureRun(snapshot)
+	if not ensureRun(snapshot) then
+		return
+	end
 	claimIfReached(snapshot)
 	finalizeIfTerminal(snapshot)
 end
