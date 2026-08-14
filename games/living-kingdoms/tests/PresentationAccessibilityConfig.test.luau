@@ -9,7 +9,12 @@ local config = luau.load(source, {
 	injectGlobals = true,
 })()
 
-assert(config.Version == "HROI-0104-access-v1", "accessibility config version drifted")
+--[[
+	The version is pinned so the accessibility catalog cannot change by accident.
+	RC 1.0 deliberately expanded it, so the pin moves with that decision rather
+	than being deleted.
+]]
+assert(config.Version == "RC-1.0-access-v2", "accessibility config version drifted")
 assert(table.isfrozen(config), "accessibility config must be immutable")
 assert(config.DefaultLevelId == config.LevelIds.Full, "players must start at the authored full intensity")
 
