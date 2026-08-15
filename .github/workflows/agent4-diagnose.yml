@@ -1,0 +1,85 @@
+name: Agent 4 progression diagnostics
+
+on:
+  push:
+    branches:
+      - agent-4/progression-core-wave-1
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+
+      - name: Materialize Main World snapshot
+        continue-on-error: true
+        run: python scripts/roblox/materialize_main_world_studio_snapshot.py
+      - name: Roadmap authority
+        continue-on-error: true
+        run: python scripts/validate_roadmap_authority.py
+      - name: Engineering efficiency
+        continue-on-error: true
+        run: python scripts/validate_efficiency_construct.py
+      - name: Patch 0.7 acceptance
+        continue-on-error: true
+        run: python scripts/validate_patch_07_acceptance.py
+      - name: Modular asset systems
+        continue-on-error: true
+        run: python scripts/validate_modular_asset_systems.py
+      - name: Main World CI artifact contract
+        continue-on-error: true
+        run: python scripts/validate_main_world_ci_artifact.py
+      - name: Main World bundle self-test
+        continue-on-error: true
+        run: python scripts/verify_main_world_artifact_bundle.py --self-test
+      - name: Studio import package
+        continue-on-error: true
+        run: python scripts/verify_studio_import_package.py
+      - name: Migration manifests
+        continue-on-error: true
+        run: python scripts/validate_migration_manifests.py
+      - name: Current migration evidence
+        continue-on-error: true
+        run: python scripts/validate_migration_current_evidence.py
+      - name: RBXL property decoder
+        continue-on-error: true
+        run: python scripts/roblox/extract_rbxl_world_properties.py --self-test
+      - name: RBXL subtree selector
+        continue-on-error: true
+        run: python scripts/roblox/select_rbxl_subtree_evidence.py --self-test
+      - name: RBXL review-unit extractor
+        continue-on-error: true
+        run: python scripts/roblox/extract_rbxl_review_unit.py --self-test
+      - name: RBXL presentation decoder
+        continue-on-error: true
+        run: python scripts/roblox/extract_rbxl_presentation_properties.py --self-test
+      - name: RBXL BillboardGui decoder
+        continue-on-error: true
+        run: python scripts/roblox/extract_rbxl_billboard_properties.py --self-test
+      - name: Re-extracted property evidence
+        continue-on-error: true
+        run: python scripts/validate_reextracted_property_evidence.py
+      - name: Re-extracted presentation evidence
+        continue-on-error: true
+        run: python scripts/validate_reextracted_presentation_evidence.py
+
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+      - name: Repository layout
+        continue-on-error: true
+        run: python scripts/validate_living_kingdoms_layout.py
+      - name: StyLua check
+        continue-on-error: true
+        run: stylua --check games/living-kingdoms/src games/living-kingdoms/tests games/living-kingdoms/tools
+      - name: Selene
+        continue-on-error: true
+        run: selene games/living-kingdoms/src
