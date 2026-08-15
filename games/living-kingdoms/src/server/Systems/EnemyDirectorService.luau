@@ -1157,7 +1157,10 @@ local function applySpitterBehavior(
 		)
 		entry.model:SetAttribute(PresentationAttributeNames.SpitterBloomCenterX, target.x)
 		entry.model:SetAttribute(PresentationAttributeNames.SpitterBloomCenterZ, target.z)
-		entry.model:SetAttribute(PresentationAttributeNames.SpitterBloomRadiusStuds, SpecialEnemyConfig.Bloom.ImpactRadiusStuds)
+		entry.model:SetAttribute(
+			PresentationAttributeNames.SpitterBloomRadiusStuds,
+			SpecialEnemyConfig.Bloom.ImpactRadiusStuds
+		)
 		return 0
 	elseif action == SpecialAbilityActionIds.Continue then
 		entry.humanoid.WalkSpeed = 0
@@ -1194,7 +1197,9 @@ local function applySpitterBehavior(
 			local angle = nextSequence() * 2.399963
 			local anchor = entry.roamAnchor
 			local radius = EnemyConfig.Walker.RoamWanderRadiusStuds
-			entry.humanoid:MoveTo(Vector3.new(anchor.x + math.cos(angle) * radius, anchor.y, anchor.z + math.sin(angle) * radius))
+			entry.humanoid:MoveTo(
+				Vector3.new(anchor.x + math.cos(angle) * radius, anchor.y, anchor.z + math.sin(angle) * radius)
+			)
 		end
 	elseif state == SpecialBehaviorStateIds.Recovering then
 		entry.humanoid.WalkSpeed = 0
@@ -1274,7 +1279,10 @@ local function applyBossBehavior(
 			local phaseTuning = BossConfig.Phases[entry.bossPhaseId :: string]
 			entry.model:SetAttribute(PresentationAttributeNames.BossSlamSequence, entry.attackAttemptSequence)
 			entry.model:SetAttribute(PresentationAttributeNames.BossSlamStartedServerTimestamp, serverTimestamp)
-			entry.model:SetAttribute(PresentationAttributeNames.BossSlamCommitServerTimestamp, serverTimestamp + phaseTuning.SlamWindupSeconds)
+			entry.model:SetAttribute(
+				PresentationAttributeNames.BossSlamCommitServerTimestamp,
+				serverTimestamp + phaseTuning.SlamWindupSeconds
+			)
 			entry.model:SetAttribute(PresentationAttributeNames.BossSlamCenterX, target.x)
 			entry.model:SetAttribute(PresentationAttributeNames.BossSlamCenterZ, target.z)
 			entry.model:SetAttribute(PresentationAttributeNames.BossSlamRadiusStuds, BossConfig.Slam.RadiusStuds)
@@ -1441,7 +1449,8 @@ local function applyBehavior(
 
 	if decision.behaviorStateIdAfter == BehaviorStateIds.Pursuing then
 		local targetId = decision.targetOperativeEntityId
-		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond * entry.effectiveMovementSpeedMultiplier
+		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond
+			* entry.effectiveMovementSpeedMultiplier
 		for _, fact in operativeFacts do
 			if fact.operativeEntityId == targetId then
 				moveStalkerToward(
@@ -1463,7 +1472,9 @@ local function applyBehavior(
 			local angle = nextSequence() * 2.399963
 			local anchor = entry.roamAnchor
 			local radius = EnemyConfig.Walker.RoamWanderRadiusStuds
-			entry.humanoid:MoveTo(Vector3.new(anchor.x + math.cos(angle) * radius, anchor.y, anchor.z + math.sin(angle) * radius))
+			entry.humanoid:MoveTo(
+				Vector3.new(anchor.x + math.cos(angle) * radius, anchor.y, anchor.z + math.sin(angle) * radius)
+			)
 		end
 		return 0
 	end
@@ -1501,7 +1512,8 @@ local function applyBehavior(
 	end
 
 	if decision.behaviorStateIdAfter == BehaviorStateIds.Attacking then
-		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond * entry.effectiveMovementSpeedMultiplier
+		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond
+			* entry.effectiveMovementSpeedMultiplier
 	end
 	return 0
 end
@@ -1543,7 +1555,10 @@ local function refreshCommanderAuras()
 	for _, entry in entries do
 		if entry.isAlive then
 			entry.model:SetAttribute(PresentationAttributeNames.EliteCommanderAuraActive, entry.commanderAuraActive)
-			entry.model:SetAttribute(PresentationAttributeNames.EffectiveMovementSpeedMultiplier, entry.effectiveMovementSpeedMultiplier)
+			entry.model:SetAttribute(
+				PresentationAttributeNames.EffectiveMovementSpeedMultiplier,
+				entry.effectiveMovementSpeedMultiplier
+			)
 		end
 	end
 end
@@ -1567,10 +1582,14 @@ local function applyRegeneration(entry: EnemyEntry, serverTimestamp: number)
 	if serverTimestamp < nextRegenerationAt then
 		return
 	end
-	entry.healthState.currentHealth = math.min(entry.maximumHealth, entry.healthState.currentHealth + runtime.healingPerInterval)
+	entry.healthState.currentHealth =
+		math.min(entry.maximumHealth, entry.healthState.currentHealth + runtime.healingPerInterval)
 	entry.healthRevision += 1
 	entry.nextRegenerationServerTimestamp = serverTimestamp + runtime.healingIntervalSeconds
-	entry.model:SetAttribute(PresentationAttributeNames.EliteRegenerationReadyServerTimestamp, entry.nextRegenerationServerTimestamp)
+	entry.model:SetAttribute(
+		PresentationAttributeNames.EliteRegenerationReadyServerTimestamp,
+		entry.nextRegenerationServerTimestamp
+	)
 	setHealthPresentation(entry)
 end
 
