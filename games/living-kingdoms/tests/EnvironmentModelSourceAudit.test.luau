@@ -143,7 +143,12 @@ do
 end
 
 assert(
-	string.find(plannerSource, "EnvironmentCompositionMath.Plan(WorldFoundationConfig, EnvironmentModelPlacementConfig)", 1, true),
+	string.find(
+		plannerSource,
+		"EnvironmentCompositionMath.Plan(WorldFoundationConfig, EnvironmentModelPlacementConfig)",
+		1,
+		true
+	),
 	"server environment planner must delegate to the shared composition kernel"
 )
 assert(
