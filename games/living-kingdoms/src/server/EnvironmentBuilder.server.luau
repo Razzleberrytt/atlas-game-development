@@ -7,7 +7,8 @@
 	This layer is deliberately narrow and cheap:
 	- real Terrain water beneath the existing glass creek guide
 	- tuned Terrain water material properties
-	- four low-rate mist emitters on non-colliding, non-queryable anchors
+	- four low-rate regional mist emitters
+	- eight sparse biome micro-atmosphere emitters (vapor, dust, motes, ash)
 	- no dynamic lights and no recurring update loop
 
 	The builder is replay-safe: presentation objects live under the generated world
@@ -18,16 +19,36 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)
+local AmbientVfxConfig = require(ReplicatedStorage.Shared.Config.EnvironmentAmbientVfxConfig)
 
 local Terrain = Workspace.Terrain
 local Presentation = Config.EnvironmentPresentation
 local PRESENTATION_FOLDER_NAME = "EnvironmentPresentation"
+local AMBIENT_VFX_FOLDER_NAME = "BiomeAmbientVfx"
 
 local applying = false
 local activeRoot: Folder? = nil
 
 type PointSpec = { x: number, y: number, z: number }
 type RgbSpec = { r: number, g: number, b: number }
+type AmbientZoneSpec = {
+	id: string,
+	kind: string,
+	x: number,
+	y: number,
+	z: number,
+	color: RgbSpec,
+	rate: number,
+	lifetimeMin: number,
+	lifetimeMax: number,
+	speedMin: number,
+	speedMax: number,
+	sizeStart: number,
+	sizeEnd: number,
+	accelerationY: number,
+	lightEmission: number,
+	lightInfluence: number,
+}
 
 local function toVector3(spec: PointSpec): Vector3
 	return Vector3.new(spec.x, spec.y, spec.z)
@@ -35,6 +56,22 @@ end
 
 local function toColor3(spec: RgbSpec): Color3
 	return Color3.fromRGB(spec.r, spec.g, spec.b)
+end
+
+local function makeInvisibleAnchor(parent: Instance, name: string, position: Vector3): Part
+	local anchor = Instance.new("Part")
+	anchor.Name = name
+	anchor.Size = Vector3.new(0.5, 0.5, 0.5)
+	anchor.CFrame = CFrame.new(position)
+	anchor.Anchored = true
+	anchor.Transparency = 1
+	anchor.CanCollide = false
+	anchor.CanTouch = false
+	anchor.CanQuery = false
+	anchor.CastShadow = false
+	anchor:SetAttribute("EnvironmentPresentationOnly", true)
+	anchor.Parent = parent
+	return anchor
 end
 
 local function configureWaterMaterial()
@@ -63,18 +100,7 @@ local function stampCreekWater()
 end
 
 local function makeMistAnchor(parent: Instance, index: number, position: Vector3)
-	local anchor = Instance.new("Part")
-	anchor.Name = string.format("MistAnchor%02d", index)
-	anchor.Size = Vector3.new(0.5, 0.5, 0.5)
-	anchor.CFrame = CFrame.new(position)
-	anchor.Anchored = true
-	anchor.Transparency = 1
-	anchor.CanCollide = false
-	anchor.CanTouch = false
-	anchor.CanQuery = false
-	anchor.CastShadow = false
-	anchor:SetAttribute("EnvironmentPresentationOnly", true)
-	anchor.Parent = parent
+	local anchor = makeInvisibleAnchor(parent, string.format("MistAnchor%02d", index), position)
 
 	local mist = Presentation.Mist
 	local emitter = Instance.new("ParticleEmitter")
@@ -106,6 +132,56 @@ local function makeMistAnchor(parent: Instance, index: number, position: Vector3
 	emitter.Parent = anchor
 end
 
+local function makeAmbientZone(parent: Instance, rawSpec: any)
+	local spec = rawSpec :: AmbientZoneSpec
+	local anchor = makeInvisibleAnchor(parent, spec.id, Vector3.new(spec.x, spec.y, spec.z))
+	anchor:SetAttribute("EnvironmentVfxZone", spec.kind)
+	anchor:SetAttribute("EnvironmentVfxVersion", AmbientVfxConfig.Version)
+
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Name = spec.kind
+	emitter.Texture = AmbientVfxConfig.Texture
+	emitter.Color = ColorSequence.new(toColor3(spec.color))
+	emitter.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(0.16, 0.78),
+		NumberSequenceKeypoint.new(0.72, 0.88),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	emitter.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, spec.sizeStart),
+		NumberSequenceKeypoint.new(0.6, (spec.sizeStart + spec.sizeEnd) * 0.6),
+		NumberSequenceKeypoint.new(1, spec.sizeEnd),
+	})
+	emitter.Lifetime = NumberRange.new(spec.lifetimeMin, spec.lifetimeMax)
+	emitter.Rate = spec.rate
+	emitter.Speed = NumberRange.new(spec.speedMin, spec.speedMax)
+	emitter.SpreadAngle = Vector2.new(180, 24)
+	emitter.Rotation = NumberRange.new(0, 360)
+	emitter.RotSpeed = NumberRange.new(-9, 9)
+	emitter.Acceleration = Vector3.new(0, spec.accelerationY, 0)
+	emitter.Drag = if spec.kind == "RoadDust" then 1.8 else 1.1
+	emitter.LightEmission = spec.lightEmission
+	emitter.LightInfluence = spec.lightInfluence
+	emitter.EmissionDirection = Enum.NormalId.Top
+	emitter.Orientation = Enum.ParticleOrientation.FacingCamera
+	emitter.LockedToPart = false
+	emitter.Parent = anchor
+end
+
+local function buildBiomeAmbientVfx(parent: Instance)
+	local folder = Instance.new("Folder")
+	folder.Name = AMBIENT_VFX_FOLDER_NAME
+	folder:SetAttribute("EnvironmentPresentationOnly", true)
+	folder:SetAttribute("EnvironmentVfxVersion", AmbientVfxConfig.Version)
+	folder:SetAttribute("EnvironmentVfxZoneCount", #AmbientVfxConfig.Zones)
+	folder.Parent = parent
+
+	for _, zoneSpec in AmbientVfxConfig.Zones do
+		makeAmbientZone(folder, zoneSpec)
+	end
+end
+
 local function retuneCreekGuide(worldRoot: Folder)
 	local waterColor = toColor3(Presentation.Water.Color)
 	for _, descendant in worldRoot:GetDescendants() do
@@ -128,14 +204,17 @@ local function buildPresentation(worldRoot: Folder)
 	folder.Name = PRESENTATION_FOLDER_NAME
 	folder:SetAttribute("EnvironmentPresentationOnly", true)
 	folder:SetAttribute("EnvironmentPresentationVersion", Presentation.Version)
+	folder:SetAttribute("EnvironmentVfxVersion", AmbientVfxConfig.Version)
 	folder.Parent = worldRoot
 
 	for index, positionSpec in Presentation.Mist.Locations do
 		makeMistAnchor(folder, index, toVector3(positionSpec))
 	end
+	buildBiomeAmbientVfx(folder)
 
 	retuneCreekGuide(worldRoot)
 	worldRoot:SetAttribute("EnvironmentPresentationVersion", Presentation.Version)
+	worldRoot:SetAttribute("EnvironmentVfxVersion", AmbientVfxConfig.Version)
 end
 
 local function applyToWorld(candidate: Instance)
@@ -161,7 +240,12 @@ local function applyToWorld(candidate: Instance)
 	buildPresentation(candidate)
 	activeRoot = candidate
 	applying = false
-	print("[Living Kingdoms] Environment physical ambience ready: " .. Presentation.Version)
+	print(
+		"[Living Kingdoms] Environment physical ambience ready: "
+			.. Presentation.Version
+			.. " / "
+			.. AmbientVfxConfig.Version
+	)
 end
 
 Workspace.ChildAdded:Connect(function(child)
