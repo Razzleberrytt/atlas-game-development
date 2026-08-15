@@ -20,11 +20,13 @@ assert(contains(inventoryOwner, "saveCharacterProgression"), "lease owner must e
 assert(contains(lifecycle, "CharacterProgressionService.hydratePlayer"), "join lifecycle must hydrate durable progression")
 assert(contains(lifecycle, "CharacterProgressionService.configurePersistence"), "award service must bind to the leased persistence owner")
 
-assert(contains(persistence, "CharacterProgressionResolver.normalizeState"), "saved and legacy progression must normalize through the canonical resolver")
+assert(contains(persistence, "local function normalizedCharacterProgression"), "account persistence must own schema-local XP normalization")
+assert(contains(persistence, "raw.CharacterProgression or raw"), "legacy root XP fields must remain migratable into schema five")
 assert(contains(persistence, "CharacterProgression ="), "canonical account record must contain character progression")
 assert(contains(persistence, "AppliedCharacterProgressionGrantIds"), "durable one-time progression rewards need a replay ledger")
 assert(contains(persistence, "function Service:applyCharacterProgression"), "account persistence must expose one bounded XP mutation seam")
 assert(contains(persistence, "CharacterProgressionGrantAlreadyApplied"), "durable replay must resolve idempotently")
+assert(contains(persistence, "CharacterProgressionRollbackRejected"), "durable XP must never move backward")
 
 assert(contains(progression, "persistenceWriter"), "XP owner must persist before publishing live state")
 assert(contains(progression, "ProgressionPersistenceUnavailable"), "XP must fail closed when persistence is unavailable")
