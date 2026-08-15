@@ -34,7 +34,10 @@ for _, definition in ipairs(ModularAssetProductionCatalog.Dungeon.Modules) do
 	catalogDungeonAssetIds[definition.id] = true
 end
 for roleId, assetId in pairs(ASSET_ID_BY_ROLE) do
-	assert(catalogDungeonAssetIds[assetId] == true, `modular dungeon role {roleId} references unknown asset {assetId}`)
+	assert(
+		catalogDungeonAssetIds[assetId] == true,
+		`modular dungeon role {roleId} references unknown asset {assetId}`
+	)
 end
 
 type PartSnapshot = {
@@ -120,10 +123,17 @@ local function fitShellToPlacement(model: Model, root: BasePart, placement: any)
 
 	for _, snapshot in ipairs(snapshots) do
 		local localPosition = snapshot.localCFrame.Position
-		local scaledPosition = Vector3.new(localPosition.X * scaleX, localPosition.Y * scaleY, localPosition.Z * scaleZ)
+		local scaledPosition = Vector3.new(
+			localPosition.X * scaleX,
+			localPosition.Y * scaleY,
+			localPosition.Z * scaleZ
+		)
 		local partScaleY = if snapshot.part == root then 1 else scaleY
-		snapshot.part.Size =
-			Vector3.new(snapshot.size.X * scaleX, snapshot.size.Y * partScaleY, snapshot.size.Z * scaleZ)
+		snapshot.part.Size = Vector3.new(
+			snapshot.size.X * scaleX,
+			snapshot.size.Y * partScaleY,
+			snapshot.size.Z * scaleZ
+		)
 		snapshot.part.CFrame = targetRootCFrame * CFrame.new(scaledPosition) * snapshot.localCFrame.Rotation
 	end
 	return true
@@ -131,7 +141,9 @@ end
 
 local function cloneAsset(assetId: string): Instance?
 	local generatedRoot = ModularAssetResolver.GetGeneratedRoot(ReplicatedStorage)
-	local clone = if generatedRoot ~= nil then ModularAssetResolver.CloneByAssetId(generatedRoot, assetId) else nil
+	local clone = if generatedRoot ~= nil
+		then ModularAssetResolver.CloneByAssetId(generatedRoot, assetId)
+		else nil
 	if clone ~= nil then
 		return clone
 	end
@@ -140,12 +152,20 @@ local function cloneAsset(assetId: string): Instance?
 		return nil
 	end
 	readinessWaitSpent = true
-	if ModularAssetResolver.WaitForGeneratedAssetById(ReplicatedStorage, assetId, ASSET_READY_WAIT_SECONDS) == nil then
+	if
+		ModularAssetResolver.WaitForGeneratedAssetById(
+			ReplicatedStorage,
+			assetId,
+			ASSET_READY_WAIT_SECONDS
+		) == nil
+	then
 		return nil
 	end
 
 	generatedRoot = ModularAssetResolver.GetGeneratedRoot(ReplicatedStorage)
-	return if generatedRoot ~= nil then ModularAssetResolver.CloneByAssetId(generatedRoot, assetId) else nil
+	return if generatedRoot ~= nil
+		then ModularAssetResolver.CloneByAssetId(generatedRoot, assetId)
+		else nil
 end
 
 local function hideAuthoritativeGrayboxVisuals(roomModel: Model)

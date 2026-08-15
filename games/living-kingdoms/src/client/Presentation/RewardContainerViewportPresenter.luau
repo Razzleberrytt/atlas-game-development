@@ -110,10 +110,10 @@ local function sanitizeClone(model: Model)
 			descendant.CanCollide = false
 			descendant.CanTouch = false
 			descendant.CanQuery = false
+		elseif descendant:IsA("ProximityPrompt") or descendant:IsA("ClickDetector") then
+			descendant:Destroy()
 		elseif
-			descendant:IsA("ProximityPrompt")
-			or descendant:IsA("ClickDetector")
-			or descendant:IsA("Script")
+			descendant:IsA("Script")
 			or descendant:IsA("LocalScript")
 			or descendant:IsA("ModuleScript")
 		then
@@ -129,7 +129,10 @@ local function frameModel(model: Model, camera: Camera)
 	local extent = math.max(boundsSize.X, boundsSize.Y, boundsSize.Z)
 	local distance = math.max(7, extent * 1.55)
 	local height = math.max(3, boundsSize.Y * 0.65)
-	camera.CFrame = CFrame.lookAt(Vector3.new(distance, height, distance * 1.15), Vector3.new(0, 0, 0))
+	camera.CFrame = CFrame.lookAt(
+		Vector3.new(distance, height, distance * 1.15),
+		Vector3.new(0, 0, 0)
+	)
 end
 
 function Presenter.create(parent: Instance): ViewportFrame
