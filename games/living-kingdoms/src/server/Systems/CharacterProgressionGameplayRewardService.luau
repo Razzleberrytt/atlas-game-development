@@ -25,7 +25,7 @@ local Service = {}
 local started = false
 local accumulatedSeconds = 0
 local heartbeatConnection: RBXScriptConnection? = nil
-local completedDungeonAwards: { [string]: { [number]: boolean } = {}
+local completedDungeonAwards: { [string]: { [number]: boolean } } = {}
 
 local function awardDungeonCompletion()
 	local snapshot = ExpeditionLiveRuntimeService.readSnapshot()
