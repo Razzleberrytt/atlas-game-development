@@ -29,7 +29,7 @@ local persistence = PlayerInventoryPersistenceService.new(store)
 local buildPersistence = CharacterBuildPersistenceService.new(store)
 local destroyed = false
 
-local recentDismantleRequests: { [number]: { number } = {}
+local recentDismantleRequests: { [number]: { number } } = {}
 
 local definitionsById: { [string]: any } = {}
 for _, definition in EquipmentRewardConfig.Definitions do
