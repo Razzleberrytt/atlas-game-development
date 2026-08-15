@@ -121,14 +121,22 @@ PERSISTENCE_HARDENING_FIXTURES = (
 )
 
 
+def resolve_named_fixture(name: str) -> Path:
+    """Resolve one uniquely named fixture regardless of its semantic subdirectory."""
+    matches = sorted((GAME / "tests").rglob(f"{name}.test.luau"))
+    if not matches:
+        raise RuntimeError(f"persistence-hardening fixture is missing: {name}.test.luau")
+    if len(matches) > 1:
+        relative_matches = ", ".join(str(path.relative_to(ROOT)) for path in matches)
+        raise RuntimeError(
+            f"persistence-hardening fixture name is ambiguous: {name}.test.luau -> {relative_matches}"
+        )
+    return matches[0]
+
+
 def validate_persistence_hardening() -> None:
     """Patch 0.7 durable-state suite: a filter over the same fixtures, never a substitute."""
-    fixtures = []
-    for name in PERSISTENCE_HARDENING_FIXTURES:
-        path = GAME / "tests" / f"{name}.test.luau"
-        if not path.exists():
-            raise RuntimeError(f"persistence-hardening fixture is missing: {path}")
-        fixtures.append(path)
+    fixtures = [resolve_named_fixture(name) for name in PERSISTENCE_HARDENING_FIXTURES]
     for fixture in fixtures:
         run(
             f"Persistence fixture: {fixture.relative_to(ROOT)}",
