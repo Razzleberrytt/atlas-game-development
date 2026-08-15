@@ -226,7 +226,8 @@ local function generateForSpec(
 		local jitter = 0.75 + 0.50 * nextRandom(randomState)
 		local yawDegrees = -180 + 360 * nextRandom(randomState)
 
-		if landmarkClearance >= PlacementConfig.LandmarkPaddingStuds
+		if
+			landmarkClearance >= PlacementConfig.LandmarkPaddingStuds
 			and routeDistance >= spec.minRouteDistanceStuds
 			and creekDistance >= spec.minCreekDistanceStuds
 		then
@@ -265,12 +266,7 @@ local function generateForSpec(
 
 	assert(
 		#chosen == spec.count,
-		string.format(
-			"Environment composition could only place %d/%d assets for %s",
-			#chosen,
-			spec.count,
-			spec.assetId
-		)
+		string.format("Environment composition could only place %d/%d assets for %s", #chosen, spec.count, spec.assetId)
 	)
 
 	local placements: { Placement } = {}
