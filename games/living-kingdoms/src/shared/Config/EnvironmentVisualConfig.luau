@@ -322,6 +322,9 @@ local EnvironmentVisualConfig = {
 
 assert(EnvironmentVisualConfig.Cycle.Seconds >= 600, "visual day/night cycle must remain slow")
 assert(#EnvironmentVisualConfig.Phases >= 4, "visual profile requires multiple day/night keyframes")
-assert(EnvironmentVisualConfig.Water.Transparency >= 0 and EnvironmentVisualConfig.Water.Transparency <= 1, "water transparency must be normalized")
+assert(
+	EnvironmentVisualConfig.Water.Transparency >= 0 and EnvironmentVisualConfig.Water.Transparency <= 1,
+	"water transparency must be normalized"
+)
 
 return table.freeze(EnvironmentVisualConfig)
