@@ -51,13 +51,22 @@ export type OperativeModifiers = RelicModifiers & {
 type CacheEntry = {
 	revision: number,
 	modifiers: RelicModifiers,
-	partialRuntimeModifiers: OperativeModifiers?,
 }
 
 local RelicModifierService = {}
 
 local NEUTRAL_RELIC_MODIFIERS: RelicModifiers = RelicModifierResolver.deriveModifiers({})
 local cache: { [Player]: CacheEntry } = {}
+
+-- These match the defensive bounds already expected by the authoritative
+-- gameplay owners. Composition clamps here so a valid progression+equipment
+-- combination never trips a downstream malformed-data fallback back to neutral.
+local DAMAGE_MULTIPLIER_MINIMUM = 0.1
+local DAMAGE_MULTIPLIER_MAXIMUM = 5
+local LIFE_MULTIPLIER_MINIMUM = 1
+local LIFE_MULTIPLIER_MAXIMUM = 2
+local COOLDOWN_MULTIPLIER_MINIMUM = 0.5
+local COOLDOWN_MULTIPLIER_MAXIMUM = 2
 
 local function canComposeEquipment(player: Player): boolean
 	local playerAsAny = player :: any
@@ -88,6 +97,27 @@ local function applyCharacterStats(player: Player, combined: any)
 	combined.equipmentMovementSpeedMultiplier *= characterStatRatio(player, CharacterStatConfig.StatIds.MovementSpeed)
 	combined.equipmentAbilityCooldownDurationMultiplier *=
 		characterStatRatio(player, CharacterStatConfig.StatIds.CooldownDurationMultiplier)
+
+	combined.equipmentDamageMultiplier = math.clamp(
+		combined.equipmentDamageMultiplier,
+		DAMAGE_MULTIPLIER_MINIMUM,
+		DAMAGE_MULTIPLIER_MAXIMUM
+	)
+	combined.equipmentMaximumHealthMultiplier = math.clamp(
+		combined.equipmentMaximumHealthMultiplier,
+		LIFE_MULTIPLIER_MINIMUM,
+		LIFE_MULTIPLIER_MAXIMUM
+	)
+	combined.equipmentMovementSpeedMultiplier = math.clamp(
+		combined.equipmentMovementSpeedMultiplier,
+		LIFE_MULTIPLIER_MINIMUM,
+		LIFE_MULTIPLIER_MAXIMUM
+	)
+	combined.equipmentAbilityCooldownDurationMultiplier = math.clamp(
+		combined.equipmentAbilityCooldownDurationMultiplier,
+		COOLDOWN_MULTIPLIER_MINIMUM,
+		COOLDOWN_MULTIPLIER_MAXIMUM
+	)
 end
 
 local function composeOperativeModifiers(player: Player, relicModifiers: RelicModifiers): OperativeModifiers
@@ -135,13 +165,9 @@ end
 
 --[[
 	Returns the operative's current bounded modifier bundle. Relics may be served
-	from the build-revision cache; durable equipment is resolved from the current
-	authoritative inventory record and server-authored active weapon every read.
-
-	Partial runtimes that omit equipment composition reuse one neutral composed
-	bundle per relic revision. Full production runtimes deliberately do not cache
-	the composed equipment result, because durable equip changes have an authority
-	revision independent from the temporary run-build revision.
+	from the build-revision cache; durable equipment and character stats are
+	resolved from their current authoritative state every read because their
+	revisions are independent from the temporary run-build revision.
 ]]
 function RelicModifierService.read(player: Player): OperativeModifiers
 	local read = RunBuildService.readEquippedRelicIds(player)
@@ -151,11 +177,6 @@ function RelicModifierService.read(player: Player): OperativeModifiers
 	end
 	local cached = cache[player]
 	if cached ~= nil and cached.revision == read.revision then
-		if not canComposeEquipment(player) then
-			-- Character progression can change without changing the temporary relic
-			-- revision, so recompute the composed bundle even in partial runtimes.
-			return composeOperativeModifiers(player, cached.modifiers)
-		end
 		return composeOperativeModifiers(player, cached.modifiers)
 	end
 	local modifiers = RelicModifierResolver.deriveModifiers(read.relicIds)
@@ -163,7 +184,6 @@ function RelicModifierService.read(player: Player): OperativeModifiers
 	cache[player] = {
 		revision = read.revision,
 		modifiers = modifiers,
-		partialRuntimeModifiers = nil,
 	}
 	return composed
 end
