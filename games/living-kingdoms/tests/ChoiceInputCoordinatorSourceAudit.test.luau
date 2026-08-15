@@ -11,7 +11,7 @@ local function assert(condition: unknown, message: string?)
 end
 
 local root = "games/living-kingdoms/src/client/Controllers/"
-local coordinator = fs.readFile(root .. "ChoiceInputCoordinator.luau")
+local coordinator = fs.readFile(root .. "Input/ChoiceInputCoordinator.luau")
 local hordeHud = fs.readFile(root .. "HordeHUDController.luau")
 local runBuildHud = fs.readFile(root .. "RunBuildHUDController.luau")
 
