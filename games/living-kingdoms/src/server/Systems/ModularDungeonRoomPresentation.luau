@@ -29,6 +29,14 @@ local ASSET_ID_BY_ROLE = table.freeze({
 	[RoleIds.Secret] = "dungeon.room.secret.a",
 })
 
+local catalogDungeonAssetIds: { [string]: boolean } = {}
+for _, definition in ipairs(ModularAssetProductionCatalog.Dungeon.Modules) do
+	catalogDungeonAssetIds[definition.id] = true
+end
+for roleId, assetId in pairs(ASSET_ID_BY_ROLE) do
+	assert(catalogDungeonAssetIds[assetId] == true, `modular dungeon role {roleId} references unknown asset {assetId}`)
+end
+
 type PartSnapshot = {
 	part: BasePart,
 	localCFrame: CFrame,
