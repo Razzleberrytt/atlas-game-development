@@ -133,8 +133,10 @@ assert(
 	"world dressing must instantiate the deterministic composition plan"
 )
 assert(
-	string.find(dressingSource, 'modelsFolder.Name = "EnvironmentModels"', 1, true),
-	"world dressing must isolate environment models"
+	string.find(dressingSource, 'local ENVIRONMENT_MODELS_FOLDER_NAME = "EnvironmentModels"', 1, true)
+		and string.find(dressingSource, "modelsFolder.Name = ENVIRONMENT_MODELS_FOLDER_NAME", 1, true)
+		and string.find(dressingSource, 'modelsFolder:SetAttribute("EnvironmentPresentationOnly", true)', 1, true),
+	"world dressing must isolate generated models in a presentation-only EnvironmentModels container"
 )
 assert(
 	string.find(dressingSource, 'worldRoot:FindFirstChild("TerrainFoundation")', 1, true),
