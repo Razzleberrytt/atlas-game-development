@@ -19,7 +19,10 @@ local config = loadPureConfig(configPath)
 local world = loadPureConfig(worldConfigPath)
 
 assert(config.Version == "biome-vfx-v1", "ambient VFX version changed")
-assert(config.Texture == "rbxasset://textures/particles/smoke_main.dds", "ambient VFX must use an engine-shipped texture")
+assert(
+	config.Texture == "rbxasset://textures/particles/smoke_main.dds",
+	"ambient VFX must use an engine-shipped texture"
+)
 assert(#config.Zones == 8, "ambient VFX anchor budget changed")
 
 local allowedKinds = {
@@ -69,14 +72,35 @@ local loadedBuilder = luau.load(fs.readFile(builderPath), {
 assert(type(loadedBuilder) == "function", "EnvironmentBuilder source must compile")
 
 local builderSource = fs.readFile(builderPath)
-assert(string.find(builderSource, "EnvironmentAmbientVfxConfig", 1, true), "environment builder must load ambient VFX config")
-assert(string.find(builderSource, 'AMBIENT_VFX_FOLDER_NAME = "BiomeAmbientVfx"', 1, true), "ambient VFX folder identity is missing")
+assert(
+	string.find(builderSource, "EnvironmentAmbientVfxConfig", 1, true),
+	"environment builder must load ambient VFX config"
+)
+assert(
+	string.find(builderSource, 'AMBIENT_VFX_FOLDER_NAME = "BiomeAmbientVfx"', 1, true),
+	"ambient VFX folder identity is missing"
+)
 assert(string.find(builderSource, 'Instance.new("ParticleEmitter")', 1, true), "ambient VFX emitters are missing")
-assert(string.find(builderSource, 'anchor:SetAttribute("EnvironmentVfxZone"', 1, true), "ambient VFX zones need Studio-inspectable identity")
-assert(string.find(builderSource, "anchor.CanCollide = false", 1, true), "ambient VFX anchors must not affect collision")
-assert(string.find(builderSource, "anchor.CanTouch = false", 1, true), "ambient VFX anchors must not affect touch authority")
-assert(string.find(builderSource, "anchor.CanQuery = false", 1, true), "ambient VFX anchors must not affect gameplay queries")
-assert(not string.find(builderSource, 'Instance.new("PointLight")', 1, true), "ambient VFX must add zero dynamic lights")
+assert(
+	string.find(builderSource, 'anchor:SetAttribute("EnvironmentVfxZone"', 1, true),
+	"ambient VFX zones need Studio-inspectable identity"
+)
+assert(
+	string.find(builderSource, "anchor.CanCollide = false", 1, true),
+	"ambient VFX anchors must not affect collision"
+)
+assert(
+	string.find(builderSource, "anchor.CanTouch = false", 1, true),
+	"ambient VFX anchors must not affect touch authority"
+)
+assert(
+	string.find(builderSource, "anchor.CanQuery = false", 1, true),
+	"ambient VFX anchors must not affect gameplay queries"
+)
+assert(
+	not string.find(builderSource, 'Instance.new("PointLight")', 1, true),
+	"ambient VFX must add zero dynamic lights"
+)
 assert(not string.find(builderSource, 'Instance.new("SpotLight")', 1, true), "ambient VFX must add zero dynamic lights")
 assert(not string.find(builderSource, "RunService", 1, true), "ambient VFX must not add a recurring update loop")
 assert(not string.find(builderSource, "RemoteEvent", 1, true), "ambient VFX must not add a network authority surface")
