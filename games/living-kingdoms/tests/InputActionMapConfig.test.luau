@@ -129,7 +129,7 @@ assert(not contains(revive, "Enum.KeyCode.ButtonX"))
 local worldPrompt = fs.readFile(SERVER .. "SurvivalLootService.luau")
 assert(contains(worldPrompt, "prompt.KeyboardKeyCode = Enum.KeyCode.E"))
 
-local choiceCoordinator = fs.readFile(CLIENT .. "ChoiceInputCoordinator.luau")
+local choiceCoordinator = fs.readFile(CLIENT .. "Input/ChoiceInputCoordinator.luau")
 assert(contains(choiceCoordinator, "Enum.KeyCode.One"))
 assert(contains(choiceCoordinator, "Enum.KeyCode.Two"))
 assert(contains(choiceCoordinator, "Enum.KeyCode.Three"))
