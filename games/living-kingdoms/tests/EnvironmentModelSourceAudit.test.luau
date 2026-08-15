@@ -81,7 +81,10 @@ for _, spec in placementConfig.AssetSpecs do
 	assert(allowedAssetIds[spec.assetId], "composition uses unsupported environment asset: " .. spec.assetId)
 	assert(allowedFields[spec.field], "composition uses unsupported story field: " .. spec.field)
 	assert(allowedTiers[spec.tier], "composition uses unsupported hierarchy tier: " .. spec.tier)
-	assert(not seenAssetIds[spec.assetId], "environment asset family duplicated in composition config: " .. spec.assetId)
+	assert(
+		not seenAssetIds[spec.assetId],
+		"environment asset family duplicated in composition config: " .. spec.assetId
+	)
 	seenAssetIds[spec.assetId] = true
 	assert(spec.count > 0, "composition family count must be positive")
 	assert(spec.packingRadiusStuds >= 4, "composition family packing radius is too small")
@@ -128,7 +131,7 @@ for requiredPlannerToken in
 		"WorldFoundationConfig.Dressing.TrailReflectorPositions",
 		"WorldFoundationConfig.EnvironmentPresentation.Water.CreekPoints",
 	}
- do
+do
 	assert(
 		string.find(plannerSource, requiredPlannerToken, 1, true),
 		"environment composition planner is missing deterministic constraint: " .. requiredPlannerToken
@@ -198,4 +201,6 @@ assert(
 	"generated models must expose packing radius for Studio inspection"
 )
 
-print("EnvironmentModelSourceAudit: hierarchical fields, global packing, budgets, semantic ids, grounding, and presentation authority passed")
+print(
+	"EnvironmentModelSourceAudit: hierarchical fields, global packing, budgets, semantic ids, grounding, and presentation authority passed"
+)
