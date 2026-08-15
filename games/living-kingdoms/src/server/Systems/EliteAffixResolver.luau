@@ -113,10 +113,7 @@ function EliteAffixResolver.resolveAssignment(facts: AssignmentFacts): Assignmen
 		or type(facts.entityId) ~= "string"
 		or facts.entityId == ""
 		or type(facts.spawnSourceId) ~= "string"
-		or (
-			facts.spawnSourceId ~= EnemyContracts.EnemySpawnSourceIds.AuthoredWave
-			and facts.spawnSourceId ~= EnemyContracts.EnemySpawnSourceIds.RoamingPressure
-		)
+		or (facts.spawnSourceId ~= EnemyContracts.EnemySpawnSourceIds.AuthoredWave and facts.spawnSourceId ~= EnemyContracts.EnemySpawnSourceIds.RoamingPressure)
 		or type(facts.operationElapsedSeconds) ~= "number"
 		or facts.operationElapsedSeconds ~= facts.operationElapsedSeconds
 		or type(facts.activeEliteCount) ~= "number"
@@ -150,15 +147,7 @@ function EliteAffixResolver.resolveAssignment(facts: AssignmentFacts): Assignmen
 
 	if
 		(eliteEligible ~= nil and type(eliteEligible) ~= "boolean")
-		or (
-			eliteChance ~= nil
-			and (
-				type(eliteChance) ~= "number"
-				or eliteChance ~= eliteChance
-				or eliteChance < 0
-				or eliteChance > 1
-			)
-		)
+		or (eliteChance ~= nil and (type(eliteChance) ~= "number" or eliteChance ~= eliteChance or eliteChance < 0 or eliteChance > 1))
 		or (requestedAffixId ~= nil and (type(requestedAffixId) ~= "string" or requestedAffixId == ""))
 	then
 		return neutral()
@@ -188,7 +177,9 @@ function EliteAffixResolver.resolveAssignment(facts: AssignmentFacts): Assignmen
 
 	local probability = eliteChance
 	if probability == nil then
-		probability = if facts.isHordePulse then planning.hordePulseProbability else planning.ordinaryPressureProbability
+		probability = if facts.isHordePulse
+			then planning.hordePulseProbability
+			else planning.ordinaryPressureProbability
 	end
 	local threshold = math.floor(probability * planning.deterministicRollResolution)
 	if stableRoll(facts.entityId, "elite") >= threshold then
