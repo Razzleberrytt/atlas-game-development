@@ -11,7 +11,7 @@ local EnemyContracts = require(script.Parent.Parent.Combat.EnemyContracts)
 local WorldFoundationConfig = require(script.Parent.WorldFoundationConfig)
 
 local EnemyConfig = {
-	Version = "MVP-0.1-v6-purposeful-stalker-pressure",
+	Version = "MVP-0.1-v7-bounded-pursuit-navigation",
 	Walker = table.freeze({
 		ArchetypeId = EnemyContracts.EnemyArchetypeIds.ExclusionWalker,
 		DisplayName = "Exclusion Stalker",
@@ -29,8 +29,10 @@ local EnemyConfig = {
 	}),
 	Navigation = table.freeze({
 		PursuitRepathIntervalSeconds = 0.45,
+		MaximumPathComputationsPerEvaluation = 4,
 		AgentRadiusStuds = 2.5,
 		AgentHeightStuds = 4,
+		AgentCanJump = false,
 		WaypointSpacingStuds = 5,
 		PackFlankOffsetStuds = 4.5,
 		FlankActivationDistanceStuds = 38,
@@ -89,6 +91,17 @@ assert(
 	"attack windup must be visible, bounded, and shorter than the cooldown"
 )
 assert(EnemyConfig.Walker.AttackCooldownSeconds > 0, "attack cooldown must be positive")
+assert(
+	EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation > 0
+		and EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation % 1 == 0
+		and EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation <= 8,
+	"pathfinding work per enemy evaluation must remain a small positive integer budget"
+)
+assert(type(EnemyConfig.Navigation.AgentCanJump) == "boolean", "pathfinding jump capability must be explicit")
+assert(
+	not EnemyConfig.Navigation.AgentCanJump,
+	"walker Humanoids currently have zero JumpPower, so navigation must not request jump waypoints"
+)
 assert(
 	EnemyConfig.FairSpawn.MinimumOperativeDistanceStuds > EnemyConfig.Combat.GameplayVisibilityRadiusStuds,
 	"fair spawns must land outside the darkness engagement radius"
