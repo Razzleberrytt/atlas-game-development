@@ -22,6 +22,7 @@ local READABILITY_DRESSING_NAME = "ReadabilityDressing"
 local HERO_MODELS_FOLDER_NAME = "EnvironmentModels"
 local HASH_MODULUS = 2147483647
 local HASH_MULTIPLIER = 131
+local ASSET_READY_POLL_SECONDS = 0.05
 
 local function stableHash(text: string): number
 	local hash = 17
@@ -29,6 +30,44 @@ local function stableHash(text: string): number
 		hash = (hash * HASH_MULTIPLIER + string.byte(text, index)) % HASH_MODULUS
 	end
 	return hash
+end
+
+local function requiredAssetIds(): { string }
+	local seen = {}
+	local result = {}
+	for _, fieldSpec in Config.FieldSpecs do
+		for _, assetId in fieldSpec.assetIds do
+			if seen[assetId] then
+				continue
+			end
+			seen[assetId] = true
+			table.insert(result, assetId)
+		end
+	end
+	table.sort(result)
+	return result
+end
+
+local function generatedRootIsReady(root: Folder, assetIds: { string }): boolean
+	for _, assetId in assetIds do
+		if ModularAssetResolver.FindByAssetId(root, assetId) == nil then
+			return false
+		end
+	end
+	return true
+end
+
+local function waitForGeneratedRoot(): Folder?
+	local assetIds = requiredAssetIds()
+	local deadline = Workspace:GetServerTimeNow() + Config.GeneratedAssetWaitSeconds
+	repeat
+		local root = ModularAssetResolver.GetGeneratedRoot(ReplicatedStorage)
+		if root ~= nil and generatedRootIsReady(root, assetIds) then
+			return root
+		end
+		task.wait(ASSET_READY_POLL_SECONDS)
+	until Workspace:GetServerTimeNow() >= deadline
+	return nil
 end
 
 local function sanitizePresentationClone(instance: Instance)
@@ -76,18 +115,6 @@ local function placeClone(clone: Instance, cframe: CFrame)
 	else
 		error("modular environment dressing asset must resolve to a Model or BasePart")
 	end
-end
-
-local function waitForGeneratedRoot(): Folder?
-	local atlasAssets = ReplicatedStorage:WaitForChild("AtlasAssets", Config.GeneratedAssetWaitSeconds)
-	if atlasAssets == nil then
-		return nil
-	end
-	local generated = atlasAssets:WaitForChild("GeneratedModularAssets", Config.GeneratedAssetWaitSeconds)
-	if generated ~= nil and generated:IsA("Folder") then
-		return generated
-	end
-	return nil
 end
 
 local function collectAnchorsByField(heroModels: Folder): { [string]: { Model } }
@@ -181,7 +208,7 @@ end
 
 local generatedRoot = waitForGeneratedRoot()
 if generatedRoot == nil then
-	warn("[Living Kingdoms] Modular environment dressing skipped: generated modular asset root was not ready")
+	warn("[Living Kingdoms] Modular environment dressing skipped: complete modular prop library was not ready")
 	return
 end
 
