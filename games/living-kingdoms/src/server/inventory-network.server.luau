@@ -6,7 +6,8 @@
 	Inventory identity is always derived from the invoking Player. This script also
 	owns the application-scoped lease lifecycle required by InventoryLiveService:
 	load/acquire on join, periodic renewal while connected, release on leave, and
-	final release on shutdown. A snapshot is only pushed after a successful load.
+	final release on shutdown. Character progression hydrates and commits through
+	the same lease owner; no client mutation surface is introduced.
 ]]
 
 local Players = game:GetService("Players")
@@ -14,9 +15,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local InventoryLiveService = require(script.Parent.Systems.InventoryLiveService)
+local CharacterProgressionService = require(script.Parent.Systems.CharacterProgressionService)
 local OperativeLifeService = require(script.Parent.Systems.OperativeLifeService)
 
 local LEASE_RENEW_INTERVAL_SECONDS = 30
+
+assert(CharacterProgressionService.configurePersistence(function(playerId, progressionState, sourceId, attributionId, nowUnix)
+	return InventoryLiveService.saveCharacterProgression(playerId, progressionState, sourceId, attributionId, nowUnix)
+end), "character progression persistence writer must bind")
 
 local existing = ReplicatedStorage:FindFirstChild("InventoryNetwork")
 if existing ~= nil then
@@ -71,24 +77,29 @@ local function reconcileEquipmentEffects(player: Player)
 end
 
 --[[
-	A player whose inventory could not be leased must not keep playing. Their
-	session would run against no durable record: rewards would be refused, and
-	whichever server does hold the lease owns the truth they would be diverging
-	from. Kicking is the safe outcome, and it is the policy the retired
-	ExpeditionFoundationBootstrap lifecycle enforced before this script became
-	the single owner.
+	A player whose leased persistence could not load must not keep playing. Their
+	session would run against no durable record and whichever server holds the
+	lease owns the truth they would be diverging from.
 ]]
 local function loadPlayer(player: Player)
 	local loaded = InventoryLiveService.loadPlayer(player.UserId, os.time())
 	if loaded.Accepted ~= true then
-		warn(string.format("[InventoryNetwork] inventory load rejected for %d: %s", player.UserId, loaded.ReasonId))
+		warn(string.format("[InventoryNetwork] persistence load rejected for %d: %s", player.UserId, loaded.ReasonId))
 		if player.Parent == Players then
-			player:Kick("Your inventory is active on another server or could not be loaded safely. Please rejoin.")
+			player:Kick("Your saved character is active on another server or could not be loaded safely. Please rejoin.")
 		end
 		return
 	end
 	if player.Parent ~= Players then
 		InventoryLiveService.releasePlayer(player.UserId)
+		return
+	end
+	local hydrated = CharacterProgressionService.hydratePlayer(player, loaded.ProgressionState)
+	if hydrated.Accepted ~= true then
+		InventoryLiveService.releasePlayer(player.UserId)
+		if player.Parent == Players then
+			player:Kick("Your character progression could not be loaded safely. Please rejoin.")
+		end
 		return
 	end
 	loadedPlayerIds[player.UserId] = true
@@ -102,7 +113,7 @@ local function releasePlayer(player: Player)
 	if released.Accepted ~= true and released.ReasonId ~= "LeaseNotOwned" then
 		warn(
 			string.format(
-				"[InventoryNetwork] inventory lease release rejected for %d: %s",
+				"[InventoryNetwork] persistence lease release rejected for %d: %s",
 				player.UserId,
 				released.ReasonId
 			)
@@ -172,31 +183,20 @@ local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
 	renewalAccumulatorSeconds = 0
 	local nowUnix = os.time()
 	for _, player in Players:GetPlayers() do
-		--[[
-			Only loaded players are renewed. A player who never loaded has no
-			lease to renew, so renewing everyone present would report LeaseNotOwned
-			for them and -- under the kick policy below -- eject a player for a
-			lease they were never granted.
-		]]
 		if loadedPlayerIds[player.UserId] then
 			local renewed = InventoryLiveService.renewPlayer(player.UserId, nowUnix)
 			if renewed.Accepted ~= true then
 				warn(
 					string.format(
-						"[InventoryNetwork] inventory lease renewal rejected for %d: %s",
+						"[InventoryNetwork] persistence lease renewal rejected for %d: %s",
 						player.UserId,
 						renewed.ReasonId
 					)
 				)
-				--[[
-					A lost lease means another server now owns this inventory.
-					Continuing would let this session mutate a record it no
-					longer holds, so the session ends here.
-				]]
 				loadedPlayerIds[player.UserId] = nil
 				InventoryLiveService.releasePlayer(player.UserId)
 				if player.Parent == Players then
-					player:Kick("Your inventory session could no longer be protected. Please rejoin.")
+					player:Kick("Your saved-character session could no longer be protected. Please rejoin.")
 				end
 			end
 		end
@@ -211,4 +211,4 @@ game:BindToClose(function()
 	InventoryLiveService.destroy()
 end)
 
-print("[Living Kingdoms] Inventory network and lease lifecycle mounted")
+print("[Living Kingdoms] Inventory, progression, and lease lifecycle mounted")
