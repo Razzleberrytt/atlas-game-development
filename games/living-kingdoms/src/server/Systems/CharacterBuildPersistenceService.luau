@@ -144,6 +144,10 @@ function Service:savePlayer(playerId: number, buildState: any, requestId: string
 	local alreadyApplied = false
 	local acceptedTransform = false
 	local write = selfAny._store:commit(keyFor(playerId), function(current: any): any
+		-- UpdateAsync may invoke the transform more than once. These flags describe
+		-- the final invocation only, so retry history cannot leak into the response.
+		alreadyApplied = false
+		acceptedTransform = false
 		local normalized = normalizeRecord(current, nowUnix)
 		if normalized == nil then
 			return current
