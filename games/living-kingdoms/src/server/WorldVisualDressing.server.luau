@@ -6,9 +6,10 @@
 	presentation-only: they do not collide, participate in queries, emit dynamic
 	light, or own navigation truth.
 
-	Semantic asset IDs come from EnvironmentAssetKitRegistry, so authored meshes
-	can replace the procedural model layer later without changing placement or
-	gameplay contracts.
+	Environmental model positions are generated from deterministic composition
+	fields rather than hand-authored coordinates. Semantic asset IDs still come
+	from EnvironmentAssetKitRegistry, so authored meshes can replace the procedural
+	model layer later without changing composition or gameplay contracts.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,6 +17,7 @@ local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)
 local EnvironmentModelPlacementConfig = require(ReplicatedStorage.Shared.Config.EnvironmentModelPlacementConfig)
+local EnvironmentCompositionPlanner = require(script.Parent.EnvironmentCompositionPlanner)
 local EnvironmentModelFactory = require(script.Parent.EnvironmentModelFactory)
 
 local DRESSING_FOLDER_NAME = "ReadabilityDressing"
@@ -25,18 +27,15 @@ type PointSpec = { x: number, y: number, z: number }
 type EnvironmentPlacementSpec = {
 	id: string,
 	assetId: string,
+	field: string,
 	x: number,
-	y: number,
 	z: number,
 	yawDegrees: number,
+	fieldScore: number,
 }
 
 local function toVector3(spec: PointSpec): Vector3
 	return Vector3.new(spec.x, spec.y, spec.z)
-end
-
-local function toPlacementCFrame(spec: EnvironmentPlacementSpec): CFrame
-	return CFrame.new(spec.x, spec.y, spec.z) * CFrame.Angles(0, math.rad(spec.yawDegrees), 0)
 end
 
 local function makePresentationPart(
@@ -100,29 +99,59 @@ local function buildTrailReflector(parent: Instance, index: number, position: Ve
 	)
 end
 
-local function buildEnvironmentModels(parent: Instance)
+local function groundedPlacementCFrame(
+	worldRoot: Folder,
+	placementSpec: EnvironmentPlacementSpec
+): CFrame
+	local terrainFoundation = worldRoot:FindFirstChild("TerrainFoundation")
+	assert(terrainFoundation ~= nil, "TerrainFoundation must exist before environment composition")
+
+	local raycastParams = RaycastParams.new()
+	raycastParams.FilterType = Enum.RaycastFilterType.Include
+	raycastParams.FilterDescendantsInstances = { terrainFoundation }
+
+	local origin = Vector3.new(placementSpec.x, 160, placementSpec.z)
+	local raycastResult = Workspace:Raycast(origin, Vector3.new(0, -320, 0), raycastParams)
+	local groundY = if raycastResult ~= nil then raycastResult.Position.Y else 0
+
+	return CFrame.new(placementSpec.x, groundY, placementSpec.z)
+		* CFrame.Angles(0, math.rad(placementSpec.yawDegrees), 0)
+end
+
+local function buildEnvironmentModels(parent: Instance, worldRoot: Folder)
 	local modelsFolder = Instance.new("Folder")
 	modelsFolder.Name = ENVIRONMENT_MODELS_FOLDER_NAME
 	modelsFolder:SetAttribute("EnvironmentModelVersion", EnvironmentModelPlacementConfig.Version)
+	modelsFolder:SetAttribute("EnvironmentCompositionAlgorithm", EnvironmentModelPlacementConfig.AlgorithmVersion)
+	modelsFolder:SetAttribute("EnvironmentCompositionSeed", EnvironmentModelPlacementConfig.Seed)
 	modelsFolder:SetAttribute("EnvironmentPresentationOnly", true)
 	modelsFolder.Parent = parent
 
-	for _, placementSpec in EnvironmentModelPlacementConfig.Placements do
+	local placements = EnvironmentCompositionPlanner.Plan()
+	for _, rawPlacementSpec in placements do
+		local placementSpec = rawPlacementSpec :: EnvironmentPlacementSpec
 		assert(
 			EnvironmentModelFactory.Supports(placementSpec.assetId),
 			string.format("Unsupported environment model placement asset: %s", placementSpec.assetId)
 		)
+
 		local model = EnvironmentModelFactory.Build(
 			modelsFolder,
 			placementSpec.assetId,
-			toPlacementCFrame(placementSpec :: EnvironmentPlacementSpec)
+			groundedPlacementCFrame(worldRoot, placementSpec)
 		)
 		model.Name = placementSpec.id
 		model:SetAttribute("EnvironmentPlacementId", placementSpec.id)
+		model:SetAttribute("EnvironmentField", placementSpec.field)
+		model:SetAttribute("EnvironmentFieldScore", placementSpec.fieldScore)
+		model:SetAttribute("EnvironmentCompositionSeed", EnvironmentModelPlacementConfig.Seed)
+		model:SetAttribute("EnvironmentCompositionAlgorithm", EnvironmentModelPlacementConfig.AlgorithmVersion)
 	end
+
+	modelsFolder:SetAttribute("EnvironmentModelCount", #placements)
 end
 
-local function applyDressing(worldRoot: Instance)
+local function applyDressing(worldRoot: Folder)
 	local existing = worldRoot:FindFirstChild(DRESSING_FOLDER_NAME)
 	if existing ~= nil then
 		existing:Destroy()
@@ -132,6 +161,8 @@ local function applyDressing(worldRoot: Instance)
 	dressing.Name = DRESSING_FOLDER_NAME
 	dressing:SetAttribute("WorldDressingVersion", Config.Dressing.Version)
 	dressing:SetAttribute("EnvironmentModelVersion", EnvironmentModelPlacementConfig.Version)
+	dressing:SetAttribute("EnvironmentCompositionAlgorithm", EnvironmentModelPlacementConfig.AlgorithmVersion)
+	dressing:SetAttribute("EnvironmentCompositionSeed", EnvironmentModelPlacementConfig.Seed)
 	dressing:SetAttribute("EnvironmentPresentationOnly", true)
 	dressing.Parent = worldRoot
 
@@ -139,14 +170,17 @@ local function applyDressing(worldRoot: Instance)
 		buildTrailReflector(dressing, index, toVector3(positionSpec))
 	end
 
-	buildEnvironmentModels(dressing)
+	buildEnvironmentModels(dressing, worldRoot)
 
 	worldRoot:SetAttribute("WorldDressingVersion", Config.Dressing.Version)
 	worldRoot:SetAttribute("EnvironmentModelVersion", EnvironmentModelPlacementConfig.Version)
+	worldRoot:SetAttribute("EnvironmentCompositionAlgorithm", EnvironmentModelPlacementConfig.AlgorithmVersion)
+	worldRoot:SetAttribute("EnvironmentCompositionSeed", EnvironmentModelPlacementConfig.Seed)
 end
 
-local worldRoot = Workspace:WaitForChild(Config.WorldRootName)
-assert(worldRoot:IsA("Folder"), Config.WorldRootName .. " must be a Folder")
+local worldRootInstance = Workspace:WaitForChild(Config.WorldRootName)
+assert(worldRootInstance:IsA("Folder"), Config.WorldRootName .. " must be a Folder")
+local worldRoot = worldRootInstance :: Folder
 
 -- Waiting for Landmarks makes this pass deterministic relative to the synchronous
 -- world builder without polling or adding a recurring server loop.
@@ -155,8 +189,9 @@ applyDressing(worldRoot)
 
 print(
 	string.format(
-		"[Living Kingdoms] World visual dressing ready: %s / %s",
+		"[Living Kingdoms] World visual dressing ready: %s / %s / %s",
 		Config.Dressing.Version,
-		EnvironmentModelPlacementConfig.Version
+		EnvironmentModelPlacementConfig.Version,
+		EnvironmentModelPlacementConfig.AlgorithmVersion
 	)
 )
