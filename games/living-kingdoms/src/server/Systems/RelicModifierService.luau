@@ -10,9 +10,10 @@
 	inventory record on each read so an equip change cannot be hidden behind the
 	relic cache.
 
-	This adapter owns no relic or inventory state, creates no connections, and adds
-	no network surface. It is the server composition seam between independently
-	owned build facts and the existing gameplay owners that consume them.
+	Wave 2 character stats are composed here because this is already the server
+	boundary consumed by damage, life, movement, reload, and cooldown owners. The
+	central stat read excludes Equipment so legacy authoritative item multipliers
+	remain single-applied until Agent 3 elects to move those sources into StatService.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -29,6 +30,8 @@ local EquippedEquipmentModifierResolver = if equippedEquipmentModifierResolverMo
 	else require(equippedEquipmentModifierResolverModule)
 local RelicModifierResolver = require(ReplicatedStorage.Shared.RPG.RelicModifierResolver)
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
+local CharacterStatConfig = require(ReplicatedStorage.Shared.Config.CharacterStatConfig)
+local CharacterStatService = require(script.Parent.CharacterStatService)
 local inventoryLiveServiceModule = script.Parent.InventoryLiveService
 local InventoryLiveService = if EquippedEquipmentModifierResolver == nil or inventoryLiveServiceModule == nil
 	then nil
@@ -63,6 +66,30 @@ local function canComposeEquipment(player: Player): boolean
 		and type(playerAsAny.GetAttribute) == "function"
 end
 
+local function characterStatRatio(player: Player, statId: string): number
+	local definition = CharacterStatConfig.Stats[statId]
+	if type(definition) ~= "table" or type(definition.BaseValue) ~= "number" or definition.BaseValue <= 0 then
+		return 1
+	end
+	local resolved = CharacterStatService.getResolvedStatExcludingSourceCategory(
+		player,
+		statId,
+		CharacterStatConfig.SourceCategories.Equipment
+	)
+	if type(resolved) ~= "number" or resolved ~= resolved or resolved == math.huge or resolved == -math.huge then
+		return 1
+	end
+	return math.clamp(resolved / definition.BaseValue, 0.1, 5)
+end
+
+local function applyCharacterStats(player: Player, combined: any)
+	combined.equipmentDamageMultiplier *= characterStatRatio(player, CharacterStatConfig.StatIds.DamageMultiplier)
+	combined.equipmentMaximumHealthMultiplier *= characterStatRatio(player, CharacterStatConfig.StatIds.MaxHealth)
+	combined.equipmentMovementSpeedMultiplier *= characterStatRatio(player, CharacterStatConfig.StatIds.MovementSpeed)
+	combined.equipmentAbilityCooldownDurationMultiplier *=
+		characterStatRatio(player, CharacterStatConfig.StatIds.CooldownDurationMultiplier)
+end
+
 local function composeOperativeModifiers(player: Player, relicModifiers: RelicModifiers): OperativeModifiers
 	local combined = table.clone(relicModifiers) :: any
 	combined.equipmentDamageMultiplier = 1
@@ -72,6 +99,7 @@ local function composeOperativeModifiers(player: Player, relicModifiers: RelicMo
 	combined.equipmentAbilityCooldownDurationMultiplier = 1
 	combined.equipmentAbilityPowerMultiplier = 1
 	if not canComposeEquipment(player) then
+		applyCharacterStats(player, combined)
 		return table.freeze(combined) :: OperativeModifiers
 	end
 	local record = InventoryLiveService.getRecord(player.UserId)
@@ -101,6 +129,7 @@ local function composeOperativeModifiers(player: Player, relicModifiers: RelicMo
 			end
 		end
 	end
+	applyCharacterStats(player, combined)
 	return table.freeze(combined) :: OperativeModifiers
 end
 
@@ -123,10 +152,9 @@ function RelicModifierService.read(player: Player): OperativeModifiers
 	local cached = cache[player]
 	if cached ~= nil and cached.revision == read.revision then
 		if not canComposeEquipment(player) then
-			if cached.partialRuntimeModifiers == nil then
-				cached.partialRuntimeModifiers = composeOperativeModifiers(player, cached.modifiers)
-			end
-			return cached.partialRuntimeModifiers
+			-- Character progression can change without changing the temporary relic
+			-- revision, so recompute the composed bundle even in partial runtimes.
+			return composeOperativeModifiers(player, cached.modifiers)
 		end
 		return composeOperativeModifiers(player, cached.modifiers)
 	end
@@ -135,7 +163,7 @@ function RelicModifierService.read(player: Player): OperativeModifiers
 	cache[player] = {
 		revision = read.revision,
 		modifiers = modifiers,
-		partialRuntimeModifiers = if canComposeEquipment(player) then nil else composed,
+		partialRuntimeModifiers = nil,
 	}
 	return composed
 end
@@ -163,12 +191,6 @@ function RelicModifierService.advanceBloodBatteryKills(player: Player, kills: nu
 	return if advance == nil then 0 else advance.triggerCount
 end
 
---[[
-	Suppression Engine's sustained-shot progress. The counter saturates in the
-	equipped relic slot, so it survives nothing the relic is not equipped for and
-	is released with the operation like every other slot fact. Reading an
-	unequipped relic returns zero and resetting it is a no-op.
-]]
 function RelicModifierService.readSustainedShots(player: Player): number
 	local counter = RunBuildService.readRelicCounter(player, RunRpgContracts.RelicIds.SuppressionEngine)
 	return if type(counter) == "number" then counter else 0
@@ -186,10 +208,6 @@ function RelicModifierService.resetSustainedShots(player: Player)
 	RunBuildService.setRelicCounter(player, RunRpgContracts.RelicIds.SuppressionEngine, 0)
 end
 
---[[
-	Spends Second Wind's single operation charge. Returns false when the relic is
-	not equipped or already spent, so the reprieve cannot repeat.
-]]
 function RelicModifierService.consumeSecondWindCharge(player: Player): boolean
 	return RunBuildService.consumeRelicCharge(player, RunRpgContracts.RelicIds.SecondWind)
 end
