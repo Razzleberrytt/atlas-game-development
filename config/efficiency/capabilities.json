@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "living-kingdoms",
-  "updated": "2026-08-10",
+  "updated": "2026-08-14",
   "capabilities": [
     {
       "id": "combat-authority",
@@ -40,6 +40,28 @@
       "tests_glob": "games/living-kingdoms/tests/**/*.test.luau",
       "data_driven": false,
       "notes": "Lifecycle changes require ownership/cleanup scrutiny."
+    },
+    {
+      "id": "procedural-instances",
+      "name": "Seeded modular procedural expedition instances",
+      "owner": "server/shared-contract",
+      "status": "active",
+      "extension_points": [
+        "games/living-kingdoms/src/shared/Config/RoomAssemblyConfig.luau",
+        "games/living-kingdoms/src/shared/Expeditions/ProceduralInstanceGenerator.luau",
+        "games/living-kingdoms/src/shared/Expeditions/InstanceLayoutValidator.luau",
+        "games/living-kingdoms/src/server/Systems/ExpeditionRoomPlacementService.luau"
+      ],
+      "consumers": [
+        "expedition-runtime",
+        "encounter-spawning",
+        "room-completion",
+        "reward-hooks",
+        "instance-debugging"
+      ],
+      "tests_glob": "games/living-kingdoms/tests/*Instance*.test.luau",
+      "data_driven": true,
+      "notes": "Add compatible room definitions to the existing room pool; keep generation seed/state authoritative on the server and use the shared generator only for deterministic planning/reproduction."
     },
     {
       "id": "reward-results",
