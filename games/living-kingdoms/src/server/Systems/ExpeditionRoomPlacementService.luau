@@ -47,7 +47,12 @@ local function buildWallSide(
 	if sideId == "North" or sideId == "South" then
 		local z = center.z + (if sideId == "North" then -size.z / 2 else size.z / 2)
 		if not isOpen then
-			rockWall(sideId .. "Wall", Vector3.new(size.x, size.y, WALL_THICKNESS), CFrame.new(center.x, center.y, z), parent)
+			rockWall(
+				sideId .. "Wall",
+				Vector3.new(size.x, size.y, WALL_THICKNESS),
+				CFrame.new(center.x, center.y, z),
+				parent
+			)
 			return
 		end
 
@@ -70,7 +75,12 @@ local function buildWallSide(
 
 	local x = center.x + (if sideId == "West" then -size.x / 2 else size.x / 2)
 	if not isOpen then
-		rockWall(sideId .. "Wall", Vector3.new(WALL_THICKNESS, size.y, size.z), CFrame.new(x, center.y, center.z), parent)
+		rockWall(
+			sideId .. "Wall",
+			Vector3.new(WALL_THICKNESS, size.y, size.z),
+			CFrame.new(x, center.y, center.z),
+			parent
+		)
 		return
 	end
 
