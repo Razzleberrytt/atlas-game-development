@@ -15,6 +15,14 @@ local SourceIds = table.freeze({
 	System = "System",
 })
 
+local RewardXP = table.freeze({
+	-- Shared co-op enemy-death reward. Individual killer/assist splits can be
+	-- layered on once combat exposes a durable contributor ledger.
+	EnemyKill = 20,
+	Assist = 10,
+	DungeonCompletion = 250,
+})
+
 local Config = {
 	Version = "CHARACTER-XP-v1",
 	MinimumLevel = 1,
@@ -29,6 +37,7 @@ local Config = {
 	QuadraticXPPerLevelSquared = 1,
 
 	SourceIds = SourceIds,
+	RewardXP = RewardXP,
 }
 
 assert(Config.MinimumLevel == 1, "character progression currently expects level one as its origin")
@@ -39,6 +48,12 @@ assert(Config.LinearXPPerLevel >= 0 and Config.LinearXPPerLevel % 1 == 0, "linea
 assert(
 	Config.QuadraticXPPerLevelSquared >= 0 and Config.QuadraticXPPerLevelSquared % 1 == 0,
 	"quadratic XP growth must be a nonnegative integer"
+)
+assert(Config.RewardXP.EnemyKill > 0 and Config.RewardXP.EnemyKill % 1 == 0, "enemy XP must be a positive integer")
+assert(Config.RewardXP.Assist > 0 and Config.RewardXP.Assist % 1 == 0, "assist XP must be a positive integer")
+assert(
+	Config.RewardXP.DungeonCompletion > 0 and Config.RewardXP.DungeonCompletion % 1 == 0,
+	"dungeon completion XP must be a positive integer"
 )
 
 return table.freeze(Config)
