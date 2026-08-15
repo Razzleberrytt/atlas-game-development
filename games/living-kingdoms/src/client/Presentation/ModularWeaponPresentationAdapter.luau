@@ -24,6 +24,9 @@ local MIN_SOCKET_SPAN = 0.05
 local MIN_SCALE = 0.05
 local MAX_SCALE = 4
 local SHELL_NAME = "ModularWeaponShell"
+local ASSET_READY_WAIT_SECONDS = 0.75
+
+local readinessWaitSpent = false
 
 local function findAttachment(root: Instance, name: string): Attachment?
 	for _, descendant in ipairs(root:GetDescendants()) do
@@ -163,6 +166,25 @@ local function weldShellToRoot(shell: Model, root: BasePart)
 	end
 end
 
+local function cloneGeneratedAsset(assetId: string): Instance?
+	local generatedRoot = ModularAssetResolver.GetGeneratedRoot(ReplicatedStorage)
+	local clone = if generatedRoot ~= nil then ModularAssetResolver.CloneByAssetId(generatedRoot, assetId) else nil
+	if clone ~= nil then
+		return clone
+	end
+
+	if readinessWaitSpent then
+		return nil
+	end
+	readinessWaitSpent = true
+	if ModularAssetResolver.WaitForGeneratedAssetById(ReplicatedStorage, assetId, ASSET_READY_WAIT_SECONDS) == nil then
+		return nil
+	end
+
+	generatedRoot = ModularAssetResolver.GetGeneratedRoot(ReplicatedStorage)
+	return if generatedRoot ~= nil then ModularAssetResolver.CloneByAssetId(generatedRoot, assetId) else nil
+end
+
 function Adapter.Apply(rig: WeaponPresentationRig, assetId: string): boolean
 	if assetId == "" then
 		return false
@@ -171,12 +193,7 @@ function Adapter.Apply(rig: WeaponPresentationRig, assetId: string): boolean
 		return true
 	end
 
-	local generatedRoot = ModularAssetResolver.GetGeneratedRoot(ReplicatedStorage)
-	if generatedRoot == nil then
-		return false
-	end
-
-	local clone = ModularAssetResolver.CloneByAssetId(generatedRoot, assetId)
+	local clone = cloneGeneratedAsset(assetId)
 	if clone == nil or not clone:IsA("Model") then
 		if clone ~= nil then
 			clone:Destroy()

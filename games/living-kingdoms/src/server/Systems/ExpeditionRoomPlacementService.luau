@@ -5,6 +5,7 @@ local Workspace = game:GetService("Workspace")
 
 local RoomPlacementPlanner = require(ReplicatedStorage.Shared.Expeditions.RoomPlacementPlanner)
 local ExpeditionEnvironmentBuilder = require(script.Parent.ExpeditionEnvironmentBuilder)
+local ModularDungeonRoomPresentation = require(script.Parent.ModularDungeonRoomPresentation)
 
 local ROOT_NAME = "ExpeditionRooms"
 local Service = {}
@@ -112,6 +113,7 @@ local function buildRoom(placement: any, seed: number, parent: Instance)
 	doorwayFixture("EntranceReveal", entranceCFrame, placement.RoleId, model)
 	doorwayFixture("ExitReveal", exitCFrame, placement.RoleId, model)
 	ExpeditionEnvironmentBuilder.decorate(model, placement, seed)
+	ModularDungeonRoomPresentation.apply(model, placement)
 	model.PrimaryPart = floor
 	model.Parent = parent
 end
