@@ -13,8 +13,10 @@ local inventoryLive = fs.readFile("games/living-kingdoms/src/server/Systems/Inve
 local inventoryNetwork = fs.readFile("games/living-kingdoms/src/server/inventory-network.server.luau")
 local combatAdapter = fs.readFile("games/living-kingdoms/src/server/Systems/EquipmentCombatAdapter.luau")
 local weaponResolver = fs.readFile("games/living-kingdoms/src/shared/Equipment/EquippedWeaponResolver.luau")
+local equippedModifierResolver = fs.readFile("games/living-kingdoms/src/shared/Equipment/EquippedEquipmentModifierResolver.luau")
 local modifierService = fs.readFile("games/living-kingdoms/src/server/Systems/RelicModifierService.luau")
 local combatRuntime = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau")
+local damageResolver = fs.readFile("games/living-kingdoms/src/server/Systems/DamageResolver.luau")
 local comparisonResolver = fs.readFile("games/living-kingdoms/src/shared/Equipment/EquipmentComparisonResolver.luau")
 local rewardService = fs.readFile("games/living-kingdoms/src/server/Systems/EquipmentRewardService.luau")
 
@@ -44,10 +46,12 @@ assertThat(string.find(weaponResolver, "ItemNotOwned", 1, true) ~= nil, "forged 
 assertThat(string.find(weaponResolver, "ItemNotEquipped", 1, true) ~= nil, "unequipped instances must not drive combat")
 assertThat(string.find(weaponResolver, "definition.WeaponId", 1, true) ~= nil, "weapon id must come from authored definition")
 
-assertThat(string.find(modifierService, "EquippedEquipmentModifierResolver.resolve", 1, true) ~= nil, "equipped affixes must resolve from durable record")
-assertThat(string.find(modifierService, "definition.WeaponId == weaponId", 1, true) ~= nil, "weapon affixes must match the active authored weapon")
-assertThat(string.find(combatRuntime, "RelicModifierService.getDamageMultiplier", 1, true) ~= nil, "authoritative damage must consume equipment modifiers")
-assertThat(string.find(combatRuntime, "RelicModifierService.getReloadDurationMultiplier", 1, true) ~= nil, "authoritative reload must consume equipment modifiers")
+assertThat(string.find(equippedModifierResolver, "EquipmentAffixModifierResolver.resolve(reward.Affixes)", 1, true) ~= nil, "equipped affixes must resolve from canonical stored rolls")
+assertThat(string.find(equippedModifierResolver, "definition.WeaponId == weaponId", 1, true) ~= nil, "weapon affixes must match the active authored weapon")
+assertThat(string.find(modifierService, "EquippedEquipmentModifierResolver.resolveForWeapon(record, activeWeaponId)", 1, true) ~= nil, "server modifier adapter must join durable inventory to active weapon")
+assertThat(string.find(combatRuntime, "relicModifiers = RelicModifierService.read(player)", 1, true) ~= nil, "authoritative combat must consume the composed equipment bundle")
+assertThat(string.find(combatRuntime, "equipmentReloadDurationMultiplier", 1, true) ~= nil, "authoritative reload must consume equipment modifiers")
+assertThat(string.find(damageResolver, "equipmentDamageMultiplier = relic.equipmentDamageMultiplier or 1", 1, true) ~= nil, "authoritative damage must consume the bounded equipment multiplier")
 
 assertThat(string.find(comparisonResolver, "candidateScore", 1, true) ~= nil, "informational comparison score must remain available")
 assertThat(string.find(rewardService, "GenerateGUID", 1, true) ~= nil, "generated durable rewards must receive unique instance identity")
