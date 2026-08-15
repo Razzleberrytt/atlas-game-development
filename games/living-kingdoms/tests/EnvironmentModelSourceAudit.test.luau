@@ -84,24 +84,42 @@ end
 
 local factorySource = fs.readFile(factoryPath)
 local dressingSource = fs.readFile(dressingPath)
-assert(string.find(factorySource, "EnvironmentAssetKitRegistry", 1, true), "factory must resolve semantic asset registry ids")
+assert(
+	string.find(factorySource, "EnvironmentAssetKitRegistry", 1, true),
+	"factory must resolve semantic asset registry ids"
+)
 assert(string.find(factorySource, "part.Anchored = true", 1, true), "environment model parts must stay anchored")
 assert(string.find(factorySource, "part.CanCollide = false", 1, true), "presentation models must not own collision")
 assert(string.find(factorySource, "part.CanTouch = false", 1, true), "presentation models must not own touch authority")
-assert(string.find(factorySource, "part.CanQuery = false", 1, true), "presentation models must not affect gameplay queries")
+assert(
+	string.find(factorySource, "part.CanQuery = false", 1, true),
+	"presentation models must not affect gameplay queries"
+)
 assert(
 	string.find(factorySource, 'model:SetAttribute("EnvironmentPresentationOnly", true)', 1, true),
 	"models must declare presentation-only ownership"
 )
-assert(not string.find(factorySource, 'Instance.new("PointLight")', 1, true), "environment models must add zero dynamic lights")
-assert(not string.find(factorySource, 'Instance.new("SpotLight")', 1, true), "environment models must add zero dynamic lights")
-assert(not string.find(factorySource, 'Instance.new("Script")', 1, true), "environment models must not add per-prop scripts")
+assert(
+	not string.find(factorySource, 'Instance.new("PointLight")', 1, true),
+	"environment models must add zero dynamic lights"
+)
+assert(
+	not string.find(factorySource, 'Instance.new("SpotLight")', 1, true),
+	"environment models must add zero dynamic lights"
+)
+assert(
+	not string.find(factorySource, 'Instance.new("Script")', 1, true),
+	"environment models must not add per-prop scripts"
+)
 
 for assetId in allowedAssetIds do
 	assert(string.find(factorySource, assetId, 1, true), "factory is missing a registered starter builder: " .. assetId)
 end
 
-assert(string.find(dressingSource, "EnvironmentModelFactory.Build", 1, true), "world dressing must instantiate model placements")
+assert(
+	string.find(dressingSource, "EnvironmentModelFactory.Build", 1, true),
+	"world dressing must instantiate model placements"
+)
 assert(
 	string.find(dressingSource, 'modelsFolder.Name = "EnvironmentModels"', 1, true),
 	"world dressing must isolate environment models"
