@@ -1,9 +1,7 @@
 --!strict
 
 -- Canonical server owner for live character XP. Other server systems award XP
--- through this module; there is deliberately no client mutation remote. The
--- hydration/export seam is persistence-agnostic so durable storage can bind to
--- this API without moving progression math or creating a second XP authority.
+-- through this module; there is deliberately no client mutation endpoint.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -20,6 +18,7 @@ local playerRemovingConnection: RBXScriptConnection? = nil
 local nextListenerId = 0
 local levelUpListeners: { [number]: (any) -> () } = {}
 local progressionChangedListeners: { [number]: (any) -> () } = {}
+local persistenceWriter: ((number, any, string, string?, number) -> any)? = nil
 
 local function isPlayer(player: any): boolean
 	return typeof(player) == "Instance" and player:IsA("Player")
@@ -87,6 +86,17 @@ function Service.start()
 	end)
 end
 
+-- InventoryLiveService supplies this once its lease lifecycle is mounted. The
+-- writer must durably accept the candidate state before this service publishes
+-- it. This keeps live attributes and saved progression in lockstep.
+function Service.configurePersistence(writer: any): boolean
+	if type(writer) ~= "function" then
+		return false
+	end
+	persistenceWriter = writer
+	return true
+end
+
 -- Server-side persistence adapters may hydrate malformed or historical state.
 -- The pure resolver canonicalizes it; derived Level/XPIntoLevel fields are never
 -- trusted from storage.
@@ -113,9 +123,8 @@ function Service.getState(player: Player): any
 	return ensureState(player)
 end
 
--- This is the only XP mutation API. `sourceId` is a server-authored attribution
--- category, not a client claim; attributionId is optional context for future
--- kill/assist/quest/dungeon/event/exploration telemetry and dedupe layers.
+-- This is the only XP mutation API. Damage, targets, completion state, source,
+-- amount and attribution are all resolved by server systems before this call.
 function Service.awardXP(player: Player, amount: any, sourceId: any, attributionId: any?): any
 	if not isPlayer(player) then
 		return table.freeze({ Accepted = false, ReasonId = "InvalidPlayer" })
@@ -127,12 +136,43 @@ function Service.awardXP(player: Player, amount: any, sourceId: any, attribution
 		return table.freeze({ Accepted = false, ReasonId = "InvalidAttributionId" })
 	end
 
-	local resolution = Resolver.awardXP(ensureState(player), amount, Config)
+	local previousState = ensureState(player)
+	local resolution = Resolver.awardXP(previousState, amount, Config)
 	if resolution.Accepted ~= true then
 		return resolution
 	end
 
-	setState(player, resolution.State)
+	local writer = persistenceWriter
+	if writer == nil then
+		return table.freeze({ Accepted = false, ReasonId = "ProgressionPersistenceUnavailable", State = previousState })
+	end
+	local persisted = writer(player.UserId, resolution.State, sourceId, attributionId, os.time())
+	if type(persisted) ~= "table" or persisted.Accepted ~= true then
+		return table.freeze({
+			Accepted = false,
+			ReasonId = if type(persisted) == "table" then persisted.ReasonId else "ProgressionSaveFailed",
+			State = previousState,
+		})
+	end
+	if persisted.AlreadyApplied == true then
+		local storedState = Resolver.normalizeState(persisted.State, Config)
+		setState(player, storedState)
+		return table.freeze({
+			Accepted = true,
+			ReasonId = "XPAlreadyAwarded",
+			SourceId = sourceId,
+			AttributionId = attributionId,
+			RequestedXP = resolution.RequestedXP,
+			AwardedXP = 0,
+			LevelsGained = 0,
+			LevelUps = table.freeze({}),
+			PreviousState = previousState,
+			State = storedState,
+		})
+	end
+
+	local committedState = Resolver.normalizeState(persisted.State or resolution.State, Config)
+	setState(player, committedState)
 	local payload = table.freeze({
 		Player = player,
 		UserId = player.UserId,
@@ -141,8 +181,8 @@ function Service.awardXP(player: Player, amount: any, sourceId: any, attribution
 		AwardedXP = resolution.AwardedXP,
 		LevelsGained = resolution.LevelsGained,
 		LevelUps = resolution.LevelUps,
-		PreviousState = resolution.PreviousState,
-		State = resolution.State,
+		PreviousState = previousState,
+		State = committedState,
 	})
 	notify(progressionChangedListeners, payload)
 	if resolution.LevelsGained > 0 then
@@ -158,8 +198,8 @@ function Service.awardXP(player: Player, amount: any, sourceId: any, attribution
 		AwardedXP = resolution.AwardedXP,
 		LevelsGained = resolution.LevelsGained,
 		LevelUps = resolution.LevelUps,
-		PreviousState = resolution.PreviousState,
-		State = resolution.State,
+		PreviousState = previousState,
+		State = committedState,
 	})
 end
 
