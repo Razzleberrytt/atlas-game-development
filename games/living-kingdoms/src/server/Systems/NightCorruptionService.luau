@@ -1,11 +1,11 @@
 --!strict
 
-local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config.NightCorruptionConfig)
+local EnvironmentProfileService = require(script.Parent.EnvironmentProfileService)
 
 local Service = {}
 local network = ReplicatedStorage:WaitForChild("HordeNetwork")
@@ -43,26 +43,16 @@ local function evaluateAt(serverTimestamp: number)
 	network:SetAttribute("NightCorruptionXpMultiplier", 1 + tier * Config.XpBonusPerTier)
 
 	if isNight then
-		Lighting.ClockTime = Config.NightStartClockTime
+		local clockTime = Config.NightStartClockTime
 			+ (Config.DeepNightClockTime + 24 - Config.NightStartClockTime) * intensity
-		if Lighting.ClockTime >= 24 then
-			Lighting.ClockTime -= 24
+		if clockTime >= 24 then
+			clockTime -= 24
 		end
-		Lighting.Brightness = 2.05 - intensity * 0.8
-		Lighting.ExposureCompensation = 0.12 - intensity * 0.42
-		Lighting.FogEnd = 485 - intensity * (485 - Config.MinimumFogEnd)
-		Lighting.Ambient = Color3.fromRGB(
-			35 - math.floor(intensity * 20),
-			44 - math.floor(intensity * 25),
-			56 - math.floor(intensity * 25)
-		)
+		EnvironmentProfileService.applyCorruption(clockTime, intensity, Config.MinimumFogEnd)
 	else
 		local daylightProgress = cycleElapsed / Config.DaylightSeconds
-		Lighting.ClockTime = Config.DayClockTime + daylightProgress * (Config.NightStartClockTime - Config.DayClockTime)
-		Lighting.Brightness = 2.65
-		Lighting.ExposureCompensation = 0.12
-		Lighting.FogEnd = 620
-		Lighting.Ambient = Color3.fromRGB(91, 85, 71)
+		local clockTime = Config.DayClockTime + daylightProgress * (Config.NightStartClockTime - Config.DayClockTime)
+		EnvironmentProfileService.applyDaylight(clockTime)
 	end
 end
 
@@ -71,6 +61,7 @@ function Service.start()
 		return
 	end
 	started = true
+	EnvironmentProfileService.start()
 	startedAt = Workspace:GetServerTimeNow()
 	lastTier = -1
 	transitionSequence = 0
