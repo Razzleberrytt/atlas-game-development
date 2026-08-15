@@ -49,7 +49,8 @@ local function multiplier(value: unknown, minimum: number, maximum: number): num
 end
 
 function Resolver.resolve(baseDefinition: any, modifiers: WeaponStatModifiers?): ResolvedWeaponStats?
-	if type(baseDefinition) ~= "table"
+	if
+		type(baseDefinition) ~= "table"
 		or type(baseDefinition.WeaponId) ~= "string"
 		or baseDefinition.WeaponId == ""
 		or not finite(baseDefinition.DamagePerHit)
@@ -73,7 +74,8 @@ function Resolver.resolve(baseDefinition: any, modifiers: WeaponStatModifiers?):
 	local reloadMultiplier = multiplier(values.ReloadDurationMultiplier, 0.55, 1.5)
 	local spreadMultiplier = multiplier(values.SpreadMultiplier, 0.5, 2)
 	local headshotBonus = values.HeadshotMultiplierBonus or 0
-	if damageMultiplier == nil
+	if
+		damageMultiplier == nil
 		or cadenceMultiplier == nil
 		or magazineMultiplier == nil
 		or reloadMultiplier == nil

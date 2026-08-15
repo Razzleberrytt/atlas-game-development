@@ -83,19 +83,38 @@ end
 
 for weaponId, definition in DefinitionsById do
 	assert(definition.WeaponId == weaponId, "weapon pattern identity must match its key")
-	assert(definition.MaximumSecondaryTargets >= 0 and definition.MaximumSecondaryTargets <= 3, "secondary target count must remain tightly bounded")
-	assert(definition.SecondaryDamageMultiplier > 0 and definition.SecondaryDamageMultiplier <= 1, "secondary damage multiplier must be positive and cannot exceed primary damage")
+	assert(
+		definition.MaximumSecondaryTargets >= 0 and definition.MaximumSecondaryTargets <= 3,
+		"secondary target count must remain tightly bounded"
+	)
+	assert(
+		definition.SecondaryDamageMultiplier > 0 and definition.SecondaryDamageMultiplier <= 1,
+		"secondary damage multiplier must be positive and cannot exceed primary damage"
+	)
 	if definition.ModeId == ModeIds.SingleTarget then
 		assert(definition.MaximumSecondaryTargets == 0, "single-target weapons cannot emit secondary impacts")
 	elseif definition.ModeId == ModeIds.ConeCleave then
 		assert(definition.ConeHalfAngleDegrees ~= nil, "cone patterns require an angle")
-		assert(definition.ConeHalfAngleDegrees > 0 and definition.ConeHalfAngleDegrees <= 30, "cone half-angle must remain bounded")
-		assert(definition.MaximumSecondaryTargets <= shotgunPelletCount - 1, "shotgun secondary impacts cannot exceed pellet budget")
-		assert(definition.MaximumSecondaryRangeStuds > 0 and definition.MaximumSecondaryRangeStuds <= FirearmConfig.BreachShotgun.RangeStuds, "shotgun secondary range cannot exceed configured weapon range")
+		assert(
+			definition.ConeHalfAngleDegrees > 0 and definition.ConeHalfAngleDegrees <= 30,
+			"cone half-angle must remain bounded"
+		)
+		assert(
+			definition.MaximumSecondaryTargets <= shotgunPelletCount - 1,
+			"shotgun secondary impacts cannot exceed pellet budget"
+		)
+		assert(
+			definition.MaximumSecondaryRangeStuds > 0
+				and definition.MaximumSecondaryRangeStuds <= FirearmConfig.BreachShotgun.RangeStuds,
+			"shotgun secondary range cannot exceed configured weapon range"
+		)
 	elseif definition.ModeId == ModeIds.LinePierce then
 		assert(definition.PierceHalfWidthStuds ~= nil, "line-pierce patterns require a half-width")
 		assert(definition.MinimumBeyondPrimaryStuds ~= nil, "line-pierce patterns require primary separation")
-		assert(definition.PierceHalfWidthStuds > 0 and definition.PierceHalfWidthStuds <= 4, "pierce width must remain bounded")
+		assert(
+			definition.PierceHalfWidthStuds > 0 and definition.PierceHalfWidthStuds <= 4,
+			"pierce width must remain bounded"
+		)
 	else
 		error("unknown weapon pattern mode: " .. definition.ModeId)
 	end

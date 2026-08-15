@@ -51,8 +51,14 @@ assert(config.BasicFirearm.FiringModeId == modes.Burst, "compatibility rifle mus
 assert(config.BasicFirearm.BurstCount == 3, "burst rifle must fire three-round bursts")
 assert(config.BreachShotgun.PelletCount > 1, "shotgun must expose multiple bounded pellets")
 assert(config.BreachShotgun.PelletCount <= config.MaximumPelletCount, "shotgun pellet count must stay bounded")
-assert(config.BreachShotgun.SpreadDegrees > config.SniperRifle.SpreadDegrees, "shotgun must be less accurate than sniper")
-assert(config.SniperRifle.HeadshotMultiplier > config.LightMachineGun.HeadshotMultiplier, "precision archetype must reward weak points")
+assert(
+	config.BreachShotgun.SpreadDegrees > config.SniperRifle.SpreadDegrees,
+	"shotgun must be less accurate than sniper"
+)
+assert(
+	config.SniperRifle.HeadshotMultiplier > config.LightMachineGun.HeadshotMultiplier,
+	"precision archetype must reward weak points"
+)
 
 for weaponId, definition in config.DefinitionsById do
 	assert(config.get(weaponId) == definition, "lookup must return canonical definition")
@@ -60,7 +66,10 @@ for weaponId, definition in config.DefinitionsById do
 	assert(definition.PelletCount >= 1 and definition.PelletCount <= 8, "pellet bounds regressed")
 	assert(definition.SpreadDegrees >= 0 and definition.SpreadDegrees <= 30, "spread bounds regressed")
 	assert(definition.HeadshotMultiplier >= 1 and definition.HeadshotMultiplier <= 2.5, "headshot bounds regressed")
-	assert(definition.BurstIntervalSeconds >= 0.05 and definition.BurstIntervalSeconds <= definition.CadenceSeconds, "burst timing bounds regressed")
+	assert(
+		definition.BurstIntervalSeconds >= 0.05 and definition.BurstIntervalSeconds <= definition.CadenceSeconds,
+		"burst timing bounds regressed"
+	)
 end
 
 print("WeaponArchetypeConfig: automatic, semi, burst and multi-pellet archetypes passed")

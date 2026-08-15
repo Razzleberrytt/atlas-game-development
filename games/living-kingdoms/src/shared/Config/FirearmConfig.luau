@@ -232,12 +232,27 @@ for weaponId, definition in definitionsById do
 	assert(definition.CadenceSeconds >= 0.05 and definition.CadenceSeconds <= 2, "cadence must remain bounded")
 	assert(definition.RangeStuds >= 30 and definition.RangeStuds <= 180, "weapon range must remain bounded")
 	assert(definition.DamagePerHit > 0 and definition.DamagePerHit <= 150, "weapon damage must remain bounded")
-	assert(definition.ReloadDurationSeconds >= 1 and definition.ReloadDurationSeconds <= 5, "reload must remain bounded")
-	assert(definition.PelletCount >= 1 and definition.PelletCount <= 8 and definition.PelletCount % 1 == 0, "pellet count must stay bounded")
+	assert(
+		definition.ReloadDurationSeconds >= 1 and definition.ReloadDurationSeconds <= 5,
+		"reload must remain bounded"
+	)
+	assert(
+		definition.PelletCount >= 1 and definition.PelletCount <= 8 and definition.PelletCount % 1 == 0,
+		"pellet count must stay bounded"
+	)
 	assert(definition.SpreadDegrees >= 0 and definition.SpreadDegrees <= 30, "spread must stay bounded")
-	assert(definition.HeadshotMultiplier >= 1 and definition.HeadshotMultiplier <= 2.5, "headshot multiplier must stay bounded")
-	assert(definition.BurstCount >= 1 and definition.BurstCount <= 5 and definition.BurstCount % 1 == 0, "burst count must stay bounded")
-	assert(definition.BurstIntervalSeconds >= 0.05 and definition.BurstIntervalSeconds <= definition.CadenceSeconds, "burst interval must fit cadence")
+	assert(
+		definition.HeadshotMultiplier >= 1 and definition.HeadshotMultiplier <= 2.5,
+		"headshot multiplier must stay bounded"
+	)
+	assert(
+		definition.BurstCount >= 1 and definition.BurstCount <= 5 and definition.BurstCount % 1 == 0,
+		"burst count must stay bounded"
+	)
+	assert(
+		definition.BurstIntervalSeconds >= 0.05 and definition.BurstIntervalSeconds <= definition.CadenceSeconds,
+		"burst interval must fit cadence"
+	)
 	if definition.FiringModeId == FiringModeIds.Burst then
 		assert(definition.BurstCount >= 2, "burst weapons require multiple shots")
 	else

@@ -144,8 +144,8 @@ local function copyWeaponState(weaponState: WeaponReadinessState): WeaponReadine
 end
 
 local function setFireModeState(weaponState: WeaponReadinessState, fireModeState: FireModeState): WeaponReadinessState
-	local result = copyWeaponState(weaponState)
-	;(result :: any).fireModeState = fireModeState
+	local result = copyWeaponState(weaponState);
+	(result :: any).fireModeState = fireModeState
 	return result
 end
 
@@ -250,7 +250,8 @@ local function resolveCadenceSeconds(
 		local multiplier = readProgressionNumber("RunCadenceMultiplier", 1)
 		local relicMultiplier = 1
 		if relicCadenceMultiplier ~= nil then
-			if type(relicCadenceMultiplier) ~= "number"
+			if
+				type(relicCadenceMultiplier) ~= "number"
 				or relicCadenceMultiplier ~= relicCadenceMultiplier
 				or relicCadenceMultiplier < RELIC_CADENCE_MULTIPLIER_FLOOR
 				or relicCadenceMultiplier > 1
@@ -261,7 +262,8 @@ local function resolveCadenceSeconds(
 		end
 		local classMultiplier = 1
 		if classCadenceMultiplier ~= nil then
-			if type(classCadenceMultiplier) ~= "number"
+			if
+				type(classCadenceMultiplier) ~= "number"
 				or classCadenceMultiplier ~= classCadenceMultiplier
 				or classCadenceMultiplier < CLASS_CADENCE_MULTIPLIER_FLOOR
 				or classCadenceMultiplier > 1
@@ -272,7 +274,8 @@ local function resolveCadenceSeconds(
 		end
 		requested = configured * multiplier * relicMultiplier * classMultiplier
 	end
-	if type(requested) ~= "number"
+	if
+		type(requested) ~= "number"
 		or requested ~= requested
 		or requested < MINIMUM_CADENCE_SECONDS
 		or requested > configured
@@ -312,7 +315,13 @@ function AutomaticFireResolver.resolve(
 ): AutomaticFireResolution
 	local targetEntityId = if selectedTarget == nil then nil else selectedTarget.targetEntityId
 	if operativeState.combatStateId ~= CombatContracts.OperativeCombatStateIds.Ready then
-		return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.OperativeStateInvalid)
+		return reject(
+			operativeState,
+			weaponState,
+			targetEntityId,
+			serverTimestamp,
+			rejectionReasons.OperativeStateInvalid
+		)
 	end
 
 	local configuredWeapon = resolveWeaponDefinition(weaponState.weaponId)
@@ -340,11 +349,18 @@ function AutomaticFireResolver.resolve(
 		return reject(operativeState, weaponState, nil, serverTimestamp, rejectionReasons.NoSelectedTarget)
 	end
 
-	if not selectedTarget.isValid
+	if
+		not selectedTarget.isValid
 		or selectedTarget.operativeEntityId ~= operativeState.entityId
 		or targetEntityId == nil
 	then
-		return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.SelectedTargetInvalid)
+		return reject(
+			operativeState,
+			weaponState,
+			targetEntityId,
+			serverTimestamp,
+			rejectionReasons.SelectedTargetInvalid
+		)
 	end
 
 	if firingModeId == SEMI_AUTOMATIC_MODE_ID and fireModeState.triggerLatched then
@@ -369,7 +385,13 @@ function AutomaticFireResolver.resolve(
 		if not fireModeState.triggerLatched then
 			local burstCount = configuredWeapon.BurstCount
 			if type(burstCount) ~= "number" or burstCount < 2 or burstCount > 5 or burstCount % 1 ~= 0 then
-				return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.WeaponNotReady)
+				return reject(
+					operativeState,
+					weaponState,
+					targetEntityId,
+					serverTimestamp,
+					rejectionReasons.WeaponNotReady
+				)
 			end
 			fireModeState.burstShotsRemaining = burstCount
 		end
@@ -378,7 +400,11 @@ function AutomaticFireResolver.resolve(
 	local effectiveCadenceOverride = cadenceSecondsOverride
 	if firingModeId == BURST_MODE_ID and fireModeState.burstShotsRemaining > 1 then
 		local burstInterval = configuredWeapon.BurstIntervalSeconds
-		if type(burstInterval) ~= "number" or burstInterval < MINIMUM_CADENCE_SECONDS or burstInterval > configuredWeapon.CadenceSeconds then
+		if
+			type(burstInterval) ~= "number"
+			or burstInterval < MINIMUM_CADENCE_SECONDS
+			or burstInterval > configuredWeapon.CadenceSeconds
+		then
 			return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.WeaponNotReady)
 		end
 		effectiveCadenceOverride = if effectiveCadenceOverride == nil
@@ -392,7 +418,8 @@ function AutomaticFireResolver.resolve(
 		classCadenceMultiplier
 	)
 	local ammoConservationChance = resolveAmmoConservationChance()
-	if cadenceSeconds == nil
+	if
+		cadenceSeconds == nil
 		or ammoConservationChance == nil
 		or weaponState.ammunition.weaponId ~= weaponState.weaponId
 		or weaponState.cadence.weaponId ~= weaponState.weaponId
