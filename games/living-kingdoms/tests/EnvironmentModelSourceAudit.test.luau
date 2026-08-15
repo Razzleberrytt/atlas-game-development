@@ -20,18 +20,38 @@ end
 local placementConfig = loadPureConfig(placementPath)
 local world = loadPureConfig(worldConfigPath)
 
-assert(placementConfig.Version == "environment-models-v3-seeded-fields", "environment model placement version changed")
-assert(placementConfig.AlgorithmVersion == "gaussian-fields-poisson-v1", "composition algorithm identity changed")
+assert(
+	placementConfig.Version == "environment-models-v4-hierarchical-packing",
+	"environment model placement version changed"
+)
+assert(
+	placementConfig.AlgorithmVersion == "gaussian-fields-hierarchical-poisson-v2",
+	"composition algorithm identity changed"
+)
 assert(placementConfig.Seed == world.Seed, "environment composition must share the authored world seed")
 assert(placementConfig.HalfExtentStuds <= world.PlayableHalfExtentStuds, "composition escaped authored world extent")
 assert(placementConfig.CandidateCountPerAsset == 7000, "composition candidate budget changed")
 assert(placementConfig.LandmarkPaddingStuds >= 8, "composition landmark padding is too small")
+assert(
+	placementConfig.CrossFamilySpacingScale >= 0.8,
+	"cross-family packing scale must preserve visible footprint separation"
+)
+assert(#placementConfig.TierOrder == 3, "hierarchical environment composition must preserve three tiers")
+assert(placementConfig.TierOrder[1] == "Anchor", "Anchor composition must run first")
+assert(placementConfig.TierOrder[2] == "Mass", "Mass composition must run second")
+assert(placementConfig.TierOrder[3] == "Detail", "Detail composition must run last")
 
 local allowedAssetIds = {
 	["env.rock.frontier.boulder_a"] = true,
 	["env.tree.corrupted.dead_pine_a"] = true,
+	["env.root.corrupted.fallen_mass_a"] = true,
+	["env.root.corrupted.stump_cluster_a"] = true,
 	["env.structure.industry.mine_support_a"] = true,
+	["env.structure.industry.broken_support_a"] = true,
+	["env.prop.industry.ore_cart_a"] = true,
 	["env.camp.frontier.abandoned_fire_ring_a"] = true,
+	["env.camp.frontier.torn_shelter_a"] = true,
+	["env.prop.frontier.supply_crate_stack_a"] = true,
 }
 local allowedFields = {
 	frontier = true,
@@ -39,29 +59,45 @@ local allowedFields = {
 	industry = true,
 	camp = true,
 }
+local allowedTiers = {
+	Anchor = true,
+	Mass = true,
+	Detail = true,
+}
 local seenAssetIds = {}
 local seenPrefixes = {}
+local tierCounts = {
+	Anchor = 0,
+	Mass = 0,
+	Detail = 0,
+}
 local totalModelBudget = 0
 
-assert(#placementConfig.AssetSpecs == 4, "starter composition must preserve four environment families")
+assert(#placementConfig.AssetSpecs == 10, "hierarchical composition must preserve ten environment families")
 for _, spec in placementConfig.AssetSpecs do
 	assert(type(spec.idPrefix) == "string" and spec.idPrefix ~= "", "composition spec requires an id prefix")
 	assert(not seenPrefixes[spec.idPrefix], "composition id prefixes must be unique: " .. spec.idPrefix)
 	seenPrefixes[spec.idPrefix] = true
-	assert(allowedAssetIds[spec.assetId], "composition uses unsupported starter asset: " .. spec.assetId)
+	assert(allowedAssetIds[spec.assetId], "composition uses unsupported environment asset: " .. spec.assetId)
 	assert(allowedFields[spec.field], "composition uses unsupported story field: " .. spec.field)
-	assert(not seenAssetIds[spec.assetId], "starter asset family duplicated in composition config: " .. spec.assetId)
+	assert(allowedTiers[spec.tier], "composition uses unsupported hierarchy tier: " .. spec.tier)
+	assert(not seenAssetIds[spec.assetId], "environment asset family duplicated in composition config: " .. spec.assetId)
 	seenAssetIds[spec.assetId] = true
 	assert(spec.count > 0, "composition family count must be positive")
-	assert(spec.minSpacingStuds >= 30, "composition family spacing is too dense")
-	assert(spec.minRouteDistanceStuds >= 28, "composition intrudes into the primary route readability lane")
-	assert(spec.minCreekDistanceStuds >= 18, "composition intrudes into the creek readability lane")
+	assert(spec.packingRadiusStuds >= 4, "composition family packing radius is too small")
+	assert(spec.minSpacingStuds >= 28, "composition family spacing is too dense")
+	assert(spec.minRouteDistanceStuds >= 26, "composition intrudes into the primary route readability lane")
+	assert(spec.minCreekDistanceStuds >= 16, "composition intrudes into the creek readability lane")
+	tierCounts[spec.tier] += spec.count
 	totalModelBudget += spec.count
 end
-assert(totalModelBudget == 29, "seeded environment model budget changed")
+assert(totalModelBudget == 59, "hierarchical environment model budget changed")
+assert(tierCounts.Anchor == 20, "anchor silhouette budget changed")
+assert(tierCounts.Mass == 18, "mass silhouette budget changed")
+assert(tierCounts.Detail == 21, "detail silhouette budget changed")
 
 for assetId in allowedAssetIds do
-	assert(seenAssetIds[assetId], "composition config is missing starter asset: " .. assetId)
+	assert(seenAssetIds[assetId], "composition config is missing environment asset: " .. assetId)
 end
 
 for _, path in { plannerPath, factoryPath, dressingPath } do
@@ -85,11 +121,14 @@ for requiredPlannerToken in
 		"local function polylineDistance",
 		"local function minimumLandmarkClearance",
 		"local function isFarEnough",
+		"local function isGloballyFarEnough",
+		"PlacementConfig.CrossFamilySpacingScale",
+		"PlacementConfig.TierOrder",
 		"PlacementConfig.AssetSpecs",
 		"WorldFoundationConfig.Dressing.TrailReflectorPositions",
 		"WorldFoundationConfig.EnvironmentPresentation.Water.CreekPoints",
 	}
-do
+ do
 	assert(
 		string.find(plannerSource, requiredPlannerToken, 1, true),
 		"environment composition planner is missing deterministic constraint: " .. requiredPlannerToken
@@ -125,7 +164,7 @@ assert(
 )
 
 for assetId in allowedAssetIds do
-	assert(string.find(factorySource, assetId, 1, true), "factory is missing a registered starter builder: " .. assetId)
+	assert(string.find(factorySource, assetId, 1, true), "factory is missing a registered builder: " .. assetId)
 end
 
 assert(
@@ -150,5 +189,13 @@ assert(
 	string.find(dressingSource, 'model:SetAttribute("EnvironmentField"', 1, true),
 	"generated models must expose their mathematical story field for Studio inspection"
 )
+assert(
+	string.find(dressingSource, 'model:SetAttribute("EnvironmentCompositionTier"', 1, true),
+	"generated models must expose hierarchical composition tier for Studio inspection"
+)
+assert(
+	string.find(dressingSource, 'model:SetAttribute("EnvironmentPackingRadiusStuds"', 1, true),
+	"generated models must expose packing radius for Studio inspection"
+)
 
-print("EnvironmentModelSourceAudit: seeded fields, budgets, semantic ids, grounding, and presentation authority passed")
+print("EnvironmentModelSourceAudit: hierarchical fields, global packing, budgets, semantic ids, grounding, and presentation authority passed")
