@@ -1,26 +1,42 @@
 --!strict
 
 --[[
-	Adds a bounded, source-managed readability pass after WorldFoundationService
-	creates the operation world. These props are presentation-only: they do not
-	collide, participate in queries, emit dynamic light, or own navigation truth.
+	Adds a bounded, source-managed readability and environmental model pass after
+	WorldFoundationService creates the operation world. These props are
+	presentation-only: they do not collide, participate in queries, emit dynamic
+	light, or own navigation truth.
 
-	The goal is cheap route legibility in dawn/night conditions without increasing
-	the local-light budget. Authored meshes can replace this layer later without
-	changing any gameplay contract.
+	Semantic asset IDs come from EnvironmentAssetKitRegistry, so authored meshes
+	can replace the procedural model layer later without changing placement or
+	gameplay contracts.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)
+local EnvironmentModelPlacementConfig = require(ReplicatedStorage.Shared.Config.EnvironmentModelPlacementConfig)
+local EnvironmentModelFactory = require(script.Parent.EnvironmentModelFactory)
 
 local DRESSING_FOLDER_NAME = "ReadabilityDressing"
+local ENVIRONMENT_MODELS_FOLDER_NAME = "EnvironmentModels"
 
 type PointSpec = { x: number, y: number, z: number }
+type EnvironmentPlacementSpec = {
+	id: string,
+	assetId: string,
+	x: number,
+	y: number,
+	z: number,
+	yawDegrees: number,
+}
 
 local function toVector3(spec: PointSpec): Vector3
 	return Vector3.new(spec.x, spec.y, spec.z)
+end
+
+local function toPlacementCFrame(spec: EnvironmentPlacementSpec): CFrame
+	return CFrame.new(spec.x, spec.y, spec.z) * CFrame.Angles(0, math.rad(spec.yawDegrees), 0)
 end
 
 local function makePresentationPart(
@@ -84,6 +100,28 @@ local function buildTrailReflector(parent: Instance, index: number, position: Ve
 	)
 end
 
+local function buildEnvironmentModels(parent: Instance)
+	local modelsFolder = Instance.new("Folder")
+	modelsFolder.Name = ENVIRONMENT_MODELS_FOLDER_NAME
+	modelsFolder:SetAttribute("EnvironmentModelVersion", EnvironmentModelPlacementConfig.Version)
+	modelsFolder:SetAttribute("EnvironmentPresentationOnly", true)
+	modelsFolder.Parent = parent
+
+	for _, placementSpec in EnvironmentModelPlacementConfig.Placements do
+		assert(
+			EnvironmentModelFactory.Supports(placementSpec.assetId),
+			string.format("Unsupported environment model placement asset: %s", placementSpec.assetId)
+		)
+		local model = EnvironmentModelFactory.Build(
+			modelsFolder,
+			placementSpec.assetId,
+			toPlacementCFrame(placementSpec :: EnvironmentPlacementSpec)
+		)
+		model.Name = placementSpec.id
+		model:SetAttribute("EnvironmentPlacementId", placementSpec.id)
+	end
+end
+
 local function applyDressing(worldRoot: Instance)
 	local existing = worldRoot:FindFirstChild(DRESSING_FOLDER_NAME)
 	if existing ~= nil then
@@ -93,6 +131,7 @@ local function applyDressing(worldRoot: Instance)
 	local dressing = Instance.new("Folder")
 	dressing.Name = DRESSING_FOLDER_NAME
 	dressing:SetAttribute("WorldDressingVersion", Config.Dressing.Version)
+	dressing:SetAttribute("EnvironmentModelVersion", EnvironmentModelPlacementConfig.Version)
 	dressing:SetAttribute("EnvironmentPresentationOnly", true)
 	dressing.Parent = worldRoot
 
@@ -100,7 +139,10 @@ local function applyDressing(worldRoot: Instance)
 		buildTrailReflector(dressing, index, toVector3(positionSpec))
 	end
 
+	buildEnvironmentModels(dressing)
+
 	worldRoot:SetAttribute("WorldDressingVersion", Config.Dressing.Version)
+	worldRoot:SetAttribute("EnvironmentModelVersion", EnvironmentModelPlacementConfig.Version)
 end
 
 local worldRoot = Workspace:WaitForChild(Config.WorldRootName)
@@ -111,4 +153,10 @@ assert(worldRoot:IsA("Folder"), Config.WorldRootName .. " must be a Folder")
 worldRoot:WaitForChild("Landmarks")
 applyDressing(worldRoot)
 
-print("[Living Kingdoms] World visual dressing ready: " .. Config.Dressing.Version)
+print(
+	string.format(
+		"[Living Kingdoms] World visual dressing ready: %s / %s",
+		Config.Dressing.Version,
+		EnvironmentModelPlacementConfig.Version
+	)
+)
