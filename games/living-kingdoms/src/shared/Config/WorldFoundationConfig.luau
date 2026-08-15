@@ -3,6 +3,15 @@
 -- P5-0102 authored-world constants. Geometry remains replaceable graybox, but
 -- these stable routes, landmarks, and presentation profiles preserve the
 -- operation's visual language while keeping runtime tuning centralized.
+-- Keep this module runtime-agnostic: Lune fixtures load it without Roblox globals.
+local function rgb(r: number, g: number, b: number)
+	return table.freeze({ r = r, g = g, b = b })
+end
+
+local function point(x: number, y: number, z: number)
+	return table.freeze({ x = x, y = y, z = z })
+end
+
 local WorldFoundationConfig = {
 	Version = "MVP-0.1-v4-forest-clarity",
 	Seed = 1847,
@@ -42,18 +51,18 @@ local WorldFoundationConfig = {
 		GeographicLatitude = 38,
 		Brightness = 2.65,
 		ExposureCompensation = 0.12,
-		Ambient = Color3.fromRGB(91, 85, 71),
-		OutdoorAmbient = Color3.fromRGB(132, 126, 104),
+		Ambient = rgb(91, 85, 71),
+		OutdoorAmbient = rgb(132, 126, 104),
 		EnvironmentDiffuseScale = 0.7,
 		EnvironmentSpecularScale = 0.5,
 		GlobalShadows = true,
 		ShadowSoftness = 0.38,
-		FogColor = Color3.fromRGB(151, 178, 172),
+		FogColor = rgb(151, 178, 172),
 		FogStart = 120,
 		FogEnd = 620,
 		Atmosphere = table.freeze({
-			Color = Color3.fromRGB(196, 216, 205),
-			Decay = Color3.fromRGB(82, 106, 95),
+			Color = rgb(196, 216, 205),
+			Decay = rgb(82, 106, 95),
 			Density = 0.22,
 			Offset = 0.05,
 			Glare = 0.08,
@@ -63,7 +72,7 @@ local WorldFoundationConfig = {
 			Brightness = 0.015,
 			Contrast = 0.08,
 			Saturation = 0.16,
-			TintColor = Color3.fromRGB(255, 238, 208),
+			TintColor = rgb(255, 238, 208),
 		}),
 		Bloom = table.freeze({
 			Intensity = 0.18,
@@ -77,7 +86,7 @@ local WorldFoundationConfig = {
 		Clouds = table.freeze({
 			Cover = 0.38,
 			Density = 0.44,
-			Color = Color3.fromRGB(232, 225, 205),
+			Color = rgb(232, 225, 205),
 		}),
 		Night = table.freeze({
 			BrightnessStart = 2.05,
@@ -85,8 +94,8 @@ local WorldFoundationConfig = {
 			ExposureStart = 0.12,
 			ExposureEnd = -0.30,
 			FogEndStart = 485,
-			AmbientStart = Color3.fromRGB(35, 44, 56),
-			AmbientEnd = Color3.fromRGB(15, 19, 31),
+			AmbientStart = rgb(35, 44, 56),
+			AmbientEnd = rgb(15, 19, 31),
 		}),
 	}),
 	Dressing = table.freeze({
@@ -94,18 +103,18 @@ local WorldFoundationConfig = {
 		-- Emissive-only route markers deliberately add no dynamic lights. They are
 		-- presentation-only and sit outside gameplay/query surfaces.
 		TrailReflectorPositions = table.freeze({
-			Vector3.new(-205, 2.35, -190),
-			Vector3.new(-174, 2.35, -174),
-			Vector3.new(-140, 2.35, -162),
-			Vector3.new(-105, 2.35, -151),
-			Vector3.new(-67, 2.35, -142),
-			Vector3.new(-28, 2.35, -130),
-			Vector3.new(12, 2.35, -118),
-			Vector3.new(52, 2.35, -122),
-			Vector3.new(94, 2.35, -140),
-			Vector3.new(136, 2.35, -158),
-			Vector3.new(178, 2.35, -176),
-			Vector3.new(205, 2.35, -132),
+			point(-205, 2.35, -190),
+			point(-174, 2.35, -174),
+			point(-140, 2.35, -162),
+			point(-105, 2.35, -151),
+			point(-67, 2.35, -142),
+			point(-28, 2.35, -130),
+			point(12, 2.35, -118),
+			point(52, 2.35, -122),
+			point(94, 2.35, -140),
+			point(136, 2.35, -158),
+			point(178, 2.35, -176),
+			point(205, 2.35, -132),
 		}),
 	}),
 }
