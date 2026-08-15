@@ -47,6 +47,13 @@ local WorldFoundationConfig = {
 		RouteClearanceStuds = 18,
 	}),
 	Lighting = table.freeze({
+		-- One-time compatibility snapshot consumed by WorldFoundationService during
+		-- synchronous construction. LightingController owns recurring mutations.
+		ClockTime = 7.35,
+		Brightness = 2.45,
+		ExposureCompensation = 0.08,
+		FogStart = 110,
+		FogEnd = 660,
 		GeographicLatitude = 38,
 		EnvironmentDiffuseScale = 0.7,
 		EnvironmentSpecularScale = 0.5,
