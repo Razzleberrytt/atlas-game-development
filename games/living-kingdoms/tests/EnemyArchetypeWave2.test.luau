@@ -15,7 +15,8 @@ local function loadSimple(path: string, debugName: string)
 end
 
 local contracts = loadSimple("games/living-kingdoms/src/shared/Combat/EnemyContracts.luau", "EnemyContracts")
-local worldConfig = loadSimple("games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "WorldFoundationConfig")
+local worldConfig =
+	loadSimple("games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "WorldFoundationConfig")
 local rpgContracts = loadSimple("games/living-kingdoms/src/shared/RPG/RunRpgContracts.luau", "RunRpgContracts")
 
 local CONTRACTS_TOKEN = {}
@@ -244,7 +245,10 @@ local runnerCommit = behaviorResolver.resolveBehavior(
 	{ operative(5) },
 	10.46
 )
-assertThat(runnerCommit.shouldAttack and runnerCommit.attack.damageAmount == 13, "Runner damage must come from its definition")
+assertThat(
+	runnerCommit.shouldAttack and runnerCommit.attack.damageAmount == 13,
+	"Runner damage must come from its definition"
+)
 
 local bruteCommit = behaviorResolver.resolveBehavior(
 	facts("enemy.wave2.brute", "WindingUp", {
@@ -255,7 +259,10 @@ local bruteCommit = behaviorResolver.resolveBehavior(
 	{ operative(8) },
 	21.06
 )
-assertThat(bruteCommit.shouldAttack and bruteCommit.attack.damageAmount == 34, "Brute damage must come from its definition")
+assertThat(
+	bruteCommit.shouldAttack and bruteCommit.attack.damageAmount == 34,
+	"Brute damage must come from its definition"
+)
 
 local forcedEliteId = "enemy.wave2.forced-elite"
 contracts.ServerRuntimeMetadataByEntityId[forcedEliteId] = {
@@ -273,7 +280,10 @@ local forcedElite = eliteResolver.resolveAssignment({
 	isHordePulse = false,
 	hordeRoleId = "horde.role.infected",
 })
-assertThat(forcedElite.affixId == rpgContracts.EliteAffixIds.Frenzied, "authored compatible affix must resolve deterministically")
+assertThat(
+	forcedElite.affixId == rpgContracts.EliteAffixIds.Frenzied,
+	"authored compatible affix must resolve deterministically"
+)
 local ineligibleId = "enemy.wave2.ineligible"
 contracts.ServerRuntimeMetadataByEntityId[ineligibleId] = {
 	archetypeId = ids.BlightSpitter,
@@ -314,12 +324,22 @@ local replayPlan = composer.compose(encounter, spawnPoints, { Seed = 4242, Compo
 assertThat(firstPlan.isValid and #firstPlan.spawns == 4, "valid budgeted encounter must compose")
 assertThat(firstPlan.usedBudget <= firstPlan.effectiveBudget, "composition must never exceed budget")
 assertThat(firstPlan.spawns[1].archetypeId == ids.GriefBrute, "required Brute anchor must be emitted first")
-assertThat(firstPlan.spawns[2].archetypeId == ids.RazorRunner and firstPlan.spawns[3].archetypeId == ids.RazorRunner, "required Runner support must be exact")
+assertThat(
+	firstPlan.spawns[2].archetypeId == ids.RazorRunner and firstPlan.spawns[3].archetypeId == ids.RazorRunner,
+	"required Runner support must be exact"
+)
 for index, spawn in firstPlan.spawns do
 	assertThat(spawn.entityId == replayPlan.spawns[index].entityId, "same seed must replay entity identity")
 	assertThat(spawn.archetypeId == replayPlan.spawns[index].archetypeId, "same seed must replay composition")
 end
-assertThat(not composer.compose({ Id = "bad", Budget = 2, MinimumCount = 1, MaximumCount = 1, ArchetypeIds = { "enemy.unknown" } }, spawnPoints, { Seed = 1 }).isValid, "unknown archetypes must fail closed")
+assertThat(
+	not composer.compose(
+		{ Id = "bad", Budget = 2, MinimumCount = 1, MaximumCount = 1, ArchetypeIds = { "enemy.unknown" } },
+		spawnPoints,
+		{ Seed = 1 }
+	).isValid,
+	"unknown archetypes must fail closed"
+)
 assertThat(not composer.compose({
 	Id = "too-cheap",
 	Budget = 2,
@@ -334,4 +354,6 @@ contracts.ServerRuntimeMetadataByEntityId["enemy.wave2.brute"] = nil
 contracts.ServerRuntimeMetadataByEntityId[forcedEliteId] = nil
 contracts.ServerRuntimeMetadataByEntityId[ineligibleId] = nil
 
-print("EnemyArchetypeWave2: definitions, behavior diversity, authored elites, budgets, determinism, and invalid-input handling passed")
+print(
+	"EnemyArchetypeWave2: definitions, behavior diversity, authored elites, budgets, determinism, and invalid-input handling passed"
+)
