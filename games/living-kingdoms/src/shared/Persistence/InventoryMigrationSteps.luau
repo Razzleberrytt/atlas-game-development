@@ -1,20 +1,6 @@
 --!strict
 
---[[
-	Patch 0.7 schema migration authoring contract.
-
-	Migration used to be implicit: normalizeRecord rebuilt a record from whatever
-	fields it recognised and stamped the current schema on the result. That works
-	while every jump happens to be safe, but it records nothing about which jump
-	was taken, cannot refuse an unauthored one, and gives an operator no way to
-	tell a 1 -> 4 migration from a 3 -> 4 one after the fact.
-
-	Steps are declared here, one per adjacent schema pair, and a migration is the
-	ordered sequence between two versions. Sequencing matters: a record at 1 must
-	pass through 2 and 3 to reach 4, so every future step can assume the shape the
-	step before it produced rather than every historical shape at once.
-]]
-
+-- Explicit adjacent-version migration plan for the canonical player record.
 local Contracts = require(script.Parent.PlayerInventoryContracts)
 
 export type MigrationStep = {
@@ -54,6 +40,12 @@ local STEPS: { MigrationStep } = table.freeze({
 		ToSchemaVersion = 4,
 		Summary = "introduce per-grant content identity",
 	}),
+	table.freeze({
+		StepId = "inventory-4-to-5-character-progression",
+		FromSchemaVersion = 4,
+		ToSchemaVersion = 5,
+		Summary = "introduce canonical long-horizon character XP in the player record",
+	}),
 })
 
 InventoryMigrationSteps.Steps = STEPS
@@ -78,12 +70,6 @@ local function rejected(reasonId: string): MigrationPlan
 	})
 end
 
---[[
-	The declared steps must form one unbroken chain from the oldest supported
-	schema to the current one. A gap would let a record migrate into a version
-	nothing knows how to produce, so it is caught here at load rather than
-	discovered by a stranded player.
-]]
 function InventoryMigrationSteps.validateChain(): (boolean, string)
 	local expectedFrom = Contracts.SupportedSchemaVersions[1]
 	for index, step in STEPS do
@@ -108,11 +94,6 @@ function InventoryMigrationSteps.plan(fromSchemaVersion: any, toSchemaVersion: a
 	if not Contracts.isSupportedSchemaVersion(toSchemaVersion) then
 		return rejected("UnsupportedTargetSchema")
 	end
-	--[[
-		A downgrade is never authored. A record written by a newer deploy holds
-		state this build cannot describe, so rewriting it at an older schema
-		would discard exactly the fields it could not see.
-	]]
 	if toSchemaVersion < fromSchemaVersion then
 		return rejected("SchemaDowngradeNotAuthored")
 	end
