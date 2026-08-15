@@ -43,8 +43,8 @@ end
 
 assert(contains(presenter, 'if reward.SourceId == "Boss" then'))
 assert(contains(presenter, 'if reward.Rarity == "Rare" then'))
-assert(contains(presenter, "descendant:IsA(\"ProximityPrompt\")"))
-assert(contains(presenter, "descendant:IsA(\"Script\")"))
+assert(contains(presenter, 'descendant:IsA("ProximityPrompt")'))
+assert(contains(presenter, 'descendant:IsA("Script")'))
 assert(contains(resultController, "require(script.Parent.Parent.Presentation.RewardContainerViewportPresenter)"))
 assert(contains(resultController, "RewardContainerViewportPresenter.create(rewardRow)"))
 assert(contains(resultController, "RewardContainerViewportPresenter.render(rewardViewport, snapshot)"))
@@ -54,7 +54,7 @@ assert(contains(runBuildController, "require(script.Parent.Parent.Presentation.R
 assert(contains(runBuildController, "RewardContainerViewportPresenter.create(panel)"))
 assert(contains(runBuildController, "RewardContainerViewportPresenter.renderRunReward(rewardViewport, reward)"))
 assert(contains(runBuildController, "RewardContainerViewportPresenter.clear(rewardViewport)"))
-assert(contains(runBuildController, "local reward = if type(rewards) == \"table\" then rewards[1] else nil"))
+assert(contains(runBuildController, 'local reward = if type(rewards) == "table" then rewards[1] else nil'))
 
 for _, prohibited in
 	{
@@ -71,7 +71,12 @@ for _, prohibited in
 		"Heartbeat",
 	}
 do
-	assert(not contains(presenter, prohibited), "reward-container presenter gained authority/runtime token " .. prohibited)
+	assert(
+		not contains(presenter, prohibited),
+		"reward-container presenter gained authority/runtime token " .. prohibited
+	)
 end
 
-print("RewardContainerViewportPresenterSourceAudit: debrief + live relic chest visuals remain client-only and authority-free")
+print(
+	"RewardContainerViewportPresenterSourceAudit: debrief + live relic chest visuals remain client-only and authority-free"
+)

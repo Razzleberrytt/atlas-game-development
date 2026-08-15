@@ -8,8 +8,7 @@ end
 
 local resolver = fs.readFile("games/living-kingdoms/src/shared/Assets/ModularAssetResolver.luau")
 local bootstrap = fs.readFile("games/living-kingdoms/src/server/ModularAssetBootstrap.server.luau")
-local weaponAdapter =
-	fs.readFile("games/living-kingdoms/src/client/Presentation/ModularWeaponPresentationAdapter.luau")
+local weaponAdapter = fs.readFile("games/living-kingdoms/src/client/Presentation/ModularWeaponPresentationAdapter.luau")
 local survivalPresentation =
 	fs.readFile("games/living-kingdoms/src/server/Systems/ModularRewardContainerPresentation.luau")
 
@@ -60,10 +59,12 @@ for label, source in pairs({
 	assert(contains(source, "ModularAssetResolver.CloneByAssetId"), label .. " must retain stable-ID cloning")
 end
 
-for _, prohibited in {
-	"WaitForChild(\"GeneratedModularAssets\")",
-	"while true do\n\t\ttask.wait()",
-} do
+for _, prohibited in
+	{
+		'WaitForChild("GeneratedModularAssets")',
+		"while true do\n\t\ttask.wait()",
+	}
+do
 	assert(not contains(resolver, prohibited), "modular readiness must not introduce an unbounded wait")
 end
 

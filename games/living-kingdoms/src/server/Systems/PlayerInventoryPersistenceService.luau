@@ -606,21 +606,18 @@ function Service:dismantle(
 		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Outcome = nil, Record = nil })
 	end
 	local record: PlayerInventoryRecord? = selfAny._records[playerId]
-	local resolution = InventoryDismantleResolver.resolve(
-		{
-			RequesterId = playerId,
-			OwnerId = playerId,
-			InstanceId = instanceId,
-			TransactionId = transactionId,
-			NowUnix = nowUnix,
-		},
-		{
-			Record = record,
-			HasSessionLease = hasSessionLease == true,
-			AppliedTransactions = if record then record.AppliedDismantleTransactions else {},
-			RecentRequestTimestamps = recentRequestTimestamps or {},
-		}
-	)
+	local resolution = InventoryDismantleResolver.resolve({
+		RequesterId = playerId,
+		OwnerId = playerId,
+		InstanceId = instanceId,
+		TransactionId = transactionId,
+		NowUnix = nowUnix,
+	}, {
+		Record = record,
+		HasSessionLease = hasSessionLease == true,
+		AppliedTransactions = if record then record.AppliedDismantleTransactions else {},
+		RecentRequestTimestamps = recentRequestTimestamps or {},
+	})
 	if resolution.Accepted ~= true then
 		return table.freeze({
 			Accepted = false,
