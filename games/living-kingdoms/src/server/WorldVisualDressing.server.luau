@@ -28,6 +28,8 @@ type EnvironmentPlacementSpec = {
 	id: string,
 	assetId: string,
 	field: string,
+	tier: string,
+	packingRadiusStuds: number,
 	x: number,
 	z: number,
 	yawDegrees: number,
@@ -121,6 +123,10 @@ local function buildEnvironmentModels(parent: Instance, worldRoot: Folder)
 	modelsFolder:SetAttribute("EnvironmentModelVersion", EnvironmentModelPlacementConfig.Version)
 	modelsFolder:SetAttribute("EnvironmentCompositionAlgorithm", EnvironmentModelPlacementConfig.AlgorithmVersion)
 	modelsFolder:SetAttribute("EnvironmentCompositionSeed", EnvironmentModelPlacementConfig.Seed)
+	modelsFolder:SetAttribute(
+		"EnvironmentCrossFamilySpacingScale",
+		EnvironmentModelPlacementConfig.CrossFamilySpacingScale
+	)
 	modelsFolder:SetAttribute("EnvironmentPresentationOnly", true)
 	modelsFolder.Parent = parent
 
@@ -140,6 +146,8 @@ local function buildEnvironmentModels(parent: Instance, worldRoot: Folder)
 		model.Name = placementSpec.id
 		model:SetAttribute("EnvironmentPlacementId", placementSpec.id)
 		model:SetAttribute("EnvironmentField", placementSpec.field)
+		model:SetAttribute("EnvironmentCompositionTier", placementSpec.tier)
+		model:SetAttribute("EnvironmentPackingRadiusStuds", placementSpec.packingRadiusStuds)
 		model:SetAttribute("EnvironmentFieldScore", placementSpec.fieldScore)
 		model:SetAttribute("EnvironmentCompositionSeed", EnvironmentModelPlacementConfig.Seed)
 		model:SetAttribute("EnvironmentCompositionAlgorithm", EnvironmentModelPlacementConfig.AlgorithmVersion)
