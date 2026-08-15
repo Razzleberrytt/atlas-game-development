@@ -31,6 +31,11 @@ assertThat(below.XPRemainingToNextLevel == 1, "boundary remainder must be exact"
 local boundary = resolver.normalizeState({ TotalXP = 100 }, config)
 assertThat(boundary.Level == 2 and boundary.XPIntoLevel == 0, "exact threshold must advance exactly one level")
 
+local serializedBoundary = resolver.serializeState(boundary)
+assertThat(serializedBoundary.Version == config.Version and serializedBoundary.TotalXP == 100, "normalized canonical state must serialize for persistence without a second curve pass")
+local serializedRaw = resolver.serializeState({ TotalXP = 100 }, config)
+assertThat(serializedRaw.Version == config.Version and serializedRaw.TotalXP == 100, "raw persistence state must serialize through the configured curve")
+
 local targetFive = resolver.totalXPForLevel(5, config)
 assertThat(type(targetFive) == "number", "level-five threshold must resolve")
 local multi = resolver.awardXP(nil, (targetFive :: number) + 7, config)
@@ -84,4 +89,4 @@ for level = 1, 999 do
 	end
 end
 
-print("CharacterProgressionResolver: thresholds, migration, multi-level awards, cap, invalid input, and consistency passed")
+print("CharacterProgressionResolver: thresholds, serialization, migration, multi-level awards, cap, invalid input, and consistency passed")
