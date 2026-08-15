@@ -6,9 +6,11 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local EquipmentComparisonResolver = require(ReplicatedStorage.Shared.Equipment.EquipmentComparisonResolver)
+local EquipmentContracts = require(ReplicatedStorage.Shared.Equipment.EquipmentRewardContracts)
 local InventoryDismantleResolver = require(ReplicatedStorage.Shared.Persistence.InventoryDismantleResolver)
 local EquipmentRewardConfig = require(ReplicatedStorage.Shared.Config.EquipmentRewardConfig)
 local PlayerInventorySnapshot = require(ReplicatedStorage.Shared.Persistence.PlayerInventorySnapshot)
+local StorageResults = require(ReplicatedStorage.Shared.Persistence.StorageResultContracts)
 local RobloxInventoryDataStoreAdapter = require(script.Parent.RobloxInventoryDataStoreAdapter)
 local PlayerInventoryPersistenceService = require(script.Parent.PlayerInventoryPersistenceService)
 local InventorySessionLeaseService = require(script.Parent.InventorySessionLeaseService)
@@ -40,6 +42,19 @@ end
 
 local function lookupEquipmentDefinition(definitionId: string): any
 	return definitionsById[definitionId]
+end
+
+local function isKnownSlot(slotId: unknown): boolean
+	for _, candidate in EquipmentContracts.SlotIds do
+		if slotId == candidate then
+			return true
+		end
+	end
+	return false
+end
+
+local function inventoryKeyFor(playerId: number): string
+	return string.format("player:%d:inventory", playerId)
 end
 
 local Service = {}
@@ -185,6 +200,69 @@ function Service.equipOwnedItem(requesterId: number, ownerId: number, instanceId
 		return table.freeze({ Accepted = false, ReasonId = "ItemNotOwned", Record = record })
 	end
 	return persistence:equip(ownerId, item.Slot, instanceId, nowUnix)
+end
+
+--[[
+	Unequip accepts only a slot intent. Ownership comes from requester identity,
+	the record must already be loaded under this server's lease, and the durable
+	write happens before the resident cache advances. Removing an equipped slot
+	cannot increase record size, so the existing record-size budget cannot become
+	worse on this mutation path.
+
+	PlayerInventoryPersistenceService predates explicit unequip. This live owner
+	already owns both its store and resident service instance, so it performs the
+	narrow removal here without introducing a second persistence lifetime. The
+	cache update mirrors the persistence service's post-commit mutation rule.
+]]
+function Service.unequipOwnedSlot(requesterId: number, ownerId: number, slotId: any, nowUnix: number): any
+	if destroyed then
+		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Record = nil })
+	end
+	if requesterId ~= ownerId then
+		return table.freeze({ Accepted = false, ReasonId = "CrossPlayerInventoryAccess", Record = nil })
+	end
+	if not isKnownSlot(slotId) or type(nowUnix) ~= "number" then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidUnequipRequest", Record = nil })
+	end
+	if not leases:hasLease(ownerId, nowUnix) then
+		return table.freeze({
+			Accepted = false,
+			ReasonId = "SessionLeaseRequired",
+			Record = persistence:getRecord(ownerId),
+		})
+	end
+	local record = persistence:getRecord(ownerId)
+	if record == nil then
+		return table.freeze({ Accepted = false, ReasonId = "InventoryNotLoaded", Record = nil })
+	end
+	if nowUnix < record.UpdatedAtUnix then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidUnequipRequest", Record = record })
+	end
+	if record.EquippedBySlot[slotId] == nil then
+		return table.freeze({ Accepted = true, ReasonId = "SlotAlreadyUnequipped", Record = record })
+	end
+
+	local nextRecord = {
+		SchemaVersion = record.SchemaVersion,
+		PlayerId = record.PlayerId,
+		InventoryByInstanceId = table.clone(record.InventoryByInstanceId),
+		EquippedBySlot = table.clone(record.EquippedBySlot),
+		AppliedRewardInstanceIds = table.clone(record.AppliedRewardInstanceIds),
+		AppliedRewardGrantIds = table.clone(record.AppliedRewardGrantIds),
+		AppliedDismantleTransactions = table.clone(record.AppliedDismantleTransactions),
+		AppliedRewardContentSignatures = table.clone(record.AppliedRewardContentSignatures),
+		UpdatedAtUnix = nowUnix,
+	}
+	nextRecord.EquippedBySlot[slotId] = nil
+	local write = store:write(inventoryKeyFor(ownerId), nextRecord)
+	if write.Status ~= StorageResults.WriteStatuses.Committed then
+		return table.freeze({ Accepted = false, ReasonId = "SaveFailed", Record = record })
+	end
+
+	local persistenceState = persistence :: any
+	assert(type(persistenceState._records) == "table", "inventory persistence resident cache unavailable")
+	persistenceState._records[ownerId] = nextRecord
+	return table.freeze({ Accepted = true, ReasonId = "ItemUnequipped", Record = persistence:getRecord(ownerId) })
 end
 
 --[[

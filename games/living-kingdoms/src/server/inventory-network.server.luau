@@ -13,10 +13,12 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local EquipmentCombatAdapter = require(script.Parent.Systems.EquipmentCombatAdapter)
 local InventoryLiveService = require(script.Parent.Systems.InventoryLiveService)
 local OperativeLifeService = require(script.Parent.Systems.OperativeLifeService)
 
 local LEASE_RENEW_INTERVAL_SECONDS = 30
+local WEAPON_ACTIVATION_RETRY_SECONDS = 0.25
 
 local existing = ReplicatedStorage:FindFirstChild("InventoryNetwork")
 if existing ~= nil then
@@ -39,6 +41,10 @@ local equipOwnedItem = Instance.new("RemoteFunction")
 equipOwnedItem.Name = "EquipOwnedItem"
 equipOwnedItem.Parent = network
 
+local unequipOwnedSlot = Instance.new("RemoteFunction")
+unequipOwnedSlot.Name = "UnequipOwnedSlot"
+unequipOwnedSlot.Parent = network
+
 local dismantleOwnedItem = Instance.new("RemoteFunction")
 dismantleOwnedItem.Name = "DismantleOwnedItem"
 dismantleOwnedItem.Parent = network
@@ -48,7 +54,9 @@ state.Name = "State"
 state.Parent = network
 
 local loadedPlayerIds: { [number]: boolean } = {}
+local pendingWeaponActivationByPlayerId: { [number]: { InstanceId: string?, UsePreferred: boolean } } = {}
 local renewalAccumulatorSeconds = 0
+local weaponActivationAccumulatorSeconds = 0
 
 local function rejected(reasonId: string): any
 	return table.freeze({ Accepted = false, ReasonId = reasonId, Snapshot = nil })
@@ -68,6 +76,42 @@ end
 local function reconcileEquipmentEffects(player: Player)
 	OperativeLifeService.reconcileMaximumHealth(player)
 	OperativeLifeService.reconcileMovementSpeed(player)
+end
+
+local function tryPendingWeaponActivation(player: Player)
+	local pending = pendingWeaponActivationByPlayerId[player.UserId]
+	if pending == nil or loadedPlayerIds[player.UserId] ~= true then
+		return
+	end
+	local accepted, reasonId = if pending.UsePreferred
+		then EquipmentCombatAdapter.activatePreferredOrDefault(player)
+		else EquipmentCombatAdapter.activateOwnedEquippedWeapon(player, pending.InstanceId)
+	if accepted then
+		pendingWeaponActivationByPlayerId[player.UserId] = nil
+		return
+	end
+	-- CombatWeaponRejected is expected while the combat owner is not yet ready
+	-- or the player is currently outside a combat-legal state. Keep only that
+	-- transient case queued; stale/invalid inventory resolutions fail closed.
+	if reasonId ~= "CombatWeaponRejected" and reasonId ~= "InventoryNotLoaded" then
+		pendingWeaponActivationByPlayerId[player.UserId] = nil
+	end
+end
+
+local function queueEquippedWeaponActivation(player: Player, record: any, instanceId: string)
+	local item = if type(record) == "table" and type(record.InventoryByInstanceId) == "table"
+		then record.InventoryByInstanceId[instanceId]
+		else nil
+	if type(item) ~= "table" or not EquipmentCombatAdapter.isWeaponSlot(item.Slot) then
+		return
+	end
+	pendingWeaponActivationByPlayerId[player.UserId] = { InstanceId = instanceId, UsePreferred = false }
+	tryPendingWeaponActivation(player)
+end
+
+local function queuePreferredWeaponActivation(player: Player)
+	pendingWeaponActivationByPlayerId[player.UserId] = { InstanceId = nil, UsePreferred = true }
+	tryPendingWeaponActivation(player)
 end
 
 --[[
@@ -98,6 +142,7 @@ end
 
 local function releasePlayer(player: Player)
 	loadedPlayerIds[player.UserId] = nil
+	pendingWeaponActivationByPlayerId[player.UserId] = nil
 	local released = InventoryLiveService.releasePlayer(player.UserId)
 	if released.Accepted ~= true and released.ReasonId ~= "LeaseNotOwned" then
 		warn(
@@ -133,6 +178,24 @@ equipOwnedItem.OnServerInvoke = function(player: Player, instanceId: any): any
 	local outcome = InventoryLiveService.equipOwnedItem(player.UserId, player.UserId, instanceId, os.time())
 	if outcome.Accepted == true then
 		reconcileEquipmentEffects(player)
+		queueEquippedWeaponActivation(player, outcome.Record, instanceId)
+		pushTo(player)
+	end
+	return table.freeze({ Accepted = outcome.Accepted == true, ReasonId = outcome.ReasonId })
+end
+
+-- Unequip carries only a known slot intent. The live service derives identity
+-- from the invoking player and owns the lease/durable mutation.
+unequipOwnedSlot.OnServerInvoke = function(player: Player, slotId: any): any
+	if type(slotId) ~= "string" then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidUnequipRequest" })
+	end
+	local outcome = InventoryLiveService.unequipOwnedSlot(player.UserId, player.UserId, slotId, os.time())
+	if outcome.Accepted == true then
+		reconcileEquipmentEffects(player)
+		if EquipmentCombatAdapter.isWeaponSlot(slotId) then
+			queuePreferredWeaponActivation(player)
+		end
 		pushTo(player)
 	end
 	return table.freeze({ Accepted = outcome.Accepted == true, ReasonId = outcome.ReasonId })
@@ -165,6 +228,14 @@ for _, player in Players:GetPlayers() do
 end
 
 local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
+	weaponActivationAccumulatorSeconds += deltaTime
+	if weaponActivationAccumulatorSeconds >= WEAPON_ACTIVATION_RETRY_SECONDS then
+		weaponActivationAccumulatorSeconds = 0
+		for _, player in Players:GetPlayers() do
+			tryPendingWeaponActivation(player)
+		end
+	end
+
 	renewalAccumulatorSeconds += deltaTime
 	if renewalAccumulatorSeconds < LEASE_RENEW_INTERVAL_SECONDS then
 		return
@@ -194,6 +265,7 @@ local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
 					longer holds, so the session ends here.
 				]]
 				loadedPlayerIds[player.UserId] = nil
+				pendingWeaponActivationByPlayerId[player.UserId] = nil
 				InventoryLiveService.releasePlayer(player.UserId)
 				if player.Parent == Players then
 					player:Kick("Your inventory session could no longer be protected. Please rejoin.")
@@ -208,6 +280,7 @@ game:BindToClose(function()
 	playerAddedConnection:Disconnect()
 	playerRemovingConnection:Disconnect()
 	table.clear(loadedPlayerIds)
+	table.clear(pendingWeaponActivationByPlayerId)
 	InventoryLiveService.destroy()
 end)
 
