@@ -20,12 +20,13 @@ local ModularAssetResolver = require(ReplicatedStorage.Shared.Assets.ModularAsse
 
 local READABILITY_DRESSING_NAME = "ReadabilityDressing"
 local HERO_MODELS_FOLDER_NAME = "EnvironmentModels"
+local HASH_MODULUS = 2147483647
+local HASH_MULTIPLIER = 131
 
 local function stableHash(text: string): number
-	local hash = 2166136261
+	local hash = 17
 	for index = 1, #text do
-		hash = bit32.bxor(hash, string.byte(text, index))
-		hash = (hash * 16777619) % 4294967296
+		hash = (hash * HASH_MULTIPLIER + string.byte(text, index)) % HASH_MODULUS
 	end
 	return hash
 end
@@ -132,14 +133,14 @@ local function cloneFieldProp(
 	anchor: Model,
 	slotIndex: number,
 	assetIds: { string }
-)
+): boolean
 	local key = string.format("%s|%s|%d|%d", field, anchor.Name, slotIndex, WorldConfig.Seed)
 	local hash = stableHash(key)
 	local assetId = assetIds[(hash % #assetIds) + 1]
 	local clone = ModularAssetResolver.CloneByAssetId(generatedRoot, assetId, nil)
 	if clone == nil then
 		warn(string.format("[Living Kingdoms] Modular environment asset unavailable: %s", assetId))
-		return
+		return false
 	end
 
 	local angle = math.rad(hash % 360)
@@ -159,6 +160,7 @@ local function cloneFieldProp(
 	clone:SetAttribute("EnvironmentDressingVersion", Config.Version)
 	placeClone(clone, CFrame.new(ground) * CFrame.Angles(0, yaw, 0))
 	clone.Parent = folder
+	return true
 end
 
 local worldRootInstance = Workspace:WaitForChild(WorldConfig.WorldRootName)
@@ -205,8 +207,9 @@ for field, fieldSpec in Config.FieldSpecs do
 	end
 	for slotIndex = 1, fieldSpec.count do
 		local anchor = chooseAnchor(bucket, slotIndex, fieldSpec.count)
-		cloneFieldProp(generatedRoot, worldRoot, output, field, anchor, slotIndex, fieldSpec.assetIds)
-		created += 1
+		if cloneFieldProp(generatedRoot, worldRoot, output, field, anchor, slotIndex, fieldSpec.assetIds) then
+			created += 1
+		end
 	end
 end
 
