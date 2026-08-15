@@ -68,9 +68,9 @@ end
 
 local function spawnResolution(rejectionReasonId: string?): EnemySpawnResolution
 	return table.freeze({
-			isLegal = rejectionReasonId == nil,
-			rejectionReasonId = rejectionReasonId,
-		}) :: EnemySpawnResolution
+		isLegal = rejectionReasonId == nil,
+		rejectionReasonId = rejectionReasonId,
+	}) :: EnemySpawnResolution
 end
 
 function EnemyBehaviorResolver.resolveSpawn(request: EnemySpawnRequest, facts: EnemySpawnFacts): EnemySpawnResolution
