@@ -26,7 +26,7 @@ local function count(source: string, token: string): number
 	end
 end
 
-local controllerPath = "games/living-kingdoms/src/client/Controllers/ConfirmedHitMarkerController.luau"
+local controllerPath = "games/living-kingdoms/src/client/Controllers/CombatFeedback/ConfirmedHitMarkerController.luau"
 local configPath = "games/living-kingdoms/src/shared/Config/ConfirmedHitMarkerConfig.luau"
 local bootstrapPath = "games/living-kingdoms/src/client/init.client.luau"
 
