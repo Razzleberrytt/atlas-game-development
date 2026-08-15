@@ -5,7 +5,14 @@
 -- cross-system facts needed for lifecycle, cleanup, rewards, and telemetry.
 
 export type LifecycleState =
-	"Creating" | "WaitingForPlayers" | "Active" | "Encounter" | "Boss" | "Completed" | "Failed" | "CleaningUp"
+	"Creating"
+	| "WaitingForPlayers"
+	| "Active"
+	| "Encounter"
+	| "Boss"
+	| "Completed"
+	| "Failed"
+	| "CleaningUp"
 
 local MAX_ARCHIVED_RESULTS = 32
 local Service = {}
@@ -49,11 +56,14 @@ local function normalizeRooms(roomPlan: any): ({ any }, number)
 	for _, node in roomPlan.Nodes do
 		if type(node) == "table" and type(node.RoomId) == "string" and node.RoomId ~= "" then
 			local roleId = if type(node.Role) == "string" then node.Role else node.RoleId
-			table.insert(rooms, table.freeze({
-				Index = if validInteger(node.Index) then node.Index else #rooms + 1,
-				RoomId = node.RoomId,
-				RoleId = roleId,
-			}))
+			table.insert(
+				rooms,
+				table.freeze({
+					Index = if validInteger(node.Index) then node.Index else #rooms + 1,
+					RoomId = node.RoomId,
+					RoleId = roleId,
+				})
+			)
 			if roleId ~= "Entry" and roleId ~= "Elite" and roleId ~= "Boss" then
 				progressCount += 1
 			end
@@ -122,7 +132,12 @@ local function buildResult(record: any): any
 end
 
 function Service.create(parameters: any): any
-	if type(parameters) ~= "table" or type(parameters.RunId) ~= "string" or #parameters.RunId < 8 or #parameters.RunId > 96 then
+	if
+		type(parameters) ~= "table"
+		or type(parameters.RunId) ~= "string"
+		or #parameters.RunId < 8
+		or #parameters.RunId > 96
+	then
 		return reply(false, "InvalidRunId", nil)
 	end
 	if not validInteger(parameters.Seed) or not validInteger(parameters.PartySize) or parameters.PartySize < 1 then
@@ -207,7 +222,9 @@ function Service.sync(runId: string, observation: any): any
 	if type(observation.ObservedAtUnix) ~= "number" or observation.ObservedAtUnix < record.StartedAtUnix then
 		return reply(false, "InvalidObservationTimestamp", snapshot(record))
 	end
-	local nextEncounterKey = if type(observation.EncounterKey) == "string" and observation.EncounterKey ~= "" then observation.EncounterKey else nil
+	local nextEncounterKey = if type(observation.EncounterKey) == "string" and observation.EncounterKey ~= ""
+		then observation.EncounterKey
+		else nil
 	if record.ActiveEncounterKey ~= nil and nextEncounterKey ~= record.ActiveEncounterKey then
 		record.EncountersCompleted += 1
 	end
@@ -217,9 +234,15 @@ function Service.sync(runId: string, observation: any): any
 	record.CurrentRoomId = observation.CurrentRoomId
 	record.CurrentRoomRoleId = observation.CurrentRoomRoleId
 	record.ActiveEncounterKey = nextEncounterKey
-	if validInteger(observation.CompletedRoomCount) then record.RoomsCompleted = math.max(record.RoomsCompleted, observation.CompletedRoomCount) end
-	if validInteger(observation.EncounteredRoomCount) then record.RoomsEncountered = math.max(record.RoomsEncountered, observation.EncounteredRoomCount) end
-	if validInteger(observation.TotalRoomCount) then record.TotalRooms = math.max(record.TotalRooms, observation.TotalRoomCount) end
+	if validInteger(observation.CompletedRoomCount) then
+		record.RoomsCompleted = math.max(record.RoomsCompleted, observation.CompletedRoomCount)
+	end
+	if validInteger(observation.EncounteredRoomCount) then
+		record.RoomsEncountered = math.max(record.RoomsEncountered, observation.EncounteredRoomCount)
+	end
+	if validInteger(observation.TotalRoomCount) then
+		record.TotalRooms = math.max(record.TotalRooms, observation.TotalRoomCount)
+	end
 	if runtimeSnapshot.OutcomeId == "Completed" then
 		record.LifecycleState = "Completed"
 		record.FinishedAtUnix = record.FinishedAtUnix or observation.ObservedAtUnix
@@ -245,7 +268,11 @@ function Service.setParticipantConnected(runId: string, userId: number, connecte
 	if record.ParticipantUserIds[userId] ~= true then
 		return reply(false, "PlayerNotParticipant", snapshot(record), { AllParticipantsDisconnected = false })
 	end
-	if connected then record.ConnectedParticipantUserIds[userId] = true else record.ConnectedParticipantUserIds[userId] = nil end
+	if connected then
+		record.ConnectedParticipantUserIds[userId] = true
+	else
+		record.ConnectedParticipantUserIds[userId] = nil
+	end
 	record.Revision += 1
 	return reply(true, if connected then "ParticipantConnected" else "ParticipantDisconnected", snapshot(record), {
 		AllParticipantsDisconnected = next(record.ConnectedParticipantUserIds) == nil,
@@ -254,9 +281,15 @@ end
 
 function Service.recordRewardOutcome(runId: string, outcomeId: string): any
 	local record = activeByRunId[runId]
-	if record == nil then return reply(false, "RunNotTracked", nil) end
-	if type(outcomeId) ~= "string" or outcomeId == "" then return reply(false, "InvalidRewardOutcome", snapshot(record)) end
-	if record.RewardOutcomeIds[outcomeId] then return reply(true, "RewardOutcomeAlreadyRecorded", snapshot(record)) end
+	if record == nil then
+		return reply(false, "RunNotTracked", nil)
+	end
+	if type(outcomeId) ~= "string" or outcomeId == "" then
+		return reply(false, "InvalidRewardOutcome", snapshot(record))
+	end
+	if record.RewardOutcomeIds[outcomeId] then
+		return reply(true, "RewardOutcomeAlreadyRecorded", snapshot(record))
+	end
 	record.RewardOutcomeIds[outcomeId] = true
 	record.Revision += 1
 	return reply(true, "RewardOutcomeRecorded", snapshot(record))
@@ -264,8 +297,14 @@ end
 
 function Service.fail(runId: string, reasonId: string, nowUnix: number, outcomeId: string?): any
 	local record = activeByRunId[runId]
-	if record == nil then return reply(false, "RunNotTracked", nil) end
-	if record.LifecycleState == "Completed" or record.LifecycleState == "Failed" or record.LifecycleState == "CleaningUp" then
+	if record == nil then
+		return reply(false, "RunNotTracked", nil)
+	end
+	if
+		record.LifecycleState == "Completed"
+		or record.LifecycleState == "Failed"
+		or record.LifecycleState == "CleaningUp"
+	then
 		return reply(false, "RunTerminal", snapshot(record))
 	end
 	if type(reasonId) ~= "string" or reasonId == "" or type(nowUnix) ~= "number" or nowUnix < record.StartedAtUnix then
@@ -318,7 +357,9 @@ end
 
 function Service.readActiveRunIds(): { string }
 	local ids = {}
-	for runId in activeByRunId do table.insert(ids, runId) end
+	for runId in activeByRunId do
+		table.insert(ids, runId)
+	end
 	table.sort(ids)
 	return table.freeze(ids)
 end
