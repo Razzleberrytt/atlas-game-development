@@ -26,39 +26,48 @@ assert(config.Budgets.CollidablePartCount == 0, "presentation content must remai
 assert(config.Budgets.TouchPartCount == 0, "presentation content must remain non-touching")
 assert(config.Budgets.QueryablePartCount == 0, "presentation content must remain outside gameplay queries")
 
-for _, required in {
-	'instance:GetAttribute("EnvironmentPresentationOnly") == true',
-	"collectPresentationRoots",
-	"hasPresentationAncestor",
-	'instance:IsA("BasePart")',
-	"instance.CanCollide",
-	"instance.CanTouch",
-	"instance.CanQuery",
-	'instance:IsA("ParticleEmitter")',
-	'instance:IsA("Light")',
-	'instance:IsA("ProximityPrompt")',
-	'instance:IsA("ClickDetector")',
-	'instance:IsA("Script")',
-	'instance:IsA("LocalScript")',
-	'instance:IsA("ModuleScript")',
-	'worldRoot:SetAttribute("EnvironmentPresentationBudgetStatus", status)',
-	"task.wait(BudgetConfig.SettleSeconds)",
-	"Workspace.ChildAdded:Connect",
-} do
+for _, required in
+	{
+		'instance:GetAttribute("EnvironmentPresentationOnly") == true',
+		"collectPresentationRoots",
+		"hasPresentationAncestor",
+		'instance:IsA("BasePart")',
+		"instance.CanCollide",
+		"instance.CanTouch",
+		"instance.CanQuery",
+		'instance:IsA("ParticleEmitter")',
+		'instance:IsA("Light")',
+		'instance:IsA("ProximityPrompt")',
+		'instance:IsA("ClickDetector")',
+		'instance:IsA("Script")',
+		'instance:IsA("LocalScript")',
+		'instance:IsA("ModuleScript")',
+		'worldRoot:SetAttribute("EnvironmentPresentationBudgetStatus", status)',
+		"task.wait(BudgetConfig.SettleSeconds)",
+		"Workspace.ChildAdded:Connect",
+	}
+do
 	assert(string.find(source, required, 1, true), "presentation budget audit is missing contract: " .. required)
 end
 
-for _, forbidden in {
-	"RunService.Heartbeat",
-	"RunService.RenderStepped",
-	"RunService.Stepped",
-	"while true",
-	"Destroy()",
-	"CanCollide = false",
-	"CanQuery = false",
-	"CanTouch = false",
-} do
-	assert(not string.find(source, forbidden, 1, true), "presentation budget audit mutates or polls runtime content: " .. forbidden)
+for _, forbidden in
+	{
+		"RunService.Heartbeat",
+		"RunService.RenderStepped",
+		"RunService.Stepped",
+		"while true",
+		"Destroy()",
+		"CanCollide = false",
+		"CanQuery = false",
+		"CanTouch = false",
+	}
+do
+	assert(
+		not string.find(source, forbidden, 1, true),
+		"presentation budget audit mutates or polls runtime content: " .. forbidden
+	)
 end
 
-print("EnvironmentPresentationBudgetSourceAudit: one-shot measurement, hard ceilings, and zero-authority boundaries passed")
+print(
+	"EnvironmentPresentationBudgetSourceAudit: one-shot measurement, hard ceilings, and zero-authority boundaries passed"
+)
