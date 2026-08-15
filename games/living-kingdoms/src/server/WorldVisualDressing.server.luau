@@ -17,6 +17,12 @@ local Config = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)
 
 local DRESSING_FOLDER_NAME = "ReadabilityDressing"
 
+type PointSpec = { x: number, y: number, z: number }
+
+local function toVector3(spec: PointSpec): Vector3
+	return Vector3.new(spec.x, spec.y, spec.z)
+end
+
 local function makePresentationPart(
 	parent: Instance,
 	name: string,
@@ -90,8 +96,8 @@ local function applyDressing(worldRoot: Instance)
 	dressing:SetAttribute("EnvironmentPresentationOnly", true)
 	dressing.Parent = worldRoot
 
-	for index, position in Config.Dressing.TrailReflectorPositions do
-		buildTrailReflector(dressing, index, position)
+	for index, positionSpec in Config.Dressing.TrailReflectorPositions do
+		buildTrailReflector(dressing, index, toVector3(positionSpec))
 	end
 
 	worldRoot:SetAttribute("WorldDressingVersion", Config.Dressing.Version)
