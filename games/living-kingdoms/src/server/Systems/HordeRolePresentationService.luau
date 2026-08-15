@@ -10,6 +10,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local HordeRolePresentationConfig = require(ReplicatedStorage.Shared.Config.HordeRolePresentationConfig)
+local ModularEnemyPresentationService = require(script.Parent.ModularEnemyPresentationService)
 
 local HordeRolePresentationService = {}
 
@@ -93,6 +94,12 @@ function HordeRolePresentationService.applyRolePresentation(enemyModel: Model): 
 	if presentation == nil or not presentation:IsA("Model") then
 		return false
 	end
+
+	-- Build the stable modular base first, then let the horde-role layer tint,
+	-- scale, and pose that base. This preserves role readability while allowing
+	-- the same authoritative enemy to carry many visual combinations.
+	ModularEnemyPresentationService.applyPresentation(enemyModel)
+
 	local profile = profileFor(enemyModel)
 	for _, descendant in presentation:GetDescendants() do
 		if descendant:IsA("BasePart") then
