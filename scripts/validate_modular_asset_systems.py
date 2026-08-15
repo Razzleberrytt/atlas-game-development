@@ -43,6 +43,33 @@ BOOTSTRAP = (
     / "server"
     / "ModularAssetBootstrap.server.luau"
 )
+WEAPON_PRESENTATION_CONFIG = (
+    ROOT
+    / "games"
+    / "living-kingdoms"
+    / "src"
+    / "client"
+    / "Presentation"
+    / "ModularWeaponPresentationConfig.luau"
+)
+WEAPON_PRESENTATION_ADAPTER = (
+    ROOT
+    / "games"
+    / "living-kingdoms"
+    / "src"
+    / "client"
+    / "Presentation"
+    / "ModularWeaponPresentationAdapter.luau"
+)
+WEAPON_PRESENTATION_FACTORY = (
+    ROOT
+    / "games"
+    / "living-kingdoms"
+    / "src"
+    / "client"
+    / "Presentation"
+    / "WeaponPresentationFactory.luau"
+)
 
 PACK_IDS = (
     "pack.modular_enemy",
@@ -95,6 +122,24 @@ WEAPON_CATEGORIES = (
     "LMG",
     "Launcher",
     "Exotic",
+)
+
+LIVE_WEAPON_ASSET_IDS = (
+    "weapon.assault_rifle.a",
+    "weapon.lmg.a",
+    "weapon.shotgun.a",
+    "weapon.sniper_rifle.a",
+    "weapon.hand_cannon.a",
+    "weapon.smg.a",
+)
+
+LIVE_WEAPON_CONFIG_KEYS = (
+    "FirearmConfig.BasicFirearm.WeaponId",
+    "FirearmConfig.LightMachineGun.WeaponId",
+    "FirearmConfig.BreachShotgun.WeaponId",
+    "FirearmConfig.SniperRifle.WeaponId",
+    "FirearmConfig.ServicePistol.WeaponId",
+    "FirearmConfig.SubmachineGun.WeaponId",
 )
 
 PROP_CATEGORIES = (
@@ -155,6 +200,9 @@ def main() -> int:
         factory = read_required(FACTORY)
         resolver = read_required(RESOLVER)
         bootstrap = read_required(BOOTSTRAP)
+        weapon_presentation_config = read_required(WEAPON_PRESENTATION_CONFIG)
+        weapon_presentation_adapter = read_required(WEAPON_PRESENTATION_ADAPTER)
+        weapon_presentation_factory = read_required(WEAPON_PRESENTATION_FACTORY)
 
         require_all(catalog, PACK_IDS, "catalog pack coverage")
         require_all(catalog, TOP_FIVE, "catalog top-five priority")
@@ -214,7 +262,49 @@ def main() -> int:
         require_all(resolver, ("BuildIndex", "FindByAssetId", "CloneByAssetId", "GeneratedModularAssets"), "resolver API")
         require_all(bootstrap, ("Catalog.GeneratedRootName", "Factory.BuildStarterLibrary", "GeneratedPrototypeRoot"), "bootstrap contract")
 
-        combined = "\n".join((roadmap, catalog, factory, resolver, bootstrap))
+        require_all(weapon_presentation_config, LIVE_WEAPON_CONFIG_KEYS, "live firearm modular mappings")
+        require_all(weapon_presentation_config, LIVE_WEAPON_ASSET_IDS, "live modular weapon asset IDs")
+        require_all(
+            weapon_presentation_config,
+            ("ModularAssetProductionCatalog.Weapons.Categories", "FirearmConfig.DefinitionsById", "GetAssetId"),
+            "weapon mapping drift guards",
+        )
+        require_all(
+            weapon_presentation_adapter,
+            (
+                "ModularAssetResolver.GetGeneratedRoot",
+                "ModularAssetResolver.CloneByAssetId",
+                'findAttachment(shell, "Grip")',
+                'findAttachment(shell, "Muzzle")',
+                "shell:ScaleTo(scale)",
+                "ModularShellWeld",
+                "hideProceduralShell",
+                'VisualStatus", "ModularGeneratedAsset"',
+            ),
+            "modular weapon presentation adapter",
+        )
+        require_all(
+            weapon_presentation_factory,
+            (
+                "createProceduralRig",
+                "ModularWeaponPresentationConfig.GetAssetId",
+                "ModularWeaponPresentationAdapter.Apply",
+            ),
+            "live weapon factory modular integration",
+        )
+
+        combined = "\n".join(
+            (
+                roadmap,
+                catalog,
+                factory,
+                resolver,
+                bootstrap,
+                weapon_presentation_config,
+                weapon_presentation_adapter,
+                weapon_presentation_factory,
+            )
+        )
         if "rbxassetid://" in combined.lower():
             raise AssertionError("modular asset system must not commit placeholder marketplace asset IDs")
         if "math.random(" in factory:
@@ -228,7 +318,7 @@ def main() -> int:
         print(f"[modular-assets] FAILED: {exc}", file=sys.stderr)
         return 1
 
-    print("[modular-assets] OK — 20-pack roadmap + top-five runtime starter library contract")
+    print("[modular-assets] OK — modular library + live weapon presentation contract")
     return 0
 
 
