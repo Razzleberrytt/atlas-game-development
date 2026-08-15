@@ -166,11 +166,13 @@ local function buildCorruptedDeadPine(model: Model)
 		)
 	end
 
-	for index, corruptionSpec in {
-		{ Vector3.new(-0.85, 5.0, 0.65), Vector3.new(0.55, 2.0, 0.55), -16 },
-		{ Vector3.new(0.75, 12.8, -0.65), Vector3.new(0.42, 1.55, 0.42), 21 },
-		{ Vector3.new(-0.4, 18.0, 0.55), Vector3.new(0.35, 1.2, 0.35), -8 },
-	} do
+	for index, corruptionSpec in
+		{
+			{ Vector3.new(-0.85, 5.0, 0.65), Vector3.new(0.55, 2.0, 0.55), -16 },
+			{ Vector3.new(0.75, 12.8, -0.65), Vector3.new(0.42, 1.55, 0.42), 21 },
+			{ Vector3.new(-0.4, 18.0, 0.55), Vector3.new(0.35, 1.2, 0.35), -8 },
+		}
+	do
 		local shard = makePart(
 			model,
 			string.format("CorruptionShard%02d", index),
@@ -212,8 +214,24 @@ local function buildMineSupport(model: Model)
 		Enum.Material.WoodPlanks,
 		nil
 	)
-	makeBeam(model, "LeftBrace", Vector3.new(-5.5, 3.0, 0.7), Vector3.new(-1.6, 11.9, 0.7), 1.0, TIMBER_LIGHT, Enum.Material.WoodPlanks)
-	makeBeam(model, "RightBrace", Vector3.new(5.5, 3.0, -0.7), Vector3.new(1.6, 11.9, -0.7), 1.0, TIMBER_LIGHT, Enum.Material.WoodPlanks)
+	makeBeam(
+		model,
+		"LeftBrace",
+		Vector3.new(-5.5, 3.0, 0.7),
+		Vector3.new(-1.6, 11.9, 0.7),
+		1.0,
+		TIMBER_LIGHT,
+		Enum.Material.WoodPlanks
+	)
+	makeBeam(
+		model,
+		"RightBrace",
+		Vector3.new(5.5, 3.0, -0.7),
+		Vector3.new(1.6, 11.9, -0.7),
+		1.0,
+		TIMBER_LIGHT,
+		Enum.Material.WoodPlanks
+	)
 
 	for _, x in { -5.7, 5.7 } do
 		makePart(
@@ -249,15 +267,32 @@ local function buildAbandonedFireRing(model: Model)
 			model,
 			string.format("RingStone%02d", index),
 			Vector3.new(1.65, 1.0 + ((index % 3) * 0.12), 1.35),
-			CFrame.new(position) * CFrame.Angles(math.rad(index % 2 == 0 and 7 or -5), -angle, math.rad((index % 4) - 2)),
+			CFrame.new(position)
+				* CFrame.Angles(math.rad(index % 2 == 0 and 7 or -5), -angle, math.rad((index % 4) - 2)),
 			index % 2 == 0 and ROCK_MID or ROCK_DARK,
 			Enum.Material.Rock,
 			Enum.PartType.Ball
 		)
 	end
 
-	makeBeam(model, "CharredLogA", Vector3.new(-2.2, 0.7, -1.65), Vector3.new(2.2, 0.7, 1.65), 0.7, CHARCOAL, Enum.Material.Wood)
-	makeBeam(model, "CharredLogB", Vector3.new(-2.2, 0.72, 1.65), Vector3.new(2.2, 0.72, -1.65), 0.7, CHARCOAL, Enum.Material.Wood)
+	makeBeam(
+		model,
+		"CharredLogA",
+		Vector3.new(-2.2, 0.7, -1.65),
+		Vector3.new(2.2, 0.7, 1.65),
+		0.7,
+		CHARCOAL,
+		Enum.Material.Wood
+	)
+	makeBeam(
+		model,
+		"CharredLogB",
+		Vector3.new(-2.2, 0.72, 1.65),
+		Vector3.new(2.2, 0.72, -1.65),
+		0.7,
+		CHARCOAL,
+		Enum.Material.Wood
+	)
 	local embers = makePart(
 		model,
 		"ColdEmbers",
@@ -281,7 +316,10 @@ local builders: { [string]: Builder } = {
 function EnvironmentModelFactory.Build(parent: Instance, assetId: string, placement: CFrame): Model
 	local definition = registryById[assetId]
 	assert(definition ~= nil, string.format("Unknown environment asset id: %s", assetId))
-	assert(definition.presentationOnly == true, string.format("Environment asset %s must be presentation-only", assetId))
+	assert(
+		definition.presentationOnly == true,
+		string.format("Environment asset %s must be presentation-only", assetId)
+	)
 
 	local builder = builders[assetId]
 	assert(builder ~= nil, string.format("No procedural builder registered for environment asset: %s", assetId))
