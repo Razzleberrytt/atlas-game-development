@@ -13,8 +13,6 @@ local Service = {}
 
 local started = false
 local statesByUserId: { [number]: any } = {}
-local playerAddedConnection: RBXScriptConnection? = nil
-local playerRemovingConnection: RBXScriptConnection? = nil
 local nextListenerId = 0
 local levelUpListeners: { [number]: (any) -> () } = {}
 local progressionChangedListeners: { [number]: (any) -> () } = {}
@@ -80,8 +78,8 @@ function Service.start()
 	for _, player in Players:GetPlayers() do
 		initializePlayer(player)
 	end
-	playerAddedConnection = Players.PlayerAdded:Connect(initializePlayer)
-	playerRemovingConnection = Players.PlayerRemoving:Connect(function(player: Player)
+	Players.PlayerAdded:Connect(initializePlayer)
+	Players.PlayerRemoving:Connect(function(player: Player)
 		statesByUserId[player.UserId] = nil
 	end)
 end
