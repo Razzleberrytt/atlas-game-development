@@ -21,14 +21,18 @@ if not isStudio then
 end
 
 local existing = ServerStorage:FindFirstChild("ExpeditionRunDevelopment")
-if existing ~= nil then existing:Destroy() end
+if existing ~= nil then
+	existing:Destroy()
+end
 local control = Instance.new("BindableFunction")
 control.Name = "ExpeditionRunDevelopment"
 control.Parent = ServerStorage
 
 local function stopped(): any
 	local snapshot = ExpeditionLiveRuntimeService.readSnapshot()
-	if snapshot == nil then return table.freeze({ Accepted = false, ReasonId = "NoActiveExpedition" }) end
+	if snapshot == nil then
+		return table.freeze({ Accepted = false, ReasonId = "NoActiveExpedition" })
+	end
 	ExpeditionRunStateService.fail(snapshot.RunId, "DevelopmentForceCleanup", Workspace:GetServerTimeNow(), "Abandoned")
 	return ExpeditionLiveRuntimeService.stopExpedition("DevelopmentForceCleanup")
 end
@@ -46,8 +50,13 @@ control.OnInvoke = function(action: any, payload: any?): any
 			return table.freeze({ Accepted = false, ReasonId = "ExpeditionAlreadyActive" })
 		end
 		local previous = ExpeditionRunStateService.readLastResult()
-		if previous == nil then return table.freeze({ Accepted = false, ReasonId = "NoPreviousRun" }) end
-		return ExpeditionLiveRuntimeService.startExpedition({ Seed = previous.Seed, PartySize = math.max(1, #Players:GetPlayers()) })
+		if previous == nil then
+			return table.freeze({ Accepted = false, ReasonId = "NoPreviousRun" })
+		end
+		return ExpeditionLiveRuntimeService.startExpedition({
+			Seed = previous.Seed,
+			PartySize = math.max(1, #Players:GetPlayers()),
+		})
 	elseif action == "ReadSnapshot" then
 		return ExpeditionLiveRuntimeService.readSnapshot()
 	elseif action == "ReadRoomPlan" then
@@ -64,7 +73,9 @@ control.OnInvoke = function(action: any, payload: any?): any
 end
 
 game:BindToClose(function()
-	if control.Parent ~= nil then control:Destroy() end
+	if control.Parent ~= nil then
+		control:Destroy()
+	end
 end)
 
 print("[Living Kingdoms] Expedition run development harness mounted")
