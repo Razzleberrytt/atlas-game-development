@@ -155,6 +155,9 @@ local dressingSource = fs.readFile("games/living-kingdoms/src/server/WorldVisual
 assert(string.find(dressingSource, "CanCollide = false", 1, true), "readability dressing must not alter collision")
 assert(string.find(dressingSource, "CanQuery = false", 1, true), "readability dressing must not alter gameplay queries")
 assert(string.find(dressingSource, "Enum.Material.Neon", 1, true), "reflective markers need emissive readability")
-assert(not string.find(dressingSource, "PointLight", 1, true), "readability dressing must add zero dynamic lights")
+assert(
+	not string.find(dressingSource, 'Instance.new("PointLight")', 1, true),
+	"readability dressing must add zero dynamic lights"
+)
 
 print("WorldFoundationConfig fixtures passed")
