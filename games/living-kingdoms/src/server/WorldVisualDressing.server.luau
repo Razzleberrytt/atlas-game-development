@@ -99,10 +99,7 @@ local function buildTrailReflector(parent: Instance, index: number, position: Ve
 	)
 end
 
-local function groundedPlacementCFrame(
-	worldRoot: Folder,
-	placementSpec: EnvironmentPlacementSpec
-): CFrame
+local function groundedPlacementCFrame(worldRoot: Folder, placementSpec: EnvironmentPlacementSpec): CFrame
 	local terrainFoundation = worldRoot:FindFirstChild("TerrainFoundation")
 	assert(terrainFoundation ~= nil, "TerrainFoundation must exist before environment composition")
 
