@@ -1,14 +1,16 @@
 --!strict
 
 --[[
-	Deterministic environmental composition planner.
+	Deterministic hierarchical environmental composition planner.
 
 	The authored world defines landmarks, a primary route, and a creek. This module
 	turns those semantic constraints into presentation-model placements by combining:
 	- Gaussian attraction/repulsion fields for environmental storytelling,
 	- minimum route/creek/landmark clearances for gameplay readability,
 	- seeded candidate generation for reproducibility,
-	- greedy Poisson-like spacing for silhouette separation.
+	- tiered anchor -> mass -> detail placement,
+	- greedy Poisson-like same-family spacing,
+	- global footprint-aware packing across every generated family.
 
 	The planner is runtime placement logic only. Generated models remain
 	presentation-only and own no collision, navigation, combat, or progression truth.
@@ -45,6 +47,8 @@ type Placement = {
 	id: string,
 	assetId: string,
 	field: string,
+	tier: string,
+	packingRadiusStuds: number,
 	x: number,
 	z: number,
 	yawDegrees: number,
@@ -55,10 +59,18 @@ type AssetSpec = {
 	idPrefix: string,
 	assetId: string,
 	field: string,
+	tier: string,
 	count: number,
+	packingRadiusStuds: number,
 	minSpacingStuds: number,
 	minRouteDistanceStuds: number,
 	minCreekDistanceStuds: number,
+}
+
+type PackedPlacement = {
+	x: number,
+	z: number,
+	packingRadiusStuds: number,
 }
 
 type RandomState = {
@@ -195,11 +207,30 @@ local function fieldScore(
 	error(string.format("Unknown environment composition field: %s", fieldName))
 end
 
+local function candidateDistance(candidate: Candidate, x: number, z: number): number
+	local dx = candidate.x - x
+	local dz = candidate.z - z
+	return math.sqrt(dx * dx + dz * dz)
+end
+
 local function isFarEnough(candidate: Candidate, chosen: { Candidate }, minimumSpacing: number): boolean
 	for _, accepted in chosen do
-		local dx = candidate.x - accepted.x
-		local dz = candidate.z - accepted.z
-		if math.sqrt(dx * dx + dz * dz) < minimumSpacing then
+		if candidateDistance(candidate, accepted.x, accepted.z) < minimumSpacing then
+			return false
+		end
+	end
+	return true
+end
+
+local function isGloballyFarEnough(
+	candidate: Candidate,
+	spec: AssetSpec,
+	globalAccepted: { PackedPlacement }
+): boolean
+	for _, accepted in globalAccepted do
+		local requiredDistance =
+			(spec.packingRadiusStuds + accepted.packingRadiusStuds) * PlacementConfig.CrossFamilySpacingScale
+		if candidateDistance(candidate, accepted.x, accepted.z) < requiredDistance then
 			return false
 		end
 	end
@@ -211,7 +242,8 @@ local function generateForSpec(
 	randomState: RandomState,
 	landmarks: { [string]: Landmark2 },
 	routePoints: { Point2 },
-	creekPoints: { Point2 }
+	creekPoints: { Point2 },
+	globalAccepted: { PackedPlacement }
 ): { Placement }
 	local candidates: { Candidate } = {}
 	local halfExtent = PlacementConfig.HalfExtentStuds
@@ -256,7 +288,10 @@ local function generateForSpec(
 
 	local chosen: { Candidate } = {}
 	for _, candidate in candidates do
-		if isFarEnough(candidate, chosen, spec.minSpacingStuds) then
+		if
+			isFarEnough(candidate, chosen, spec.minSpacingStuds)
+			and isGloballyFarEnough(candidate, spec, globalAccepted)
+		then
 			table.insert(chosen, candidate)
 			if #chosen >= spec.count then
 				break
@@ -271,14 +306,22 @@ local function generateForSpec(
 
 	local placements: { Placement } = {}
 	for index, candidate in chosen do
-		table.insert(placements, {
+		local placement = {
 			id = string.format("%s.%02d", spec.idPrefix, index),
 			assetId = spec.assetId,
 			field = spec.field,
+			tier = spec.tier,
+			packingRadiusStuds = spec.packingRadiusStuds,
 			x = candidate.x,
 			z = candidate.z,
 			yawDegrees = candidate.yawDegrees,
 			fieldScore = candidate.fieldScore,
+		}
+		table.insert(placements, placement)
+		table.insert(globalAccepted, {
+			x = candidate.x,
+			z = candidate.z,
+			packingRadiusStuds = spec.packingRadiusStuds,
 		})
 	end
 	return placements
@@ -290,11 +333,17 @@ function EnvironmentCompositionPlanner.Plan(): { Placement }
 	local creekPoints = buildCreekPoints()
 	local randomState = initializeRandom(PlacementConfig.Seed)
 	local placements: { Placement } = {}
+	local globalAccepted: { PackedPlacement } = {}
 
-	for _, rawSpec in PlacementConfig.AssetSpecs do
-		local generated = generateForSpec(rawSpec :: AssetSpec, randomState, landmarks, routePoints, creekPoints)
-		for _, placement in generated do
-			table.insert(placements, placement)
+	for _, tierName in PlacementConfig.TierOrder do
+		for _, rawSpec in PlacementConfig.AssetSpecs do
+			local spec = rawSpec :: AssetSpec
+			if spec.tier == tierName then
+				local generated = generateForSpec(spec, randomState, landmarks, routePoints, creekPoints, globalAccepted)
+				for _, placement in generated do
+					table.insert(placements, placement)
+				end
+			end
 		end
 	end
 
