@@ -46,6 +46,12 @@ local STEPS: { MigrationStep } = table.freeze({
 		ToSchemaVersion = 5,
 		Summary = "introduce canonical long-horizon character XP in the player record",
 	}),
+	table.freeze({
+		StepId = "inventory-5-to-6-character-build",
+		FromSchemaVersion = 5,
+		ToSchemaVersion = 6,
+		Summary = "introduce durable character attribute allocations in the canonical player record",
+	}),
 })
 
 InventoryMigrationSteps.Steps = STEPS
