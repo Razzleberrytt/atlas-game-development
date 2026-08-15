@@ -28,7 +28,10 @@ assertThat(
 )
 assertThat(contains(director, "operationPressureStartedServerTimestamp"), "protected opening needs operation time")
 assertThat(contains(behavior, "archetype.AttackWindupSeconds * cadenceMultiplier"), "windup cadence must be bounded")
-assertThat(contains(behavior, "archetype.AttackCooldownSeconds * cadenceMultiplier"), "cooldown cadence must be bounded")
+assertThat(
+	contains(behavior, "archetype.AttackCooldownSeconds * cadenceMultiplier"),
+	"cooldown cadence must be bounded"
+)
 assertThat(
 	contains(horde, "EffectiveMovementSpeedMultiplier"),
 	"horde role speed must preserve elite and aura movement"
