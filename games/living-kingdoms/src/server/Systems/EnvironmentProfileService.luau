@@ -18,6 +18,8 @@ local Config = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)
 
 local EnvironmentProfileService = {}
 
+type RgbSpec = { r: number, g: number, b: number }
+
 local EFFECT_NAMES = table.freeze({
 	"LivingKingdomsAtmosphere",
 	"LivingKingdomsColorGrade",
@@ -26,6 +28,10 @@ local EFFECT_NAMES = table.freeze({
 })
 
 local started = false
+
+local function toColor3(spec: RgbSpec): Color3
+	return Color3.fromRGB(spec.r, spec.g, spec.b)
+end
 
 local function destroyOwnedEffects()
 	for _, childName in EFFECT_NAMES do
@@ -44,12 +50,12 @@ end
 local function applyStaticLighting()
 	local profile = Config.Lighting
 	Lighting.GeographicLatitude = profile.GeographicLatitude
-	Lighting.OutdoorAmbient = profile.OutdoorAmbient
+	Lighting.OutdoorAmbient = toColor3(profile.OutdoorAmbient)
 	Lighting.EnvironmentDiffuseScale = profile.EnvironmentDiffuseScale
 	Lighting.EnvironmentSpecularScale = profile.EnvironmentSpecularScale
 	Lighting.GlobalShadows = profile.GlobalShadows
 	Lighting.ShadowSoftness = profile.ShadowSoftness
-	Lighting.FogColor = profile.FogColor
+	Lighting.FogColor = toColor3(profile.FogColor)
 	Lighting.FogStart = profile.FogStart
 end
 
@@ -58,8 +64,8 @@ local function buildOwnedEffects()
 
 	local atmosphere = Instance.new("Atmosphere")
 	atmosphere.Name = "LivingKingdomsAtmosphere"
-	atmosphere.Color = profile.Atmosphere.Color
-	atmosphere.Decay = profile.Atmosphere.Decay
+	atmosphere.Color = toColor3(profile.Atmosphere.Color)
+	atmosphere.Decay = toColor3(profile.Atmosphere.Decay)
 	atmosphere.Density = profile.Atmosphere.Density
 	atmosphere.Offset = profile.Atmosphere.Offset
 	atmosphere.Glare = profile.Atmosphere.Glare
@@ -71,7 +77,7 @@ local function buildOwnedEffects()
 	grade.Brightness = profile.ColorGrade.Brightness
 	grade.Contrast = profile.ColorGrade.Contrast
 	grade.Saturation = profile.ColorGrade.Saturation
-	grade.TintColor = profile.ColorGrade.TintColor
+	grade.TintColor = toColor3(profile.ColorGrade.TintColor)
 	grade.Parent = Lighting
 
 	local bloom = Instance.new("BloomEffect")
@@ -91,7 +97,7 @@ local function buildOwnedEffects()
 	clouds.Name = "LivingKingdomsClouds"
 	clouds.Cover = profile.Clouds.Cover
 	clouds.Density = profile.Clouds.Density
-	clouds.Color = profile.Clouds.Color
+	clouds.Color = toColor3(profile.Clouds.Color)
 	clouds.Parent = Workspace.Terrain
 end
 
@@ -113,7 +119,7 @@ function EnvironmentProfileService.applyDaylight(clockTime: number)
 	Lighting.ClockTime = clockTime
 	Lighting.Brightness = profile.Brightness
 	Lighting.ExposureCompensation = profile.ExposureCompensation
-	Lighting.Ambient = profile.Ambient
+	Lighting.Ambient = toColor3(profile.Ambient)
 	Lighting.FogEnd = profile.FogEnd
 end
 
@@ -126,7 +132,7 @@ function EnvironmentProfileService.applyCorruption(clockTime: number, intensity:
 	Lighting.Brightness = night.BrightnessStart + (night.BrightnessEnd - night.BrightnessStart) * alpha
 	Lighting.ExposureCompensation = night.ExposureStart + (night.ExposureEnd - night.ExposureStart) * alpha
 	Lighting.FogEnd = night.FogEndStart + (minimumFogEnd - night.FogEndStart) * alpha
-	Lighting.Ambient = night.AmbientStart:Lerp(night.AmbientEnd, alpha)
+	Lighting.Ambient = toColor3(night.AmbientStart):Lerp(toColor3(night.AmbientEnd), alpha)
 end
 
 function EnvironmentProfileService.stop()
