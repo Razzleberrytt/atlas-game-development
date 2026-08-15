@@ -50,7 +50,7 @@ local function notify(player: Player, sourceId: string)
 	end
 end
 
-local function collectModifiers(userId: number): { any }
+local function collectModifiers(userId: number, excludedSourceCategory: string?): { any }
 	local collected = {}
 	local sources = sourcesByUserId[userId]
 	if sources == nil then
@@ -63,7 +63,9 @@ local function collectModifiers(userId: number): { any }
 	table.sort(sourceIds)
 	for _, sourceId in sourceIds do
 		for _, modifier in sources[sourceId] do
-			table.insert(collected, modifier)
+			if excludedSourceCategory == nil or modifier.SourceCategory ~= excludedSourceCategory then
+				table.insert(collected, modifier)
+			end
 		end
 	end
 	return collected
@@ -152,19 +154,27 @@ function Service.getResolvedStat(player: Player, statId: any): number?
 	if not isPlayer(player) or not Resolver.isKnownStat(statId, Config) then
 		return nil
 	end
-	return Resolver.resolveStat(statId, collectModifiers(player.UserId), Config)
+	return Resolver.resolveStat(statId, collectModifiers(player.UserId, nil), Config)
+end
+
+function Service.getResolvedStatExcludingSourceCategory(player: Player, statId: any, excludedSourceCategory: any): number?
+	if not isPlayer(player) or not Resolver.isKnownStat(statId, Config) or not validSourceCategory(excludedSourceCategory) then
+		return nil
+	end
+	return Resolver.resolveStat(statId, collectModifiers(player.UserId, excludedSourceCategory), Config)
 end
 
 function Service.getResolvedStats(player: Player): { [string]: number }?
 	if not isPlayer(player) then
 		return nil
 	end
-	return Resolver.resolveAll(collectModifiers(player.UserId), Config)
+	return Resolver.resolveAll(collectModifiers(player.UserId, nil), Config)
 end
 
 -- PascalCase aliases are intentional: they make the public seam cheap for
 -- existing services that use that convention without creating duplicate math.
 Service.GetResolvedStat = Service.getResolvedStat
+Service.GetResolvedStatExcludingSourceCategory = Service.getResolvedStatExcludingSourceCategory
 Service.GetResolvedStats = Service.getResolvedStats
 Service.SetSourceModifiers = Service.setSourceModifiers
 Service.ClearSourceModifiers = Service.clearSourceModifiers
