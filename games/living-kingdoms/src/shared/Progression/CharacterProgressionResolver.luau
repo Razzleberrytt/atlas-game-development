@@ -179,7 +179,25 @@ function Resolver.normalizeState(rawState: any, config: any): CharacterProgressi
 	return stateFromTotalXP(0, typedConfig, true, "MissingProgressionFields")
 end
 
-function Resolver.serializeState(rawState: any, config: any): any
+function Resolver.serializeState(rawState: any, config: any?): any
+	-- Persistence already normalizes with the configured curve before serializing.
+	-- Allow that canonical state to serialize without running the curve a second
+	-- time, while all non-canonical callers must still provide a valid config.
+	if config == nil then
+		if
+			type(rawState) ~= "table"
+			or type(rawState.Version) ~= "string"
+			or rawState.Version == ""
+			or not isFiniteNumber(rawState.TotalXP)
+			or rawState.TotalXP < 0
+		then
+			error("canonical character progression state required when config is omitted", 2)
+		end
+		return table.freeze({
+			Version = rawState.Version,
+			TotalXP = math.floor(rawState.TotalXP),
+		})
+	end
 	local state = Resolver.normalizeState(rawState, config)
 	return table.freeze({
 		Version = state.Version,
