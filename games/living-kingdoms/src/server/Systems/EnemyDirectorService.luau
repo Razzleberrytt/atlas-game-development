@@ -11,8 +11,8 @@
 
 	Bounded by construction: one heartbeat connection, one evaluation pass at
 	a configured interval, configured population caps, a bounded deferred
-	fair-spawn queue, zero per-enemy connections, zero timers, and zero
-	raycasts. Corpse cleanup and spawn retries ride the same pass.
+	fair-spawn queue, zero per-enemy connections, zero timers, and bounded
+	pathfinding work. Corpse cleanup and spawn retries ride the same pass.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -199,6 +199,10 @@ type BloomZone = {
 type PendingSpawn = {
 	request: EnemySpawnRequest,
 	nextRetryServerTimestamp: number,
+}
+
+type EvaluationBudget = {
+	remainingPathComputations: number,
 }
 
 local ENEMY_FOLDER_NAME = "EnemyEntities"
@@ -1385,11 +1389,26 @@ local function applyBossBehavior(
 	return 0
 end
 
-local function moveStalkerToward(entry: EnemyEntry, targetPosition: Vector3, serverTimestamp: number)
+local function moveStalkerToward(
+	entry: EnemyEntry,
+	targetPosition: Vector3,
+	serverTimestamp: number,
+	budget: EvaluationBudget
+)
 	if serverTimestamp < entry.nextPursuitRepathServerTimestamp then
 		return
 	end
-	entry.nextPursuitRepathServerTimestamp = serverTimestamp + EnemyConfig.Navigation.PursuitRepathIntervalSeconds
+
+	local canComputePath = budget.remainingPathComputations > 0
+	if canComputePath then
+		budget.remainingPathComputations -= 1
+		entry.nextPursuitRepathServerTimestamp = serverTimestamp + EnemyConfig.Navigation.PursuitRepathIntervalSeconds
+	else
+		-- Do not let a synchronized pack create an unbounded burst of yielding
+		-- ComputeAsync calls. Keep direct pursuit active and retry on the next
+		-- shared evaluation so enemies that missed this pass are not starved.
+		entry.nextPursuitRepathServerTimestamp = serverTimestamp + EnemyConfig.EvaluationIntervalSeconds
+	end
 
 	local destination = targetPosition
 	local toTarget = Vector3.new(targetPosition.X - entry.root.Position.X, 0, targetPosition.Z - entry.root.Position.Z)
@@ -1405,12 +1424,12 @@ local function moveStalkerToward(entry: EnemyEntry, targetPosition: Vector3, ser
 	-- trees and structures. Lightweight fixtures deliberately fall back to the
 	-- same bounded Humanoid destination without needing a pathfinding mock.
 	local pathService = PathfindingService :: any
-	if type(pathService.CreatePath) == "function" then
+	if canComputePath and type(pathService.CreatePath) == "function" then
 		local ok, path = pcall(function()
 			local createdPath = pathService:CreatePath({
 				AgentRadius = EnemyConfig.Navigation.AgentRadiusStuds,
 				AgentHeight = EnemyConfig.Navigation.AgentHeightStuds,
-				AgentCanJump = true,
+				AgentCanJump = EnemyConfig.Navigation.AgentCanJump,
 				WaypointSpacing = EnemyConfig.Navigation.WaypointSpacingStuds,
 			})
 			createdPath:ComputeAsync(entry.root.Position, destination)
@@ -1420,7 +1439,7 @@ local function moveStalkerToward(entry: EnemyEntry, targetPosition: Vector3, ser
 			local waypoints = path:GetWaypoints()
 			local waypoint = waypoints[math.min(2, #waypoints)]
 			if waypoint ~= nil then
-				if waypoint.Action == Enum.PathWaypointAction.Jump then
+				if EnemyConfig.Navigation.AgentCanJump and waypoint.Action == Enum.PathWaypointAction.Jump then
 					entry.humanoid.Jump = true
 				end
 				entry.humanoid:MoveTo(waypoint.Position)
@@ -1429,11 +1448,17 @@ local function moveStalkerToward(entry: EnemyEntry, targetPosition: Vector3, ser
 		end
 	end
 
-	-- Exact target fallback preserves direct pursuit if a path cannot be solved.
+	-- Exact target fallback preserves direct pursuit if a path cannot be solved
+	-- or if this evaluation pass has spent its shared pathfinding budget.
 	entry.humanoid:MoveTo(targetPosition)
 end
 
-local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperativeFact }, serverTimestamp: number): number
+local function applyBehavior(
+	entry: EnemyEntry,
+	operativeFacts: { EnemyOperativeFact },
+	serverTimestamp: number,
+	budget: EvaluationBudget
+): number
 	if entry.archetypeId == PROGENITOR_ARCHETYPE_ID then
 		return applyBossBehavior(entry, operativeFacts, serverTimestamp)
 	end
@@ -1481,7 +1506,8 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 				moveStalkerToward(
 					entry,
 					Vector3.new(fact.position.x, fact.position.y, fact.position.z),
-					serverTimestamp
+					serverTimestamp,
+					budget
 				)
 				break
 			end
@@ -1666,6 +1692,9 @@ function EnemyDirectorService.evaluateAt(serverTimestamp: number): EvaluationSum
 		return summary
 	end
 	local operativeFacts = readOperativeFacts()
+	local budget: EvaluationBudget = {
+		remainingPathComputations = EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation,
+	}
 	summary.spawnedCount += retryPendingSpawns(operativeFacts, serverTimestamp)
 	summary.spawnedCount += attemptRoamingSpawns(operativeFacts, serverTimestamp)
 	refreshCommanderAuras()
@@ -1680,7 +1709,7 @@ function EnemyDirectorService.evaluateAt(serverTimestamp: number): EvaluationSum
 			end
 		elseif entry.isAlive then
 			applyRegeneration(entry, serverTimestamp)
-			summary.attackCommittedCount += applyBehavior(entry, operativeFacts, serverTimestamp)
+			summary.attackCommittedCount += applyBehavior(entry, operativeFacts, serverTimestamp, budget)
 		end
 	end
 	for _, entityId in toClean do
