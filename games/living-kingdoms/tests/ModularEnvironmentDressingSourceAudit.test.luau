@@ -25,6 +25,7 @@ assert(config.MaximumPropCount == 18, "secondary environment prop budget changed
 assert(config.MinimumOffsetStuds >= 7, "secondary props are too close to hero silhouettes")
 assert(config.MaximumOffsetStuds <= 11, "secondary props can drift too far from accepted hero anchors")
 assert(config.MinimumOffsetStuds < config.MaximumOffsetStuds, "secondary prop offset range is invalid")
+assert(config.GeneratedAssetWaitSeconds <= 8, "modular prop readiness wait is too long")
 
 local catalogPropIds = {}
 for _, definition in catalog.Props.Categories do
@@ -54,15 +55,22 @@ end
 
 for _, required in {
 	"ModularAssetResolver.CloneByAssetId",
+	"ModularAssetResolver.GetGeneratedRoot",
+	"ModularAssetResolver.FindByAssetId",
 	"EnvironmentModels",
 	"EnvironmentField",
 	"TerrainFoundation",
 	"Workspace:Raycast",
 	"HASH_MODULUS = 2147483647",
 	"HASH_MULTIPLIER = 131",
-	"part.CanCollide = false",
-	"part.CanTouch = false",
-	"part.CanQuery = false",
+	"Workspace:GetServerTimeNow() + Config.GeneratedAssetWaitSeconds",
+	"task.wait(ASSET_READY_POLL_SECONDS)",
+	"descendant.CanCollide = false",
+	"descendant.CanTouch = false",
+	"descendant.CanQuery = false",
+	"instance.CanCollide = false",
+	"instance.CanTouch = false",
+	"instance.CanQuery = false",
 	'descendant:IsA("ProximityPrompt")',
 	'descendant:IsA("ClickDetector")',
 	'output:SetAttribute("EnvironmentPresentationOnly", true)',
@@ -84,4 +92,4 @@ for _, forbidden in {
 	assert(not string.find(source, forbidden, 1, true), "modular environment dressing contains forbidden behavior: " .. forbidden)
 end
 
-print("ModularEnvironmentDressingSourceAudit: catalog binding, 18-prop budget, grounding, and query isolation passed")
+print("ModularEnvironmentDressingSourceAudit: catalog binding, readiness, 18-prop budget, grounding, and query isolation passed")
