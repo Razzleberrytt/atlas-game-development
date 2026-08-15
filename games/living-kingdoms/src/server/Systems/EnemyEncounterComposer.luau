@@ -109,7 +109,7 @@ local function readAllowedArchetypes(config: EncounterConfig): ({ string }?, str
 	local seen = {}
 	for _, archetypeId in source do
 		if
-		not nonemptyString(archetypeId)
+			not nonemptyString(archetypeId)
 			or seen[archetypeId] == true
 			or not EnemyArchetypeConfig.isEncounterEligible(archetypeId)
 		then
@@ -287,15 +287,18 @@ function EnemyEncounterComposer.compose(
 		usedBudget += definition.SpawnCost
 		local point = spawnPoints[spawnIndex]
 		local authoredEliteChance = if definition.EliteEligible then eliteChance else 0
-		table.insert(spawns, table.freeze({
-			entityId = string.format("encounter:%s:%d:%d", config.Id, math.floor(context.Seed), spawnIndex),
-			archetypeId = archetypeId,
-			displayName = definition.DisplayName,
-			position = table.freeze({ x = point.x, y = point.y, z = point.z }),
-			spawnCost = definition.SpawnCost,
-			eliteChance = authoredEliteChance,
-			requestedEliteAffixId = if definition.EliteEligible then config.RequestedEliteAffixId else nil,
-		}))
+		table.insert(
+			spawns,
+			table.freeze({
+				entityId = string.format("encounter:%s:%d:%d", config.Id, math.floor(context.Seed), spawnIndex),
+				archetypeId = archetypeId,
+				displayName = definition.DisplayName,
+				position = table.freeze({ x = point.x, y = point.y, z = point.z }),
+				spawnCost = definition.SpawnCost,
+				eliteChance = authoredEliteChance,
+				requestedEliteAffixId = if definition.EliteEligible then config.RequestedEliteAffixId else nil,
+			})
+		)
 	end
 
 	-- Exact requested anchors are emitted in the caller's allowed-archetype order,
