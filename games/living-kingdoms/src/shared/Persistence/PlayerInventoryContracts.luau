@@ -10,6 +10,11 @@ export type CharacterProgressionRecord = {
 	TotalXP: number,
 }
 
+export type CharacterBuildRecord = {
+	Version: string,
+	AllocatedAttributes: { [string]: number },
+}
+
 -- What a dismantle destroyed. Recorded so a replayed transaction can be answered
 -- after a rejoin without consulting the item, which no longer exists.
 export type DismantleOutcome = {
@@ -37,6 +42,11 @@ export type PlayerInventoryRecord = {
 	-- expedition completion. High-frequency kill/assist awards should use
 	-- bounded encounter/session attribution rather than growing this forever.
 	AppliedCharacterProgressionGrantIds: { [string]: boolean },
+	-- Schema 6. Durable build decisions remain in the same leased account record
+	-- as XP and equipment. Earned point totals are derived from character level;
+	-- only allocations need persistence.
+	CharacterBuild: CharacterBuildRecord,
+	AppliedCharacterBuildRequestIds: { [string]: boolean },
 	UpdatedAtUnix: number,
 }
 
@@ -54,7 +64,7 @@ export type MutationResult = {
 }
 
 -- Every version the loader can still read. Historical records migrate forward.
-local SupportedSchemaVersions = table.freeze({ 1, 2, 3, 4, 5 })
+local SupportedSchemaVersions = table.freeze({ 1, 2, 3, 4, 5, 6 })
 
 local function isSupportedSchemaVersion(value: any): boolean
 	for _, supported in SupportedSchemaVersions do
@@ -66,7 +76,7 @@ local function isSupportedSchemaVersion(value: any): boolean
 end
 
 return table.freeze({
-	CurrentSchemaVersion = 5,
+	CurrentSchemaVersion = 6,
 	SupportedSchemaVersions = SupportedSchemaVersions,
 	isSupportedSchemaVersion = isSupportedSchemaVersion,
 })
