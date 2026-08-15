@@ -5,6 +5,11 @@ local EquipmentContracts = require(script.Parent.Parent.Equipment.EquipmentRewar
 export type EquipmentReward = EquipmentContracts.EquipmentReward
 export type EquipmentSlotId = EquipmentContracts.EquipmentSlotId
 
+export type CharacterProgressionRecord = {
+	Version: string,
+	TotalXP: number,
+}
+
 -- What a dismantle destroyed. Recorded so a replayed transaction can be answered
 -- after a rejoin without consulting the item, which no longer exists.
 export type DismantleOutcome = {
@@ -23,12 +28,11 @@ export type PlayerInventoryRecord = {
 	AppliedRewardGrantIds: { [string]: boolean },
 	-- Schema 3. Idempotency ledger for dismantle, keyed by transaction id.
 	AppliedDismantleTransactions: { [string]: DismantleOutcome },
-	--[[
-		Schema 4. Content identity per applied grant. AppliedRewardGrantIds can
-		only say an id was used; this says what it was used for, so a repeat with
-		different content reads as a conflict instead of a successful retry.
-	]]
+	-- Schema 4. Content identity per applied grant.
 	AppliedRewardContentSignatures: { [string]: string },
+	-- Schema 5. Long-horizon character XP stored inside the existing canonical
+	-- account record so inventory/session-lease ownership remains singular.
+	CharacterProgression: CharacterProgressionRecord,
 	UpdatedAtUnix: number,
 }
 
@@ -45,12 +49,8 @@ export type MutationResult = {
 	Record: PlayerInventoryRecord?,
 }
 
---[[
-	Every version the loader can still read. A record saved at any of these must
-	load and migrate forward; dropping one strands live inventories, so this list
-	only ever grows until a migration is proven to have retired a version.
-]]
-local SupportedSchemaVersions = table.freeze({ 1, 2, 3, 4 })
+-- Every version the loader can still read. Historical records migrate forward.
+local SupportedSchemaVersions = table.freeze({ 1, 2, 3, 4, 5 })
 
 local function isSupportedSchemaVersion(value: any): boolean
 	for _, supported in SupportedSchemaVersions do
@@ -62,7 +62,7 @@ local function isSupportedSchemaVersion(value: any): boolean
 end
 
 return table.freeze({
-	CurrentSchemaVersion = 4,
+	CurrentSchemaVersion = 5,
 	SupportedSchemaVersions = SupportedSchemaVersions,
 	isSupportedSchemaVersion = isSupportedSchemaVersion,
 })
