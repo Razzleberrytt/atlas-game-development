@@ -1,0 +1,54 @@
+name: Repair enemy presentation lint warnings
+
+on:
+  push:
+    branches:
+      - fix/stylua-enemy-presentation-20260814
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/stylua-enemy-presentation-20260814
+      - name: Install pinned Rokit tools
+        uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+      - name: Remove unused presentation locals
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('games/living-kingdoms/src/server/Systems/EnemyArchetypePresentationService.luau')
+          text = path.read_text()
+          replacements = {
+              '\tlocal thorax = makeRigidPart(\n\t\tpresentation,\n\t\troot,\n\t\t"Thorax",': '\tmakeRigidPart(\n\t\tpresentation,\n\t\troot,\n\t\t"Thorax",',
+              '\tlocal head = makeRigidPart(\n\t\tpresentation,\n\t\troot,\n\t\t"PinchedHead",': '\tmakeRigidPart(\n\t\tpresentation,\n\t\troot,\n\t\t"PinchedHead",',
+              '\tlocal head = makeRigidPart(\n\t\tpresentation,\n\t\troot,\n\t\t"CrownedHead",': '\tmakeRigidPart(\n\t\tpresentation,\n\t\troot,\n\t\t"CrownedHead",',
+          }
+          for old, new in replacements.items():
+              if text.count(old) != 1:
+                  raise SystemExit(f'expected exactly one match for {old!r}, got {text.count(old)}')
+              text = text.replace(old, new)
+          path.write_text(text)
+          PY
+          stylua games/living-kingdoms/src/server/Systems/EnemyArchetypePresentationService.luau
+          selene games/living-kingdoms/src/server/Systems/EnemyArchetypePresentationService.luau
+      - name: Commit repair
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add games/living-kingdoms/src/server/Systems/EnemyArchetypePresentationService.luau
+          git commit -m "fix: remove unused enemy presentation locals"
+          git push origin HEAD:fix/stylua-enemy-presentation-20260814
