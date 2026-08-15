@@ -8,6 +8,7 @@ local Workspace = game:GetService("Workspace")
 local Config = require(ReplicatedStorage.Shared.Config.SurvivalLootConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
 local PrimaryCombatModeContracts = require(ReplicatedStorage.Shared.Combat.PrimaryCombatModeContracts)
+local ModularRewardContainerPresentation = require(script.Parent.ModularRewardContainerPresentation)
 local OperativeCombatRuntimeService = require(script.Parent.OperativeCombatRuntimeService)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
 
@@ -384,33 +385,9 @@ local function createCampfire(parent: Instance)
 end
 
 local function createChest(parent: Instance, index: number, position: Vector3)
-	local model = Instance.new("Model")
-	model.Name = "LootChest" .. index
-	model.Parent = parent
-	local base = Instance.new("Part")
-	base.Name = "ChestBase"
-	base.Size = Vector3.new(5, 2.4, 3.2)
-	base.Position = position
-	base.Color = Color3.fromRGB(73, 47, 28)
-	base.Material = Enum.Material.WoodPlanks
-	base.Anchored = true
-	base.Parent = model
-	local lid = Instance.new("Part")
-	lid.Name = "ChestLid"
-	lid.Size = Vector3.new(5.2, 1.1, 3.4)
-	lid.Position = position + Vector3.new(0, 1.7, 0)
-	lid.Color = Color3.fromRGB(102, 67, 34)
-	lid.Material = Enum.Material.WoodPlanks
-	lid.Anchored = true
-	lid.Parent = model
-	local band = Instance.new("Part")
-	band.Name = "MetalBand"
-	band.Size = Vector3.new(0.55, 3.2, 3.45)
-	band.Position = position + Vector3.new(0, 0.7, 0)
-	band.Color = Color3.fromRGB(45, 48, 47)
-	band.Material = Enum.Material.Metal
-	band.Anchored = true
-	band.Parent = model
+	local presentation = ModularRewardContainerPresentation.createSupplyChest(parent, index, position)
+	local model = presentation.model
+	local lid = presentation.lid
 	local highlight = Instance.new("Highlight")
 	highlight.Name = "SupplyReadability"
 	highlight.Adornee = model
@@ -456,7 +433,7 @@ local function createChest(parent: Instance, index: number, position: Vector3)
 			lootOwner = player
 			highlight.Enabled = false
 			beacon.Enabled = false
-			lid.CFrame = lid.CFrame * CFrame.new(0, 1.1, 1) * CFrame.Angles(math.rad(-32), 0, 0)
+			presentation.Open()
 			state.openedChests += 1
 			local woodAmount = Config.ChestWoodMinimum
 				+ (index * 5 % (Config.ChestWoodMaximum - Config.ChestWoodMinimum + 1))
