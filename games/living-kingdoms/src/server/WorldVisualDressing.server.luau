@@ -64,7 +64,7 @@ local function buildTrailReflector(parent: Instance, index: number, position: Ve
 	)
 
 	-- Neon is intentionally emissive-only. A physical cap + post silhouette keeps
-	-- the cue readable even when color fidelity is poor, without a PointLight.
+	-- the cue readable even when color fidelity is poor, with no dynamic light.
 	makePresentationPart(
 		marker,
 		"ReflectiveCap",
