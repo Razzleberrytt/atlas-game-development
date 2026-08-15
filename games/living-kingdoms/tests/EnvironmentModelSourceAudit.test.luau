@@ -5,6 +5,7 @@ local luau = require("@lune/luau")
 
 local placementPath = "games/living-kingdoms/src/shared/Config/EnvironmentModelPlacementConfig.luau"
 local worldConfigPath = "games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau"
+local plannerPath = "games/living-kingdoms/src/server/EnvironmentCompositionPlanner.luau"
 local factoryPath = "games/living-kingdoms/src/server/EnvironmentModelFactory.luau"
 local dressingPath = "games/living-kingdoms/src/server/WorldVisualDressing.server.luau"
 
@@ -16,11 +17,15 @@ local function loadPureConfig(path)
 	})()
 end
 
-local placements = loadPureConfig(placementPath)
+local placementConfig = loadPureConfig(placementPath)
 local world = loadPureConfig(worldConfigPath)
 
-assert(placements.Version == "environment-models-v2-landmark-framing", "environment model placement version changed")
-assert(#placements.Placements == 10, "environment model placement budget changed")
+assert(placementConfig.Version == "environment-models-v3-seeded-fields", "environment model placement version changed")
+assert(placementConfig.AlgorithmVersion == "gaussian-fields-poisson-v1", "composition algorithm identity changed")
+assert(placementConfig.Seed == world.Seed, "environment composition must share the authored world seed")
+assert(placementConfig.HalfExtentStuds <= world.PlayableHalfExtentStuds, "composition escaped authored world extent")
+assert(placementConfig.CandidateCountPerAsset == 7000, "composition candidate budget changed")
+assert(placementConfig.LandmarkPaddingStuds >= 8, "composition landmark padding is too small")
 
 local allowedAssetIds = {
 	["env.rock.frontier.boulder_a"] = true,
@@ -28,52 +33,38 @@ local allowedAssetIds = {
 	["env.structure.industry.mine_support_a"] = true,
 	["env.camp.frontier.abandoned_fire_ring_a"] = true,
 }
-local placementIds = {}
+local allowedFields = {
+	frontier = true,
+	corruption = true,
+	industry = true,
+	camp = true,
+}
+local seenAssetIds = {}
+local seenPrefixes = {}
+local totalModelBudget = 0
 
-local landmarks = {}
-for _, landmark in world.Landmarks do
-	landmarks[landmark.id] = landmark
+assert(#placementConfig.AssetSpecs == 4, "starter composition must preserve four environment families")
+for _, spec in placementConfig.AssetSpecs do
+	assert(type(spec.idPrefix) == "string" and spec.idPrefix ~= "", "composition spec requires an id prefix")
+	assert(not seenPrefixes[spec.idPrefix], "composition id prefixes must be unique: " .. spec.idPrefix)
+	seenPrefixes[spec.idPrefix] = true
+	assert(allowedAssetIds[spec.assetId], "composition uses unsupported starter asset: " .. spec.assetId)
+	assert(allowedFields[spec.field], "composition uses unsupported story field: " .. spec.field)
+	assert(not seenAssetIds[spec.assetId], "starter asset family duplicated in composition config: " .. spec.assetId)
+	seenAssetIds[spec.assetId] = true
+	assert(spec.count > 0, "composition family count must be positive")
+	assert(spec.minSpacingStuds >= 30, "composition family spacing is too dense")
+	assert(spec.minRouteDistanceStuds >= 28, "composition intrudes into the primary route readability lane")
+	assert(spec.minCreekDistanceStuds >= 18, "composition intrudes into the creek readability lane")
+	totalModelBudget += spec.count
 end
-local overlook = landmarks.RockyOverlook
-local extraction = landmarks.ExtractionClearing
-assert(overlook ~= nil and extraction ~= nil, "required landmark geometry is missing")
+assert(totalModelBudget == 29, "seeded environment model budget changed")
 
-local function distance2d(x1, z1, x2, z2)
-	local dx = x1 - x2
-	local dz = z1 - z2
-	return math.sqrt(dx * dx + dz * dz)
-end
-
-for _, placement in placements.Placements do
-	assert(type(placement.id) == "string" and placement.id ~= "", "environment placement requires a stable id")
-	assert(not placementIds[placement.id], "environment placement ids must be unique: " .. placement.id)
-	placementIds[placement.id] = true
-	assert(
-		allowedAssetIds[placement.assetId],
-		"environment placement uses an unsupported starter asset: " .. placement.assetId
-	)
-	assert(math.abs(placement.x) <= world.PlayableHalfExtentStuds, "environment model escaped authored x extent")
-	assert(math.abs(placement.z) <= world.PlayableHalfExtentStuds, "environment model escaped authored z extent")
-
-	if string.find(placement.id, "overlook.boulder.", 1, true) == 1 then
-		assert(
-			distance2d(placement.x, placement.z, overlook.x, overlook.z) > overlook.radius + 5,
-			"overlook boulder intrudes into the authored landmark core: " .. placement.id
-		)
-	elseif string.find(placement.id, "corruption.dead_pine.", 1, true) == 1 then
-		assert(
-			distance2d(placement.x, placement.z, extraction.x, extraction.z) > extraction.radius + 10,
-			"corrupted pine intrudes into the extraction readability core: " .. placement.id
-		)
-	elseif string.find(placement.id, "logging.mine_support.", 1, true) == 1 then
-		assert(
-			distance2d(placement.x, placement.z, 45, -91) > 30,
-			"mine support visually collides with the existing log loader: " .. placement.id
-		)
-	end
+for assetId in allowedAssetIds do
+	assert(seenAssetIds[assetId], "composition config is missing starter asset: " .. assetId)
 end
 
-for _, path in { factoryPath, dressingPath } do
+for _, path in { plannerPath, factoryPath, dressingPath } do
 	local loaded = luau.load(fs.readFile(path), {
 		debugName = path,
 		environment = {},
@@ -82,8 +73,27 @@ for _, path in { factoryPath, dressingPath } do
 	assert(type(loaded) == "function", "environment model source must compile: " .. path)
 end
 
+local plannerSource = fs.readFile(plannerPath)
 local factorySource = fs.readFile(factoryPath)
 local dressingSource = fs.readFile(dressingPath)
+
+for requiredPlannerToken in {
+	"MODULUS = 2147483647",
+	"MULTIPLIER = 48271",
+	"local function gaussian",
+	"local function polylineDistance",
+	"local function minimumLandmarkClearance",
+	"local function isFarEnough",
+	"PlacementConfig.AssetSpecs",
+	"WorldFoundationConfig.Dressing.TrailReflectorPositions",
+	"WorldFoundationConfig.EnvironmentPresentation.Water.CreekPoints",
+} do
+	assert(
+		string.find(plannerSource, requiredPlannerToken, 1, true),
+		"environment composition planner is missing deterministic constraint: " .. requiredPlannerToken
+	)
+end
+
 assert(
 	string.find(factorySource, "EnvironmentAssetKitRegistry", 1, true),
 	"factory must resolve semantic asset registry ids"
@@ -117,16 +127,24 @@ for assetId in allowedAssetIds do
 end
 
 assert(
-	string.find(dressingSource, "EnvironmentModelFactory.Build", 1, true),
-	"world dressing must instantiate model placements"
+	string.find(dressingSource, "EnvironmentCompositionPlanner.Plan", 1, true),
+	"world dressing must instantiate the deterministic composition plan"
 )
 assert(
 	string.find(dressingSource, 'modelsFolder.Name = "EnvironmentModels"', 1, true),
 	"world dressing must isolate environment models"
 )
 assert(
-	string.find(dressingSource, "EnvironmentModelPlacementConfig.Placements", 1, true),
-	"world dressing must remain data-driven"
+	string.find(dressingSource, 'worldRoot:FindFirstChild("TerrainFoundation")', 1, true),
+	"environment models must ground against authored terrain geometry"
+)
+assert(
+	string.find(dressingSource, "Workspace:Raycast", 1, true),
+	"environment composition must resolve generated x/z coordinates onto world geometry"
+)
+assert(
+	string.find(dressingSource, 'model:SetAttribute("EnvironmentField"', 1, true),
+	"generated models must expose their mathematical story field for Studio inspection"
 )
 
-print("EnvironmentModelSourceAudit: semantic ids, placement clearance, budgets, and presentation authority passed")
+print("EnvironmentModelSourceAudit: seeded fields, budgets, semantic ids, grounding, and presentation authority passed")
