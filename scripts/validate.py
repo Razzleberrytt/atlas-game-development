@@ -210,6 +210,7 @@ def main() -> int:
         if args.profile in {"fast", "full"}:
             validate_toolchain_and_game()
     except RuntimeError as exc:
+        print(f"::error title=Atlas validation::{exc}", file=sys.stderr)
         print(f"\n[validate] FAILED: {exc}", file=sys.stderr)
         return 1
 
