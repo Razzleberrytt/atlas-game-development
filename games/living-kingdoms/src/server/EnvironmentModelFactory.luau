@@ -466,15 +466,7 @@ local function buildBrokenSupport(model: Model)
 		TIMBER,
 		Enum.Material.WoodPlanks
 	)
-	makePart(
-		model,
-		"RustPlate",
-		Vector3.new(2.4, 0.35, 2.4),
-		CFrame.new(-4.65, 8.3, 0),
-		RUST,
-		Enum.Material.Metal,
-		nil
-	)
+	makePart(model, "RustPlate", Vector3.new(2.4, 0.35, 2.4), CFrame.new(-4.65, 8.3, 0), RUST, Enum.Material.Metal, nil)
 end
 
 local function buildOreCart(model: Model)
@@ -487,15 +479,7 @@ local function buildOreCart(model: Model)
 		Enum.Material.Metal,
 		nil
 	)
-	makePart(
-		model,
-		"CartLip",
-		Vector3.new(7.0, 0.45, 5.2),
-		CFrame.new(0, 4.55, 0),
-		IRON,
-		Enum.Material.Metal,
-		nil
-	)
+	makePart(model, "CartLip", Vector3.new(7.0, 0.45, 5.2), CFrame.new(0, 4.55, 0), IRON, Enum.Material.Metal, nil)
 	makePart(
 		model,
 		"Wheel01",
@@ -541,15 +525,7 @@ local function buildOreCart(model: Model)
 		RUST,
 		Enum.Material.Metal
 	)
-	makeBeam(
-		model,
-		"HandleB",
-		Vector3.new(2.2, 3.3, 2.1),
-		Vector3.new(2.2, 3.6, 6.2),
-		0.35,
-		RUST,
-		Enum.Material.Metal
-	)
+	makeBeam(model, "HandleB", Vector3.new(2.2, 3.3, 2.1), Vector3.new(2.2, 3.6, 6.2), 0.35, RUST, Enum.Material.Metal)
 end
 
 local function buildAbandonedFireRing(model: Model)
@@ -601,15 +577,7 @@ local function buildAbandonedFireRing(model: Model)
 end
 
 local function buildTornShelter(model: Model)
-	makePart(
-		model,
-		"LeftPost",
-		Vector3.new(0.9, 6.6, 0.9),
-		CFrame.new(-4.2, 3.3, 0),
-		TIMBER,
-		Enum.Material.Wood,
-		nil
-	)
+	makePart(model, "LeftPost", Vector3.new(0.9, 6.6, 0.9), CFrame.new(-4.2, 3.3, 0), TIMBER, Enum.Material.Wood, nil)
 	makePart(
 		model,
 		"RightPost",
@@ -685,24 +653,8 @@ local function buildSupplyCrateStack(model: Model)
 		Enum.Material.WoodPlanks,
 		nil
 	)
-	makePart(
-		model,
-		"BandA",
-		Vector3.new(0.28, 3.1, 3.5),
-		CFrame.new(-1.7, 1.55, 0),
-		IRON,
-		Enum.Material.Metal,
-		nil
-	)
-	makePart(
-		model,
-		"BandB",
-		Vector3.new(3.7, 2.9, 0.28),
-		CFrame.new(2.0, 1.45, 0.4),
-		IRON,
-		Enum.Material.Metal,
-		nil
-	)
+	makePart(model, "BandA", Vector3.new(0.28, 3.1, 3.5), CFrame.new(-1.7, 1.55, 0), IRON, Enum.Material.Metal, nil)
+	makePart(model, "BandB", Vector3.new(3.7, 2.9, 0.28), CFrame.new(2.0, 1.45, 0.4), IRON, Enum.Material.Metal, nil)
 end
 
 local builders: { [string]: Builder } = {
