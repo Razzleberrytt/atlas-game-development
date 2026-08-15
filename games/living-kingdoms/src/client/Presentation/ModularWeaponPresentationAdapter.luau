@@ -144,11 +144,8 @@ local function fitShellToRig(shell: Model, rig: WeaponPresentationRig): (boolean
 	local sourceUp = if shell.PrimaryPart ~= nil then shell.PrimaryPart.CFrame.UpVector else Vector3.yAxis
 	local targetUp = rig.root.CFrame.UpVector
 	local sourceFrame = CFrame.lookAt(sourceGrip.WorldPosition, sourceMuzzle.WorldPosition, sourceUp)
-	local targetFrame = CFrame.lookAt(
-		rig.rightGripAttachment.WorldPosition,
-		rig.muzzleAttachment.WorldPosition,
-		targetUp
-	)
+	local targetFrame =
+		CFrame.lookAt(rig.rightGripAttachment.WorldPosition, rig.muzzleAttachment.WorldPosition, targetUp)
 	local alignment = targetFrame * sourceFrame:Inverse()
 	shell:PivotTo(alignment * shell:GetPivot())
 	return true, scale
