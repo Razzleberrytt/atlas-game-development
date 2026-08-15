@@ -53,43 +53,52 @@ for field in expectedFields do
 	assert(config.FieldSpecs[field] ~= nil, "modular environment dressing is missing story field: " .. field)
 end
 
-for _, required in {
-	"ModularAssetResolver.CloneByAssetId",
-	"ModularAssetResolver.GetGeneratedRoot",
-	"ModularAssetResolver.FindByAssetId",
-	"EnvironmentModels",
-	"EnvironmentField",
-	"TerrainFoundation",
-	"Workspace:Raycast",
-	"HASH_MODULUS = 2147483647",
-	"HASH_MULTIPLIER = 131",
-	"Workspace:GetServerTimeNow() + Config.GeneratedAssetWaitSeconds",
-	"task.wait(ASSET_READY_POLL_SECONDS)",
-	"descendant.CanCollide = false",
-	"descendant.CanTouch = false",
-	"descendant.CanQuery = false",
-	"instance.CanCollide = false",
-	"instance.CanTouch = false",
-	"instance.CanQuery = false",
-	'descendant:IsA("ProximityPrompt")',
-	'descendant:IsA("ClickDetector")',
-	'output:SetAttribute("EnvironmentPresentationOnly", true)',
-	'output:SetAttribute("EnvironmentPropBudget", Config.MaximumPropCount)',
-	'worldRoot:SetAttribute("ModularEnvironmentDressingVersion", Config.Version)',
-} do
+for _, required in
+	{
+		"ModularAssetResolver.CloneByAssetId",
+		"ModularAssetResolver.GetGeneratedRoot",
+		"ModularAssetResolver.FindByAssetId",
+		"EnvironmentModels",
+		"EnvironmentField",
+		"TerrainFoundation",
+		"Workspace:Raycast",
+		"HASH_MODULUS = 2147483647",
+		"HASH_MULTIPLIER = 131",
+		"Workspace:GetServerTimeNow() + Config.GeneratedAssetWaitSeconds",
+		"task.wait(ASSET_READY_POLL_SECONDS)",
+		"descendant.CanCollide = false",
+		"descendant.CanTouch = false",
+		"descendant.CanQuery = false",
+		"instance.CanCollide = false",
+		"instance.CanTouch = false",
+		"instance.CanQuery = false",
+		'descendant:IsA("ProximityPrompt")',
+		'descendant:IsA("ClickDetector")',
+		'output:SetAttribute("EnvironmentPresentationOnly", true)',
+		'output:SetAttribute("EnvironmentPropBudget", Config.MaximumPropCount)',
+		'worldRoot:SetAttribute("ModularEnvironmentDressingVersion", Config.Version)',
+	}
+do
 	assert(string.find(source, required, 1, true), "modular environment dressing is missing contract: " .. required)
 end
 
-for _, forbidden in {
-	"math.random",
-	"Random.new",
-	"RunService.Heartbeat",
-	"while true",
-	'Instance.new("PointLight")',
-	'Instance.new("SpotLight")',
-	'Instance.new("Script")',
-} do
-	assert(not string.find(source, forbidden, 1, true), "modular environment dressing contains forbidden behavior: " .. forbidden)
+for _, forbidden in
+	{
+		"math.random",
+		"Random.new",
+		"RunService.Heartbeat",
+		"while true",
+		'Instance.new("PointLight")',
+		'Instance.new("SpotLight")',
+		'Instance.new("Script")',
+	}
+do
+	assert(
+		not string.find(source, forbidden, 1, true),
+		"modular environment dressing contains forbidden behavior: " .. forbidden
+	)
 end
 
-print("ModularEnvironmentDressingSourceAudit: catalog binding, readiness, 18-prop budget, grounding, and query isolation passed")
+print(
+	"ModularEnvironmentDressingSourceAudit: catalog binding, readiness, 18-prop budget, grounding, and query isolation passed"
+)
