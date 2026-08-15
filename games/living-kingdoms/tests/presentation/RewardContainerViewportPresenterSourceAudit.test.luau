@@ -7,9 +7,11 @@ local function contains(source: string, token: string): boolean
 end
 
 local presentationPath = "games/living-kingdoms/src/client/Presentation/RewardContainerViewportPresenter.luau"
-local controllerPath = "games/living-kingdoms/src/client/Controllers/ExpeditionResultController.luau"
+local resultControllerPath = "games/living-kingdoms/src/client/Controllers/ExpeditionResultController.luau"
+local runBuildControllerPath = "games/living-kingdoms/src/client/Controllers/RunBuildHUDController.luau"
 local presenter = fs.readFile(presentationPath)
-local controller = fs.readFile(controllerPath)
+local resultController = fs.readFile(resultControllerPath)
+local runBuildController = fs.readFile(runBuildControllerPath)
 
 for _, token in
 	{
@@ -21,6 +23,14 @@ for _, token in
 		'"reward.chest.boss"',
 		'OutcomeId == "Completed"',
 		'RewardDispositionId == "Banked"',
+		"RunRpgContracts.RewardSourceIds",
+		"RewardSourceIds.BossMilestone",
+		"RewardSourceIds.EliteKill",
+		"RewardSourceIds.SpecialInterrupt",
+		"RewardSourceIds.HordeClear",
+		"resolveRunRewardAssetId",
+		"renderAssetId",
+		"renderRunReward",
 		'Instance.new("ViewportFrame")',
 		'Instance.new("WorldModel")',
 		"GetBoundingBox",
@@ -35,10 +45,16 @@ assert(contains(presenter, 'if reward.SourceId == "Boss" then'))
 assert(contains(presenter, 'if reward.Rarity == "Rare" then'))
 assert(contains(presenter, "descendant:IsA(\"ProximityPrompt\")"))
 assert(contains(presenter, "descendant:IsA(\"Script\")"))
-assert(contains(controller, "require(script.Parent.Parent.Presentation.RewardContainerViewportPresenter)"))
-assert(contains(controller, "RewardContainerViewportPresenter.create(rewardRow)"))
-assert(contains(controller, "RewardContainerViewportPresenter.render(rewardViewport, snapshot)"))
-assert(contains(controller, "layoutRewardPresentation(false)"))
+assert(contains(resultController, "require(script.Parent.Parent.Presentation.RewardContainerViewportPresenter)"))
+assert(contains(resultController, "RewardContainerViewportPresenter.create(rewardRow)"))
+assert(contains(resultController, "RewardContainerViewportPresenter.render(rewardViewport, snapshot)"))
+assert(contains(resultController, "layoutRewardPresentation(false)"))
+
+assert(contains(runBuildController, "require(script.Parent.Parent.Presentation.RewardContainerViewportPresenter)"))
+assert(contains(runBuildController, "RewardContainerViewportPresenter.create(panel)"))
+assert(contains(runBuildController, "RewardContainerViewportPresenter.renderRunReward(rewardViewport, reward)"))
+assert(contains(runBuildController, "RewardContainerViewportPresenter.clear(rewardViewport)"))
+assert(contains(runBuildController, "local reward = if type(rewards) == \"table\" then rewards[1] else nil"))
 
 for _, prohibited in
 	{
@@ -58,4 +74,4 @@ do
 	assert(not contains(presenter, prohibited), "reward-container presenter gained authority/runtime token " .. prohibited)
 end
 
-print("RewardContainerViewportPresenterSourceAudit: modular debrief reward visuals remain client-only and authority-free")
+print("RewardContainerViewportPresenterSourceAudit: debrief + live relic chest visuals remain client-only and authority-free")

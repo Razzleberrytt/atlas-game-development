@@ -1,12 +1,13 @@
 --!strict
 
--- Client-only adapter from finalized expedition rewards to the shared modular
+-- Client-only adapter from server-authored reward facts to the shared modular
 -- reward-container library. It renders presentation geometry in a ViewportFrame
 -- and never sends requests, grants items, or mutates authoritative reward state.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ModularAssetResolver = require(ReplicatedStorage.Shared.Assets.ModularAssetResolver)
+local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
 
 local Presenter = {}
 
@@ -15,6 +16,7 @@ local CAMERA_NAME = "RewardContainerCamera"
 local COMMON_ASSET_ID = "reward.chest.common"
 local RARE_ASSET_ID = "reward.chest.rare"
 local BOSS_ASSET_ID = "reward.chest.boss"
+local RewardSourceIds = RunRpgContracts.RewardSourceIds
 
 local function isSecuredRewardSnapshot(snapshot: any): boolean
 	return type(snapshot) == "table"
@@ -41,6 +43,33 @@ function Presenter.resolveAssetId(snapshot: any): string?
 		end
 	end
 	return if hasRareReward then RARE_ASSET_ID else COMMON_ASSET_ID
+end
+
+function Presenter.resolveRunRewardAssetId(reward: any): string?
+	if
+		type(reward) ~= "table"
+		or type(reward.sourceId) ~= "string"
+		or type(reward.offeredRelicIds) ~= "table"
+		or #reward.offeredRelicIds == 0
+	then
+		return nil
+	end
+
+	local sourceId = reward.sourceId
+	if sourceId == RewardSourceIds.BossMilestone then
+		return BOSS_ASSET_ID
+	end
+	if sourceId == RewardSourceIds.EliteKill or sourceId == RewardSourceIds.SpecialInterrupt then
+		return RARE_ASSET_ID
+	end
+	if
+		sourceId == RewardSourceIds.HordeClear
+		or sourceId == RewardSourceIds.ObjectiveCompletion
+		or sourceId == RewardSourceIds.AuthoredContainer
+	then
+		return COMMON_ASSET_ID
+	end
+	return nil
 end
 
 local function worldFor(viewport: ViewportFrame): WorldModel
@@ -128,10 +157,9 @@ function Presenter.clear(viewport: ViewportFrame)
 	viewport.Visible = false
 end
 
-function Presenter.render(viewport: ViewportFrame, snapshot: any): boolean
+function Presenter.renderAssetId(viewport: ViewportFrame, assetId: string): boolean
 	Presenter.clear(viewport)
-	local assetId = Presenter.resolveAssetId(snapshot)
-	if assetId == nil then
+	if assetId == "" then
 		return false
 	end
 
@@ -161,6 +189,24 @@ function Presenter.render(viewport: ViewportFrame, snapshot: any): boolean
 	viewport:SetAttribute("RewardContainerAssetId", assetId)
 	viewport.Visible = true
 	return true
+end
+
+function Presenter.render(viewport: ViewportFrame, snapshot: any): boolean
+	local assetId = Presenter.resolveAssetId(snapshot)
+	if assetId == nil then
+		Presenter.clear(viewport)
+		return false
+	end
+	return Presenter.renderAssetId(viewport, assetId)
+end
+
+function Presenter.renderRunReward(viewport: ViewportFrame, reward: any): boolean
+	local assetId = Presenter.resolveRunRewardAssetId(reward)
+	if assetId == nil then
+		Presenter.clear(viewport)
+		return false
+	end
+	return Presenter.renderAssetId(viewport, assetId)
 end
 
 return table.freeze(Presenter)

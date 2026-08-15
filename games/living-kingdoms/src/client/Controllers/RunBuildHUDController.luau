@@ -31,6 +31,7 @@ local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
 local ChoiceInputCoordinator = require(script.Parent.ChoiceInputCoordinator)
 local InterfaceTheme = require(script.Parent.Parent.UI.InterfaceTheme)
+local RewardContainerViewportPresenter = require(script.Parent.Parent.Presentation.RewardContainerViewportPresenter)
 local ActiveInputDeviceFamily = require(script.Parent.Parent.State.ActiveInputDeviceFamily)
 local InputActionMapConfig = require(ReplicatedStorage.Shared.Config.InputActionMapConfig)
 local InputDeviceFamilyResolver = require(ReplicatedStorage.Shared.Input.InputDeviceFamilyResolver)
@@ -53,6 +54,7 @@ local choicePanel: Frame? = nil
 local relicBar: Frame? = nil
 local choiceTitle: TextLabel? = nil
 local choiceSubtitle: TextLabel? = nil
+local rewardViewport: ViewportFrame? = nil
 local statusLabel: TextLabel? = nil
 
 local choiceRelicIds: { [number]: string } = {}
@@ -248,12 +250,13 @@ local function createGui()
 	status.Parent = gui
 	statusLabel = status
 
-	-- Reward panel: the two server-authored choices.
+	-- Reward panel: the two server-authored choices plus their presentation-only
+	-- modular reward container preview.
 	local panel = Instance.new("Frame")
 	panel.Name = "RelicReward"
 	panel.AnchorPoint = Vector2.new(1, 0.5)
 	panel.Position = UDim2.new(1, -18, 0.5, -36)
-	panel.Size = UDim2.fromOffset(430, 300)
+	panel.Size = UDim2.fromOffset(430, 330)
 	panel.BackgroundColor3 = InterfaceTheme.Palette.Panel
 	panel.BackgroundTransparency = 0.04
 	panel.BorderSizePixel = 0
@@ -263,10 +266,14 @@ local function createGui()
 	addStroke(panel, InterfaceTheme.Palette.AccentDim, 0.08, 2)
 	choicePanel = panel
 
+	rewardViewport = RewardContainerViewportPresenter.create(panel)
+	rewardViewport.Position = UDim2.fromOffset(22, 10)
+	rewardViewport.Size = UDim2.fromOffset(80, 80)
+
 	local title = Instance.new("TextLabel")
 	title.Name = "Title"
-	title.Position = UDim2.fromOffset(22, 14)
-	title.Size = UDim2.new(1, -44, 0, 28)
+	title.Position = UDim2.fromOffset(114, 14)
+	title.Size = UDim2.new(1, -136, 0, 28)
 	title.BackgroundTransparency = 1
 	title.Font = Enum.Font.GothamBold
 	title.TextColor3 = InterfaceTheme.Palette.Accent
@@ -278,12 +285,13 @@ local function createGui()
 
 	local subtitle = Instance.new("TextLabel")
 	subtitle.Name = "Subtitle"
-	subtitle.Position = UDim2.fromOffset(22, 42)
-	subtitle.Size = UDim2.new(1, -44, 0, 22)
+	subtitle.Position = UDim2.fromOffset(114, 42)
+	subtitle.Size = UDim2.new(1, -136, 0, 42)
 	subtitle.BackgroundTransparency = 1
 	subtitle.Font = Enum.Font.GothamMedium
 	subtitle.TextColor3 = InterfaceTheme.Palette.TextMuted
 	subtitle.TextSize = 15
+	subtitle.TextWrapped = true
 	subtitle.TextXAlignment = Enum.TextXAlignment.Left
 	subtitle.Text = "The relic equips into your first empty slot."
 	subtitle.Parent = panel
@@ -291,8 +299,8 @@ local function createGui()
 
 	local choiceRow = Instance.new("Frame")
 	choiceRow.Name = "Choices"
-	choiceRow.Position = UDim2.fromOffset(22, 72)
-	choiceRow.Size = UDim2.new(1, -44, 1, -88)
+	choiceRow.Position = UDim2.fromOffset(22, 104)
+	choiceRow.Size = UDim2.new(1, -44, 1, -120)
 	choiceRow.BackgroundTransparency = 1
 	choiceRow.Parent = panel
 
@@ -444,6 +452,9 @@ local function applySnapshot(snapshot: unknown)
 	table.clear(choiceRelicIds)
 	if reward == nil or type(reward.offeredRelicIds) ~= "table" or not isFiniteNumber(reward.rewardSequence) then
 		activeRewardSequence = nil
+		if rewardViewport ~= nil then
+			RewardContainerViewportPresenter.clear(rewardViewport)
+		end
 		panel.Visible = false
 		setChoiceInputActive(false)
 		for _, button in choiceButtons do
@@ -484,7 +495,15 @@ local function applySnapshot(snapshot: unknown)
 		title.Text = choiceTitleText(keyTokens)
 		subtitle.Text = choiceSubtitleText(familyId, keyTokens)
 	end
-	panel.Visible = visibleChoices > 0
+	local panelVisible = visibleChoices > 0
+	if rewardViewport ~= nil then
+		if panelVisible then
+			RewardContainerViewportPresenter.renderRunReward(rewardViewport, reward)
+		else
+			RewardContainerViewportPresenter.clear(rewardViewport)
+		end
+	end
+	panel.Visible = panelVisible
 	setChoiceInputActive(panel.Visible)
 end
 
@@ -570,6 +589,7 @@ function RunBuildHUDController.stop()
 	relicBar = nil
 	choiceTitle = nil
 	choiceSubtitle = nil
+	rewardViewport = nil
 	statusLabel = nil
 	activeRewardSequence = nil
 	pendingReplacementRelicId = nil
