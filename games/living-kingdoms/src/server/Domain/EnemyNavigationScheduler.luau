@@ -95,7 +95,10 @@ function Scheduler.resolveProgress(
 ): ProgressResolution
 	assert(minimumProgressStuds > 0, "minimum navigation progress must be positive")
 	assert(progressWindowSeconds > 0, "navigation progress window must be positive")
-	assert(recoveryCooldownSeconds >= progressWindowSeconds, "navigation recovery cooldown must cover the progress window")
+	assert(
+		recoveryCooldownSeconds >= progressWindowSeconds,
+		"navigation recovery cooldown must cover the progress window"
+	)
 
 	local dx = currentPosition.x - progressAnchor.x
 	local dz = currentPosition.z - progressAnchor.z
