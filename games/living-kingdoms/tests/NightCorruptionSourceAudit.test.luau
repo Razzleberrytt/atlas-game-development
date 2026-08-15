@@ -25,7 +25,10 @@ check(config.DaylightSeconds < config.CycleSeconds, "each cycle requires prepara
 check(config.MaximumTier == 6, "night requires six readable corruption milestones")
 check(string.find(service, 'network:SetAttribute("NightCorruptionTier"', 1, true), "server must publish corruption")
 check(not string.find(service, "Lighting.", 1, true), "corruption gameplay must not mutate global Lighting")
-check(not string.find(service, "EnvironmentProfileService", 1, true), "corruption gameplay must not drive visual cadence")
+check(
+	not string.find(service, "EnvironmentProfileService", 1, true),
+	"corruption gameplay must not drive visual cadence"
+)
 check(string.find(environmentProfile, "Lighting.ClockTime", 1, true), "environment profile must visibly change time")
 check(string.find(environmentProfile, "Lighting.FogEnd", 1, true), "environment profile must own depth")
 check(
