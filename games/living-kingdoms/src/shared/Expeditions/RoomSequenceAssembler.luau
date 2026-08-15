@@ -11,6 +11,10 @@ local Config = require(script.Parent.Parent.Config.RoomAssemblyConfig)
 
 local RoleIds = Contracts.RoleIds
 
+export type AssembleOptions = {
+	VariableRoomCount: number?,
+}
+
 local MODULUS = 2_147_483_647
 local MULTIPLIER = 48_271
 
@@ -95,22 +99,40 @@ local function planIdentity(seed: number, nodes: { any }): string
 		)
 	end
 
-	return `{Config.DefinitionId}@{Config.DefinitionVersion}|config={Config.Version}|seed={seed}|rooms={table.concat(
+	return `{Config.DefinitionId}@{Config.DefinitionVersion}|config={Config.Version}|seed={seed}|length={#nodes}|rooms={table.concat(
 		roomIdentities,
 		","
 	)}`
 end
 
+local function resolveVariableRoomCount(state: number, options: AssembleOptions?): number
+	local requested = if options ~= nil then options.VariableRoomCount else nil
+	if requested ~= nil then
+		assert(type(requested) == "number" and requested % 1 == 0, "variable room count must be an integer")
+		assert(
+			requested >= Config.Route.MinimumVariableRooms and requested <= Config.Route.MaximumVariableRooms,
+			"variable room count is outside configured bounds"
+		)
+		assert(
+			requested >= Config.Route.RequiredCombatRooms,
+			"variable room count cannot fit the required combat rooms"
+		)
+		return requested
+	end
+
+	local variableRange = Config.Route.MaximumVariableRooms - Config.Route.MinimumVariableRooms + 1
+	return Config.Route.MinimumVariableRooms + (state % variableRange)
+end
+
 local RoomSequenceAssembler = {}
 
-function RoomSequenceAssembler.assemble(seed: number): any
+function RoomSequenceAssembler.assemble(seed: number, options: AssembleOptions?): any
 	assert(type(seed) == "number" and seed % 1 == 0, "room plan seed must be an integer")
 	assert(seed >= 1 and seed < MODULUS, "room plan seed is outside supported bounds")
+	assert(options == nil or type(options) == "table", "room plan options must be a table")
 
-	local state = seed
-	state = nextRandom(state)
-	local variableRange = Config.Route.MaximumVariableRooms - Config.Route.MinimumVariableRooms + 1
-	local variableRoomCount = Config.Route.MinimumVariableRooms + (state % variableRange)
+	local state = nextRandom(seed)
+	local variableRoomCount = resolveVariableRoomCount(state, options)
 	local traversalCount = variableRoomCount - Config.Route.RequiredCombatRooms
 
 	local roleSequence = {}
@@ -157,6 +179,7 @@ function RoomSequenceAssembler.assemble(seed: number): any
 		DefinitionVersion = Config.DefinitionVersion,
 		ConfigVersion = Config.Version,
 		PlanIdentity = identity,
+		VariableRoomCount = variableRoomCount,
 		Nodes = table.freeze(nodes),
 		EntryIndex = 1,
 		EliteIndex = eliteIndex,

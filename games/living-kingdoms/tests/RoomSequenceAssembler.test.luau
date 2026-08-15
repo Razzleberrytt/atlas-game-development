@@ -71,6 +71,7 @@ local function validatePlan(plan: any)
 	local minimumNodes = config.Route.MinimumVariableRooms + 3
 	local maximumNodes = config.Route.MaximumVariableRooms + 3
 	assert(#plan.Nodes >= minimumNodes and #plan.Nodes <= maximumNodes, "plan length is outside bounded route size")
+	assert(plan.VariableRoomCount == #plan.Nodes - 3, "plan must expose its configured variable-room count")
 	assert(plan.EntryIndex == 1, "entry must be first")
 	assert(plan.EliteIndex == #plan.Nodes - 1, "elite must immediately precede boss")
 	assert(plan.BossIndex == #plan.Nodes, "boss must be terminal")
@@ -80,6 +81,10 @@ local function validatePlan(plan: any)
 	assert(plan.ConfigVersion == config.Version, "plan must expose the exact room config version")
 	assert(type(plan.PlanIdentity) == "string" and #plan.PlanIdentity > 0, "plan identity must be recorded")
 	assert(string.find(plan.PlanIdentity, `seed={plan.Seed}`, 1, true) ~= nil, "plan identity must include the seed")
+	assert(
+		string.find(plan.PlanIdentity, `length={#plan.Nodes}`, 1, true) ~= nil,
+		"plan identity must include route length"
+	)
 	assert(
 		string.find(plan.PlanIdentity, `config={config.Version}`, 1, true) ~= nil,
 		"plan identity must include config version"
@@ -129,6 +134,24 @@ assert(
 	"different seeds must remain distinguishable even if room selection collides"
 )
 
+local minimumLength = assembler.assemble(7_001, { VariableRoomCount = config.Route.MinimumVariableRooms })
+local maximumLength = assembler.assemble(7_001, { VariableRoomCount = config.Route.MaximumVariableRooms })
+validatePlan(minimumLength)
+validatePlan(maximumLength)
+assert(minimumLength.VariableRoomCount == config.Route.MinimumVariableRooms)
+assert(maximumLength.VariableRoomCount == config.Route.MaximumVariableRooms)
+assert(#minimumLength.Nodes == config.Route.MinimumVariableRooms + 3)
+assert(#maximumLength.Nodes == config.Route.MaximumVariableRooms + 3)
+assert(
+	minimumLength.PlanIdentity ~= maximumLength.PlanIdentity,
+	"route length must participate in reproduction identity"
+)
+assert(
+	assembler.assemble(7_001, { VariableRoomCount = config.Route.MinimumVariableRooms }).PlanIdentity
+		== minimumLength.PlanIdentity,
+	"fixed-length generation must remain reproducible"
+)
+
 local signatures = {}
 local encounterSignatures = {}
 for seed = 1, 30 do
@@ -164,5 +187,15 @@ local okFraction = pcall(function()
 	assembler.assemble(1.5)
 end)
 assert(not okFraction, "fractional seed must be rejected")
+
+local okTooShort = pcall(function()
+	assembler.assemble(9, { VariableRoomCount = config.Route.MinimumVariableRooms - 1 })
+end)
+assert(not okTooShort, "route lengths below configured bounds must be rejected")
+
+local okTooLong = pcall(function()
+	assembler.assemble(9, { VariableRoomCount = config.Route.MaximumVariableRooms + 1 })
+end)
+assert(not okTooLong, "route lengths above configured bounds must be rejected")
 
 print("VS-0104 RoomSequenceAssembler fixture passed")
