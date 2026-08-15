@@ -67,7 +67,10 @@ local function horizontalDistanceSquared(a: { x: number, z: number }, b: { x: nu
 end
 
 local function spawnResolution(rejectionReasonId: string?): EnemySpawnResolution
-	return table.freeze({ isLegal = rejectionReasonId == nil, rejectionReasonId = rejectionReasonId }) :: EnemySpawnResolution
+	return table.freeze({
+			isLegal = rejectionReasonId == nil,
+			rejectionReasonId = rejectionReasonId,
+		}) :: EnemySpawnResolution
 end
 
 function EnemyBehaviorResolver.resolveSpawn(request: EnemySpawnRequest, facts: EnemySpawnFacts): EnemySpawnResolution
@@ -82,14 +85,7 @@ function EnemyBehaviorResolver.resolveSpawn(request: EnemySpawnRequest, facts: E
 		or (request.hordeRoleId ~= nil and not isNonemptyString(request.hordeRoleId))
 		or (request.encounterId ~= nil and not isNonemptyString(request.encounterId))
 		or (request.compositionIdentity ~= nil and not isNonemptyString(request.compositionIdentity))
-		or (
-			request.eliteChance ~= nil
-			and (
-				not isFiniteNumber(request.eliteChance)
-				or (request.eliteChance :: number) < 0
-				or (request.eliteChance :: number) > 1
-			)
-		)
+		or (request.eliteChance ~= nil and (not isFiniteNumber(request.eliteChance) or (request.eliteChance :: number) < 0 or (request.eliteChance :: number) > 1))
 		or (request.requestedEliteAffixId ~= nil and not isNonemptyString(request.requestedEliteAffixId))
 		or type(facts) ~= "table"
 		or type(facts.existingEnemyEntityIds) ~= "table"
@@ -158,7 +154,9 @@ end
 
 local function resolveOrdinaryArchetype(enemy: EnemyBehaviorFacts)
 	local metadata = EnemyContracts.ServerRuntimeMetadataByEntityId[enemy.entityId]
-	local archetypeId = enemy.archetypeId or (if metadata == nil then nil else metadata.archetypeId) or ArchetypeIds.ExclusionWalker
+	local archetypeId = enemy.archetypeId
+		or (if metadata == nil then nil else metadata.archetypeId)
+		or ArchetypeIds.ExclusionWalker
 	return EnemyConfig.getOrdinaryArchetype(archetypeId)
 end
 
@@ -174,15 +172,36 @@ function EnemyBehaviorResolver.resolveBehavior(
 		or not isWorldPosition(enemy.position)
 		or type(operatives) ~= "table"
 	then
-		return decision(BehaviorStateIds.Roaming, nil, AttackWindupActionIds.None, false, nil, BehaviorRejectionReasonIds.InvalidFacts)
+		return decision(
+			BehaviorStateIds.Roaming,
+			nil,
+			AttackWindupActionIds.None,
+			false,
+			nil,
+			BehaviorRejectionReasonIds.InvalidFacts
+		)
 	end
 	if not isFiniteTimestamp(serverTimestamp) then
-		return decision(enemy.behaviorStateId, nil, AttackWindupActionIds.None, false, nil, BehaviorRejectionReasonIds.InvalidTimestamp)
+		return decision(
+			enemy.behaviorStateId,
+			nil,
+			AttackWindupActionIds.None,
+			false,
+			nil,
+			BehaviorRejectionReasonIds.InvalidTimestamp
+		)
 	end
 
 	local archetype = resolveOrdinaryArchetype(enemy)
 	if archetype == nil then
-		return decision(BehaviorStateIds.Roaming, nil, AttackWindupActionIds.None, false, nil, BehaviorRejectionReasonIds.InvalidFacts)
+		return decision(
+			BehaviorStateIds.Roaming,
+			nil,
+			AttackWindupActionIds.None,
+			false,
+			nil,
+			BehaviorRejectionReasonIds.InvalidFacts
+		)
 	end
 
 	local windupTargetId = enemy.attackWindupTargetOperativeEntityId
@@ -196,7 +215,14 @@ function EnemyBehaviorResolver.resolveBehavior(
 		or (hasWindupTimestamp and (not isFiniteTimestamp(windupStartedAt) or (windupStartedAt :: number) > serverTimestamp))
 		or ((enemy.behaviorStateId == BehaviorStateIds.WindingUp) ~= hasWindup)
 	then
-		return decision(BehaviorStateIds.Roaming, nil, AttackWindupActionIds.None, false, nil, BehaviorRejectionReasonIds.InvalidFacts)
+		return decision(
+			BehaviorStateIds.Roaming,
+			nil,
+			AttackWindupActionIds.None,
+			false,
+			nil,
+			BehaviorRejectionReasonIds.InvalidFacts
+		)
 	end
 
 	if enemy.behaviorStateId == BehaviorStateIds.Dead then
@@ -224,7 +250,14 @@ function EnemyBehaviorResolver.resolveBehavior(
 	if cadenceMultiplier == nil then
 		cadenceMultiplier = 1
 	elseif not isFiniteNumber(cadenceMultiplier) or cadenceMultiplier < 0.4 or cadenceMultiplier > 1 then
-		return decision(BehaviorStateIds.Roaming, nil, AttackWindupActionIds.None, false, nil, BehaviorRejectionReasonIds.InvalidFacts)
+		return decision(
+			BehaviorStateIds.Roaming,
+			nil,
+			AttackWindupActionIds.None,
+			false,
+			nil,
+			BehaviorRejectionReasonIds.InvalidFacts
+		)
 	end
 
 	local detectionSquared = archetype.DetectionRadiusStuds ^ 2
@@ -282,7 +315,14 @@ function EnemyBehaviorResolver.resolveBehavior(
 			local startedAt = windupStartedAt :: number
 			local commitAt = startedAt + archetype.AttackWindupSeconds * cadenceMultiplier
 			if serverTimestamp < commitAt then
-				return decision(BehaviorStateIds.WindingUp, windupTargetId, AttackWindupActionIds.Continue, false, nil, nil)
+				return decision(
+					BehaviorStateIds.WindingUp,
+					windupTargetId,
+					AttackWindupActionIds.Continue,
+					false,
+					nil,
+					nil
+				)
 			end
 			local attack: EnemyContracts.AuthoritativeEnemyAttack = table.freeze({
 				damageEventId = "enemyattack:"
