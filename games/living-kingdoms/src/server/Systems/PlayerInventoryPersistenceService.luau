@@ -11,8 +11,6 @@ local DurableMutation = require(ReplicatedStorage.Shared.Persistence.DurableMuta
 local MigrationSteps = require(ReplicatedStorage.Shared.Persistence.InventoryMigrationSteps)
 local Recovery = require(ReplicatedStorage.Shared.Persistence.InventoryRecoveryContracts)
 local Capacity = require(ReplicatedStorage.Shared.Persistence.InventoryCapacityContracts)
-local CharacterProgressionConfig = require(ReplicatedStorage.Shared.Config.CharacterProgressionConfig)
-local CharacterProgressionResolver = require(ReplicatedStorage.Shared.Progression.CharacterProgressionResolver)
 
 export type EquipmentReward = EquipmentContracts.EquipmentReward
 export type EquipmentAffixRoll = EquipmentContracts.EquipmentAffixRoll
@@ -37,13 +35,16 @@ export type Service = {
 		grantId: string?,
 		nowUnix: number
 	) -> MutationResult,
-	equip: (
+	equip: (self: Service, playerId: number, slotId: EquipmentSlotId, instanceId: string, nowUnix: number) -> MutationResult,
+	dismantle: (
 		self: Service,
 		playerId: number,
-		slotId: EquipmentSlotId,
 		instanceId: string,
-		nowUnix: number
-	) -> MutationResult,
+		transactionId: string,
+		nowUnix: number,
+		hasSessionLease: boolean,
+		recentRequestTimestamps: { number }
+	) -> any,
 	getRecord: (self: Service, playerId: number) -> PlayerInventoryRecord?,
 	releasePlayer: (self: Service, playerId: number) -> any,
 	destroy: (self: Service) -> (),
@@ -54,6 +55,7 @@ local VALID_SLOTS = EquipmentContracts.SlotIds
 local VALID_RARITIES = EquipmentContracts.RarityIds
 local VALID_SOURCES = EquipmentContracts.SourceIds
 local VALID_AFFIX_EFFECTS = EquipmentAffixContracts.EffectIds
+local CHARACTER_PROGRESSION_VERSION = "CHARACTER-XP-v1"
 
 local Service = {}
 Service.__index = Service
@@ -66,6 +68,10 @@ local function isInteger(value: any): boolean
 	return type(value) == "number" and value % 1 == 0
 end
 
+local function isFiniteNumber(value: any): boolean
+	return type(value) == "number" and value == value and value ~= math.huge and value ~= -math.huge
+end
+
 local function isKnownValue(container: any, value: any): boolean
 	for _, candidate in container do
 		if candidate == value then
@@ -76,12 +82,20 @@ local function isKnownValue(container: any, value: any): boolean
 end
 
 local function normalizedCharacterProgression(value: any): any
-	local normalized = CharacterProgressionResolver.normalizeState(value, CharacterProgressionConfig)
-	return CharacterProgressionResolver.serializeState(normalized)
+	local raw = if type(value) == "table" then value else {}
+	local totalXP = raw.TotalXP
+	if totalXP == nil then
+		totalXP = raw.CharacterTotalXP or raw.Experience or raw.XP or raw.TotalExperience
+	end
+	if not isFiniteNumber(totalXP) or totalXP < 0 then
+		totalXP = 0
+	end
+	return table.freeze({
+		Version = if type(raw.Version) == "string" and raw.Version ~= "" then raw.Version else CHARACTER_PROGRESSION_VERSION,
+		TotalXP = math.floor(totalXP),
+	})
 end
 
--- Saved rewards may predate affixes. Missing affixes normalize to an empty list,
--- while malformed payloads fail closed instead of being silently dropped.
 local function normalizedAffixes(value: any): { EquipmentAffixRoll }?
 	if value == nil then
 		return table.freeze({})
@@ -89,7 +103,6 @@ local function normalizedAffixes(value: any): { EquipmentAffixRoll }?
 	if type(value) ~= "table" then
 		return nil
 	end
-
 	local normalized = {}
 	local seenIds = {}
 	for index, rawAffix in value do
@@ -144,7 +157,6 @@ local function normalizedReward(value: any): EquipmentReward?
 	if affixes == nil then
 		return nil
 	end
-
 	local grantId = value.GrantId
 	if type(grantId) ~= "string" or #grantId < 8 then
 		grantId = string.format("reward:%s:%s", value.RunId, value.SourceId)
@@ -153,7 +165,6 @@ local function normalizedReward(value: any): EquipmentReward?
 	if type(signature) ~= "string" or #signature < 3 then
 		signature = "legacy|" .. value.InstanceId
 	end
-
 	return table.freeze({
 		InstanceId = value.InstanceId,
 		GrantId = grantId,
@@ -301,17 +312,13 @@ local function normalizeRecord(raw: any, playerId: number, nowUnix: number): (Pl
 		record.EquippedBySlot[slotId] = instanceId
 	end
 
-	-- Schema 5 introduces progression in the already-authoritative account
-	-- record. The pure resolver handles legacy XP/level shapes and clamps bad
-	-- finite values to the configured progression domain.
-	record.CharacterProgression = normalizedCharacterProgression(raw.CharacterProgression)
+	record.CharacterProgression = normalizedCharacterProgression(raw.CharacterProgression or raw)
 	for grantId, applied in raw.AppliedCharacterProgressionGrantIds or {} do
 		if type(grantId) ~= "string" or #grantId < 8 or applied ~= true then
 			return nil, false, "InvalidCharacterProgressionGrantLedger"
 		end
 		record.AppliedCharacterProgressionGrantIds[grantId] = true
 	end
-
 	return record, migrated, if migrated then "MigratedRecord" else "LoadedRecord"
 end
 
@@ -340,13 +347,7 @@ local function guardedWrite(store: any, key: string, record: PlayerInventoryReco
 end
 
 function Service.new(store: Store): Service
-	assert(
-		type(store) == "table"
-			and type(store.read) == "function"
-			and type(store.write) == "function"
-			and type(store.commit) == "function",
-		"invalid store"
-	)
+	assert(type(store) == "table" and type(store.read) == "function" and type(store.write) == "function" and type(store.commit) == "function", "invalid store")
 	return setmetatable({ _store = store, _records = {}, _destroyed = false }, Service) :: any
 end
 
@@ -362,42 +363,23 @@ function Service:loadPlayer(playerId: number, nowUnix: number): LoadResult
 	if readResult.Status == StorageResults.ReadStatuses.Failed then
 		return table.freeze({ Accepted = false, ReasonId = "LoadFailed", Record = nil, Migrated = false })
 	end
-
 	local key = keyFor(playerId)
 	local sourceSchema = if type(readResult.Value) == "table" then readResult.Value.SchemaVersion else nil
 	local normalized, migrated, reasonId = normalizeRecord(readResult.Value, playerId, nowUnix)
 	if normalized == nil then
 		self:_quarantine(key, reasonId, nowUnix, readResult.Value)
-		return table.freeze({
-			Accepted = false,
-			ReasonId = reasonId,
-			Record = nil,
-			Migrated = false,
-			Classification = Recovery.classify(reasonId),
-		})
+		return table.freeze({ Accepted = false, ReasonId = reasonId, Record = nil, Migrated = false, Classification = Recovery.classify(reasonId) })
 	end
-
 	local plan = MigrationSteps.plan(sourceSchema or CURRENT_SCHEMA, CURRENT_SCHEMA)
 	if not plan.Accepted then
 		self:_quarantine(key, plan.ReasonId, nowUnix, readResult.Value)
-		return table.freeze({
-			Accepted = false,
-			ReasonId = plan.ReasonId,
-			Record = nil,
-			Migrated = false,
-			Classification = Recovery.classify(plan.ReasonId),
-		})
+		return table.freeze({ Accepted = false, ReasonId = plan.ReasonId, Record = nil, Migrated = false, Classification = Recovery.classify(plan.ReasonId) })
 	end
-
 	if migrated then
 		local reconciled = true
 		local write = selfAny._store:commit(key, function(current: any): any
 			if current ~= nil and type(current) == "table" and current.UpdatedAtUnix ~= nil then
-				if
-					type(readResult.Value) ~= "table"
-					or current.UpdatedAtUnix ~= readResult.Value.UpdatedAtUnix
-					or current.SchemaVersion ~= sourceSchema
-				then
+				if type(readResult.Value) ~= "table" or current.UpdatedAtUnix ~= readResult.Value.UpdatedAtUnix or current.SchemaVersion ~= sourceSchema then
 					reconciled = false
 					return current
 				end
@@ -406,33 +388,14 @@ function Service:loadPlayer(playerId: number, nowUnix: number): LoadResult
 			return normalized
 		end)
 		if not reconciled then
-			return table.freeze({
-				Accepted = false,
-				ReasonId = "MigrationRaceDetected",
-				Record = nil,
-				Migrated = false,
-				Classification = Recovery.Classifications.Transient,
-			})
+			return table.freeze({ Accepted = false, ReasonId = "MigrationRaceDetected", Record = nil, Migrated = false, Classification = Recovery.Classifications.Transient })
 		end
 		if write.Status ~= StorageResults.WriteStatuses.Committed then
-			return table.freeze({
-				Accepted = false,
-				ReasonId = "SaveFailed",
-				Record = nil,
-				Migrated = false,
-				Classification = Recovery.Classifications.Transient,
-			})
+			return table.freeze({ Accepted = false, ReasonId = "SaveFailed", Record = nil, Migrated = false, Classification = Recovery.Classifications.Transient })
 		end
 	end
-
 	selfAny._records[playerId] = normalized
-	return table.freeze({
-		Accepted = true,
-		ReasonId = reasonId,
-		Record = cloneRecord(normalized),
-		Migrated = migrated,
-		MigrationStepIds = plan.StepIds,
-	})
+	return table.freeze({ Accepted = true, ReasonId = reasonId, Record = cloneRecord(normalized), Migrated = migrated, MigrationStepIds = plan.StepIds })
 end
 
 function Service:_quarantine(sourceKey: string, reasonId: string, nowUnix: number, payload: any)
@@ -452,178 +415,77 @@ end
 
 function Service:applyReward(playerId: number, reward: EquipmentReward, nowUnix: number): MutationResult
 	local selfAny = self :: any
-	if selfAny._destroyed then
-		return result(false, "ServiceDestroyed", nil)
-	end
+	if selfAny._destroyed then return result(false, "ServiceDestroyed", nil) end
 	local record: PlayerInventoryRecord? = selfAny._records[playerId]
-	if record == nil then
-		return result(false, "PlayerNotLoaded", nil)
-	end
+	if record == nil then return result(false, "PlayerNotLoaded", nil) end
 	local normalized = normalizedReward(reward)
-	if normalized == nil or type(nowUnix) ~= "number" or nowUnix < record.UpdatedAtUnix then
-		return result(false, "InvalidReward", cloneRecord(record))
-	end
+	if normalized == nil or type(nowUnix) ~= "number" or nowUnix < record.UpdatedAtUnix then return result(false, "InvalidReward", cloneRecord(record)) end
 	if record.AppliedRewardGrantIds[normalized.GrantId] then
 		local knownSignature = record.AppliedRewardContentSignatures[normalized.GrantId]
-		if knownSignature ~= nil and knownSignature ~= normalized.ContentSignature then
-			return result(false, "RewardGrantConflict", cloneRecord(record))
-		end
+		if knownSignature ~= nil and knownSignature ~= normalized.ContentSignature then return result(false, "RewardGrantConflict", cloneRecord(record)) end
 		return result(false, "RewardAlreadyApplied", cloneRecord(record))
 	end
-	if record.AppliedRewardInstanceIds[normalized.InstanceId] then
-		return result(false, "RewardAlreadyApplied", cloneRecord(record))
-	end
-
+	if record.AppliedRewardInstanceIds[normalized.InstanceId] then return result(false, "RewardAlreadyApplied", cloneRecord(record)) end
 	local nextRecord = mutableCopy(record, nowUnix)
 	nextRecord.InventoryByInstanceId[normalized.InstanceId] = normalized
 	nextRecord.AppliedRewardInstanceIds[normalized.InstanceId] = true
 	nextRecord.AppliedRewardGrantIds[normalized.GrantId] = true
 	nextRecord.AppliedRewardContentSignatures[normalized.GrantId] = normalized.ContentSignature
-	if
-		DurableMutation.exceedsBound(nextRecord.AppliedRewardGrantIds)
-		or DurableMutation.exceedsBound(nextRecord.AppliedDismantleTransactions)
-		or DurableMutation.exceedsBound(nextRecord.AppliedCharacterProgressionGrantIds)
-	then
+	if DurableMutation.exceedsBound(nextRecord.AppliedRewardGrantIds) or DurableMutation.exceedsBound(nextRecord.AppliedDismantleTransactions) or DurableMutation.exceedsBound(nextRecord.AppliedCharacterProgressionGrantIds) then
 		return result(false, "MutationLedgerBoundExceeded", cloneRecord(record))
 	end
 	local written, writeReason = guardedWrite(selfAny._store, keyFor(playerId), nextRecord)
-	if not written then
-		return result(false, writeReason, cloneRecord(record))
-	end
+	if not written then return result(false, writeReason, cloneRecord(record)) end
 	selfAny._records[playerId] = nextRecord
 	return result(true, "RewardApplied", cloneRecord(nextRecord))
 end
 
--- Persists the resolver-produced canonical XP projection through the same
--- account record and write path as inventory. Optional grant ids are durable
--- idempotency only for low-frequency rewards (quest/event/expedition completion).
-function Service:applyCharacterProgression(
-	playerId: number,
-	progressionState: any,
-	grantId: string?,
-	nowUnix: number
-): MutationResult
+function Service:applyCharacterProgression(playerId: number, progressionState: any, grantId: string?, nowUnix: number): MutationResult
 	local selfAny = self :: any
-	if selfAny._destroyed then
-		return result(false, "ServiceDestroyed", nil)
-	end
+	if selfAny._destroyed then return result(false, "ServiceDestroyed", nil) end
 	local record: PlayerInventoryRecord? = selfAny._records[playerId]
-	if record == nil then
-		return result(false, "PlayerNotLoaded", nil)
-	end
-	if type(nowUnix) ~= "number" or nowUnix < record.UpdatedAtUnix then
-		return result(false, "InvalidCharacterProgressionRequest", cloneRecord(record))
-	end
-	if grantId ~= nil and (type(grantId) ~= "string" or #grantId < 8) then
-		return result(false, "InvalidCharacterProgressionGrantId", cloneRecord(record))
-	end
-	if grantId ~= nil and record.AppliedCharacterProgressionGrantIds[grantId] then
-		return result(false, "CharacterProgressionGrantAlreadyApplied", cloneRecord(record))
-	end
-
+	if record == nil then return result(false, "PlayerNotLoaded", nil) end
+	if type(nowUnix) ~= "number" or nowUnix < record.UpdatedAtUnix then return result(false, "InvalidCharacterProgressionRequest", cloneRecord(record)) end
+	if grantId ~= nil and (type(grantId) ~= "string" or #grantId < 8) then return result(false, "InvalidCharacterProgressionGrantId", cloneRecord(record)) end
+	if grantId ~= nil and record.AppliedCharacterProgressionGrantIds[grantId] then return result(false, "CharacterProgressionGrantAlreadyApplied", cloneRecord(record)) end
 	local normalized = normalizedCharacterProgression(progressionState)
 	local previous = normalizedCharacterProgression(record.CharacterProgression)
-	if normalized.TotalXP < previous.TotalXP then
-		return result(false, "CharacterProgressionRollbackRejected", cloneRecord(record))
-	end
-
+	if normalized.TotalXP < previous.TotalXP then return result(false, "CharacterProgressionRollbackRejected", cloneRecord(record)) end
 	local nextRecord = mutableCopy(record, nowUnix)
 	nextRecord.CharacterProgression = normalized
-	if grantId ~= nil then
-		nextRecord.AppliedCharacterProgressionGrantIds[grantId] = true
-	end
-	if DurableMutation.exceedsBound(nextRecord.AppliedCharacterProgressionGrantIds) then
-		return result(false, "MutationLedgerBoundExceeded", cloneRecord(record))
-	end
+	if grantId ~= nil then nextRecord.AppliedCharacterProgressionGrantIds[grantId] = true end
+	if DurableMutation.exceedsBound(nextRecord.AppliedCharacterProgressionGrantIds) then return result(false, "MutationLedgerBoundExceeded", cloneRecord(record)) end
 	local written, writeReason = guardedWrite(selfAny._store, keyFor(playerId), nextRecord)
-	if not written then
-		return result(false, writeReason, cloneRecord(record))
-	end
+	if not written then return result(false, writeReason, cloneRecord(record)) end
 	selfAny._records[playerId] = nextRecord
 	return result(true, "CharacterProgressionApplied", cloneRecord(nextRecord))
 end
 
 function Service:equip(playerId: number, slotId: EquipmentSlotId, instanceId: string, nowUnix: number): MutationResult
 	local selfAny = self :: any
-	if selfAny._destroyed then
-		return result(false, "ServiceDestroyed", nil)
-	end
+	if selfAny._destroyed then return result(false, "ServiceDestroyed", nil) end
 	local record: PlayerInventoryRecord? = selfAny._records[playerId]
-	if record == nil then
-		return result(false, "PlayerNotLoaded", nil)
-	end
-	if
-		not isKnownValue(VALID_SLOTS, slotId)
-		or type(instanceId) ~= "string"
-		or type(nowUnix) ~= "number"
-		or nowUnix < record.UpdatedAtUnix
-	then
-		return result(false, "InvalidEquipRequest", cloneRecord(record))
-	end
+	if record == nil then return result(false, "PlayerNotLoaded", nil) end
+	if not isKnownValue(VALID_SLOTS, slotId) or type(instanceId) ~= "string" or type(nowUnix) ~= "number" or nowUnix < record.UpdatedAtUnix then return result(false, "InvalidEquipRequest", cloneRecord(record)) end
 	local reward = record.InventoryByInstanceId[instanceId]
-	if reward == nil then
-		return result(false, "ItemNotOwned", cloneRecord(record))
-	end
-	if reward.Slot ~= slotId then
-		return result(false, "SlotMismatch", cloneRecord(record))
-	end
-
+	if reward == nil then return result(false, "ItemNotOwned", cloneRecord(record)) end
+	if reward.Slot ~= slotId then return result(false, "SlotMismatch", cloneRecord(record)) end
 	local nextRecord = mutableCopy(record, nowUnix)
 	nextRecord.EquippedBySlot[slotId] = instanceId
 	local written, writeReason = guardedWrite(selfAny._store, keyFor(playerId), nextRecord)
-	if not written then
-		return result(false, writeReason, cloneRecord(record))
-	end
+	if not written then return result(false, writeReason, cloneRecord(record)) end
 	selfAny._records[playerId] = nextRecord
 	return result(true, "ItemEquipped", cloneRecord(nextRecord))
 end
 
-function Service:dismantle(
-	playerId: number,
-	instanceId: string,
-	transactionId: string,
-	nowUnix: number,
-	hasSessionLease: boolean,
-	recentRequestTimestamps: { number }
-): any
+function Service:dismantle(playerId: number, instanceId: string, transactionId: string, nowUnix: number, hasSessionLease: boolean, recentRequestTimestamps: { number }): any
 	local selfAny = self :: any
-	if selfAny._destroyed then
-		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Outcome = nil, Record = nil })
-	end
+	if selfAny._destroyed then return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Outcome = nil, Record = nil }) end
 	local record: PlayerInventoryRecord? = selfAny._records[playerId]
-	local resolution = InventoryDismantleResolver.resolve({
-		RequesterId = playerId,
-		OwnerId = playerId,
-		InstanceId = instanceId,
-		TransactionId = transactionId,
-		NowUnix = nowUnix,
-	}, {
-		Record = record,
-		HasSessionLease = hasSessionLease == true,
-		AppliedTransactions = if record then record.AppliedDismantleTransactions else {},
-		RecentRequestTimestamps = recentRequestTimestamps or {},
-	})
-
-	if resolution.Accepted ~= true then
-		return table.freeze({
-			Accepted = false,
-			ReasonId = resolution.ReasonId,
-			Outcome = nil,
-			Record = if record then cloneRecord(record) else nil,
-		})
-	end
-	if resolution.Replayed == true then
-		return table.freeze({
-			Accepted = true,
-			ReasonId = resolution.ReasonId,
-			Outcome = resolution.Outcome,
-			Record = if record then cloneRecord(record) else nil,
-		})
-	end
-	if record == nil then
-		return table.freeze({ Accepted = false, ReasonId = "PlayerNotLoaded", Outcome = nil, Record = nil })
-	end
-
+	local resolution = InventoryDismantleResolver.resolve({ RequesterId = playerId, OwnerId = playerId, InstanceId = instanceId, TransactionId = transactionId, NowUnix = nowUnix }, { Record = record, HasSessionLease = hasSessionLease == true, AppliedTransactions = if record then record.AppliedDismantleTransactions else {}, RecentRequestTimestamps = recentRequestTimestamps or {} })
+	if resolution.Accepted ~= true then return table.freeze({ Accepted = false, ReasonId = resolution.ReasonId, Outcome = nil, Record = if record then cloneRecord(record) else nil }) end
+	if resolution.Replayed == true then return table.freeze({ Accepted = true, ReasonId = resolution.ReasonId, Outcome = resolution.Outcome, Record = if record then cloneRecord(record) else nil }) end
+	if record == nil then return table.freeze({ Accepted = false, ReasonId = "PlayerNotLoaded", Outcome = nil, Record = nil }) end
 	local resolved = resolution.NextRecord :: any
 	local durable = mutableCopy(record, resolved.UpdatedAtUnix)
 	durable.InventoryByInstanceId = table.clone(resolved.InventoryByInstanceId)
@@ -632,56 +494,31 @@ function Service:dismantle(
 	durable.AppliedRewardGrantIds = table.clone(resolved.AppliedRewardGrantIds)
 	durable.AppliedDismantleTransactions = table.clone(resolved.AppliedDismantleTransactions)
 	durable.AppliedDismantleTransactions[transactionId] = resolution.Outcome
-
 	local written, writeReason = guardedWrite(selfAny._store, keyFor(playerId), durable)
-	if not written then
-		return table.freeze({
-			Accepted = false,
-			ReasonId = writeReason,
-			Outcome = nil,
-			Record = cloneRecord(record),
-		})
-	end
+	if not written then return table.freeze({ Accepted = false, ReasonId = writeReason, Outcome = nil, Record = cloneRecord(record) }) end
 	selfAny._records[playerId] = durable
-	return table.freeze({
-		Accepted = true,
-		ReasonId = resolution.ReasonId,
-		Outcome = resolution.Outcome,
-		Record = cloneRecord(durable),
-	})
+	return table.freeze({ Accepted = true, ReasonId = resolution.ReasonId, Outcome = resolution.Outcome, Record = cloneRecord(durable) })
 end
 
 function Service:releasePlayer(playerId: number): any
 	local selfAny = self :: any
-	if selfAny._destroyed then
-		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Released = false })
-	end
-	if not isInteger(playerId) or playerId <= 0 then
-		return table.freeze({ Accepted = false, ReasonId = "InvalidReleaseRequest", Released = false })
-	end
+	if selfAny._destroyed then return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Released = false }) end
+	if not isInteger(playerId) or playerId <= 0 then return table.freeze({ Accepted = false, ReasonId = "InvalidReleaseRequest", Released = false }) end
 	local held = selfAny._records[playerId] ~= nil
 	selfAny._records[playerId] = nil
-	return table.freeze({
-		Accepted = true,
-		ReasonId = if held then "RecordReleased" else "NoRecordHeld",
-		Released = held,
-	})
+	return table.freeze({ Accepted = true, ReasonId = if held then "RecordReleased" else "NoRecordHeld", Released = held })
 end
 
 function Service:getRecord(playerId: number): PlayerInventoryRecord?
 	local selfAny = self :: any
-	if selfAny._destroyed then
-		return nil
-	end
+	if selfAny._destroyed then return nil end
 	local record = selfAny._records[playerId]
 	return if record then cloneRecord(record) else nil
 end
 
 function Service:destroy()
 	local selfAny = self :: any
-	if selfAny._destroyed then
-		return
-	end
+	if selfAny._destroyed then return end
 	selfAny._destroyed = true
 	table.clear(selfAny._records)
 end
