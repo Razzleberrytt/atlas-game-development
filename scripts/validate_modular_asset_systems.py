@@ -43,6 +43,78 @@ BOOTSTRAP = (
     / "server"
     / "ModularAssetBootstrap.server.luau"
 )
+WEAPON_PRESENTATION_CONFIG = (
+    ROOT
+    / "games"
+    / "living-kingdoms"
+    / "src"
+    / "client"
+    / "Presentation"
+    / "ModularWeaponPresentationConfig.luau"
+)
+WEAPON_PRESENTATION_ADAPTER = (
+    ROOT
+    / "games"
+    / "living-kingdoms"
+    / "src"
+    / "client"
+    / "Presentation"
+    / "ModularWeaponPresentationAdapter.luau"
+)
+WEAPON_PRESENTATION_FACTORY = (
+    ROOT
+    / "games"
+    / "living-kingdoms"
+    / "src"
+    / "client"
+    / "Presentation"
+    / "WeaponPresentationFactory.luau"
+)
+REWARD_VIEWPORT_PRESENTER = (
+    ROOT
+    / "games"
+    / "living-kingdoms"
+    / "src"
+    / "client"
+    / "Presentation"
+    / "RewardContainerViewportPresenter.luau"
+)
+EXPEDITION_RESULT_CONTROLLER = (
+    ROOT
+    / "games"
+    / "living-kingdoms"
+    / "src"
+    / "client"
+    / "Controllers"
+    / "ExpeditionResultController.luau"
+)
+RUN_BUILD_HUD_CONTROLLER = (
+    ROOT
+    / "games"
+    / "living-kingdoms"
+    / "src"
+    / "client"
+    / "Controllers"
+    / "RunBuildHUDController.luau"
+)
+SURVIVAL_REWARD_PRESENTATION = (
+    ROOT
+    / "games"
+    / "living-kingdoms"
+    / "src"
+    / "server"
+    / "Systems"
+    / "ModularRewardContainerPresentation.luau"
+)
+SURVIVAL_LOOT_SERVICE = (
+    ROOT
+    / "games"
+    / "living-kingdoms"
+    / "src"
+    / "server"
+    / "Systems"
+    / "SurvivalLootService.luau"
+)
 
 PACK_IDS = (
     "pack.modular_enemy",
@@ -97,6 +169,24 @@ WEAPON_CATEGORIES = (
     "Exotic",
 )
 
+LIVE_WEAPON_ASSET_IDS = (
+    "weapon.assault_rifle.a",
+    "weapon.lmg.a",
+    "weapon.shotgun.a",
+    "weapon.sniper_rifle.a",
+    "weapon.hand_cannon.a",
+    "weapon.smg.a",
+)
+
+LIVE_WEAPON_CONFIG_KEYS = (
+    "FirearmConfig.BasicFirearm.WeaponId",
+    "FirearmConfig.LightMachineGun.WeaponId",
+    "FirearmConfig.BreachShotgun.WeaponId",
+    "FirearmConfig.SniperRifle.WeaponId",
+    "FirearmConfig.ServicePistol.WeaponId",
+    "FirearmConfig.SubmachineGun.WeaponId",
+)
+
 PROP_CATEGORIES = (
     "Crate",
     "Barrel",
@@ -148,6 +238,12 @@ def require_all(text: str, values: tuple[str, ...], label: str) -> None:
         raise AssertionError(f"{label} is missing: {', '.join(missing)}")
 
 
+def forbid_all(text: str, values: tuple[str, ...], label: str) -> None:
+    present = [value for value in values if value in text]
+    if present:
+        raise AssertionError(f"{label} gained prohibited tokens: {', '.join(present)}")
+
+
 def main() -> int:
     try:
         roadmap = read_required(ROADMAP)
@@ -155,6 +251,14 @@ def main() -> int:
         factory = read_required(FACTORY)
         resolver = read_required(RESOLVER)
         bootstrap = read_required(BOOTSTRAP)
+        weapon_presentation_config = read_required(WEAPON_PRESENTATION_CONFIG)
+        weapon_presentation_adapter = read_required(WEAPON_PRESENTATION_ADAPTER)
+        weapon_presentation_factory = read_required(WEAPON_PRESENTATION_FACTORY)
+        reward_viewport_presenter = read_required(REWARD_VIEWPORT_PRESENTER)
+        expedition_result_controller = read_required(EXPEDITION_RESULT_CONTROLLER)
+        run_build_hud_controller = read_required(RUN_BUILD_HUD_CONTROLLER)
+        survival_reward_presentation = read_required(SURVIVAL_REWARD_PRESENTATION)
+        survival_loot_service = read_required(SURVIVAL_LOOT_SERVICE)
 
         require_all(catalog, PACK_IDS, "catalog pack coverage")
         require_all(catalog, TOP_FIVE, "catalog top-five priority")
@@ -190,7 +294,11 @@ def main() -> int:
             ),
             "roadmap 20-pack coverage",
         )
-        require_all(roadmap, ("Explore → Fight → Loot → Upgrade → Repeat", "900 visual combinations"), "roadmap force-multiplier contract")
+        require_all(
+            roadmap,
+            ("Explore → Fight → Loot → Upgrade → Repeat", "900 visual combinations"),
+            "roadmap force-multiplier contract",
+        )
 
         require_all(
             factory,
@@ -211,10 +319,167 @@ def main() -> int:
             ),
             "factory implementation surface",
         )
-        require_all(resolver, ("BuildIndex", "FindByAssetId", "CloneByAssetId", "GeneratedModularAssets"), "resolver API")
-        require_all(bootstrap, ("Catalog.GeneratedRootName", "Factory.BuildStarterLibrary", "GeneratedPrototypeRoot"), "bootstrap contract")
+        require_all(
+            resolver,
+            ("BuildIndex", "FindByAssetId", "CloneByAssetId", "GeneratedModularAssets"),
+            "resolver API",
+        )
+        require_all(
+            bootstrap,
+            ("Catalog.GeneratedRootName", "Factory.BuildStarterLibrary", "GeneratedPrototypeRoot"),
+            "bootstrap contract",
+        )
 
-        combined = "\n".join((roadmap, catalog, factory, resolver, bootstrap))
+        require_all(weapon_presentation_config, LIVE_WEAPON_CONFIG_KEYS, "live firearm modular mappings")
+        require_all(weapon_presentation_config, LIVE_WEAPON_ASSET_IDS, "live modular weapon asset IDs")
+        require_all(
+            weapon_presentation_config,
+            ("ModularAssetProductionCatalog.Weapons.Categories", "FirearmConfig.DefinitionsById", "GetAssetId"),
+            "weapon mapping drift guards",
+        )
+        require_all(
+            weapon_presentation_adapter,
+            (
+                "ModularAssetResolver.GetGeneratedRoot",
+                "ModularAssetResolver.CloneByAssetId",
+                'findAttachment(shell, "Grip")',
+                'findAttachment(shell, "Muzzle")',
+                "shell:ScaleTo(scale)",
+                "ModularShellWeld",
+                "hideProceduralShell",
+                'VisualStatus", "ModularGeneratedAsset"',
+            ),
+            "modular weapon presentation adapter",
+        )
+        require_all(
+            weapon_presentation_factory,
+            (
+                "createProceduralRig",
+                "ModularWeaponPresentationConfig.GetAssetId",
+                "ModularWeaponPresentationAdapter.Apply",
+            ),
+            "live weapon factory modular integration",
+        )
+
+        require_all(
+            reward_viewport_presenter,
+            (
+                '"reward.chest.common"',
+                '"reward.chest.rare"',
+                '"reward.chest.boss"',
+                "ModularAssetResolver.GetGeneratedRoot",
+                "ModularAssetResolver.CloneByAssetId",
+                "resolveRunRewardAssetId",
+                "RewardSourceIds.BossMilestone",
+                "RewardSourceIds.EliteKill",
+                "RewardSourceIds.SpecialInterrupt",
+                "RewardSourceIds.HordeClear",
+                "renderAssetId",
+                "renderRunReward",
+                "PresentationOnly",
+            ),
+            "reward viewport modular integration",
+        )
+        require_all(
+            expedition_result_controller,
+            (
+                "RewardContainerViewportPresenter.create(rewardRow)",
+                "RewardContainerViewportPresenter.render(rewardViewport, snapshot)",
+                "layoutRewardPresentation(false)",
+            ),
+            "expedition debrief reward-container binding",
+        )
+        require_all(
+            run_build_hud_controller,
+            (
+                "RewardContainerViewportPresenter.create(panel)",
+                "RewardContainerViewportPresenter.renderRunReward(rewardViewport, reward)",
+                "RewardContainerViewportPresenter.clear(rewardViewport)",
+            ),
+            "live relic reward-container binding",
+        )
+        forbid_all(
+            reward_viewport_presenter,
+            (
+                "FireServer",
+                "InvokeServer",
+                "RemoteEvent",
+                "RemoteFunction",
+                "DataStore",
+                "grantFoundAmmunition",
+                "stageLoot",
+            ),
+            "reward viewport presentation authority",
+        )
+
+        require_all(
+            survival_reward_presentation,
+            (
+                'COMMON_REWARD_ASSET_ID = "reward.chest.common"',
+                "ModularAssetResolver.GetGeneratedRoot",
+                "ModularAssetResolver.CloneByAssetId",
+                'findBasePart(model, "Root")',
+                'findBasePart(model, "Lid")',
+                "part.CanCollide = false",
+                "part.CanTouch = false",
+                "part.CanQuery = false",
+                "proxy.CanCollide = true",
+                "proxy.CanTouch = true",
+                "proxy.CanQuery = true",
+                '"ChestCollisionBase"',
+                '"ChestCollisionLid"',
+                '"ChestCollisionBand"',
+                "createFallbackChest",
+                "createSupplyChest",
+                "PresentationOnly",
+            ),
+            "survival modular reward-container presentation",
+        )
+        require_all(
+            survival_loot_service,
+            (
+                "ModularRewardContainerPresentation.createSupplyChest(parent, index, position)",
+                "presentation.Open()",
+                "Config.ChestWoodMinimum",
+                "Config.AmmoRoundsMinimum",
+                "Config.ChestWeaponChancePercent",
+                "Config.GuaranteedWeaponByOpenedChest",
+                "OperativeCombatRuntimeService.grantFoundAmmunition",
+                "stageLoot(state",
+                "collectChestLoot(player, chestId, position)",
+                "lootOwner ~= player",
+            ),
+            "survival loot retained authority",
+        )
+        forbid_all(
+            survival_reward_presentation,
+            (
+                "ChestWeaponChancePercent",
+                "GuaranteedWeaponByOpenedChest",
+                "grantFoundAmmunition",
+                "equipFoundWeapon",
+                "stageLoot",
+                "RemoteEvent",
+                "FireClient",
+                "FireServer",
+            ),
+            "survival reward presentation authority",
+        )
+
+        combined = "\n".join(
+            (
+                roadmap,
+                catalog,
+                factory,
+                resolver,
+                bootstrap,
+                weapon_presentation_config,
+                weapon_presentation_adapter,
+                weapon_presentation_factory,
+                reward_viewport_presenter,
+                survival_reward_presentation,
+            )
+        )
         if "rbxassetid://" in combined.lower():
             raise AssertionError("modular asset system must not commit placeholder marketplace asset IDs")
         if "math.random(" in factory:
@@ -228,7 +493,7 @@ def main() -> int:
         print(f"[modular-assets] FAILED: {exc}", file=sys.stderr)
         return 1
 
-    print("[modular-assets] OK — 20-pack roadmap + top-five runtime starter library contract")
+    print("[modular-assets] OK — starter library + live weapon/reward presentation contracts")
     return 0
 
 
