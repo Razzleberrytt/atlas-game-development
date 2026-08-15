@@ -115,7 +115,9 @@ function EnemyEncounterService:spawnEncounter(config: any, spawnPoints: { any },
 
 	local plan = self.composer.compose(config, spawnPoints, context)
 	if type(plan) ~= "table" or plan.isValid ~= true or type(plan.spawns) ~= "table" or #plan.spawns == 0 then
-		return invalidStart(if type(plan) == "table" then plan.rejectionReasonId or "InvalidComposition" else "InvalidComposition")
+		return invalidStart(
+			if type(plan) == "table" then plan.rejectionReasonId or "InvalidComposition" else "InvalidComposition"
+		)
 	end
 
 	local tracked = {}
@@ -191,7 +193,9 @@ function EnemyEncounterService:spawnEncounter(config: any, spawnPoints: { any },
 		acceptedCount = acceptedCount,
 		deferredCount = deferredCount,
 		compositionIdentity = plan.compositionIdentity,
-		rejectionReasonId = if acceptedCount < #plan.spawns then permanentRejectionReason or "CompositionDrift" else nil,
+		rejectionReasonId = if acceptedCount < #plan.spawns
+			then permanentRejectionReason or "CompositionDrift"
+			else nil,
 	})
 end
 
