@@ -222,14 +222,10 @@ local function isFarEnough(candidate: Candidate, chosen: { Candidate }, minimumS
 	return true
 end
 
-local function isGloballyFarEnough(
-	candidate: Candidate,
-	spec: AssetSpec,
-	globalAccepted: { PackedPlacement }
-): boolean
+local function isGloballyFarEnough(candidate: Candidate, spec: AssetSpec, globalAccepted: { PackedPlacement }): boolean
 	for _, accepted in globalAccepted do
-		local requiredDistance =
-			(spec.packingRadiusStuds + accepted.packingRadiusStuds) * PlacementConfig.CrossFamilySpacingScale
+		local requiredDistance = (spec.packingRadiusStuds + accepted.packingRadiusStuds)
+			* PlacementConfig.CrossFamilySpacingScale
 		if candidateDistance(candidate, accepted.x, accepted.z) < requiredDistance then
 			return false
 		end
@@ -339,7 +335,8 @@ function EnvironmentCompositionPlanner.Plan(): { Placement }
 		for _, rawSpec in PlacementConfig.AssetSpecs do
 			local spec = rawSpec :: AssetSpec
 			if spec.tier == tierName then
-				local generated = generateForSpec(spec, randomState, landmarks, routePoints, creekPoints, globalAccepted)
+				local generated =
+					generateForSpec(spec, randomState, landmarks, routePoints, creekPoints, globalAccepted)
 				for _, placement in generated do
 					table.insert(placements, placement)
 				end
