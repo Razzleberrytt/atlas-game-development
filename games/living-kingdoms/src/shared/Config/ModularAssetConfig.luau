@@ -33,48 +33,20 @@ export type WeaponProfile = {
 
 Config.Version = "VIS-modular-assets-v1"
 
-Config.EnemySlots = table.freeze({
-	"Body",
-	"WarPlate",
-	"Horns",
-	"Weapon",
-	"BackSpikes",
-})
+local BODY_IDS = table.freeze({ "OgreBase", "OgreBrute", "OgreRavaged" })
+local WAR_PLATE_IDS = table.freeze({ "ScrapHarness", "RiotPlates", "WardenPlate", "Bare" })
+local HORN_IDS = table.freeze({ "None", "Twin", "Swept", "Broken" })
+local WEAPON_IDS = table.freeze({ "Sword", "Axe", "Spear", "Staff" })
+local BACK_SPIKE_IDS = table.freeze({ "None", "Sparse", "Heavy" })
 
-Config.BodyIds = table.freeze({
-	"OgreBase",
-	"OgreBrute",
-	"OgreRavaged",
-})
+Config.EnemySlots = table.freeze({ "Body", "WarPlate", "Horns", "Weapon", "BackSpikes" })
+Config.BodyIds = BODY_IDS
+Config.WarPlateIds = WAR_PLATE_IDS
+Config.HornIds = HORN_IDS
+Config.WeaponIds = WEAPON_IDS
+Config.BackSpikeIds = BACK_SPIKE_IDS
 
-Config.WarPlateIds = table.freeze({
-	"ScrapHarness",
-	"RiotPlates",
-	"WardenPlate",
-	"Bare",
-})
-
-Config.HornIds = table.freeze({
-	"None",
-	"Twin",
-	"Swept",
-	"Broken",
-})
-
-Config.WeaponIds = table.freeze({
-	"Sword",
-	"Axe",
-	"Spear",
-	"Staff",
-})
-
-Config.BackSpikeIds = table.freeze({
-	"None",
-	"Sparse",
-	"Heavy",
-})
-
-Config.BodyProfiles = table.freeze({
+local BODY_PROFILES: { [string]: BodyProfile } = {
 	OgreBase = table.freeze({
 		TorsoScale = table.freeze({ 1.0, 1.0, 1.0 }),
 		RibScale = table.freeze({ 1.0, 1.0, 1.0 }),
@@ -90,9 +62,10 @@ Config.BodyProfiles = table.freeze({
 		RibScale = table.freeze({ 0.92, 1.13, 0.9 }),
 		HeadScale = table.freeze({ 0.92, 1.08, 0.95 }),
 	}),
-})
+}
+Config.BodyProfiles = table.freeze(BODY_PROFILES)
 
-Config.WeaponProfiles = table.freeze({
+local WEAPON_PROFILES: { [string]: WeaponProfile } = {
 	Sword = table.freeze({
 		DisplayName = "Scrap Sword",
 		Silhouette = "Blade",
@@ -121,7 +94,8 @@ Config.WeaponProfiles = table.freeze({
 		HeadLength = 0.9,
 		HeadWidth = 1.05,
 	}),
-})
+}
+Config.WeaponProfiles = table.freeze(WEAPON_PROFILES)
 
 local function stableHash(seed: string): number
 	local hash = 17
@@ -139,11 +113,11 @@ function Config.resolveEnemyVariant(seed: string): EnemyVariant
 	assert(type(seed) == "string" and seed ~= "", "modular enemy variant requires a non-empty seed")
 	local hash = stableHash(seed)
 	return table.freeze({
-		BodyId = choose(Config.BodyIds, hash, 3),
-		WarPlateId = choose(Config.WarPlateIds, hash, 11),
-		HornId = choose(Config.HornIds, hash, 23),
-		WeaponId = choose(Config.WeaponIds, hash, 37),
-		BackSpikeId = choose(Config.BackSpikeIds, hash, 53),
+		BodyId = choose(BODY_IDS, hash, 3),
+		WarPlateId = choose(WAR_PLATE_IDS, hash, 11),
+		HornId = choose(HORN_IDS, hash, 23),
+		WeaponId = choose(WEAPON_IDS, hash, 37),
+		BackSpikeId = choose(BACK_SPIKE_IDS, hash, 53),
 	})
 end
 
@@ -151,14 +125,14 @@ function Config.getBodyProfile(bodyId: unknown): BodyProfile?
 	if type(bodyId) ~= "string" then
 		return nil
 	end
-	return Config.BodyProfiles[bodyId]
+	return BODY_PROFILES[bodyId]
 end
 
 function Config.getWeaponProfile(weaponId: unknown): WeaponProfile?
 	if type(weaponId) ~= "string" then
 		return nil
 	end
-	return Config.WeaponProfiles[weaponId]
+	return WEAPON_PROFILES[weaponId]
 end
 
 return table.freeze(Config)
