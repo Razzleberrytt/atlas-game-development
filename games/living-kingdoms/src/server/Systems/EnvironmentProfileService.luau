@@ -7,10 +7,15 @@
 	image: Lighting, Sky, Atmosphere, post-processing, clouds, and the visual side
 	of the corruption-driven day/night transition. Local landmark lights remain
 	owned by their world props.
+
+	Studio preview support is deliberately implemented here so visual acceptance
+	can inspect the same production profile without enabling the live corruption
+	cycle or introducing a second Lighting owner.
 ]]
 
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)
@@ -29,6 +34,7 @@ local EFFECT_NAMES = table.freeze({
 })
 
 local started = false
+local studioPreviewActive = false
 local atmosphere: Atmosphere? = nil
 local grade: ColorCorrectionEffect? = nil
 local bloom: BloomEffect? = nil
@@ -184,25 +190,7 @@ local function applyDayVisuals(clockTime: number)
 	end
 end
 
-function EnvironmentProfileService.start()
-	if started then
-		return
-	end
-	started = true
-
-	-- Replace only instances owned by this profile so unrelated place effects
-	-- survive. Engine-shipped sky textures avoid unverified marketplace assets.
-	destroyOwnedEffects()
-	applyStaticLighting()
-	buildOwnedEffects()
-	applyDayVisuals(Config.Lighting.ClockTime)
-end
-
-function EnvironmentProfileService.applyDaylight(clockTime: number)
-	applyDayVisuals(clockTime)
-end
-
-function EnvironmentProfileService.applyCorruption(clockTime: number, intensity: number, minimumFogEnd: number)
+local function applyCorruptionVisuals(clockTime: number, intensity: number, minimumFogEnd: number)
 	local profile = Config.Lighting
 	local night = profile.Night
 	local alpha = math.clamp(intensity, 0, 1)
@@ -260,11 +248,67 @@ function EnvironmentProfileService.applyCorruption(clockTime: number, intensity:
 	end
 end
 
+function EnvironmentProfileService.start()
+	if started then
+		return
+	end
+	started = true
+
+	-- Replace only instances owned by this profile so unrelated place effects
+	-- survive. Engine-shipped sky textures avoid unverified marketplace assets.
+	destroyOwnedEffects()
+	applyStaticLighting()
+	buildOwnedEffects()
+	applyDayVisuals(Config.Lighting.ClockTime)
+end
+
+function EnvironmentProfileService.applyDaylight(clockTime: number)
+	if studioPreviewActive then
+		return
+	end
+	applyDayVisuals(clockTime)
+end
+
+function EnvironmentProfileService.applyCorruption(clockTime: number, intensity: number, minimumFogEnd: number)
+	if studioPreviewActive then
+		return
+	end
+	applyCorruptionVisuals(clockTime, intensity, minimumFogEnd)
+end
+
+function EnvironmentProfileService.setStudioPreview(
+	clockTime: number,
+	intensity: number,
+	minimumFogEnd: number
+): boolean
+	if not RunService:IsStudio() then
+		return false
+	end
+	if not started then
+		EnvironmentProfileService.start()
+	end
+	studioPreviewActive = true
+	applyCorruptionVisuals(clockTime, intensity, minimumFogEnd)
+	return true
+end
+
+function EnvironmentProfileService.clearStudioPreview(): boolean
+	if not RunService:IsStudio() then
+		return false
+	end
+	studioPreviewActive = false
+	if started then
+		applyDayVisuals(Config.Lighting.ClockTime)
+	end
+	return true
+end
+
 function EnvironmentProfileService.stop()
 	if not started then
 		return
 	end
 	started = false
+	studioPreviewActive = false
 	destroyOwnedEffects()
 end
 
