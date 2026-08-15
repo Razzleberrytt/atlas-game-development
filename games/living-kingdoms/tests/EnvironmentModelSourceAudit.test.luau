@@ -5,6 +5,7 @@ local luau = require("@lune/luau")
 
 local placementPath = "games/living-kingdoms/src/shared/Config/EnvironmentModelPlacementConfig.luau"
 local worldConfigPath = "games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau"
+local mathPath = "games/living-kingdoms/src/shared/Environment/EnvironmentCompositionMath.luau"
 local plannerPath = "games/living-kingdoms/src/server/EnvironmentCompositionPlanner.luau"
 local factoryPath = "games/living-kingdoms/src/server/EnvironmentModelFactory.luau"
 local dressingPath = "games/living-kingdoms/src/server/WorldVisualDressing.server.luau"
@@ -103,7 +104,7 @@ for assetId in allowedAssetIds do
 	assert(seenAssetIds[assetId], "composition config is missing environment asset: " .. assetId)
 end
 
-for _, path in { plannerPath, factoryPath, dressingPath } do
+for _, path in { mathPath, plannerPath, factoryPath, dressingPath } do
 	local loaded = luau.load(fs.readFile(path), {
 		debugName = path,
 		environment = {},
@@ -112,11 +113,12 @@ for _, path in { plannerPath, factoryPath, dressingPath } do
 	assert(type(loaded) == "function", "environment model source must compile: " .. path)
 end
 
+local mathSource = fs.readFile(mathPath)
 local plannerSource = fs.readFile(plannerPath)
 local factorySource = fs.readFile(factoryPath)
 local dressingSource = fs.readFile(dressingPath)
 
-for requiredPlannerToken in
+for requiredMathToken in
 	{
 		"MODULUS = 2147483647",
 		"MULTIPLIER = 48271",
@@ -125,18 +127,29 @@ for requiredPlannerToken in
 		"local function minimumLandmarkClearance",
 		"local function isFarEnough",
 		"local function isGloballyFarEnough",
-		"PlacementConfig.CrossFamilySpacingScale",
-		"PlacementConfig.TierOrder",
-		"PlacementConfig.AssetSpecs",
-		"WorldFoundationConfig.Dressing.TrailReflectorPositions",
-		"WorldFoundationConfig.EnvironmentPresentation.Water.CreekPoints",
+		"placementConfig.CrossFamilySpacingScale",
+		"placementConfig.TierOrder",
+		"placementConfig.AssetSpecs",
+		"worldConfig.Dressing.TrailReflectorPositions",
+		"worldConfig.EnvironmentPresentation.Water.CreekPoints",
+		"function EnvironmentCompositionMath.EvaluatePoint",
+		"function EnvironmentCompositionMath.Plan",
 	}
 do
 	assert(
-		string.find(plannerSource, requiredPlannerToken, 1, true),
-		"environment composition planner is missing deterministic constraint: " .. requiredPlannerToken
+		string.find(mathSource, requiredMathToken, 1, true),
+		"shared environment composition math is missing deterministic constraint: " .. requiredMathToken
 	)
 end
+
+assert(
+	string.find(plannerSource, "EnvironmentCompositionMath.Plan(WorldFoundationConfig, EnvironmentModelPlacementConfig)", 1, true),
+	"server environment planner must delegate to the shared composition kernel"
+)
+assert(
+	not string.find(plannerSource, "MODULUS = 2147483647", 1, true),
+	"server environment planner must not duplicate deterministic composition math"
+)
 
 assert(
 	string.find(factorySource, "EnvironmentAssetKitRegistry", 1, true),
@@ -202,5 +215,5 @@ assert(
 )
 
 print(
-	"EnvironmentModelSourceAudit: hierarchical fields, global packing, budgets, semantic ids, grounding, and presentation authority passed"
+	"EnvironmentModelSourceAudit: shared math, hierarchy, packing, semantic ids, grounding, and presentation authority passed"
 )
