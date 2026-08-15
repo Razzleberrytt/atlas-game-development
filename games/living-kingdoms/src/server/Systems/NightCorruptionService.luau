@@ -5,7 +5,6 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config.NightCorruptionConfig)
-local EnvironmentProfileService = require(script.Parent.EnvironmentProfileService)
 
 local Service = {}
 local network = ReplicatedStorage:WaitForChild("HordeNetwork")
@@ -41,19 +40,6 @@ local function evaluateAt(serverTimestamp: number)
 	network:SetAttribute("NightCorruptionThreatBonus", intensity * Config.MaximumThreatBonus)
 	network:SetAttribute("NightCorruptionEnemySpeedMultiplier", 1 + tier * Config.EnemySpeedBonusPerTier)
 	network:SetAttribute("NightCorruptionXpMultiplier", 1 + tier * Config.XpBonusPerTier)
-
-	if isNight then
-		local clockTime = Config.NightStartClockTime
-			+ (Config.DeepNightClockTime + 24 - Config.NightStartClockTime) * intensity
-		if clockTime >= 24 then
-			clockTime -= 24
-		end
-		EnvironmentProfileService.applyCorruption(clockTime, intensity, Config.MinimumFogEnd)
-	else
-		local daylightProgress = cycleElapsed / Config.DaylightSeconds
-		local clockTime = Config.DayClockTime + daylightProgress * (Config.NightStartClockTime - Config.DayClockTime)
-		EnvironmentProfileService.applyDaylight(clockTime)
-	end
 end
 
 function Service.start()
@@ -61,7 +47,6 @@ function Service.start()
 		return
 	end
 	started = true
-	EnvironmentProfileService.start()
 	startedAt = Workspace:GetServerTimeNow()
 	lastTier = -1
 	transitionSequence = 0
