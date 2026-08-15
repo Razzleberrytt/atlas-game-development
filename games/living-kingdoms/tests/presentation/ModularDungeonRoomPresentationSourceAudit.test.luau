@@ -19,6 +19,9 @@ for _, token in
 		'RoleIds.Elite] = "dungeon.room.combat.a"',
 		'RoleIds.Boss] = "dungeon.arena.boss.a"',
 		'RoleIds.Secret] = "dungeon.room.secret.a"',
+		"ModularAssetProductionCatalog.Dungeon.Modules",
+		"catalogDungeonAssetIds[definition.id] = true",
+		"catalogDungeonAssetIds[assetId] == true",
 		"ASSET_READY_WAIT_SECONDS = 0.75",
 		"local readinessWaitSpent = false",
 		"ModularAssetResolver.WaitForGeneratedAssetById",
@@ -64,9 +67,16 @@ do
 	assert(contains(roomPlacement, token), "authoritative room-placement contract missing " .. token)
 end
 
-local decorateStart = assert(string.find(roomPlacement, "ExpeditionEnvironmentBuilder.decorate(model, placement, seed)", 1, true))
-local modularStart = assert(string.find(roomPlacement, "ModularDungeonRoomPresentation.apply(model, placement)", 1, true))
-assert(decorateStart < modularStart, "authored room decoration must exist before the modular presentation shell is applied")
+local decorateStart = assert(
+	string.find(roomPlacement, "ExpeditionEnvironmentBuilder.decorate(model, placement, seed)", 1, true)
+)
+local modularStart = assert(
+	string.find(roomPlacement, "ModularDungeonRoomPresentation.apply(model, placement)", 1, true)
+)
+assert(
+	decorateStart < modularStart,
+	"authored room decoration must exist before the modular presentation shell is applied"
+)
 
 for _, prohibited in
 	{
@@ -82,11 +92,16 @@ for _, prohibited in
 		"EncounterCoordinator",
 	}
 do
-	assert(not contains(presentation, prohibited), "modular dungeon presentation gained misleading/authoritative token " .. prohibited)
+	assert(
+		not contains(presentation, prohibited),
+		"modular dungeon presentation gained misleading/authoritative token " .. prohibited
+	)
 end
 
 assert(not contains(presentation, 'graybox.CanCollide = false'))
 assert(not contains(presentation, 'graybox.CanQuery = false'))
 assert(not contains(presentation, 'graybox.CanTouch = false'))
 
-print("ModularDungeonRoomPresentationSourceAudit: live shell mapping, fit, fallback, and authority boundaries passed")
+print(
+	"ModularDungeonRoomPresentationSourceAudit: live shell mapping, fit, fallback, and authority boundaries passed"
+)
