@@ -8,7 +8,7 @@ local config = luau.load(source, {
 	injectGlobals = true,
 })()
 
-assert(config.Version == "MVP-0.1-v3-living-dawn", "world version changed")
+assert(config.Version == "MVP-0.1-v4-forest-clarity", "world version changed")
 assert(config.PlayableHalfExtentStuds == 640, "immersive expanse must retain its authored extent")
 assert(config.Seed == 1847, "deterministic seed changed")
 assert(#config.Landmarks == 8, "required landmark count changed")
@@ -60,6 +60,18 @@ assert(config.Lighting.Brightness >= 2.5, "world lighting must preserve terrain 
 assert(config.Lighting.ExposureCompensation >= 0, "world lighting must not crush dark materials")
 assert(config.Lighting.FogStart >= 110, "near-route fog should preserve exploration readability")
 assert(config.Lighting.FogEnd >= 600, "major landmarks need a useful reveal distance")
+assert(config.Lighting.EnvironmentDiffuseScale <= 1, "diffuse environment contribution must remain bounded")
+assert(config.Lighting.EnvironmentSpecularScale <= 1, "specular environment contribution must remain bounded")
+assert(config.Lighting.Atmosphere.Density > 0 and config.Lighting.Atmosphere.Density < 0.5, "atmosphere must stay readable")
+assert(config.Lighting.Bloom.Intensity <= 0.25, "bloom must remain restrained")
+assert(config.Lighting.Night.BrightnessEnd < config.Lighting.Night.BrightnessStart, "night must darken progressively")
+assert(config.Lighting.Night.FogEndStart < config.Lighting.FogEnd, "night must close the long-distance reveal")
+assert(config.Dressing.Version == "readability-v1", "readability dressing version changed")
+assert(#config.Dressing.TrailReflectorPositions == 12, "trail reflector budget changed")
+for _, position in config.Dressing.TrailReflectorPositions do
+	assert(type(position.x) == "number" and type(position.y) == "number" and type(position.z) == "number", "dressing coordinates must remain pure data")
+	assert(math.abs(position.x) <= config.PlayableHalfExtentStuds and math.abs(position.z) <= config.PlayableHalfExtentStuds, "dressing marker escaped the authored world")
+end
 assert(
 	config.InsertionPosition.x == -224 and config.InsertionPosition.z == -208,
 	"insertion must remain at the ranger station"
@@ -68,6 +80,8 @@ assert(
 for _, path in
 	{
 		"games/living-kingdoms/src/server/Systems/WorldFoundationService.luau",
+		"games/living-kingdoms/src/server/Systems/EnvironmentProfileService.luau",
+		"games/living-kingdoms/src/server/WorldVisualDressing.server.luau",
 		"games/living-kingdoms/src/client/Controllers/EnvironmentAmbienceController.luau",
 	}
 do
@@ -113,5 +127,18 @@ assert(string.find(worldSource, "buildEvacuationStory", 1, true) ~= nil, "evacua
 assert(string.find(worldSource, "buildImmersiveExpanse", 1, true) ~= nil, "immersive outer-region pass is missing")
 assert(string.find(worldSource, "buildLivingGroundDetail", 1, true) ~= nil, "living ground-detail pass is missing")
 assert(string.find(worldSource, "grade.Saturation = 0.16", 1, true) ~= nil, "warm color grade is missing")
+
+local environmentProfileSource = fs.readFile("games/living-kingdoms/src/server/Systems/EnvironmentProfileService.luau")
+assert(string.find(environmentProfileSource, "LivingKingdomsAtmosphere", 1, true), "canonical atmosphere owner is missing")
+assert(string.find(environmentProfileSource, "LivingKingdomsColorGrade", 1, true), "canonical color-grade owner is missing")
+assert(string.find(environmentProfileSource, "LivingKingdomsBloom", 1, true), "canonical bloom owner is missing")
+assert(string.find(environmentProfileSource, "LivingKingdomsSunRays", 1, true), "canonical sun-ray owner is missing")
+assert(string.find(environmentProfileSource, "LivingKingdomsClouds", 1, true), "canonical cloud owner is missing")
+
+local dressingSource = fs.readFile("games/living-kingdoms/src/server/WorldVisualDressing.server.luau")
+assert(string.find(dressingSource, "CanCollide = false", 1, true), "readability dressing must not alter collision")
+assert(string.find(dressingSource, "CanQuery = false", 1, true), "readability dressing must not alter gameplay queries")
+assert(string.find(dressingSource, "Enum.Material.Neon", 1, true), "reflective markers need emissive readability")
+assert(not string.find(dressingSource, "PointLight", 1, true), "readability dressing must add zero dynamic lights")
 
 print("WorldFoundationConfig fixtures passed")
