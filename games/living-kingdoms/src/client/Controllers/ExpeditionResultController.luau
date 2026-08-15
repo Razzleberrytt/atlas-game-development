@@ -14,11 +14,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ]]
 local NETWORK_WAIT_SECONDS = 20
 local PANEL_WIDTH = 680
-local PANEL_HEIGHT = 430
+local PANEL_HEIGHT = 470
 local PANEL_VIEWPORT_MARGIN = 24
+local REWARD_PREVIEW_WIDTH = 150
+local REWARD_PREVIEW_GAP = 16
 
 local InterfaceTheme = require(script.Parent.Parent.UI.InterfaceTheme)
 local ResponsivePanelScale = require(script.Parent.Parent.Presentation.ResponsivePanelScale)
+local RewardContainerViewportPresenter = require(script.Parent.Parent.Presentation.RewardContainerViewportPresenter)
 
 local Controller = {}
 local localPlayer = Players.LocalPlayer
@@ -33,6 +36,7 @@ local gui: ScreenGui? = nil
 local headline: TextLabel? = nil
 local summary: TextLabel? = nil
 local rewardsLabel: TextLabel? = nil
+local rewardViewport: ViewportFrame? = nil
 local details: TextLabel? = nil
 
 local VALID_OUTCOMES = {
@@ -81,6 +85,21 @@ local function validSnapshot(payload: any): boolean
 		end
 	end
 	return true
+end
+
+local function layoutRewardPresentation(hasPreview: boolean)
+	if rewardViewport == nil or rewardsLabel == nil then
+		return
+	end
+	if hasPreview then
+		rewardViewport.Visible = true
+		rewardsLabel.Position = UDim2.fromOffset(REWARD_PREVIEW_WIDTH + REWARD_PREVIEW_GAP, 0)
+		rewardsLabel.Size = UDim2.new(1, -(REWARD_PREVIEW_WIDTH + REWARD_PREVIEW_GAP), 1, 0)
+	else
+		rewardViewport.Visible = false
+		rewardsLabel.Position = UDim2.fromOffset(0, 0)
+		rewardsLabel.Size = UDim2.fromScale(1, 1)
+	end
 end
 
 local function createGui()
@@ -139,12 +158,24 @@ local function createGui()
 	})
 	summary.Size = UDim2.new(1, 0, 0, 58)
 
-	rewardsLabel = InterfaceTheme.label(panel, {
+	local rewardRow = Instance.new("Frame")
+	rewardRow.Name = "RewardPresentation"
+	rewardRow.BackgroundTransparency = 1
+	rewardRow.BorderSizePixel = 0
+	rewardRow.Size = UDim2.new(1, 0, 0, 150)
+	rewardRow.Parent = panel
+
+	rewardViewport = RewardContainerViewportPresenter.create(rewardRow)
+	rewardViewport.Position = UDim2.fromOffset(0, 0)
+	rewardViewport.Size = UDim2.fromOffset(REWARD_PREVIEW_WIDTH, REWARD_PREVIEW_WIDTH)
+
+	rewardsLabel = InterfaceTheme.label(rewardRow, {
 		name = "Rewards",
 		role = "Body",
 		size = InterfaceTheme.TextSize.Subtitle,
 	})
-	rewardsLabel.Size = UDim2.new(1, 0, 0, 120)
+	rewardsLabel.Position = UDim2.fromOffset(0, 0)
+	rewardsLabel.Size = UDim2.fromScale(1, 1)
 
 	details = InterfaceTheme.label(panel, {
 		name = "Details",
@@ -190,7 +221,14 @@ local function formatRewards(rewards: { any }, rewardDispositionId: string): str
 end
 
 local function applySnapshot(snapshot: any)
-	if gui == nil or headline == nil or summary == nil or rewardsLabel == nil or details == nil then
+	if
+		gui == nil
+		or headline == nil
+		or summary == nil
+		or rewardsLabel == nil
+		or rewardViewport == nil
+		or details == nil
+	then
 		return
 	end
 
@@ -207,6 +245,7 @@ local function applySnapshot(snapshot: any)
 	end
 
 	rewardsLabel.Text = formatRewards(snapshot.Rewards, snapshot.RewardDispositionId)
+	layoutRewardPresentation(RewardContainerViewportPresenter.render(rewardViewport, snapshot))
 	local secretText = if snapshot.SecretDiscovered then "Secret reliquary discovered" else "Secret reliquary not found"
 	details.Text = string.format(
 		"Duration: %s  •  Party: %d\n%s\nRun: %s\n\nReturn to preparation to begin another seeded expedition.",
@@ -219,6 +258,10 @@ end
 
 local function receive(payload: any)
 	if payload == nil then
+		if rewardViewport ~= nil then
+			RewardContainerViewportPresenter.clear(rewardViewport)
+			layoutRewardPresentation(false)
+		end
 		if gui then
 			gui.Enabled = false
 		end
@@ -261,6 +304,7 @@ function Controller.stop()
 		gui:Destroy()
 		gui = nil
 	end
+	rewardViewport = nil
 end
 
 return Controller
