@@ -174,39 +174,88 @@ local function buildDungeonModule(parent: Instance, definition): Model
 				breach.Position += Vector3.new(0, -wallHeight * 0.2, -floorSize.Z * 0.2)
 			end
 		elseif definition.variant == "Curved" then
-			local turn = createPart(model, "TurnGuide", Vector3.new(floorSize.X, 1, floorSize.X), Vector3.new(halfX / 2, 0.05, halfZ - halfX / 2), COLORS.Trim, Enum.Material.Slate, nil)
+			local turn = createPart(
+				model,
+				"TurnGuide",
+				Vector3.new(floorSize.X, 1, floorSize.X),
+				Vector3.new(halfX / 2, 0.05, halfZ - halfX / 2),
+				COLORS.Trim,
+				Enum.Material.Slate,
+				nil
+			)
 			turn.CanCollide = true
 		end
 	elseif definition.family == "Door" then
 		wall("Frame_Left", Vector3.new(3, wallHeight, 2), Vector3.new(-5.5, wallHeight / 2, 0))
 		wall("Frame_Right", Vector3.new(3, wallHeight, 2), Vector3.new(5.5, wallHeight / 2, 0))
 		wall("Frame_Top", Vector3.new(8, 4, 2), Vector3.new(0, wallHeight - 2, 0))
-		local door = createPart(model, "DoorPanel", Vector3.new(8, 14, 1), Vector3.new(0, 7, 0), COLORS.DarkMetal, Enum.Material.Metal, nil)
+		local door = createPart(
+			model,
+			"DoorPanel",
+			Vector3.new(8, 14, 1),
+			Vector3.new(0, 7, 0),
+			COLORS.DarkMetal,
+			Enum.Material.Metal,
+			nil
+		)
 		door.CanCollide = true
 		door:SetAttribute("DoorVariant", definition.variant)
 		createSocket(door, "Interaction", Vector3.new(3, 0, -0.6), "Interaction")
 	elseif definition.family == "Transition" and definition.variant == "Stairs" then
 		for index = 1, 8 do
-			local step = createPart(model, "Step_" .. tostring(index), Vector3.new(14, 1, 4), Vector3.new(0, index - 0.5, -14 + index * 3.5), COLORS.Stone, Enum.Material.Concrete, nil)
+			local step = createPart(
+				model,
+				"Step_" .. tostring(index),
+				Vector3.new(14, 1, 4),
+				Vector3.new(0, index - 0.5, -14 + index * 3.5),
+				COLORS.Stone,
+				Enum.Material.Concrete,
+				nil
+			)
 			step.CanCollide = true
 		end
 	elseif definition.family == "Transition" and definition.variant == "Bridge" then
 		for index = 1, 7 do
-			local plank = createPart(model, "BridgeDeck_" .. tostring(index), Vector3.new(14, 1, 3.5), Vector3.new(0, 3, -12 + index * 4), COLORS.Trim, Enum.Material.WoodPlanks, nil)
+			local plank = createPart(
+				model,
+				"BridgeDeck_" .. tostring(index),
+				Vector3.new(14, 1, 3.5),
+				Vector3.new(0, 3, -12 + index * 4),
+				COLORS.Trim,
+				Enum.Material.WoodPlanks,
+				nil
+			)
 			plank.CanCollide = true
 		end
 	elseif definition.family == "Platform" then
 		floor.Position = Vector3.new(0, 8, 0)
 		for _, x in ipairs({ -halfX + 2, halfX - 2 }) do
 			for _, z in ipairs({ -halfZ + 2, halfZ - 2 }) do
-				local support = createPart(model, "Support", Vector3.new(2, 8, 2), Vector3.new(x, 4, z), COLORS.DarkMetal, Enum.Material.Metal, nil)
+				local support = createPart(
+					model,
+					"Support",
+					Vector3.new(2, 8, 2),
+					Vector3.new(x, 4, z),
+					COLORS.DarkMetal,
+					Enum.Material.Metal,
+					nil
+				)
 				support.CanCollide = true
 			end
 		end
 	elseif definition.family == "Arena" then
-		for _, offset in ipairs({ Vector3.new(-halfX, wallHeight / 2, 0), Vector3.new(halfX, wallHeight / 2, 0), Vector3.new(0, wallHeight / 2, -halfZ), Vector3.new(0, wallHeight / 2, halfZ) }) do
+		for _, offset in ipairs({
+			Vector3.new(-halfX, wallHeight / 2, 0),
+			Vector3.new(halfX, wallHeight / 2, 0),
+			Vector3.new(0, wallHeight / 2, -halfZ),
+			Vector3.new(0, wallHeight / 2, halfZ),
+		}) do
 			local horizontal = math.abs(offset.X) > 0
-			wall("ArenaWall", horizontal and Vector3.new(1, wallHeight, floorSize.Z) or Vector3.new(floorSize.X, wallHeight, 1), offset)
+			wall(
+				"ArenaWall",
+				horizontal and Vector3.new(1, wallHeight, floorSize.Z) or Vector3.new(floorSize.X, wallHeight, 1),
+				offset
+			)
 		end
 		createSocket(floor, "BossAnchor", Vector3.new(0, 1, 0), "EncounterAnchor")
 	else
@@ -249,7 +298,15 @@ end
 local function buildEnemyWeapon(parent: Instance, weaponId: string, scale: number)
 	local melee = weaponId:find("blade", 1, true) ~= nil
 	local bodySize = melee and Vector3.new(0.55, 0.55, 5.5) or Vector3.new(1, 1, 4.5)
-	local weapon = createPart(parent, "Weapon", bodySize * scale, Vector3.new(2.25 * scale, 4.1 * scale, -0.5 * scale), COLORS.Weapon, Enum.Material.Metal, nil)
+	local weapon = createPart(
+		parent,
+		"Weapon",
+		bodySize * scale,
+		Vector3.new(2.25 * scale, 4.1 * scale, -0.5 * scale),
+		COLORS.Weapon,
+		Enum.Material.Metal,
+		nil
+	)
 	weapon:SetAttribute("VisualPartId", weaponId)
 	if melee then
 		weapon.Orientation = Vector3.new(0, 0, -18)
@@ -277,35 +334,105 @@ function Factory.BuildEnemyVariant(parent: Instance, archetype: string, seed: nu
 	model:SetAttribute("AccessoryPartId", accessoryId)
 
 	local enemyColor = archetype == "Corrupted" and COLORS.Corruption or COLORS.Enemy
-	local root = createPart(model, "Root", Vector3.new(2.5, 4, 1.6) * scale, Vector3.new(0, 4 * scale, 0), enemyColor, Enum.Material.SmoothPlastic, 1)
+	local root = createPart(
+		model,
+		"Root",
+		Vector3.new(2.5, 4, 1.6) * scale,
+		Vector3.new(0, 4 * scale, 0),
+		enemyColor,
+		Enum.Material.SmoothPlastic,
+		1
+	)
 	root.CanQuery = false
 	model.PrimaryPart = root
 	createSocket(root, "TargetCenter", Vector3.new(0, 0.6 * scale, 0), "Target")
 
-	local torso = createPart(model, "Body", Vector3.new(3.1, 3.5, 1.8) * scale, Vector3.new(0, 4.2 * scale, 0), enemyColor, Enum.Material.SmoothPlastic, nil)
+	local torso = createPart(
+		model,
+		"Body",
+		Vector3.new(3.1, 3.5, 1.8) * scale,
+		Vector3.new(0, 4.2 * scale, 0),
+		enemyColor,
+		Enum.Material.SmoothPlastic,
+		nil
+	)
 	torso:SetAttribute("VisualPartId", bodyId)
-	local head = createPart(model, "Head", Vector3.new(2.1, 2.1, 2) * scale, Vector3.new(0, 7.05 * scale, 0), COLORS.EnemyDark, Enum.Material.SmoothPlastic, nil)
+	local head = createPart(
+		model,
+		"Head",
+		Vector3.new(2.1, 2.1, 2) * scale,
+		Vector3.new(0, 7.05 * scale, 0),
+		COLORS.EnemyDark,
+		Enum.Material.SmoothPlastic,
+		nil
+	)
 	head:SetAttribute("VisualPartId", headId)
-	local armor = createPart(model, "Armor", Vector3.new(3.35, 2.25, 2.05) * scale, Vector3.new(0, 4.65 * scale, -0.05 * scale), archetype == "Corrupted" and COLORS.Corruption or COLORS.EnemyArmor, Enum.Material.Metal, nil)
+	local armor = createPart(
+		model,
+		"Armor",
+		Vector3.new(3.35, 2.25, 2.05) * scale,
+		Vector3.new(0, 4.65 * scale, -0.05 * scale),
+		archetype == "Corrupted" and COLORS.Corruption or COLORS.EnemyArmor,
+		Enum.Material.Metal,
+		nil
+	)
 	armor:SetAttribute("VisualPartId", armorId)
 
 	for _, x in ipairs({ -1.05, 1.05 }) do
-		createPart(model, "Leg", Vector3.new(0.9, 3.2, 1) * scale, Vector3.new(x * scale, 1.6 * scale, 0), enemyColor, Enum.Material.SmoothPlastic, nil)
-		createPart(model, "Arm", Vector3.new(0.85, 3.1, 0.9) * scale, Vector3.new(x * 1.85 * scale, 4.35 * scale, 0), enemyColor, Enum.Material.SmoothPlastic, nil)
+		createPart(
+			model,
+			"Leg",
+			Vector3.new(0.9, 3.2, 1) * scale,
+			Vector3.new(x * scale, 1.6 * scale, 0),
+			enemyColor,
+			Enum.Material.SmoothPlastic,
+			nil
+		)
+		createPart(
+			model,
+			"Arm",
+			Vector3.new(0.85, 3.1, 0.9) * scale,
+			Vector3.new(x * 1.85 * scale, 4.35 * scale, 0),
+			enemyColor,
+			Enum.Material.SmoothPlastic,
+			nil
+		)
 	end
 
 	if accessoryId ~= "accessory.none" then
-		local accessory = createPart(model, "Accessory", Vector3.new(1.7, 2.5, 0.8) * scale, Vector3.new(0, 4.65 * scale, 1.25 * scale), COLORS.DarkMetal, Enum.Material.Metal, nil)
+		local accessory = createPart(
+			model,
+			"Accessory",
+			Vector3.new(1.7, 2.5, 0.8) * scale,
+			Vector3.new(0, 4.65 * scale, 1.25 * scale),
+			COLORS.DarkMetal,
+			Enum.Material.Metal,
+			nil
+		)
 		accessory:SetAttribute("VisualPartId", accessoryId)
 	end
 	buildEnemyWeapon(model, weaponId, scale)
 
 	if archetype == "Elite" then
 		model:SetAttribute("EliteVisual", true)
-		createBall(model, "EliteCore", Vector3.new(0.65, 0.65, 0.65) * scale, Vector3.new(0, 5.2 * scale, -1.2 * scale), Color3.fromRGB(216, 155, 65), Enum.Material.Neon)
+		createBall(
+			model,
+			"EliteCore",
+			Vector3.new(0.65, 0.65, 0.65) * scale,
+			Vector3.new(0, 5.2 * scale, -1.2 * scale),
+			Color3.fromRGB(216, 155, 65),
+			Enum.Material.Neon
+		)
 	elseif archetype == "Corrupted" then
 		for index = 1, 3 do
-			createBall(model, "CorruptionNode_" .. tostring(index), Vector3.new(0.6, 0.6, 0.6) * scale, Vector3.new((index - 2) * 0.8 * scale, (5 + index * 0.35) * scale, -1.15 * scale), COLORS.Corruption, Enum.Material.Neon)
+			createBall(
+				model,
+				"CorruptionNode_" .. tostring(index),
+				Vector3.new(0.6, 0.6, 0.6) * scale,
+				Vector3.new((index - 2) * 0.8 * scale, (5 + index * 0.35) * scale, -1.15 * scale),
+				COLORS.Corruption,
+				Enum.Material.Neon
+			)
 		end
 	end
 
@@ -335,27 +462,95 @@ local function buildWeapon(parent: Instance, definition): Model
 	local model = createModel(parent, definition.category, definition.id, "pack.player_weapons")
 	model:SetAttribute("WeaponCategory", definition.category)
 	local length, width, height = weaponDimensions(definition.category)
-	local receiver = createPart(model, "Root", Vector3.new(width, height, length * 0.52), Vector3.new(0, 1.8, 0), COLORS.Weapon, Enum.Material.Metal, nil)
+	local receiver = createPart(
+		model,
+		"Root",
+		Vector3.new(width, height, length * 0.52),
+		Vector3.new(0, 1.8, 0),
+		COLORS.Weapon,
+		Enum.Material.Metal,
+		nil
+	)
 	model.PrimaryPart = receiver
-	local barrel = createPart(model, "Barrel", Vector3.new(width * 0.48, height * 0.48, length * 0.48), Vector3.new(0, 1.85, -(length * 0.47)), COLORS.DarkMetal, Enum.Material.Metal, nil)
-	local grip = createPart(model, "GripVisual", Vector3.new(width * 0.55, 1.65, 0.75), Vector3.new(0, 0.75, 0.55), COLORS.DarkMetal, Enum.Material.Metal, nil)
+	local barrel = createPart(
+		model,
+		"Barrel",
+		Vector3.new(width * 0.48, height * 0.48, length * 0.48),
+		Vector3.new(0, 1.85, -(length * 0.47)),
+		COLORS.DarkMetal,
+		Enum.Material.Metal,
+		nil
+	)
+	local grip = createPart(
+		model,
+		"GripVisual",
+		Vector3.new(width * 0.55, 1.65, 0.75),
+		Vector3.new(0, 0.75, 0.55),
+		COLORS.DarkMetal,
+		Enum.Material.Metal,
+		nil
+	)
 	grip.Orientation = Vector3.new(-12, 0, 0)
 	createSocket(receiver, "Grip", Vector3.new(0, -height / 2, 0.35), "Grip")
 	createSocket(barrel, "Muzzle", Vector3.new(0, 0, -barrel.Size.Z / 2), "Muzzle")
 	createSocket(receiver, "Secondary", Vector3.new(0, height / 2, 0), "WeaponSecondary")
 
 	if definition.category == "SniperRifle" then
-		createCylinder(model, "Scope", Vector3.new(0.65, 2.8, 0.65), Vector3.new(0, 2.7, -0.2), COLORS.DarkMetal, Enum.Material.Metal)
+		createCylinder(
+			model,
+			"Scope",
+			Vector3.new(0.65, 2.8, 0.65),
+			Vector3.new(0, 2.7, -0.2),
+			COLORS.DarkMetal,
+			Enum.Material.Metal
+		)
 	elseif definition.category == "LMG" then
-		createPart(model, "Magazine", Vector3.new(1.5, 1.7, 1.4), Vector3.new(0, 0.95, -0.3), COLORS.DarkMetal, Enum.Material.Metal, nil)
+		createPart(
+			model,
+			"Magazine",
+			Vector3.new(1.5, 1.7, 1.4),
+			Vector3.new(0, 0.95, -0.3),
+			COLORS.DarkMetal,
+			Enum.Material.Metal,
+			nil
+		)
 	elseif definition.category == "Launcher" then
-		createCylinder(model, "LaunchTube", Vector3.new(1.7, length * 0.72, 1.7), Vector3.new(0, 2.05, -0.8), COLORS.DarkMetal, Enum.Material.Metal)
+		createCylinder(
+			model,
+			"LaunchTube",
+			Vector3.new(1.7, length * 0.72, 1.7),
+			Vector3.new(0, 2.05, -0.8),
+			COLORS.DarkMetal,
+			Enum.Material.Metal
+		)
 	elseif definition.category == "Exotic" then
-		createBall(model, "EnergyCore", Vector3.new(0.85, 0.85, 0.85), Vector3.new(0, 2.05, -0.8), Color3.fromRGB(88, 201, 204), Enum.Material.Neon)
+		createBall(
+			model,
+			"EnergyCore",
+			Vector3.new(0.85, 0.85, 0.85),
+			Vector3.new(0, 2.05, -0.8),
+			Color3.fromRGB(88, 201, 204),
+			Enum.Material.Neon
+		)
 	elseif definition.category == "Shotgun" then
-		createPart(model, "Pump", Vector3.new(width * 0.85, height * 0.9, 1.8), Vector3.new(0, 1.75, -2.1), COLORS.Wood, Enum.Material.Wood, nil)
+		createPart(
+			model,
+			"Pump",
+			Vector3.new(width * 0.85, height * 0.9, 1.8),
+			Vector3.new(0, 1.75, -2.1),
+			COLORS.Wood,
+			Enum.Material.Wood,
+			nil
+		)
 	elseif definition.category == "HandCannon" then
-		createCylinder(model, "Cylinder", Vector3.new(1.2, 1.35, 1.2), Vector3.new(0, 1.9, -0.15), COLORS.WeaponAccent, Enum.Material.Metal)
+		createCylinder(
+			model,
+			"Cylinder",
+			Vector3.new(1.2, 1.35, 1.2),
+			Vector3.new(0, 1.9, -0.15),
+			COLORS.WeaponAccent,
+			Enum.Material.Metal
+		)
 	end
 	return model
 end
@@ -366,47 +561,203 @@ local function buildProp(parent: Instance, definition): Model
 	local root: Part
 
 	if definition.category == "Crate" then
-		root = createPart(model, "Root", Vector3.new(5, 4, 5), Vector3.new(0, 2, 0), COLORS.Wood, Enum.Material.WoodPlanks, nil)
+		root = createPart(
+			model,
+			"Root",
+			Vector3.new(5, 4, 5),
+			Vector3.new(0, 2, 0),
+			COLORS.Wood,
+			Enum.Material.WoodPlanks,
+			nil
+		)
 	elseif definition.category == "Barrel" then
-		root = createCylinder(model, "Root", Vector3.new(3, 4.5, 3), Vector3.new(0, 2.25, 0), COLORS.Metal, Enum.Material.Metal)
+		root = createCylinder(
+			model,
+			"Root",
+			Vector3.new(3, 4.5, 3),
+			Vector3.new(0, 2.25, 0),
+			COLORS.Metal,
+			Enum.Material.Metal
+		)
 	elseif definition.category == "Pipe" then
-		root = createCylinder(model, "Root", Vector3.new(1.5, 8, 1.5), Vector3.new(0, 1.5, 0), COLORS.DarkMetal, Enum.Material.Metal)
+		root = createCylinder(
+			model,
+			"Root",
+			Vector3.new(1.5, 8, 1.5),
+			Vector3.new(0, 1.5, 0),
+			COLORS.DarkMetal,
+			Enum.Material.Metal
+		)
 	elseif definition.category == "Terminal" then
-		root = createPart(model, "Root", Vector3.new(3.5, 5, 2), Vector3.new(0, 2.5, 0), COLORS.DarkMetal, Enum.Material.Metal, nil)
-		createPart(model, "Screen", Vector3.new(2.7, 1.7, 0.12), Vector3.new(0, 3.2, -1.06), Color3.fromRGB(67, 165, 169), Enum.Material.Neon, nil)
+		root = createPart(
+			model,
+			"Root",
+			Vector3.new(3.5, 5, 2),
+			Vector3.new(0, 2.5, 0),
+			COLORS.DarkMetal,
+			Enum.Material.Metal,
+			nil
+		)
+		createPart(
+			model,
+			"Screen",
+			Vector3.new(2.7, 1.7, 0.12),
+			Vector3.new(0, 3.2, -1.06),
+			Color3.fromRGB(67, 165, 169),
+			Enum.Material.Neon,
+			nil
+		)
 		createSocket(root, "Interaction", Vector3.new(0, 0.5, -1.1), "Interaction")
 	elseif definition.category == "Desk" then
-		root = createPart(model, "Root", Vector3.new(7, 0.5, 3), Vector3.new(0, 3.2, 0), COLORS.Wood, Enum.Material.WoodPlanks, nil)
+		root = createPart(
+			model,
+			"Root",
+			Vector3.new(7, 0.5, 3),
+			Vector3.new(0, 3.2, 0),
+			COLORS.Wood,
+			Enum.Material.WoodPlanks,
+			nil
+		)
 		for _, x in ipairs({ -2.7, 2.7 }) do
-			createPart(model, "Leg", Vector3.new(0.5, 3, 0.5), Vector3.new(x, 1.5, 0), COLORS.DarkMetal, Enum.Material.Metal, nil)
+			createPart(
+				model,
+				"Leg",
+				Vector3.new(0.5, 3, 0.5),
+				Vector3.new(x, 1.5, 0),
+				COLORS.DarkMetal,
+				Enum.Material.Metal,
+				nil
+			)
 		end
 	elseif definition.category == "Shelf" then
-		root = createPart(model, "Root", Vector3.new(6, 0.45, 2), Vector3.new(0, 0.4, 0), COLORS.DarkMetal, Enum.Material.Metal, nil)
+		root = createPart(
+			model,
+			"Root",
+			Vector3.new(6, 0.45, 2),
+			Vector3.new(0, 0.4, 0),
+			COLORS.DarkMetal,
+			Enum.Material.Metal,
+			nil
+		)
 		for level = 1, 4 do
-			createPart(model, "Shelf_" .. tostring(level), Vector3.new(6, 0.35, 2), Vector3.new(0, level * 2, 0), COLORS.Metal, Enum.Material.Metal, nil)
+			createPart(
+				model,
+				"Shelf_" .. tostring(level),
+				Vector3.new(6, 0.35, 2),
+				Vector3.new(0, level * 2, 0),
+				COLORS.Metal,
+				Enum.Material.Metal,
+				nil
+			)
 		end
 	elseif definition.category == "BrokenMachinery" then
-		root = createPart(model, "Root", Vector3.new(6, 3.5, 4), Vector3.new(0, 1.75, 0), COLORS.DarkMetal, Enum.Material.CorrodedMetal, nil)
-		createCylinder(model, "BrokenAxle", Vector3.new(1, 5, 1), Vector3.new(1.5, 3.7, -0.4), COLORS.Metal, Enum.Material.CorrodedMetal).Orientation = Vector3.new(15, 0, 70)
+		root = createPart(
+			model,
+			"Root",
+			Vector3.new(6, 3.5, 4),
+			Vector3.new(0, 1.75, 0),
+			COLORS.DarkMetal,
+			Enum.Material.CorrodedMetal,
+			nil
+		)
+		createCylinder(
+			model,
+			"BrokenAxle",
+			Vector3.new(1, 5, 1),
+			Vector3.new(1.5, 3.7, -0.4),
+			COLORS.Metal,
+			Enum.Material.CorrodedMetal
+		).Orientation =
+			Vector3.new(15, 0, 70)
 	elseif definition.category == "Sign" then
-		root = createPart(model, "Root", Vector3.new(0.6, 7, 0.6), Vector3.new(0, 3.5, 0), COLORS.DarkMetal, Enum.Material.Metal, nil)
-		createPart(model, "SignFace", Vector3.new(6, 2.6, 0.35), Vector3.new(0, 6, 0), COLORS.Trim, Enum.Material.Metal, nil)
+		root = createPart(
+			model,
+			"Root",
+			Vector3.new(0.6, 7, 0.6),
+			Vector3.new(0, 3.5, 0),
+			COLORS.DarkMetal,
+			Enum.Material.Metal,
+			nil
+		)
+		createPart(
+			model,
+			"SignFace",
+			Vector3.new(6, 2.6, 0.35),
+			Vector3.new(0, 6, 0),
+			COLORS.Trim,
+			Enum.Material.Metal,
+			nil
+		)
 	elseif definition.category == "Lamp" then
-		root = createPart(model, "Root", Vector3.new(0.5, 7, 0.5), Vector3.new(0, 3.5, 0), COLORS.DarkMetal, Enum.Material.Metal, nil)
-		createBall(model, "Lamp", Vector3.new(1.5, 1.5, 1.5), Vector3.new(0, 7.3, 0), Color3.fromRGB(227, 187, 104), Enum.Material.Neon)
+		root = createPart(
+			model,
+			"Root",
+			Vector3.new(0.5, 7, 0.5),
+			Vector3.new(0, 3.5, 0),
+			COLORS.DarkMetal,
+			Enum.Material.Metal,
+			nil
+		)
+		createBall(
+			model,
+			"Lamp",
+			Vector3.new(1.5, 1.5, 1.5),
+			Vector3.new(0, 7.3, 0),
+			Color3.fromRGB(227, 187, 104),
+			Enum.Material.Neon
+		)
 	elseif definition.category == "Debris" then
-		root = createPart(model, "Root", Vector3.new(4.5, 0.7, 2), Vector3.new(0, 0.4, 0), COLORS.Stone, Enum.Material.Concrete, nil)
+		root = createPart(
+			model,
+			"Root",
+			Vector3.new(4.5, 0.7, 2),
+			Vector3.new(0, 0.4, 0),
+			COLORS.Stone,
+			Enum.Material.Concrete,
+			nil
+		)
 		for index = 1, 3 do
-			local chunk = createPart(model, "Chunk_" .. tostring(index), Vector3.new(1.2 + index * 0.4, 0.8, 1.5), Vector3.new(index * 1.1 - 2, 0.7, index % 2), COLORS.Stone, Enum.Material.Concrete, nil)
+			local chunk = createPart(
+				model,
+				"Chunk_" .. tostring(index),
+				Vector3.new(1.2 + index * 0.4, 0.8, 1.5),
+				Vector3.new(index * 1.1 - 2, 0.7, index % 2),
+				COLORS.Stone,
+				Enum.Material.Concrete,
+				nil
+			)
 			chunk.Orientation = Vector3.new(index * 9, index * 21, index * 5)
 		end
 	elseif definition.category == "Rock" then
-		root = createBall(model, "Root", Vector3.new(5.5, 3.8, 4.7), Vector3.new(0, 1.8, 0), COLORS.Stone, Enum.Material.Rock)
+		root = createBall(
+			model,
+			"Root",
+			Vector3.new(5.5, 3.8, 4.7),
+			Vector3.new(0, 1.8, 0),
+			COLORS.Stone,
+			Enum.Material.Rock
+		)
 		root.Orientation = Vector3.new(9, 23, 6)
 	else
-		root = createPart(model, "Root", Vector3.new(0.8, 4.5, 0.8), Vector3.new(0, 2.25, 0), COLORS.Plant, Enum.Material.Grass, nil)
+		root = createPart(
+			model,
+			"Root",
+			Vector3.new(0.8, 4.5, 0.8),
+			Vector3.new(0, 2.25, 0),
+			COLORS.Plant,
+			Enum.Material.Grass,
+			nil
+		)
 		for index = 1, 5 do
-			local leaf = createPart(model, "Leaf_" .. tostring(index), Vector3.new(0.4, 3, 1), Vector3.new((index - 3) * 0.45, 3.6, 0), COLORS.Plant, Enum.Material.Grass, nil)
+			local leaf = createPart(
+				model,
+				"Leaf_" .. tostring(index),
+				Vector3.new(0.4, 3, 1),
+				Vector3.new((index - 3) * 0.45, 3.6, 0),
+				COLORS.Plant,
+				Enum.Material.Grass,
+				nil
+			)
 			leaf.Orientation = Vector3.new(index * 7 - 21, index * 31, index * 5 - 15)
 		end
 	end
@@ -420,7 +771,15 @@ local function buildRewardContainer(parent: Instance, definition): Model
 	local model = createModel(parent, definition.tier .. " Chest", definition.id, "pack.reward_containers")
 	model:SetAttribute("RewardTier", definition.tier)
 	local accent = REWARD_COLORS[definition.tier] or REWARD_COLORS.Common
-	local base = createPart(model, "Root", Vector3.new(6, 2.4, 4), Vector3.new(0, 1.2, 0), COLORS.DarkMetal, Enum.Material.Metal, nil)
+	local base = createPart(
+		model,
+		"Root",
+		Vector3.new(6, 2.4, 4),
+		Vector3.new(0, 1.2, 0),
+		COLORS.DarkMetal,
+		Enum.Material.Metal,
+		nil
+	)
 	base.CanCollide = true
 	model.PrimaryPart = base
 	createPart(model, "Lid", Vector3.new(6.2, 1.5, 4.2), Vector3.new(0, 3.1, 0), accent, Enum.Material.Metal, nil)
@@ -429,7 +788,15 @@ local function buildRewardContainer(parent: Instance, definition): Model
 	createSocket(base, "Interaction", Vector3.new(0, 0.7, -2.1), "Interaction")
 	if definition.tier == "Boss" or definition.tier == "Legendary" or definition.tier == "Event" then
 		for _, x in ipairs({ -2.5, 2.5 }) do
-			createPart(model, "TierFin", Vector3.new(0.45, 2.8, 4.5), Vector3.new(x, 2.5, 0), accent, Enum.Material.Metal, nil)
+			createPart(
+				model,
+				"TierFin",
+				Vector3.new(0.45, 2.8, 4.5),
+				Vector3.new(x, 2.5, 0),
+				accent,
+				Enum.Material.Metal,
+				nil
+			)
 		end
 	end
 	return model
@@ -497,7 +864,10 @@ function Factory.BuildStarterLibrary(parent: Instance): Folder
 
 	library:SetAttribute("DungeonPrototypeCount", #Catalog.Dungeon.Modules)
 	library:SetAttribute("EnemyArchetypeCount", #Catalog.Enemies.Archetypes)
-	library:SetAttribute("EnemyBaseCombinationCount", #Catalog.Enemies.Bodies * #Catalog.Enemies.Heads * #Catalog.Enemies.Armor * #Catalog.Enemies.Weapons)
+	library:SetAttribute(
+		"EnemyBaseCombinationCount",
+		#Catalog.Enemies.Bodies * #Catalog.Enemies.Heads * #Catalog.Enemies.Armor * #Catalog.Enemies.Weapons
+	)
 	library:SetAttribute("WeaponPrototypeCount", #Catalog.Weapons.Categories)
 	library:SetAttribute("PropPrototypeCount", #Catalog.Props.Categories)
 	library:SetAttribute("RewardContainerPrototypeCount", #Catalog.RewardContainers.Tiers)
