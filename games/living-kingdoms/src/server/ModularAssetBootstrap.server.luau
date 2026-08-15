@@ -22,7 +22,8 @@ local existing = atlasAssets:FindFirstChild(Catalog.GeneratedRootName)
 if
 	existing ~= nil
 	and (
-		existing:GetAttribute("CatalogVersion") ~= Catalog.Version
+		not existing:IsA("Folder")
+		or existing:GetAttribute("CatalogVersion") ~= Catalog.Version
 		or existing:GetAttribute(READY_ATTRIBUTE) ~= true
 	)
 then
