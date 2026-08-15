@@ -123,7 +123,10 @@ local function buildEnvironmentModels(parent: Instance, worldRoot: Folder)
 	modelsFolder:SetAttribute("EnvironmentModelVersion", EnvironmentModelPlacementConfig.Version)
 	modelsFolder:SetAttribute("EnvironmentCompositionAlgorithm", EnvironmentModelPlacementConfig.AlgorithmVersion)
 	modelsFolder:SetAttribute("EnvironmentCompositionSeed", EnvironmentModelPlacementConfig.Seed)
-	modelsFolder:SetAttribute("EnvironmentCrossFamilySpacingScale", EnvironmentModelPlacementConfig.CrossFamilySpacingScale)
+	modelsFolder:SetAttribute(
+		"EnvironmentCrossFamilySpacingScale",
+		EnvironmentModelPlacementConfig.CrossFamilySpacingScale
+	)
 	modelsFolder:SetAttribute("EnvironmentPresentationOnly", true)
 	modelsFolder.Parent = parent
 
