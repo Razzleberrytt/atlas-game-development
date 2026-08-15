@@ -11,7 +11,7 @@ local EnemyContracts = require(script.Parent.Parent.Combat.EnemyContracts)
 local WorldFoundationConfig = require(script.Parent.WorldFoundationConfig)
 
 local EnemyConfig = {
-	Version = "MVP-0.1-v6-purposeful-stalker-pressure",
+	Version = "MVP-0.1-v8-fair-stuck-recovery",
 	Walker = table.freeze({
 		ArchetypeId = EnemyContracts.EnemyArchetypeIds.ExclusionWalker,
 		DisplayName = "Exclusion Stalker",
@@ -29,11 +29,16 @@ local EnemyConfig = {
 	}),
 	Navigation = table.freeze({
 		PursuitRepathIntervalSeconds = 0.45,
+		MaximumPathComputationsPerEvaluation = 4,
 		AgentRadiusStuds = 2.5,
 		AgentHeightStuds = 4,
+		AgentCanJump = false,
 		WaypointSpacingStuds = 5,
 		PackFlankOffsetStuds = 4.5,
 		FlankActivationDistanceStuds = 38,
+		StuckMinimumProgressStuds = 1.5,
+		StuckProgressWindowSeconds = 1.25,
+		StuckRecoveryCooldownSeconds = 1.5,
 	}),
 	FairSpawn = table.freeze({
 		MinimumOperativeDistanceStuds = 64,
@@ -90,6 +95,30 @@ assert(
 )
 assert(EnemyConfig.Walker.AttackCooldownSeconds > 0, "attack cooldown must be positive")
 assert(
+	EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation > 0
+		and EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation % 1 == 0
+		and EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation <= 8,
+	"pathfinding work per enemy evaluation must remain a small positive integer budget"
+)
+assert(type(EnemyConfig.Navigation.AgentCanJump) == "boolean", "pathfinding jump capability must be explicit")
+assert(
+	not EnemyConfig.Navigation.AgentCanJump,
+	"walker Humanoids currently have zero JumpPower, so navigation must not request jump waypoints"
+)
+assert(
+	EnemyConfig.Navigation.StuckMinimumProgressStuds > 0
+		and EnemyConfig.Navigation.StuckMinimumProgressStuds < EnemyConfig.Walker.AttackRangeStuds,
+	"stuck progress threshold must be positive and smaller than melee range"
+)
+assert(
+	EnemyConfig.Navigation.StuckProgressWindowSeconds > EnemyConfig.Navigation.PursuitRepathIntervalSeconds,
+	"stuck detection must observe multiple ordinary repath intervals"
+)
+assert(
+	EnemyConfig.Navigation.StuckRecoveryCooldownSeconds >= EnemyConfig.Navigation.StuckProgressWindowSeconds,
+	"stuck recovery cooldown must prevent repeated repath thrash"
+)
+assert(
 	EnemyConfig.FairSpawn.MinimumOperativeDistanceStuds > EnemyConfig.Combat.GameplayVisibilityRadiusStuds,
 	"fair spawns must land outside the darkness engagement radius"
 )
@@ -116,27 +145,22 @@ assert(
 	"roaming spawns must honor the fair-spawn distance"
 )
 assert(
-	EnemyConfig.Pressure.RoamingSpawnMaximumDistanceStuds > EnemyConfig.Pressure.RoamingSpawnMinimumDistanceStuds,
-	"the roaming spawn ring must have positive width"
+	EnemyConfig.Pressure.RoamingSpawnMaximumDistanceStuds >= EnemyConfig.Pressure.RoamingSpawnMinimumDistanceStuds,
+	"roaming spawn ring must be ordered"
+)
+assert(EnemyConfig.Cleanup.CorpseCleanupSeconds > 0, "corpse cleanup must be bounded")
+assert(EnemyConfig.Combat.GameplayVisibilityRadiusStuds > 0, "combat visibility radius must be positive")
+assert(
+	EnemyConfig.Combat.EvaluationIntervalSeconds >= 0.05,
+	"combat evaluation cadence must stay bounded away from per-frame polling"
 )
 assert(
-	EnemyConfig.Pressure.RoamingSpawnMaximumDistanceStuds < WorldFoundationConfig.PlayableHalfExtentStuds,
-	"roaming spawns must stay inside the authored world"
-)
-assert(EnemyConfig.Cleanup.CorpseCleanupSeconds > 0, "corpse cleanup must be a bounded positive duration")
-assert(EnemyConfig.Combat.GameplayVisibilityRadiusStuds > 0, "the darkness engagement radius must be positive")
-assert(
-	EnemyConfig.Combat.EvaluationIntervalSeconds > 0 and EnemyConfig.Combat.EvaluationIntervalSeconds <= 1,
-	"combat evaluation must stay bounded and responsive"
+	EnemyConfig.Combat.MaximumLineOfSightRaycastsPerEvaluation > 0,
+	"combat line-of-sight raycast budget must be positive"
 )
 assert(
-	EnemyConfig.Combat.MaximumLineOfSightRaycastsPerEvaluation > 0
-		and EnemyConfig.Combat.MaximumLineOfSightRaycastsPerEvaluation <= 8,
-	"the line-of-sight raycast budget must remain bounded"
-)
-assert(
-	EnemyConfig.EvaluationIntervalSeconds > 0 and EnemyConfig.EvaluationIntervalSeconds <= 1,
-	"enemy evaluation must stay bounded and responsive"
+	EnemyConfig.EvaluationIntervalSeconds >= 0.05,
+	"enemy evaluation cadence must stay bounded away from per-frame polling"
 )
 
 return table.freeze(EnemyConfig)

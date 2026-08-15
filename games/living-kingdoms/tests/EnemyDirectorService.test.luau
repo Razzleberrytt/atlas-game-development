@@ -42,7 +42,10 @@ local SPECIAL_RESOLVER_TOKEN = {}
 local BOSS_CONTRACTS_TOKEN = {}
 local BOSS_CONFIG_TOKEN = {}
 local BOSS_RESOLVER_TOKEN = {}
+local NAVIGATION_SCHEDULER_TOKEN = {}
 
+local navigationScheduler =
+	loadSimple("games/living-kingdoms/src/server/Domain/EnemyNavigationScheduler.luau", "EnemyNavigationScheduler")
 local rpgContracts = loadSimple("games/living-kingdoms/src/shared/RPG/RunRpgContracts.luau", "RunRpgContracts")
 local rpgConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RunRpgConfig.luau"), {
 	debugName = "RunRpgConfig",
@@ -294,7 +297,6 @@ local function signal()
 	return value
 end
 
--- Instance double with settable properties and destroy tracking.
 local createdInstances = {}
 local function fakeInstance(className: string)
 	local attributes = {}
@@ -354,8 +356,6 @@ local workspaceMock = {
 }
 local runServiceMock = { Heartbeat = heartbeatSignal }
 
--- Life-service mock: roster, players, characters, and an auditable
--- authoritative damage boundary.
 local roster = {}
 local playersById = {}
 local damageCalls = {}
@@ -460,6 +460,9 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				BossPhaseResolver = BOSS_RESOLVER_TOKEN,
 				EliteAffixResolver = ELITE_RESOLVER_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
+				Parent = {
+					Domain = { EnemyNavigationScheduler = NAVIGATION_SCHEDULER_TOKEN },
+				},
 			},
 		},
 		require = function(token)
@@ -493,6 +496,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return eliteResolver
 			elseif token == LIFE_TOKEN then
 				return lifeService
+			elseif token == NAVIGATION_SCHEDULER_TOKEN then
+				return navigationScheduler
 			end
 			error("unexpected EnemyDirectorService dependency")
 		end,
@@ -600,10 +605,8 @@ local function reset()
 	service.start()
 end
 
--- Stopped service refuses spawns.
 assert(service.spawnEnemy(request("enemy.a", 0, 0)).rejectionReasonId == "ServiceStopped")
 
--- Basic spawn lifecycle.
 reset()
 assert(findCreated("EnemyEntities") ~= nil, "start must create the enemy folder")
 local firstSpawn = service.spawnEnemy(request("enemy.a", 0, 0))
@@ -623,9 +626,6 @@ assert(walkerModel:GetAttribute(presentationAttributes.AttackServerTimestamp) ==
 assert(walkerModel:GetAttribute(presentationAttributes.HitSequence) == 0)
 assert(walkerModel:GetAttribute(presentationAttributes.HitServerTimestamp) == 0)
 
--- RPG-0105 assignment remains off during the protected opening, then applies
--- one deterministic Frenzied identity with bounded health and replicated safe
--- presentation facts. Death immediately releases the simultaneous-elite slot.
 reset()
 service.beginOperationPressure()
 now = rpgConfig.EliteAssignmentPlanning.protectedOpeningSeconds - 0.01
@@ -662,8 +662,6 @@ assert(service.commitHealthState(eliteEntityId, eliteHealth.revision, {
 	processedShotIds = { ["shot:elite"] = true },
 }, now + 1))
 
--- Armored absorbs only a configured fraction behind a finite armor pool. The
--- returned committed damage keeps hit feedback aligned with actual health.
 reset()
 service.beginOperationPressure()
 now = rpgConfig.EliteAssignmentPlanning.protectedOpeningSeconds
@@ -684,8 +682,6 @@ assert(
 	armoredModel:GetAttribute(presentationAttributes.EliteArmorRemaining) == rpgConfig.ArmoredRuntime.armorCapacity - 8
 )
 
--- Regenerator waits through uninterrupted pressure, heals on its bounded
--- interval, and advances the health revision so stale shots cannot overwrite it.
 reset()
 service.beginOperationPressure()
 now = rpgConfig.EliteAssignmentPlanning.protectedOpeningSeconds
@@ -712,7 +708,6 @@ assert(
 )
 assert(regenerated.revision == damagedRegenerator.revision + 1, "server healing must advance health revision")
 
--- Volatile is a delayed, smaller-than-Bloater one-shot danger zone.
 reset()
 local _volatileTarget, volatileTargetRoot = addOperative("operative.player:volatile", 300, 300)
 service.beginOperationPressure()
@@ -738,8 +733,6 @@ service.evaluateAt(detonateAt + 0.1)
 assert(#damageCalls == 1, "Volatile reaction must never duplicate")
 assert(volatileModel:GetAttribute(presentationAttributes.EliteVolatileDetonationSequence) == detonateAt)
 
--- Commander buffs only nearby non-elites, at one stack, and the aura clears on
--- range exit and commander death.
 reset()
 service.beginOperationPressure()
 now = rpgConfig.EliteAssignmentPlanning.protectedOpeningSeconds
@@ -771,7 +764,6 @@ assert(service.commitHealthState(commanderId, commanderHealth.revision, {
 service.evaluateAt(now + 0.4)
 assert(ordinaryModel:GetAttribute(presentationAttributes.EliteCommanderAuraActive) == false)
 
--- Unfair authored spawn defers, then lands once the operative moves away.
 reset()
 assert(service.spawnEnemy(request("enemy.a", 0, 0)).didSpawn)
 local victim, victimRoot = addOperative("operative.player:1", 100, 0)
@@ -787,11 +779,9 @@ local retried = service.evaluateAt(now)
 assert(retried.spawnedCount == 1 and service.readPressureState().pendingSpawnCount == 0)
 assert(service.readActiveEnemyCount() == 2)
 
--- Roaming spawn proposals never defer.
 local unfairRoam = service.spawnEnemy(request("enemy.roam-unfair", 250 + minimumSpawn - 1, 250, "RoamingPressure"))
 assert(not unfairRoam.didSpawn and not unfairRoam.wasDeferred)
 
--- Population caps: representative 1/2/4-operative caps, then cap deferral.
 assert(service.readPressureState().activeEnemyCount == 2)
 local capForOne =
 	math.min(config.Population.AbsoluteMaximumConcurrent, config.Population.MaximumConcurrentPerOperative * 1)
@@ -801,8 +791,6 @@ end
 local overCap = service.spawnEnemy(request("enemy.overflow", -100, -100))
 assert(not overCap.didSpawn and overCap.wasDeferred and overCap.rejectionReasonId == "PopulationCapReached")
 
--- Pursuit: an operative inside detection (but beyond the fair-spawn floor at
--- spawn time) draws movement intent toward them.
 reset()
 addOperative("operative.player:1", 66, 0)
 assert(service.spawnEnemy(request("enemy.hunter", 0, 0)).didSpawn)
@@ -821,8 +809,6 @@ local lastMove = hunterHumanoid.movedTo[#hunterHumanoid.movedTo]
 assert(lastMove.X == 66 and lastMove.Z == 0, "pursuit must move toward the server-read operative position")
 assert(hunterHumanoid.WalkSpeed == walker.PursuitSpeedStudsPerSecond)
 
--- Attacks: a server-owned windup precedes every commit and can be canceled.
--- The spawn is fair; the operative then walks into melee range.
 reset()
 local target, targetRoot = addOperative("operative.player:7", 300, 300)
 assert(service.spawnEnemy(request("enemy.biter", 0, 0)).didSpawn)
@@ -851,10 +837,6 @@ assert(biterModel:GetAttribute("EnemyPresentationAttackSequence") == 1)
 assert(biterModel:GetAttribute("EnemyPresentationAttackServerTimestamp") == now)
 assert(biterModel:GetAttribute("EnemyPresentationBehaviorStateId") == "Attacking")
 
--- Iron Hide: a squad incoming-damage multiplier published on ProgressionNetwork
--- reduces the amount committed at the enemy attack source while the P3 boundary
--- still receives one authoritative event. Absent the attribute the amount is the
--- unmodified configured attack damage (asserted above).
 reset()
 progressionAttributes.RunIncomingDamageMultiplier = 0.5
 local _mitigatedTarget, mitigatedRoot = addOperative("operative.player:9", 300, 300)
@@ -872,7 +854,6 @@ assert(
 assert(damageCalls[1].damage.damageAmount < walker.AttackDamage, "mitigated damage must be below the base attack")
 progressionAttributes.RunIncomingDamageMultiplier = 1
 
--- Leaving melee range during windup cancels damage and resumes pursuit.
 reset()
 target, targetRoot = addOperative("operative.player:7", 300, 300)
 assert(service.spawnEnemy(request("enemy.cancel", 0, 0)).didSpawn)
@@ -887,7 +868,6 @@ assert(service.evaluateAt(now).attackCommittedCount == 0 and #damageCalls == 0)
 assert(cancelModel:GetAttribute("EnemyPresentationBehaviorStateId") == "Pursuing")
 assert(cancelModel:GetAttribute("EnemyPresentationAttackSequence") == 0)
 
--- Cooldown starts at the committed strike, then another complete windup is required.
 reset()
 target, targetRoot = addOperative("operative.player:7", 300, 300)
 assert(service.spawnEnemy(request("enemy.retry", 0, 0)).didSpawn)
@@ -903,8 +883,6 @@ now = firstCommitAt + walker.AttackCooldownSeconds
 assert(service.evaluateAt(now).attackCommittedCount == 0, "cooldown deadline starts a windup, not instant damage")
 local retryModel = findCreated("Test Walker")
 assert(retryModel ~= nil and retryModel:GetAttribute("EnemyPresentationWindupSequence") == 2)
-
--- A rejected life commit keeps the same windup pending and retries without a hidden instant attack.
 rejectNextDamage = true
 now += walker.AttackWindupSeconds
 assert(service.evaluateAt(now).attackCommittedCount == 0)
@@ -913,13 +891,10 @@ assert(retryModel:GetAttribute("EnemyPresentationAttackSequence") == 1)
 now += 0.2
 assert(service.evaluateAt(now).attackCommittedCount == 1, "rejected commits must retry the disclosed windup")
 assert(retryModel:GetAttribute("EnemyPresentationAttackSequence") == 2)
--- Downed operatives never begin a windup.
 target.snapshot.lifeStateId = "Incapacitated"
 now += walker.AttackCooldownSeconds
 assert(service.evaluateAt(now).attackCommittedCount == 0, "only Alive operatives receive enemy damage")
 
--- Health commit boundary: revision gate, monotonic health, ShotId retention,
--- death, corpse cleanup.
 reset()
 addOperative("operative.player:1", 300, 300)
 assert(service.spawnEnemy(request("enemy.mark", 0, 0)).didSpawn)
@@ -974,7 +949,6 @@ assert(service.evaluateAt(now).cleanedCount == 1)
 assert(markModel._destroyed, "corpse cleanup must destroy the body")
 assert(service.readHealthState("enemy.mark") == nil)
 
--- Roaming pressure, escalation cadence, and recovery windows.
 reset()
 addOperative("operative.player:1", 0, 0)
 service.beginOperationPressure()
@@ -990,8 +964,8 @@ assert(roamSummary.spawnedCount == level0.SpawnCount, "roaming must spawn on its
 local roamFacts = service.readEnemyCombatFacts()
 assert(#roamFacts == level0.SpawnCount)
 for _, fact in roamFacts do
-	local dx = fact.worldPosition.X - 0
-	local dz = fact.worldPosition.Z - 0
+	local dx = fact.worldPosition.X
+	local dz = fact.worldPosition.Z
 	local distance = math.sqrt(dx * dx + dz * dz)
 	assert(distance >= minimumSpawn, "roaming spawns must honor fairness")
 	assert(
@@ -1001,8 +975,6 @@ for _, fact in roamFacts do
 	)
 end
 
--- An authored wave just before the next scheduled roam raises escalation and
--- opens a recovery window that pauses that roam.
 local scheduledRoamAt = service.readPressureState().nextRoamingSpawnServerTimestamp :: number
 now = scheduledRoamAt - 1
 local waveAccepted = service.spawnAuthoredWave(2, {
@@ -1018,13 +990,10 @@ local level2 = config.Pressure.RoamingByEscalationLevel[2]
 now = scheduledRoamAt
 assert(now < recoveryEnd, "this scenario must land the roam inside the recovery window")
 assert(service.evaluateAt(now).spawnedCount == 0, "recovery windows must pause roaming pressure")
--- After the recovery window the escalated cadence resumes.
 local resumeAt = service.readPressureState().nextRoamingSpawnServerTimestamp
 assert(resumeAt == now + level2.IntervalSeconds, "escalation must tighten the roaming interval")
 now = math.max(resumeAt, recoveryEnd)
 local resumed = service.evaluateAt(now)
--- The earlier special replaces one Stalker inside the same bounded cadence;
--- it must never add another body on top of the group budget.
 assert(resumed.spawnedCount == level2.SpawnCount, "mixed pressure must stay inside the authored group count")
 local spitterCount = 0
 for _, instance in createdInstances do
@@ -1038,11 +1007,9 @@ for _, instance in createdInstances do
 end
 assert(spitterCount == 1, "early escalation must introduce one bounded ranged threat")
 
--- Escalation level never regresses.
 service.spawnAuthoredWave(1, { { id = "enemy.wave1-late", name = "Wave Walker", x = 250, y = 3, z = -250 } })
 assert(service.readPressureState().escalationLevel == 2, "escalation is monotonic")
 
--- Stand-down: spawning stops, pending clears, and every enemy becomes inert.
 reset()
 local standTarget, standRoot = addOperative("operative.player:1", 300, 300)
 assert(service.spawnEnemy(request("enemy.stood", 0, 0)).didSpawn)
@@ -1057,7 +1024,6 @@ now = 500
 assert(service.evaluateAt(now).attackCommittedCount == 0, "stood-down enemies never attack")
 assert(#damageCalls == 0)
 assert(service.readEnemyCombatFacts()[1].targetOperativeEntityId == nil)
--- Pressure can begin again (a fresh operation) and enemies wake.
 service.beginOperationPressure()
 now = 501
 assert(service.evaluateAt(now).attackCommittedCount == 0, "pressure restart must begin a disclosed windup")
@@ -1067,9 +1033,6 @@ now += walker.AttackWindupSeconds
 assert(service.evaluateAt(now).attackCommittedCount == 1, "woken enemies commit only after windup")
 assert(standTarget.snapshot.lifeStateId == "Alive")
 
--- P9-0102 Blight Spitter integration: archetype spawn, the Corrosive Bloom charge
--- lifecycle, the commit burst against clustered operatives, the lingering pool,
--- and stand-down cleanup — all through the existing director boundaries.
 local spitterCfg = specialConfig.BlightSpitter
 local bloomCfg = specialConfig.Bloom
 local presentation = presentationContracts.AttributeNames
@@ -1088,8 +1051,6 @@ local function countLivingSpitters(): number
 	return total
 end
 
--- Spawn a Spitter with no operatives present (fair), then cluster operatives near
--- it. The Spitter carries its own health and archetype, never an elite affix.
 reset()
 assert(service.spawnEnemy({
 	entityId = "enemy.spitter.test",
@@ -1103,16 +1064,11 @@ assert(spitterModel ~= nil and spitterModel:GetAttribute("EnemyArchetypeId") == 
 assert(spitterModel:GetAttribute(presentation.EliteAffixId) == nil, "special enemies are never elite-decorated")
 local spitterHealth = service.readHealthState("enemy.spitter.test")
 assert(spitterHealth ~= nil and spitterHealth.healthState.currentHealth == spitterCfg.MaximumHealth)
-
--- A dense cluster of three plus one operative outside the impact radius and one
--- incapacitated operative inside it (which must be excluded from targeting/damage).
 addOperative("op:spit-a", 10, 0)
 addOperative("op:spit-b", 14, 0)
 addOperative("op:spit-c", 18, 0)
 addOperative("op:spit-edge", 10, 20)
 addOperative("op:spit-down", 12, 0, "Incapacitated")
-
--- Begin: the densest cluster anchors the charge and the telegraph is disclosed.
 now = 1
 assert(service.evaluateAt(now).attackCommittedCount == 0 and #damageCalls == 0)
 assert(spitterModel:GetAttribute(presentation.BehaviorStateId) == "Charging")
@@ -1121,12 +1077,7 @@ assert(spitterModel:GetAttribute(presentation.SpitterBloomChargeStartedServerTim
 assert(spitterModel:GetAttribute(presentation.SpitterBloomCommitServerTimestamp) == 1 + bloomCfg.ChargeWindupSeconds)
 assert(spitterModel:GetAttribute(presentation.SpitterBloomCenterX) == 10, "the bloom locks onto the densest cluster")
 assert(spitterModel:GetAttribute(presentation.SpitterBloomRadiusStuds) == bloomCfg.ImpactRadiusStuds)
-
--- Continue before the windup elapses: no damage yet.
 assert(service.evaluateAt(1 + bloomCfg.ChargeWindupSeconds - 0.01).attackCommittedCount == 0 and #damageCalls == 0)
-
--- Commit: every Alive operative inside the impact radius takes one authoritative
--- event; the out-of-radius and incapacitated operatives are excluded.
 local burst = service.evaluateAt(1 + bloomCfg.ChargeWindupSeconds)
 assert(burst.attackCommittedCount == 3, "the bloom hits the three clustered Alive operatives only")
 assert(#damageCalls == 3)
@@ -1142,8 +1093,6 @@ assert(hitIds["op:spit-a"].damageEventId == "spitterbloom:enemy.spitter.test:op:
 assert(spitterModel:GetAttribute(presentation.BehaviorStateId) == "Recovering", "the Spitter reloads after committing")
 assert(spitterModel:GetAttribute(presentation.SpitterBloomChargeStartedServerTimestamp) == 0, "the telegraph clears")
 
--- The lingering pool denies the ground: it ticks a smaller amount on its interval,
--- then expires. Ticks persist independent of the Spitter's own reload.
 local committedAt = 1 + bloomCfg.ChargeWindupSeconds
 table.clear(damageCalls)
 local firstTick = service.evaluateAt(committedAt + bloomCfg.Lingering.TickIntervalSeconds)
@@ -1156,8 +1105,6 @@ assert(
 	"the pool expires after its lifetime"
 )
 assert(#damageCalls == 0)
-
--- Killing the Spitter frees its concurrent slot.
 local aliveSpitterHealth = service.readHealthState("enemy.spitter.test")
 assert(aliveSpitterHealth ~= nil)
 assert(service.commitHealthState("enemy.spitter.test", aliveSpitterHealth.revision, {
@@ -1167,8 +1114,6 @@ assert(service.commitHealthState("enemy.spitter.test", aliveSpitterHealth.revisi
 }, committedAt + bloomCfg.Lingering.LifetimeSeconds + 1))
 assert(not service.readHealthState("enemy.spitter.test").isAlive)
 
--- Stand-down clears an in-flight charge and every lingering pool so a resolved
--- squad is neither charged at nor denied ground.
 reset()
 assert(service.spawnEnemy({
 	entityId = "enemy.spitter.stand",
@@ -1182,7 +1127,7 @@ addOperative("op:stand-b", 14, 0)
 local standSpitterModel = findModelByEntityId("enemy.spitter.stand")
 now = 1
 service.evaluateAt(now)
-service.evaluateAt(1 + bloomCfg.ChargeWindupSeconds) -- commit, registering a pool
+service.evaluateAt(1 + bloomCfg.ChargeWindupSeconds)
 service.endOperationPressure()
 assert(standSpitterModel:GetAttribute(presentation.BehaviorStateId) == "StandDown")
 assert(standSpitterModel:GetAttribute(presentation.SpitterBloomChargeStartedServerTimestamp) == 0)
@@ -1194,8 +1139,6 @@ assert(
 )
 assert(#damageCalls == 0)
 
--- The concurrent-Spitter cap: with the maximum already alive, an eligible roam
--- introduces no further Spitter.
 reset()
 addOperative("op:cap", 0, 0)
 for index = 1, specialConfig.Spawn.MaximumConcurrent do
@@ -1217,9 +1160,6 @@ assert(
 	"an eligible roam never exceeds the concurrent Spitter cap"
 )
 
--- P9-0104 Progenitor boss: authored spawn, armored vulnerability windows, the
--- Slam AoE, phase transitions, the Brood surge, the shroud visibility override,
--- and defeat — all through the existing director boundaries.
 local carapace = bossConfig.Phases.Carapace
 local broodHealth = bossConfig.Progenitor.MaximumHealth * 0.5
 local collapseHealth = bossConfig.Progenitor.MaximumHealth * 0.2
@@ -1242,7 +1182,6 @@ reset()
 local _bn, bossNearRoot = addOperative("op:boss-near", 10, 0)
 local _bf, bossFarRoot = addOperative("op:boss-far", 40, 0)
 addOperative("op:boss-down", 5, 0, "Incapacitated")
--- A stopped or duplicate boss spawn is refused.
 assert(service.spawnBoss({ x = 0, y = 1, z = 0 }, false), "the boss spawns at the arena")
 assert(not service.spawnBoss({ x = 0, y = 1, z = 0 }, false), "only one boss exists per operation")
 local bossModel = findBoss()
@@ -1253,15 +1192,11 @@ assert(firstBossState.exists and firstBossState.isAlive and not firstBossState.i
 assert(firstBossState.phaseId == "Carapace" and not firstBossState.isVulnerable)
 local bossHealthRead = service.readHealthState(bossId)
 assert(bossHealthRead ~= nil and bossHealthRead.healthState.currentHealth == bossConfig.Progenitor.MaximumHealth)
-
--- Armored: operative fire is rejected outside an exposure window.
 assert(not service.commitHealthState(bossId, bossHealthRead.revision, {
 	entityId = bossId,
 	currentHealth = bossHealthRead.healthState.currentHealth - 50,
 	processedShotIds = { ["shot:boss-armored"] = true },
 }, 1), "the armored boss cannot be damaged")
-
--- Slam lifecycle: Begin discloses the telegraph, Commit hits the AoE.
 now = 1
 service.evaluateAt(now)
 assert(bossModel:GetAttribute(presentation.BossSlamSequence) == 1)
@@ -1273,8 +1208,6 @@ local slam = service.evaluateAt(1 + carapace.SlamWindupSeconds)
 assert(slam.attackCommittedCount == 1, "the Slam hits only the Alive operative inside the radius")
 assert(#damageCalls == 1 and damageCalls[1].operativeEntityId == "op:boss-near")
 assert(damageCalls[1].damage.damageAmount == bossConfig.Slam.Damage)
-
--- The exposure window opens on the next pass; now operative fire lands.
 service.evaluateAt(1 + carapace.SlamWindupSeconds + 0.1)
 assert(service.readBossState().isVulnerable, "the exposure window opens after the Slam")
 local vulnerableHealth = service.readHealthState(bossId)
@@ -1286,9 +1219,6 @@ assert(
 	}, 1 + carapace.SlamWindupSeconds + 0.15),
 	"the vulnerable boss takes damage"
 )
-
--- Crossing the Brood threshold transitions the phase, summons a bounded add
--- surge, and raises the spore shroud. Move operatives clear so adds spawn fairly.
 bossNearRoot.Position = roblox.Vector3.new(300, 2, 300)
 bossFarRoot.Position = roblox.Vector3.new(300, 2, 300)
 local beforeAdds = service.readActiveEnemyCount()
@@ -1299,8 +1229,6 @@ assert(
 	service.readGameplayVisibilityRadiusStuds() == bossConfig.Visibility.ShroudRadiusStuds,
 	"the spore shroud shrinks operative gameplay visibility"
 )
-
--- Collapse with un-repaired floodlights leaves the arena dark.
 local broodBossHealth = service.readHealthState(bossId)
 assert(service.commitHealthState(bossId, broodBossHealth.revision, {
 	entityId = bossId,
@@ -1313,8 +1241,6 @@ assert(
 	service.readGameplayVisibilityRadiusStuds() == bossConfig.Visibility.CollapseDarkRadiusStuds,
 	"un-repaired floodlights leave Collapse dark"
 )
-
--- Defeat: a killing blow while vulnerable resolves the boss and frees the slot.
 local collapseBossHealth = service.readHealthState(bossId)
 assert(service.commitHealthState(bossId, collapseBossHealth.revision, {
 	entityId = bossId,
@@ -1329,7 +1255,6 @@ assert(
 )
 assert(service.spawnBoss({ x = 0, y = 1, z = 0 }, true), "a fresh operation can spawn a new boss")
 
--- Repaired floodlights light the Collapse arena.
 reset()
 addOperative("op:lit", 300, 300)
 assert(service.spawnBoss({ x = 0, y = 1, z = 0 }, true))
@@ -1351,7 +1276,6 @@ assert(
 	"repaired floodlights keep Collapse readable"
 )
 
--- Stand-down freezes the boss: not vulnerable and no Slam.
 reset()
 addOperative("op:stand-boss", 10, 0)
 assert(service.spawnBoss({ x = 0, y = 1, z = 0 }, false))
@@ -1361,8 +1285,6 @@ table.clear(damageCalls)
 assert(service.evaluateAt(5).attackCommittedCount == 0, "a stood-down boss never Slams")
 assert(#damageCalls == 0)
 
--- Performance bounds: one heartbeat connection, no timers, no raycasts, no
--- remotes, bounded caps for 1/2/4 operatives.
 assert(heartbeatSignal:count() == 1, "the director must own exactly one heartbeat connection")
 local directorSource = fs.readFile("games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau")
 for _, prohibited in
@@ -1384,7 +1306,7 @@ do
 		"director must stay bounded and server-only: " .. prohibited
 	)
 end
--- Representative caps recomputed through the same public surface.
+
 reset()
 local function fillToCap(): number
 	local spawned = 0
@@ -1416,15 +1338,9 @@ assert(
 	"four-operative cap must reach the configured absolute maximum"
 )
 
--- Heartbeat wiring drives evaluation through the configured interval.
 now = 1000
 heartbeatSignal:Fire(config.EvaluationIntervalSeconds + 0.01)
--- (No assertion beyond not erroring: evaluation content is covered above.)
 
--- Teardown: folder emptied but preserved, state cleared, heartbeat disconnected.
--- The folder instance must outlive a replay cycle: server and client consumers
--- bind ChildAdded to it once, so replacing it would silently orphan them and
--- leave post-replay enemies without a presentation rig.
 local folder = findCreated("EnemyEntities")
 assert(folder ~= nil)
 assert(#folder:GetChildren() > 0, "the populated run must leave enemies in the folder")
@@ -1436,7 +1352,6 @@ assert(service.readActiveEnemyCount() == 0)
 assert(service.spawnEnemy(request("enemy.late", 0, 0)).rejectionReasonId == "ServiceStopped")
 service.stop()
 
--- Replay: restarting must reuse the surviving folder rather than create another.
 service.start()
 assert(findCreated("EnemyEntities") == folder, "replay must reuse the existing enemy folder")
 local replaySpawn = service.spawnEnemy(request("enemy.replay", 0, 0))
@@ -1444,7 +1359,6 @@ assert(replaySpawn.didSpawn, "the reused folder must accept spawns after replay"
 assert(#folder:GetChildren() == 1, "the replayed enemy must land in the reused folder")
 service.stop()
 
--- Bootstrap wiring: the production director starts before the mission director.
 local bootstrap = fs.readFile("games/living-kingdoms/src/server/init.server.luau")
 local directorStart = string.find(bootstrap, "EnemyDirectorService.start()", 1, true)
 local missionStart = string.find(bootstrap, "MissionDirectorService.start()", 1, true)
