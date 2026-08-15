@@ -132,7 +132,7 @@ local function createBlightSpitterPresentation(root: BasePart): Model
 		Enum.Material.Slate,
 		Enum.PartType.Ball
 	)
-	local thorax = makeRigidPart(
+	makeRigidPart(
 		presentation,
 		root,
 		"Thorax",
@@ -152,7 +152,7 @@ local function createBlightSpitterPresentation(root: BasePart): Model
 		Enum.Material.CorrodedMetal,
 		nil
 	)
-	local head = makeRigidPart(
+	makeRigidPart(
 		presentation,
 		root,
 		"PinchedHead",
@@ -346,7 +346,7 @@ local function createProgenitorPresentation(root: BasePart): Model
 	)
 	addGlow(coreGlow, COLORS.progenitorCore, 3.7, 12)
 
-	local head = makeRigidPart(
+	makeRigidPart(
 		presentation,
 		root,
 		"CrownedHead",
