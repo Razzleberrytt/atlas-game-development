@@ -24,14 +24,16 @@ end
 
 local lighting = config.Lighting
 local sky = lighting.Sky
-for _, face in {
-	sky.SkyboxBk,
-	sky.SkyboxDn,
-	sky.SkyboxFt,
-	sky.SkyboxLf,
-	sky.SkyboxRt,
-	sky.SkyboxUp,
-} do
+for _, face in
+	{
+		sky.SkyboxBk,
+		sky.SkyboxDn,
+		sky.SkyboxFt,
+		sky.SkyboxLf,
+		sky.SkyboxRt,
+		sky.SkyboxUp,
+	}
+do
 	assert(string.find(face, "rbxasset://textures/sky/", 1, true) == 1, "sky must use engine-shipped textures")
 end
 assert(sky.StarCount <= 2000, "sky star budget is too high")
