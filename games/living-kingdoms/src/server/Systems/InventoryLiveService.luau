@@ -11,6 +11,7 @@ local EquipmentRewardConfig = require(ReplicatedStorage.Shared.Config.EquipmentR
 local PlayerInventorySnapshot = require(ReplicatedStorage.Shared.Persistence.PlayerInventorySnapshot)
 local RobloxInventoryDataStoreAdapter = require(script.Parent.RobloxInventoryDataStoreAdapter)
 local PlayerInventoryPersistenceService = require(script.Parent.PlayerInventoryPersistenceService)
+local CharacterProgressionPersistenceService = require(script.Parent.CharacterProgressionPersistenceService)
 local InventorySessionLeaseService = require(script.Parent.InventorySessionLeaseService)
 
 local store = RobloxInventoryDataStoreAdapter.new({
@@ -26,6 +27,7 @@ local leaseOwnerId =
 	string.format("%s:%s", game.JobId ~= "" and game.JobId or "studio", HttpService:GenerateGUID(false))
 local leases = InventorySessionLeaseService.new(store, leaseOwnerId, 90)
 local persistence = PlayerInventoryPersistenceService.new(store)
+local progressionPersistence = CharacterProgressionPersistenceService.new(store)
 local destroyed = false
 
 -- Accepted dismantle timestamps per owner, for the rate bound only.
@@ -59,8 +61,29 @@ function Service.loadPlayer(playerId: number, nowUnix: number): any
 	local loaded = persistence:loadPlayer(playerId, nowUnix)
 	if loaded.Accepted ~= true then
 		leases:release(playerId)
+		return loaded
 	end
-	return loaded
+	local progression = progressionPersistence:loadPlayer(playerId, nowUnix)
+	if progression.Accepted ~= true then
+		persistence:releasePlayer(playerId)
+		leases:release(playerId)
+		return table.freeze({
+			Accepted = false,
+			ReasonId = progression.ReasonId,
+			Record = nil,
+			Migrated = false,
+			ProgressionState = nil,
+			ProgressionMigrated = progression.Migrated == true,
+		})
+	end
+	return table.freeze({
+		Accepted = true,
+		ReasonId = loaded.ReasonId,
+		Record = loaded.Record,
+		Migrated = loaded.Migrated == true,
+		ProgressionState = progression.State,
+		ProgressionMigrated = progression.Migrated == true,
+	})
 end
 
 function Service.renewPlayer(playerId: number, nowUnix: number): any
@@ -76,15 +99,33 @@ function Service.releasePlayer(playerId: number): any
 	end
 	recentDismantleRequests[playerId] = nil
 	local released = leases:release(playerId)
-	--[[
-		The lease and the resident record have to fall together. Releasing only
-		the lease left the departed player's inventory resident for the life of
-		the server and still readable through getRecord. Order matters: the lease
-		goes first so no mutation can be authorized against a record that is
-		about to be dropped.
-	]]
+	-- The lease and both resident records fall together. The lease goes first so
+	-- no mutation can be authorized while either resident record is being dropped.
 	persistence:releasePlayer(playerId)
+	progressionPersistence:releasePlayer(playerId)
 	return released
+end
+
+function Service.saveCharacterProgression(playerId: number, state: any, sourceId: any, attributionId: any, nowUnix: number): any
+	if destroyed then
+		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", State = nil, AlreadyApplied = false })
+	end
+	if not leases:hasLease(playerId, nowUnix) then
+		return table.freeze({
+			Accepted = false,
+			ReasonId = "SessionLeaseRequired",
+			State = progressionPersistence:getState(playerId),
+			AlreadyApplied = false,
+		})
+	end
+	return progressionPersistence:savePlayer(playerId, state, sourceId, attributionId, nowUnix)
+end
+
+function Service.getCharacterProgression(playerId: number): any
+	if destroyed then
+		return nil
+	end
+	return progressionPersistence:getState(playerId)
 end
 
 function Service.applyReward(playerId: number, reward: any, nowUnix: number): any
@@ -192,8 +233,8 @@ end
 	only client-authored value accepted here, and it can do nothing but make a
 	retry idempotent — it never names an item, an owner, or a value.
 
-	Accepted request timestamps are tracked per owner for the rate bound. They
-	are intentionally in-memory: a rejoin is far slower than the window, so
+	Accepted request timestamps are tracked per owner, for the rate bound only.
+	They are intentionally in-memory: a rejoin is far slower than the window, so
 	persisting them would buy nothing.
 ]]
 function Service.dismantleOwnedItem(
@@ -252,6 +293,7 @@ function Service.destroy(): any
 	end
 	local summary = leases:releaseAll()
 	persistence:destroy()
+	progressionPersistence:destroy()
 	leases:destroy()
 	destroyed = true
 	return summary
