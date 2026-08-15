@@ -431,6 +431,9 @@ function AutomaticFireResolver.resolve(
 		return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.NoAmmunition)
 	end
 	if serverTimestamp < weaponState.cadence.nextAllowedFireServerTimestamp then
+		if firingModeId == FALLBACK_AUTOMATIC_MODE_ID then
+			return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.CadenceBlocked)
+		end
 		return rejection(
 			operativeState,
 			setFireModeState(weaponState, fireModeState),
