@@ -12,13 +12,11 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
 
 local ModularAssetConfig = require(ReplicatedStorage.Shared.Config.ModularAssetConfig)
 
 local Service = {}
 
-local ENEMY_FOLDER_NAME = "EnemyEntities"
 local PRESENTATION_MODEL_NAME = "ExclusionWalkerPresentation"
 local MODULE_FOLDER_NAME = "ModularAssets"
 local BASE_SIZE_ATTRIBUTE = "HordeRoleBaseSize"
@@ -33,9 +31,6 @@ local COLORS = table.freeze({
 	weaponDark = Color3.fromRGB(69, 76, 75),
 	corruption = Color3.fromRGB(154, 255, 55),
 })
-
-local started = false
-local childAddedConnection: RBXScriptConnection? = nil
 
 local function configurePart(part: Part, name: string, size: Vector3, color: Color3, material: Enum.Material)
 	part.Name = name
@@ -213,45 +208,8 @@ local function decorate(enemyModel: Model): boolean
 	return true
 end
 
-local function decorateDeferred(enemyModel: Model)
-	-- EnemyPresentationService is registered first and normally builds the shell
-	-- synchronously. Deferring once also makes the ordering contract resilient to
-	-- future presentation work that yields before parenting the shell.
-	task.defer(function()
-		if enemyModel.Parent ~= nil then
-			decorate(enemyModel)
-		end
-	end)
-end
-
-function Service.start()
-	if started then
-		return
-	end
-	started = true
-	local folder = Workspace:FindFirstChild(ENEMY_FOLDER_NAME)
-	assert(folder ~= nil and folder:IsA("Folder"), "ModularEnemyPresentationService must start after EnemyDirectorService")
-	for _, child in folder:GetChildren() do
-		if child:IsA("Model") then
-			decorateDeferred(child)
-		end
-	end
-	childAddedConnection = folder.ChildAdded:Connect(function(child)
-		if child:IsA("Model") then
-			decorateDeferred(child)
-		end
-	end)
-end
-
-function Service.stop()
-	if not started then
-		return
-	end
-	started = false
-	if childAddedConnection ~= nil then
-		childAddedConnection:Disconnect()
-		childAddedConnection = nil
-	end
+function Service.applyPresentation(enemyModel: Model): boolean
+	return decorate(enemyModel)
 end
 
 return table.freeze(Service)
