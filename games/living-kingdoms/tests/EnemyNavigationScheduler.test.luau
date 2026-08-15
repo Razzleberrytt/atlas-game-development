@@ -33,7 +33,10 @@ end
 
 local reordered = { "enemy.05", "enemy.02", "enemy.04", "enemy.01", "enemy.03" }
 local first = Scheduler.resolveRoundRobin(reordered, nil, 2)
-assert(first.grantedEntityIds["enemy.01"] and first.grantedEntityIds["enemy.02"], "grant order must be lexical, not table order")
+assert(
+	first.grantedEntityIds["enemy.01"] and first.grantedEntityIds["enemy.02"],
+	"grant order must be lexical, not table order"
+)
 local second = Scheduler.resolveRoundRobin(reordered, first.nextCursorEntityId, 2)
 assert(second.grantedEntityIds["enemy.03"] and second.grantedEntityIds["enemy.04"], "cursor must advance fairly")
 local third = Scheduler.resolveRoundRobin(reordered, second.nextCursorEntityId, 2)
@@ -42,19 +45,61 @@ assert(third.grantedEntityIds["enemy.05"] and third.grantedEntityIds["enemy.01"]
 local anchor = { x = 0, y = 0, z = 0 }
 local moving = Scheduler.resolveProgress({ x = 2, y = 0, z = 0 }, anchor, 0, 0, 0.5, 1.5, 1.25, 1.5)
 assert(not moving.didRecover, "real movement must never trigger stuck recovery")
-assert(moving.progressAnchor.x == 2 and moving.progressAnchorServerTimestamp == 0.5, "movement must reset the progress anchor")
+assert(
+	moving.progressAnchor.x == 2 and moving.progressAnchorServerTimestamp == 0.5,
+	"movement must reset the progress anchor"
+)
 
-local waiting = Scheduler.resolveProgress({ x = 2.4, y = 0, z = 0 }, moving.progressAnchor, 0.5, 0, 1.4, 1.5, 1.25, 1.5)
+local waiting = Scheduler.resolveProgress(
+	{ x = 2.4, y = 0, z = 0 },
+	moving.progressAnchor,
+	0.5,
+	0,
+	1.4,
+	1.5,
+	1.25,
+	1.5
+)
 assert(not waiting.didRecover, "sub-threshold movement before the window must remain ordinary pursuit")
 
-local stuck = Scheduler.resolveProgress({ x = 2.4, y = 0, z = 0 }, waiting.progressAnchor, waiting.progressAnchorServerTimestamp, 0, 1.8, 1.5, 1.25, 1.5)
+local stuck = Scheduler.resolveProgress(
+	{ x = 2.4, y = 0, z = 0 },
+	waiting.progressAnchor,
+	waiting.progressAnchorServerTimestamp,
+	0,
+	1.8,
+	1.5,
+	1.25,
+	1.5
+)
 assert(stuck.didRecover, "a full no-progress window must trigger bounded recovery")
-assert(stuck.nextRecoveryServerTimestamp == 3.3, "recovery must publish a deterministic cooldown")
+assert(
+	math.abs(stuck.nextRecoveryServerTimestamp - 3.3) < 0.0001,
+	"recovery must publish a deterministic cooldown"
+)
 
-local coolingDown = Scheduler.resolveProgress({ x = 2.4, y = 0, z = 0 }, stuck.progressAnchor, stuck.progressAnchorServerTimestamp, stuck.nextRecoveryServerTimestamp, 3.1, 1.5, 1.25, 1.5)
+local coolingDown = Scheduler.resolveProgress(
+	{ x = 2.4, y = 0, z = 0 },
+	stuck.progressAnchor,
+	stuck.progressAnchorServerTimestamp,
+	stuck.nextRecoveryServerTimestamp,
+	3.1,
+	1.5,
+	1.25,
+	1.5
+)
 assert(not coolingDown.didRecover, "recovery cooldown must prevent repath thrash")
 
-local recoveredAgain = Scheduler.resolveProgress({ x = 2.4, y = 0, z = 0 }, coolingDown.progressAnchor, coolingDown.progressAnchorServerTimestamp, coolingDown.nextRecoveryServerTimestamp, 3.4, 1.5, 1.25, 1.5)
+local recoveredAgain = Scheduler.resolveProgress(
+	{ x = 2.4, y = 0, z = 0 },
+	coolingDown.progressAnchor,
+	coolingDown.progressAnchorServerTimestamp,
+	coolingDown.nextRecoveryServerTimestamp,
+	3.4,
+	1.5,
+	1.25,
+	1.5
+)
 assert(recoveredAgain.didRecover, "persistent obstruction may recover again after the cooldown")
 
 print("EnemyNavigationScheduler: 24-enemy round-robin fairness + bounded stuck recovery validated")
