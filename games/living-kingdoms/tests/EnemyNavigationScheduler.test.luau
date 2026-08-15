@@ -50,16 +50,7 @@ assert(
 	"movement must reset the progress anchor"
 )
 
-local waiting = Scheduler.resolveProgress(
-	{ x = 2.4, y = 0, z = 0 },
-	moving.progressAnchor,
-	0.5,
-	0,
-	1.4,
-	1.5,
-	1.25,
-	1.5
-)
+local waiting = Scheduler.resolveProgress({ x = 2.4, y = 0, z = 0 }, moving.progressAnchor, 0.5, 0, 1.4, 1.5, 1.25, 1.5)
 assert(not waiting.didRecover, "sub-threshold movement before the window must remain ordinary pursuit")
 
 local stuck = Scheduler.resolveProgress(
@@ -73,10 +64,7 @@ local stuck = Scheduler.resolveProgress(
 	1.5
 )
 assert(stuck.didRecover, "a full no-progress window must trigger bounded recovery")
-assert(
-	math.abs(stuck.nextRecoveryServerTimestamp - 3.3) < 0.0001,
-	"recovery must publish a deterministic cooldown"
-)
+assert(math.abs(stuck.nextRecoveryServerTimestamp - 3.3) < 0.0001, "recovery must publish a deterministic cooldown")
 
 local coolingDown = Scheduler.resolveProgress(
 	{ x = 2.4, y = 0, z = 0 },
