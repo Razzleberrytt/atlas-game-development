@@ -33,6 +33,10 @@ export type PlayerInventoryRecord = {
 	-- Schema 5. Long-horizon character XP stored inside the existing canonical
 	-- account record so inventory/session-lease ownership remains singular.
 	CharacterProgression: CharacterProgressionRecord,
+	-- Durable idempotency for low-frequency progression grants such as an
+	-- expedition completion. High-frequency kill/assist awards should use
+	-- bounded encounter/session attribution rather than growing this forever.
+	AppliedCharacterProgressionGrantIds: { [string]: boolean },
 	UpdatedAtUnix: number,
 }
 
