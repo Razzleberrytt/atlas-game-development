@@ -35,6 +35,7 @@ local SpecialEnemyBehaviorResolver = require(script.Parent.SpecialEnemyBehaviorR
 local BossPhaseResolver = require(script.Parent.BossPhaseResolver)
 local EliteAffixResolver = require(script.Parent.EliteAffixResolver)
 local OperativeLifeService = require(script.Parent.OperativeLifeService)
+local EnemyNavigationScheduler = require(script.Parent.Parent.Domain.EnemyNavigationScheduler)
 
 type AuthoritativeEnemyAttack = EnemyContracts.AuthoritativeEnemyAttack
 type EnemyOperativeFact = EnemyContracts.EnemyOperativeFact
@@ -56,11 +57,6 @@ local PresentationLifeStateIds = EnemyPresentationContracts.LifeStateIds
 local SpawnSourceIds = EnemyContracts.EnemySpawnSourceIds
 local SpawnRejectionReasonIds = EnemyContracts.EnemySpawnRejectionReasonIds
 
--- Squad Iron Hide mitigation is published by RunProgressionService as a bounded
--- server-owned attribute. Read it defensively (mirroring the operative-side
--- DamageResolver) and clamp to at most 1 so the enemy attack source can only
--- reduce, never amplify, the authoritative amount the P3 boundary receives.
--- Absent progression state (including the fixture harness) falls back to 1.
 local function readIncomingDamageMultiplier(): number
 	local storageAsAny = ReplicatedStorage :: any
 	if type(storageAsAny.FindFirstChild) ~= "function" then
@@ -154,6 +150,9 @@ type EnemyEntry = {
 	nextRoamRetargetServerTimestamp: number,
 	nextPursuitRepathServerTimestamp: number,
 	pursuitFlankSign: number,
+	navigationProgressAnchor: EnemyWorldPosition,
+	navigationProgressAnchorServerTimestamp: number,
+	nextStuckRecoveryServerTimestamp: number,
 	cleanupAtServerTimestamp: number?,
 	eliteAffixId: string?,
 	movementSpeedMultiplier: number,
@@ -167,11 +166,9 @@ type EnemyEntry = {
 	commanderAuraActive: boolean,
 	effectiveMovementSpeedMultiplier: number,
 	effectiveAttackCadenceMultiplier: number,
-	-- Blight Spitter Corrosive Bloom charge facts; nil for every other archetype.
 	bloomChargeTargetPosition: EnemyWorldPosition?,
 	bloomChargeStartedServerTimestamp: number?,
 	lastBloomCommitServerTimestamp: number?,
-	-- The Progenitor boss phase machine; populated only for the boss archetype.
 	bossPhaseId: string?,
 	bossIsVulnerable: boolean,
 	bossFloodlightsRestored: boolean,
@@ -182,8 +179,6 @@ type EnemyEntry = {
 	bossLastSlamCommitServerTimestamp: number?,
 }
 
--- One server-owned lingering Corrosive Bloom pool. Persists after the Spitter
--- that cast it dies; ticked on the shared evaluation pass and pruned on expiry.
 type BloomZone = {
 	zoneId: string,
 	sourceEntityId: string,
@@ -202,7 +197,7 @@ type PendingSpawn = {
 }
 
 type EvaluationBudget = {
-	remainingPathComputations: number,
+	pathComputationGrants: { [string]: boolean },
 }
 
 local ENEMY_FOLDER_NAME = "EnemyEntities"
@@ -221,22 +216,17 @@ local isStoodDown = false
 local escalationLevel = 0
 local nextRoamingSpawnServerTimestamp: number? = nil
 local recoveryWindowEndServerTimestamp: number? = nil
--- Deterministic counter behind roam identity, wander headings, and spawn-ring
--- placement; no randomness enters enemy behavior.
 local sequenceCounter = 0
+local navigationFairnessCursorEntityId: string? = nil
 local operationPressureStartedServerTimestamp: number? = nil
 local activeEliteCount = 0
--- Alive Blight Spitters and their live area-denial pools. Bounded by config.
 local activeSpitterCount = 0
 local activeBloomZones: { BloomZone } = {}
--- At most one Progenitor boss exists per operation.
 local activeBossEntityId: string? = nil
 local bossDefeated = false
 
 local EliteAffixIds = RunRpgContracts.EliteAffixIds
 
--- Special enemies are never elite-decorated (the RPG affix layer stays separate),
--- so their spawn takes this fixed no-affix assignment instead of the resolver.
 local NO_AFFIX_ASSIGNMENT = table.freeze({
 	affixId = nil :: string?,
 	maximumHealthMultiplier = 1,
@@ -275,11 +265,6 @@ end
 local function setHealthPresentation(entry: EnemyEntry)
 	local billboard = entry.healthLabel.Parent
 	if billboard ~= nil and billboard:IsA("BillboardGui") then
-		-- Corpses retain their model briefly for death punctuation, but their
-		-- target UI must disappear on the authoritative death transition.
-		-- Ordinary enemy health is already communicated by hit punctuation and
-		-- silhouettes. Persistent labels are reserved for living elites so a
-		-- damaged horde cannot turn into a wall of names and numbers.
 		billboard.Enabled = entry.isAlive and entry.eliteAffixId ~= nil
 	end
 	local displayName = if entry.eliteAffixId == nil then nil else ELITE_DISPLAY_NAMES[entry.eliteAffixId]
@@ -467,16 +452,12 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 	local assignment
 	local maximumHealth
 	if isBoss then
-		-- The boss is a single authored, stationary instance; it bypasses the elite
-		-- layer and carries its own health. A larger footprint reads as a climax.
 		assignment = NO_AFFIX_ASSIGNMENT
 		maximumHealth = BossConfig.Progenitor.MaximumHealth
 		humanoid.WalkSpeed = 0
 		root.Size = Vector3.new(10, 14, 10)
 		root.Position = Vector3.new(request.position.x, request.position.y + 7, request.position.z)
 	elseif isSpitter then
-		-- Special enemies bypass the RPG elite affix layer and carry their own
-		-- authoritative health and roam speed.
 		assignment = NO_AFFIX_ASSIGNMENT
 		maximumHealth = SpecialEnemyConfig.BlightSpitter.MaximumHealth
 		humanoid.WalkSpeed = SpecialEnemyConfig.BlightSpitter.RoamSpeedStudsPerSecond
@@ -524,6 +505,9 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 		nextRoamRetargetServerTimestamp = serverTimestamp,
 		nextPursuitRepathServerTimestamp = serverTimestamp,
 		pursuitFlankSign = if nextSequence() % 2 == 0 then -1 else 1,
+		navigationProgressAnchor = { x = root.Position.X, y = root.Position.Y, z = root.Position.Z },
+		navigationProgressAnchorServerTimestamp = serverTimestamp,
+		nextStuckRecoveryServerTimestamp = serverTimestamp,
 		cleanupAtServerTimestamp = nil,
 		eliteAffixId = assignment.affixId,
 		movementSpeedMultiplier = assignment.movementSpeedMultiplier,
@@ -630,19 +614,11 @@ local function commitSpawn(request: EnemySpawnRequest, serverTimestamp: number)
 		model:SetAttribute(PresentationAttributeNames.BossSlamRadiusStuds, BossConfig.Slam.RadiusStuds)
 	end
 	model.Parent = folder
-	-- Keep physical simulation server-owned so replicated movement cannot be
-	-- steered by a client.
 	pcall(function()
 		root:SetNetworkOwner(nil)
 	end)
 end
 
---[[
-	Validate and spawn one enemy now. An authored-wave placement that is only
-	unfair (an operative stands too close) or over the cap defers into the
-	bounded retry queue instead of appearing beside a player; roaming spawns
-	never defer because the next interval simply proposes a fresh position.
-]]
 function EnemyDirectorService.spawnEnemy(request: EnemySpawnRequest): SpawnResult
 	if not started then
 		return { didSpawn = false, wasDeferred = false, rejectionReasonId = "ServiceStopped" }
@@ -668,11 +644,6 @@ function EnemyDirectorService.spawnEnemy(request: EnemySpawnRequest): SpawnResul
 	return { didSpawn = false, wasDeferred = false, rejectionReasonId = resolution.rejectionReasonId }
 end
 
---[[
-	Spawn one authored escalation wave. Raises the escalation level
-	monotonically and opens the configured recovery window so roaming pressure
-	pauses around the authored spike.
-]]
 function EnemyDirectorService.spawnAuthoredWave(
 	waveIndex: number,
 	definitions: { { id: string, name: string, x: number, y: number, z: number } }
@@ -717,11 +688,6 @@ function EnemyDirectorService.beginOperationPressure()
 	end
 end
 
---[[
-	Terminal stand-down at mission resolution: spawning stops, pending spawns
-	clear, and every living enemy becomes inert so a resolved squad is not
-	chased through the result screen.
-]]
 function EnemyDirectorService.endOperationPressure()
 	if not started then
 		return
@@ -731,7 +697,6 @@ function EnemyDirectorService.endOperationPressure()
 	nextRoamingSpawnServerTimestamp = nil
 	recoveryWindowEndServerTimestamp = nil
 	table.clear(pendingSpawns)
-	-- A resolved squad is not chased, and its held ground is no longer denied.
 	table.clear(activeBloomZones)
 	for _, entry in entries do
 		if entry.isAlive then
@@ -794,8 +759,6 @@ function EnemyDirectorService.readHealthState(entityId: string): EnemyHealthRead
 	return {
 		revision = entry.healthRevision,
 		isAlive = entry.isAlive,
-		-- Elite affixes scale maximum health, so Execution Protocol's threshold
-		-- must read the enemy's own authoritative maximum, not the walker default.
 		maximumHealth = entry.maximumHealth,
 		healthState = {
 			entityId = entry.healthState.entityId,
@@ -856,12 +819,6 @@ local function applyDeath(entry: EnemyEntry, serverTimestamp: number)
 	setHealthPresentation(entry)
 end
 
---[[
-	Revisioned commit boundary for operative fire. The caller supplies the
-	P2 DamageResolver output state; the commit is rejected unless identity
-	matches, the expected revision is current, health never increases, and
-	every previously processed ShotId is preserved.
-]]
 function EnemyDirectorService.commitHealthState(
 	entityId: string,
 	expectedRevision: number,
@@ -889,8 +846,6 @@ function EnemyDirectorService.commitHealthState(
 	then
 		return false, nil
 	end
-	-- The boss is armored except during a telegraphed post-Slam exposure window;
-	-- operative fire outside it is authoritatively rejected without state change.
 	if entry.archetypeId == PROGENITOR_ARCHETYPE_ID and not entry.bossIsVulnerable then
 		return false, nil
 	end
@@ -939,12 +894,6 @@ function EnemyDirectorService.readActiveEnemyCount(): number
 	return activeEnemyCount
 end
 
---[[
-	Spawn the single authored Progenitor boss at the arena. Placement is authored
-	(the extraction clearing), so it bypasses the fair-spawn ring. At most one boss
-	exists per operation. `floodlightsRestored` is the P8 objective fact that
-	governs Collapse-phase readability.
-]]
 function EnemyDirectorService.spawnBoss(position: EnemyWorldPosition, floodlightsRestored: boolean): boolean
 	if not started or activeBossEntityId ~= nil or type(position) ~= "table" then
 		return false
@@ -964,8 +913,6 @@ function EnemyDirectorService.spawnBoss(position: EnemyWorldPosition, floodlight
 	return true
 end
 
--- True only for the one live boss entity. The combat owner uses it to attribute
--- P10 boss-exposure contribution without reading director internals.
 function EnemyDirectorService.isBossEntity(entityId: string): boolean
 	return type(entityId) == "string" and entityId ~= "" and activeBossEntityId == entityId
 end
@@ -991,9 +938,6 @@ function EnemyDirectorService.readBossState(): BossStateRead
 	}) :: BossStateRead
 end
 
--- The operative gameplay-visibility radius, shrunk while a living boss projects
--- its spore shroud (Brood) or its Collapse darkness. The combat runtime reads this
--- so the boss's shroud limits targeting, not just presentation.
 function EnemyDirectorService.readGameplayVisibilityRadiusStuds(): number
 	local normal = EnemyConfig.Combat.GameplayVisibilityRadiusStuds
 	local bossId = activeBossEntityId
@@ -1040,7 +984,6 @@ local function retryPendingSpawns(operativeFacts: { EnemyOperativeFact }, server
 			pending.nextRetryServerTimestamp = serverTimestamp + EnemyConfig.FairSpawn.DeferredRetryIntervalSeconds
 			index += 1
 		else
-			-- Duplicate or invalid placements can never become legal.
 			table.remove(pendingSpawns, index)
 		end
 	end
@@ -1049,8 +992,6 @@ end
 
 local function proposeRoamingPosition(anchor: EnemyWorldPosition): EnemyWorldPosition
 	local sequence = nextSequence()
-	-- Golden-angle sequence: deterministic, well-spread headings without
-	-- randomness.
 	local angle = sequence * 2.399963
 	local ringMinimum = EnemyConfig.Pressure.RoamingSpawnMinimumDistanceStuds
 	local ringMaximum = EnemyConfig.Pressure.RoamingSpawnMaximumDistanceStuds
@@ -1101,8 +1042,6 @@ local function attemptRoamingSpawns(operativeFacts: { EnemyOperativeFact }, serv
 			spawned += 1
 		end
 	end
-	-- One Spitter replaces one Stalker inside the authored cadence count. Mixed
-	-- pressure therefore adds a tactical problem without restoring crowd clutter.
 	if shouldSpawnSpitter then
 		local anchor = anchors[(nextSequence() % #anchors) + 1]
 		local spitterRequest: EnemySpawnRequest = {
@@ -1121,10 +1060,6 @@ local function attemptRoamingSpawns(operativeFacts: { EnemyOperativeFact }, serv
 	return spawned
 end
 
--- Commit one bounded set of authoritative area-denial damage events (a bloom
--- burst or one lingering tick) through the existing P3 boundary, applying the
--- same squad Iron Hide mitigation the walker melee source uses. Returns the
--- number of committed events.
 local function commitBloomImpacts(impacts: { AuthoritativeEnemyAttack }, serverTimestamp: number): number
 	local committed = 0
 	local mitigation = readIncomingDamageMultiplier()
@@ -1148,8 +1083,6 @@ local function commitBloomImpacts(impacts: { AuthoritativeEnemyAttack }, serverT
 	return committed
 end
 
--- Register a committed bloom's lingering pool, bounded by the configured active
--- cap with oldest-first eviction so the worst-case tick work stays flat.
 local function registerBloomZone(zone: LingeringBloomZone)
 	if #activeBloomZones >= SpecialEnemyConfig.Bloom.MaximumActiveZones then
 		table.remove(activeBloomZones, 1)
@@ -1167,8 +1100,6 @@ local function registerBloomZone(zone: LingeringBloomZone)
 	})
 end
 
--- Tick every live lingering pool on the shared evaluation pass and prune expired
--- pools. Pools persist after the Spitter that cast them dies.
 local function tickBloomZones(operativeFacts: { EnemyOperativeFact }, serverTimestamp: number): number
 	local committed = 0
 	local index = 1
@@ -1188,13 +1119,6 @@ local function tickBloomZones(operativeFacts: { EnemyOperativeFact }, serverTime
 	return committed
 end
 
---[[
-	One Blight Spitter behavior pass. The pure resolver picks the densest cluster,
-	runs the Corrosive Bloom charge lifecycle, and — at commit — returns the burst
-	against every Alive operative in radius plus the lingering-pool descriptor.
-	This owner applies movement intent, discloses the charge telegraph, commits the
-	authoritative damage, and registers the pool. Returns the committed burst count.
-]]
 local function applySpitterBehavior(
 	entry: EnemyEntry,
 	operativeFacts: { EnemyOperativeFact },
@@ -1233,10 +1157,7 @@ local function applySpitterBehavior(
 		)
 		entry.model:SetAttribute(PresentationAttributeNames.SpitterBloomCenterX, target.x)
 		entry.model:SetAttribute(PresentationAttributeNames.SpitterBloomCenterZ, target.z)
-		entry.model:SetAttribute(
-			PresentationAttributeNames.SpitterBloomRadiusStuds,
-			SpecialEnemyConfig.Bloom.ImpactRadiusStuds
-		)
+		entry.model:SetAttribute(PresentationAttributeNames.SpitterBloomRadiusStuds, SpecialEnemyConfig.Bloom.ImpactRadiusStuds)
 		return 0
 	elseif action == SpecialAbilityActionIds.Continue then
 		entry.humanoid.WalkSpeed = 0
@@ -1273,20 +1194,14 @@ local function applySpitterBehavior(
 			local angle = nextSequence() * 2.399963
 			local anchor = entry.roamAnchor
 			local radius = EnemyConfig.Walker.RoamWanderRadiusStuds
-			entry.humanoid:MoveTo(
-				Vector3.new(anchor.x + math.cos(angle) * radius, anchor.y, anchor.z + math.sin(angle) * radius)
-			)
+			entry.humanoid:MoveTo(Vector3.new(anchor.x + math.cos(angle) * radius, anchor.y, anchor.z + math.sin(angle) * radius))
 		end
 	elseif state == SpecialBehaviorStateIds.Recovering then
-		-- In bloom range but reloading: hold position as a stationary priority target.
 		entry.humanoid.WalkSpeed = 0
 	end
 	return 0
 end
 
--- Summon one bounded Brood add surge around the boss. Adds are ordinary walkers
--- placed on the fair-spawn ring and validated like any roaming spawn; they count
--- against the population budget.
 local function summonBroodSurge(
 	entry: EnemyEntry,
 	count: number,
@@ -1310,14 +1225,6 @@ local function summonBroodSurge(
 	end
 end
 
---[[
-	One Progenitor boss behavior pass. The pure BossPhaseResolver derives the
-	monotonic phase, the post-Slam exposure window, the Slam lifecycle and its AoE,
-	the one-shot Brood surge, and the shroud/darkness visibility override. This
-	owner commits the Slam damage through the P3 boundary, spawns the Brood adds,
-	stores the vulnerability and visibility state for the fire and combat owners,
-	and discloses the Slam telegraph. Returns the committed Slam damage count.
-]]
 local function applyBossBehavior(
 	entry: EnemyEntry,
 	operativeFacts: { EnemyOperativeFact },
@@ -1367,10 +1274,7 @@ local function applyBossBehavior(
 			local phaseTuning = BossConfig.Phases[entry.bossPhaseId :: string]
 			entry.model:SetAttribute(PresentationAttributeNames.BossSlamSequence, entry.attackAttemptSequence)
 			entry.model:SetAttribute(PresentationAttributeNames.BossSlamStartedServerTimestamp, serverTimestamp)
-			entry.model:SetAttribute(
-				PresentationAttributeNames.BossSlamCommitServerTimestamp,
-				serverTimestamp + phaseTuning.SlamWindupSeconds
-			)
+			entry.model:SetAttribute(PresentationAttributeNames.BossSlamCommitServerTimestamp, serverTimestamp + phaseTuning.SlamWindupSeconds)
 			entry.model:SetAttribute(PresentationAttributeNames.BossSlamCenterX, target.x)
 			entry.model:SetAttribute(PresentationAttributeNames.BossSlamCenterZ, target.z)
 			entry.model:SetAttribute(PresentationAttributeNames.BossSlamRadiusStuds, BossConfig.Slam.RadiusStuds)
@@ -1389,24 +1293,67 @@ local function applyBossBehavior(
 	return 0
 end
 
+local function buildEvaluationBudget(serverTimestamp: number): EvaluationBudget
+	local candidates: { string } = {}
+	for entityId, entry in entries do
+		if
+			entry.isAlive
+			and entry.archetypeId == EnemyConfig.Walker.ArchetypeId
+			and entry.behaviorStateId == BehaviorStateIds.Pursuing
+			and serverTimestamp >= entry.nextPursuitRepathServerTimestamp
+		then
+			table.insert(candidates, entityId)
+		end
+	end
+	local resolution = EnemyNavigationScheduler.resolveRoundRobin(
+		candidates,
+		navigationFairnessCursorEntityId,
+		EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation
+	)
+	navigationFairnessCursorEntityId = resolution.nextCursorEntityId
+	return { pathComputationGrants = resolution.grantedEntityIds }
+end
+
+local function resetNavigationProgress(entry: EnemyEntry, serverTimestamp: number)
+	local position = entry.root.Position
+	entry.navigationProgressAnchor = { x = position.X, y = position.Y, z = position.Z }
+	entry.navigationProgressAnchorServerTimestamp = serverTimestamp
+	entry.nextStuckRecoveryServerTimestamp = serverTimestamp
+end
+
 local function moveStalkerToward(
 	entry: EnemyEntry,
 	targetPosition: Vector3,
 	serverTimestamp: number,
 	budget: EvaluationBudget
 )
+	local currentPosition = entry.root.Position
+	local progress = EnemyNavigationScheduler.resolveProgress(
+		{ x = currentPosition.X, y = currentPosition.Y, z = currentPosition.Z },
+		entry.navigationProgressAnchor,
+		entry.navigationProgressAnchorServerTimestamp,
+		entry.nextStuckRecoveryServerTimestamp,
+		serverTimestamp,
+		EnemyConfig.Navigation.StuckMinimumProgressStuds,
+		EnemyConfig.Navigation.StuckProgressWindowSeconds,
+		EnemyConfig.Navigation.StuckRecoveryCooldownSeconds
+	)
+	entry.navigationProgressAnchor = progress.progressAnchor
+	entry.navigationProgressAnchorServerTimestamp = progress.progressAnchorServerTimestamp
+	entry.nextStuckRecoveryServerTimestamp = progress.nextRecoveryServerTimestamp
+	if progress.didRecover then
+		entry.pursuitFlankSign *= -1
+		entry.nextPursuitRepathServerTimestamp = serverTimestamp
+	end
+
 	if serverTimestamp < entry.nextPursuitRepathServerTimestamp then
 		return
 	end
 
-	local canComputePath = budget.remainingPathComputations > 0
+	local canComputePath = budget.pathComputationGrants[entry.entityId] == true
 	if canComputePath then
-		budget.remainingPathComputations -= 1
 		entry.nextPursuitRepathServerTimestamp = serverTimestamp + EnemyConfig.Navigation.PursuitRepathIntervalSeconds
 	else
-		-- Do not let a synchronized pack create an unbounded burst of yielding
-		-- ComputeAsync calls. Keep direct pursuit active and retry on the next
-		-- shared evaluation so enemies that missed this pass are not starved.
 		entry.nextPursuitRepathServerTimestamp = serverTimestamp + EnemyConfig.EvaluationIntervalSeconds
 	end
 
@@ -1420,9 +1367,6 @@ local function moveStalkerToward(
 		destination += perpendicular * EnemyConfig.Navigation.PackFlankOffsetStuds * entry.pursuitFlankSign
 	end
 
-	-- Production uses a short, periodically refreshed path so stalkers flow around
-	-- trees and structures. Lightweight fixtures deliberately fall back to the
-	-- same bounded Humanoid destination without needing a pathfinding mock.
 	local pathService = PathfindingService :: any
 	if canComputePath and type(pathService.CreatePath) == "function" then
 		local ok, path = pcall(function()
@@ -1448,9 +1392,7 @@ local function moveStalkerToward(
 		end
 	end
 
-	-- Exact target fallback preserves direct pursuit if a path cannot be solved
-	-- or if this evaluation pass has spent its shared pathfinding budget.
-	entry.humanoid:MoveTo(targetPosition)
+	entry.humanoid:MoveTo(destination)
 end
 
 local function applyBehavior(
@@ -1499,8 +1441,7 @@ local function applyBehavior(
 
 	if decision.behaviorStateIdAfter == BehaviorStateIds.Pursuing then
 		local targetId = decision.targetOperativeEntityId
-		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond
-			* entry.effectiveMovementSpeedMultiplier
+		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond * entry.effectiveMovementSpeedMultiplier
 		for _, fact in operativeFacts do
 			if fact.operativeEntityId == targetId then
 				moveStalkerToward(
@@ -1516,14 +1457,13 @@ local function applyBehavior(
 	end
 	if decision.behaviorStateIdAfter == BehaviorStateIds.Roaming then
 		entry.humanoid.WalkSpeed = EnemyConfig.Walker.RoamSpeedStudsPerSecond * entry.effectiveMovementSpeedMultiplier
+		resetNavigationProgress(entry, serverTimestamp)
 		if serverTimestamp >= entry.nextRoamRetargetServerTimestamp then
 			entry.nextRoamRetargetServerTimestamp = serverTimestamp + EnemyConfig.Walker.RoamRetargetIntervalSeconds
 			local angle = nextSequence() * 2.399963
 			local anchor = entry.roamAnchor
 			local radius = EnemyConfig.Walker.RoamWanderRadiusStuds
-			entry.humanoid:MoveTo(
-				Vector3.new(anchor.x + math.cos(angle) * radius, anchor.y, anchor.z + math.sin(angle) * radius)
-			)
+			entry.humanoid:MoveTo(Vector3.new(anchor.x + math.cos(angle) * radius, anchor.y, anchor.z + math.sin(angle) * radius))
 		end
 		return 0
 	end
@@ -1561,8 +1501,7 @@ local function applyBehavior(
 	end
 
 	if decision.behaviorStateIdAfter == BehaviorStateIds.Attacking then
-		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond
-			* entry.effectiveMovementSpeedMultiplier
+		entry.humanoid.WalkSpeed = EnemyConfig.Walker.PursuitSpeedStudsPerSecond * entry.effectiveMovementSpeedMultiplier
 	end
 	return 0
 end
@@ -1604,10 +1543,7 @@ local function refreshCommanderAuras()
 	for _, entry in entries do
 		if entry.isAlive then
 			entry.model:SetAttribute(PresentationAttributeNames.EliteCommanderAuraActive, entry.commanderAuraActive)
-			entry.model:SetAttribute(
-				PresentationAttributeNames.EffectiveMovementSpeedMultiplier,
-				entry.effectiveMovementSpeedMultiplier
-			)
+			entry.model:SetAttribute(PresentationAttributeNames.EffectiveMovementSpeedMultiplier, entry.effectiveMovementSpeedMultiplier)
 		end
 	end
 end
@@ -1631,14 +1567,10 @@ local function applyRegeneration(entry: EnemyEntry, serverTimestamp: number)
 	if serverTimestamp < nextRegenerationAt then
 		return
 	end
-	entry.healthState.currentHealth =
-		math.min(entry.maximumHealth, entry.healthState.currentHealth + runtime.healingPerInterval)
+	entry.healthState.currentHealth = math.min(entry.maximumHealth, entry.healthState.currentHealth + runtime.healingPerInterval)
 	entry.healthRevision += 1
 	entry.nextRegenerationServerTimestamp = serverTimestamp + runtime.healingIntervalSeconds
-	entry.model:SetAttribute(
-		PresentationAttributeNames.EliteRegenerationReadyServerTimestamp,
-		entry.nextRegenerationServerTimestamp
-	)
+	entry.model:SetAttribute(PresentationAttributeNames.EliteRegenerationReadyServerTimestamp, entry.nextRegenerationServerTimestamp)
 	setHealthPresentation(entry)
 end
 
@@ -1679,24 +1611,15 @@ local function detonateVolatile(entry: EnemyEntry, serverTimestamp: number)
 	setHealthPresentation(entry)
 end
 
---[[
-	One bounded evaluation pass driving every enemy: deferred fair-spawn
-	retries, roaming pressure with recovery windows, behavior decisions with
-	movement intent and attacks, and corpse cleanup. The heartbeat calls this
-	at the configured interval; fixtures call it directly with deterministic
-	timestamps.
-]]
 function EnemyDirectorService.evaluateAt(serverTimestamp: number): EvaluationSummary
 	local summary = { spawnedCount = 0, attackCommittedCount = 0, cleanedCount = 0 }
 	if not started or type(serverTimestamp) ~= "number" or serverTimestamp ~= serverTimestamp then
 		return summary
 	end
 	local operativeFacts = readOperativeFacts()
-	local budget: EvaluationBudget = {
-		remainingPathComputations = EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation,
-	}
 	summary.spawnedCount += retryPendingSpawns(operativeFacts, serverTimestamp)
 	summary.spawnedCount += attemptRoamingSpawns(operativeFacts, serverTimestamp)
+	local budget = buildEvaluationBudget(serverTimestamp)
 	refreshCommanderAuras()
 	summary.attackCommittedCount += tickBloomZones(operativeFacts, serverTimestamp)
 	local toClean: { string } = {}
@@ -1723,12 +1646,6 @@ function EnemyDirectorService.evaluateAt(serverTimestamp: number): EvaluationSum
 	return summary
 end
 
--- Replay reuses the folder instance rather than replacing it. Every consumer --
--- the server presentation, loot, experience and probe owners, plus the client
--- enemy presentation, impact, audio and telegraph controllers -- caches this
--- reference and binds ChildAdded to it once. Destroying the folder orphans all
--- of those bindings, so enemies spawned after a replay would keep their bare
--- server root and never receive a presentation rig.
 local function clearEnemyFolder(folder: Folder)
 	for _, child in folder:GetChildren() do
 		child:Destroy()
@@ -1790,6 +1707,7 @@ function EnemyDirectorService.stop()
 	recoveryWindowEndServerTimestamp = nil
 	accumulatedSeconds = 0
 	sequenceCounter = 0
+	navigationFairnessCursorEntityId = nil
 	local folder = enemyFolder
 	if folder ~= nil then
 		clearEnemyFolder(folder)
