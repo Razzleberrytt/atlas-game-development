@@ -10,8 +10,8 @@
 - Weapon Model Pack starter library: Assault Rifle, SMG, Shotgun, Hand Cannon, Sniper Rifle, LMG, Launcher, and Exotic prototypes with stable root/grip/muzzle/secondary socket contracts.
 - Environmental Prop Pack starter library: Crate, Barrel, Pipe, Terminal, Desk, Shelf, Broken Machinery, Sign, Lamp, Debris, Rock, and Vegetation prototypes.
 - Loot Chest / Reward Container starter library: Common, Rare, Epic, Legendary, Boss, Secret, and Event tiers with stable reward-origin and interaction sockets.
-- Runtime bootstrap: generated prototypes are published under `ReplicatedStorage/AtlasAssets/GeneratedModularAssets` and version-replaced only inside that owned subtree.
-- Runtime resolver: presentation consumers can find or clone prototypes by stable `AssetId` rather than depending on generated model names.
+- Runtime bootstrap/readiness: the generated starter library is constructed off-tree, marked `GeneratedPrototypeReady` only after construction succeeds, and then published under `ReplicatedStorage/AtlasAssets/GeneratedModularAssets`. Startup-sensitive weapon and survival-chest consumers retain an immediate fast path plus one tightly bounded, asset-specific readiness wait before falling back, preventing bootstrap/replication races from masquerading as missing content.
+- Runtime resolver: presentation consumers can find or clone prototypes by stable `AssetId`; readiness-aware consumers can wait for one exact generated `AssetId` without introducing an unbounded startup wait.
 - Live environment binding: authored world placements can resolve stable modular environment assets while retaining procedural fallback composition.
 - Live enemy binding: standard enemy presentation can consume modular enemy families while preserving special/boss rules and gameplay authority.
 - Live weapon binding: all six configured firearms map to stable modular weapon IDs. The generated shell auto-fits from its `Grip` → `Muzzle` socket span and mounts onto the existing mechanical presentation rig, preserving grip, bolt, magazine, recoil, reload, muzzle, ejection, and combat contracts. Missing generated assets fall back to the existing project-original procedural weapon model.
@@ -19,7 +19,7 @@
   - completed, banked expedition rewards render Common/Rare/Boss modular chests in the existing debrief without creating a claim path;
   - pending run-relic offers render a source-authored Common/Rare/Boss chest in the existing choice HUD while the server remains authoritative for offered relic IDs and replacement rules;
   - survival supply chests use the generated Common reward chest with the original three-part procedural chest as a fallback. Generated shell parts are non-colliding, non-touching, and non-queryable; legacy-sized invisible proxies preserve the previous character collision and ray-query footprint while `SurvivalLootService` retains all loot authority.
-- Validation: `scripts/validate_modular_asset_systems.py` checks the 20-pack roadmap, starter library, all six live firearm mappings, socket-fit adapter contract, weapon-factory integration, reward viewport bindings, live relic reward-source mapping, survival chest fallback/query boundary, and retained loot authority through the unified repository gate.
+- Validation: `scripts/validate_modular_asset_systems.py` checks the 20-pack roadmap, starter library, all six live firearm mappings, socket-fit adapter contract, weapon-factory integration, reward viewport bindings, live relic reward-source mapping, survival chest fallback/query boundary, and retained loot authority. `ModularAssetReadinessSourceAudit.test.luau` separately locks atomic publication, the ready marker, bounded asset-specific waits, one-shot wait budgets, and immediate stable-ID fast paths.
 
 ## Deliberately not claimed complete
 
@@ -34,7 +34,7 @@ Generic modular blockouts are not treated as automatic upgrades. Existing bespok
 ## Next highest-ROI implementation passes
 
 1. Refresh the seeded dungeon foundation against current `main`, then bind stable dungeon module IDs/snap sockets while preserving canonical room order, encounter/barrier authority, and the existing traversal collision contract.
-2. Verify modular asset bootstrap ordering so live consumers reliably see the generated library and fall back only when assets are genuinely unavailable, not because of startup timing.
-3. Studio-verify first-person weapon shells, survival chest collision/opening, reward viewports, and device-scaled HUD readability across several representative sessions.
-4. Replace the most-visible first-person modular weapon shells and highest-frequency dungeon pieces with authored meshes while preserving stable IDs and socket contracts.
+2. Studio-verify first-person weapon shells, survival chest collision/opening, reward viewports, and device-scaled HUD readability across several representative sessions.
+3. Replace the most-visible first-person modular weapon shells and highest-frequency dungeon pieces with authored meshes while preserving stable IDs and socket contracts.
+4. Add authored visual upgrades to modular enemy armor/accessory families while retaining the current gameplay-readability suppression for misleading ranged weapons.
 5. Add future-pack bindings only where an existing gameplay owner already exposes a presentation-safe state seam; do not replace richer bespoke stateful visuals with lower-information generic blockouts.
