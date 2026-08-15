@@ -13,6 +13,9 @@ local Presentation = {}
 local COMMON_REWARD_ASSET_ID = "reward.chest.common"
 local MODULAR_STATUS = "ModularGeneratedAsset"
 local FALLBACK_STATUS = "ProceduralFallback"
+local ASSET_READY_WAIT_SECONDS = 0.75
+
+local readinessWaitSpent = false
 
 type SupplyChestPresentation = {
 	model: Model,
@@ -81,13 +84,37 @@ local function createLegacyCollisionContract(model: Model, position: Vector3): B
 	return lid
 end
 
-local function createModularChest(parent: Instance, modelName: string, position: Vector3): SupplyChestPresentation?
+local function cloneCommonRewardAsset(): Instance?
 	local generatedRoot = ModularAssetResolver.GetGeneratedRoot(ReplicatedStorage)
-	if generatedRoot == nil then
+	local clone = if generatedRoot ~= nil
+		then ModularAssetResolver.CloneByAssetId(generatedRoot, COMMON_REWARD_ASSET_ID)
+		else nil
+	if clone ~= nil then
+		return clone
+	end
+
+	if readinessWaitSpent then
+		return nil
+	end
+	readinessWaitSpent = true
+	if
+		ModularAssetResolver.WaitForGeneratedAssetById(
+			ReplicatedStorage,
+			COMMON_REWARD_ASSET_ID,
+			ASSET_READY_WAIT_SECONDS
+		) == nil
+	then
 		return nil
 	end
 
-	local clone = ModularAssetResolver.CloneByAssetId(generatedRoot, COMMON_REWARD_ASSET_ID)
+	generatedRoot = ModularAssetResolver.GetGeneratedRoot(ReplicatedStorage)
+	return if generatedRoot ~= nil
+		then ModularAssetResolver.CloneByAssetId(generatedRoot, COMMON_REWARD_ASSET_ID)
+		else nil
+end
+
+local function createModularChest(parent: Instance, modelName: string, position: Vector3): SupplyChestPresentation?
+	local clone = cloneCommonRewardAsset()
 	if clone == nil or not clone:IsA("Model") then
 		if clone ~= nil then
 			clone:Destroy()
