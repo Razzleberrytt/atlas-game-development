@@ -14,7 +14,6 @@ jobs:
     steps:
       - name: Check out branch
         uses: actions/checkout@v4
-
       - name: Install pinned Rokit tools
         uses: CompeyDev/setup-rokit@v0.1.2
         with:
@@ -22,46 +21,21 @@ jobs:
           path: .
           cache: false
           token: ${{ github.token }}
-
-      - name: CharacterProgressionResolver
+      - name: InventorySessionLeaseService
         continue-on-error: true
-        run: lune run games/living-kingdoms/tests/CharacterProgressionResolver.test.luau
-      - name: CharacterProgressionServiceSourceAudit
+        run: lune run games/living-kingdoms/tests/InventorySessionLeaseService.test.luau
+      - name: InventoryMultiServerHandoff
         continue-on-error: true
-        run: lune run games/living-kingdoms/tests/CharacterProgressionServiceSourceAudit.test.luau
-      - name: CharacterProgressionPersistenceSourceAudit
+        run: lune run games/living-kingdoms/tests/InventoryMultiServerHandoff.test.luau
+      - name: InventoryReadOutageRecovery
         continue-on-error: true
-        run: lune run games/living-kingdoms/tests/CharacterProgressionPersistenceSourceAudit.test.luau
-      - name: CharacterProgressionPersistence
+        run: lune run games/living-kingdoms/tests/InventoryReadOutageRecovery.test.luau
+      - name: InventoryLifecycleFaultMatrix
         continue-on-error: true
-        run: lune run games/living-kingdoms/tests/CharacterProgressionPersistence.test.luau
-      - name: PlayerInventoryPersistenceService
+        run: lune run games/living-kingdoms/tests/InventoryLifecycleFaultMatrix.test.luau
+      - name: StudioInventoryPersistenceIsolation
         continue-on-error: true
-        run: lune run games/living-kingdoms/tests/PlayerInventoryPersistenceService.test.luau
-      - name: InventoryMigrationMatrix
+        run: lune run games/living-kingdoms/tests/StudioInventoryPersistenceIsolation.test.luau
+      - name: RobloxInventoryDataStoreAdapterLoadGuard
         continue-on-error: true
-        run: lune run games/living-kingdoms/tests/InventoryMigrationMatrix.test.luau
-      - name: InventoryRecordCapacity
-        continue-on-error: true
-        run: lune run games/living-kingdoms/tests/InventoryRecordCapacity.test.luau
-      - name: InventoryInvariantChecker
-        continue-on-error: true
-        run: lune run games/living-kingdoms/tests/InventoryInvariantChecker.test.luau
-      - name: InventoryStorageContractSourceAudit
-        continue-on-error: true
-        run: lune run games/living-kingdoms/tests/InventoryStorageContractSourceAudit.test.luau
-      - name: InventoryLiveLifecycleSourceAudit
-        continue-on-error: true
-        run: lune run games/living-kingdoms/tests/InventoryLiveLifecycleSourceAudit.test.luau
-      - name: PersistenceReasonClassificationAudit
-        continue-on-error: true
-        run: lune run games/living-kingdoms/tests/PersistenceReasonClassificationAudit.test.luau
-      - name: OperativeProgressionLedgerShape
-        continue-on-error: true
-        run: lune run games/living-kingdoms/tests/OperativeProgressionLedgerShape.test.luau
-      - name: DurableMutationAuthoritySourceAudit
-        continue-on-error: true
-        run: lune run games/living-kingdoms/tests/DurableMutationAuthoritySourceAudit.test.luau
-      - name: EquipmentAffixDurableLifecycle
-        continue-on-error: true
-        run: lune run games/living-kingdoms/tests/EquipmentAffixDurableLifecycle.test.luau
+        run: lune run games/living-kingdoms/tests/RobloxInventoryDataStoreAdapterLoadGuard.test.luau
