@@ -324,6 +324,23 @@ function AutomaticFireResolver.resolve(
 		)
 	end
 
+	if
+		selectedTarget ~= nil
+		and (
+			not selectedTarget.isValid
+			or selectedTarget.operativeEntityId ~= operativeState.entityId
+			or targetEntityId == nil
+		)
+	then
+		return reject(
+			operativeState,
+			weaponState,
+			targetEntityId,
+			serverTimestamp,
+			rejectionReasons.SelectedTargetInvalid
+		)
+	end
+
 	local configuredWeapon = resolveWeaponDefinition(weaponState.weaponId)
 	if configuredWeapon == nil then
 		return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.WeaponNotReady)
@@ -347,20 +364,6 @@ function AutomaticFireResolver.resolve(
 			)
 		end
 		return reject(operativeState, weaponState, nil, serverTimestamp, rejectionReasons.NoSelectedTarget)
-	end
-
-	if
-		not selectedTarget.isValid
-		or selectedTarget.operativeEntityId ~= operativeState.entityId
-		or targetEntityId == nil
-	then
-		return reject(
-			operativeState,
-			weaponState,
-			targetEntityId,
-			serverTimestamp,
-			rejectionReasons.SelectedTargetInvalid
-		)
 	end
 
 	if firingModeId == SEMI_AUTOMATIC_MODE_ID and fireModeState.triggerLatched then
