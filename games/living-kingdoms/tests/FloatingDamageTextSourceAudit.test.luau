@@ -26,7 +26,7 @@ local function count(source: string, token: string): number
 	end
 end
 
-local controllerPath = "games/living-kingdoms/src/client/Controllers/FloatingDamageTextController.luau"
+local controllerPath = "games/living-kingdoms/src/client/Controllers/CombatFeedback/FloatingDamageTextController.luau"
 local configPath = "games/living-kingdoms/src/shared/Config/FloatingDamageTextConfig.luau"
 local bootstrapPath = "games/living-kingdoms/src/client/init.client.luau"
 local serverPath = "games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau"
