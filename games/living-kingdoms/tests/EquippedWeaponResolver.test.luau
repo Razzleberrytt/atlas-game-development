@@ -61,17 +61,26 @@ local notEquippedRecord = {
 	EquippedBySlot = { Primary = "other" },
 }
 local notEquipped = resolver.resolveInstance(notEquippedRecord, "primary", lookupDefinition)
-assertThat(not notEquipped.Accepted and notEquipped.ReasonId == "ItemNotEquipped", "owned but unequipped item must not drive combat")
+assertThat(
+	not notEquipped.Accepted and notEquipped.ReasonId == "ItemNotEquipped",
+	"owned but unequipped item must not drive combat"
+)
 
 local armor = resolver.resolveInstance(record, "armor", lookupDefinition)
-assertThat(not armor.Accepted and armor.ReasonId == "ItemIsNotWeaponEquipment", "non-weapon equipment must not resolve a weapon")
+assertThat(
+	not armor.Accepted and armor.ReasonId == "ItemIsNotWeaponEquipment",
+	"non-weapon equipment must not resolve a weapon"
+)
 
 local forgedDefinitionRecord = {
 	InventoryByInstanceId = { forged = record.InventoryByInstanceId.forged },
 	EquippedBySlot = { Primary = "forged" },
 }
 local forged = resolver.resolveInstance(forgedDefinitionRecord, "forged", lookupDefinition)
-assertThat(not forged.Accepted and forged.ReasonId == "UnknownEquipmentDefinition", "unknown definitions must fail closed")
+assertThat(
+	not forged.Accepted and forged.ReasonId == "UnknownEquipmentDefinition",
+	"unknown definitions must fail closed"
+)
 
 local slotMismatchDefinitions = {
 	["frontier-rifle"] = { Id = "frontier-rifle", Slot = "Secondary", WeaponId = "weapon.sniper_rifle" },
@@ -79,7 +88,10 @@ local slotMismatchDefinitions = {
 local slotMismatch = resolver.resolveInstance(record, "primary", function(definitionId: string): any
 	return slotMismatchDefinitions[definitionId]
 end)
-assertThat(not slotMismatch.Accepted and slotMismatch.ReasonId == "InvalidWeaponDefinition", "definition slot mismatch must fail closed")
+assertThat(
+	not slotMismatch.Accepted and slotMismatch.ReasonId == "InvalidWeaponDefinition",
+	"definition slot mismatch must fail closed"
+)
 
 local empty = resolver.resolvePreferred({ InventoryByInstanceId = {}, EquippedBySlot = {} }, lookupDefinition)
 assertThat(not empty.Accepted and empty.ReasonId == "NoEquippedWeapon", "empty equipment must resolve no weapon")
