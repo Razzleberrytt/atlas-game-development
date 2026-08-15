@@ -6,9 +6,7 @@ local function contains(source: string, token: string): boolean
 	return string.find(source, token, 1, true) ~= nil
 end
 
-local enemyService = fs.readFile(
-	"games/living-kingdoms/src/server/Systems/ModularEnemyAssetPresentationService.luau"
-)
+local enemyService = fs.readFile("games/living-kingdoms/src/server/Systems/ModularEnemyAssetPresentationService.luau")
 local enemyBootstrap = fs.readFile("games/living-kingdoms/src/server/modular-enemy-assets.server.luau")
 local worldDressing = fs.readFile("games/living-kingdoms/src/server/ModularWorldDressing.server.luau")
 
@@ -41,8 +39,16 @@ for _, prohibited in
 		"DamagePerHit",
 	}
 do
-	assert(not contains(enemyService, prohibited), "modular enemy presentation gained gameplay authority token " .. prohibited)
-	assert(not contains(worldDressing, prohibited), "modular world dressing gained gameplay authority token " .. prohibited)
+	assert(
+		not contains(enemyService, prohibited),
+		"modular enemy presentation gained gameplay authority token " .. prohibited
+	)
+	assert(
+		not contains(worldDressing, prohibited),
+		"modular world dressing gained gameplay authority token " .. prohibited
+	)
 end
 
-print("ModularAssetRuntimeIntegrationSourceAudit: canonical assets are live with presentation-only authority boundaries")
+print(
+	"ModularAssetRuntimeIntegrationSourceAudit: canonical assets are live with presentation-only authority boundaries"
+)
