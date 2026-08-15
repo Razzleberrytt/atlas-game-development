@@ -11,6 +11,8 @@ local DurableMutation = require(ReplicatedStorage.Shared.Persistence.DurableMuta
 local MigrationSteps = require(ReplicatedStorage.Shared.Persistence.InventoryMigrationSteps)
 local Recovery = require(ReplicatedStorage.Shared.Persistence.InventoryRecoveryContracts)
 local Capacity = require(ReplicatedStorage.Shared.Persistence.InventoryCapacityContracts)
+local CharacterProgressionConfig = require(ReplicatedStorage.Shared.Config.CharacterProgressionConfig)
+local CharacterProgressionResolver = require(ReplicatedStorage.Shared.Progression.CharacterProgressionResolver)
 
 export type EquipmentReward = EquipmentContracts.EquipmentReward
 export type EquipmentAffixRoll = EquipmentContracts.EquipmentAffixRoll
@@ -28,6 +30,13 @@ export type Store = {
 export type Service = {
 	loadPlayer: (self: Service, playerId: number, nowUnix: number) -> LoadResult,
 	applyReward: (self: Service, playerId: number, reward: EquipmentReward, nowUnix: number) -> MutationResult,
+	applyCharacterProgression: (
+		self: Service,
+		playerId: number,
+		progressionState: any,
+		grantId: string?,
+		nowUnix: number
+	) -> MutationResult,
 	equip: (
 		self: Service,
 		playerId: number,
@@ -66,10 +75,13 @@ local function isKnownValue(container: any, value: any): boolean
 	return false
 end
 
--- Saved rewards may predate Patch 0.3. Missing affixes therefore normalize to
--- an empty list, while malformed affix payloads fail closed instead of being
--- silently dropped. Historical rolls are validated structurally rather than
--- against today's config so a future balance change cannot invalidate old gear.
+local function normalizedCharacterProgression(value: any): any
+	local normalized = CharacterProgressionResolver.normalizeState(value, CharacterProgressionConfig)
+	return CharacterProgressionResolver.serializeState(normalized)
+end
+
+-- Saved rewards may predate affixes. Missing affixes normalize to an empty list,
+-- while malformed payloads fail closed instead of being silently dropped.
 local function normalizedAffixes(value: any): { EquipmentAffixRoll }?
 	if value == nil then
 		return table.freeze({})
@@ -98,16 +110,13 @@ local function normalizedAffixes(value: any): { EquipmentAffixRoll }?
 			return nil
 		end
 		seenIds[rawAffix.Id] = true
-		table.insert(
-			normalized,
-			table.freeze({
-				Id = rawAffix.Id,
-				Version = rawAffix.Version,
-				DisplayName = rawAffix.DisplayName,
-				EffectId = rawAffix.EffectId,
-				Value = rawAffix.Value,
-			})
-		)
+		table.insert(normalized, table.freeze({
+			Id = rawAffix.Id,
+			Version = rawAffix.Version,
+			DisplayName = rawAffix.DisplayName,
+			EffectId = rawAffix.EffectId,
+			Value = rawAffix.Value,
+		}))
 	end
 	if #normalized ~= #value then
 		return nil
@@ -119,11 +128,7 @@ local function normalizedReward(value: any): EquipmentReward?
 	if type(value) ~= "table" or type(value.InstanceId) ~= "string" or #value.InstanceId < 8 then
 		return nil
 	end
-	if
-		type(value.DefinitionId) ~= "string"
-		or type(value.DefinitionVersion) ~= "string"
-		or type(value.DisplayName) ~= "string"
-	then
+	if type(value.DefinitionId) ~= "string" or type(value.DefinitionVersion) ~= "string" or type(value.DisplayName) ~= "string" then
 		return nil
 	end
 	if not isKnownValue(VALID_SLOTS, value.Slot) or not isKnownValue(VALID_RARITIES, value.Rarity) then
@@ -176,31 +181,40 @@ local function newRecord(playerId: number, nowUnix: number): PlayerInventoryReco
 		AppliedRewardGrantIds = {},
 		AppliedDismantleTransactions = {},
 		AppliedRewardContentSignatures = {},
+		CharacterProgression = normalizedCharacterProgression(nil),
+		AppliedCharacterProgressionGrantIds = {},
 		UpdatedAtUnix = nowUnix,
 	}
 end
 
---[[
-	A shallow clone per field is sufficient: every value inside these tables is
-	either a scalar or an already-frozen reward/outcome, so no caller can reach
-	through a copy to mutate service state.
-]]
+local function mutableCopy(record: PlayerInventoryRecord, nowUnix: number): PlayerInventoryRecord
+	return {
+		SchemaVersion = CURRENT_SCHEMA,
+		PlayerId = record.PlayerId,
+		InventoryByInstanceId = table.clone(record.InventoryByInstanceId),
+		EquippedBySlot = table.clone(record.EquippedBySlot),
+		AppliedRewardInstanceIds = table.clone(record.AppliedRewardInstanceIds),
+		AppliedRewardGrantIds = table.clone(record.AppliedRewardGrantIds),
+		AppliedDismantleTransactions = table.clone(record.AppliedDismantleTransactions or {}),
+		AppliedRewardContentSignatures = table.clone(record.AppliedRewardContentSignatures or {}),
+		CharacterProgression = normalizedCharacterProgression(record.CharacterProgression),
+		AppliedCharacterProgressionGrantIds = table.clone(record.AppliedCharacterProgressionGrantIds or {}),
+		UpdatedAtUnix = nowUnix,
+	}
+end
+
 local function cloneRecord(record: PlayerInventoryRecord): PlayerInventoryRecord
-	local inventory = table.clone(record.InventoryByInstanceId)
-	local equipped = table.clone(record.EquippedBySlot)
-	local instances = table.clone(record.AppliedRewardInstanceIds)
-	local grants = table.clone(record.AppliedRewardGrantIds)
-	local dismantles = table.clone(record.AppliedDismantleTransactions or {})
-	local signatures = table.clone(record.AppliedRewardContentSignatures or {})
 	return table.freeze({
 		SchemaVersion = record.SchemaVersion,
 		PlayerId = record.PlayerId,
-		InventoryByInstanceId = table.freeze(inventory),
-		EquippedBySlot = table.freeze(equipped),
-		AppliedRewardInstanceIds = table.freeze(instances),
-		AppliedRewardGrantIds = table.freeze(grants),
-		AppliedDismantleTransactions = table.freeze(dismantles),
-		AppliedRewardContentSignatures = table.freeze(signatures),
+		InventoryByInstanceId = table.freeze(table.clone(record.InventoryByInstanceId)),
+		EquippedBySlot = table.freeze(table.clone(record.EquippedBySlot)),
+		AppliedRewardInstanceIds = table.freeze(table.clone(record.AppliedRewardInstanceIds)),
+		AppliedRewardGrantIds = table.freeze(table.clone(record.AppliedRewardGrantIds)),
+		AppliedDismantleTransactions = table.freeze(table.clone(record.AppliedDismantleTransactions or {})),
+		AppliedRewardContentSignatures = table.freeze(table.clone(record.AppliedRewardContentSignatures or {})),
+		CharacterProgression = table.freeze(table.clone(record.CharacterProgression)),
+		AppliedCharacterProgressionGrantIds = table.freeze(table.clone(record.AppliedCharacterProgressionGrantIds or {})),
 		UpdatedAtUnix = record.UpdatedAtUnix,
 	})
 end
@@ -246,29 +260,15 @@ local function normalizeRecord(raw: any, playerId: number, nowUnix: number): (Pl
 		end
 		record.AppliedRewardGrantIds[grantId] = true
 	end
-	--[[
-		Schema 3 added the dismantle ledger. Records saved at 1 or 2 simply have
-		none, which migrates to an empty ledger: they predate dismantle, so no
-		transaction can have been applied. A malformed entry is rejected rather
-		than dropped, because silently discarding it would let an already-applied
-		dismantle be replayed into a second destruction.
-	]]
 	for transactionId, outcome in raw.AppliedDismantleTransactions or {} do
 		if type(transactionId) ~= "string" or type(outcome) ~= "table" then
 			return nil, false, "InvalidDismantleLedger"
 		end
-		if type(outcome.InstanceId) ~= "string" or type(outcome.SalvagedDefinitionId) ~= "string" then
-			return nil, false, "InvalidDismantleLedger"
-		end
-		--[[
-			A replayed dismantle is answered from this record, not from the item,
-			which no longer exists. A structurally incomplete outcome would answer
-			the replay with nonsense, so every field a replay discloses is checked
-			rather than merely typed.
-		]]
 		if
 			not DurableMutation.isValidTransactionId(transactionId)
+			or type(outcome.InstanceId) ~= "string"
 			or #outcome.InstanceId < 8
+			or type(outcome.SalvagedDefinitionId) ~= "string"
 			or #outcome.SalvagedDefinitionId < 1
 			or type(outcome.SalvagedRarity) ~= "string"
 			or not isKnownValue(VALID_RARITIES, outcome.SalvagedRarity)
@@ -284,13 +284,6 @@ local function normalizeRecord(raw: any, playerId: number, nowUnix: number): (Pl
 			SalvagedPower = outcome.SalvagedPower,
 		})
 	end
-	--[[
-		Schema 4 added per-grant content identity. Records saved at 1-3 have none:
-		their grants are known to have happened but not what they were, so a
-		repeat of one of those ids can only be treated as a replay. That is the
-		safe direction -- it preserves today's behaviour for historical grants
-		while new grants gain conflict detection.
-	]]
 	for grantId, signature in raw.AppliedRewardContentSignatures or {} do
 		if type(grantId) ~= "string" or not DurableMutation.isValidContentIdentity(signature) then
 			return nil, false, "InvalidRewardSignatureLedger"
@@ -307,6 +300,18 @@ local function normalizeRecord(raw: any, playerId: number, nowUnix: number): (Pl
 		end
 		record.EquippedBySlot[slotId] = instanceId
 	end
+
+	-- Schema 5 introduces progression in the already-authoritative account
+	-- record. The pure resolver handles legacy XP/level shapes and clamps bad
+	-- finite values to the configured progression domain.
+	record.CharacterProgression = normalizedCharacterProgression(raw.CharacterProgression)
+	for grantId, applied in raw.AppliedCharacterProgressionGrantIds or {} do
+		if type(grantId) ~= "string" or #grantId < 8 or applied ~= true then
+			return nil, false, "InvalidCharacterProgressionGrantLedger"
+		end
+		record.AppliedCharacterProgressionGrantIds[grantId] = true
+	end
+
 	return record, migrated, if migrated then "MigratedRecord" else "LoadedRecord"
 end
 
@@ -314,23 +319,15 @@ local function result(accepted: boolean, reasonId: string, record: PlayerInvento
 	return table.freeze({ Accepted = accepted, ReasonId = reasonId, Record = record })
 end
 
---[[
-	Every durable write passes through here. A record over the budget does not
-	save a truncated version -- it does not save at all, and every later mutation
-	fails the same way while the player keeps playing. Refusing before submission
-	turns that into one reportable condition instead of silent permanent loss.
-]]
 local function guardedWrite(store: any, key: string, record: PlayerInventoryRecord): (boolean, string)
 	local classification, bytes = Capacity.classify(record)
 	if classification == Capacity.SizeClassifications.Exceeded then
-		warn(
-			string.format(
-				"[AtlasPersistence] refusing write for %s: estimated %d bytes exceeds the %d byte budget",
-				key,
-				bytes,
-				Capacity.SafeRecordByteLimit
-			)
-		)
+		warn(string.format(
+			"[AtlasPersistence] refusing write for %s: estimated %d bytes exceeds the %d byte budget",
+			key,
+			bytes,
+			Capacity.SafeRecordByteLimit
+		))
 		return false, "RecordSizeExceeded"
 	end
 	if classification == Capacity.SizeClassifications.Approaching then
@@ -361,13 +358,6 @@ function Service:loadPlayer(playerId: number, nowUnix: number): LoadResult
 	if not isInteger(playerId) or playerId <= 0 or type(nowUnix) ~= "number" or nowUnix < 0 then
 		return table.freeze({ Accepted = false, ReasonId = "InvalidLoadRequest", Record = nil, Migrated = false })
 	end
-	--[[
-		A failed read is not an absent record. Treating it as one would build a
-		blank record and try to persist it, so the read status is checked before
-		normalization rather than relying on a downstream write guard to catch
-		the consequence -- and the caller gets LoadFailed, which names what
-		actually went wrong, instead of a SaveFailed that misdescribes it.
-	]]
 	local readResult = selfAny._store:read(keyFor(playerId))
 	if readResult.Status == StorageResults.ReadStatuses.Failed then
 		return table.freeze({ Accepted = false, ReasonId = "LoadFailed", Record = nil, Migrated = false })
@@ -377,12 +367,6 @@ function Service:loadPlayer(playerId: number, nowUnix: number): LoadResult
 	local sourceSchema = if type(readResult.Value) == "table" then readResult.Value.SchemaVersion else nil
 	local normalized, migrated, reasonId = normalizeRecord(readResult.Value, playerId, nowUnix)
 	if normalized == nil then
-		--[[
-			A record we cannot parse is copied aside before the caller is told. The
-			source is never rewritten: whatever is wrong with it, it is still the
-			only durable state this player has, and a repair that guessed would
-			destroy the evidence needed to do the repair properly.
-		]]
 		self:_quarantine(key, reasonId, nowUnix, readResult.Value)
 		return table.freeze({
 			Accepted = false,
@@ -393,10 +377,6 @@ function Service:loadPlayer(playerId: number, nowUnix: number): LoadResult
 		})
 	end
 
-	--[[
-		Migration is planned rather than assumed, so the jump taken is recorded and
-		an unauthored one is refused instead of silently performed.
-	]]
 	local plan = MigrationSteps.plan(sourceSchema or CURRENT_SCHEMA, CURRENT_SCHEMA)
 	if not plan.Accepted then
 		self:_quarantine(key, plan.ReasonId, nowUnix, readResult.Value)
@@ -410,12 +390,6 @@ function Service:loadPlayer(playerId: number, nowUnix: number): LoadResult
 	end
 
 	if migrated then
-		--[[
-			The write-back must not clobber a record that changed since the read.
-			Committing through a transform lets the store's own value be compared
-			at commit time, so a newer record wins instead of being overwritten by
-			one derived from a stale read.
-		]]
 		local reconciled = true
 		local write = selfAny._store:commit(key, function(current: any): any
 			if current ~= nil and type(current) == "table" and current.UpdatedAtUnix ~= nil then
@@ -461,12 +435,6 @@ function Service:loadPlayer(playerId: number, nowUnix: number): LoadResult
 	})
 end
 
---[[
-	Quarantine copies the damaged payload to a derived key and leaves the source
-	untouched. A failure to quarantine is deliberately not fatal: the load has
-	already failed, and losing the diagnostic copy is strictly better than turning
-	a diagnosable failure into an unexplained one.
-]]
 function Service:_quarantine(sourceKey: string, reasonId: string, nowUnix: number, payload: any)
 	local selfAny = self :: any
 	if payload == nil or Recovery.isRecoverable(reasonId) then
@@ -495,15 +463,6 @@ function Service:applyReward(playerId: number, reward: EquipmentReward, nowUnix:
 	if normalized == nil or type(nowUnix) ~= "number" or nowUnix < record.UpdatedAtUnix then
 		return result(false, "InvalidReward", cloneRecord(record))
 	end
-	--[[
-		A repeat of a grant id is either a retry of the same grant or a different
-		grant wearing a used id, and those need opposite answers. The ledger used
-		to record only that an id had been used, so the second case was reported
-		as the first and the differing reward was discarded without a signal.
-
-		Historical grants carry no recorded signature, so they can only be treated
-		as replays -- the safe direction, and exactly what happened before.
-	]]
 	if record.AppliedRewardGrantIds[normalized.GrantId] then
 		local knownSignature = record.AppliedRewardContentSignatures[normalized.GrantId]
 		if knownSignature ~= nil and knownSignature ~= normalized.ContentSignature then
@@ -515,40 +474,15 @@ function Service:applyReward(playerId: number, reward: EquipmentReward, nowUnix:
 		return result(false, "RewardAlreadyApplied", cloneRecord(record))
 	end
 
-	local nextRecord = newRecord(playerId, nowUnix)
-	for id, existing in record.InventoryByInstanceId do
-		nextRecord.InventoryByInstanceId[id] = existing
-	end
-	for slot, id in record.EquippedBySlot do
-		nextRecord.EquippedBySlot[slot] = id
-	end
-	for id, applied in record.AppliedRewardInstanceIds do
-		nextRecord.AppliedRewardInstanceIds[id] = applied
-	end
-	for id, applied in record.AppliedRewardGrantIds do
-		nextRecord.AppliedRewardGrantIds[id] = applied
-	end
-	-- Carrying the dismantle ledger forward is mandatory: dropping it would let
-	-- an already-applied dismantle replay into a second destruction.
-	for transactionId, outcome in record.AppliedDismantleTransactions do
-		nextRecord.AppliedDismantleTransactions[transactionId] = outcome
-	end
-	for grantId, signature in record.AppliedRewardContentSignatures do
-		nextRecord.AppliedRewardContentSignatures[grantId] = signature
-	end
+	local nextRecord = mutableCopy(record, nowUnix)
 	nextRecord.InventoryByInstanceId[normalized.InstanceId] = normalized
 	nextRecord.AppliedRewardInstanceIds[normalized.InstanceId] = true
 	nextRecord.AppliedRewardGrantIds[normalized.GrantId] = true
 	nextRecord.AppliedRewardContentSignatures[normalized.GrantId] = normalized.ContentSignature
-
-	--[[
-		Ledgers only grow. A record past the bound would eventually stop saving
-		at the DataStore size limit, losing the inventory rather than just the
-		ledger, so the write is refused here where it can still be reported.
-	]]
 	if
 		DurableMutation.exceedsBound(nextRecord.AppliedRewardGrantIds)
 		or DurableMutation.exceedsBound(nextRecord.AppliedDismantleTransactions)
+		or DurableMutation.exceedsBound(nextRecord.AppliedCharacterProgressionGrantIds)
 	then
 		return result(false, "MutationLedgerBoundExceeded", cloneRecord(record))
 	end
@@ -558,6 +492,55 @@ function Service:applyReward(playerId: number, reward: EquipmentReward, nowUnix:
 	end
 	selfAny._records[playerId] = nextRecord
 	return result(true, "RewardApplied", cloneRecord(nextRecord))
+end
+
+-- Persists the resolver-produced canonical XP projection through the same
+-- account record and write path as inventory. Optional grant ids are durable
+-- idempotency only for low-frequency rewards (quest/event/expedition completion).
+function Service:applyCharacterProgression(
+	playerId: number,
+	progressionState: any,
+	grantId: string?,
+	nowUnix: number
+): MutationResult
+	local selfAny = self :: any
+	if selfAny._destroyed then
+		return result(false, "ServiceDestroyed", nil)
+	end
+	local record: PlayerInventoryRecord? = selfAny._records[playerId]
+	if record == nil then
+		return result(false, "PlayerNotLoaded", nil)
+	end
+	if type(nowUnix) ~= "number" or nowUnix < record.UpdatedAtUnix then
+		return result(false, "InvalidCharacterProgressionRequest", cloneRecord(record))
+	end
+	if grantId ~= nil and (type(grantId) ~= "string" or #grantId < 8) then
+		return result(false, "InvalidCharacterProgressionGrantId", cloneRecord(record))
+	end
+	if grantId ~= nil and record.AppliedCharacterProgressionGrantIds[grantId] then
+		return result(false, "CharacterProgressionGrantAlreadyApplied", cloneRecord(record))
+	end
+
+	local normalized = normalizedCharacterProgression(progressionState)
+	local previous = normalizedCharacterProgression(record.CharacterProgression)
+	if normalized.TotalXP < previous.TotalXP then
+		return result(false, "CharacterProgressionRollbackRejected", cloneRecord(record))
+	end
+
+	local nextRecord = mutableCopy(record, nowUnix)
+	nextRecord.CharacterProgression = normalized
+	if grantId ~= nil then
+		nextRecord.AppliedCharacterProgressionGrantIds[grantId] = true
+	end
+	if DurableMutation.exceedsBound(nextRecord.AppliedCharacterProgressionGrantIds) then
+		return result(false, "MutationLedgerBoundExceeded", cloneRecord(record))
+	end
+	local written, writeReason = guardedWrite(selfAny._store, keyFor(playerId), nextRecord)
+	if not written then
+		return result(false, writeReason, cloneRecord(record))
+	end
+	selfAny._records[playerId] = nextRecord
+	return result(true, "CharacterProgressionApplied", cloneRecord(nextRecord))
 end
 
 function Service:equip(playerId: number, slotId: EquipmentSlotId, instanceId: string, nowUnix: number): MutationResult
@@ -584,27 +567,8 @@ function Service:equip(playerId: number, slotId: EquipmentSlotId, instanceId: st
 	if reward.Slot ~= slotId then
 		return result(false, "SlotMismatch", cloneRecord(record))
 	end
-	local nextRecord = newRecord(playerId, nowUnix)
-	for id, existing in record.InventoryByInstanceId do
-		nextRecord.InventoryByInstanceId[id] = existing
-	end
-	for slot, id in record.EquippedBySlot do
-		nextRecord.EquippedBySlot[slot] = id
-	end
-	for id, applied in record.AppliedRewardInstanceIds do
-		nextRecord.AppliedRewardInstanceIds[id] = applied
-	end
-	for id, applied in record.AppliedRewardGrantIds do
-		nextRecord.AppliedRewardGrantIds[id] = applied
-	end
-	-- Carrying the dismantle ledger forward is mandatory: dropping it would let
-	-- an already-applied dismantle replay into a second destruction.
-	for transactionId, outcome in record.AppliedDismantleTransactions do
-		nextRecord.AppliedDismantleTransactions[transactionId] = outcome
-	end
-	for grantId, signature in record.AppliedRewardContentSignatures do
-		nextRecord.AppliedRewardContentSignatures[grantId] = signature
-	end
+
+	local nextRecord = mutableCopy(record, nowUnix)
 	nextRecord.EquippedBySlot[slotId] = instanceId
 	local written, writeReason = guardedWrite(selfAny._store, keyFor(playerId), nextRecord)
 	if not written then
@@ -614,15 +578,6 @@ function Service:equip(playerId: number, slotId: EquipmentSlotId, instanceId: st
 	return result(true, "ItemEquipped", cloneRecord(nextRecord))
 end
 
---[[
-	Destroys one owned item under a transaction id. The decision belongs to the
-	pure resolver; this method owns only the durable parts — recording the
-	transaction so a replay survives a rejoin, and the write itself.
-
-	A failed save leaves the in-memory record untouched, so a retry of the same
-	transaction re-runs the decision rather than reporting a destruction that
-	was never persisted.
-]]
 function Service:dismantle(
 	playerId: number,
 	instanceId: string,
@@ -636,7 +591,6 @@ function Service:dismantle(
 		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Outcome = nil, Record = nil })
 	end
 	local record: PlayerInventoryRecord? = selfAny._records[playerId]
-
 	local resolution = InventoryDismantleResolver.resolve({
 		RequesterId = playerId,
 		OwnerId = playerId,
@@ -658,8 +612,6 @@ function Service:dismantle(
 			Record = if record then cloneRecord(record) else nil,
 		})
 	end
-
-	-- A replay writes nothing; the original transaction already persisted.
 	if resolution.Replayed == true then
 		return table.freeze({
 			Accepted = true,
@@ -668,31 +620,17 @@ function Service:dismantle(
 			Record = if record then cloneRecord(record) else nil,
 		})
 	end
+	if record == nil then
+		return table.freeze({ Accepted = false, ReasonId = "PlayerNotLoaded", Outcome = nil, Record = nil })
+	end
 
-	local nextRecord = resolution.NextRecord :: any
-	local durable = newRecord(playerId, nextRecord.UpdatedAtUnix)
-	for id, existing in nextRecord.InventoryByInstanceId do
-		durable.InventoryByInstanceId[id] = existing
-	end
-	for slot, id in nextRecord.EquippedBySlot do
-		durable.EquippedBySlot[slot] = id
-	end
-	for id, applied in nextRecord.AppliedRewardInstanceIds do
-		durable.AppliedRewardInstanceIds[id] = applied
-	end
-	for id, applied in nextRecord.AppliedRewardGrantIds do
-		durable.AppliedRewardGrantIds[id] = applied
-	end
-	for id, outcome in nextRecord.AppliedDismantleTransactions do
-		durable.AppliedDismantleTransactions[id] = outcome
-	end
-	--[[
-		Destroying an item must not erase the record that its grant was already
-		applied, or the same reward could be granted again after a dismantle.
-	]]
-	for grantId, signature in record.AppliedRewardContentSignatures do
-		durable.AppliedRewardContentSignatures[grantId] = signature
-	end
+	local resolved = resolution.NextRecord :: any
+	local durable = mutableCopy(record, resolved.UpdatedAtUnix)
+	durable.InventoryByInstanceId = table.clone(resolved.InventoryByInstanceId)
+	durable.EquippedBySlot = table.clone(resolved.EquippedBySlot)
+	durable.AppliedRewardInstanceIds = table.clone(resolved.AppliedRewardInstanceIds)
+	durable.AppliedRewardGrantIds = table.clone(resolved.AppliedRewardGrantIds)
+	durable.AppliedDismantleTransactions = table.clone(resolved.AppliedDismantleTransactions)
 	durable.AppliedDismantleTransactions[transactionId] = resolution.Outcome
 
 	local written, writeReason = guardedWrite(selfAny._store, keyFor(playerId), durable)
@@ -701,7 +639,7 @@ function Service:dismantle(
 			Accepted = false,
 			ReasonId = writeReason,
 			Outcome = nil,
-			Record = if record then cloneRecord(record) else nil,
+			Record = cloneRecord(record),
 		})
 	end
 	selfAny._records[playerId] = durable
@@ -713,17 +651,6 @@ function Service:dismantle(
 	})
 end
 
---[[
-	Drops one player's in-memory record. Load is wired to PlayerAdded, so without
-	a symmetric release every player who ever joined stays resident for the life
-	of the server, and a departed player's inventory remains readable through
-	getRecord long after their session lease was released.
-
-	This deliberately writes nothing. Every mutation path already saves before it
-	updates memory, so the store is current by construction; saving on release
-	would risk overwriting a newer record written by whichever server acquired
-	the lease next.
-]]
 function Service:releasePlayer(playerId: number): any
 	local selfAny = self :: any
 	if selfAny._destroyed then
