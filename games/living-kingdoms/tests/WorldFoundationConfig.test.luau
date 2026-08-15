@@ -62,15 +62,25 @@ assert(config.Lighting.FogStart >= 110, "near-route fog should preserve explorat
 assert(config.Lighting.FogEnd >= 600, "major landmarks need a useful reveal distance")
 assert(config.Lighting.EnvironmentDiffuseScale <= 1, "diffuse environment contribution must remain bounded")
 assert(config.Lighting.EnvironmentSpecularScale <= 1, "specular environment contribution must remain bounded")
-assert(config.Lighting.Atmosphere.Density > 0 and config.Lighting.Atmosphere.Density < 0.5, "atmosphere must stay readable")
+assert(
+	config.Lighting.Atmosphere.Density > 0 and config.Lighting.Atmosphere.Density < 0.5,
+	"atmosphere must stay readable"
+)
 assert(config.Lighting.Bloom.Intensity <= 0.25, "bloom must remain restrained")
 assert(config.Lighting.Night.BrightnessEnd < config.Lighting.Night.BrightnessStart, "night must darken progressively")
 assert(config.Lighting.Night.FogEndStart < config.Lighting.FogEnd, "night must close the long-distance reveal")
 assert(config.Dressing.Version == "readability-v1", "readability dressing version changed")
 assert(#config.Dressing.TrailReflectorPositions == 12, "trail reflector budget changed")
 for _, position in config.Dressing.TrailReflectorPositions do
-	assert(type(position.x) == "number" and type(position.y) == "number" and type(position.z) == "number", "dressing coordinates must remain pure data")
-	assert(math.abs(position.x) <= config.PlayableHalfExtentStuds and math.abs(position.z) <= config.PlayableHalfExtentStuds, "dressing marker escaped the authored world")
+	assert(
+		type(position.x) == "number" and type(position.y) == "number" and type(position.z) == "number",
+		"dressing coordinates must remain pure data"
+	)
+	assert(
+		math.abs(position.x) <= config.PlayableHalfExtentStuds
+			and math.abs(position.z) <= config.PlayableHalfExtentStuds,
+		"dressing marker escaped the authored world"
+	)
 end
 assert(
 	config.InsertionPosition.x == -224 and config.InsertionPosition.z == -208,
@@ -129,8 +139,14 @@ assert(string.find(worldSource, "buildLivingGroundDetail", 1, true) ~= nil, "liv
 assert(string.find(worldSource, "grade.Saturation = 0.16", 1, true) ~= nil, "warm color grade is missing")
 
 local environmentProfileSource = fs.readFile("games/living-kingdoms/src/server/Systems/EnvironmentProfileService.luau")
-assert(string.find(environmentProfileSource, "LivingKingdomsAtmosphere", 1, true), "canonical atmosphere owner is missing")
-assert(string.find(environmentProfileSource, "LivingKingdomsColorGrade", 1, true), "canonical color-grade owner is missing")
+assert(
+	string.find(environmentProfileSource, "LivingKingdomsAtmosphere", 1, true),
+	"canonical atmosphere owner is missing"
+)
+assert(
+	string.find(environmentProfileSource, "LivingKingdomsColorGrade", 1, true),
+	"canonical color-grade owner is missing"
+)
 assert(string.find(environmentProfileSource, "LivingKingdomsBloom", 1, true), "canonical bloom owner is missing")
 assert(string.find(environmentProfileSource, "LivingKingdomsSunRays", 1, true), "canonical sun-ray owner is missing")
 assert(string.find(environmentProfileSource, "LivingKingdomsClouds", 1, true), "canonical cloud owner is missing")
