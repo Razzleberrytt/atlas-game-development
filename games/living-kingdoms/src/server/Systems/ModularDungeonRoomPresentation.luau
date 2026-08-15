@@ -1,7 +1,7 @@
 --!strict
 
 -- Presentation-only adapter from authoritative expedition room placements to the
--- generated modular dungeon kit. RoomPlacementPlanner, graybox collision,
+-- generated modular dungeon kit. The canonical room planner, graybox collision,
 -- connectors, reveal barriers, encounters, and lifecycle remain authoritative.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -34,7 +34,10 @@ for _, definition in ipairs(ModularAssetProductionCatalog.Dungeon.Modules) do
 	catalogDungeonAssetIds[definition.id] = true
 end
 for roleId, assetId in pairs(ASSET_ID_BY_ROLE) do
-	assert(catalogDungeonAssetIds[assetId] == true, `modular dungeon role {roleId} references unknown asset {assetId}`)
+	assert(
+		catalogDungeonAssetIds[assetId] == true,
+		`modular dungeon role {roleId} references unknown asset {assetId}`
+	)
 end
 
 type PartSnapshot = {
@@ -138,7 +141,9 @@ end
 
 local function cloneAsset(assetId: string): Instance?
 	local generatedRoot = ModularAssetResolver.GetGeneratedRoot(ReplicatedStorage)
-	local clone = if generatedRoot ~= nil then ModularAssetResolver.CloneByAssetId(generatedRoot, assetId) else nil
+	local clone = if generatedRoot ~= nil
+		then ModularAssetResolver.CloneByAssetId(generatedRoot, assetId)
+		else nil
 	if clone ~= nil then
 		return clone
 	end
@@ -147,12 +152,20 @@ local function cloneAsset(assetId: string): Instance?
 		return nil
 	end
 	readinessWaitSpent = true
-	if ModularAssetResolver.WaitForGeneratedAssetById(ReplicatedStorage, assetId, ASSET_READY_WAIT_SECONDS) == nil then
+	if
+		ModularAssetResolver.WaitForGeneratedAssetById(
+			ReplicatedStorage,
+			assetId,
+			ASSET_READY_WAIT_SECONDS
+		) == nil
+	then
 		return nil
 	end
 
 	generatedRoot = ModularAssetResolver.GetGeneratedRoot(ReplicatedStorage)
-	return if generatedRoot ~= nil then ModularAssetResolver.CloneByAssetId(generatedRoot, assetId) else nil
+	return if generatedRoot ~= nil
+		then ModularAssetResolver.CloneByAssetId(generatedRoot, assetId)
+		else nil
 end
 
 local function hideAuthoritativeGrayboxVisuals(roomModel: Model)
