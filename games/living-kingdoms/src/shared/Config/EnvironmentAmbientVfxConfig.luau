@@ -2,17 +2,14 @@
 
 -- Runtime-agnostic micro-atmosphere zones. Keep this pure data so Lune can
 -- validate the presentation budget without Roblox globals.
-local function rgb(r: number, g: number, b: number)
-	return table.freeze({ r = r, g = g, b = b })
-end
-
-local function zone(
+type RgbSpec = { r: number, g: number, b: number }
+type ZoneSpec = {
 	id: string,
 	kind: string,
 	x: number,
 	y: number,
 	z: number,
-	color: any,
+	color: RgbSpec,
 	rate: number,
 	lifetimeMin: number,
 	lifetimeMax: number,
@@ -22,26 +19,15 @@ local function zone(
 	sizeEnd: number,
 	accelerationY: number,
 	lightEmission: number,
-	lightInfluence: number
-)
-	return table.freeze({
-		id = id,
-		kind = kind,
-		x = x,
-		y = y,
-		z = z,
-		color = color,
-		rate = rate,
-		lifetimeMin = lifetimeMin,
-		lifetimeMax = lifetimeMax,
-		speedMin = speedMin,
-		speedMax = speedMax,
-		sizeStart = sizeStart,
-		sizeEnd = sizeEnd,
-		accelerationY = accelerationY,
-		lightEmission = lightEmission,
-		lightInfluence = lightInfluence,
-	})
+	lightInfluence: number,
+}
+
+local function rgb(r: number, g: number, b: number): RgbSpec
+	return table.freeze({ r = r, g = g, b = b })
+end
+
+local function zone(spec: ZoneSpec): ZoneSpec
+	return table.freeze(spec)
 end
 
 local EnvironmentAmbientVfxConfig = {
@@ -49,20 +35,156 @@ local EnvironmentAmbientVfxConfig = {
 	Texture = "rbxasset://textures/particles/smoke_main.dds",
 	Zones = table.freeze({
 		-- Creek vapor keeps the central crossing cool and damp without adding more fog globally.
-		zone("creek.vapor.crossing", "CreekVapor", 26, 3.0, 14, rgb(184, 211, 211), 0.55, 5.5, 8.0, 0.12, 0.38, 1.8, 4.8, 0.09, 0.01, 0.86),
-		zone("creek.vapor.north", "CreekVapor", 24, 3.0, 126, rgb(173, 202, 204), 0.45, 6.0, 8.0, 0.10, 0.32, 1.6, 4.4, 0.08, 0.01, 0.88),
+		zone({
+			id = "creek.vapor.crossing",
+			kind = "CreekVapor",
+			x = 26,
+			y = 3.0,
+			z = 14,
+			color = rgb(184, 211, 211),
+			rate = 0.55,
+			lifetimeMin = 5.5,
+			lifetimeMax = 8.0,
+			speedMin = 0.12,
+			speedMax = 0.38,
+			sizeStart = 1.8,
+			sizeEnd = 4.8,
+			accelerationY = 0.09,
+			lightEmission = 0.01,
+			lightInfluence = 0.86,
+		}),
+		zone({
+			id = "creek.vapor.north",
+			kind = "CreekVapor",
+			x = 24,
+			y = 3.0,
+			z = 126,
+			color = rgb(173, 202, 204),
+			rate = 0.45,
+			lifetimeMin = 6.0,
+			lifetimeMax = 8.0,
+			speedMin = 0.10,
+			speedMax = 0.32,
+			sizeStart = 1.6,
+			sizeEnd = 4.4,
+			accelerationY = 0.08,
+			lightEmission = 0.01,
+			lightInfluence = 0.88,
+		}),
 
 		-- Logging-road dust gives the industrial route visible motion while staying sparse.
-		zone("road.dust.loader", "RoadDust", 52, 2.2, -108, rgb(153, 128, 89), 0.65, 3.0, 4.5, 0.35, 0.75, 0.45, 1.5, 0.16, 0.0, 0.94),
-		zone("road.dust.roadblock", "RoadDust", 150, 2.2, -158, rgb(145, 119, 83), 0.55, 3.0, 4.5, 0.30, 0.70, 0.4, 1.35, 0.14, 0.0, 0.95),
+		zone({
+			id = "road.dust.loader",
+			kind = "RoadDust",
+			x = 52,
+			y = 2.2,
+			z = -108,
+			color = rgb(153, 128, 89),
+			rate = 0.65,
+			lifetimeMin = 3.0,
+			lifetimeMax = 4.5,
+			speedMin = 0.35,
+			speedMax = 0.75,
+			sizeStart = 0.45,
+			sizeEnd = 1.5,
+			accelerationY = 0.16,
+			lightEmission = 0.0,
+			lightInfluence = 0.94,
+		}),
+		zone({
+			id = "road.dust.roadblock",
+			kind = "RoadDust",
+			x = 150,
+			y = 2.2,
+			z = -158,
+			color = rgb(145, 119, 83),
+			rate = 0.55,
+			lifetimeMin = 3.0,
+			lifetimeMax = 4.5,
+			speedMin = 0.30,
+			speedMax = 0.70,
+			sizeStart = 0.4,
+			sizeEnd = 1.35,
+			accelerationY = 0.14,
+			lightEmission = 0.0,
+			lightInfluence = 0.95,
+		}),
 
 		-- Forest motes make the quieter western woods feel alive without bright firefly lights.
-		zone("forest.motes.lookout", "ForestMotes", -158, 6.0, 122, rgb(210, 204, 146), 0.42, 5.0, 7.5, 0.15, 0.42, 0.22, 0.7, 0.05, 0.03, 0.80),
-		zone("forest.motes.camp", "ForestMotes", -118, 4.0, 76, rgb(205, 198, 137), 0.48, 5.0, 7.5, 0.15, 0.45, 0.22, 0.72, 0.06, 0.03, 0.80),
+		zone({
+			id = "forest.motes.lookout",
+			kind = "ForestMotes",
+			x = -158,
+			y = 6.0,
+			z = 122,
+			color = rgb(210, 204, 146),
+			rate = 0.42,
+			lifetimeMin = 5.0,
+			lifetimeMax = 7.5,
+			speedMin = 0.15,
+			speedMax = 0.42,
+			sizeStart = 0.22,
+			sizeEnd = 0.7,
+			accelerationY = 0.05,
+			lightEmission = 0.03,
+			lightInfluence = 0.80,
+		}),
+		zone({
+			id = "forest.motes.camp",
+			kind = "ForestMotes",
+			x = -118,
+			y = 4.0,
+			z = 76,
+			color = rgb(205, 198, 137),
+			rate = 0.48,
+			lifetimeMin = 5.0,
+			lifetimeMax = 7.5,
+			speedMin = 0.15,
+			speedMax = 0.45,
+			sizeStart = 0.22,
+			sizeEnd = 0.72,
+			accelerationY = 0.06,
+			lightEmission = 0.03,
+			lightInfluence = 0.80,
+		}),
 
 		-- Corruption ash defines the eastern contaminated edge with color/motion, not light.
-		zone("corruption.ash.extraction", "CorruptionAsh", 282, 4.0, 96, rgb(115, 96, 124), 0.72, 5.0, 7.5, 0.18, 0.48, 0.28, 0.9, 0.18, 0.02, 0.90),
-		zone("corruption.ash.ridge", "CorruptionAsh", 296, 5.0, 154, rgb(105, 91, 116), 0.62, 5.0, 7.5, 0.16, 0.44, 0.26, 0.84, 0.20, 0.02, 0.90),
+		zone({
+			id = "corruption.ash.extraction",
+			kind = "CorruptionAsh",
+			x = 282,
+			y = 4.0,
+			z = 96,
+			color = rgb(115, 96, 124),
+			rate = 0.72,
+			lifetimeMin = 5.0,
+			lifetimeMax = 7.5,
+			speedMin = 0.18,
+			speedMax = 0.48,
+			sizeStart = 0.28,
+			sizeEnd = 0.9,
+			accelerationY = 0.18,
+			lightEmission = 0.02,
+			lightInfluence = 0.90,
+		}),
+		zone({
+			id = "corruption.ash.ridge",
+			kind = "CorruptionAsh",
+			x = 296,
+			y = 5.0,
+			z = 154,
+			color = rgb(105, 91, 116),
+			rate = 0.62,
+			lifetimeMin = 5.0,
+			lifetimeMax = 7.5,
+			speedMin = 0.16,
+			speedMax = 0.44,
+			sizeStart = 0.26,
+			sizeEnd = 0.84,
+			accelerationY = 0.20,
+			lightEmission = 0.02,
+			lightInfluence = 0.90,
+		}),
 	}),
 }
 
