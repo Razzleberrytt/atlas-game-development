@@ -29,6 +29,7 @@ end
 for _, token in
 	{
 		'READY_ATTRIBUTE = "GeneratedPrototypeReady"',
+		'not existing:IsA("Folder")',
 		"existing:GetAttribute(READY_ATTRIBUTE) ~= true",
 		"Factory.BuildStarterLibrary(generatedRoot)",
 		"generatedRoot:SetAttribute(READY_ATTRIBUTE, true)",
