@@ -52,6 +52,7 @@ def validate_docs() -> None:
     python_script("roadmap/authority integrity", "scripts/validate_roadmap_authority.py")
     python_script("engineering efficiency construct", "scripts/validate_efficiency_construct.py")
     python_script("Patch 0.7 acceptance matrix", "scripts/validate_patch_07_acceptance.py")
+    python_script("modular asset systems", "scripts/validate_modular_asset_systems.py")
     python_script("Main World CI artifact contract", "scripts/validate_main_world_ci_artifact.py")
     python_script(
         "Main World artifact bundle verifier",
