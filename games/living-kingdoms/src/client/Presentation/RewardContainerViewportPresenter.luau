@@ -110,9 +110,13 @@ local function sanitizeClone(model: Model)
 			descendant.CanCollide = false
 			descendant.CanTouch = false
 			descendant.CanQuery = false
-		elseif descendant:IsA("ProximityPrompt") or descendant:IsA("ClickDetector") then
-			descendant:Destroy()
-		elseif descendant:IsA("Script") or descendant:IsA("LocalScript") or descendant:IsA("ModuleScript") then
+		elseif
+			descendant:IsA("ProximityPrompt")
+			or descendant:IsA("ClickDetector")
+			or descendant:IsA("Script")
+			or descendant:IsA("LocalScript")
+			or descendant:IsA("ModuleScript")
+		then
 			descendant:Destroy()
 		end
 	end
