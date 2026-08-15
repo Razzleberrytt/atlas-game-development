@@ -69,7 +69,12 @@ for _, prohibited in
 		"FireServer",
 	}
 do
-	assert(not contains(presentation, prohibited), "reward-container presentation gained gameplay authority token " .. prohibited)
+	assert(
+		not contains(presentation, prohibited),
+		"reward-container presentation gained gameplay authority token " .. prohibited
+	)
 end
 
-print("ModularRewardContainerPresentationSourceAudit: modular shell, fallback, collision, and authority boundaries passed")
+print(
+	"ModularRewardContainerPresentationSourceAudit: modular shell, fallback, collision, and authority boundaries passed"
+)
