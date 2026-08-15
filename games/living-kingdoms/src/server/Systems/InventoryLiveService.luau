@@ -12,6 +12,7 @@ local CharacterProgressionConfig = require(ReplicatedStorage.Shared.Config.Chara
 local PlayerInventorySnapshot = require(ReplicatedStorage.Shared.Persistence.PlayerInventorySnapshot)
 local RobloxInventoryDataStoreAdapter = require(script.Parent.RobloxInventoryDataStoreAdapter)
 local PlayerInventoryPersistenceService = require(script.Parent.PlayerInventoryPersistenceService)
+local CharacterBuildPersistenceService = require(script.Parent.CharacterBuildPersistenceService)
 local InventorySessionLeaseService = require(script.Parent.InventorySessionLeaseService)
 
 local store = RobloxInventoryDataStoreAdapter.new({
@@ -25,9 +26,10 @@ local leaseOwnerId =
 	string.format("%s:%s", game.JobId ~= "" and game.JobId or "studio", HttpService:GenerateGUID(false))
 local leases = InventorySessionLeaseService.new(store, leaseOwnerId, 90)
 local persistence = PlayerInventoryPersistenceService.new(store)
+local buildPersistence = CharacterBuildPersistenceService.new(store)
 local destroyed = false
 
-local recentDismantleRequests: { [number]: { number } } = {}
+local recentDismantleRequests: { [number]: { number } = {}
 
 local definitionsById: { [string]: any } = {}
 for _, definition in EquipmentRewardConfig.Definitions do
@@ -63,6 +65,12 @@ function Service.loadPlayer(playerId: number, nowUnix: number): any
 		leases:release(playerId)
 		return loaded
 	end
+	local buildLoaded = buildPersistence:loadPlayer(playerId, nowUnix)
+	if buildLoaded.Accepted ~= true then
+		persistence:releasePlayer(playerId)
+		leases:release(playerId)
+		return rejected(buildLoaded.ReasonId)
+	end
 	local record = loaded.Record
 	return table.freeze({
 		Accepted = true,
@@ -71,6 +79,7 @@ function Service.loadPlayer(playerId: number, nowUnix: number): any
 		Migrated = loaded.Migrated == true,
 		ProgressionState = if record ~= nil then record.CharacterProgression else nil,
 		ProgressionMigrated = loaded.Migrated == true,
+		BuildState = buildLoaded.State,
 	})
 end
 
@@ -86,6 +95,7 @@ function Service.releasePlayer(playerId: number): any
 		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed" })
 	end
 	recentDismantleRequests[playerId] = nil
+	buildPersistence:releasePlayer(playerId)
 	local released = leases:release(playerId)
 	persistence:releasePlayer(playerId)
 	return released
@@ -154,6 +164,31 @@ function Service.getCharacterProgression(playerId: number): any
 	end
 	local record = persistence:getRecord(playerId)
 	return if record ~= nil then record.CharacterProgression else nil
+end
+
+function Service.saveCharacterBuild(playerId: number, state: any, requestId: any, nowUnix: number): any
+	if destroyed then
+		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", State = nil, AlreadyApplied = false })
+	end
+	if type(requestId) ~= "string" then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidBuildRequestId", State = nil, AlreadyApplied = false })
+	end
+	if not leases:hasLease(playerId, nowUnix) then
+		return table.freeze({
+			Accepted = false,
+			ReasonId = "SessionLeaseRequired",
+			State = buildPersistence:getState(playerId),
+			AlreadyApplied = false,
+		})
+	end
+	return buildPersistence:savePlayer(playerId, state, requestId, nowUnix)
+end
+
+function Service.getCharacterBuild(playerId: number): any
+	if destroyed then
+		return nil
+	end
+	return buildPersistence:getState(playerId)
 end
 
 function Service.applyReward(playerId: number, reward: any, nowUnix: number): any
@@ -286,6 +321,7 @@ function Service.destroy(): any
 		return table.freeze({ Requested = 0, Released = 0, Unresolved = 0, UnresolvedPlayerIds = table.freeze({}) })
 	end
 	local summary = leases:releaseAll()
+	buildPersistence:destroy()
 	persistence:destroy()
 	leases:destroy()
 	destroyed = true
