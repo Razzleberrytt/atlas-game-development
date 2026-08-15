@@ -61,7 +61,9 @@ local function awardDungeonCompletion()
 		)
 		if outcome.Accepted == true then
 			completedForRun[userId] = true
-		elseif outcome.ReasonId ~= "ProgressionNotLoaded" and outcome.ReasonId ~= "ProgressionPersistenceUnavailable" then
+		elseif
+			outcome.ReasonId ~= "ProgressionNotLoaded" and outcome.ReasonId ~= "ProgressionPersistenceUnavailable"
+		then
 			warn(
 				string.format(
 					"[CharacterProgressionRewards] dungeon XP rejected for %d on %s: %s",

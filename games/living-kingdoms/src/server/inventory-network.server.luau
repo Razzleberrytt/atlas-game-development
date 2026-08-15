@@ -20,9 +20,20 @@ local OperativeLifeService = require(script.Parent.Systems.OperativeLifeService)
 
 local LEASE_RENEW_INTERVAL_SECONDS = 30
 
-assert(CharacterProgressionService.configurePersistence(function(playerId, progressionState, sourceId, attributionId, nowUnix)
-	return InventoryLiveService.saveCharacterProgression(playerId, progressionState, sourceId, attributionId, nowUnix)
-end), "character progression persistence writer must bind")
+assert(
+	CharacterProgressionService.configurePersistence(
+		function(playerId, progressionState, sourceId, attributionId, nowUnix)
+			return InventoryLiveService.saveCharacterProgression(
+				playerId,
+				progressionState,
+				sourceId,
+				attributionId,
+				nowUnix
+			)
+		end
+	),
+	"character progression persistence writer must bind"
+)
 
 local existing = ReplicatedStorage:FindFirstChild("InventoryNetwork")
 if existing ~= nil then
@@ -86,7 +97,9 @@ local function loadPlayer(player: Player)
 	if loaded.Accepted ~= true then
 		warn(string.format("[InventoryNetwork] persistence load rejected for %d: %s", player.UserId, loaded.ReasonId))
 		if player.Parent == Players then
-			player:Kick("Your saved character is active on another server or could not be loaded safely. Please rejoin.")
+			player:Kick(
+				"Your saved character is active on another server or could not be loaded safely. Please rejoin."
+			)
 		end
 		return
 	end

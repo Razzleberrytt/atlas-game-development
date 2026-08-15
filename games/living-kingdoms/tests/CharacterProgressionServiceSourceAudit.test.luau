@@ -15,11 +15,20 @@ assert(contains(service, "Resolver.awardXP"), "server service must delegate XP m
 assert(contains(service, "function Service.hydratePlayer"), "future persistence must have a canonical hydration seam")
 assert(contains(service, "function Service.exportPlayerState"), "future persistence must have a minimal export seam")
 assert(contains(service, "function Service.connectLevelUp"), "level-up consumers need an extension hook")
-assert(contains(service, "function Service.connectProgressionChanged"), "progression consumers need a general extension hook")
+assert(
+	contains(service, "function Service.connectProgressionChanged"),
+	"progression consumers need a general extension hook"
+)
 assert(contains(service, "Players.PlayerAdded:Connect"), "progression state must initialize server-side")
 assert(contains(service, "Players.PlayerRemoving:Connect"), "departed player state must be released")
-assert(contains(service, 'SetAttribute("CharacterLevel"'), "authoritative level must be available for presentation consumers")
-assert(contains(service, 'SetAttribute("CharacterTotalXP"'), "authoritative XP must be available for presentation consumers")
+assert(
+	contains(service, 'SetAttribute("CharacterLevel"'),
+	"authoritative level must be available for presentation consumers"
+)
+assert(
+	contains(service, 'SetAttribute("CharacterTotalXP"'),
+	"authoritative XP must be available for presentation consumers"
+)
 assert(contains(service, "validSourceId(sourceId)"), "XP awards must require configured server attribution")
 
 for _, sourceName in { "EnemyKill", "Assist", "Quest", "DungeonCompletion", "Event", "Exploration" } do
@@ -27,8 +36,14 @@ for _, sourceName in { "EnemyKill", "Assist", "Quest", "DungeonCompletion", "Eve
 end
 
 for _, prohibited in { "OnServerEvent", "FireServer", "RemoteEvent", "RemoteFunction" } do
-	assert(not contains(service, prohibited), "progression service must not expose client mutation authority: " .. prohibited)
-	assert(not contains(bootstrap, prohibited), "progression bootstrap must not mount client mutation authority: " .. prohibited)
+	assert(
+		not contains(service, prohibited),
+		"progression service must not expose client mutation authority: " .. prohibited
+	)
+	assert(
+		not contains(bootstrap, prohibited),
+		"progression bootstrap must not mount client mutation authority: " .. prohibited
+	)
 end
 
 assert(contains(bootstrap, "CharacterProgressionService.start()"), "bootstrap must mount the canonical server owner")

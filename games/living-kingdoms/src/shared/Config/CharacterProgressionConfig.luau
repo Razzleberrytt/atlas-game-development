@@ -44,7 +44,10 @@ assert(Config.MinimumLevel == 1, "character progression currently expects level 
 assert(Config.MaximumLevel > Config.MinimumLevel, "character progression requires more than one level")
 assert(Config.MaximumLevel % 1 == 0, "character level cap must be an integer")
 assert(Config.BaseXPToNextLevel > 0 and Config.BaseXPToNextLevel % 1 == 0, "base XP must be a positive integer")
-assert(Config.LinearXPPerLevel >= 0 and Config.LinearXPPerLevel % 1 == 0, "linear XP growth must be a nonnegative integer")
+assert(
+	Config.LinearXPPerLevel >= 0 and Config.LinearXPPerLevel % 1 == 0,
+	"linear XP growth must be a nonnegative integer"
+)
 assert(
 	Config.QuadraticXPPerLevelSquared >= 0 and Config.QuadraticXPPerLevelSquared % 1 == 0,
 	"quadratic XP growth must be a nonnegative integer"

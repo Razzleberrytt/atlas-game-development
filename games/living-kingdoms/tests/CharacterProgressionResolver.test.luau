@@ -13,10 +13,11 @@ local config = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/Ch
 	debugName = "CharacterProgressionConfig",
 	injectGlobals = true,
 })()
-local resolver = luau.load(fs.readFile("games/living-kingdoms/src/shared/Progression/CharacterProgressionResolver.luau"), {
-	debugName = "CharacterProgressionResolver",
-	injectGlobals = true,
-})()
+local resolver =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Progression/CharacterProgressionResolver.luau"), {
+		debugName = "CharacterProgressionResolver",
+		injectGlobals = true,
+	})()
 
 assertThat(config.MinimumLevel == 1, "leveling must begin at level one")
 assertThat(config.MaximumLevel == 1000, "default character cap must support long-horizon progression")
@@ -32,9 +33,15 @@ local boundary = resolver.normalizeState({ TotalXP = 100 }, config)
 assertThat(boundary.Level == 2 and boundary.XPIntoLevel == 0, "exact threshold must advance exactly one level")
 
 local serializedBoundary = resolver.serializeState(boundary)
-assertThat(serializedBoundary.Version == config.Version and serializedBoundary.TotalXP == 100, "normalized canonical state must serialize for persistence without a second curve pass")
+assertThat(
+	serializedBoundary.Version == config.Version and serializedBoundary.TotalXP == 100,
+	"normalized canonical state must serialize for persistence without a second curve pass"
+)
 local serializedRaw = resolver.serializeState({ TotalXP = 100 }, config)
-assertThat(serializedRaw.Version == config.Version and serializedRaw.TotalXP == 100, "raw persistence state must serialize through the configured curve")
+assertThat(
+	serializedRaw.Version == config.Version and serializedRaw.TotalXP == 100,
+	"raw persistence state must serialize through the configured curve"
+)
 
 local targetFive = resolver.totalXPForLevel(5, config)
 assertThat(type(targetFive) == "number", "level-five threshold must resolve")
@@ -47,11 +54,17 @@ assertThat(multi.LevelUps[1] == 2 and multi.LevelUps[4] == 5, "level-up hook pay
 
 local malformed = resolver.normalizeState({ TotalXP = "broken", Level = 900 }, config)
 assertThat(malformed.Level == 1 and malformed.TotalXP == 0, "malformed canonical XP must fail closed")
-assertThat(malformed.RecoveredState == true and malformed.RecoveryReasonId == "InvalidTotalXP", "repair reason must be explicit")
+assertThat(
+	malformed.RecoveredState == true and malformed.RecoveryReasonId == "InvalidTotalXP",
+	"repair reason must be explicit"
+)
 
 local legacy = resolver.normalizeState({ Level = 10 }, config)
 assertThat(legacy.Level == 10, "legacy level-only state must migrate to the same bounded level")
-assertThat(legacy.TotalXP == resolver.totalXPForLevel(10, config), "legacy level migration must use canonical threshold")
+assertThat(
+	legacy.TotalXP == resolver.totalXPForLevel(10, config),
+	"legacy level migration must use canonical threshold"
+)
 assertThat(legacy.RecoveredState == true, "legacy state must be marked as recovered")
 
 for _, invalid in { -1, 0, 0 / 0, math.huge, -math.huge, "100" } do
@@ -65,7 +78,10 @@ assertThat(type(capXP) == "number" and capXP > 0, "cap threshold must resolve")
 local huge = resolver.awardXP(nil, 1e300, config)
 assertThat(huge.Accepted == true and huge.ReasonId == "XPClampedAtLevelCap", "huge finite XP must safely clamp")
 assertThat(huge.State.Level == config.MaximumLevel and huge.State.TotalXP == capXP, "huge XP must land exactly at cap")
-assertThat(huge.State.IsLevelCap == true and huge.State.XPRemainingToNextLevel == 0, "cap state must expose no phantom next level")
+assertThat(
+	huge.State.IsLevelCap == true and huge.State.XPRemainingToNextLevel == 0,
+	"cap state must expose no phantom next level"
+)
 local capped = resolver.awardXP(huge.State, 1, config)
 assertThat(capped.Accepted == false and capped.ReasonId == "LevelCapReached", "XP at cap must reject without overflow")
 
@@ -89,4 +105,6 @@ for level = 1, 999 do
 	end
 end
 
-print("CharacterProgressionResolver: thresholds, serialization, migration, multi-level awards, cap, invalid input, and consistency passed")
+print(
+	"CharacterProgressionResolver: thresholds, serialization, migration, multi-level awards, cap, invalid input, and consistency passed"
+)

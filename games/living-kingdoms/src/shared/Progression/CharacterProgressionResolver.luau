@@ -82,9 +82,7 @@ function Resolver.xpToNextLevel(level: any, config: any): number?
 		return nil
 	end
 	local n = level - config.MinimumLevel
-	return config.BaseXPToNextLevel
-		+ config.LinearXPPerLevel * n
-		+ config.QuadraticXPPerLevelSquared * n * n
+	return config.BaseXPToNextLevel + config.LinearXPPerLevel * n + config.QuadraticXPPerLevelSquared * n * n
 end
 
 function Resolver.totalXPForLevel(level: any, config: any): number?
@@ -126,7 +124,7 @@ local function stateFromTotalXP(
 	local level = levelForTotalXP(boundedXP, config)
 	local levelThreshold = totalXPUnchecked(level, config)
 	local isCap = level >= config.MaximumLevel
-	local required = if isCap then 0 else (Resolver.xpToNextLevel(level, config) :: number)
+	local required = if isCap then 0 else Resolver.xpToNextLevel(level, config) :: number
 	local intoLevel = if isCap then 0 else boundedXP - levelThreshold
 	local remaining = if isCap then 0 else required - intoLevel
 
@@ -161,7 +159,12 @@ function Resolver.normalizeState(rawState: any, config: any): CharacterProgressi
 			if not isFiniteNumber(value) or value < 0 then
 				return stateFromTotalXP(0, typedConfig, true, "InvalidTotalXP")
 			end
-			return stateFromTotalXP(value, typedConfig, fieldName ~= "TotalXP", if fieldName ~= "TotalXP" then "LegacyXPField" else nil)
+			return stateFromTotalXP(
+				value,
+				typedConfig,
+				fieldName ~= "TotalXP",
+				if fieldName ~= "TotalXP" then "LegacyXPField" else nil
+			)
 		end
 	end
 
