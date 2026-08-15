@@ -1,10 +1,10 @@
 --!strict
 
 --[[
-	Server-consumed firing-pattern definitions for the selectable firearm roster.
-	These values may widen one already accepted shot to a strictly bounded set of
-	additional server-derived hostile targets. They do not accept client aim,
-	target, damage, spread, or ammunition input.
+	Server-consumed firing-pattern definitions for the firearm roster. The shotgun
+	pattern is now derived from the base weapon's bounded pellet/spread data, so a
+	future item/stat resolver can change behavior without creating a copied firing
+	script. These patterns never accept client target, damage or ammunition input.
 ]]
 
 local FirearmConfig = require(script.Parent.FirearmConfig)
@@ -44,13 +44,15 @@ local LightMachineGun = singleTarget(FirearmConfig.LightMachineGun.WeaponId)
 local ServicePistol = singleTarget(FirearmConfig.ServicePistol.WeaponId)
 local SubmachineGun = singleTarget(FirearmConfig.SubmachineGun.WeaponId)
 
+local shotgunPelletCount = FirearmConfig.BreachShotgun.PelletCount or 4
+local shotgunSpreadDegrees = FirearmConfig.BreachShotgun.SpreadDegrees or 26
 local BreachShotgun: WeaponPatternDefinition = table.freeze({
 	WeaponId = FirearmConfig.BreachShotgun.WeaponId,
 	ModeId = ModeIds.ConeCleave,
-	MaximumSecondaryTargets = 3,
+	MaximumSecondaryTargets = math.min(3, math.max(0, shotgunPelletCount - 1)),
 	SecondaryDamageMultiplier = 0.7,
 	MaximumSecondaryRangeStuds = 30,
-	ConeHalfAngleDegrees = 26,
+	ConeHalfAngleDegrees = shotgunSpreadDegrees,
 	PierceHalfWidthStuds = nil,
 	MinimumBeyondPrimaryStuds = nil,
 })
@@ -81,34 +83,19 @@ end
 
 for weaponId, definition in DefinitionsById do
 	assert(definition.WeaponId == weaponId, "weapon pattern identity must match its key")
-	assert(
-		definition.MaximumSecondaryTargets >= 0 and definition.MaximumSecondaryTargets <= 3,
-		"secondary target count must remain tightly bounded"
-	)
-	assert(
-		definition.SecondaryDamageMultiplier > 0 and definition.SecondaryDamageMultiplier <= 1,
-		"secondary damage multiplier must be positive and cannot exceed primary damage"
-	)
+	assert(definition.MaximumSecondaryTargets >= 0 and definition.MaximumSecondaryTargets <= 3, "secondary target count must remain tightly bounded")
+	assert(definition.SecondaryDamageMultiplier > 0 and definition.SecondaryDamageMultiplier <= 1, "secondary damage multiplier must be positive and cannot exceed primary damage")
 	if definition.ModeId == ModeIds.SingleTarget then
 		assert(definition.MaximumSecondaryTargets == 0, "single-target weapons cannot emit secondary impacts")
 	elseif definition.ModeId == ModeIds.ConeCleave then
 		assert(definition.ConeHalfAngleDegrees ~= nil, "cone patterns require an angle")
-		assert(
-			definition.ConeHalfAngleDegrees > 0 and definition.ConeHalfAngleDegrees <= 30,
-			"cone half-angle must remain bounded"
-		)
-		assert(
-			definition.MaximumSecondaryRangeStuds > 0
-				and definition.MaximumSecondaryRangeStuds <= FirearmConfig.BreachShotgun.RangeStuds,
-			"shotgun secondary range cannot exceed configured weapon range"
-		)
+		assert(definition.ConeHalfAngleDegrees > 0 and definition.ConeHalfAngleDegrees <= 30, "cone half-angle must remain bounded")
+		assert(definition.MaximumSecondaryTargets <= shotgunPelletCount - 1, "shotgun secondary impacts cannot exceed pellet budget")
+		assert(definition.MaximumSecondaryRangeStuds > 0 and definition.MaximumSecondaryRangeStuds <= FirearmConfig.BreachShotgun.RangeStuds, "shotgun secondary range cannot exceed configured weapon range")
 	elseif definition.ModeId == ModeIds.LinePierce then
 		assert(definition.PierceHalfWidthStuds ~= nil, "line-pierce patterns require a half-width")
 		assert(definition.MinimumBeyondPrimaryStuds ~= nil, "line-pierce patterns require primary separation")
-		assert(
-			definition.PierceHalfWidthStuds > 0 and definition.PierceHalfWidthStuds <= 4,
-			"pierce width must remain bounded"
-		)
+		assert(definition.PierceHalfWidthStuds > 0 and definition.PierceHalfWidthStuds <= 4, "pierce width must remain bounded")
 	else
 		error("unknown weapon pattern mode: " .. definition.ModeId)
 	end
@@ -119,7 +106,7 @@ for _, weaponId in FirearmConfig.SelectableWeaponIds do
 end
 
 local Config = {
-	Version = "HROI-0124-v1-authoritative-weapon-patterns",
+	Version = "WAVE-2-v1-data-driven-patterns",
 	ModeIds = ModeIds,
 	BasicFirearm = BasicFirearm,
 	LightMachineGun = LightMachineGun,
