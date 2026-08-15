@@ -19,7 +19,7 @@ local weaponSelection = fs.readFile("games/living-kingdoms/src/client/Controller
 local hordeHud = fs.readFile("games/living-kingdoms/src/client/Controllers/HordeHUDController.luau")
 local massacre = fs.readFile("games/living-kingdoms/src/client/Controllers/MassacreCrescendoController.luau")
 local runBuildHud = fs.readFile("games/living-kingdoms/src/client/Controllers/RunBuildHUDController.luau")
-local camera = fs.readFile("games/living-kingdoms/src/client/Controllers/CameraController.luau")
+local camera = fs.readFile("games/living-kingdoms/src/client/Controllers/Input/CameraController.luau")
 
 for _, source in { enemy, harness } do
 	assertThat(contains(source, "billboard.AlwaysOnTop = false"), "enemy labels must respect world occlusion")
