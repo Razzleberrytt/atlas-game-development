@@ -25,7 +25,10 @@ check(config.DaylightSeconds < config.CycleSeconds, "each corruption cycle requi
 check(config.MaximumTier == 6, "night requires six readable corruption milestones")
 check(string.find(service, 'network:SetAttribute("NightCorruptionTier"', 1, true), "server must publish corruption")
 check(not string.find(service, "EnvironmentProfileService", 1, true), "corruption state must not own global visuals")
-check(string.find(controller, "EnvironmentProfileService.applyCycle", 1, true), "lighting controller must own visual cycle")
+check(
+	string.find(controller, "EnvironmentProfileService.applyCycle", 1, true),
+	"lighting controller must own visual cycle"
+)
 check(string.find(controller, "task.wait", 1, true), "lighting controller must use bounded scheduled updates")
 check(string.find(environmentProfile, "Lighting.ClockTime", 1, true), "cycle must visibly change time")
 check(string.find(environmentProfile, "Lighting.FogEnd", 1, true), "night must visibly close in")
