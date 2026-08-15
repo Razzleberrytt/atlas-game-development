@@ -467,8 +467,7 @@ local function createProgenitorPresentation(root: BasePart): Model
 			root,
 			if chimneyIndex < 0 then "SporeChimneyLeft" else "SporeChimneyRight",
 			Vector3.new(0.62, 1.65, 0.72),
-			CFrame.new(chimneyIndex * 0.92, 1.48, 1.3)
-				* CFrame.Angles(math.rad(-18), 0, math.rad(chimneyIndex * 8)),
+			CFrame.new(chimneyIndex * 0.92, 1.48, 1.3) * CFrame.Angles(math.rad(-18), 0, math.rad(chimneyIndex * 8)),
 			COLORS.progenitorSpore,
 			Enum.Material.Slate,
 			Enum.PartType.Cylinder
@@ -481,8 +480,7 @@ local function createProgenitorPresentation(root: BasePart): Model
 			root,
 			"BackCarapaceSpine" .. tostring(spineIndex + 3),
 			Vector3.new(0.24, 0.78 + (2 - math.abs(spineIndex)) * 0.13, 0.3),
-			CFrame.new(spineIndex * 0.56, 0.55, 1.62)
-				* CFrame.Angles(math.rad(-56), 0, math.rad(spineIndex * 4)),
+			CFrame.new(spineIndex * 0.56, 0.55, 1.62) * CFrame.Angles(math.rad(-56), 0, math.rad(spineIndex * 4)),
 			COLORS.progenitorBone,
 			Enum.Material.Slate,
 			nil
