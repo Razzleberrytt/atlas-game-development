@@ -2,10 +2,11 @@
 
 -- A short preparation day followed by a long worsening night. Pressure changes
 -- continuously; tiers are readable milestones, never discrete combat waves.
+-- LightingController owns the rendered day/night clock; this config owns only
+-- corruption gameplay timing and disclosed threat modifiers.
 local Config = {
-	-- MVP 0.1 environment baseline gate. NightCorruptionService remains the owner
-	-- and publishes tier-zero state, but the clock stays at the accepted morning
-	-- baseline until a Studio pass proves the daytime biome and enemy readability.
+	-- MVP 0.1 gameplay gate. NightCorruptionService publishes tier-zero state
+	-- until the daytime biome and enemy-readability Studio acceptance is complete.
 	RuntimeEnabled = false,
 	RuntimeFlagOwner = "MVP 0.1 environment baseline",
 	RuntimeReenableGate = "daytime biome visual and combat-readability Studio acceptance",
