@@ -77,17 +77,19 @@ local plannerSource = fs.readFile(plannerPath)
 local factorySource = fs.readFile(factoryPath)
 local dressingSource = fs.readFile(dressingPath)
 
-for requiredPlannerToken in {
-	"MODULUS = 2147483647",
-	"MULTIPLIER = 48271",
-	"local function gaussian",
-	"local function polylineDistance",
-	"local function minimumLandmarkClearance",
-	"local function isFarEnough",
-	"PlacementConfig.AssetSpecs",
-	"WorldFoundationConfig.Dressing.TrailReflectorPositions",
-	"WorldFoundationConfig.EnvironmentPresentation.Water.CreekPoints",
-} do
+for requiredPlannerToken in
+	{
+		"MODULUS = 2147483647",
+		"MULTIPLIER = 48271",
+		"local function gaussian",
+		"local function polylineDistance",
+		"local function minimumLandmarkClearance",
+		"local function isFarEnough",
+		"PlacementConfig.AssetSpecs",
+		"WorldFoundationConfig.Dressing.TrailReflectorPositions",
+		"WorldFoundationConfig.EnvironmentPresentation.Water.CreekPoints",
+	}
+do
 	assert(
 		string.find(plannerSource, requiredPlannerToken, 1, true),
 		"environment composition planner is missing deterministic constraint: " .. requiredPlannerToken
