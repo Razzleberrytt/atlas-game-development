@@ -276,7 +276,11 @@ function EnvironmentProfileService.applyCorruption(clockTime: number, intensity:
 	applyCorruptionVisuals(clockTime, intensity, minimumFogEnd)
 end
 
-function EnvironmentProfileService.setStudioPreview(clockTime: number, intensity: number, minimumFogEnd: number): boolean
+function EnvironmentProfileService.setStudioPreview(
+	clockTime: number,
+	intensity: number,
+	minimumFogEnd: number
+): boolean
 	if not RunService:IsStudio() then
 		return false
 	end
