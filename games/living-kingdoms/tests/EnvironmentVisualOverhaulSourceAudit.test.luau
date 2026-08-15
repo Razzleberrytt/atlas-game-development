@@ -22,7 +22,10 @@ check(config.Lighting.Cycle.UpdateIntervalSeconds >= 0.25, "lighting updates mus
 check(#config.Environment.Mist.Anchors == 3, "ambient mist must stay intentionally sparse")
 check(#config.Environment.AccentLights == 2, "environment pass must keep a tiny added dynamic-light budget")
 
-check(string.find(controller, "EnvironmentProfileService.applyCycle", 1, true), "controller must drive canonical profile")
+check(
+	string.find(controller, "EnvironmentProfileService.applyCycle", 1, true),
+	"controller must drive canonical profile"
+)
 check(string.find(controller, "task.wait", 1, true), "controller must use scheduled task waits")
 
 check(string.find(profile, 'Instance.new("Sky")', 1, true), "profile must create a custom Sky")
@@ -35,7 +38,10 @@ check(string.find(profile, "Lighting.ColorShift_Bottom", 1, true), "cycle must t
 check(string.find(profile, "Lighting.FogColor", 1, true), "cycle must tune fog color")
 check(string.find(profile, "Lighting.FogEnd", 1, true), "cycle must tune fog depth")
 
-check(string.find(builder, "WorldFoundationService.start()", 1, true), "builder must compose deterministic world generation")
+check(
+	string.find(builder, "WorldFoundationService.start()", 1, true),
+	"builder must compose deterministic world generation"
+)
 check(string.find(builder, "terrain.WaterColor", 1, true), "builder must tune Terrain water")
 check(string.find(builder, 'Instance.new("ParticleEmitter")', 1, true), "builder must create bounded ambient particles")
 check(string.find(builder, 'Instance.new("PointLight")', 1, true), "builder must create a landmark point light")
