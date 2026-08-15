@@ -46,6 +46,15 @@ local function validConfig(config: any): boolean
 		and config.Rewards.MaximumEarnedPerkPoints >= 0
 end
 
+local function sortedAttributeIds(config: any): { string }
+	local ids = {}
+	for attributeId in config.Attributes do
+		table.insert(ids, attributeId)
+	end
+	table.sort(ids)
+	return ids
+end
+
 local function emptyAllocations(config: any): { [string]: number }
 	local allocations = {}
 	for attributeId in config.Attributes do
@@ -251,7 +260,8 @@ function Resolver.progressionModifiers(state: any, level: any, config: any): { a
 		})
 	end
 
-	for attributeId, points in normalized.AllocatedAttributes do
+	for _, attributeId in sortedAttributeIds(config) do
+		local points = normalized.AllocatedAttributes[attributeId]
 		if points > 0 then
 			local attribute = config.Attributes[attributeId]
 			for _, modifierPerPoint in attribute.ModifiersPerPoint do
