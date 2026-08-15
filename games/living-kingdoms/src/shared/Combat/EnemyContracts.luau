@@ -22,7 +22,12 @@ export type EnemyArchetypeId =
 export type EnemyBehaviorStateId = "Roaming" | "Pursuing" | "WindingUp" | "Attacking" | "StandDown" | "Dead"
 export type EnemyAttackWindupActionId = "None" | "Begin" | "Continue" | "Cancel" | "Commit"
 export type EnemySpawnSourceId = "AuthoredWave" | "RoamingPressure"
-export type EnemyMovementBehaviorId = "DirectPursuit" | "Skirmish" | "HeavyPressure" | "RangedApproach" | "StationaryBoss"
+export type EnemyMovementBehaviorId =
+	"DirectPursuit"
+	| "Skirmish"
+	| "HeavyPressure"
+	| "RangedApproach"
+	| "StationaryBoss"
 export type EnemyAttackBehaviorId = "Melee" | "CorrosiveBloom" | "BossSlam"
 
 export type EnemySpawnRejectionReasonId =
