@@ -24,7 +24,7 @@ local function prepareModularPart(part: BasePart)
 	part.Anchored = true
 	part.CanCollide = false
 	part.CanTouch = false
-	part.CanQuery = true
+	part.CanQuery = false
 end
 
 local function createCollisionProxy(parent: Instance, name: string, size: Vector3, cframe: CFrame): BasePart
@@ -36,7 +36,7 @@ local function createCollisionProxy(parent: Instance, name: string, size: Vector
 	proxy.Anchored = true
 	proxy.CanCollide = true
 	proxy.CanTouch = true
-	proxy.CanQuery = false
+	proxy.CanQuery = true
 	proxy.CastShadow = false
 	proxy.Parent = parent
 	return proxy
