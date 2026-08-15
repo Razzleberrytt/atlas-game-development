@@ -182,35 +182,41 @@ for _, placement in placements do
 		table.insert(
 			svg,
 			string.format(
-				'<polygon points="%s" fill="%s" stroke="#101210" stroke-width="1" data-id="%s"/>',
+				'<polygon points="%s" fill="%s" stroke="#101210" stroke-width="1" data-id="%s" data-field="%s" data-tier="%s"/>',
 				points,
 				color,
-				placement.id
+				placement.id,
+				placement.field,
+				placement.tier
 			)
 		)
 	elseif placement.tier == "Mass" then
 		table.insert(
 			svg,
 			string.format(
-				'<circle cx="%.2f" cy="%.2f" r="%.2f" fill="%s" stroke="#101210" stroke-width="1" data-id="%s"/>',
+				'<circle cx="%.2f" cy="%.2f" r="%.2f" fill="%s" stroke="#101210" stroke-width="1" data-id="%s" data-field="%s" data-tier="%s"/>',
 				x,
 				y,
 				radius,
 				color,
-				placement.id
+				placement.id,
+				placement.field,
+				placement.tier
 			)
 		)
 	else
 		table.insert(
 			svg,
 			string.format(
-				'<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="%s" stroke="#101210" stroke-width="1" data-id="%s"/>',
+				'<rect x="%.2f" y="%.2f" width="%.2f" height="%.2f" fill="%s" stroke="#101210" stroke-width="1" data-id="%s" data-field="%s" data-tier="%s"/>',
 				x - radius,
 				y - radius,
 				radius * 2,
 				radius * 2,
 				color,
-				placement.id
+				placement.id,
+				placement.field,
+				placement.tier
 			)
 		)
 	end
