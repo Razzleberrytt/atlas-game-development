@@ -6,8 +6,9 @@
 	Inventory identity is always derived from the invoking Player. This script also
 	owns the application-scoped lease lifecycle required by InventoryLiveService:
 	load/acquire on join, periodic renewal while connected, release on leave, and
-	final release on shutdown. Character progression hydrates and commits through
-	the same lease owner; no client mutation surface is introduced.
+	final release on shutdown. Character progression/build state hydrates and
+	commits through the same lease owner; clients can request build decisions but
+	cannot submit XP, resolved stats, player identity, or persistence state.
 ]]
 
 local Players = game:GetService("Players")
@@ -16,6 +17,8 @@ local RunService = game:GetService("RunService")
 
 local InventoryLiveService = require(script.Parent.Systems.InventoryLiveService)
 local CharacterProgressionService = require(script.Parent.Systems.CharacterProgressionService)
+local CharacterBuildService = require(script.Parent.Systems.CharacterBuildService)
+local CharacterStatService = require(script.Parent.Systems.CharacterStatService)
 local OperativeLifeService = require(script.Parent.Systems.OperativeLifeService)
 
 local LEASE_RENEW_INTERVAL_SECONDS = 30
@@ -23,6 +26,12 @@ local LEASE_RENEW_INTERVAL_SECONDS = 30
 assert(CharacterProgressionService.configurePersistence(function(playerId, progressionState, sourceId, attributionId, nowUnix)
 	return InventoryLiveService.saveCharacterProgression(playerId, progressionState, sourceId, attributionId, nowUnix)
 end), "character progression persistence writer must bind")
+assert(CharacterBuildService.configurePersistence(function(playerId, buildState, requestId, nowUnix)
+	return InventoryLiveService.saveCharacterBuild(playerId, buildState, requestId, nowUnix)
+end), "character build persistence writer must bind")
+
+CharacterProgressionService.start()
+CharacterBuildService.start()
 
 local existing = ReplicatedStorage:FindFirstChild("InventoryNetwork")
 if existing ~= nil then
@@ -49,6 +58,18 @@ local dismantleOwnedItem = Instance.new("RemoteFunction")
 dismantleOwnedItem.Name = "DismantleOwnedItem"
 dismantleOwnedItem.Parent = network
 
+local getCharacterBuild = Instance.new("RemoteFunction")
+getCharacterBuild.Name = "GetCharacterBuild"
+getCharacterBuild.Parent = network
+
+local allocateCharacterAttribute = Instance.new("RemoteFunction")
+allocateCharacterAttribute.Name = "AllocateCharacterAttribute"
+allocateCharacterAttribute.Parent = network
+
+local respecCharacterBuild = Instance.new("RemoteFunction")
+respecCharacterBuild.Name = "RespecCharacterBuild"
+respecCharacterBuild.Parent = network
+
 local state = Instance.new("RemoteEvent")
 state.Name = "State"
 state.Parent = network
@@ -64,9 +85,6 @@ local function readFor(player: Player): any
 	return InventoryLiveService.readOwnedSnapshot(player.UserId, player.UserId)
 end
 
--- Pushes the owner their own snapshot. Every send is addressed to exactly one
--- player and built from that player's identity, so one inventory can never fan
--- out to another player.
 local function pushTo(player: Player)
 	state:FireClient(player, readFor(player))
 end
@@ -76,11 +94,13 @@ local function reconcileEquipmentEffects(player: Player)
 	OperativeLifeService.reconcileMovementSpeed(player)
 end
 
---[[
-	A player whose leased persistence could not load must not keep playing. Their
-	session would run against no durable record and whichever server holds the
-	lease owns the truth they would be diverging from.
-]]
+local statDisconnect = CharacterStatService.connectResolvedStatsChanged(function(payload: any)
+	local player = payload.Player
+	if typeof(player) == "Instance" and player:IsA("Player") and loadedPlayerIds[player.UserId] then
+		reconcileEquipmentEffects(player)
+	end
+end)
+
 local function loadPlayer(player: Player)
 	local loaded = InventoryLiveService.loadPlayer(player.UserId, os.time())
 	if loaded.Accepted ~= true then
@@ -102,6 +122,15 @@ local function loadPlayer(player: Player)
 		end
 		return
 	end
+	local buildHydrated = CharacterBuildService.hydratePlayer(player, loaded.BuildState)
+	if buildHydrated.Accepted ~= true then
+		CharacterBuildService.releasePlayer(player)
+		InventoryLiveService.releasePlayer(player.UserId)
+		if player.Parent == Players then
+			player:Kick("Your character build could not be loaded safely. Please rejoin.")
+		end
+		return
+	end
 	loadedPlayerIds[player.UserId] = true
 	reconcileEquipmentEffects(player)
 	pushTo(player)
@@ -109,6 +138,7 @@ end
 
 local function releasePlayer(player: Player)
 	loadedPlayerIds[player.UserId] = nil
+	CharacterBuildService.releasePlayer(player)
 	local released = InventoryLiveService.releasePlayer(player.UserId)
 	if released.Accepted ~= true and released.ReasonId ~= "LeaseNotOwned" then
 		warn(
@@ -135,8 +165,6 @@ compareOwnedItem.OnServerInvoke = function(player: Player, candidateInstanceId: 
 	return InventoryLiveService.compareOwnedItem(player.UserId, player.UserId, candidateInstanceId)
 end
 
--- The client names only an owned instance. Slot, definition and any combat
--- WeaponId are derived by server-owned inventory/config state.
 equipOwnedItem.OnServerInvoke = function(player: Player, instanceId: any): any
 	if type(instanceId) ~= "string" then
 		return table.freeze({ Accepted = false, ReasonId = "InvalidEquipRequest" })
@@ -164,6 +192,33 @@ dismantleOwnedItem.OnServerInvoke = function(player: Player, instanceId: any, tr
 		ReasonId = outcome.ReasonId,
 		Outcome = outcome.Outcome,
 	})
+end
+
+getCharacterBuild.OnServerInvoke = function(player: Player, ...: any): any
+	if select("#", ...) ~= 0 then
+		return table.freeze({ Accepted = false, ReasonId = "MalformedBuildRequest", Snapshot = nil })
+	end
+	local snapshot = CharacterBuildService.getSnapshot(player)
+	if snapshot == nil then
+		return table.freeze({ Accepted = false, ReasonId = "BuildUnavailable", Snapshot = nil })
+	end
+	return table.freeze({ Accepted = true, ReasonId = "BuildRead", Snapshot = snapshot })
+end
+
+allocateCharacterAttribute.OnServerInvoke = function(player: Player, ...: any): any
+	if select("#", ...) ~= 3 then
+		return table.freeze({ Accepted = false, ReasonId = "MalformedBuildRequest" })
+	end
+	local attributeId, amount, requestId = ...
+	return CharacterBuildService.allocateAttributePoints(player, attributeId, amount, requestId)
+end
+
+respecCharacterBuild.OnServerInvoke = function(player: Player, ...: any): any
+	if select("#", ...) ~= 1 then
+		return table.freeze({ Accepted = false, ReasonId = "MalformedBuildRequest" })
+	end
+	local requestId = ...
+	return CharacterBuildService.respec(player, requestId)
 end
 
 local playerAddedConnection = Players.PlayerAdded:Connect(function(player)
@@ -194,6 +249,7 @@ local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
 					)
 				)
 				loadedPlayerIds[player.UserId] = nil
+				CharacterBuildService.releasePlayer(player)
 				InventoryLiveService.releasePlayer(player.UserId)
 				if player.Parent == Players then
 					player:Kick("Your saved-character session could no longer be protected. Please rejoin.")
@@ -207,8 +263,11 @@ game:BindToClose(function()
 	heartbeatConnection:Disconnect()
 	playerAddedConnection:Disconnect()
 	playerRemovingConnection:Disconnect()
+	if statDisconnect ~= nil then
+		statDisconnect()
+	end
 	table.clear(loadedPlayerIds)
 	InventoryLiveService.destroy()
 end)
 
-print("[Living Kingdoms] Inventory, progression, and lease lifecycle mounted")
+print("[Living Kingdoms] Inventory, progression, character builds, stats, and lease lifecycle mounted")
