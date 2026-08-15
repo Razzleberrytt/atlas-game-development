@@ -13,7 +13,7 @@ local function assertThat(condition: boolean, message: string)
 end
 
 local project = fs.readFile("games/living-kingdoms/default.project.json")
-local camera = fs.readFile("games/living-kingdoms/src/client/Controllers/CameraController.luau")
+local camera = fs.readFile("games/living-kingdoms/src/client/Controllers/Input/CameraController.luau")
 local weapon = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponController.luau")
 local combat = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau")
 
