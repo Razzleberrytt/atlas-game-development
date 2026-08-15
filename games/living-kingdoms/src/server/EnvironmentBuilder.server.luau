@@ -139,7 +139,12 @@ local function buildPresentation(worldRoot: Folder)
 end
 
 local function applyToWorld(candidate: Instance)
-	if applying or candidate.Parent ~= Workspace or candidate.Name ~= Config.WorldRootName or not candidate:IsA("Folder") then
+	if
+		applying
+		or candidate.Parent ~= Workspace
+		or candidate.Name ~= Config.WorldRootName
+		or not candidate:IsA("Folder")
+	then
 		return
 	end
 	applying = true
