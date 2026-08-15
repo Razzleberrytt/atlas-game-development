@@ -1,6 +1,5 @@
 --!strict
 
-local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -41,29 +40,6 @@ local function evaluateAt(serverTimestamp: number)
 	network:SetAttribute("NightCorruptionThreatBonus", intensity * Config.MaximumThreatBonus)
 	network:SetAttribute("NightCorruptionEnemySpeedMultiplier", 1 + tier * Config.EnemySpeedBonusPerTier)
 	network:SetAttribute("NightCorruptionXpMultiplier", 1 + tier * Config.XpBonusPerTier)
-
-	if isNight then
-		Lighting.ClockTime = Config.NightStartClockTime
-			+ (Config.DeepNightClockTime + 24 - Config.NightStartClockTime) * intensity
-		if Lighting.ClockTime >= 24 then
-			Lighting.ClockTime -= 24
-		end
-		Lighting.Brightness = 2.05 - intensity * 0.8
-		Lighting.ExposureCompensation = 0.12 - intensity * 0.42
-		Lighting.FogEnd = 485 - intensity * (485 - Config.MinimumFogEnd)
-		Lighting.Ambient = Color3.fromRGB(
-			35 - math.floor(intensity * 20),
-			44 - math.floor(intensity * 25),
-			56 - math.floor(intensity * 25)
-		)
-	else
-		local daylightProgress = cycleElapsed / Config.DaylightSeconds
-		Lighting.ClockTime = Config.DayClockTime + daylightProgress * (Config.NightStartClockTime - Config.DayClockTime)
-		Lighting.Brightness = 2.65
-		Lighting.ExposureCompensation = 0.12
-		Lighting.FogEnd = 620
-		Lighting.Ambient = Color3.fromRGB(91, 85, 71)
-	end
 end
 
 function Service.start()
