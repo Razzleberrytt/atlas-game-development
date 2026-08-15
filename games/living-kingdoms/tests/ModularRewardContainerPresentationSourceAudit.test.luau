@@ -20,9 +20,14 @@ assert(contains(presentation, 'findBasePart(model, "Lid")'))
 assert(contains(presentation, 'VisualStatus", MODULAR_STATUS'))
 assert(contains(presentation, 'VisualStatus", FALLBACK_STATUS'))
 
--- Generated geometry must stay presentation-only while invisible proxies preserve
--- the pre-integration supply chest collision footprint and opening motion.
+-- Generated geometry stays purely visual. Invisible proxies preserve the old
+-- character collision, touch, and ray-query footprint plus lid opening motion.
 assert(contains(presentation, "part.CanCollide = false"))
+assert(contains(presentation, "part.CanTouch = false"))
+assert(contains(presentation, "part.CanQuery = false"))
+assert(contains(presentation, "proxy.CanCollide = true"))
+assert(contains(presentation, "proxy.CanTouch = true"))
+assert(contains(presentation, "proxy.CanQuery = true"))
 assert(contains(presentation, '"ChestCollisionBase"'))
 assert(contains(presentation, '"ChestCollisionLid"'))
 assert(contains(presentation, '"ChestCollisionBand"'))
@@ -76,5 +81,5 @@ do
 end
 
 print(
-	"ModularRewardContainerPresentationSourceAudit: modular shell, fallback, collision, and authority boundaries passed"
+	"ModularRewardContainerPresentationSourceAudit: modular shell, fallback, collision/query, and authority boundaries passed"
 )
