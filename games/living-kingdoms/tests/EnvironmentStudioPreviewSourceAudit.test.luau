@@ -31,14 +31,8 @@ assert(
 	"live environment writes must yield while Studio preview owns the profile"
 )
 
-assert(
-	string.find(previewSource, "LK_EnvironmentPreviewEnabled", 1, true),
-	"preview enable attribute is missing"
-)
-assert(
-	string.find(previewSource, "LK_EnvironmentPreviewIntensity", 1, true),
-	"preview intensity attribute is missing"
-)
+assert(string.find(previewSource, "LK_EnvironmentPreviewEnabled", 1, true), "preview enable attribute is missing")
+assert(string.find(previewSource, "LK_EnvironmentPreviewIntensity", 1, true), "preview intensity attribute is missing")
 assert(
 	string.find(previewSource, "LK_EnvironmentPreviewClockTime", 1, true),
 	"derived preview clock readback is missing"
@@ -55,7 +49,10 @@ assert(
 )
 
 assert(not string.find(previewSource, "RemoteEvent", 1, true), "Studio preview must not add a client authority surface")
-assert(not string.find(previewSource, "RemoteFunction", 1, true), "Studio preview must not add a client authority surface")
+assert(
+	not string.find(previewSource, "RemoteFunction", 1, true),
+	"Studio preview must not add a client authority surface"
+)
 assert(not string.find(previewSource, "DataStore", 1, true), "Studio preview must not persist acceptance state")
 assert(
 	string.find(nightConfigSource, "RuntimeEnabled = false", 1, true),
