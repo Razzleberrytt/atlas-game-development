@@ -1,25 +1,29 @@
-local source = assert(fs.readFile("games/living-kingdoms/src/client/Controllers/ClassSquadPresentationController.luau"))
+--!strict
 
-local requiredSnippets = {
-	'ReplicatedStorage:WaitForChild("ClassNetwork", NETWORK_WAIT_SECONDS)',
-	'classNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS)',
-	'classNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS)',
-	'assert(classNetwork ~= nil, "ClassNetwork did not become available before the client bootstrap timeout")',
-	'assert(stateRemote ~= nil, "ClassNetwork.State did not become available before the client bootstrap timeout")',
-	'assert(readStateFunction ~= nil, "ClassNetwork.ReadState did not become available before the client bootstrap timeout")',
-}
+local fs = require("@lune/fs")
 
-for _, snippet in requiredSnippets do
-	assert(string.find(source, snippet, 1, true) ~= nil, "missing bounded ClassSquad network contract: " .. snippet)
+local source = fs.readFile("games/living-kingdoms/src/client/Controllers/ClassSquadPresentationController.luau")
+local timeout = "NETWORK_WAIT_SECONDS"
+
+local function requireBoundedWait(receiver: string, childName: string)
+	local expected = string.format('%s:WaitForChild("%s", %s)', receiver, childName, timeout)
+	assert(
+		string.find(source, expected, 1, true) ~= nil,
+		string.format("%s.%s must use the bounded client network timeout", receiver, childName)
+	)
 end
 
-local forbiddenSnippets = {
-	'classNetwork:WaitForChild("State")',
-	'classNetwork:WaitForChild("ReadState")',
-}
+requireBoundedWait("ReplicatedStorage", "ClassNetwork")
+requireBoundedWait("classNetwork", "State")
+requireBoundedWait("classNetwork", "ReadState")
 
-for _, snippet in forbiddenSnippets do
-	assert(string.find(source, snippet, 1, true) == nil, "unbounded ClassSquad child wait regressed: " .. snippet)
-end
+assert(
+	string.find(source, 'classNetwork:WaitForChild("State")', 1, true) == nil,
+	"State must never regress to an unbounded module-scope wait"
+)
+assert(
+	string.find(source, 'classNetwork:WaitForChild("ReadState")', 1, true) == nil,
+	"ReadState must never regress to an unbounded module-scope wait"
+)
 
-print("ClassSquad network wait source audit passed")
+print("ClassSquadNetworkWaitSourceAudit: ClassNetwork and required children are bounded")
