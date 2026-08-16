@@ -9,8 +9,12 @@ local client = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponC
 local runtime = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau")
 
 local fallback = assert(
-	string.find(client, "local RELEASE_DIRECTION_FALLBACK = Vector3.new(0, 0, -1)", 1, true),
-	"trigger release needs a deterministic valid transport direction when the camera is unavailable"
+	string.find(client, "local function releaseDirectionFallback(): Vector3", 1, true),
+	"trigger release needs a valid transport direction when the camera is unavailable"
+)
+assert(
+	string.find(client, "return Vector3.new(0, 0, -1)", fallback, true),
+	"release fallback must remain a deterministic unit vector"
 )
 local sender = assert(string.find(client, "local function sendFireIntent(isFiring: boolean)", fallback, true))
 local missingDirection = assert(string.find(client, "if direction == nil then", sender, true))
@@ -19,7 +23,7 @@ local pressFailsClosed = assert(
 	"an aimed fire press must still fail closed without a valid camera direction"
 )
 local releaseFallback = assert(
-	string.find(client, "direction = RELEASE_DIRECTION_FALLBACK", pressFailsClosed, true),
+	string.find(client, "direction = releaseDirectionFallback()", pressFailsClosed, true),
 	"release must survive a transient missing camera"
 )
 local send = assert(
