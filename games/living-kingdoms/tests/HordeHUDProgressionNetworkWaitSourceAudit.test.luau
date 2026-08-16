@@ -17,12 +17,8 @@ assert(
 
 local function assertBoundedChild(childName: string)
 	assert(
-		string.find(
-			source,
-			'progressionNetwork:WaitForChild("' .. childName .. '", NETWORK_WAIT_SECONDS)',
-			1,
-			true
-		) ~= nil,
+		string.find(source, 'progressionNetwork:WaitForChild("' .. childName .. '", NETWORK_WAIT_SECONDS)', 1, true)
+			~= nil,
 		"HordeHUDController must bound ProgressionNetwork." .. childName
 	)
 	assert(
