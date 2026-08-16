@@ -24,6 +24,7 @@ local Config = {
 			"OuterTraversalRepair",
 			"GroundSkin",
 			"RegionalRoutes",
+			"ArrivalTraversal",
 			"Environment",
 			"Structures",
 			"Props",
