@@ -22,8 +22,12 @@ assert(
 	"PrimaryAttackModeController must not use an unbounded MeleeNetwork.StrikeIntent wait"
 )
 assert(
-	string.find(source, "MeleeNetwork.StrikeIntent did not become available before the client bootstrap timeout", 1, true)
-		~= nil,
+	string.find(
+		source,
+		"MeleeNetwork.StrikeIntent did not become available before the client bootstrap timeout",
+		1,
+		true
+	) ~= nil,
 	"PrimaryAttackModeController must fail closed when MeleeNetwork.StrikeIntent is absent"
 )
 
