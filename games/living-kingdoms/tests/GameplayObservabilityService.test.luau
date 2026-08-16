@@ -69,84 +69,83 @@ local runById = {
 }
 local lastResult = table.freeze({ RunId = "run-old", OutcomeId = "Completed" })
 
-local service =
-	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/GameplayObservabilityService.luau"), {
-		debugName = "GameplayObservabilityService",
-		environment = {
-			game = {
-				GetService = function(_self: unknown, serviceName: string)
-					if serviceName == "Workspace" then
-						return {
-							GetServerTimeNow = function()
-								return 123.5
-							end,
-						}
-					end
-					error("unexpected service " .. serviceName)
-				end,
-			},
-			script = {
-				Parent = {
-					AmmunitionScarcityTelemetryService = AMMUNITION_TOKEN,
-					ClassService = CLASS_TOKEN,
-					EnemyDirectorService = ENEMY_TOKEN,
-					ExpeditionRunStateService = RUN_TOKEN,
-				},
-			},
-			require = function(token: unknown)
-				if token == AMMUNITION_TOKEN then
+local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/GameplayObservabilityService.luau"), {
+	debugName = "GameplayObservabilityService",
+	environment = {
+		game = {
+			GetService = function(_self: unknown, serviceName: string)
+				if serviceName == "Workspace" then
 					return {
-						read = function()
-							ammunitionReadCount += 1
-							return ammunitionSnapshot
+						GetServerTimeNow = function()
+							return 123.5
 						end,
 					}
 				end
-				if token == CLASS_TOKEN then
-					return {
-						readRoster = function()
-							classRosterReadCount += 1
-							return roster
-						end,
-						readValidationTelemetry = function()
-							classTelemetryReadCount += 1
-							return classTelemetry
-						end,
-					}
-				end
-				if token == ENEMY_TOKEN then
-					return {
-						readPressureState = function()
-							pressureReadCount += 1
-							return pressure
-						end,
-						readEnemyCombatFacts = function()
-							enemyFactsReadCount += 1
-							return enemyFacts
-						end,
-					}
-				end
-				if token == RUN_TOKEN then
-					return {
-						readActiveRunIds = function()
-							activeRunIdsReadCount += 1
-							return activeRunIds
-						end,
-						read = function(runId: string)
-							runReadCount += 1
-							return runById[runId]
-						end,
-						readLastResult = function()
-							lastResultReadCount += 1
-							return lastResult
-						end,
-					}
-				end
-				error("unexpected module request")
+				error("unexpected service " .. serviceName)
 			end,
 		},
-		injectGlobals = true,
-	})()
+		script = {
+			Parent = {
+				AmmunitionScarcityTelemetryService = AMMUNITION_TOKEN,
+				ClassService = CLASS_TOKEN,
+				EnemyDirectorService = ENEMY_TOKEN,
+				ExpeditionRunStateService = RUN_TOKEN,
+			},
+		},
+		require = function(token: unknown)
+			if token == AMMUNITION_TOKEN then
+				return {
+					read = function()
+						ammunitionReadCount += 1
+						return ammunitionSnapshot
+					end,
+				}
+			end
+			if token == CLASS_TOKEN then
+				return {
+					readRoster = function()
+						classRosterReadCount += 1
+						return roster
+					end,
+					readValidationTelemetry = function()
+						classTelemetryReadCount += 1
+						return classTelemetry
+					end,
+				}
+			end
+			if token == ENEMY_TOKEN then
+				return {
+					readPressureState = function()
+						pressureReadCount += 1
+						return pressure
+					end,
+					readEnemyCombatFacts = function()
+						enemyFactsReadCount += 1
+						return enemyFacts
+					end,
+				}
+			end
+			if token == RUN_TOKEN then
+				return {
+					readActiveRunIds = function()
+						activeRunIdsReadCount += 1
+						return activeRunIds
+					end,
+					read = function(runId: string)
+						runReadCount += 1
+						return runById[runId]
+					end,
+					readLastResult = function()
+						lastResultReadCount += 1
+						return lastResult
+					end,
+				}
+			end
+			error("unexpected module request")
+		end,
+	},
+	injectGlobals = true,
+})()
 
 local snapshot = service.readSnapshot()
 check(snapshot.schemaVersion == 1, "schema version")
