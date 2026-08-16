@@ -81,8 +81,7 @@ end
 local function overlapsX(a, b): boolean
 	local ag = geometry(a)
 	local bg = geometry(b)
-	return math.min(ag.x + ag.sx / 2, bg.x + bg.sx / 2) + EPSILON
-		>= math.max(ag.x - ag.sx / 2, bg.x - bg.sx / 2)
+	return math.min(ag.x + ag.sx / 2, bg.x + bg.sx / 2) + EPSILON >= math.max(ag.x - ag.sx / 2, bg.x - bg.sx / 2)
 end
 
 local function assertStaticWalkable(node)
@@ -98,10 +97,8 @@ local spawnConfig = loadConfig(
 	"games/living-kingdoms/src/shared/Config/RecoveredSpawnLocationConfig.luau",
 	"RecoveredSpawnLocationConfig"
 )
-local lifecycle = loadConfig(
-	"games/living-kingdoms/src/shared/Config/MainWorldLifecycleConfig.luau",
-	"MainWorldLifecycleConfig"
-)
+local lifecycle =
+	loadConfig("games/living-kingdoms/src/shared/Config/MainWorldLifecycleConfig.luau", "MainWorldLifecycleConfig")
 local portalConfig = loadConfig(
 	"games/living-kingdoms/src/shared/Config/RecoveredDungeonPortalConfig.luau",
 	"RecoveredDungeonPortalConfig"
