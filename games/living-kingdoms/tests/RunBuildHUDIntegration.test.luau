@@ -33,7 +33,7 @@ end
 
 local service = fs.readFile("games/living-kingdoms/src/server/Systems/RunBuildService.luau")
 local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/RunBuildHUDController.luau")
-local choiceCoordinator = fs.readFile("games/living-kingdoms/src/client/Controllers/ChoiceInputCoordinator.luau")
+local choiceCoordinator = fs.readFile("games/living-kingdoms/src/client/Controllers/Input/ChoiceInputCoordinator.luau")
 local bootstrapServer = fs.readFile("games/living-kingdoms/src/server/init.server.luau")
 local bootstrapClient = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 
