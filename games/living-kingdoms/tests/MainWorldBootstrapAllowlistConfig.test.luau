@@ -46,7 +46,7 @@ check(responsibilities["durable-inventory-adapter"] == true)
 
 check(config.StaticSceneStabilization.Enabled == true)
 check(config.StaticSceneStabilization.WorldRootName == "LivingKingdomsMainWorld")
-check(#config.StaticSceneStabilization.StaticRootNames == 38)
+check(#config.StaticSceneStabilization.StaticRootNames == 39)
 check(#config.StaticSceneStabilization.DynamicRootNames == 1)
 check(config.StaticSceneStabilization.DynamicRootNames[1] == "NPCs")
 
@@ -60,6 +60,7 @@ for _, rootName in config.StaticSceneStabilization.DynamicRootNames do
 	classifiedRoots[rootName] = "dynamic"
 end
 check(classifiedRoots.NPCs == "dynamic")
+check(classifiedRoots.ArrivalTraversal == "static")
 
 local excluded = {}
 for _, root in config.ExcludedActiveSourceRoots do
@@ -87,7 +88,7 @@ for rootName in mountedWorld do
 		check(classifiedRoots[rootName] ~= nil, "mounted Main World root must be explicitly classified")
 	end
 end
-check(mountedRootCount == 39)
+check(mountedRootCount == 40)
 check(
 	mountedRootCount
 		== #config.StaticSceneStabilization.StaticRootNames + #config.StaticSceneStabilization.DynamicRootNames
