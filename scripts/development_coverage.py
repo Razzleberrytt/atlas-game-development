@@ -99,9 +99,11 @@ def validate_registry(registry: dict) -> list[dict]:
         errors.append("schema_version must be 1")
     if registry.get("project") != "living-kingdoms":
         errors.append("project must be living-kingdoms")
+
     engines = registry.get("canonical_engines")
     if not isinstance(engines, list) or len(engines) != 12 or len(set(engines)) != 12:
         errors.append("canonical_engines must contain exactly 12 unique engine names")
+        engines = engines or []
 
     sections = registry.get("sections", [])
     if len(sections) != 31:
@@ -114,26 +116,29 @@ def validate_registry(registry: dict) -> list[dict]:
         if code in seen_codes:
             errors.append(f"duplicate section code: {code}")
         seen_codes.add(code)
-        if section.get("start") != expected_start:
-            errors.append(
-                f"section {code} starts at {section.get('start')}; expected contiguous start {expected_start}"
-            )
-        start, end = section.get("start"), section.get("end")
+
+        start = section.get("start")
+        end = section.get("end")
+        if start != expected_start:
+            errors.append(f"section {code} starts at {start}; expected contiguous start {expected_start}")
         if not isinstance(start, int) or not isinstance(end, int) or end < start:
             errors.append(f"section {code} has invalid range")
             continue
         expected_start = end + 1
+
         if section.get("coverage_state") not in VALID_COVERAGE:
             errors.append(f"section {code} has invalid coverage_state")
         if section.get("evidence_level") not in VALID_EVIDENCE:
             errors.append(f"section {code} has invalid evidence_level")
         if section.get("priority") not in VALID_PRIORITIES:
             errors.append(f"section {code} has invalid priority")
-        unknown_engines = set(section.get("engines", [])) - set(engines or [])
+
+        unknown_engines = set(section.get("engines", [])) - set(engines)
         if unknown_engines:
             errors.append(f"section {code} references unknown engines: {sorted(unknown_engines)}")
         if not section.get("owner_hints"):
             errors.append(f"section {code} must include owner_hints")
+
         items = section.get("items")
         if not isinstance(items, list) or not all(isinstance(title, str) and title.strip() for title in items):
             errors.append(f"section {code} has invalid item titles")
@@ -165,7 +170,7 @@ def validate_registry(registry: dict) -> list[dict]:
             errors.append(f"override {key} has invalid evidence_level")
         if "priority" in override and override["priority"] not in VALID_PRIORITIES:
             errors.append(f"override {key} has invalid priority")
-        unknown = set(override.get("engines", [])) - set(engines or [])
+        unknown = set(override.get("engines", [])) - set(engines)
         if unknown:
             errors.append(f"override {key} references unknown engines: {sorted(unknown)}")
 
@@ -214,6 +219,7 @@ def render_taxonomy(registry: dict, rows: list[dict]) -> str:
     by_section: dict[str, list[dict]] = defaultdict(list)
     for row in rows:
         by_section[row["section_code"]].append(row)
+
     for section in registry["sections"]:
         lines.extend(
             [
@@ -230,6 +236,7 @@ def render_taxonomy(registry: dict, rows: list[dict]) -> str:
                 suffix = f" — *override: {row['coverage_state']}, {row['evidence_level']}*"
             lines.append(f"- **{row['id']}** — {row['title']}{suffix}")
         lines.append("")
+
     lines.extend(
         [
             "## Working workflow",
@@ -288,10 +295,20 @@ def render_report(registry: dict, rows: list[dict]) -> str:
     ]
     for key in ("complete", "substantial", "partial", "not-started", "unknown", "deferred", "blocked", "not-applicable"):
         lines.append(f"| `{key}` | {state_counts.get(key, 0)} |")
+
     lines.extend(["", "## Evidence distribution", "", "| Evidence | Items |", "|---|---:|"])
     for key in ("studio", "automated", "source-mapped", "section-inferred", "none"):
         lines.append(f"| `{key}` | {evidence_counts.get(key, 0)} |")
-    lines.extend(["", "## Section health", "", "| Section | Range | Coverage | Evidence | Health | Engines |", "|---|---:|---|---|---:|---|"])
+
+    lines.extend(
+        [
+            "",
+            "## Section health",
+            "",
+            "| Section | Range | Coverage | Evidence | Health | Engines |",
+            "|---|---:|---|---|---:|---|",
+        ]
+    )
     for section in registry["sections"]:
         srows = section_rows[section["code"]]
         savg = sum(score(row) for row in srows) / len(srows)
@@ -351,6 +368,7 @@ def render_atlas(registry: dict, rows: list[dict]) -> str:
     for section in registry["sections"]:
         for engine in section["engines"]:
             engine_sections[engine].append(section["code"])
+
     lines = [
         "# Living Kingdoms — Development Atlas",
         "",
@@ -380,12 +398,22 @@ def render_atlas(registry: dict, rows: list[dict]) -> str:
             section = next(s for s in registry["sections"] if s["code"] == code)
             labels.append(f"{code} ({section['start']}–{section['end']})")
         lines.append(f"| {engine} | {', '.join(labels)} |")
-    lines.extend(["", "## Section → owner map", "", "| Section | Coverage | Evidence | Owner hints |", "|---|---|---|---|"])
+
+    lines.extend(
+        [
+            "",
+            "## Section → owner map",
+            "",
+            "| Section | Coverage | Evidence | Owner hints |",
+            "|---|---|---|---|",
+        ]
+    )
     for section in registry["sections"]:
         lines.append(
             f"| {section['code']}. {section['title']} | `{section['coverage_state']}` | "
             f"`{section['evidence_level']}` | {'<br>'.join(section['owner_hints'])} |"
         )
+
     lines.extend(
         [
             "",
@@ -408,10 +436,12 @@ def render_atlas(registry: dict, rows: list[dict]) -> str:
 
 
 def generated_documents(registry: dict, rows: list[dict]) -> dict[Path, str]:
+    # Every renderer ends with a deliberate blank line, so join() already emits
+    # the canonical single final newline. Do not append a second newline here.
     return {
-        TAXONOMY: render_taxonomy(registry, rows) + "\n",
-        ATLAS: render_atlas(registry, rows) + "\n",
-        REPORT: render_report(registry, rows) + "\n",
+        TAXONOMY: render_taxonomy(registry, rows),
+        ATLAS: render_atlas(registry, rows),
+        REPORT: render_report(registry, rows),
     }
 
 
