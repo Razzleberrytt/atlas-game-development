@@ -29,6 +29,7 @@ AUTHORITY_FILES = (
     ROOT / "docs" / "bible" / "00-project-charter.md",
     ROADMAP_INDEX,
     ROOT / "docs" / "roadmap" / "PARALLEL-DEVELOPMENT-POLICY.md",
+    ROOT / "docs" / "roadmap" / "AUTOMATED-FIRST-EXECUTION-POLICY.md",
     ROOT / "docs" / "roadmap" / "EXECUTION-DASHBOARD.md",
     ROOT / "docs" / "roadmap" / "MVP-BUILD-THROUGH-TESTING-POLICY.md",
     ROOT / "docs" / "roadmap" / "PLAYABLE-MVP-PATCH-EXECUTION.md",
