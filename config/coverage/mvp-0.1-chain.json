@@ -74,7 +74,7 @@
       "name": "run-reward-choice",
       "status": "SOURCE_PRESENT",
       "evidence": "automated",
-      "evidence_refs": ["commit:5bab6597910e6c8ccd348dbf008734a2b677b120", "commit:83e6cff7e357c47c89bfa800e0b123dac461204c4"],
+      "evidence_refs": ["commit:5bab6597910e6c8ccd348dbf008734a2b677b120", "commit:83e6cff7e357c47d4151c37a9e750d6cd0beff72"],
       "exit_condition": "The run offers at least one meaningful, server-authoritative reward decision."
     },
     {
