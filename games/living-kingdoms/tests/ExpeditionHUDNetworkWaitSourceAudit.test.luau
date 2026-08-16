@@ -15,11 +15,13 @@ for _, childName in { "State", "ReadState" } do
 	)
 end
 
-for _, message in {
-	"ExpeditionNetwork did not become available before the client bootstrap timeout",
-	"ExpeditionNetwork.State did not become available before the client bootstrap timeout",
-	"ExpeditionNetwork.ReadState did not become available before the client bootstrap timeout",
-} do
+for _, message in
+	{
+		"ExpeditionNetwork did not become available before the client bootstrap timeout",
+		"ExpeditionNetwork.State did not become available before the client bootstrap timeout",
+		"ExpeditionNetwork.ReadState did not become available before the client bootstrap timeout",
+	}
+do
 	assert(string.find(source, message, 1, true) ~= nil, "missing ExpeditionHUD bootstrap assertion: " .. message)
 end
 
