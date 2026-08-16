@@ -168,10 +168,21 @@ local function currentAimDirection(): Vector3?
 	return if direction.Magnitude > 0.99 then direction.Unit else nil
 end
 
+local function releaseDirectionFallback(): Vector3
+	return Vector3.new(0, 0, -1)
+end
+
 local function sendFireIntent(isFiring: boolean)
 	local direction = currentAimDirection()
 	if direction == nil then
-		return
+		if isFiring then
+			return
+		end
+		-- Release carries no targeting authority, but the current server transport
+		-- contract still validates a unit aim vector before it clears the latch.
+		-- Construct the sentinel only on the missing-camera release path so module
+		-- loading does not depend on a live Vector3 runtime in source-audit harnesses.
+		direction = releaseDirectionFallback()
 	end
 	state.lastAimSendLocalTimestamp = os.clock()
 	fireIntentRemote:FireServer(isFiring, direction)
