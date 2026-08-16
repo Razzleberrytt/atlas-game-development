@@ -6,12 +6,8 @@ local source = fs.readFile("games/living-kingdoms/src/client/Controllers/Expedit
 
 for _, networkName in { "ExpeditionResultNetwork", "ExpeditionLobbyNetwork" } do
 	assert(
-		string.find(
-			source,
-			'ReplicatedStorage:WaitForChild("' .. networkName .. '", NETWORK_WAIT_SECONDS)',
-			1,
-			true
-		) ~= nil,
+		string.find(source, 'ReplicatedStorage:WaitForChild("' .. networkName .. '", NETWORK_WAIT_SECONDS)', 1, true)
+			~= nil,
 		"ExpeditionReturnController must bound " .. networkName
 	)
 end
@@ -25,12 +21,8 @@ for _, wait in
 	}
 do
 	assert(
-		string.find(
-			source,
-			wait.receiver .. ':WaitForChild("' .. wait.child .. '", NETWORK_WAIT_SECONDS)',
-			1,
-			true
-		) ~= nil,
+		string.find(source, wait.receiver .. ':WaitForChild("' .. wait.child .. '", NETWORK_WAIT_SECONDS)', 1, true)
+			~= nil,
 		"ExpeditionReturnController must bound " .. wait.receiver .. "." .. wait.child
 	)
 	assert(
