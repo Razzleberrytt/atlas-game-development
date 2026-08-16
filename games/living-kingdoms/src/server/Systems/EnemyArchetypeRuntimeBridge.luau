@@ -97,7 +97,11 @@ local function decorateAliveModel(entityId: string, model: Model)
 	model:SetAttribute("EnemyEliteEligible", definition.EliteEligible)
 	local weakPoint = definition.WeakPoint
 	setOptionalAttribute(model, "EnemyWeakPointPartName", if weakPoint == nil then nil else weakPoint.partName)
-	setOptionalAttribute(model, "EnemyWeakPointDamageMultiplier", if weakPoint == nil then nil else weakPoint.damageMultiplier)
+	setOptionalAttribute(
+		model,
+		"EnemyWeakPointDamageMultiplier",
+		if weakPoint == nil then nil else weakPoint.damageMultiplier
+	)
 	local affixId = model:GetAttribute(AttributeNames.EliteAffixId)
 	model:SetAttribute("EnemyIsElite", type(affixId) == "string" and affixId ~= "")
 end
@@ -131,7 +135,10 @@ local function applyOrdinaryMovement(entityId: string, model: Model)
 			cadence = 1
 		end
 		if type(startedAt) == "number" and startedAt > 0 then
-			model:SetAttribute(AttributeNames.WindupCommitServerTimestamp, startedAt + definition.AttackWindupSeconds * cadence)
+			model:SetAttribute(
+				AttributeNames.WindupCommitServerTimestamp,
+				startedAt + definition.AttackWindupSeconds * cadence
+			)
 		end
 	end
 end
@@ -235,7 +242,8 @@ function Bridge.install(director: any): boolean
 	)
 		local scale = healthScale(entityId)
 		if scale == 1 then
-			local didCommit, committedDamage = originalCommitHealthState(entityId, expectedRevision, healthStateAfter, serverTimestamp)
+			local didCommit, committedDamage =
+				originalCommitHealthState(entityId, expectedRevision, healthStateAfter, serverTimestamp)
 			if didCommit and nonemptyString(damagingOperativeEntityId) and RuntimeMetadata[entityId] ~= nil then
 				RuntimeMetadata[entityId].lastDamagingOperativeEntityId = damagingOperativeEntityId
 			end
@@ -258,7 +266,8 @@ function Bridge.install(director: any): boolean
 			currentHealth = underlying.healthState.currentHealth - requestedDamage / scale,
 			processedShotIds = healthStateAfter.processedShotIds,
 		}
-		local didCommit, committedDamage = originalCommitHealthState(entityId, expectedRevision, translatedAfter, serverTimestamp)
+		local didCommit, committedDamage =
+			originalCommitHealthState(entityId, expectedRevision, translatedAfter, serverTimestamp)
 		if didCommit and nonemptyString(damagingOperativeEntityId) and RuntimeMetadata[entityId] ~= nil then
 			RuntimeMetadata[entityId].lastDamagingOperativeEntityId = damagingOperativeEntityId
 		end

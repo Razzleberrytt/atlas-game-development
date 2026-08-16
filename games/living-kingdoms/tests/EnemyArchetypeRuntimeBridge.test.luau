@@ -16,11 +16,10 @@ local function loadSimple(path: string, debugName: string)
 end
 
 local contracts = loadSimple("games/living-kingdoms/src/shared/Combat/EnemyContracts.luau", "EnemyContracts")
-local presentationContracts = loadSimple(
-	"games/living-kingdoms/src/shared/Visual/EnemyPresentationContracts.luau",
-	"EnemyPresentationContracts"
-)
-local worldConfig = loadSimple("games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "WorldFoundationConfig")
+local presentationContracts =
+	loadSimple("games/living-kingdoms/src/shared/Visual/EnemyPresentationContracts.luau", "EnemyPresentationContracts")
+local worldConfig =
+	loadSimple("games/living-kingdoms/src/shared/Config/WorldFoundationConfig.luau", "WorldFoundationConfig")
 
 local CONTRACTS_TOKEN = {}
 local WORLD_TOKEN = {}
@@ -152,58 +151,75 @@ local fakeDirector = {
 }
 
 assertThat(bridge.install(fakeDirector), "bridge must install on the production-shaped director boundary")
-assertThat(bridge.registerSpawn({
-	entityId = "enemy.bridge.brute",
-	archetypeId = ids.GriefBrute,
-	encounterId = "encounter:bridge",
-	compositionIdentity = "room:bridge",
-	eliteChance = 0.25,
-}), "authored runtime metadata must register")
+assertThat(
+	bridge.registerSpawn({
+		entityId = "enemy.bridge.brute",
+		archetypeId = ids.GriefBrute,
+		encounterId = "encounter:bridge",
+		compositionIdentity = "room:bridge",
+		eliteChance = 0.25,
+	}),
+	"authored runtime metadata must register"
+)
 assertThat(table.isfrozen(contracts), "shared contract vocabulary must remain frozen")
-assertThat(contracts.ServerRuntimeMetadataByEntityId["enemy.bridge.brute"] ~= nil, "nested VM-local registry must remain mutable")
+assertThat(
+	contracts.ServerRuntimeMetadataByEntityId["enemy.bridge.brute"] ~= nil,
+	"nested VM-local registry must remain mutable"
+)
 
 local initial = fakeDirector.readHealthState("enemy.bridge.brute")
-assertThat(math.abs(initial.maximumHealth - 150) < 0.001, "Brute max health must resolve through the authoritative health seam")
+assertThat(
+	math.abs(initial.maximumHealth - 150) < 0.001,
+	"Brute max health must resolve through the authoritative health seam"
+)
 assertThat(math.abs(initial.healthState.currentHealth - 150) < 0.001, "Brute starts at resolved max health")
 
-local didDamage, committedDamage = fakeDirector.commitHealthState(
-	"enemy.bridge.brute",
-	initial.revision,
-	{
-		entityId = "enemy.bridge.brute",
-		currentHealth = 116,
-		processedShotIds = { "shot:1" },
-	},
-	10,
-	"operative:test"
+local didDamage, committedDamage = fakeDirector.commitHealthState("enemy.bridge.brute", initial.revision, {
+	entityId = "enemy.bridge.brute",
+	currentHealth = 116,
+	processedShotIds = { "shot:1" },
+}, 10, "operative:test")
+assertThat(
+	didDamage and math.abs(committedDamage - 34) < 0.001,
+	"virtual Brute damage must map proportionally to underlying authoritative health"
 )
-assertThat(didDamage and math.abs(committedDamage - 34) < 0.001, "virtual Brute damage must map proportionally to underlying authoritative health")
 local afterDamage = fakeDirector.readHealthState("enemy.bridge.brute")
-assertThat(math.abs(afterDamage.healthState.currentHealth - 116) < 0.001, "resolved health must round-trip after damage")
+assertThat(
+	math.abs(afterDamage.healthState.currentHealth - 116) < 0.001,
+	"resolved health must round-trip after damage"
+)
 
 local rewardContext = bridge.readRewardContext("enemy.bridge.brute")
-assertThat(rewardContext.baseFieldXp == 28 and rewardContext.lootProfileId == "enemy.heavy", "reward hook must expose archetype metadata")
+assertThat(
+	rewardContext.baseFieldXp == 28 and rewardContext.lootProfileId == "enemy.heavy",
+	"reward hook must expose archetype metadata"
+)
 assertThat(rewardContext.encounterId == "encounter:bridge", "reward hook must retain encounter identity")
-assertThat(rewardContext.lastDamagingOperativeEntityId == "operative:test", "trusted optional damage source must be retained")
+assertThat(
+	rewardContext.lastDamagingOperativeEntityId == "operative:test",
+	"trusted optional damage source must be retained"
+)
 assertThat(rewardContext.isAlive == true, "reward context must report current life state")
 
-local didKill, lethalDamage = fakeDirector.commitHealthState(
-	"enemy.bridge.brute",
-	afterDamage.revision,
-	{
-		entityId = "enemy.bridge.brute",
-		currentHealth = 0,
-		processedShotIds = { "shot:1", "shot:2" },
-	},
-	11,
-	"operative:test"
-)
+local didKill, lethalDamage = fakeDirector.commitHealthState("enemy.bridge.brute", afterDamage.revision, {
+	entityId = "enemy.bridge.brute",
+	currentHealth = 0,
+	processedShotIds = { "shot:1", "shot:2" },
+}, 11, "operative:test")
 assertThat(didKill and math.abs(lethalDamage - 116) < 0.001, "lethal damage must preserve resolved health semantics")
-assertThat(fakeDirector.readHealthState("enemy.bridge.brute").isAlive == false, "underlying director death invariant must remain authoritative")
-assertThat(bridge.readRewardContext("enemy.bridge.brute").isAlive == false, "reward hook must observe authoritative death")
+assertThat(
+	fakeDirector.readHealthState("enemy.bridge.brute").isAlive == false,
+	"underlying director death invariant must remain authoritative"
+)
+assertThat(
+	bridge.readRewardContext("enemy.bridge.brute").isAlive == false,
+	"reward hook must observe authoritative death"
+)
 
 assertThat(bridge.unregisterSpawn("enemy.bridge.brute"), "explicit rejected/cleanup path must unregister metadata")
 assertThat(bridge.readRewardContext("enemy.bridge.brute") == nil, "unregistered metadata must not leak")
 fakeDirector.stop()
 
-print("EnemyArchetypeRuntimeBridge: health scaling, reward attribution hook, teardown, and no extra loops/connections passed")
+print(
+	"EnemyArchetypeRuntimeBridge: health scaling, reward attribution hook, teardown, and no extra loops/connections passed"
+)

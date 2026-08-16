@@ -128,7 +128,10 @@ assertThat(a.didStart and a.acceptedCount == 2, "first encounter should start")
 assertThat(b.didStart and b.acceptedCount == 2, "second simultaneous encounter should start")
 assertThat(#submittedRequests == 4, "each planned spawn must cross the director boundary once")
 assertThat(submittedRequests[1].encounterId == "encounter:a", "encounter identity must reach spawn request")
-assertThat(bridgeRegistered["encounter:a:1"] and bridgeRegistered["encounter:b:2"], "runtime metadata must register before spawn")
+assertThat(
+	bridgeRegistered["encounter:a:1"] and bridgeRegistered["encounter:b:2"],
+	"runtime metadata must register before spawn"
+)
 
 facts = {
 	{ entityId = "encounter:a:1", isAlive = true },
@@ -151,13 +154,22 @@ assertThat(service:releaseEncounter("encounter:a"), "completed session should be
 assertThat(service:readEncounter("encounter:a") == nil, "released session must be cleaned up")
 
 local invalid = service:spawnEncounter({ Id = "encounter:invalid", Invalid = true }, points, { Seed = 3 })
-assertThat(not invalid.didStart and invalid.rejectionReasonId == "InvalidFixture", "invalid composition must fail closed")
-assertThat(not service:spawnEncounter({ Id = "" }, points, { Seed = 3 }).didStart, "empty encounter IDs must fail closed")
+assertThat(
+	not invalid.didStart and invalid.rejectionReasonId == "InvalidFixture",
+	"invalid composition must fail closed"
+)
+assertThat(
+	not service:spawnEncounter({ Id = "" }, points, { Seed = 3 }).didStart,
+	"empty encounter IDs must fail closed"
+)
 
 rejectAll = true
 local rejected = service:spawnEncounter({ Id = "encounter:rejected" }, points, { Seed = 4 })
 assertThat(not rejected.didStart and rejected.acceptedCount == 0, "zero accepted spawns must not create a live session")
-assertThat(bridgeUnregistered["encounter:rejected:1"] and bridgeUnregistered["encounter:rejected:2"], "permanent spawn rejection must clean runtime metadata")
+assertThat(
+	bridgeUnregistered["encounter:rejected:1"] and bridgeUnregistered["encounter:rejected:2"],
+	"permanent spawn rejection must clean runtime metadata"
+)
 rejectAll = false
 
 deferEntityIds["encounter:deferred:1"] = true
@@ -166,18 +178,35 @@ local deferred = service:spawnEncounter({ Id = "encounter:deferred" }, points, {
 assertThat(deferred.didStart and deferred.deferredCount == 2, "deferred legal spawns must remain tracked")
 facts = {}
 local earlyComplete, earlyReason = service:pollCompletion("encounter:deferred")
-assertThat(not earlyComplete and earlyReason == "AwaitingTrackedSpawn", "pending deferred spawns must not false-complete")
+assertThat(
+	not earlyComplete and earlyReason == "AwaitingTrackedSpawn",
+	"pending deferred spawns must not false-complete"
+)
 facts = { { entityId = "encounter:deferred:1", isAlive = true }, { entityId = "encounter:deferred:2", isAlive = true } }
-assertThat(select(1, service:pollCompletion("encounter:deferred")) == false, "deferred encounter must observe live state")
+assertThat(
+	select(1, service:pollCompletion("encounter:deferred")) == false,
+	"deferred encounter must observe live state"
+)
 facts = {}
-assertThat(select(1, service:pollCompletion("encounter:deferred")) == true, "deferred encounter completes after observed enemies die")
+assertThat(
+	select(1, service:pollCompletion("encounter:deferred")) == true,
+	"deferred encounter completes after observed enemies die"
+)
 
 local cancelled = service:spawnEncounter({ Id = "encounter:cancelled" }, points, { Seed = 6 })
 assertThat(cancelled.didStart and service:cancelEncounter("encounter:cancelled"), "active encounter must cancel")
 local cancelledComplete, cancelledReason = service:pollCompletion("encounter:cancelled")
-assertThat(not cancelledComplete and cancelledReason == "EncounterCancelled", "cancelled encounters must never report completion")
+assertThat(
+	not cancelledComplete and cancelledReason == "EncounterCancelled",
+	"cancelled encounters must never report completion"
+)
 
 service:destroy()
-assertThat(not service:spawnEncounter({ Id = "encounter:after-destroy" }, points, { Seed = 7 }).didStart, "destroyed service must reject new work")
+assertThat(
+	not service:spawnEncounter({ Id = "encounter:after-destroy" }, points, { Seed = 7 }).didStart,
+	"destroyed service must reject new work"
+)
 
-print("EnemyEncounterServiceWave2: simultaneous tracking, exact completion, deferral, invalid/zero handling, cancellation, and cleanup passed")
+print(
+	"EnemyEncounterServiceWave2: simultaneous tracking, exact completion, deferral, invalid/zero handling, cancellation, and cleanup passed"
+)

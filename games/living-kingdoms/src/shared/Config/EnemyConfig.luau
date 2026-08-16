@@ -187,7 +187,8 @@ assert(
 assert(EnemyConfig.FairSpawn.MaximumDeferredSpawns > 0, "the deferred spawn queue must be bounded and positive")
 assert(
 	EnemyConfig.Population.MaximumConcurrentPerOperative > 0
-		and EnemyConfig.Population.AbsoluteMaximumConcurrent >= EnemyConfig.Population.MaximumConcurrentPerOperative * 4,
+		and EnemyConfig.Population.AbsoluteMaximumConcurrent
+			>= EnemyConfig.Population.MaximumConcurrentPerOperative * 4,
 	"population caps must cover the four-operative squad"
 )
 for level = 0, EnemyConfig.Pressure.MaximumEscalationLevel do

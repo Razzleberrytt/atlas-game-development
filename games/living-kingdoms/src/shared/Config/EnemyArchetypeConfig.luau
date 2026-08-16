@@ -71,7 +71,10 @@ local function ordinary(definition): EnemyArchetypeDefinition
 			partName = definition.WeakPointPartName,
 			damageMultiplier = definition.WeakPointDamageMultiplier,
 		}),
-		RewardMetadata = table.freeze({ baseFieldXp = definition.BaseFieldXp, lootProfileId = definition.LootProfileId }),
+		RewardMetadata = table.freeze({
+			baseFieldXp = definition.BaseFieldXp,
+			lootProfileId = definition.LootProfileId,
+		}),
 		Tags = definition.Tags,
 		FactionId = definition.FactionId,
 		EliteEligible = definition.EliteEligible,
@@ -150,11 +153,23 @@ function EnemyArchetypeConfig.validateDefinition(definition: unknown): (boolean,
 	if value.RuntimeKind ~= "Ordinary" and value.RuntimeKind ~= "Special" then
 		return false, "RuntimeKindInvalid"
 	end
-	for _, fieldName in {
-		"MaximumHealth", "PursuitSpeedStudsPerSecond", "RoamSpeedStudsPerSecond", "DetectionRadiusStuds",
-		"PursuitDropRadiusStuds", "AttackRangeStuds", "AttackDamage", "AttackWindupSeconds", "AttackCooldownSeconds",
-		"RoamWanderRadiusStuds", "RoamRetargetIntervalSeconds", "SpawnCost", "EncounterWeight",
-	} do
+	for _, fieldName in
+		{
+			"MaximumHealth",
+			"PursuitSpeedStudsPerSecond",
+			"RoamSpeedStudsPerSecond",
+			"DetectionRadiusStuds",
+			"PursuitDropRadiusStuds",
+			"AttackRangeStuds",
+			"AttackDamage",
+			"AttackWindupSeconds",
+			"AttackCooldownSeconds",
+			"RoamWanderRadiusStuds",
+			"RoamRetargetIntervalSeconds",
+			"SpawnCost",
+			"EncounterWeight",
+		}
+	do
 		if type(value[fieldName]) ~= "number" or not finitePositive(value[fieldName]) then
 			return false, "NumericFieldInvalid:" .. fieldName
 		end
@@ -171,7 +186,11 @@ function EnemyArchetypeConfig.validateDefinition(definition: unknown): (boolean,
 	if value.PursuitDropRadiusStuds < value.DetectionRadiusStuds then
 		return false, "PursuitDropInvalid"
 	end
-	if type(value.EliteEligible) ~= "boolean" or type(value.Tags) ~= "table" or type(value.RewardMetadata) ~= "table" then
+	if
+		type(value.EliteEligible) ~= "boolean"
+		or type(value.Tags) ~= "table"
+		or type(value.RewardMetadata) ~= "table"
+	then
 		return false, "MetadataInvalid"
 	end
 	return true, nil

@@ -19,7 +19,7 @@ local weaponSelection = fs.readFile("games/living-kingdoms/src/client/Controller
 local hordeHud = fs.readFile("games/living-kingdoms/src/client/Controllers/HordeHUDController.luau")
 local massacre = fs.readFile("games/living-kingdoms/src/client/Controllers/MassacreCrescendoController.luau")
 local runBuildHud = fs.readFile("games/living-kingdoms/src/client/Controllers/RunBuildHUDController.luau")
-local camera = fs.readFile("games/living-kingdoms/src/client/Controllers/CameraController.luau")
+local camera = fs.readFile("games/living-kingdoms/src/client/Controllers/Input/CameraController.luau")
 
 for _, source in { enemy, harness } do
 	assertThat(contains(source, "billboard.AlwaysOnTop = false"), "enemy labels must respect world occlusion")
@@ -56,7 +56,7 @@ assertThat(contains(massacre, "isBlockingChoiceVisible"), "crescendo must detect
 assertThat(contains(massacre, "not isBlockingChoiceVisible()"), "crescendo must yield while choices are visible")
 assertThat(contains(massacre, 'FindFirstChild("RelicReward")'), "crescendo must also yield to relic choices")
 assertThat(contains(massacre, "UDim2.fromOffset(460, 82)"), "crescendo must remain a compact combat toast")
-assertThat(contains(runBuildHud, "UDim2.fromOffset(430, 300)"), "relic choices must remain a compact side card")
+assertThat(contains(runBuildHud, "UDim2.fromOffset(430, 330)"), "relic choices must remain a compact side card")
 assertThat(contains(runBuildHud, "Enum.FillDirection.Vertical"), "relic choices must stack without crossing the HUD")
 assertThat(contains(camera, "LockFirstPerson"), "combat must use the authored first-person camera policy")
 assertThat(contains(camera, "MouseBehavior.LockCenter"), "FPS mouse-look must keep the desktop cursor centered")

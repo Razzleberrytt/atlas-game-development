@@ -39,8 +39,24 @@ def run(label: str, command: list[str]) -> None:
         raise RuntimeError(
             f"required executable {executable!r} was not found; install pinned tools from rokit.toml"
         )
-    result = subprocess.run(command, cwd=ROOT, check=False)
+    result = subprocess.run(
+        command,
+        cwd=ROOT,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    output = result.stdout or ""
+    if output:
+        print(output, end="" if output.endswith("\n") else "\n", flush=True)
     if result.returncode != 0:
+        tail = output[-3000:].strip()
+        if tail:
+            escaped_tail = tail.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+            print(f"::error title=Atlas command output::{escaped_tail}", file=sys.stderr)
         raise RuntimeError(f"{label} failed with exit code {result.returncode}")
 
 
@@ -210,6 +226,7 @@ def main() -> int:
         if args.profile in {"fast", "full"}:
             validate_toolchain_and_game()
     except RuntimeError as exc:
+        print(f"::error title=Atlas validation::{exc}", file=sys.stderr)
         print(f"\n[validate] FAILED: {exc}", file=sys.stderr)
         return 1
 
