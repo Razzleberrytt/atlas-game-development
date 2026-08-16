@@ -26,16 +26,23 @@ for _, childName in { "ActionIntent", "State", "ReadState" } do
 	)
 end
 
-for _, snippet in {
-	'assert(classNetwork ~= nil, "ClassNetwork did not become available before the client bootstrap timeout")',
-	'assert(stateRemote ~= nil, "ClassNetwork.State did not become available before the client bootstrap timeout")',
-	'assert(readStateFunction ~= nil, "ClassNetwork.ReadState did not become available before the client bootstrap timeout")',
-} do
+for _, snippet in
+	{
+		'assert(classNetwork ~= nil, "ClassNetwork did not become available before the client bootstrap timeout")',
+		'assert(stateRemote ~= nil, "ClassNetwork.State did not become available before the client bootstrap timeout")',
+		'assert(readStateFunction ~= nil, "ClassNetwork.ReadState did not become available before the client bootstrap timeout")',
+	}
+do
 	assert(string.find(source, snippet, 1, true) ~= nil, "missing ClassAction bootstrap assertion: " .. snippet)
 end
 
 assert(
-	string.find(source, "ClassNetwork.ActionIntent did not become available before the client bootstrap timeout", 1, true) ~= nil,
+	string.find(
+		source,
+		"ClassNetwork.ActionIntent did not become available before the client bootstrap timeout",
+		1,
+		true
+	) ~= nil,
 	"ActionIntent must fail closed when the remote is absent"
 )
 
