@@ -27,7 +27,10 @@ local localPlayer = Players.LocalPlayer
 local classNetwork = ReplicatedStorage:WaitForChild("ClassNetwork", NETWORK_WAIT_SECONDS)
 assert(classNetwork ~= nil, "ClassNetwork did not become available before the client bootstrap timeout")
 local selectionIntentRemote = classNetwork:WaitForChild("SelectionIntent", NETWORK_WAIT_SECONDS)
-assert(selectionIntentRemote ~= nil, "ClassNetwork.SelectionIntent did not become available before the client bootstrap timeout")
+assert(
+	selectionIntentRemote ~= nil,
+	"ClassNetwork.SelectionIntent did not become available before the client bootstrap timeout"
+)
 local stateRemote = classNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS)
 assert(stateRemote ~= nil, "ClassNetwork.State did not become available before the client bootstrap timeout")
 local readStateFunction = classNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS)
