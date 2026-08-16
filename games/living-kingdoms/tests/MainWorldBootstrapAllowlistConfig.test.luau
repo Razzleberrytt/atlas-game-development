@@ -88,7 +88,10 @@ for rootName in mountedWorld do
 	end
 end
 check(mountedRootCount == 39)
-check(mountedRootCount == #config.StaticSceneStabilization.StaticRootNames + #config.StaticSceneStabilization.DynamicRootNames)
+check(
+	mountedRootCount
+		== #config.StaticSceneStabilization.StaticRootNames + #config.StaticSceneStabilization.DynamicRootNames
+)
 check(
 	mainWorldProject.tree.ServerScriptService.MainWorldStaticSceneStabilizer["$path"]
 		== "src/main-world/server/MainWorldStaticSceneStabilizer.luau"
