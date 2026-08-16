@@ -10,13 +10,15 @@ assert(
 	"PersonalFlashlightController must bound FlashlightNetwork"
 )
 assert(
-	string.find(source, "FlashlightNetwork did not become available before the client bootstrap timeout", 1, true) ~= nil,
+	string.find(source, "FlashlightNetwork did not become available before the client bootstrap timeout", 1, true)
+		~= nil,
 	"PersonalFlashlightController must fail closed when FlashlightNetwork is absent"
 )
 
 local function assertBoundedChild(childName: string)
 	assert(
-		string.find(source, 'flashlightNetwork:WaitForChild("' .. childName .. '", NETWORK_WAIT_SECONDS)', 1, true) ~= nil,
+		string.find(source, 'flashlightNetwork:WaitForChild("' .. childName .. '", NETWORK_WAIT_SECONDS)', 1, true)
+			~= nil,
 		"PersonalFlashlightController must bound FlashlightNetwork." .. childName
 	)
 	assert(
