@@ -59,7 +59,7 @@ check(string.find(bootstrap, "failedControllers", 1, true) ~= nil, "failures mus
 check(string.find(bootstrap, "task.spawn", 1, true) == nil, "controller steps must not be deferred; the order matters")
 check(string.find(bootstrap, "task.defer", 1, true) == nil, "controller steps must not be deferred; the order matters")
 
--- 2. Every module-scope network wait is bounded.
+-- 2. Every direct ReplicatedStorage module-scope network wait is bounded.
 
 local unbounded: { string } = {}
 for _, directory in { "Controllers", "State", "Presentation" } do
@@ -82,5 +82,23 @@ check(
 	#unbounded == 0,
 	"a module-scope network wait must be bounded or it hangs the whole require chain: " .. table.concat(unbounded, ", ")
 )
+
+-- 3. WeaponController's network folder children are also module-scope
+-- dependencies, so each child wait must carry the same timeout. Keep this
+-- regression focused here; a repo-wide migration of legacy child waits is a
+-- separate checkpoint rather than hidden scope expansion in this fix.
+
+local weaponController = fs.readFile("games/living-kingdoms/src/client/Controllers/WeaponController.luau")
+for _, remoteName in { "FireIntent", "ReloadIntent", "CombatPresentation" } do
+	check(
+		string.find(
+			weaponController,
+			'combatNetwork:WaitForChild("' .. remoteName .. '", NETWORK_WAIT_SECONDS)',
+			1,
+			true
+		) ~= nil,
+		"WeaponController must bound its " .. remoteName .. " child wait"
+	)
+end
 
 print("ClientBootstrapIsolationSourceAudit: isolated requires and steps, ordered, with bounded network waits")

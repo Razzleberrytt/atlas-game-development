@@ -103,10 +103,22 @@ local state: LifecycleState = {
 	crosshairGui = nil,
 }
 
-local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork", NETWORK_WAIT_SECONDS)
-local fireIntentRemote = combatNetwork:WaitForChild("FireIntent") :: RemoteEvent
-local reloadIntentRemote = combatNetwork:WaitForChild("ReloadIntent") :: RemoteEvent
-local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: RemoteEvent
+local combatNetwork = assert(
+	ReplicatedStorage:WaitForChild("CombatNetwork", NETWORK_WAIT_SECONDS),
+	"CombatNetwork unavailable after bounded wait"
+)
+local fireIntentRemote = assert(
+	combatNetwork:WaitForChild("FireIntent", NETWORK_WAIT_SECONDS),
+	"CombatNetwork.FireIntent unavailable after bounded wait"
+) :: RemoteEvent
+local reloadIntentRemote = assert(
+	combatNetwork:WaitForChild("ReloadIntent", NETWORK_WAIT_SECONDS),
+	"CombatNetwork.ReloadIntent unavailable after bounded wait"
+) :: RemoteEvent
+local presentationRemote = assert(
+	combatNetwork:WaitForChild("CombatPresentation", NETWORK_WAIT_SECONDS),
+	"CombatNetwork.CombatPresentation unavailable after bounded wait"
+) :: RemoteEvent
 
 local function clearHudAttributes()
 	for _, attributeName in HUD_ATTRIBUTES do
