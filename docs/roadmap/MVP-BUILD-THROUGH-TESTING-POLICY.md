@@ -1,157 +1,146 @@
 # Atlas — Continuous Build-Through + Deferred Verification Policy
 
-**Status:** CURRENT EXECUTION-CADENCE AND ROADMAP-STATUS AUTHORITY  
+**Status:** CURRENT BUILT-VS-VERIFIED AUTHORITY  
 **Adopted:** 2026-08-08  
-**Revised:** 2026-08-09  
-**Scope:** Implementation cadence, roadmap status meaning, and manual Roblox Studio testing during development of the playable game.  
-**Supersedes for execution:** any roadmap, patch, queue, checklist, STOP/PLAY/FIX wording, future-phase lock, verification gate, or agent instruction that treats ordinary missing manual/Studio/device/play evidence as a reason source development must stop.  
-**Does not supersede:** server-authority/security requirements, data-loss protections, known runtime failures, accepted evidence truth, explicit architecture decisions, irreversible persistence/migration safeguards, or automated validation failures.
+**Refreshed:** 2026-08-16  
+**Scope:** source-completion status, deferred manual evidence, and the relationship between implementation and verification.  
+**Task selection authority:** [`EXECUTION-DASHBOARD.md`](EXECUTION-DASHBOARD.md).  
+**Automated cadence authority:** [`AUTOMATED-FIRST-EXECUTION-POLICY.md`](AUTOMATED-FIRST-EXECUTION-POLICY.md).
 
 ## Decision
 
 Atlas uses a **continuous-build, deferred-verification** workflow.
 
-The roadmap is a priority system and destination map, not a permission system. Agents should continue implementing and merging useful dependency-safe source work for as long as eligible work exists. Manual Studio/device/play evidence is tracked separately and does not ordinarily gate the next source patch.
+Manual Studio/device/play evidence is tracked honestly but does not ordinarily stop dependency-safe source work after automated validation succeeds.
 
 ```text
-choose highest-ROI eligible source task
-→ implement a small diagnosable increment
-→ run applicable automated/static validation
-→ merge when successful
-→ record BUILT — VERIFICATION PENDING when engine/manual evidence remains
-→ continue to the next coherent task or patch
-→ run grouped Studio/device/play evidence when available
-→ convert reproducible failures into immediate FIX tasks
-→ promote passing work to VERIFIED
+dashboard-selected work
+→ implement coherent increment
+→ automated validation
+→ merge when green
+→ BUILT — VERIFICATION PENDING when engine/manual facts remain
+→ continue dependency-safe source work
+→ grouped Studio/device/play evidence when useful/required
+→ VERIFIED only when the stated evidence passes
+→ reproducible failure becomes immediate FIX
 ```
-
-## Lock retirement rule
-
-**General execution locks are retired.**
-
-Older language such as `[L]`, `LOCKED`, `hard gate`, `STOP`, `THEN EXPAND`, `may not begin`, `blocked until play evidence`, or similar scheduling language must not prevent ordinary dependency-safe source development merely because a prior milestone has not yet been manually verified.
-
-Interpret ordinary phase-order locks as **priority guidance / DEFERRED verification order**, not permission barriers.
-
-Do not add new manual-verification locks.
-
-A task may be **BLOCKED** only when a concrete technical or safety condition makes implementation unsafe or invalid. The blocker must be named.
-
-Valid blockers include:
-
-- a known server-authority/security defect that downstream work would depend on;
-- durable player data can be corrupted, duplicated, blanked, or irreversibly migrated;
-- a required canonical owner/interface is missing or known broken and cannot yet be safely defined;
-- a known lifecycle/state-delivery failure makes dependent implementation incorrect;
-- an irreversible persistence/security cutover requires runtime proof before further dependent activation;
-- applicable automated validation is failing and invalidates the work;
-- a real runtime test has already exposed a reproducible failure that invalidates downstream assumptions.
-
-**Not valid by itself:** “Studio/device/manual verification has not been run yet.”
 
 ## Status model
 
 - **NOT STARTED** — no meaningful implementation exists.
 - **BUILDING** — implementation is active or partial.
-- **BUILT — VERIFICATION PENDING** — source implementation exists and applicable automated/static checks pass, while manual/engine/device/integration evidence is still outstanding.
-- **VERIFIED** — applicable acceptance evidence has passed.
-- **DEFERRED** — lower priority, not prohibited.
-- **BLOCKED — <concrete reason>** — implementation cannot safely/correctly proceed for a named technical reason.
+- **BUILT — VERIFICATION PENDING** — intended source behavior exists and applicable automated/static checks pass; relevant engine/device/human evidence remains unmeasured.
+- **VERIFIED** — the required evidence for the stated claim passed.
+- **DEFERRED** — intentionally lower priority or explicitly postponed.
+- **BLOCKED — <concrete reason>** — implementation cannot safely/correctly proceed for a named reason.
 - **HISTORICAL** — provenance only.
 
-Source-complete work remains built even when manual evidence is pending. Pending evidence does not become proof, but it also does not freeze development.
+Source-complete work remains built when manual evidence is pending. Pending evidence is not proof, but it is also not a source-development freeze.
 
-## Patch progression rule
+Development-coverage states are separate. `substantial` coverage does not equal `VERIFIED`.
 
-Patch boundaries are **organizational milestones, not source locks**.
+## Valid blockers
 
-When a patch's coherent source scope is built and automated validation is green, agents may proceed to the next patch while the earlier patch remains **BUILT — VERIFICATION PENDING**.
+A task may be blocked by a concrete condition such as:
 
-If later manual evidence finds a concrete defect, that defect immediately preempts new expansion and becomes the highest-priority FIX until the invalid assumption is repaired.
+- a known server-authority/security defect downstream work would depend on;
+- durable player data can be corrupted, duplicated, lost, blanked, or irreversibly migrated;
+- a required canonical owner/interface is missing or known broken and cannot be safely defined;
+- a known lifecycle/state-delivery failure makes dependent implementation incorrect;
+- an irreversible persistence/security cutover needs runtime proof before a dependent step;
+- applicable deterministic validation is red in a way that invalidates the work;
+- a real runtime observation already exposed a reproducible failure;
+- a direct branch/owner conflict cannot be isolated safely.
 
-This creates two simultaneous lanes:
+**Not a blocker by itself:** “ordinary Studio/device/manual verification has not been run yet.”
+
+## Patch progression
+
+Patch boundaries are organizational/product milestones, not global source locks.
+
+- The execution dashboard chooses the current lane.
+- A coherent source layer may proceed while earlier manual evidence remains pending when dependencies are safe.
+- If later evidence exposes a real defect, that defect immediately preempts dependent expansion.
+- Do not resurrect old patch queues, old PR numbers, or old “next task” text from dated documents after the dashboard has moved on.
+
+This creates two conceptual lanes:
 
 ```text
-SOURCE LANE: 0.2 → 0.3 → 0.4 → ... continuously when safe
-EVIDENCE LANE: grouped Studio/device/play passes → VERIFIED promotions / concrete FIXes
+SOURCE: current dashboard task → next dependency-safe source work
+EVIDENCE: grouped Studio/device/play checks → VERIFIED promotions or concrete FIXes
 ```
 
-The evidence lane can lag the source lane. Status labels must make that lag explicit.
+The evidence lane can lag. Status labels make the lag explicit.
 
 ## Implementation freedom with scope discipline
 
-Agents may continue to later roadmap areas when prior source work is coherent and doing so is dependency-safe. Prefer, in order:
+Build-through is not permission for giant speculative breadth.
 
-1. current/next patch player value;
-2. known blocker removal;
+Prefer:
+
+1. current dashboard defects/tasks;
+2. player value and dependency removal;
 3. reusable canonical owners/interfaces;
-4. data-driven conversion that reduces future implementation cost;
-5. focused regression/tooling improvements that protect imminent work.
+4. data/configuration seams that reduce future implementation cost;
+5. focused regression/tooling improvements that protect imminent work;
+6. broad taxonomy gaps only after the above are considered.
 
-Removing locks is not permission for giant speculative breadth. Broad unrelated systems remain lower priority unless they remove a real dependency or become the current roadmap target.
+For exhaustive cross-system requests, classify gaps through `LK-001`–`LK-300`, then route them into existing owners. Do not turn the taxonomy into 300 parallel projects.
 
 ## Manual evidence policy
 
-Manual Studio/device/play testing remains valuable for facts source validation cannot establish: game feel, actual device input, streaming, Terrain/world composition, live timing, audio/visual readability, multiplayer timing, memory/performance, and publishing behavior.
+Studio/device/play testing remains valuable for:
 
-However, these checks are normally **evidence obligations**, not permission gates.
+- game feel;
+- actual input/device behavior;
+- Terrain/world composition;
+- streaming/live timing;
+- multiplayer behavior;
+- performance/memory/network profiling;
+- animation/assets;
+- audio/lighting;
+- publishing configuration.
 
-When evidence can be run:
+When evidence runs:
 
-- passing results promote applicable work to **VERIFIED**;
-- reproducible failures become immediate FIX tasks;
-- incomplete/unavailable evidence leaves work **BUILT — VERIFICATION PENDING** while source development continues.
+- passing results may promote the supported claim to **VERIFIED**;
+- reproducible failures become immediate FIX candidates;
+- unavailable/incomplete evidence leaves source work **BUILT — VERIFICATION PENDING** when appropriate.
 
-Early runtime evidence is mandatory only when continuing would knowingly risk irreversible data/security damage or depend on an engine fact that cannot be bounded safely by source/tests.
+Earlier evidence is mandatory only when continuing would knowingly risk irreversible/high-consequence harm or depend on an engine fact that cannot be safely bounded by source/tests.
 
 ## Automated validation remains mandatory
 
-For every implementation change, run all applicable non-manual checks available in the environment, including as relevant:
+Run the risk-appropriate repository gate before merge. Continuous build-through never means stacking known deterministic breakage.
 
-- repository/layout and roadmap-authority validators;
-- efficiency-construct validation;
-- StyLua/Selene;
-- Lune/unit/regression tests;
-- Rojo builds;
-- content/reference/schema validators;
-- server-authority/security tests;
-- deterministic/seeded tests;
-- migration/persistence validation.
-
-Known deterministic failures must be fixed or concretely bounded. Continuous build-through does not permit stacking known automated breakage.
-
-## Agent task-selection rule
-
-When asked to continue or implement the roadmap:
-
-1. fetch current `main`;
-2. inspect open PRs for overlap;
-3. identify the highest-ROI current/next roadmap capability;
-4. check for a **known concrete** safety/authority/data/lifecycle failure;
-5. fix such a failure first when present;
-6. otherwise implement the smallest coherent source increment;
-7. run applicable automated validation;
-8. merge successful work;
-9. mark manual/engine evidence pending rather than stopping;
-10. proceed to the next task or patch;
-11. repeat until roadmap work is exhausted or a real named blocker makes further implementation unsafe/impossible.
-
-Do not stop merely because a Studio pass, playtest, device pass, patch exit question, or experiential acceptance question remains unanswered.
-
-## Relationship to older STOP / PLAY / FIX language
-
-STOP / PLAY / FIX remains useful as a **debugging response after an actual failure is known**, not as an automatic phase lock.
-
-Correct interpretation:
-
-```text
-no known failure + source validation green → KEEP BUILDING
-manual evidence pending → TRACK PENDING, KEEP BUILDING
-real reproducible failure discovered → STOP DEPENDENT EXPANSION, FIX, THEN CONTINUE
+```bash
+python scripts/validate.py docs
+python scripts/validate.py fast
+python scripts/validate.py full
 ```
 
-Any older roadmap text that says the next patch “must not begin” solely because the previous patch lacks manual evidence is superseded by this policy.
+## Relationship to STOP / PLAY / FIX
 
-## Success condition
+STOP / PLAY / FIX is a useful response to a **known** failure, not an automatic phase ceremony.
 
-This policy is working when agents can continuously implement, validate, merge, and compound progress across the roadmap without artificial manual-testing handoffs, while runtime truth remains honest through BUILT — VERIFICATION PENDING / VERIFIED separation and genuine safety failures still preempt expansion.
+```text
+no known failure + automated gate green → KEEP BUILDING
+manual evidence pending → TRACK PENDING, KEEP BUILDING
+real reproducible failure → STOP DEPENDENT EXPANSION, FIX, VALIDATE, CONTINUE
+```
+
+## Agent rule
+
+When asked to continue:
+
+1. fetch current main and inspect open PRs for freshness/overlap;
+2. read the dashboard;
+3. fix a concrete blocker if present;
+4. otherwise implement the smallest coherent selected increment;
+5. run required automated validation;
+6. merge when green within WIP rules;
+7. record manual/engine evidence truthfully;
+8. update dashboard/coverage only if their truth materially changed;
+9. continue rather than inserting an artificial manual handoff.
+
+> **Built means source truth. Verified means evidence truth. Neither word should be used to fake the other.**

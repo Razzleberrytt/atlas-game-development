@@ -13,9 +13,11 @@ Always read:
 
 Load other authority **only when relevant**:
 
+- documentation/coherence work → `../../docs/README.md`
 - product/design conflict → `../../docs/bible/00-current-product-authority.md`
 - detailed current-patch acceptance → `../../docs/roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md`
 - long-range scope lookup → `../../docs/roadmap/MASTER-ROADMAP.md`
+- broad development coverage / gap classification → `../../docs/architecture/DEVELOPMENT_TAXONOMY.md`, `../../docs/architecture/DEVELOPMENT-ATLAS.md`, `../../config/coverage/living-kingdoms-development.json`
 - repeated feature/content extension or implementation friction → `../../docs/production/EXTENSION-COST-MODEL.md`
 - gameplay modifier/effect ownership → `../../docs/production/EFFECT-OWNER-ROUTING.md`
 - broader leverage decision → `../../docs/roadmap/DEVELOPMENT-FLYWHEEL.md` and `../../docs/production/ENGINEERING-EFFICIENCY-OPS.md`
@@ -29,7 +31,7 @@ Do not preload every roadmap/specification for a routine isolated change.
 
 ## Execution cadence
 
-Follow dashboard NOW/NEXT/LATER. Inspect open PRs before starting. Do not duplicate overlapping work.
+Follow dashboard NOW/NEXT/LATER. Inspect open PRs before starting. Do not duplicate overlapping work, and do not assume an old open PR is current merely because it remains open; re-check its base, overlap, contracts, and validation first.
 
 Implementation may continue through dependency-safe increments after automated validation. Do not require a Studio handoff after every small merge. At coherent player-facing milestones, run the integrated Studio/playtest/debug/replay pass and mark VERIFIED only after evidence passes.
 
@@ -45,11 +47,14 @@ A known runtime failure, unsafe authority assumption, persistence risk, or concr
 - **BLOCKED — <reason>** — a concrete dependency/safety/runtime boundary prevents safe progress.
 - **HISTORICAL** — provenance only.
 
+Coverage ontology state is separate from patch status. A concern may be `substantial` in the development registry while player-facing Studio verification remains pending.
+
 ## Canonical layout
 
 ```text
 games/living-kingdoms/
 ├── default.project.json
+├── main-world.project.json
 ├── src/
 │   ├── client/
 │   ├── server/
@@ -60,7 +65,7 @@ games/living-kingdoms/
 └── imports/
 ```
 
-Rojo maps client → `StarterPlayerScripts/Client`, server → `ServerScriptService/Server`, shared → `ReplicatedStorage/Shared`. Mapping changes require migration notes, build validation, and Studio smoke evidence.
+Rojo maps client → `StarterPlayerScripts/Client`, server → `ServerScriptService/Server`, shared → `ReplicatedStorage/Shared` in the canonical operation project. `main-world.project.json` owns the dedicated Main World mapping. Mapping changes require migration notes, build validation, and Studio smoke evidence appropriate to the affected place.
 
 ## Authority boundaries
 
@@ -105,6 +110,26 @@ Avoid live-service coupling in pure shared modules.
 - Keep balance/configuration centralized under `src/shared/Config` when appropriate.
 - Preserve mobile/controller/accessibility behavior when changing controls or presentation.
 - Never invent asset, animation, product, place, universe IDs, or secrets.
+
+## Development coverage routing
+
+The 300-area taxonomy is a **coverage ontology, not a runtime decomposition**. Before a broad cross-system implementation or audit:
+
+```bash
+python scripts/development_coverage.py report
+```
+
+Then:
+
+1. identify the relevant `LK-###` concern(s);
+2. use the Development Atlas to identify the conceptual engine(s);
+3. search current source/capability/extension/effect registries for the real owner;
+4. extend that owner or stable data seam first;
+5. create a new owner only when a genuinely missing responsibility boundary exists;
+6. update the coverage registry only when the coherent change materially changes coverage/evidence;
+7. run `python scripts/development_coverage.py sync` after registry changes.
+
+Never create one service, module, metric, or registry per LK row merely to make the taxonomy look complete.
 
 ## Scaling / compounding rule
 
@@ -174,9 +199,10 @@ Do not delete or loosen an existing test merely because new code fails it unless
 ## Source/import rules
 
 - `src` is canonical runtime source.
-- `default.project.json` is canonical DataModel mapping.
+- `default.project.json` and `main-world.project.json` are canonical DataModel mappings for their places.
 - `tests` is regression coverage.
 - `imports` is preservation/reference, never an automatic replacement source tree.
+- development coverage metadata lives outside runtime source and never establishes gameplay truth.
 - Do not commit generated place/build artifacts.
 - Never overwrite `src` from an extracted Studio place without review and reconciliation.
 
@@ -198,15 +224,17 @@ Record source-complete work as **BUILT — VERIFICATION PENDING** until applicab
 
 ## Completion checklist
 
-- [ ] current dashboard and open PR overlap checked
+- [ ] current dashboard and open PR overlap/base freshness checked
 - [ ] smallest coherent high-ROI increment selected
+- [ ] relevant LK coverage concerns classified for broad cross-system work
 - [ ] registered extension contract used when adding a repeated family variant
 - [ ] effect owner route checked when wiring a reusable gameplay modifier
 - [ ] extension-cost budget checked or deliberate semantic escalation explained
 - [ ] authority boundaries preserved
 - [ ] focused regression coverage added/updated
+- [ ] development coverage registry updated only if material coverage/evidence changed
 - [ ] correct validation profile passed
 - [ ] Studio-only claims reported truthfully
-- [ ] roadmap updated only if meaningful status/next-task truth changed
+- [ ] roadmap/dashboard updated only if meaningful status/next-task truth changed
 - [ ] no generated artifacts or secrets committed
 - [ ] completion report names status, pending evidence, blocker if any, and next task

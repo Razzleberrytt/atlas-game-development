@@ -1,494 +1,305 @@
-# Atlas — Playable MVP + Patch Execution v2.10
+# Atlas — Playable Patch Scope v3.0
 
-**Status:** CURRENT EXECUTION-SEQUENCING AUTHORITY  
-**Adopted:** 2026-08-08  
-**Refreshed:** 2026-08-09  
-**Scope:** Product implementation order after and around the active v2.7 runtime stabilization gate.  
-**Supersedes for sequencing:** any older roadmap interpretation that would build broad future systems before the next playable checkpoint.  
-**Does not supersede:** accepted runtime evidence, current Roblox platform behavior, Blueprint v2.7 runtime safety/rollout requirements, canonical ownership/security rules, or explicit architecture decisions.
+**Status:** CURRENT PLAYER-FACING PATCH SCOPE  
+**Refreshed:** 2026-08-16  
+**Purpose:** define what each playable product layer is trying to achieve without competing with the execution dashboard.  
+**Current task selection:** [`EXECUTION-DASHBOARD.md`](EXECUTION-DASHBOARD.md).
 
-## Why this document exists
+This document is a **product sequencing map**, not a live task queue. Dated implementation narration, old PR numbers, and superseded “next task” instructions belong in Git history, evidence packets, or historical docs—not in current patch authority.
 
-Atlas already has a complete long-range roadmap. The problem is not lack of scope; it is execution shape.
+## Authority relationship
 
-The game must become playable early, stay playable, and grow through small upgrade patches that can be tested and debugged in isolation. A future system being fully specified does not make it higher priority than the next playable checkpoint.
-
-The controlling production rule is now:
-
-> **Always leave Atlas playable. Build the smallest complete loop, test it, fix it, then add one coherent layer.**
-
-## Precedence rule
-
-For implementation sequencing, use this order:
+Use:
 
 ```text
 accepted runtime evidence / current Roblox platform behavior
-→ Blueprint v2.7 + Production Core v2.7 while the active stabilization/rollout gate remains open
-→ PLAYABLE-MVP-PATCH-EXECUTION.md (this document)
-→ Current Product Authority + MASTER-ROADMAP.md for product direction and complete scope inventory
-→ Active Place Rollout + Cross-System Traceability + production controls
-→ accepted current specifications / architecture decisions
-→ specialist visual/environment/Studio guidance
-→ historical charters, pivots and older roadmaps
+→ canonical source + repository configuration
+→ Current Product Authority for product identity
+→ Parallel Development Policy for work eligibility
+→ Execution Dashboard for NOW / NEXT
+→ Automated-First + Build-Through policies for cadence/status
+→ this document for player-facing patch intent
+→ Master Roadmap for long-range scope
+→ specialist specifications / architecture / production controls
 ```
 
-This means:
+The dashboard may select a defect, maintenance lane, dependency, migration, evidence task, or tooling task between numbered product patches when that is the highest-ROI safe work.
 
-- v2.7 may still block unsafe runtime activation;
-- once work is eligible, this document decides **which playable slice comes first**;
-- `MASTER-ROADMAP.md` remains the complete destination and requirement inventory, but its later phases may not leapfrog the playable patch order below;
-- build-ahead work should preferentially prepare the **next playable patch**, not whichever future system is easiest to implement;
-- agents must not use a detailed future specification as permission to expand breadth early.
+## Patch law
 
-## Global patch law — STOP / PLAY / FIX
-
-Every playable milestone and upgrade patch ends at a hard gate:
-
-1. **STOP** — do not begin the next patch while a known blocker prevents the current build from being played end to end.
-2. **PLAY** — run the current representative loop in Studio using the applicable evidence checklist.
-3. **FIX** — repair regressions, lifecycle failures, broken transitions, unreadable gameplay, progression/reward faults, or severe performance defects before expansion.
-4. **REPLAY** — prove the loop can be repeated, not merely completed once.
-5. **THEN EXPAND** — only after the patch exit gate is satisfied does the next patch become runtime-eligible.
-
-Static validation remains required, but static validation does not replace Studio/runtime evidence for playable claims.
-
-**Build-through clarification:** an unrun consolidated Studio/device pass is not, by itself, a source-development stop. When the current milestone is source-complete and marked **BUILT — VERIFICATION PENDING**, agents may continue dependency-safe work into the next patch under `MVP-BUILD-THROUGH-TESTING-POLICY.md`. A known runtime failure, broken authority boundary, or evidence result that invalidates current assumptions *does* preempt later-patch work and returns priority to FIX.
-
-## Patch design rules
-
-Each patch should:
+Every patch should:
 
 - add one coherent player-facing layer;
-- preserve the previous patch's end-to-end loop;
-- include regression coverage for the previous playable baseline;
-- avoid unrelated architectural rewrites;
-- keep server authority and canonical ownership intact;
-- use temporary/minimal implementations where they are sufficient to test the player loop;
-- defer breadth until the underlying loop proves it deserves expansion;
-- record exact known limitations instead of hiding unfinished scope behind polish.
+- preserve the playable baseline unless an explicit migration replaces it;
+- keep valuable game truth server-owned;
+- reuse canonical owners rather than creating parallel systems;
+- prefer data/configuration for repeated content families;
+- include focused automated regression coverage;
+- keep failure/recovery paths diagnosable;
+- state manual/Studio facts as unmeasured until evidence exists;
+- remain small enough to debug and roll back coherently.
 
-A patch is not complete because its code merged. It is complete when its intended player-facing result is playable and its required evidence is recorded.
+A patch is not `VERIFIED` merely because code merged. A source-complete patch may be **BUILT — VERIFICATION PENDING** while evidence catches up.
 
-# Gate 0 — Runtime stabilization + world audit
-
-**Status:** ACTIVE / PARTIALLY COMPLETE
-
-Before MVP runtime activation:
-
-- finish the dependency-safe Blueprint v2.7 rollout/stabilization work required for a trustworthy playable baseline;
-- preserve the accepted R1 rollback checkpoint and subsequent evidence chain;
-- close required listener/presentation/lifecycle blockers rather than building around them;
-- use the completed BA-010 Main World/environment audit and its follow-up specifications to decide what world content is kept, refined, rebuilt, replaced, removed, or added;
-- do not require the final Main World before MVP 0.1 — only the smallest coherent preparation/return surface needed for the complete run.
-
-**Gate 0 exit:** Atlas has a trustworthy runtime baseline on which a complete player loop can be assembled without knowingly depending on broken state delivery, presentation ownership, or lifecycle behavior.
-
-# MVP 0.1 — First Complete Run
-
-**Priority:** HIGHEST PLAYER-FACING PRIORITY AFTER GATE 0
-
-Target player loop:
+## Product path
 
 ```text
-spawn / arrive
-→ breathe in a safe home/preparation space
-→ orient and choose a humble starting path
-→ deliberately launch one seeded expedition
-→ explore a readable route and optional discovery
-→ fight several encounter types
-→ collect loot through clear world interaction and make reward decisions
-→ defeat an elite
-→ reach and defeat one boss / terminal encounter
-→ receive result/reward
-→ return to safety and bank eligible progress
-→ equip, unlock or apply an upgrade
-→ start another run
+MVP 0.1  first complete repeatable run
+0.2      combat feel + readability
+0.3      loot + build replayability
+0.4      RPG progression
+0.5      Main World + environment
+0.6      procedural/systemic replayability
+0.7      durable persistence hardening
+0.8      co-op/social/session expansion
+0.9      content expansion + production pipeline
+RC       production hardening
+1.0      release
+LIVE     measured upgrade patches
 ```
 
-Target first-run duration: roughly **5–10 minutes**, adjustable after play evidence.
+This sequence expresses product layering, not a claim that the dashboard is currently executing the next number in the list.
 
-## Minimum viable scope
+# MVP 0.1 — First Complete Repeatable Run
 
-Use the smallest coherent implementation that proves the loop. Prefer existing working systems when available.
+**Goal:** prove the complete core loop with the smallest coherent implementation.
 
-Minimum target content:
+Target loop:
 
-- one compact preparation/Main World bridge surface;
-- one expedition launch path;
-- a real safe-arrival beat before hostile pressure begins;
-- one authored outdoor/route segment;
-- one small repeatable dungeon/encounter sequence;
-- roughly three distinct enemy tactical questions/families or equivalent encounter roles;
-- one elite;
-- one boss/terminal encounter;
-- two or three meaningfully distinct weapon/build choices;
-- basic abilities where required by the current combat identity;
-- health, failure, recovery/retry and return flow;
-- run-loss rules that remove unbanked loot/temporary power without erasing achievements, discoveries or unlocked starting options;
-- basic randomized or choice-based loot/rewards;
-- direct contextual world interaction (`E` on keyboard plus native controller/touch support) with server-owned reward validation;
-- minimal equipment/loadout handling;
-- minimal inventory sufficient for the loop;
-- minimal progression sufficient to make the second run meaningfully different;
-- minimal safe persistence only for state that must survive the test/rejoin loop;
-- basic 1–4 player support only to the extent required by current co-op foundations and evidence gates;
-- at least one optional discovery/secret or equivalent curiosity reward.
+```text
+safe arrival
+→ orient / prepare
+→ humble starting path
+→ deliberate expedition launch
+→ explore + fight
+→ discover/earn gear
+→ loot/reward decision
+→ elite
+→ boss / terminal encounter
+→ result
+→ return
+→ bank/equip/upgrade
+→ replay
+```
 
-The opening power curve should begin with a humble melee-capable path and make firearms feel discovered or earned. Do not fake it by assigning firearm ammunition/state contracts to a melee item.
+Minimum product qualities:
 
-**Opening implementation status (2026-08-09): BUILT — VERIFICATION PENDING.** Fresh operatives now begin in a server-owned `Melee` primary-combat mode with a distinct Field Hatchet contract, damage path, mouse/R2/touch primary-attack routing, truthful HUD state and first/third-person presentation. Firearm evaluation, fire and reload are rejected server-side while melee. Each operative's first personally opened survival chest stages the humble Service Pistol recovery through the existing found-weapon authority; successful recovery switches the server-owned mode to `Firearm`, while the stronger shotgun/SMG/LMG/sniper discovery pool remains available afterward. Deliberate replay resets combat mode, hidden firearm runtime state and survival loot so the opening can repeat cleanly. Automated repository validation is green; consolidated Studio/device evidence is still required before this opening is `VERIFIED`.
+- a safe preparation/return surface;
+- deliberate expedition start;
+- readable exploration/combat route;
+- several distinct tactical enemy questions;
+- meaningful loot/reward interaction;
+- elite + terminal/boss outcome;
+- failure stakes that forfeit unbanked run value without erasing durable identity;
+- replay that resets temporary run power cleanly;
+- device-neutral critical interaction paths;
+- server-owned rewards/combat/progression consequences;
+- enough variation or discovery to create a reason for another run.
 
-Use a reproducible server-owned run seed immediately where it helps identity and debugging. MVP 0.1 needs only one readable variation seam; broad modular route/encounter generation remains Patch 0.6 scope.
-
-Existing horde/director systems may provide roaming pressure and authored encounter events, but numbered-wave or tower-defense presentation is not part of the target player experience.
-
-Do **not** block MVP 0.1 on broad crafting, a full economy, a huge skill tree, multiple regions, hundreds of items, full matchmaking, final overworld art, or launch monetization.
-
-## MVP 0.1 acceptance questions
-
-- Can a fresh tester understand how to start?
-- Can they complete the loop without developer intervention?
-- Does the return flow work reliably?
-- Can the loop be repeated in the same session?
-- Does a reward or build decision create a reason to try again?
-- Are combat, objectives and navigation readable enough to diagnose fun rather than confusion?
-- Does the HUD show only information useful to the player's current decision?
-- Can keyboard, controller and touch players collect world loot without a separate click-only inventory overlay?
-- Does death create meaningful run stakes while preserving durable RPG identity?
-- Does every generated variation remain readable, navigable and winnable?
-
-**Primary product signal:** a tester voluntarily chooses to start another run.
-
-## MVP 0.1 implementation checkpoint — 2026-08-09
-
-**Status: [~] BUILT — CONSOLIDATED VERIFICATION PENDING.** The planned MVP 0.1 source loop is now end-to-end implemented; the milestone is not promoted to VERIFIED/accepted until the consolidated exact-build Studio/device pass succeeds.
-
-- [x] Supply-chest loot uses one native `E` / controller / touch prompt and keeps every loot consequence server-owned.
-- [x] The click-only item remote, chest-card overlay, always-on survival/backpack surfaces and wave-style threat strip are removed from ordinary play.
-- [x] Discovered-weapon equip replaces the immutable ammunition snapshot without changing combat authority.
-- [x] Contextual run-upgrade and relic rewards support cursor, keyboard and selection-focus input; the premature persistent skill-tree entry point is paused while its authoritative topology remains intact.
-- [x] Standard pressure uses fewer, faster Exclusion Stalkers with direct long-range pursuit and introduces the ranged Blight Spitter earlier instead of filling the route with repeated roaming wolves.
-- [x] The operation has a warm, saturated morning baseline plus bounded fern, wildflower, mushroom and leaf-litter detail. The existing night-corruption owner remains intact but is held behind its explicit runtime flag until daytime Studio acceptance.
-- [x] Server-confirmed firearm presentation now adds weapon-specific camera/FOV response while preserving server ownership of shots, cadence, ammunition, targeting and damage.
-- [x] Mission/horde pressure now stays dormant until the player deliberately launches an expedition from the Forward Operations Hub; `MissionDirectorService`/`HordeExperienceService` still `start()` unconditionally at boot (preserving every existing boot-order and replay-restart invariant), but their pressure-producing paths wait for `armPressure()`, released only by the existing lobby launch flow. Source-audited by `tests/SafeArrivalLaunchBoundarySourceAudit.test.luau`; a fresh literal-keypress Studio reconfirmation on this exact corrected build is still open (see the evidence note below).
-- [ ] The exact build still needs a first-person Studio pass for upgrade input, firearm response, Stalker/Spitter pressure, biome composition, elite → terminal encounter → return → upgrade → replay, and representative performance.
-- [x] BA-061/BA-062 source remediation is implemented for the audited combat/input gaps: primary attack is device-neutral across mouse, gamepad R2 and generated touch; reload, sprint and revive have controller paths; and the audited `E` / `ButtonX` prompt collisions were removed. This is **BUILT — VERIFICATION PENDING** at the device-evidence layer: no keyboard/controller/touch hardware pass is claimed yet.
-- [x] BA-062 **M6** closes the hint-text half of the same finding. Fixing the bindings had left the HUD still instructing every player in keyboard keys: the combat control strip read `MOVE WASD • INTERACT / PICK UP E • RELOAD R • FLASHLIGHT F`, and both reward surfaces told the player to press numbers. The control strip, the run-upgrade offer and the relic offer now resolve their hints from the canonical action map per device family through the shared `InputHintPresentationResolver`, which reports absence rather than inventing a shortcut, so a controller player is no longer told to press keys their device does not have. The combat HUD re-renders on device switch. Locked by `tests/DeviceAdaptiveHudHintSourceAudit.test.luau` and `tests/InputHintPresentationResolver.test.luau`; **BUILT — VERIFICATION PENDING** at the device layer, and token wording/on-screen placement remain unverified.
-- [x] The humble melee → earned-firearm opening is implemented without masquerading as firearm state: Field Hatchet combat has its own server-authoritative contract/target/damage path, fresh players start in melee mode, forged firearm fire/reload is rejected while melee, the first personal survival chest recovers the Service Pistol through the existing found-weapon owner, stronger firearm discoveries remain available, and deliberate replay restores the melee opening. This is **BUILT — VERIFICATION PENDING** pending the consolidated Studio/device pass.
-- [x] Failed and abandoned expeditions now forfeit claimed-but-unbanked equipment; only server-derived `Completed` outcomes distribute/persist expedition equipment, and the debrief labels forfeited versus banked gear truthfully.
-- [x] Deliberate replay clears temporary run power — Run Relics, upgrade stacks, Field XP/level, pending choices, run-only stats, combat modifiers, opening loot and firearm runtime — while preserving durable inventory/discoveries and monotonic client transport counters.
-- [x] Durable inventory now has a live session lifecycle for full-length runs: load/acquire on join, renewal inside the lease window, release on leave and final release on shutdown.
-- [x] Banked equipment is no longer inert: the owner can equip an owned durable item under the existing inventory authority, and the next deliberate launch resolves its authored equipment definition to the trusted combat `WeaponId` after fresh-run reset and before pressure arms.
-- [x] The existing RPG menu now consumes the sanitized durable inventory snapshot, shows equipped Primary/Secondary/Armor/Relic gear plus rarity/power, and uses device-neutral `Activated` input to submit only the owned `InstanceId`; server-pushed inventory state remains the truth after equip.
-
-Exact-build evidence for the completed interaction/HUD slice is recorded in
-[`../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md`](../production/evidence/2026-08-08-mvp01-direct-loot-interaction.md).
-The safe-arrival launch boundary (PR #252) was accepted on source/fixture
-evidence only per `../roadmap/MVP-BUILD-THROUGH-TESTING-POLICY.md` — it is an
-ordinary implementation increment, not a client/server trust-boundary change —
-and has not yet had a dedicated Studio keypress-level rerun; that remains part
-of the consolidated MVP 0.1 integration pass below.
-The 2026-08-09 first-run repair attempt is intentionally recorded as `INVALID`
-because the exact Studio window did not register with the enabled bridge:
-[`../production/evidence/2026-08-09-mvp01-first-run-repair-studio-bridge-blocked.md`](../production/evidence/2026-08-09-mvp01-first-run-repair-studio-bridge-blocked.md).
-
-**Next highest-ROI MVP 0.1 task:** there is no known missing source feature required to complete the planned MVP 0.1 loop. The next milestone task is the **consolidated exact-build Studio/device STOP / PLAY / FIX pass** across spawn → preparation → launch → explore → fight → loot/reward → elite → boss → result → return → bank/equip → replay, including keyboard/controller/touch and representative performance. Until that pass can run, `MVP-BUILD-THROUGH-TESTING-POLICY.md` authorizes dependency-safe **Patch 0.2 Combat Feel + Readability** source work; do not invent new MVP 0.1 scope merely because verification is pending. As of this refresh, PR #316 is the existing overlapping Patch 0.2 melee-presentation branch and must be inspected/rebased/validated before starting duplicate work. Any actual Studio/device failure found in the consolidated pass immediately preempts Patch 0.2 and becomes the highest-priority MVP 0.1 FIX.
-
-**Studio bridge status — 2026-08-09.** The consolidated pass still could not be
-started. The MCP proxy reconnects, but reports no registered Studio instance
-(`list_roblox_studios` returns an empty set and `get_studio_state` errors), which
-is the same environmental blocker that made the first-run repair attempt
-`INVALID`. This is a tooling/environment blocker, not a source blocker. No
-Studio, device, runtime or performance claim may be made until a Studio window
-registers and a fresh evidence packet is recorded against an exact
-build/commit/place identity.
+**Current interpretation:** the source loop has extensive implementation history and remains subject to truthful evidence status. Do not resurrect old MVP 0.1 “next task” text; consult current source, dashboard, and evidence.
 
 # Patch 0.2 — Combat Feel + Readability
 
-**Current source-safe upgrade lane while MVP 0.1 awaits consolidated verification.** Do not interpret this as MVP 0.1 being VERIFIED; build-through work remains subordinate to any real failure discovered by the pending exact-build pass.
+**Goal:** make the loop satisfying and legible moment to moment.
 
-**Goal:** make the already-playable loop satisfying to control and understand.
+Focus:
 
-Prioritize:
-
-- responsiveness and input feel;
-- weapon differentiation;
-- hit/impact feedback;
-- enemy reactions;
-- reload/attack cadence readability;
-- movement/combat flow;
+- responsive input/movement/combat cadence;
+- weapon identity and differentiation;
+- melee/ranged feedback;
+- hit/impact/damage/death punctuation;
+- enemy reactions and telegraphs;
+- elite/boss readability;
 - ability feedback;
-- enemy telegraphs;
-- weak points or equivalent tactical targets where appropriate;
-- elite readability;
-- boss mechanic readability;
-- combat audio/VFX polish;
-- damage/death/reward punctuation;
-- relevant presentation accessibility controls.
+- camera/HUD combat clarity;
+- device/accessibility presentation;
+- audio/VFX feedback without obscuring tactical information.
 
-**Delivered so far (BUILT — VERIFICATION PENDING):**
-
-- **Elite readability.** `EliteAffixResolver` had been assigning affixes and
-  `EnemyDirectorService` had been disclosing them on the enemy model
-  (`EnemyEliteAffixId`, `EnemyEliteDisplayName`, `EnemyEliteArmorRemaining`), but
-  no client surface read any of it — an elite was visually identical to trash and
-  the player had no way to know which enemy deserved attention.
-  `EliteReadabilityController` now renders a bounded pool of world-space
-  nameplates naming the affix, why it is dangerous, and the disclosed armor
-  remaining. Server authority is unchanged; the client never infers an elite, and
-  meaning is never carried by colour alone.
-
-**Exit question:** is the same MVP run substantially more enjoyable because fighting itself feels good?
+Exit intent: players understand why combat outcomes happened and controls feel deliberate rather than mushy or noisy.
 
 # Patch 0.3 — Loot + Build Replayability
 
-**Goal:** create a strong reason to replay the proven combat loop.
+**Goal:** make successive runs tactically different because of item/build decisions.
 
-Add only as much depth as can be evaluated clearly:
+Focus:
 
-- item/upgrade rarity or quality bands;
-- randomized stats or bounded affixes where appropriate;
-- meaningful weapon/build rolls;
-- armor/equipment only where it improves decisions;
-- basic set/synergy concepts if they create distinct playstyles;
-- strong reward presentation;
-- comparison/equip flow;
-- inventory improvements required by the new decisions;
-- dismantle/sell/salvage only if a coherent owner/value model already exists;
-- boss/elite reward identity.
+- item identity/rarity/power clarity;
+- equipment slots and comparison;
+- deterministic affix/modifier architecture;
+- meaningful reward choices;
+- run-build synergies;
+- loot generation/distribution fairness;
+- server-authoritative equip/dismantle/reward flow;
+- compact inventory UX;
+- replay motivation driven by choices, not only larger numbers.
 
-**Exit question:** does the player want another run because they are curious about or pursuing a better/different build?
+Exit intent: players can explain how two runs/builds differed and why they want another attempt.
 
 # Patch 0.4 — RPG Progression
 
-**Goal:** make Atlas feel meaningfully RPG-like without burying the proven run loop.
+**Goal:** add durable identity and progression without erasing skill or expedition difficulty.
 
-Candidate scope:
+Focus:
 
-- XP/rank progression;
-- bounded long-term unlocks;
-- archetype/class progression;
-- ability/skill choices;
-- stat or side-grade progression where justified;
-- world/activity unlocks;
-- quests and NPC interactions;
-- introductory crafting/gathering only if the canonical economy/inventory boundaries are ready;
-- achievements/challenges/codex progress.
+- character identity/levels/ranks where justified;
+- classes/archetypes/side-grades;
+- stats/talents/skill mapping;
+- loadouts and unlocks;
+- discoveries/codex/achievements;
+- bounded durable power;
+- respec/recovery rules;
+- progression presentation;
+- secure persistence through existing durable owners.
 
-Prefer a small testable progression map over a huge skill tree.
+Exit intent: long-term progress expands choices and identity more than it inflates mandatory power.
 
-**Exit question:** does progression create anticipation between runs without making the current gameplay obsolete?
+# Patch 0.5 — Main World + Environment
 
-# Patch 0.5 — Main World + Environment Expansion
+**Goal:** turn the safe home into a memorable, readable, expandable place rather than a menu or giant empty map.
 
-**Goal:** turn the preparation bridge into a memorable, readable home without sacrificing iteration speed.
+Focus:
 
-Use BA-010 and subsequent world specifications as the source for environment decisions.
+- authored Main World topology;
+- districts/biomes/landmarks;
+- route readability and redundancy;
+- safe arrival/orientation;
+- preparation/social/NPC surfaces;
+- expedition entrances/return flow;
+- world/environment composition;
+- traversal support and measurable failure resilience;
+- lighting/atmosphere/audio;
+- streaming/performance readiness;
+- secrets/environmental storytelling.
 
-Expand deliberately through:
+Architectural direction:
 
-- arrival/re-entry readability;
-- landmark hierarchy;
-- Forward Operations Hub / authored overworld integration as authorized;
-- traversal routes and dead-travel reduction;
-- service/interaction placement;
-- environmental storytelling;
-- secrets/discovery;
-- dynamic/world encounters where useful;
-- terrain, vegetation, structures, props, lighting, atmosphere, VFX and audio;
-- streaming/performance-aware composition;
-- future expansion seams.
+**authored overworld / HubTown → canonical expedition launch → modern operation runtime → return**
 
-**Exit question:** does the world make players curious and help them understand where to go next?
+Exit intent: players can navigate by place identity and understand where to prepare, explore, and launch without developer guidance.
 
-# Patch 0.6 — Procedural / Systemic Replayability
+# Patch 0.6 — Procedural + Systemic Replayability
 
-**Goal:** multiply content without requiring one-off manual content at the same rate.
+**Goal:** multiply replayability without sacrificing authored readability or winnability.
 
-Candidate multipliers:
+Focus:
 
-- modular dungeon/route assembly;
-- encounter director improvements;
-- enemy variants;
-- elite modifiers;
-- affix/build combinations;
-- procedural or rotating objectives;
-- randomized encounter situations;
-- world events;
-- dungeon/run modifiers;
-- secret/room variation;
-- boss/miniboss variation where readable.
+- reproducible server-owned seeds;
+- modular route/dungeon assembly;
+- validated room/socket/layout contracts;
+- encounter/event variation;
+- loot/enemy/boss modifier variation;
+- bounded world-system variation;
+- generation diagnostics/reproduction keys;
+- navigability/winnability validation;
+- controlled failure/fallback behavior.
 
-Randomness must preserve navigation, objective and difficulty clarity.
+Exit intent: seeds create meaningfully different but debuggable runs, never incomprehensible random soup.
 
-Prefer seeded, server-owned assembly from curated rooms, routes, encounter groups and reward tables. Record enough seed/content identity to reproduce a bad run. Do not randomize the safe home, controls, core combat rules, progression math, story truth or reward authority.
+# Patch 0.7 — Durable Persistence Hardening
 
-**Exit question:** can the same content kit generate meaningfully different runs without becoming incoherent?
+**Goal:** make valuable durable state trustworthy across retries, replays, rejoin, crashes, migration, and multi-server ownership.
 
-# Patch 0.7 — Durable Persistence + Valuable State Hardening
+Focus:
 
-**Goal:** harden the systems that survived playable testing before scaling the amount of valuable data.
+- canonical durable ownership;
+- session leases;
+- idempotent valuable mutations;
+- replay/duplication resistance;
+- migrations/quarantine/recovery;
+- inventory/progression integrity;
+- lifecycle shutdown/rejoin behavior;
+- automated failure matrices and acceptance.
 
-Re-adopt the existing persistence quality work here, including as applicable:
-
-- durable inventory/progression ownership;
-- account/character progression boundaries;
-- currencies/unlocks that have proven product value;
-- versioned migrations;
-- capacity retry;
-- durable overflow/recovery;
-- session ownership;
-- duplicate/replay resistance;
-- sequential migrations;
-- quarantine/recovery paths;
-- unknown-write reconciliation;
-- no-blank-overwrite protection;
-- disconnect/rejoin correctness;
-- transaction idempotency for valuable mutations.
-
-**Exit question:** can players trust that meaningful progress survives real lifecycle failures?
+**Current status:** automated acceptance is closed for all non-deferred ranked rows: **86 / 100 implemented, 14 explicitly deferred**. The detailed machine proof lives in `../production/PATCH-0.7-ACCEPTANCE-MATRIX.json`. This patch is not the current live task queue.
 
 # Patch 0.8 — Co-op / Social / Session Expansion
 
-**Goal:** deepen the cooperative product after the core loop works solo and in basic multiplayer.
+**Goal:** make cooperative play reliable and easy to enter without weakening authority or lifecycle correctness.
 
-Candidate scope:
+Focus:
 
-- proper party formation/invites;
-- friend join;
-- readiness;
-- activity selection;
+- parties/invites/friend joins;
+- readiness and expedition selection;
 - public/private session policy;
 - matchmaking where justified;
-- late join/reconnect policy;
-- squad state and pings;
-- revive/co-op interaction refinement;
-- difficulty/scaling policy;
-- reward isolation/shared-credit rules;
-- deterministic return-to-hub behavior;
-- abuse/security boundaries.
+- reserved-server/teleport lifecycle;
+- reconnect/late-join rules;
+- party-scoped run identity;
+- revive/support/co-op scaling;
+- social presence/communication;
+- disconnect/ownership cleanup;
+- multi-run/session isolation.
 
-**Exit question:** is playing with other people easier, clearer and more fun than before without compromising authority or lifecycle stability?
+Exit intent: players can form, enter, complete, recover from disruption, and replay cooperative sessions predictably.
 
 # Patch 0.9 — Content Expansion + Production Pipeline
 
-**Goal:** scale only the systems that have earned expansion through earlier play evidence.
+**Goal:** prove Atlas can grow breadth without linear engineering cost or authority drift.
 
-Now increase breadth:
+Focus:
 
-- weapons;
-- archetypes/classes;
-- enemy families;
-- bosses;
-- dungeon kits;
-- regions/biomes;
-- quests/events;
-- gear sets/affixes;
-- abilities;
-- crafting/resource content where validated;
-- cosmetics/expression;
-- authoring tools, validators and reusable production pipelines.
+- reusable content registries/contracts;
+- enemies/weapons/items/affixes/classes/encounters as data-first families where mature;
+- quests/NPCs/vendors/crafting/gathering only where they serve coherent loops;
+- dungeon/world content factories;
+- validation for IDs/references/prerequisites/rewards/cycles/orphans;
+- extension-cost budgets;
+- content QA and observability;
+- production cadence tooling;
+- onboarding/retention/analytics surfaces needed before launch.
 
-Favor data-driven reusable production over bespoke feature piles.
+Exit intent: adding high-quality content usually extends stable seams instead of requiring new bespoke runtime authorities.
 
-**Exit question:** can the team add substantial new content without destabilizing the proven loop or multiplying maintenance cost unsafely?
+# RC — Production Hardening
 
-# Release Candidate 1.0 — Production Readiness
+**Goal:** turn the durable playable game into a release candidate.
 
-**Goal:** convert the proven, repeatedly upgraded game into a release candidate.
+Focus:
 
-This is where the broader Master Roadmap release work becomes primary:
-
-- onboarding/first-session polish;
-- representative device testing;
+- regression/acceptance closure;
 - performance/memory/network profiling;
-- accessibility;
-- exploit/security hardening;
-- production analytics and E7 readiness;
-- runtime configuration/feature flags/rollback;
-- safety/compliance;
-- localization readiness;
-- economy balance where applicable;
-- outside-player fun/repeat-intent validation;
-- ethical monetization only after the fun gate;
-- alpha/beta/soft-launch/production launch criteria.
+- device/accessibility closure;
+- exploit/security review;
+- DataStore/recovery readiness;
+- publishing/environment configuration;
+- analytics/incident diagnostics;
+- rollback/release procedure;
+- launch content/balance/readability polish;
+- monetization only when fair, secure, platform-compliant, and product-ready.
 
-A 1.0 candidate may not use unfinished breadth to hide a weak core loop.
+# 1.0 — Release
 
-# Post-1.0 — Live Upgrade Patches
+**Goal:** ship a coherent, trustworthy product with a measured live-operations loop.
 
-After release, continue the same development law:
+Release requires evidence appropriate to the claims being made. Source completion alone is not release proof.
 
-```text
-observe
-→ choose one coherent improvement
-→ implement
-→ validate
-→ play
-→ fix regressions
-→ release
-→ measure
-```
+# LIVE — Measured Upgrade Patches
 
-Potential post-launch patches may add zones, bosses, weapons, events, classes, progression branches, social features, challenge modes or seasonal content, but each must preserve the playable baseline and use live evidence rather than speculative breadth.
-
-# Relationship to Master Roadmap v2.8
-
-`MASTER-ROADMAP.md` remains the complete requirements and dependency inventory. Its phases are mapped into this execution order rather than deleted.
-
-Examples:
-
-- Main World/environment work maps primarily to Gate 0, MVP 0.1 and Patch 0.5;
-- party/social/session work maps to MVP-minimum needs and Patch 0.8;
-- persistence work maps to MVP-minimum safe state and Patch 0.7 hardening;
-- progression/economy/content work maps to Patches 0.3, 0.4, 0.6 and 0.9;
-- quality/device/performance work is continuous, with full release acceptance at 1.0;
-- outside-player fun becomes measurable at MVP 0.1 and progressively stronger in later patches;
-- analytics/ops/compliance/localization/monetization/launch remain later release gates unless a smaller prerequisite is explicitly required earlier.
-
-When there is ambiguity between "finish an entire Master Roadmap phase" and "finish the next playable patch," choose the smallest dependency-safe work that completes the next playable patch.
-
-# Agent task-selection rule
-
-When an agent is asked to "continue," "work on the roadmap," or "do the next thing":
-
-1. fetch current `main` and inspect related open PRs;
-2. identify whether Blueprint v2.7 still has a blocking stabilization dependency;
-3. if yes, perform the next dependency-safe blocker or safe preparation that directly enables the next playable checkpoint;
-4. otherwise identify the **current playable patch** in this document;
-5. choose the highest-ROI unfinished task required for that patch's exit gate;
-6. do not start later-patch breadth while a current-patch blocker is known;
-7. preserve prior patch regression tests and playable behavior;
-8. report the current patch, blocker, evidence produced, and next highest-ROI task.
-
-# Definition of execution success
-
-The roadmap is succeeding when Atlas becomes easier to test as it grows.
-
-The intended development rhythm is:
+Post-launch work follows observed player/runtime evidence rather than speculative breadth:
 
 ```text
-stable foundation
-→ playable MVP 0.1
-→ test/debug
-→ 0.2 combat patch
-→ test/debug
-→ 0.3 loot patch
-→ test/debug
-→ 0.4 progression patch
-→ test/debug
-→ 0.5 world patch
-→ test/debug
-→ 0.6 systemic replayability patch
-→ test/debug
-→ 0.7 persistence hardening
-→ test/debug
-→ 0.8 co-op/social expansion
-→ test/debug
-→ 0.9 content expansion
-→ release-candidate hardening
-→ 1.0
-→ measured live patches
+measure
+→ identify friction/opportunity
+→ classify LK concern(s)
+→ choose highest-ROI safe change
+→ implement/validate
+→ compare outcome
+→ keep/revise/rollback
 ```
 
-The game should never again require finishing a giant batch of unrelated roadmap systems before the team can meaningfully play, diagnose and improve it.
+## Scope accounting
+
+The patch path does not attempt to enumerate every development concern inline. Comprehensive cross-system coverage lives in:
+
+- `../architecture/DEVELOPMENT_TAXONOMY.md` (`LK-001`–`LK-300`);
+- `../architecture/DEVELOPMENT-ATLAS.md`;
+- `../../config/coverage/living-kingdoms-development.json`;
+- `../production/DEVELOPMENT-COVERAGE-REPORT.md`.
+
+Those documents expose gaps; the dashboard decides execution.
+
+## Historical implementation detail
+
+Old per-PR checkpoints, obsolete branch numbers, superseded “next highest-ROI task” statements, and dated Studio-environment incidents were deliberately removed from this current scope document. Their provenance remains available in Git history and evidence files. Do not copy them back into current patch authority unless they become current facts again.
+
+> **Patch scope says what good looks like. The dashboard says what we are doing now. Evidence says what is actually proven.**
