@@ -8,6 +8,8 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local NETWORK_WAIT_SECONDS = 20
+
 local Controller = {}
 local started = false
 local connection: RBXScriptConnection? = nil
@@ -34,9 +36,12 @@ function Controller.start()
 		return
 	end
 	started = true
-	local network = ReplicatedStorage:WaitForChild("ExpeditionNetwork")
-	local state = network:WaitForChild("State") :: RemoteEvent
-	local readState = network:WaitForChild("ReadState") :: RemoteFunction
+	local network = ReplicatedStorage:WaitForChild("ExpeditionNetwork", NETWORK_WAIT_SECONDS)
+	assert(network ~= nil, "ExpeditionNetwork did not become available before the client bootstrap timeout")
+	local state = network:WaitForChild("State", NETWORK_WAIT_SECONDS)
+	assert(state ~= nil, "ExpeditionNetwork.State did not become available before the client bootstrap timeout")
+	local readState = network:WaitForChild("ReadState", NETWORK_WAIT_SECONDS)
+	assert(readState ~= nil, "ExpeditionNetwork.ReadState did not become available before the client bootstrap timeout")
 	connection = state.OnClientEvent:Connect(apply)
 	local ok, snapshot = pcall(function()
 		return readState:InvokeServer()
