@@ -17,7 +17,10 @@ local function occurrenceCount(haystack: string, needle: string): number
 	end
 end
 
-assert(string.find(source, "local function ensureNetwork(", 1, true) ~= nil, "server bootstrap must use one network builder")
+assert(
+	string.find(source, "local function ensureNetwork(", 1, true) ~= nil,
+	"server bootstrap must use one network builder"
+)
 assert(
 	string.find(source, "local publishWhenComplete = false", 1, true) ~= nil,
 	"network builder must distinguish new folders from existing folders"
@@ -35,9 +38,15 @@ local eventLoop = string.find(source, "for _, remoteName in remoteEventNames do"
 local functionLoop = string.find(source, "for _, remoteName in remoteFunctionNames or {} do", 1, true)
 local publishGate = string.find(source, "if publishWhenComplete then", 1, true)
 local publish = string.find(source, "network.Parent = ReplicatedStorage", 1, true)
-assert(eventLoop ~= nil and functionLoop ~= nil and publishGate ~= nil and publish ~= nil, "atomic network stages must exist")
+assert(
+	eventLoop ~= nil and functionLoop ~= nil and publishGate ~= nil and publish ~= nil,
+	"atomic network stages must exist"
+)
 assert(eventLoop < functionLoop, "RemoteEvents must be constructed before RemoteFunctions are finalized")
-assert(functionLoop < publishGate and publishGate < publish, "network publication must happen only after child construction")
+assert(
+	functionLoop < publishGate and publishGate < publish,
+	"network publication must happen only after child construction"
+)
 
 for _, contract in
 	{
