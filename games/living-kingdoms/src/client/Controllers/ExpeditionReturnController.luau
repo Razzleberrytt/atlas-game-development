@@ -29,7 +29,10 @@ assert(
 local lobbyNetwork = ReplicatedStorage:WaitForChild("ExpeditionLobbyNetwork", NETWORK_WAIT_SECONDS)
 assert(lobbyNetwork ~= nil, "ExpeditionLobbyNetwork did not become available before the client bootstrap timeout")
 local lobbyRequest = lobbyNetwork:WaitForChild("Request", NETWORK_WAIT_SECONDS) :: RemoteFunction?
-assert(lobbyRequest ~= nil, "ExpeditionLobbyNetwork.Request did not become available before the client bootstrap timeout")
+assert(
+	lobbyRequest ~= nil,
+	"ExpeditionLobbyNetwork.Request did not become available before the client bootstrap timeout"
+)
 local lobbyState = lobbyNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
 assert(lobbyState ~= nil, "ExpeditionLobbyNetwork.State did not become available before the client bootstrap timeout")
 
