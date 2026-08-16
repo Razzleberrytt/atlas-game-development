@@ -76,6 +76,12 @@ def validate_docs() -> None:
     python_script("Main World graph metrics self-test", "scripts/main_world_metrics.py", "--self-test")
     python_script("Main World canonical metrics", "scripts/main_world_metrics.py")
     python_script(
+        "Main World road failure impact self-test",
+        "scripts/analyze_main_world_road_failure_impact.py",
+        "--self-test",
+    )
+    python_script("Main World road failure impact", "scripts/analyze_main_world_road_failure_impact.py")
+    python_script(
         "Main World artifact bundle verifier",
         "scripts/verify_main_world_artifact_bundle.py",
         "--self-test",
