@@ -2,15 +2,30 @@
 
 **Status:** CURRENT GOVERNANCE OVERRIDE  
 **Effective:** 2026-08-12  
+**Clarified:** 2026-08-16  
 **Purpose:** keep runtime stabilization rigorous without freezing unrelated product development.
 
 ## Core rule
 
 Pending Studio evidence, rollout work, or an unresolved runtime defect does **not** create a blanket repository freeze.
 
-Atlas may continue building gameplay, RPG systems, Main World content, environment systems, weapons, enemies, crafting, progression, persistence preparation, monetization preparation, live-service tooling, visuals, developer tooling, and other roadmap work in parallel with Blueprint v2.7 stabilization.
+Atlas may continue building gameplay, RPG systems, Main World content, environment systems, weapons, enemies, crafting, progression, persistence preparation, monetization preparation, live-service tooling, visuals, developer tooling, and other roadmap work in parallel with Blueprint v2.7 stabilization when dependencies and authority boundaries permit it.
 
-Blueprint v2.7 remains authoritative for the runtime-state/presentation migration and for evidence required to call that runtime path accepted. It no longer controls whether unrelated or dependency-safe source development may proceed.
+Blueprint v2.7 remains authoritative for the runtime-state/presentation migration and for evidence required to call that runtime path accepted. It does not control whether unrelated or dependency-safe source development may proceed.
+
+## Parallel eligibility is not unlimited WIP
+
+This policy defines **what may proceed**, not **how many implementation PRs should be active at once**.
+
+Root `AGENTS.md` remains authoritative for WIP discipline: normally one active implementation PR for the current capability, with at most one additional non-overlapping feature PR when the first is externally blocked.
+
+Therefore:
+
+- multiple lanes may be dependency-safe and eligible at the same time;
+- the execution dashboard still chooses NOW/NEXT;
+- old open PRs do not become current merely because parallel work is allowed;
+- before adopting an open branch, re-check its base freshness, stack dependencies, superseding merges, ownership boundaries, and current validation;
+- parallel eligibility prevents artificial freezes; low WIP prevents fragmentation and merge chaos.
 
 ## What this policy supersedes
 
@@ -27,7 +42,7 @@ Those clauses remain relevant only when a concrete dependency or regression dire
 
 ## Parallel lanes
 
-Work may proceed concurrently in any of these lanes:
+Work may be eligible in any of these lanes:
 
 1. **Runtime stabilization** — v2.7 state delivery, semantic suppression, presentation ownership, cleanup, soak, and evidence.
 2. **Core gameplay** — combat feel, horde pressure, encounters, rewards, classes, enemies, weapons, missions, dungeon/runtime systems.
@@ -35,9 +50,9 @@ Work may proceed concurrently in any of these lanes:
 4. **Main World/environment** — authored world recovery, biomes, structures, resources, NPC presentation, traversal, streaming-ready content, atmosphere.
 5. **Content factories** — environment, weapon visuals/skins, enemy presentation, crafting/gathering visuals.
 6. **Product/business** — monetization preparation, live-service scaffolding, analytics, retention tooling, onboarding, UX, store/purchase presentation.
-7. **Developer infrastructure** — validators, registries, test fixtures, build tooling, observability, import/export, Rojo/Studio integration.
+7. **Developer infrastructure** — validators, registries, test fixtures, build tooling, observability, import/export, Rojo/Studio integration, development-coverage tooling.
 
-The existence of one active lane does not make the others illegal.
+The existence of one active lane does not make the others illegal. The WIP rule still determines how many should be actively implemented at once.
 
 ## Guardrails
 
@@ -50,6 +65,7 @@ Parallel work must still obey these rules:
 - **Fix concrete regressions first when they collide.** If new work directly breaks the active path, that defect takes priority over continuing the same integration.
 - **Automated validation remains required.** Dependency-safe source work should pass applicable static/unit/build checks before merge.
 - **Runtime promotion gates remain real.** A system may be built before all Studio gates pass, but it may not be promoted, published, or called production-ready without the evidence required for that claim.
+- **Coverage is not authorization.** A gap in the `LK-001`–`LK-300` development ontology is a candidate for classification/prioritization, not permission to create a new subsystem or leapfrog the dashboard.
 
 ## Blocking rule
 
@@ -79,7 +95,8 @@ A parallel increment may merge when:
 2. applicable automated validation passes;
 3. it is reversible or isolated where runtime risk remains;
 4. documentation/status labels accurately distinguish built from verified;
-5. no concrete known regression is being concealed.
+5. no concrete known regression is being concealed;
+6. branch state has been reconciled with current main and relevant overlapping work.
 
 Runtime-risky activation can remain disabled while the underlying source, data contracts, models, registries, tests, and tooling merge normally.
 
@@ -93,15 +110,16 @@ Blueprint v2.7 evidence gates still control acceptance of the state/presentation
 
 When asked to continue or implement the next roadmap task:
 
-1. inspect current `main` and open PRs for overlap;
+1. inspect current `main` and open PRs for freshness/overlap;
 2. fix any concrete regression that directly blocks the path being changed;
-3. otherwise choose the highest-ROI unfinished task across all available lanes;
-4. prefer work that is modular, reversible, and testable;
-5. merge successful dependency-safe increments without waiting for unrelated manual gates;
-6. keep verification status honest.
+3. otherwise follow the execution dashboard NOW/NEXT selection;
+4. use the development taxonomy/atlas for broad gap classification without treating coverage rank as automatic execution priority;
+5. prefer work that is modular, reversible, and testable;
+6. merge successful dependency-safe increments within root WIP limits without waiting for unrelated manual gates;
+7. keep verification status honest.
 
 ## Conflict rule
 
-When this policy conflicts with older v2.7 scope-freeze wording, **this policy controls the scope decision**. Blueprint v2.7 and Production Core v2.7 still control the technical invariants and evidence requirements of their runtime stabilization lane.
+When this policy conflicts with older v2.7 scope-freeze wording, **this policy controls the scope-eligibility decision**. Blueprint v2.7 and Production Core v2.7 still control the technical invariants and evidence requirements of their runtime stabilization lane. Root `AGENTS.md` and the current execution dashboard still control WIP and NOW/NEXT execution.
 
-> Stabilize rigorously, build continuously. Evidence controls promotion; it does not freeze invention.
+> **Stabilize rigorously, build continuously, keep WIP low. Evidence controls promotion; it does not freeze invention.**
