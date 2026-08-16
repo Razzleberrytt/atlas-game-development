@@ -43,7 +43,9 @@ local lastLocalSwingClock = -math.huge
 local modeConnection: RBXScriptConnection? = nil
 local mouseConnection: RBXScriptConnection? = nil
 local meleeNetwork = ReplicatedStorage:WaitForChild("MeleeNetwork", NETWORK_WAIT_SECONDS)
-local strikeIntent = meleeNetwork:WaitForChild("StrikeIntent") :: RemoteEvent
+assert(meleeNetwork ~= nil, "MeleeNetwork did not become available before the client bootstrap timeout")
+local strikeIntent = meleeNetwork:WaitForChild("StrikeIntent", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(strikeIntent ~= nil, "MeleeNetwork.StrikeIntent did not become available before the client bootstrap timeout")
 
 local function currentAimDirection(): Vector3?
 	local camera = Workspace.CurrentCamera
