@@ -1,116 +1,86 @@
-# Atlas — Execution Dashboard v1.21
+# Atlas — Execution Dashboard v1.22
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
-**Refreshed:** 2026-08-13  
+**Refreshed:** 2026-08-15  
 **Purpose:** answer quickly what is true, what is NOW, and what comes NEXT.
 
-Execution precedence:
+## Precedence
 
-1. `AUTOMATED-FIRST-EXECUTION-POLICY.md` — cadence and verification authority;
-2. `PATCH-0.7-100-TASK-ROI-BACKLOG.md` — current Patch 0.7 task authority;
-3. `PLAYABLE-MVP-PATCH-EXECUTION.md` — patch goals/product intent;
-4. `MASTER-ROADMAP.md` — long-range destination inventory.
+1. [`AUTOMATED-FIRST-EXECUTION-POLICY.md`](AUTOMATED-FIRST-EXECUTION-POLICY.md) — execution cadence and verification authority.
+2. This dashboard — current daily status and NOW/NEXT selection.
+3. [`PLAYABLE-MVP-PATCH-EXECUTION.md`](PLAYABLE-MVP-PATCH-EXECUTION.md) — player-facing patch goals/product intent.
+4. [`MASTER-ROADMAP.md`](MASTER-ROADMAP.md) — long-range destination inventory.
+5. Patch-specific acceptance/backlog documents — active only when that patch is selected.
 
-Older manual Studio/device/play gates are historical evidence instructions, not scheduling authority.
+Product-direction conflicts are resolved by [`../bible/00-current-product-authority.md`](../bible/00-current-product-authority.md).
+
+Historical Studio/device/play gates are evidence instructions, not source-work scheduling authority. Experiential facts remain **UNMEASURED** until actually tested.
 
 ## Current truth
 
-- MVP 0.1 and Patches 0.2–0.6 have substantial source implementation already merged.
-- Missing manual play/Studio/device evidence does **not** block source progression.
-- Patch 0.6's non-manual micro-update queue is complete through rank 97; its remaining historical UI/manual rows do not occupy execution priority.
-- **Patch 0.7 — Durable Persistence + Valuable State Hardening is the current source patch.**
-- Patch 0.7 entered the 100-task ranked program with an existing baseline: one canonical live inventory owner, symmetric resident-record release, committed-update lease decisions, supported-schema migration/recovery invariants, and no-blank-overwrite protection after exhausted reads.
-- **Batches 1–2 (#1–#20) are DONE.** Batch 1: canonical storage resolution now distinguishes `StudioVolatile`, `LiveDurable`, and `LiveUnavailable`, with deterministic coverage for isolation, exact durable-store binding, unavailable-store rejection, and malformed inputs.
-- Manual facts such as game feel, visual readability, real-device ergonomics, live memory/performance, or publishing behavior may remain **UNMEASURED** without stopping source work.
-
-- **Batch 2 (#11–#20) is DONE:** the live adapter now selects its store through that policy with no duplicate resolution logic, a live store that cannot be opened fails closed instead of falling soft to volatile, and storage outcomes are explicit — `Found`/`Missing`/`Failed` reads and `Committed`/`Failed` writes carrying committed value identity. Persistence branches on read status before normalizing, so an outage returns `LoadFailed` rather than borrowing `SaveFailed`.
-
-- **Batch 3 (#21–#30) is DONE:** lease records are structurally validated, an unparseable rival lease is honoured rather than silently overwritten, records carry an owner generation that survives a recycled JobId, and shutdown release now aggregates its outcome with bounded retry so a lease that survives shutdown is observable instead of invisible.
-
-- **Batch 4 (#31–#40) is DONE:** schema 4 records per-grant content identity, so a repeated grant id reads as `RewardAlreadyApplied` only when the content matches and as `RewardGrantConflict` when it does not. Equip is proven idempotent under exact replay, dismantle replay survives release/rejoin, neither mutation erases the other's replay protection, and durable ledgers are bounded where the bound can still be reported.
-- **A live defect was found and fixed alongside Batch 4:** `OperativeProgressionResolver` iterated the durable grant ledger for values, but the ledger is a set keyed by grant id, so every non-empty ledger was rejected as malformed and operative rank/unlocks were dead for exactly the players who had earned something. Both owners' fixtures were green because the resolver's fed it a shape persistence never writes.
-
-- **Batch 5 (#41–#50) is DONE:** migrations are authored as single-version steps and planned rather than assumed, the steps taken are reported, an unparseable record is copied to a derived quarantine key and never rewritten, load failures are classified transient vs corrupt, and the migration write-back refuses to clobber a record that changed since the read.
-
-- **Batch 6 (#51–#53, #58–#60) is DONE:** durable records carry a byte budget under the DataStore ceiling, estimated deterministically and pessimistically, and an oversized write is refused before submission rather than failing silently at the platform limit forever after. **#54–#57 are DEFERRED, not done** — an overflow bucket presupposes a durable inventory capacity the game does not have.
-
-- **Batch 7 (#61–#63, #70) is DONE:** every per-player service was surveyed for a durable path and the result recorded in `../production/PATCH-0.7-DURABLE-VALUE-DOMAINS.md`. Everything durable is account-scoped; everything in memory is run- or session-scoped by design. Progression snapshots now carry an identity derived from the ledger they were projected from, so a stale projection is detectable. **#64–#69 are DEFERRED, not done** — they would create a second authority over derived facts, or a currency no gameplay reads.
-
-- **Batch 8 (#71–#80) is DONE:** a deterministic fault matrix interrupts reward writes, dismantle writes, and migrations mid-flight, crashes a server before and after the durable commit, hops one player across five servers, and shuts down both cleanly and during a partial storage outage — asserting each time that durable truth wins over stale process memory. `InventoryLiveService.destroy` now returns the shutdown summary, so a partial outage is distinguishable from a clean close.
-
-- **Batch 9 (#81–#83, #85, #89, #90) is DONE:** deterministic one-shot fault injection for reads, commits, and transform retries; a reason-classification audit that reads the reasons out of the sources rather than a hand-kept list; a pure record invariant checker for duplicate items, missing ledgers, invalid equips and ownership drift; and a `persistence-hardening` validation profile. **#84, #86–#88 are DEFERRED, not done.**
-
-- **Batch 10 (#91–#100) is DONE:** `docs/production/PATCH-0.7-ACCEPTANCE-MATRIX.json` carries 40 rows — 34 satisfied and bound to 16 automated fixtures, 6 deferred with recorded reasons. `scripts/validate_patch_07_acceptance.py` runs inside `validate.py` and checks the binding in both directions, so a row cannot claim a fixture that does not exist or that nothing runs, and the profile cannot run a fixture no row claims.
-
-## Patch 0.7 status
-
-**AUTOMATED ACCEPTANCE COMPLETE for the 34 satisfied rows. Not complete as 100/100.**
-
-86 of the 100 ranked tasks are implemented and covered. **14 are deferred, not done**, each with its reason recorded in the backlog and the matrix: a durable overflow bucket (#54–#57) for a capacity limit the game does not have, separate durable progression/unlock/currency records (#64–#69) that would be a second authority over derived facts or a currency no gameplay reads, and latency injection, diagnostic counters, and randomised stress (#84, #86–#88) that would add surfaces nothing consumes.
-
-Calling that 100/100 would misreport what was built. The durable-state work Patch 0.7 set out to harden is done and machine-checked; the deferred rows are recorded as open design decisions rather than closed ones.
-
-## Ranked task backlogs
-
-Each patch now has a ranked 10-task-batch backlog. **These sit under their acceptance documents, not beside them** — an acceptance doc decides whether a patch answered its exit question; a backlog ranks the hardening, verification, and deferral-closing work underneath that decision.
-
-| Backlog | Authority it sits under |
-|---|---|
-| `PATCH-0.7-100-TASK-ROI-BACKLOG.md` | complete: 86 done, 14 deferred with reasons |
-| `PATCH-0.8-100-TASK-HARDENING-BACKLOG.md` | `PATCH-0.8-ACCEPTANCE.md` |
-| `PATCH-0.9-100-TASK-HARDENING-BACKLOG.md` | `PATCH-0.9-ACCEPTANCE.md`, `PATCH-0.9-CONTENT-PIPELINE.md` |
-| `RC-1.0-100-TASK-BACKLOG.md` | none yet — RC acceptance is written by row #91 of that backlog |
-| `PATCH-0.1-0.7-REVISION-BACKLOG.md` | the accepted patches themselves; it reopens none of them |
-
-Two properties hold across all of them. A row that should not be built is **DEFERRED with its reason**, never quietly completed. A row whose answer is experiential is **UNMEASURED**, which is a boundary of what automation can say and not a gap in the work — roughly forty of the RC 1.0 rows are of that kind, because RC is the first exit question a green gate cannot answer.
+- Atlas/Living Kingdoms has substantial playable source implementation across MVP 0.1 and Patches 0.2–0.7.
+- **Patch 0.7 durable persistence + valuable-state hardening is automated-acceptance complete for every non-deferred row.**
+- Patch 0.7 implemented **86 / 100** ranked tasks. **14 are intentionally DEFERRED**, not silently complete:
+  - #54–#57 — overflow storage without a real inventory-capacity requirement;
+  - #64–#69 — duplicate durable authorities / currency without a gameplay consumer;
+  - #84, #86–#88 — diagnostic/latency/randomized stress surfaces without a current consumer.
+- Patch 0.7's machine-readable acceptance matrix remains the canonical detailed proof: `../production/PATCH-0.7-ACCEPTANCE-MATRIX.json`.
+- Missing manual Studio/device evidence does not block dependency-safe source progression. A reproducible runtime, authority, persistence, data-loss, security, or deterministic-validation defect does.
+- `games/living-kingdoms/src/` remains the only gameplay-authoritative Living Kingdoms source tree. Studio imports are preservation/reconciliation input, never parallel runtime authority.
 
 ## NOW
 
-**Patch 0.7 durable-state hardening is complete. Choose the next patch, or revisit a deferred row if a design decision now requires it.**
+**Patch 0.7 is closed for automated source execution. Select one next coherent patch before starting broad feature expansion.**
 
-Manual play/Studio evidence for experiential facts remains **UNMEASURED** and does not hold source progression.
+Until that selection is explicit, allowed work is limited to high-confidence maintenance that improves the existing baseline without inventing product scope: concrete defect repair, authority-drift repair, validation/tooling reliability, organizational simplification, and removal of stale/duplicated repository truth.
 
-Required merge gate:
+Required merge gate for gameplay-affecting or repository-wide changes:
 
 ```bash
 python scripts/validate.py full
 ```
 
-CI equivalent is accepted as the canonical automated result.
+CI equivalent is the canonical automated result.
 
 ## NEXT
 
-After Batch 2 is automated-green and merged:
+Choose exactly one next patch/queue from its current acceptance and ranked backlog, then make that selection explicit here before implementation begins.
 
-1. mark #81–#90 DONE;
-2. activate #91–#100;
-3. bind the machine-readable acceptance matrix;
-4. continue in exact 10-task batches through all 100 Patch 0.7 tasks.
+Available planned queues include:
 
-A concrete data-loss, duplication, authority, migration, or deterministic validation defect may preempt the queue. Missing manual testing may not.
+- Patch 0.8 — use `PATCH-0.8-ACCEPTANCE.md` + `PATCH-0.8-100-TASK-HARDENING-BACKLOG.md`;
+- Patch 0.9 — use `PATCH-0.9-ACCEPTANCE.md` + `PATCH-0.9-100-TASK-HARDENING-BACKLOG.md` + `PATCH-0.9-CONTENT-PIPELINE.md`;
+- RC 1.0 — use `RC-1.0-100-TASK-BACKLOG.md` only when release-candidate work is intentionally activated;
+- a deferred Patch 0.7 row — only when a new design/gameplay requirement invalidates its recorded deferral reason.
 
-## Patch 0.7 execution map
+Selection criteria: highest player-facing or reliability ROI, dependency readiness, no overlap with open work, and no creation of a second gameplay authority.
+
+A concrete defect may preempt the selected queue. Missing manual testing alone may not.
+
+## Patch 0.7 closed execution map
 
 | Batch | Tasks | Focus | Status |
-|---|---:|---|---|
+| --- | ---: | --- | --- |
 | 1 | 1–10 | storage resolution policy | DONE |
-| 2 | 11–20 | integrate fail-closed storage + explicit outcomes | DONE |
+| 2 | 11–20 | fail-closed storage + explicit outcomes | DONE |
 | 3 | 21–30 | session ownership + lease robustness | DONE |
 | 4 | 31–40 | valuable mutation idempotency | DONE |
 | 5 | 41–50 | migration, quarantine, recovery | DONE |
-| 6 | 51–60 | capacity, overflow, retention | DONE (54–57 deferred) |
-| 7 | 61–70 | durable progression/currency/unlocks | DONE (64–69 deferred) |
+| 6 | 51–60 | capacity, overflow, retention | DONE; 54–57 DEFERRED |
+| 7 | 61–70 | durable progression/currency/unlocks | DONE; 64–69 DEFERRED |
 | 8 | 71–80 | disconnect/rejoin/crash/shutdown correctness | DONE |
-| 9 | 81–90 | automated chaos + diagnostics | DONE (84, 86–88 deferred) |
-| 10 | 91–100 | machine-readable Patch 0.7 acceptance | DONE |
+| 9 | 81–90 | automated chaos + diagnostics | DONE; 84, 86–88 DEFERRED |
+| 10 | 91–100 | machine-readable acceptance | DONE |
+
+Detailed batch narratives, individual fixes, and completed PR history belong in the Patch 0.7 backlog, acceptance matrix, production evidence, and Git history—not this daily dashboard.
 
 ## Manual evidence backlog
 
-Manual Studio/device/play work is optional and separate from NOW/NEXT. If run, record only what was actually measured. If it reveals a reproducible defect, promote that defect into the ranked source queue. If it is not run, leave the experiential fact **UNMEASURED** and continue development.
+Manual Studio/device/play work is separate from NOW/NEXT. If run, record only what was actually measured. If it reveals a reproducible defect, promote that defect into the active source queue. If it is not run, leave the experiential fact **UNMEASURED** and continue dependency-safe source work.
 
 ## WIP rule
 
-- one active implementation PR for the current 10-task batch;
-- do not duplicate open work;
-- merge only after automated validation is green;
-- immediately activate the next 10 tasks after a successful merge.
+- one active implementation PR per coherent upgrade/patch increment;
+- inspect open PRs before starting and do not duplicate work;
+- merge only after the applicable automated validation is green;
+- after a successful merge, explicitly activate the next coherent increment rather than leaving stale NEXT instructions behind.
