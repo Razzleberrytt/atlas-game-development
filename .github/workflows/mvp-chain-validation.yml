@@ -1,0 +1,32 @@
+name: MVP Chain Validation
+
+on:
+  pull_request:
+    paths:
+      - "config/coverage/mvp-0.1-chain.json"
+      - "scripts/validate_mvp_chain.py"
+      - ".github/workflows/mvp-chain-validation.yml"
+  push:
+    branches: [main]
+    paths:
+      - "config/coverage/mvp-0.1-chain.json"
+      - "scripts/validate_mvp_chain.py"
+      - ".github/workflows/mvp-chain-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate finite MVP chain
+        run: python scripts/validate_mvp_chain.py
