@@ -1,0 +1,39 @@
+name: Project Reality Validation
+
+on:
+  pull_request:
+    paths:
+      - "config/coverage/living-kingdoms-development.json"
+      - "scripts/development_coverage.py"
+      - "scripts/project_reality.py"
+      - "docs/production/PROJECT-REALITY-MAP.md"
+      - ".github/workflows/project-reality-validation.yml"
+  push:
+    branches: [main]
+    paths:
+      - "config/coverage/living-kingdoms-development.json"
+      - "scripts/development_coverage.py"
+      - "scripts/project_reality.py"
+      - "docs/production/PROJECT-REALITY-MAP.md"
+      - ".github/workflows/project-reality-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate canonical development coverage
+        run: python scripts/development_coverage.py validate --check-generated
+
+      - name: Validate derived project reality map
+        run: python scripts/project_reality.py check
