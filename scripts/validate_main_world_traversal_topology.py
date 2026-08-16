@@ -5,8 +5,8 @@ The recovered Studio snapshot intentionally preserves authored positions, includ
 biome props that were imported without their original terrain. The repo-owned
 traversal repair slices are therefore part of the playable-world contract: they
 must form one connected walkable support graph from the lower hub, support the
-preserved primary route, and reach representative anchors in the outer biome
-ring.
+preserved primary route, and support every recovered ground-contact placement in
+the walkable biome field.
 
 This validator is intentionally geometric rather than screenshot-based so a
 future snapshot refresh cannot silently recreate unreachable "islands" while
@@ -31,20 +31,35 @@ MAX_STEP_DELTA = 2.05
 RECT_EPSILON = 0.25
 SUPPORT_VERTICAL_TOLERANCE = 4.0
 
-# These are the recovered ground-biome groups that sit at the outer edge of the
-# immediate playable ring. We derive each anchor from its model data instead of
-# hard-coding coordinates, so coordinate drift in a refreshed snapshot is caught.
-OUTER_GROUND_BIOMES = (
+# These are the recovered themed biome groups intended to sit on the walkable
+# lower-world field. Sky/Ocean and non-biome roots are intentionally excluded:
+# they are not evidence that a player-facing ground destination belongs there.
+#
+# Each top-level placement in these groups must have a low-altitude ground-contact
+# anchor on reachable repo-owned support. Checking every placement (rather than one
+# representative point per biome) catches partially stranded groups.
+WALKABLE_GROUND_BIOMES = (
+    "Beach",
+    "Volcanic",
+    "Desert",
+    "Swamp",
+    "Snow",
+    "Jungle",
+    "Autumn",
+    "Meadow",
+    "Mushroom",
+    "Ruins",
+    "Ice",
     "Bamboo",
+    "Geyser",
+    "Lavender",
+    "Cherry",
+    "Tundra",
     "Canyon",
     "Coral",
     "Geothermal",
-    "Cherry",
-    "Tundra",
     "Oasis",
     "CrystalDesert",
-    "Lavender",
-    "Geyser",
 )
 
 
@@ -217,33 +232,56 @@ def route_anchors(project_world: dict[str, Any]) -> list[Anchor]:
     return anchors
 
 
-def outer_biome_anchor(group: str, project_world: dict[str, Any]) -> Anchor:
+def ground_biome_anchors(group: str, project_world: dict[str, Any]) -> list[Anchor]:
     node = project_world.get(group)
     if not isinstance(node, dict) or "$path" not in node:
-        raise RuntimeError(f"Main World project is missing outer biome mount {group!r}")
+        raise RuntimeError(f"Main World project is missing ground-biome mount {group!r}")
+
     model = load_json(GAME / str(node["$path"]))
-    candidates: list[Anchor] = []
-    for instance in iter_instances(model):
-        geometry = part_geometry(instance)
-        if geometry is None:
+    placements = model.get("Children")
+    if not isinstance(placements, list) or not placements:
+        raise RuntimeError(f"ground biome {group!r} has no top-level placements")
+
+    anchors: list[Anchor] = []
+    for index, placement in enumerate(placements):
+        if not isinstance(placement, dict):
             continue
-        x, y, z, _, size_y, _ = geometry
-        # Ground-biome art is near the lower world. Ignore intentionally elevated
-        # presentation pieces when selecting the representative traversal anchor.
-        if y > 20:
-            continue
-        candidates.append(
-            Anchor(
-                group=group,
-                name=str(instance.get("Name", "unnamed biome part")),
-                x=x,
-                bottom=y - size_y / 2,
-                z=z,
+
+        placement_name = str(placement.get("Name", f"placement {index + 1}"))
+        candidates: list[Anchor] = []
+        for instance in iter_instances(placement):
+            geometry = part_geometry(instance)
+            if geometry is None:
+                continue
+            x, y, z, _, size_y, _ = geometry
+            # Walkable biome art lives near the lower world. Elevated presentation
+            # pieces are not suitable ground-contact anchors.
+            if y > 20:
+                continue
+            candidates.append(
+                Anchor(
+                    group=group,
+                    name=placement_name,
+                    x=x,
+                    bottom=y - size_y / 2,
+                    z=z,
+                )
             )
-        )
-    if not candidates:
-        raise RuntimeError(f"outer biome {group!r} has no low-altitude BasePart anchor")
-    return max(candidates, key=lambda anchor: anchor.x * anchor.x + anchor.z * anchor.z)
+
+        if not candidates:
+            raise RuntimeError(
+                f"ground biome {group!r} placement {placement_name!r} "
+                "has no low-altitude BasePart anchor"
+            )
+
+        # Nested pieces (fronds, signs, windows, etc.) can float above the floor by
+        # design. Use the piece whose bottom is closest to the traversal plane as
+        # the placement's physical ground-contact representative.
+        anchors.append(min(candidates, key=lambda anchor: abs(anchor.bottom)))
+
+    if not anchors:
+        raise RuntimeError(f"ground biome {group!r} has no ground-contact anchors")
+    return anchors
 
 
 def main() -> int:
@@ -263,9 +301,10 @@ def main() -> int:
             "Main World traversal support graph contains unreachable surfaces: " + ", ".join(disconnected)
         )
 
+    routes = route_anchors(project_world)
     unsupported_routes = [
         anchor.name
-        for anchor in route_anchors(project_world)
+        for anchor in routes
         if not point_has_support(anchor, surfaces, reachable)
     ]
     if unsupported_routes:
@@ -273,22 +312,28 @@ def main() -> int:
             "preserved Main World route contains unsupported chunks: " + ", ".join(unsupported_routes)
         )
 
-    biome_anchors = [outer_biome_anchor(group, project_world) for group in OUTER_GROUND_BIOMES]
+    biome_anchors = [
+        anchor
+        for group in WALKABLE_GROUND_BIOMES
+        for anchor in ground_biome_anchors(group, project_world)
+    ]
     unsupported_biomes = [
-        f"{anchor.group} ({anchor.x:.1f}, {anchor.z:.1f})"
+        f"{anchor.group}/{anchor.name} ({anchor.x:.1f}, {anchor.z:.1f})"
         for anchor in biome_anchors
         if not point_has_support(anchor, surfaces, reachable)
     ]
     if unsupported_biomes:
         raise RuntimeError(
-            "outer Main World biome anchors are not on reachable support: " + ", ".join(unsupported_biomes)
+            "Main World ground-biome placements are not on reachable support: "
+            + ", ".join(unsupported_biomes)
         )
 
     print(
         "[main-world-traversal] OK — "
         f"{len(surfaces)} support surfaces form one graph; "
-        f"{len(route_anchors(project_world))} preserved route chunks and "
-        f"{len(biome_anchors)} outer-biome anchors are reachable"
+        f"{len(routes)} preserved route chunks and "
+        f"{len(biome_anchors)} placements across "
+        f"{len(WALKABLE_GROUND_BIOMES)} ground biomes are reachable"
     )
     return 0
 
