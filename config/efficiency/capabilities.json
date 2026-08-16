@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "project": "living-kingdoms",
-  "updated": "2026-08-10",
+  "updated": "2026-08-16",
   "capabilities": [
     {
       "id": "combat-authority",
@@ -156,6 +156,28 @@
       "tests_glob": "games/living-kingdoms/tests/MainWorld*.test.luau",
       "data_driven": true,
       "notes": "Admitting an environment family means flipping its projectMappingStatus to Mapped and mapping its targetPath in main-world.project.json; the fixture rejects either half alone. BA-014 run scope is then derived, never hand-maintained. Held: RuntimeEnabled stays false and scoped acceptance never authorizes activation."
+    },
+    {
+      "id": "development-coverage",
+      "name": "300-area Living Kingdoms development coverage ontology and auditor",
+      "owner": "tooling",
+      "status": "active",
+      "extension_points": [
+        "config/coverage/living-kingdoms-development.json",
+        "scripts/development_coverage.py",
+        "docs/architecture/DEVELOPMENT_TAXONOMY.md",
+        "docs/architecture/DEVELOPMENT-ATLAS.md",
+        "docs/production/DEVELOPMENT-COVERAGE-REPORT.md"
+      ],
+      "consumers": [
+        "roadmap-planning",
+        "cross-system-audits",
+        "agents",
+        "documentation-governance"
+      ],
+      "tests_glob": "scripts/development_coverage.py",
+      "data_driven": true,
+      "notes": "The taxonomy is concern coverage, not a module list or execution queue. Route LK rows into existing canonical owners and update row evidence only when coverage materially changes."
     }
   ]
 }
