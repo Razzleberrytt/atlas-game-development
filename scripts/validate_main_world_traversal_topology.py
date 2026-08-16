@@ -5,8 +5,9 @@ The recovered Studio snapshot intentionally preserves authored positions, includ
 lower-world props imported without their original terrain. Repo-owned traversal
 repair slices are therefore part of the playable-world contract: they must form
 one connected walkable support graph from the lower hub, support the preserved
-primary route, and physically underlay every ground-bearing piece in the recovered
-lower-world groups.
+primary route, physically underlay every ground-bearing piece in the recovered
+lower-world groups, and hand the elevated civic climb back onto fixed HubCore
+geometry.
 
 This validator is geometric rather than screenshot-based so a future snapshot
 refresh cannot silently recreate unreachable "islands" while still producing a
@@ -16,6 +17,7 @@ syntactically valid Rojo build.
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterator
@@ -26,6 +28,7 @@ PROJECT = GAME / "main-world.project.json"
 
 TRAVERSAL_MOUNTS = ("TraversalRepair", "OuterTraversalRepair")
 ROOT_SURFACE = "main_world.traversal.lower_continent"
+HUB_HANDOFF_SURFACE = "main_world.traversal.upper_landing"
 MAX_STEP_DELTA = 2.05
 RECT_EPSILON = 0.25
 SUPPORT_VERTICAL_TOLERANCE = 4.0
@@ -207,11 +210,76 @@ def point_has_support(anchor: Anchor, surfaces: list[Surface], reachable: set[st
     return False
 
 
+def mounted_model(project_world: dict[str, Any], mount: str) -> dict[str, Any]:
+    node = project_world.get(mount)
+    if not isinstance(node, dict) or "$path" not in node:
+        raise RuntimeError(f"Main World project is missing {mount!r} mount")
+    return load_json(GAME / str(node["$path"]))
+
+
+def fixed_collidable_surfaces(model: dict[str, Any]) -> list[Surface]:
+    surfaces: list[Surface] = []
+    for index, instance in enumerate(iter_instances(model)):
+        geometry = part_geometry(instance)
+        if geometry is None:
+            continue
+        props = instance.get("Properties", {})
+        if props.get("Anchored") is not True or props.get("CanCollide") is False:
+            continue
+        x, y, z, size_x, size_y, size_z = geometry
+        surfaces.append(
+            Surface(
+                name=f"{instance.get('Name', 'unnamed')}#{index}",
+                x=x,
+                top=y + size_y / 2,
+                z=z,
+                size_x=size_x,
+                size_z=size_z,
+            )
+        )
+    return surfaces
+
+
+def rectangle_gap(a: Surface, b: Surface) -> float:
+    dx = max(a.min_x - b.max_x, b.min_x - a.max_x, 0.0)
+    dz = max(a.min_z - b.max_z, b.min_z - a.max_z, 0.0)
+    return math.hypot(dx, dz)
+
+
+def validate_hub_handoff(project_world: dict[str, Any], surfaces: list[Surface], reachable: set[str]) -> int:
+    by_name = {surface.name: surface for surface in surfaces}
+    landing = by_name.get(HUB_HANDOFF_SURFACE)
+    if landing is None or landing.name not in reachable:
+        raise RuntimeError(f"Main World civic handoff surface is not reachable: {HUB_HANDOFF_SURFACE}")
+
+    hub_surfaces = fixed_collidable_surfaces(mounted_model(project_world, "HubCore"))
+    if not hub_surfaces:
+        raise RuntimeError("preserved HubCore has no anchored collidable BasePart surfaces")
+
+    adjacent = [surface for surface in hub_surfaces if walkably_adjacent(landing, surface)]
+    if adjacent:
+        return len(hub_surfaces)
+
+    nearest = sorted(
+        hub_surfaces,
+        key=lambda surface: (rectangle_gap(landing, surface), abs(landing.top - surface.top)),
+    )[:8]
+    detail = "; ".join(
+        f"{surface.name} center=({surface.x:.1f},{surface.top:.1f},{surface.z:.1f}) "
+        f"size=({surface.size_x:.1f},{surface.size_z:.1f}) "
+        f"horizontal_gap={rectangle_gap(landing, surface):.1f} "
+        f"top_delta={abs(landing.top - surface.top):.1f}"
+        for surface in nearest
+    )
+    raise RuntimeError(
+        "Main World civic climb does not hand off onto preserved HubCore geometry; "
+        f"upper_landing center=({landing.x:.1f},{landing.top:.1f},{landing.z:.1f}) "
+        f"size=({landing.size_x:.1f},{landing.size_z:.1f}); nearest HubCore surfaces: {detail}"
+    )
+
+
 def route_anchors(project_world: dict[str, Any]) -> list[Anchor]:
-    route_node = project_world.get("Routes")
-    if not isinstance(route_node, dict) or "$path" not in route_node:
-        raise RuntimeError("Main World project is missing the preserved Routes mount")
-    route_model = load_json(GAME / str(route_node["$path"]))
+    route_model = mounted_model(project_world, "Routes")
     anchors: list[Anchor] = []
     for instance in iter_instances(route_model):
         geometry = part_geometry(instance)
@@ -233,10 +301,7 @@ def route_anchors(project_world: dict[str, Any]) -> list[Anchor]:
 
 
 def lower_world_anchors(group: str, project_world: dict[str, Any]) -> list[Anchor]:
-    node = project_world.get(group)
-    if not isinstance(node, dict) or "$path" not in node:
-        raise RuntimeError(f"Main World project is missing lower-world mount {group!r}")
-    model = load_json(GAME / str(node["$path"]))
+    model = mounted_model(project_world, group)
     anchors: list[Anchor] = []
     for instance in iter_instances(model):
         geometry = part_geometry(instance)
@@ -277,6 +342,8 @@ def main() -> int:
             "Main World traversal support graph contains unreachable surfaces: " + ", ".join(disconnected)
         )
 
+    hub_surface_count = validate_hub_handoff(project_world, surfaces, reachable)
+
     routes = route_anchors(project_world)
     unsupported_routes = [
         anchor.name for anchor in routes if not point_has_support(anchor, surfaces, reachable)
@@ -305,6 +372,7 @@ def main() -> int:
     print(
         "[main-world-traversal] OK — "
         f"{len(surfaces)} support surfaces form one graph; "
+        f"civic climb hands off into {hub_surface_count} inspected HubCore surfaces; "
         f"{len(routes)} preserved route chunks and "
         f"{len(lower_anchors)} ground-bearing lower-world parts are supported"
     )
