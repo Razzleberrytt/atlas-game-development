@@ -73,6 +73,7 @@ def validate_docs() -> None:
     python_script("Main World traversal topology", "scripts/validate_main_world_traversal_topology.py")
     python_script("Main World route readability", "scripts/validate_main_world_route_readability.py")
     python_script("Main World static scene stabilization", "scripts/validate_main_world_static_scene.py")
+    python_script("Main World graph metrics self-test", "scripts/main_world_metrics.py", "--self-test")
     python_script("Main World canonical metrics", "scripts/main_world_metrics.py")
     python_script(
         "Main World artifact bundle verifier",
