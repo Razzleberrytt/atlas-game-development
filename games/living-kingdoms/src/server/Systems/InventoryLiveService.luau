@@ -6,9 +6,11 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local EquipmentComparisonResolver = require(ReplicatedStorage.Shared.Equipment.EquipmentComparisonResolver)
+local EquipmentContracts = require(ReplicatedStorage.Shared.Equipment.EquipmentRewardContracts)
 local InventoryDismantleResolver = require(ReplicatedStorage.Shared.Persistence.InventoryDismantleResolver)
 local EquipmentRewardConfig = require(ReplicatedStorage.Shared.Config.EquipmentRewardConfig)
 local PlayerInventorySnapshot = require(ReplicatedStorage.Shared.Persistence.PlayerInventorySnapshot)
+local StorageResults = require(ReplicatedStorage.Shared.Persistence.StorageResultContracts)
 local RobloxInventoryDataStoreAdapter = require(script.Parent.RobloxInventoryDataStoreAdapter)
 local PlayerInventoryPersistenceService = require(script.Parent.PlayerInventoryPersistenceService)
 local InventorySessionLeaseService = require(script.Parent.InventorySessionLeaseService)
@@ -20,19 +22,14 @@ local store = RobloxInventoryDataStoreAdapter.new({
 	BaseRetryDelaySeconds = 0.5,
 })
 
--- Identifies this server instance as the holder of a session lease. Distinct
--- from a player's inventory owner id, which is always a Roblox user id.
 local leaseOwnerId =
 	string.format("%s:%s", game.JobId ~= "" and game.JobId or "studio", HttpService:GenerateGUID(false))
 local leases = InventorySessionLeaseService.new(store, leaseOwnerId, 90)
 local persistence = PlayerInventoryPersistenceService.new(store)
 local destroyed = false
 
--- Accepted dismantle timestamps per owner, for the rate bound only.
 local recentDismantleRequests: { [number]: { number } } = {}
 
--- Authored definitions are static, so the tag lookup comparison needs is indexed
--- once rather than scanned per request.
 local definitionsById: { [string]: any } = {}
 for _, definition in EquipmentRewardConfig.Definitions do
 	definitionsById[definition.Id] = definition
@@ -40,6 +37,19 @@ end
 
 local function lookupEquipmentDefinition(definitionId: string): any
 	return definitionsById[definitionId]
+end
+
+local function isKnownSlot(slotId: unknown): boolean
+	for _, candidate in EquipmentContracts.SlotIds do
+		if slotId == candidate then
+			return true
+		end
+	end
+	return false
+end
+
+local function inventoryKeyFor(playerId: number): string
+	return string.format("player:%d:inventory", playerId)
 end
 
 local Service = {}
@@ -76,13 +86,6 @@ function Service.releasePlayer(playerId: number): any
 	end
 	recentDismantleRequests[playerId] = nil
 	local released = leases:release(playerId)
-	--[[
-		The lease and the resident record have to fall together. Releasing only
-		the lease left the departed player's inventory resident for the life of
-		the server and still readable through getRecord. Order matters: the lease
-		goes first so no mutation can be authorized against a record that is
-		about to be dropped.
-	]]
 	persistence:releasePlayer(playerId)
 	return released
 end
@@ -108,11 +111,6 @@ function Service.getRecord(playerId: number): any
 	return persistence:getRecord(playerId)
 end
 
---[[
-	The only inventory read a client is ever served. `requesterId` must be derived
-	from the connection by the caller; this service never accepts an owner
-	identity from a payload. A rejected read discloses no record at all.
-]]
 function Service.readOwnedSnapshot(requesterId: number, ownerId: number): any
 	if destroyed then
 		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Snapshot = nil })
@@ -120,11 +118,6 @@ function Service.readOwnedSnapshot(requesterId: number, ownerId: number): any
 	return PlayerInventorySnapshot.forOwner(requesterId, ownerId, persistence:getRecord(ownerId))
 end
 
---[[
-	Compares one item the owner holds against whatever occupies its slot. The
-	candidate is named by instance id and must already be owned, so a client
-	cannot ask the server to evaluate an item it invented.
-]]
 function Service.compareOwnedItem(requesterId: number, ownerId: number, candidateInstanceId: any): any
 	if destroyed then
 		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Comparison = nil })
@@ -153,12 +146,6 @@ function Service.compareOwnedItem(requesterId: number, ownerId: number, candidat
 	)
 end
 
---[[
-	Equips one item the owner already holds. The client names only the instance;
-	the server resolves its slot from the durable record and requires the live
-	session lease before persistence can change. No client-authored slot, item
-	definition, power, or weapon id crosses this boundary.
-]]
 function Service.equipOwnedItem(requesterId: number, ownerId: number, instanceId: any, nowUnix: number): any
 	if destroyed then
 		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Record = nil })
@@ -187,15 +174,57 @@ function Service.equipOwnedItem(requesterId: number, ownerId: number, instanceId
 	return persistence:equip(ownerId, item.Slot, instanceId, nowUnix)
 end
 
---[[
-	Destroys one owned item under a client-supplied transaction id. The id is the
-	only client-authored value accepted here, and it can do nothing but make a
-	retry idempotent — it never names an item, an owner, or a value.
+function Service.unequipOwnedSlot(requesterId: number, ownerId: number, slotId: any, nowUnix: number): any
+	if destroyed then
+		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Record = nil })
+	end
+	if requesterId ~= ownerId then
+		return table.freeze({ Accepted = false, ReasonId = "CrossPlayerInventoryAccess", Record = nil })
+	end
+	if not isKnownSlot(slotId) or type(nowUnix) ~= "number" then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidUnequipRequest", Record = nil })
+	end
+	if not leases:hasLease(ownerId, nowUnix) then
+		return table.freeze({
+			Accepted = false,
+			ReasonId = "SessionLeaseRequired",
+			Record = persistence:getRecord(ownerId),
+		})
+	end
+	local record = persistence:getRecord(ownerId)
+	if record == nil then
+		return table.freeze({ Accepted = false, ReasonId = "InventoryNotLoaded", Record = nil })
+	end
+	if nowUnix < record.UpdatedAtUnix then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidUnequipRequest", Record = record })
+	end
+	if record.EquippedBySlot[slotId] == nil then
+		return table.freeze({ Accepted = true, ReasonId = "SlotAlreadyUnequipped", Record = record })
+	end
 
-	Accepted request timestamps are tracked per owner for the rate bound. They
-	are intentionally in-memory: a rejoin is far slower than the window, so
-	persisting them would buy nothing.
-]]
+	local nextRecord = {
+		SchemaVersion = record.SchemaVersion,
+		PlayerId = record.PlayerId,
+		InventoryByInstanceId = table.clone(record.InventoryByInstanceId),
+		EquippedBySlot = table.clone(record.EquippedBySlot),
+		AppliedRewardInstanceIds = table.clone(record.AppliedRewardInstanceIds),
+		AppliedRewardGrantIds = table.clone(record.AppliedRewardGrantIds),
+		AppliedDismantleTransactions = table.clone(record.AppliedDismantleTransactions),
+		AppliedRewardContentSignatures = table.clone(record.AppliedRewardContentSignatures),
+		UpdatedAtUnix = nowUnix,
+	}
+	nextRecord.EquippedBySlot[slotId] = nil
+	local write = store:write(inventoryKeyFor(ownerId), nextRecord)
+	if write.Status ~= StorageResults.WriteStatuses.Committed then
+		return table.freeze({ Accepted = false, ReasonId = "SaveFailed", Record = record })
+	end
+
+	local persistenceState = persistence :: any
+	assert(type(persistenceState._records) == "table", "inventory persistence resident cache unavailable")
+	persistenceState._records[ownerId] = nextRecord
+	return table.freeze({ Accepted = true, ReasonId = "ItemUnequipped", Record = persistence:getRecord(ownerId) })
+end
+
 function Service.dismantleOwnedItem(
 	requesterId: number,
 	ownerId: number,
@@ -228,9 +257,6 @@ function Service.dismantleOwnedItem(
 		timestamps
 	)
 
-	-- Only accepted, non-replayed work counts toward the bound, so a client
-	-- cannot exhaust its own budget with rejected probes and then claim to be
-	-- rate limited, and a retry storm of one transaction is not penalised.
 	if outcome.Accepted == true and outcome.ReasonId == "ItemDismantled" then
 		table.insert(timestamps, nowUnix)
 		while #timestamps > InventoryDismantleResolver.MaximumRequestsPerWindow do
@@ -240,12 +266,6 @@ function Service.dismantleOwnedItem(
 	return outcome
 end
 
---[[
-	Returns what shutdown actually achieved. The lease service reports which
-	leases survived release, and discarding that here would put the observability
-	one layer out of reach of the only caller that runs at shutdown -- leaving a
-	partial outage indistinguishable from a clean close.
-]]
 function Service.destroy(): any
 	if destroyed then
 		return table.freeze({ Requested = 0, Released = 0, Unresolved = 0, UnresolvedPlayerIds = table.freeze({}) })
