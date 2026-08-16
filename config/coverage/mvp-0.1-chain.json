@@ -74,15 +74,15 @@
       "name": "run-reward-choice",
       "status": "SOURCE_PRESENT",
       "evidence": "automated",
-      "evidence_refs": ["commit:5bab6597910e6c8ccd348dbf008734a2b677b120", "commit:83e6cff7e357c47d4151c37a9e750d6cd0beff72"],
+      "evidence_refs": ["commit:5bab6597910e6c8ccd348dbf008734a2b677b120", "commit:83e6cff7e357c47c89bfa800e0b123dac461204c4"],
       "exit_condition": "The run offers at least one meaningful, server-authoritative reward decision."
     },
     {
       "id": "MVP01-10",
       "name": "durable-bank-equip-upgrade",
-      "status": "PARTIAL",
-      "evidence": "pr-candidate",
-      "evidence_refs": ["pr:577", "pr:566"],
+      "status": "SOURCE_PRESENT",
+      "evidence": "automated",
+      "evidence_refs": ["pr:317", "games/living-kingdoms/src/server/Systems/DurableStartingLoadoutService.luau", "games/living-kingdoms/src/server/Systems/OperativeProgressionService.luau", "games/living-kingdoms/src/shared/Config/OperativeProgressionConfig.luau", "pr:495"],
       "exit_condition": "A reward or progression result survives the run boundary and changes a subsequent run through canonical durable owners."
     },
     {
