@@ -9,6 +9,7 @@ local MAX_STEP_DROP = 1.0
 local MIN_WIDTH = 12.0
 local EXPECTED_ARRIVAL_MOUNT =
 	"assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-ArrivalTraversal.model.json"
+local ARRIVAL_PATH = "games/living-kingdoms/" .. EXPECTED_ARRIVAL_MOUNT
 
 local function check(condition: unknown, message: string?)
 	if not condition then
@@ -125,7 +126,7 @@ local routes = serde.decode(
 		"games/living-kingdoms/assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-RegionalRoutes.model.json"
 	)
 )
-local arrival = serde.decode("json", fs.readFile(EXPECTED_ARRIVAL_MOUNT:gsub("^", "games/living-kingdoms/")))
+local arrival = serde.decode("json", fs.readFile(ARRIVAL_PATH))
 local spawnApron = findNamed(routes, "main_world.regional_route.spawn_apron")
 local northTrunk = findNamed(routes, "main_world.regional_route.north_trunk")
 local landing = findNamed(arrival, "main_world.arrival_handoff.landing")
