@@ -84,7 +84,7 @@ def main() -> int:
         raise RuntimeError("static-scene stabilization must not enable Main World gameplay runtime")
     if not re.search(r"\bEnabled\s*=\s*true\b", config):
         raise RuntimeError("Main World StaticSceneStabilization must be explicitly enabled")
-    if '"static-scene-stabilization"' not in table_strings(config, "AllowedResponsibilities"):
+    if "static-scene-stabilization" not in table_strings(config, "AllowedResponsibilities"):
         raise RuntimeError("bootstrap allowlist must declare static-scene-stabilization responsibility")
 
     main_server = server_scripts.get("MainWorldServer")
