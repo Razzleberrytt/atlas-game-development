@@ -30,8 +30,11 @@ type PlayerRecord = {
 local Controller = {}
 local localPlayer = Players.LocalPlayer
 local classNetwork = ReplicatedStorage:WaitForChild("ClassNetwork", NETWORK_WAIT_SECONDS)
-local stateRemote = classNetwork:WaitForChild("State") :: RemoteEvent
-local readStateFunction = classNetwork:WaitForChild("ReadState") :: RemoteFunction
+assert(classNetwork ~= nil, "ClassNetwork did not become available before the client bootstrap timeout")
+local stateRemote = classNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS)
+assert(stateRemote ~= nil, "ClassNetwork.State did not become available before the client bootstrap timeout")
+local readStateFunction = classNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS)
+assert(readStateFunction ~= nil, "ClassNetwork.ReadState did not become available before the client bootstrap timeout")
 
 local GUI_NAME = "ClassSquadCue"
 local OPERATIVE_ID_ATTRIBUTE = "LK_P3_OperativeEntityId"
