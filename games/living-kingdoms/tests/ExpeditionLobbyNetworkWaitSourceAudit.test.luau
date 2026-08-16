@@ -5,7 +5,8 @@ local fs = require("@lune/fs")
 local source = fs.readFile("games/living-kingdoms/src/client/Controllers/ExpeditionLobbyController.luau")
 
 assert(
-	string.find(source, 'ReplicatedStorage:WaitForChild("ExpeditionLobbyNetwork", NETWORK_WAIT_SECONDS)', 1, true) ~= nil,
+	string.find(source, 'ReplicatedStorage:WaitForChild("ExpeditionLobbyNetwork", NETWORK_WAIT_SECONDS)', 1, true)
+		~= nil,
 	"ExpeditionLobbyController must bound ExpeditionLobbyNetwork"
 )
 
@@ -28,10 +29,7 @@ for _, message in
 		"ExpeditionLobbyNetwork.ReadState did not become available before the client bootstrap timeout",
 	}
 do
-	assert(
-		string.find(source, message, 1, true) ~= nil,
-		"missing expedition lobby bootstrap assertion: " .. message
-	)
+	assert(string.find(source, message, 1, true) ~= nil, "missing expedition lobby bootstrap assertion: " .. message)
 end
 
 print("ExpeditionLobbyNetworkWaitSourceAudit: ExpeditionLobbyNetwork startup waits are bounded")
