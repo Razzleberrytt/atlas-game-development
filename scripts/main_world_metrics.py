@@ -18,6 +18,9 @@ from typing import Any, TypeVar
 
 from validate_main_world_route_readability import (
     DISTRICT_TARGETS,
+    ROAD_MATERIAL,
+    enum_value,
+    mounted_model,
     point_on_road,
     project_world,
     reachable_roads,
@@ -30,7 +33,9 @@ from validate_main_world_static_scene import CONFIG, read, table_strings
 from validate_main_world_traversal_topology import (
     LOWER_WORLD_GROUPS,
     Surface,
+    iter_instances,
     lower_world_anchors,
+    part_geometry,
     point_has_support,
     reachable_surfaces,
     route_anchors,
@@ -40,7 +45,15 @@ from validate_main_world_traversal_topology import (
 )
 
 T = TypeVar("T")
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
+
+ARRIVAL_LANDING = "main_world.arrival_handoff.landing"
+ARRIVAL_STEP_PREFIX = "main_world.arrival_handoff.step."
+ARRIVAL_EXPECTED_STEP_COUNT = 8
+ARRIVAL_ROAD = "main_world.regional_route.north_trunk"
+ARRIVAL_TOUCH_EPSILON = 0.051
+ARRIVAL_MAX_STEP_DROP = 1.0
+ARRIVAL_MIN_WIDTH = 12.0
 
 
 def _edge_count(items: Sequence[T], adjacent: Callable[[T, T], bool]) -> int:
@@ -67,6 +80,105 @@ def _coverage(reached: int, total: int) -> float:
     if total <= 0:
         raise RuntimeError("Main World coverage denominator must be positive")
     return round(reached / total, 6)
+
+
+def _rect_gap(left: Surface, right: Any) -> float:
+    x_gap = max(0.0, left.min_x - right.max_x, right.min_x - left.max_x)
+    z_gap = max(0.0, left.min_z - right.max_z, right.min_z - left.max_z)
+    return max(x_gap, z_gap)
+
+
+def _arrival_metrics(world: dict[str, Any], roads: Sequence[Any]) -> dict[str, Any]:
+    """Validate and measure the cold-join handoff from the authored spawn to the road graph."""
+
+    model = mounted_model(world, "ArrivalTraversal")
+    arrival_surfaces: dict[str, Surface] = {}
+    for instance in iter_instances(model):
+        name = str(instance.get("Name", ""))
+        if name != ARRIVAL_LANDING and not name.startswith(ARRIVAL_STEP_PREFIX):
+            continue
+        geometry = part_geometry(instance)
+        if geometry is None:
+            raise RuntimeError(f"Main World arrival handoff instance is not a BasePart: {name}")
+        props = instance.get("Properties", {})
+        if props.get("Anchored") is not True or props.get("CanCollide") is not True:
+            raise RuntimeError(f"Main World arrival handoff must remain anchored and collidable: {name}")
+        if enum_value(instance, "Material") != ROAD_MATERIAL:
+            raise RuntimeError(f"Main World arrival handoff must use the road material: {name}")
+        x, y, z, size_x, size_y, size_z = geometry
+        if size_x < ARRIVAL_MIN_WIDTH:
+            raise RuntimeError(f"Main World arrival handoff narrowed below {ARRIVAL_MIN_WIDTH:g} studs: {name}")
+        if name in arrival_surfaces:
+            raise RuntimeError(f"Main World arrival handoff surface name is duplicated: {name}")
+        arrival_surfaces[name] = Surface(
+            name=name,
+            x=x,
+            top=y + size_y / 2,
+            z=z,
+            size_x=size_x,
+            size_z=size_z,
+        )
+
+    expected_steps = [f"{ARRIVAL_STEP_PREFIX}{index:03d}" for index in range(1, ARRIVAL_EXPECTED_STEP_COUNT + 1)]
+    expected_names = {ARRIVAL_LANDING, *expected_steps}
+    if set(arrival_surfaces) != expected_names:
+        missing = sorted(expected_names - set(arrival_surfaces))
+        unexpected = sorted(set(arrival_surfaces) - expected_names)
+        raise RuntimeError(
+            "Main World arrival handoff surface contract drifted: "
+            f"missing={missing or 'none'} unexpected={unexpected or 'none'}"
+        )
+
+    ordered = [arrival_surfaces[ARRIVAL_LANDING], *(arrival_surfaces[name] for name in expected_steps)]
+    step_drops: list[float] = []
+    horizontal_gaps: list[float] = []
+    previous = ordered[0]
+    for current in ordered[1:]:
+        if current.z <= previous.z:
+            raise RuntimeError("Main World arrival handoff must progress northward from the authored spawn")
+        horizontal_gap = max(0.0, current.min_z - previous.max_z)
+        if horizontal_gap > ARRIVAL_TOUCH_EPSILON:
+            raise RuntimeError(
+                f"Main World arrival handoff has a horizontal gap of {horizontal_gap:.3f} studs before {current.name}"
+            )
+        drop = previous.top - current.top
+        if drop <= 0.0 or drop > ARRIVAL_MAX_STEP_DROP + ARRIVAL_TOUCH_EPSILON:
+            raise RuntimeError(f"Main World arrival handoff has an unsafe vertical step of {drop:.3f} studs")
+        horizontal_gaps.append(horizontal_gap)
+        step_drops.append(drop)
+        previous = current
+
+    road_by_name = {road.name: road for road in roads}
+    road = road_by_name.get(ARRIVAL_ROAD)
+    if road is None:
+        raise RuntimeError(f"Main World arrival metrics cannot find road handoff target: {ARRIVAL_ROAD}")
+    final = ordered[-1]
+    road_horizontal_gap = _rect_gap(final, road)
+    road_vertical_gap = abs(final.top - road.top)
+    if road_horizontal_gap > ARRIVAL_TOUCH_EPSILON or road_vertical_gap > ARRIVAL_TOUCH_EPSILON:
+        raise RuntimeError(
+            "Main World arrival handoff does not terminate flush with the regional road: "
+            f"horizontal={road_horizontal_gap:.3f} vertical={road_vertical_gap:.3f}"
+        )
+
+    widths = [surface.size_x for surface in ordered]
+    return {
+        "surface_count": len(ordered),
+        "reachable_surface_count": len(ordered),
+        "reachable_surface_ratio": _coverage(len(ordered), len(ordered)),
+        "step_count": len(step_drops),
+        "safe_step_count": len(step_drops),
+        "safe_step_ratio": _coverage(len(step_drops), len(step_drops)),
+        "landing_top": round(ordered[0].top, 3),
+        "road_top": round(road.top, 3),
+        "vertical_descent": round(ordered[0].top - road.top, 3),
+        "max_step_drop": round(max(step_drops), 3),
+        "min_width": round(min(widths), 3),
+        "max_horizontal_gap": round(max(horizontal_gaps), 3),
+        "road_handoff_horizontal_gap": round(road_horizontal_gap, 3),
+        "road_handoff_vertical_gap": round(road_vertical_gap, 3),
+        "bounds": _bounds(ordered),
+    }
 
 
 def collect_metrics() -> dict[str, Any]:
@@ -144,6 +256,7 @@ def collect_metrics() -> dict[str, Any]:
             "Main World metrics found regional roads missing district targets: " + ", ".join(missed_districts)
         )
 
+    arrival = _arrival_metrics(world, roads)
     traversal_edges = _edge_count(surfaces, walkably_adjacent)
     road_edges = _edge_count(roads, roads_touch)
 
@@ -155,6 +268,7 @@ def collect_metrics() -> dict[str, Any]:
             "dynamic_root_count": len(dynamic_roots),
             "lower_world_group_count": len(LOWER_WORLD_GROUPS),
         },
+        "arrival": arrival,
         "traversal": {
             "surface_count": len(surfaces),
             "reachable_surface_count": len(support_reachable),
@@ -199,11 +313,14 @@ def main() -> int:
         return 0
 
     world = metrics["world"]
+    arrival = metrics["arrival"]
     traversal = metrics["traversal"]
     navigation = metrics["navigation"]
     print(
         "[main-world-metrics] OK — "
         f"{world['mounted_root_count']} mounts; "
+        f"arrival {arrival['reachable_surface_count']}/{arrival['surface_count']} reachable, "
+        f"max step {arrival['max_step_drop']:.3f}; "
         f"traversal {traversal['reachable_surface_count']}/{traversal['surface_count']} reachable "
         f"across {traversal['graph_edge_count']} edges; "
         f"roads {navigation['reachable_road_count']}/{navigation['road_count']} reachable "
