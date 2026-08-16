@@ -27,6 +27,8 @@
         "Routes": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Routes.model.json" },
         "TraversalRepair": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-TraversalRepair.model.json" },
         "OuterTraversalRepair": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-OuterTraversalRepair.model.json" },
+        "GroundSkin": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-GroundSkin.model.json" },
+        "RegionalRoutes": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-RegionalRoutes.model.json" },
         "Environment": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Environment.model.json" },
         "Structures": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Structures.model.json" },
         "Props": { "$path": "assets/recovered-world/models/main-world-studio-2026-08-11/MainWorld-Props.model.json" },
