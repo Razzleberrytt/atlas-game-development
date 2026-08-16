@@ -31,12 +31,14 @@ assert(stateCommit < targetClear, "firing-mode latch must reset before release d
 -- Keep this integration audit coupled to executable resolver coverage: the
 -- dedicated fixture must still prove both semi-auto and burst re-arm through
 -- exactly the nil-target release signal used above.
-for _, token in {
-	"local releasedSemi = resolver.resolve(operative(), nil, heldSemi.weaponStateAfter, 2.1)",
-	"assert(semi.decision.shouldFire, \"semi did not re-arm after release\")",
-	"local releasedBurst = resolver.resolve(operative(), nil, heldBurst.weaponStateAfter, 2.1)",
-	"assert(burst.decision.shouldFire, \"burst did not re-arm after release\")",
-} do
+for _, token in
+	{
+		"local releasedSemi = resolver.resolve(operative(), nil, heldSemi.weaponStateAfter, 2.1)",
+		'assert(semi.decision.shouldFire, "semi did not re-arm after release")',
+		"local releasedBurst = resolver.resolve(operative(), nil, heldBurst.weaponStateAfter, 2.1)",
+		'assert(burst.decision.shouldFire, "burst did not re-arm after release")',
+	}
+do
 	assert(string.find(firingModes, token, 1, true), "firing-mode release regression coverage missing: " .. token)
 end
 
