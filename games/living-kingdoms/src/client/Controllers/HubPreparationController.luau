@@ -7,6 +7,8 @@ local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local NETWORK_WAIT_SECONDS = 20
+
 local Controller = {}
 local player = Players.LocalPlayer
 
@@ -117,9 +119,18 @@ function Controller.start()
 	createCloseAffordance()
 	closeHubUi()
 
-	local expeditionNetwork = ReplicatedStorage:WaitForChild("ExpeditionNetwork")
-	local expeditionState = expeditionNetwork:WaitForChild("State") :: RemoteEvent
-	local expeditionReadState = expeditionNetwork:WaitForChild("ReadState") :: RemoteFunction
+	local expeditionNetwork = ReplicatedStorage:WaitForChild("ExpeditionNetwork", NETWORK_WAIT_SECONDS)
+	assert(expeditionNetwork ~= nil, "ExpeditionNetwork did not become available before the client bootstrap timeout")
+	local expeditionState = expeditionNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+	assert(
+		expeditionState ~= nil,
+		"ExpeditionNetwork.State did not become available before the client bootstrap timeout"
+	)
+	local expeditionReadState = expeditionNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+	assert(
+		expeditionReadState ~= nil,
+		"ExpeditionNetwork.ReadState did not become available before the client bootstrap timeout"
+	)
 	table.insert(connections, expeditionState.OnClientEvent:Connect(applyExpeditionState))
 	local stateOk, snapshot = pcall(function()
 		return expeditionReadState:InvokeServer()
