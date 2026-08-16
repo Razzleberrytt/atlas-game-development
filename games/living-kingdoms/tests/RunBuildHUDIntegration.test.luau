@@ -42,7 +42,10 @@ local bootstrapClient = fs.readFile("games/living-kingdoms/src/client/init.clien
 -- and the two identity-free intents.
 local runBuildNetworkContract =
 	'ensureNetwork("RunBuildNetwork", { "State", "SubmitRelicChoice", "SubmitRelicReplacement" }, { "ReadState" })'
-assertThat(contains(bootstrapServer, runBuildNetworkContract), "the server must own the exact run-build network contract")
+assertThat(
+	contains(bootstrapServer, runBuildNetworkContract),
+	"the server must own the exact run-build network contract"
+)
 assertThat(contains(bootstrapServer, "ensureRunBuildNetwork()"), "the run-build network must be created at bootstrap")
 
 -- Every published payload is the store's safe snapshot, never internal state.
