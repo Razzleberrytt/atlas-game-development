@@ -17,6 +17,9 @@
           "Disabled": false,
           "RunContext": "Server"
         }
+      },
+      "MainWorldStaticSceneStabilizer": {
+        "$path": "src/main-world/server/MainWorldStaticSceneStabilizer.luau"
       }
     },
     "Workspace": {
