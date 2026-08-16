@@ -27,7 +27,10 @@ for _, message in
 		"ExpeditionNetwork.ReadState did not become available before the client bootstrap timeout",
 	}
 do
-	assert(string.find(source, message, 1, true) ~= nil, "missing expedition lifecycle bootstrap assertion: " .. message)
+	assert(
+		string.find(source, message, 1, true) ~= nil,
+		"missing expedition lifecycle bootstrap assertion: " .. message
+	)
 end
 
 print("ExpeditionLifecycleNetworkWaitSourceAudit: ExpeditionNetwork startup waits are bounded")
