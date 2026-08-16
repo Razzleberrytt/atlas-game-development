@@ -70,6 +70,7 @@ def validate_docs() -> None:
     python_script("Patch 0.7 acceptance matrix", "scripts/validate_patch_07_acceptance.py")
     python_script("modular asset systems", "scripts/validate_modular_asset_systems.py")
     python_script("Main World CI artifact contract", "scripts/validate_main_world_ci_artifact.py")
+    python_script("Main World traversal topology", "scripts/validate_main_world_traversal_topology.py")
     python_script(
         "Main World artifact bundle verifier",
         "scripts/verify_main_world_artifact_bundle.py",
