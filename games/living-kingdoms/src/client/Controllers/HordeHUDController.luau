@@ -38,13 +38,17 @@ local localPlayer = Players.LocalPlayer
 local progressionNetwork = ReplicatedStorage:WaitForChild("ProgressionNetwork", NETWORK_WAIT_SECONDS)
 assert(progressionNetwork ~= nil, "ProgressionNetwork did not become available before the client bootstrap timeout")
 local progressionStateRemote = progressionNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
-assert(progressionStateRemote ~= nil, "ProgressionNetwork.State did not become available before the client bootstrap timeout")
+assert(
+	progressionStateRemote ~= nil,
+	"ProgressionNetwork.State did not become available before the client bootstrap timeout"
+)
 local progressionReadStateRemote = progressionNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
 assert(
 	progressionReadStateRemote ~= nil,
 	"ProgressionNetwork.ReadState did not become available before the client bootstrap timeout"
 )
-local progressionChooseUpgradeRemote = progressionNetwork:WaitForChild("ChooseUpgrade", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+local progressionChooseUpgradeRemote =
+	progressionNetwork:WaitForChild("ChooseUpgrade", NETWORK_WAIT_SECONDS) :: RemoteEvent?
 assert(
 	progressionChooseUpgradeRemote ~= nil,
 	"ProgressionNetwork.ChooseUpgrade did not become available before the client bootstrap timeout"
