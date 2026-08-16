@@ -1,88 +1,129 @@
 # Atlas — Automated-First Execution Policy
 
-**Status:** CURRENT EXECUTION AND VERIFICATION AUTHORITY  
+**Status:** CURRENT EXECUTION-CADENCE AUTHORITY  
 **Adopted:** 2026-08-13  
-**Scope:** task sequencing, merge gates, patch progression, and the role of manual Roblox Studio/device/play checks.  
-**Supersedes for scheduling:** any older STOP/PLAY/FIX, Studio gate, device gate, playtest gate, acceptance handoff, or patch transition that requires manual evidence before ordinary source work can continue.
+**Refreshed:** 2026-08-16  
+**Scope:** implementation cadence, automated merge gates, and the role of manual Roblox Studio/device/play evidence.  
+**Task selection authority:** [`EXECUTION-DASHBOARD.md`](EXECUTION-DASHBOARD.md).
 
-## Required development gate
+## Core rule
 
-The required gate for routine implementation is **automated repository validation**.
+Routine source development proceeds through **automated repository validation first**. Missing ordinary Studio/device/play evidence does not create a blanket source freeze.
 
 ```text
-highest-ROI ranked task
-→ implement
-→ canonical automated validation
+dashboard-selected task
+→ fetch fresh main + inspect open PR overlap
+→ implement smallest coherent increment
+→ run risk-appropriate automated validation
 → fix deterministic failures
-→ merge when green
-→ activate the next ranked task/batch
+→ merge only when required gate is green
+→ update execution/coverage truth if materially changed
+→ continue
 ```
 
-Manual Studio/device/play checks are optional evidence. They do not block source work, do not occupy NOW/NEXT by default, and do not prevent a patch from advancing through its automated task plan.
+This policy controls cadence. It does **not** choose the current feature/patch; the dashboard does.
 
-## Manual checks are never a permission gate
+## Manual evidence is evidence, not ordinary permission
 
-Do not mark work blocked, gated, waiting, stopped, or ineligible solely because manual testing has not happened.
+Manual Studio/device/play checks remain valuable for facts automation cannot establish, including:
 
-Manual evidence becomes an immediate task only when:
+- game feel and responsiveness;
+- visual/audio readability;
+- real-device controls/safe areas;
+- terrain/world composition;
+- streaming/live timing;
+- multiplayer timing;
+- representative memory/performance;
+- publishing/asset behavior.
 
-1. the user explicitly asks for that evidence; or
-2. an actual runtime observation has already exposed a reproducible defect.
+Do not mark ordinary source work blocked merely because one of those checks has not yet run.
 
-In the second case, the defect is the blocker. Missing additional testing is not.
+Earlier runtime evidence becomes mandatory when:
 
-## Truthful status language
+1. a reproducible runtime failure has already invalidated an assumption; or
+2. continuing would cross an irreversible/high-consequence persistence, security, migration, or platform boundary that cannot be safely bounded by source/tests alone.
 
-Use:
+In those cases the **concrete defect or risk** is the blocker, not the abstract absence of testing.
 
-- **BUILDING** — implementation is active.
-- **BUILT — AUTOMATED GREEN** — applicable automated checks pass.
-- **AUTOMATED ACCEPTANCE COMPLETE** — the patch's machine-readable acceptance matrix is green.
-- **UNMEASURED** — an experiential/runtime fact has not been manually measured; informational only.
-- **VERIFIED — MANUAL EVIDENCE** — optional manual evidence actually passed for the stated fact.
-- **BLOCKED — <concrete reason>** — a named technical condition prevents safe/correct continuation.
+## Status language
 
-Do not use `BUILT — VERIFICATION PENDING` as a scheduling gate. Existing historical occurrences do not stop work.
+Execution status remains the repository-wide vocabulary:
 
-## What automated validation must cover
+- **NOT STARTED**
+- **BUILDING**
+- **BUILT — VERIFICATION PENDING**
+- **VERIFIED**
+- **DEFERRED**
+- **BLOCKED — <concrete reason>**
+- **HISTORICAL**
 
-Use the canonical repository gate (`python scripts/validate.py full` / CI equivalent) and its component checks as applicable:
+A source increment may be **BUILT — VERIFICATION PENDING** after its required automated checks pass while player/engine evidence is still unmeasured. This is not a scheduling lock.
 
-- roadmap/authority integrity;
+When a patch has an explicit machine-readable automated acceptance artifact, the dashboard may additionally describe that patch as **automated-acceptance complete**. That phrase never means subjective/runtime evidence was measured if it was not.
+
+Development-coverage states (`partial`, `substantial`, etc.) are a separate ontology and never substitute for execution status.
+
+## Required automated validation
+
+Use the canonical repository entry point and risk tiers from root `AGENTS.md`:
+
+```bash
+python scripts/validate.py docs
+python scripts/validate.py fast
+python scripts/validate.py full
+```
+
+Depending on scope, this covers:
+
+- documentation/authority integrity;
+- development-coverage registry/generated-view integrity;
 - repository/layout validation;
 - formatting/linting;
-- unit/regression fixtures;
-- deterministic seeded simulations;
+- Lune/unit/regression fixtures;
+- deterministic simulations;
 - Rojo builds;
-- source ownership and trust-boundary audits;
-- schema/reference/content validators;
+- source ownership/trust-boundary audits;
+- content/schema/reference validation;
 - persistence/migration/recovery invariants;
-- machine-readable patch acceptance rows.
+- Main World topology/readability/artifact checks;
+- machine-readable patch acceptance where still applicable.
 
-Known deterministic failures are fixed before merge unless they are proven unrelated on the same base.
-
-## What manual evidence may still measure
-
-Automation should not invent claims about subjective feel, visual/audio readability, real-device ergonomics, representative live memory/performance, or publishing behavior. Those facts may remain **UNMEASURED** indefinitely without stopping routine source progress.
-
-If optional manual evidence later reveals a reproducible issue, convert that issue into the highest-ROI repair task and continue after the repair is automated-green.
+Known branch-caused deterministic failures are fixed before merge. Do not weaken tests or validation to force green.
 
 ## Patch progression
 
-Patch boundaries organize work; they do not require a human handoff.
+Patch boundaries organize product scope; they do not independently choose the current work.
 
-For Patch 0.7, `PATCH-0.7-100-TASK-ROI-BACKLOG.md` is the active task authority. Execute exactly 10 ranked tasks at a time, merge after the automated gate is green, mark the batch DONE, then activate the next 10.
+- The dashboard activates the current lane/patch/capability.
+- A patch may advance on automated source work while manual evidence remains pending when doing so is dependency-safe.
+- A reproducible runtime failure preempts dependent expansion.
+- Historical batch mechanics do not remain active after the dashboard closes that patch.
+
+**Patch 0.7 note:** its former 10-task automated batching process is closed historical execution detail. The dashboard records its current acceptance truth; this policy no longer tells agents to execute Patch 0.7 batches.
+
+## Broad audit / exhaustive-improvement requests
+
+Use the development coverage system to classify breadth without replacing the dashboard:
+
+```bash
+python scripts/development_coverage.py report
+```
+
+Then route candidate work through `LK concern → canonical engine → real owner → dependency/PR check → implementation → validation → evidence/coverage update`.
+
+Coverage health is not automatic priority. Current defects, player value, dependencies, and dashboard selection remain controlling.
 
 ## Agent rule for “continue”
 
 1. fetch current `main`;
-2. inspect open PRs;
-3. read the active ranked backlog;
-4. identify concrete technical blockers, if any;
-5. otherwise implement the current 10-task batch;
-6. run canonical automated validation;
-7. merge green work;
-8. update the backlog;
-9. immediately make the next 10 the active batch.
+2. inspect open PRs for overlap, freshness, stack dependencies, and superseding work;
+3. read the execution dashboard;
+4. fix a concrete blocking regression first when one exists;
+5. otherwise implement the dashboard-selected coherent increment;
+6. run the required automated gate;
+7. merge only when green under repository WIP/merge rules;
+8. record pending manual evidence truthfully without inserting an artificial stop;
+9. update dashboard/coverage only when their truth materially changed;
+10. continue until the dashboard queue is exhausted or a real named blocker prevents safe progress.
 
-No Studio handoff or manual-testing request is inserted automatically.
+> **Automation gates source merges. Evidence gates claims. The dashboard chooses the work.**
