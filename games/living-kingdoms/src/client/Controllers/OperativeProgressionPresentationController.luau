@@ -18,9 +18,22 @@ local NETWORK_WAIT_SECONDS = 20
 local Controller = {}
 local player = Players.LocalPlayer
 local progressionNetwork = ReplicatedStorage:WaitForChild("OperativeProgressionNetwork", NETWORK_WAIT_SECONDS)
-local progressionReadState = progressionNetwork:WaitForChild("ReadState") :: RemoteFunction
+assert(
+	progressionNetwork ~= nil,
+	"OperativeProgressionNetwork did not become available before the client bootstrap timeout"
+)
+local progressionReadState = progressionNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(
+	progressionReadState ~= nil,
+	"OperativeProgressionNetwork.ReadState did not become available before the client bootstrap timeout"
+)
 local inventoryNetwork = ReplicatedStorage:WaitForChild("InventoryNetwork", NETWORK_WAIT_SECONDS)
-local inventoryStateRemote = inventoryNetwork:WaitForChild("State") :: RemoteEvent
+assert(inventoryNetwork ~= nil, "InventoryNetwork did not become available before the client bootstrap timeout")
+local inventoryStateRemote = inventoryNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	inventoryStateRemote ~= nil,
+	"InventoryNetwork.State did not become available before the client bootstrap timeout"
+)
 
 local started = false
 local connections: { RBXScriptConnection } = {}
