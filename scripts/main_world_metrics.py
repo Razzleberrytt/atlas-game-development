@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from typing import Any, TypeVar
 
 from validate_main_world_route_readability import (
@@ -45,7 +46,7 @@ from validate_main_world_traversal_topology import (
 )
 
 T = TypeVar("T")
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 ARRIVAL_LANDING = "main_world.arrival_handoff.landing"
 ARRIVAL_STEP_PREFIX = "main_world.arrival_handoff.step."
@@ -56,13 +57,10 @@ ARRIVAL_MAX_STEP_DROP = 1.0
 ARRIVAL_MIN_WIDTH = 12.0
 
 
-def _edge_count(items: Sequence[T], adjacent: Callable[[T, T], bool]) -> int:
-    edges = 0
-    for index, left in enumerate(items):
-        for right in items[index + 1 :]:
-            if adjacent(left, right):
-                edges += 1
-    return edges
+def _coverage(reached: int, total: int) -> float:
+    if total <= 0:
+        raise RuntimeError("Main World coverage denominator must be positive")
+    return round(reached / total, 6)
 
 
 def _bounds(items: Sequence[Any]) -> dict[str, float]:
@@ -76,10 +74,170 @@ def _bounds(items: Sequence[Any]) -> dict[str, float]:
     }
 
 
-def _coverage(reached: int, total: int) -> float:
-    if total <= 0:
-        raise RuntimeError("Main World coverage denominator must be positive")
-    return round(reached / total, 6)
+def _graph_resilience(items: Sequence[T], adjacent: Callable[[T, T], bool]) -> dict[str, Any]:
+    """Measure structural redundancy in an undirected world graph.
+
+    Connectivity alone can hide a brittle map where one road or traversal tile is
+    the only route between large regions. Tarjan's algorithm identifies those
+    articulation points and bridge edges in linear time after the adjacency graph
+    is built. The current authored graphs are small, so the geometry-to-adjacency
+    construction remains the same deterministic O(n^2) pair scan used elsewhere.
+    """
+
+    if not items:
+        raise RuntimeError("cannot compute Main World graph resilience from an empty collection")
+
+    names = [str(getattr(item, "name")) for item in items]
+    if len(set(names)) != len(names):
+        raise RuntimeError("Main World graph resilience requires unique node names")
+
+    adjacency: list[set[int]] = [set() for _ in items]
+    edge_count = 0
+    for left_index, left in enumerate(items):
+        for right_index in range(left_index + 1, len(items)):
+            if adjacent(left, items[right_index]):
+                adjacency[left_index].add(right_index)
+                adjacency[right_index].add(left_index)
+                edge_count += 1
+
+    component_count = 0
+    component_seen: set[int] = set()
+    for root in range(len(items)):
+        if root in component_seen:
+            continue
+        component_count += 1
+        stack = [root]
+        component_seen.add(root)
+        while stack:
+            current = stack.pop()
+            for neighbor in adjacency[current]:
+                if neighbor not in component_seen:
+                    component_seen.add(neighbor)
+                    stack.append(neighbor)
+
+    discovery = [-1] * len(items)
+    low = [-1] * len(items)
+    parent = [-1] * len(items)
+    articulation_points: set[int] = set()
+    bridges: set[tuple[int, int]] = set()
+    next_discovery = 0
+
+    def visit(node: int) -> None:
+        nonlocal next_discovery
+        discovery[node] = next_discovery
+        low[node] = next_discovery
+        next_discovery += 1
+        child_count = 0
+
+        for neighbor in sorted(adjacency[node]):
+            if discovery[neighbor] == -1:
+                parent[neighbor] = node
+                child_count += 1
+                visit(neighbor)
+                low[node] = min(low[node], low[neighbor])
+
+                if parent[node] == -1 and child_count > 1:
+                    articulation_points.add(node)
+                if parent[node] != -1 and low[neighbor] >= discovery[node]:
+                    articulation_points.add(node)
+                if low[neighbor] > discovery[node]:
+                    bridges.add((min(node, neighbor), max(node, neighbor)))
+            elif neighbor != parent[node]:
+                low[node] = min(low[node], discovery[neighbor])
+
+    for node in range(len(items)):
+        if discovery[node] == -1:
+            visit(node)
+
+    degrees = [len(neighbors) for neighbors in adjacency]
+    isolated_names = sorted(names[index] for index, degree in enumerate(degrees) if degree == 0)
+    dead_end_names = sorted(names[index] for index, degree in enumerate(degrees) if degree == 1)
+    articulation_names = sorted(names[index] for index in articulation_points)
+    bridge_edges = sorted(
+        ({"left": names[left], "right": names[right]} for left, right in bridges),
+        key=lambda edge: (edge["left"], edge["right"]),
+    )
+    degree_distribution: dict[str, int] = {}
+    for degree in sorted(set(degrees)):
+        degree_distribution[str(degree)] = degrees.count(degree)
+
+    bridge_count = len(bridges)
+    return {
+        "node_count": len(items),
+        "edge_count": edge_count,
+        "connected_component_count": component_count,
+        "isolated_node_count": len(isolated_names),
+        "isolated_node_names": isolated_names,
+        "dead_end_node_count": len(dead_end_names),
+        "dead_end_node_names": dead_end_names,
+        "min_degree": min(degrees),
+        "max_degree": max(degrees),
+        "average_degree": round(sum(degrees) / len(degrees), 6),
+        "degree_distribution": degree_distribution,
+        "degree_at_least_two_ratio": _coverage(sum(degree >= 2 for degree in degrees), len(degrees)),
+        "articulation_point_count": len(articulation_names),
+        "articulation_point_names": articulation_names,
+        "bridge_count": bridge_count,
+        "bridge_edges": bridge_edges,
+        "cycle_rank": edge_count - len(items) + component_count,
+        "edge_redundancy_ratio": round((edge_count - bridge_count) / edge_count, 6) if edge_count > 0 else 0.0,
+    }
+
+
+@dataclass(frozen=True)
+class _SyntheticNode:
+    name: str
+
+
+def _synthetic_graph(names: Sequence[str], edges: set[tuple[str, str]]) -> tuple[list[_SyntheticNode], Callable[[Any, Any], bool]]:
+    nodes = [_SyntheticNode(name) for name in names]
+    normalized = {tuple(sorted(edge)) for edge in edges}
+
+    def adjacent(left: _SyntheticNode, right: _SyntheticNode) -> bool:
+        return tuple(sorted((left.name, right.name))) in normalized
+
+    return nodes, adjacent
+
+
+def _self_test_graph_resilience() -> None:
+    path, path_adjacent = _synthetic_graph(
+        ["A", "B", "C", "D"],
+        {("A", "B"), ("B", "C"), ("C", "D")},
+    )
+    path_metrics = _graph_resilience(path, path_adjacent)
+    assert path_metrics["connected_component_count"] == 1
+    assert path_metrics["edge_count"] == 3
+    assert path_metrics["cycle_rank"] == 0
+    assert path_metrics["dead_end_node_names"] == ["A", "D"]
+    assert path_metrics["articulation_point_names"] == ["B", "C"]
+    assert path_metrics["bridge_count"] == 3
+    assert path_metrics["edge_redundancy_ratio"] == 0.0
+
+    cycle, cycle_adjacent = _synthetic_graph(
+        ["A", "B", "C"],
+        {("A", "B"), ("B", "C"), ("C", "A")},
+    )
+    cycle_metrics = _graph_resilience(cycle, cycle_adjacent)
+    assert cycle_metrics["connected_component_count"] == 1
+    assert cycle_metrics["edge_count"] == 3
+    assert cycle_metrics["cycle_rank"] == 1
+    assert cycle_metrics["dead_end_node_count"] == 0
+    assert cycle_metrics["articulation_point_count"] == 0
+    assert cycle_metrics["bridge_count"] == 0
+    assert cycle_metrics["degree_at_least_two_ratio"] == 1.0
+    assert cycle_metrics["edge_redundancy_ratio"] == 1.0
+
+    disconnected, disconnected_adjacent = _synthetic_graph(
+        ["A", "B", "C"],
+        {("A", "B")},
+    )
+    disconnected_metrics = _graph_resilience(disconnected, disconnected_adjacent)
+    assert disconnected_metrics["connected_component_count"] == 2
+    assert disconnected_metrics["isolated_node_names"] == ["C"]
+    assert disconnected_metrics["dead_end_node_names"] == ["A", "B"]
+    assert disconnected_metrics["bridge_count"] == 1
+    assert disconnected_metrics["articulation_point_count"] == 0
+    assert disconnected_metrics["cycle_rank"] == 0
 
 
 def _rect_gap(left: Surface, right: Any) -> float:
@@ -257,8 +415,8 @@ def collect_metrics() -> dict[str, Any]:
         )
 
     arrival = _arrival_metrics(world, roads)
-    traversal_edges = _edge_count(surfaces, walkably_adjacent)
-    road_edges = _edge_count(roads, roads_touch)
+    traversal_resilience = _graph_resilience(surfaces, walkably_adjacent)
+    road_resilience = _graph_resilience(roads, roads_touch)
 
     return {
         "schema_version": SCHEMA_VERSION,
@@ -273,7 +431,8 @@ def collect_metrics() -> dict[str, Any]:
             "surface_count": len(surfaces),
             "reachable_surface_count": len(support_reachable),
             "reachable_surface_ratio": _coverage(len(support_reachable), len(surfaces)),
-            "graph_edge_count": traversal_edges,
+            "graph_edge_count": traversal_resilience["edge_count"],
+            "resilience": traversal_resilience,
             "hub_surface_count": hub_surface_count,
             "preserved_route_anchor_count": len(routes),
             "supported_route_anchor_count": len(routes) - len(unsupported_routes),
@@ -287,7 +446,8 @@ def collect_metrics() -> dict[str, Any]:
             "road_count": len(roads),
             "reachable_road_count": len(road_reachable),
             "reachable_road_ratio": _coverage(len(road_reachable), len(roads)),
-            "road_graph_edge_count": road_edges,
+            "road_graph_edge_count": road_resilience["edge_count"],
+            "resilience": road_resilience,
             "road_support_sample_count": support_sample_count,
             "district_target_count": len(DISTRICT_TARGETS),
             "reached_district_target_count": len(reached_districts),
@@ -300,12 +460,23 @@ def collect_metrics() -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--json",
         action="store_true",
         help="emit the canonical metrics document as JSON instead of the concise validation summary",
     )
+    mode.add_argument(
+        "--self-test",
+        action="store_true",
+        help="run deterministic synthetic graph tests for the resilience algorithm",
+    )
     args = parser.parse_args()
+
+    if args.self_test:
+        _self_test_graph_resilience()
+        print("[main-world-metrics] graph resilience self-test passed")
+        return 0
 
     metrics = collect_metrics()
     if args.json:
@@ -315,16 +486,20 @@ def main() -> int:
     world = metrics["world"]
     arrival = metrics["arrival"]
     traversal = metrics["traversal"]
+    traversal_resilience = traversal["resilience"]
     navigation = metrics["navigation"]
+    road_resilience = navigation["resilience"]
     print(
         "[main-world-metrics] OK — "
         f"{world['mounted_root_count']} mounts; "
         f"arrival {arrival['reachable_surface_count']}/{arrival['surface_count']} reachable, "
         f"max step {arrival['max_step_drop']:.3f}; "
         f"traversal {traversal['reachable_surface_count']}/{traversal['surface_count']} reachable "
-        f"across {traversal['graph_edge_count']} edges; "
+        f"across {traversal['graph_edge_count']} edges, "
+        f"{traversal_resilience['articulation_point_count']} chokepoints/{traversal_resilience['bridge_count']} bridges; "
         f"roads {navigation['reachable_road_count']}/{navigation['road_count']} reachable "
-        f"across {navigation['road_graph_edge_count']} edges; "
+        f"across {navigation['road_graph_edge_count']} edges, "
+        f"{road_resilience['articulation_point_count']} chokepoints/{road_resilience['bridge_count']} bridges; "
         f"district reach {navigation['reached_district_target_count']}/{navigation['district_target_count']}"
     )
     return 0
