@@ -15,7 +15,7 @@ local releaseReset = assert(
 	"accepted trigger release must reset firing-mode state through AutomaticFireResolver"
 )
 local nilTarget = assert(
-	string.find(runtime, "\n\t\tnil,\n\t\tplayerState.weaponState,", releaseReset, true),
+	string.find(runtime, "}, nil, playerState.weaponState, nowTimestamp)", releaseReset, true),
 	"trigger release must use the resolver's nil-target reset path"
 )
 local stateCommit = assert(
