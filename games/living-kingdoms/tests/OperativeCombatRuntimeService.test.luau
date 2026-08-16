@@ -200,7 +200,6 @@ local function signal()
 	return value
 end
 
--- Enemy director mock with the production read/commit surface.
 local enemies = {}
 local commitCalls = {}
 local enemyFactReadCount = 0
@@ -294,7 +293,6 @@ local function addEnemy(entityId: string, x: number, z: number, overrides: { [st
 	return enemy
 end
 
--- Life-service mock.
 local combatAllowedByPlayer = {}
 local restrictionCalls = {}
 local lifeSignal = signal()
@@ -702,10 +700,7 @@ enemies[1].currentHealth = 0
 enemies[1].isAlive = false
 now += 1
 service.evaluateAt(now)
-assert(
-	#messagesOfKind("TargetCleared") == clearedBeforeDeath + 1,
-	"a dead enemy must clear the disclosed target"
-)
+assert(#messagesOfKind("TargetCleared") == clearedBeforeDeath + 1, "a dead enemy must clear the disclosed target")
 
 reset({ operativeA })
 addEnemy("enemy.far", visibilityRadius + 1, 0)
