@@ -22,9 +22,16 @@ local ResponsivePanelScale = require(script.Parent.Parent.Presentation.Responsiv
 local Controller = {}
 local player = Players.LocalPlayer
 local network = ReplicatedStorage:WaitForChild("ExpeditionLobbyNetwork", NETWORK_WAIT_SECONDS)
-local request = network:WaitForChild("Request") :: RemoteFunction
-local stateRemote = network:WaitForChild("State") :: RemoteEvent
-local readState = network:WaitForChild("ReadState") :: RemoteFunction
+assert(network ~= nil, "ExpeditionLobbyNetwork did not become available before the client bootstrap timeout")
+local request = network:WaitForChild("Request", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(request ~= nil, "ExpeditionLobbyNetwork.Request did not become available before the client bootstrap timeout")
+local stateRemote = network:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "ExpeditionLobbyNetwork.State did not become available before the client bootstrap timeout")
+local readState = network:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(
+	readState ~= nil,
+	"ExpeditionLobbyNetwork.ReadState did not become available before the client bootstrap timeout"
+)
 
 local started = false
 local connection: RBXScriptConnection? = nil
