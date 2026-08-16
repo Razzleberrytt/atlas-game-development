@@ -1,753 +1,433 @@
-# Atlas — Master Roadmap v2.8
+# Atlas — Master Roadmap v3.0
 
-**Milestone/product authority:** Atlas v2.8 complete product path  
-**Active runtime execution authority:** Blueprint v2.7 Rollout & Observability  
-**Date:** 2026-08-08  
-**Current evidence claim:** E2 on the accepted pinned-artifact R1/replay packet
+**Status:** CURRENT LONG-RANGE PRODUCT SCOPE  
+**Refreshed:** 2026-08-16  
+**Purpose:** describe the complete destination and dependency shape without maintaining a second daily execution queue.  
+**Current execution:** [`EXECUTION-DASHBOARD.md`](EXECUTION-DASHBOARD.md).  
+**Player-facing patch layering:** [`PLAYABLE-MVP-PATCH-EXECUTION.md`](PLAYABLE-MVP-PATCH-EXECUTION.md).
 
-This document describes the full dependency-gated path from the current repository through a polished vertical slice, durable game, launch, and post-launch operation.
+## Product destination
 
-**v2.8 does not authorize agents to skip the active v2.7 rollout.** Blueprint v2.7, Production Core v2.7, the active-place rollout, and accepted runtime evidence still control current runtime execution order. Future phases exist here so the destination is explicit before they become eligible.
+Atlas is a **cooperative action RPG on Roblox** built around:
 
-Read [`../bible/00-current-product-authority.md`](../bible/00-current-product-authority.md) before interpreting older product documents.
+- readable, skillful cooperative combat;
+- run-based build/loot decisions;
+- durable identity and progression without mandatory runaway power inflation;
+- a recognizable safe Main World players return to;
+- replayable expeditions, dungeons, encounters, elites, and bosses;
+- discovery, landmarks, secrets, quests, NPCs, vendors, gathering/crafting where they improve the loop;
+- server-authoritative valuable game truth;
+- reproducible and diagnosable procedural/systemic variation;
+- data-driven content growth through stable owners/registries;
+- strong solo-to-co-op support;
+- evidence-driven live operation.
 
-## Status legend
+Product-direction conflicts are resolved by [`../bible/00-current-product-authority.md`](../bible/00-current-product-authority.md).
 
-- `[ ]` planned / not started
-- `[~]` active, partially complete, or preparation exists
-- `[x]` complete with applicable evidence
-- `[!]` blocked by an earlier gate
-- `[L]` deliberately locked future phase
-- `[H]` historical implementation record; useful provenance but not current execution authority
+## What this document owns
 
-## Authority model
+This roadmap owns **long-range scope and dependency intent**.
+
+It does **not** own:
+
+- today's task — the dashboard does;
+- whether unrelated work may proceed — Parallel Development Policy does;
+- automated-vs-manual cadence — Automated-First / Build-Through policies do;
+- runtime facts — source + accepted evidence do;
+- exhaustive concern identities — the `LK-001`–`LK-300` development taxonomy does.
+
+Historical versioned checkpoints, old PR numbers, and old evidence-gate queues are intentionally not duplicated here.
+
+## Authority relationship
 
 ```text
 accepted runtime evidence / current Roblox platform behavior
-→ Blueprint v2.7 + Production Core v2.7 for active runtime execution
-→ Current Product Authority + this Master Roadmap v2.8
-→ Active Place Rollout + Cross-System Traceability + production-control artifacts
-→ accepted current specifications / architecture decisions
-→ specialist visual/environment/Studio bibles
-→ historical charters, pivots and older roadmaps
+→ canonical source + repository configuration
+→ Current Product Authority
+→ Parallel Development Policy
+→ Execution Dashboard
+→ Automated-First / Build-Through policies
+→ Playable Patch Scope
+→ this Master Roadmap
+→ specialist architecture/specifications/production guidance
+→ Development Taxonomy/Atlas/coverage report for cross-system accounting
+→ historical provenance
 ```
 
-A future phase being documented here is not permission to implement it early.
+## Core architecture laws
 
-# Current checkpoint — 2026-08-08
+1. **One authority per valuable truth.** Combat, health, enemy state, mission state, loot, inventory, progression, persistence, economy, and ownership remain server-authoritative.
+2. **No parallel gameplay architecture.** New features extend canonical owners or explicit stable seams before new services are considered.
+3. **Repository-first.** `games/living-kingdoms/src` is canonical runtime source; Rojo project mappings define DataModel placement; tests and validators are first-class production assets.
+4. **Stable identity.** Prefer validated IDs/references/configuration over hidden object coupling.
+5. **Deterministic where useful.** Seeded/generated systems must be reproducible and bounded.
+6. **Playability before breadth.** Preserve a complete playable baseline while adding coherent layers.
+7. **Evidence honesty.** Source/static facts never pretend to prove Studio/device/player experience.
+8. **Durable-value safety.** Valuable mutations are lease/ownership/replay/idempotency safe as appropriate.
+9. **Content scales through seams.** Repeated families trend toward validated data/configuration and bounded extension cost.
+10. **World generation remains readable.** Randomness never excuses impossible navigation, unclear objectives, or unwinnable layouts.
+11. **Low WIP.** Parallel eligibility prevents freezes; it does not justify branch sprawl.
+12. **Coverage is accounting, not authority.** `LK-001`–`LK-300` exposes gaps without demanding one subsystem per row.
 
-Repository state at v2.8 adoption (commit `60229a32ec1f7db3b87a68e5f81ddf8115e665f1`):
+## Current program checkpoint
 
-- accepted evidence remains **E1**;
-- the earlier R1 artifact is no longer valid as an acceptance run because a client-bootstrap stall invalidated every run against that artifact;
-- R1 must be re-pinned to a recorded CI artifact at or after the client-bootstrap fix (`91a1ebe3d04b6d99495f19e7a809bc2b4135fd97`) and rerun under the evidence packet rules;
-- PR #221 remains prepared/blocked single-listener consolidation work;
-- PR #222 remains stacked/prepared R2 ready-gated publisher work and may not activate early;
-- the original Studio import preservation gap has been repaired: all 28/28 Studio-only sources and 1,775/1,775 Workspace identity/hierarchy rows are now preserved;
-- property-backed authored-world reconstruction has advanced beyond the first damaged-archive manifests;
-- stable world-content contracts and canonical runtime ownership guidance exist;
-- a modern Forward Operations Hub shell exists as the temporary preparation bridge;
-- the recovered authored overworld is intentionally a separate future coordinate/lifecycle space from the modern operation forest;
-- held source-managed reconstructions exist for major authored-overworld elements including WorldPath, DungeonPortal, and the quest board;
-- a pre-launch operation-selection contract is being prepared separately; its existence does not authorize early runtime wiring.
+The changing checkpoint belongs in [`EXECUTION-DASHBOARD.md`](EXECUTION-DASHBOARD.md). At this roadmap refresh, the durable Patch 0.7 layer is automated-acceptance closed for non-deferred rows and current main is in concrete maintenance/audit hardening rather than a newly activated broad feature patch.
 
-Runtime evidence refresh after adoption:
+Do not add detailed future/current PR lists here. They become stale too quickly and belong in the dashboard or GitHub itself.
 
-- **R1 accepted on a new pinned CI artifact**: workflow run 31282591558, artifact ID 9028866465, source/build identity c55287fac4ecefc120c541958a6a06049b0a78cd; the fresh packet is [`../production/evidence/2026-08-08-r1-playable-replay-loop.md`](../production/evidence/2026-08-08-r1-playable-replay-loop.md);
-- the capture advanced from 50 to 238 valid compatibility-state messages over 94 seconds, with zero invalid messages, zero queue/discard warnings, and zero enabled broad Highlight targets;
-- the same run closed a P10-0105 acceptance defect: after a terminal result, run 2 now restores 100 health and movement, dismisses the prior debrief, accepts the new operation's revision, and advances the opening objective;
-- accepted evidence advances to **E2** because the pinned artifact started and initialized cleanly; E3–E5 remain open because later reset/respawn, delayed-ready, late-join, multiplayer, streaming, and profiling matrices are not closed by a one-client R1 run.
+# Product layers
 
-## Refreshed since adoption — 2026-08-08
+## Foundation — Repository, runtime safety, observability
 
-- current `main` checkpoint before PR #245: `26898b21bffd8e4b50001da2e3812e17760bab6a`;
-- **BA-010 closed at E1**: the Main World/environment audit and composition specification is complete in [`../specifications/main-world-environment-audit.md`](../specifications/main-world-environment-audit.md) (merged via PR #241); see the refreshed W0 status below;
-- **BA-011 closed at E1**: the Main World source representation/placement strategy is complete in [`../specifications/main-world-source-representation-strategy.md`](../specifications/main-world-source-representation-strategy.md), locked by `MainWorldRepresentationConfig` (merged via PR #242); see the refreshed W1 status below;
-- **BA-012 closed at E1**: the canonical Hub interaction registry (preparation/board/vendor/NPC/crafting/gathering/portal/social anchors and owner/dependency boundaries) is complete in [`../specifications/canonical-hub-interaction-registry.md`](../specifications/canonical-hub-interaction-registry.md) (merged via PR #243); no runtime activation;
-- root `CLAUDE.md` was added as a companion mechanical/architecture reference alongside this operating contract; it does not change roadmap authority or task selection;
-- accepted evidence level is E2, single-listener consolidation is accepted, and the R2 keyed-readiness primitive is now dependency-safe preparation; runtime activation and delayed-ready evidence remain separate gates;
-- **BA-014 closed at E1**: the Main World acceptance matrix — 31 named Studio checks with fixed cameras, capture modes, device profiles, evidence artifacts and provenance-labelled thresholds — is complete in [`../specifications/main-world-acceptance-matrix.md`](../specifications/main-world-acceptance-matrix.md), locked by `MainWorldAcceptanceMatrixConfig`. It ships unrun and accepts nothing; Main World Track 1 (BA-010 → BA-014) is complete as a preparation sequence and its next step is measurement in the human/Studio lane, per [`AGENT-BUILD-AHEAD-QUEUE.md`](AGENT-BUILD-AHEAD-QUEUE.md).
+**Outcome:** the project can change rapidly without losing authority, evidence, reproducibility, or rollback ability.
 
-## Current program state
+Scope:
 
-| Program area | Status | Current meaning |
-|---|---|---|
-| Repository/tooling foundation | [x] | GitHub-first source, Rojo, validation, CI, reproducible builds and agent workflow exist. |
-| Combined-game preservation | [x] | Studio source/hierarchy recovery is repaired; preserved legacy services remain inert. |
-| Product authority reconciliation | [x] | Current Atlas product authority exists; older Living Kingdoms charter is explicitly historical. |
-| v2.7 runtime rollout | [~] | **Primary runtime lane.** R1 and exact-build single-listener consolidation are accepted; the R2 keyed-readiness primitive is source-prepared and dormant, with activation/evidence next. |
-| Controlled build-ahead | [~] | Pure contracts, data, audits, reconstruction and dormant seams may continue without activating future runtime scope. |
-| Main World / environment preparation | [~] | Forward Operations Hub is live as a bridge; authored overworld reconstruction is held; full overworld lifecycle is not active. |
-| E2–E4 integrated evidence | [~] | E2 Studio initialization accepted; E3/E4 integrated and multiplayer evidence remain blocked by later runtime gates. |
-| Durable persistence/value | [!] | Deliberately blocked until runtime ownership/cleanup is accepted. |
-| Vertical-slice activation | [!] | Preparation allowed; broad runtime integration waits for active gates. |
-| Device/performance/accessibility | [!] | Requires representative integrated build and measured evidence. |
-| Outside-player fun gate | [!] | Requires stable integrated loop. |
-| Analytics/live telemetry | [L] | Production instrumentation and E7 promotion belong after a representative player loop exists. |
-| Monetization | [L] | Locked behind outside-player fun/repeat-intent evidence. |
-| Launch/live operations | [L] | Locked until release-candidate gates pass. |
+- GitHub-first canonical source;
+- Rojo operation + dedicated Main World mappings;
+- pinned development toolchain;
+- formatting/lint/unit/integration/build validation;
+- runtime ownership/lifecycle rules;
+- network contract validation;
+- state/presentation rollout safety;
+- migration/rollback evidence;
+- source/import reconciliation;
+- capability/extension/effect-route registries;
+- development-coverage registry/auditor;
+- deterministic diagnostics and production evidence tooling.
 
-# North-star product sequence
+Versioned v2.7 documents remain specialist authority for the runtime state/presentation stabilization boundary they describe. They are not the general product task queue.
 
-The strategic loop is:
+## MVP 0.1 — First complete repeatable run
 
-```text
-Main World arrival
-→ safe orientation / discovery
-→ interaction / humble starting-path choice
-→ deliberate party or expedition launch
-→ seeded authored route / operation / dungeon
-→ mixed combat + exploration + discovery
-→ build / loot / reward decisions
-→ elite / boss / terminal outcome
-→ return safely to Main World
-→ bank eligible progress and retain durable identity
-→ choose what to do next
-```
+**Outcome:** one complete run can be understood, completed, returned from, and replayed without developer intervention.
 
-The first proof remains deliberately smaller:
+Must contain coherent versions of:
 
-```text
-arrive safely and prepare
-→ choose a humble starting path
-→ deliberately enter one readable seeded route
-→ mixed combat with distinct tactical questions
-→ information/discovery interaction
-→ repeatable dungeon/encounter sequence
-→ elite/reward decision
-→ boss/result
-→ return or lose unbanked run gains on death
-→ choose to play again
-```
+- safe arrival/preparation;
+- deliberate launch;
+- exploration/route;
+- combat and enemy variety;
+- loot/reward choice;
+- elite + boss/terminal outcome;
+- failure/retry;
+- return;
+- banking/equipment/upgrade;
+- replay reset;
+- minimal persistence needed by the loop.
 
-Current product authority defines this as an exploration-first, hard-but-fair extraction RPG. Existing horde/director machinery may supply roaming pressure and authored encounter events, but numbered-wave/tower-defense presentation is not a target experience. The ordinary HUD is contextual; direct world interactions use native `E`/controller/touch prompts with server-owned consequences; seeded variation must remain reproducible, navigable and winnable. The humble melee-first opening, safe-home lifecycle and durable death/unlock boundary require their own scoped runtime migrations and evidence rather than compatibility shortcuts.
+## Patch 0.2 — Combat feel + readability
 
-# A0 — Product authority reconciliation
+**Outcome:** controls/combat feel deliberate and outcomes are legible.
 
-**Status: [x] DOCUMENTATION AUTHORITY ESTABLISHED**
+Must mature:
 
-Purpose: prevent autonomous agents from treating historical camera/combat/world assumptions as the current strategic destination.
+- movement/input responsiveness;
+- melee/ranged handling;
+- weapon differentiation;
+- hit/impact/death feedback;
+- enemy telegraphs/reactions;
+- elite/boss readability;
+- combat HUD/camera/audio/VFX;
+- device/accessibility behavior.
 
-Complete when:
+## Patch 0.3 — Loot + build replayability
 
-- current product authority is explicit;
-- historical charter is clearly marked historical;
-- runtime behavior is protected from accidental strategic-document rewrites;
-- future foundational changes require an explicit decision record.
+**Outcome:** players make interesting run/build decisions and want another attempt.
 
-Current authority: [`../bible/00-current-product-authority.md`](../bible/00-current-product-authority.md).
+Must mature:
 
-# R — Active-place rollout and incident closure
+- item identity/rarity/equipment;
+- deterministic affixes/modifiers;
+- loot/reward generation;
+- inventory/equipment UX;
+- comparison/dismantling where justified;
+- run-build synergies;
+- reward fairness and server authority.
 
-**Status: [~] ACTIVE RUNTIME LANE — BLUEPRINT v2.7 CONTROLS EXECUTION**
+## Patch 0.4 — RPG progression
 
-Do not duplicate Tickets 331–360 here. The controlling detail remains:
+**Outcome:** long-term identity expands choices without trivializing execution/difficulty.
 
-- [`BLUEPRINT-V2.7-EXECUTION.md`](BLUEPRINT-V2.7-EXECUTION.md)
-- [`PRODUCTION-CORE-V2.7.md`](PRODUCTION-CORE-V2.7.md)
-- [`ACTIVE-PLACE-ROLLOUT-V2.7.md`](ACTIVE-PLACE-ROLLOUT-V2.7.md)
-- [`CROSS-SYSTEM-TRACEABILITY-V2.7.md`](CROSS-SYSTEM-TRACEABILITY-V2.7.md)
+Must mature:
 
-R1 acceptance is complete on the exact identity recorded in
-[`../production/evidence/2026-08-08-r1-playable-replay-loop.md`](../production/evidence/2026-08-08-r1-playable-replay-loop.md).
-The next dependency-safe runtime sequence is:
+- character levels/ranks where justified;
+- classes/archetypes;
+- stats/talents/loadouts;
+- durable unlocks;
+- discoveries/codex/achievements;
+- bounded permanent power;
+- respec/recovery;
+- progression persistence/presentation.
 
-1. merge the dormant, transport-agnostic R2 keyed-readiness primitive after rebasing it onto accepted consolidation source;
-2. add `ClientReady` delivery wiring as a separate controlled change behind `EnableReadyGatedStatePublisher`;
-3. capture delayed-ready/current-state reconstruction evidence without removing the R1 rollback checkpoint;
-4. only after R2 acceptance, begin R3 semantic change-token suppression.
+## Patch 0.5 — Main World + environment
 
-### R exit gate
+**Outcome:** players return to a recognizable, navigable, expandable home.
 
-The v2.7 closure packet must prove bounded semantic state delivery, intended listener ownership, centralized presentation ownership, cleanup stability, delayed-ready/late-join correctness, streaming rebind, reset/respawn stability, multiplayer lifecycle correctness, and retained rollback checkpoints.
+Must mature:
 
-# B — Controlled build-ahead preparation
+- authored Main World districts/biomes;
+- landmarks/route hierarchy;
+- traversal support/redundancy/readability;
+- preparation/social/NPC anchors;
+- expedition entrances/return flow;
+- world atmosphere/lighting/audio;
+- environment composition;
+- streaming/performance readiness;
+- secrets/environmental storytelling.
 
-**Status: [~] ACTIVE PREPARATION LANE**
-
-Canonical queue: [`AGENT-BUILD-AHEAD-QUEUE.md`](AGENT-BUILD-AHEAD-QUEUE.md).
-
-Agents may continue safe preparation that does not activate gated runtime behavior.
-
-Current useful categories include:
-
-- world-content IDs/contracts and reconstruction data;
-- held authored-overworld composition contracts;
-- quest/NPC/vendor/crafting/gathering contracts;
-- dungeon/portal/operation-selection contracts;
-- enemy/loot/progression coverage audits;
-- authored route/landmark/encounter data;
-- onboarding/input/UI information architecture;
-- content reference/orphan/cycle validation;
-- integration planning and source audits.
-
-Build-ahead code must remain dormant or explicitly blocked when its runtime gate has not passed.
-
-# W — Main World and environment
-
-**Status: [~] PREPARATION ACTIVE; FULL RUNTIME ACTIVATION BLOCKED**
-
-The Main World is a first-class product surface, not a 3D menu or filler open world.
-
-The accepted architectural direction is:
+Direction:
 
 ```text
 authored overworld / HubTown
-→ canonical preparation / operation selection
-→ expedition / operation runtime
-→ return to authored overworld
+→ canonical expedition launch
+→ modern operation runtime
+→ return
 ```
 
-The modern Forward Operations Hub is the current bridge, not the final Main World.
+## Patch 0.6 — Procedural/systemic replayability
 
-## W0 — Current-world audit and disposition
+**Outcome:** content variation multiplies replayability without sacrificing readability or debuggability.
 
-**Status: [~] SOURCE/EVIDENCE AUDIT COMPLETE; STUDIO VISUAL REVIEW PENDING**
+Must mature:
 
-BA-010 records the current dispositions and composition requirements in
-[`../specifications/main-world-environment-audit.md`](../specifications/main-world-environment-audit.md).
-Its completion does not constitute visual, traversal, streaming, audio or performance acceptance.
+- reproducible run seeds;
+- modular room/route/dungeon generation;
+- layout/socket/navigation validation;
+- encounter/event variation;
+- enemy/loot/boss modifier variation;
+- bounded world/event systems;
+- reproduction keys/diagnostics/fallbacks;
+- generation quality metrics.
 
-Audit all current/preserved world content and classify significant elements as:
+## Patch 0.7 — Durable persistence hardening
 
-`KEEP / REFINE / REBUILD / REPLACE / REMOVE / MISSING`
+**Outcome:** valuable state survives lifecycle failure/replay/rejoin/migration safely.
 
-Required audit coverage:
+Must mature:
 
-- spawn/arrival flow;
-- HubTown / Forward Operations Hub;
-- routes, roads, traversal times and dead travel;
-- landmarks, points of interest and world boundaries;
-- terrain, foliage, rocks, structures, props and repetition;
-- scale consistency, silhouette and sightlines;
-- environmental storytelling;
-- lighting, sky, fog/haze, materials, VFX and color grading;
-- ambient audio/music-zone architecture where applicable;
-- collision, instance counts, script ownership, streaming and replication;
-- expansion seams for quests, NPCs, vendors, crafting, gathering, dungeons and social systems.
+- canonical account/value ownership;
+- session leases;
+- idempotent valuable mutations;
+- migration/quarantine/recovery;
+- duplication/rollback resistance;
+- inventory/progression preservation;
+- disconnect/crash/shutdown correctness;
+- automated failure/acceptance matrices.
 
-Studio visual review is required for composition/atmosphere claims.
+**Current acceptance summary:** 86 / 100 ranked rows implemented; 14 deliberately deferred with explicit reasons. Detailed proof is machine-readable in `../production/PATCH-0.7-ACCEPTANCE-MATRIX.json`.
 
-## W1 — Main World spatial plan
+## Patch 0.8 — Co-op/social/session expansion
 
-**Status: [~] SOURCE/PLACEMENT STRATEGY COMPLETE; FINAL ACTIVATION BLOCKED**
+**Outcome:** groups can reliably form, enter, recover, complete, and replay cooperative sessions.
 
-BA-011 defines the dedicated place/project boundary, source/model/Terrain ownership,
-streaming groups, and arrival/return anchor policy in
-[`../specifications/main-world-source-representation-strategy.md`](../specifications/main-world-source-representation-strategy.md),
-locked by `MainWorldRepresentationConfig`. Its completion does not activate the Main
-World, create a Roblox place, reconstruct Terrain, or change the current operation
-runtime. BA-012 has since completed the canonical Hub interaction registry, and
-BA-013 defines the held environment kits, quality tiers, production ceilings,
-Terrain workflow and streaming/performance targets in
-[`../specifications/main-world-environment-production-plan.md`](../specifications/main-world-environment-production-plan.md).
-BA-014 has since turned that checklist and those targets into the repeatable
-acceptance matrix in
-[`../specifications/main-world-acceptance-matrix.md`](../specifications/main-world-acceptance-matrix.md),
-which ships unrun. The next dependency-safe Main World step is executing that
-matrix, which requires a working Studio evidence transport rather than further
-build-ahead preparation.
+Must mature:
 
-Define a readable loop:
+- party formation/invites/friend joins;
+- readiness/expedition selection;
+- session/run ownership;
+- matchmaking where justified;
+- reserved server / teleport lifecycle;
+- reconnect/late join;
+- party-scoped procedural instances;
+- revive/support/co-op scaling;
+- social presence/communication;
+- disconnect/cleanup semantics.
+
+## Patch 0.9 — Content expansion + production pipeline
+
+**Outcome:** content breadth grows without linear engineering cost or authority drift.
+
+Must mature:
+
+- data-first enemy/weapon/item/affix/class/content families where proven;
+- quest/NPC/vendor/crafting/gathering contracts where they serve the core loop;
+- dungeon/world content factories;
+- content prerequisite/reward/reference validation;
+- extension-cost budgets;
+- content QA/observability;
+- production cadence tooling;
+- onboarding/retention analytics needed before launch.
+
+## RC — Production hardening
+
+**Outcome:** a stable release candidate can be shipped, observed, and rolled back safely.
+
+Must mature:
+
+- end-to-end regression/acceptance;
+- performance/memory/network profiling;
+- keyboard/controller/touch/accessibility evidence;
+- exploit/security review;
+- DataStore/recovery validation;
+- publishing/configuration/asset readiness;
+- analytics/incident diagnostics;
+- launch balance/onboarding/readability;
+- release/rollback procedure;
+- monetization only when fair, secure, platform-compliant, and product-ready.
+
+## 1.0 — Release
+
+**Outcome:** ship a coherent, trustworthy cooperative action RPG whose core loop, durable state, co-op/session lifecycle, world, and production controls are supported by the evidence required for their claims.
+
+## LIVE — Evidence-driven operation
+
+**Outcome:** post-launch investment follows observed player/runtime evidence.
 
 ```text
-Arrival → Orientation → Exploration → Interaction → Preparation → Adventure → Return
+measure
+→ identify friction/opportunity
+→ classify LK concern(s)
+→ prioritize by player value + risk + dependency + leverage
+→ implement
+→ validate
+→ compare outcome
+→ retain / revise / rollback
 ```
 
-Lock:
-
-- primary spawn and re-entry points;
-- landmark hierarchy;
-- district/service placement;
-- road/trail/navigation language;
-- portal/expedition entrance locations;
-- social/rest/preparation spaces;
-- discovery/secret opportunities;
-- future expansion seams;
-- intended traversal-time bands.
+# System destination map
+
+The product layers above are the main dependency path. The following systems may span multiple patches and should mature when they support that path.
+
+## World / simulation
+
+Destination:
+
+- coherent world-state boundaries;
+- region/biome topology;
+- terrain/traversal surfaces;
+- weather/time/lighting where useful;
+- environmental hazards/events;
+- world observability;
+- reproducible procedural/systemic variation;
+- measured route/travel/danger/reward distribution.
 
-## W2 — Environment production
+## Combat / encounters / enemies
 
-**Status: [~] PRODUCTION PLAN COMPLETE; BROAD PRODUCTION/ACTIVATION HELD**
+Destination:
 
-BA-013 defines the evidence-bounded production units, ownership boundaries,
-provisional asset/scene budgets, quality tiers, Terrain manifest workflow,
-semantic streaming rules and BA-014 performance targets in
-[`../specifications/main-world-environment-production-plan.md`](../specifications/main-world-environment-production-plan.md).
-These are E1 planning ceilings, not accepted Studio/device evidence and not
-permission to activate the Main World. Playable MVP + Patch Execution v2.9
-keeps broad environment production in Patch 0.5; Gate 0/MVP 0.1 may use only a
-separately authorized minimal preparation/return surface and do not wait for
-the final Main World.
+- server-owned legality/damage;
+- readable melee/ranged/abilities;
+- distinct weapons;
+- enemy archetypes with clear tactical questions;
+- bounded navigation/targeting/attacks;
+- elites/bosses;
+- encounter pressure/pacing;
+- fair difficulty/co-op scaling;
+- performance budgets and diagnostics.
 
-Production scope includes:
+## Progression / loot / economy
 
-- terrain and biome language;
-- vegetation/rock/prop kits;
-- structures/ruins/interiors;
-- water/environmental surfaces;
-- lighting/sky/atmosphere/fog;
-- environmental VFX/particles;
-- ambient audio/music regions;
-- environmental storytelling;
-- controlled repetition and LOD/streaming strategy.
+Destination:
 
-Do not add broad geometry simply because it is possible; each pass requires gameplay-camera review.
+- meaningful run builds;
+- durable identity/unlocks;
+- item/equipment/affix architecture;
+- secure reward/inventory/persistence;
+- pricing/currency/vendors only when the gameplay loop needs them;
+- crafting/gathering only when resources create real decisions;
+- item/currency sinks that preserve value clarity;
+- balance/abuse protections.
 
-## W3 — Main World gameplay integration
+## Content / narrative / discovery
 
-**Status: [L]**
+Destination:
 
-Integrate only through canonical owners:
+- validated quest/objective contracts;
+- NPC/dialogue/faction/settlement surfaces;
+- discoveries/codex/secrets;
+- content prerequisites/rewards;
+- data-first repeated content;
+- orphan/cycle/reference validation;
+- environmental storytelling.
 
-- NPCs / dialogue;
-- quests / operation board;
-- vendors/economy;
-- crafting/gathering;
-- inventory/loadout preparation;
-- progression/world access;
-- dungeon/expedition entry;
-- social/party preparation;
-- onboarding;
-- discoveries/secrets.
+## Social / session
 
-## W4 — World technical acceptance
+Destination:
 
-**Status: [L]**
+- solo-to-co-op continuity;
+- party/session/run identity;
+- join/readiness/teleport/reconnect policies;
+- co-op support/revive/scaling;
+- social presence/communication;
+- reliable cleanup and ownership boundaries.
 
-Measure:
+## UX / presentation
 
-- StreamingEnabled behavior;
-- client/server instance cost;
-- memory;
-- collision/query burden;
-- draw/render cost;
-- mobile/low-graphics readability;
-- network replication;
-- spawn/return reliability;
-- portal/transition reliability.
+Destination:
 
-## W5 — Main World acceptance gate
+- understandable onboarding;
+- contextual HUD;
+- coherent menus/navigation;
+- keyboard/controller/touch parity for critical actions;
+- accessibility;
+- clear errors/recovery;
+- responsive movement/camera;
+- strong visual/audio/VFX/animation identity within performance budgets.
 
-**Status: [L]**
+## Production / live operations
 
-A fresh player should be able to spawn, orient, find major services, understand how to start an adventure, recognize major landmarks, explore without hopeless confusion, and understand what to do after returning.
+Destination:
 
-# S — Party, social and matchmaking/session infrastructure
+- reproducible builds;
+- trusted validation/evidence;
+- observability/analytics;
+- content pipeline;
+- release/rollback/incident handling;
+- player support/feedback loop;
+- measured live balance/content cadence;
+- secure monetization only after product readiness.
 
-**Status: [L]**
+# Deferred / conditional destination systems
 
-Do not invent this inside unrelated expedition tasks.
+Some systems remain valid long-range ideas but are deliberately **conditional**, not assumed requirements:
 
-Plan dedicated contracts for:
+- player housing/decorating/ownership;
+- guild halls/large guild systems;
+- broad player trading;
+- large-scale PvP;
+- complex simulated faction politics;
+- deep profession/economy layers;
+- recurring daily/weekly chores;
+- launch monetization breadth.
 
-- party creation/invites/friend join;
-- membership and readiness;
-- leader/host policy if the product actually needs one;
-- expedition selection authority;
-- public/private session policy;
-- matchmaking rules where justified;
-- reserved server/teleport lifecycle where appropriate;
-- disconnect/reconnect and late-join policy;
-- AFK and abandoned-party handling;
-- deterministic return-to-hub behavior;
-- abuse/security boundaries.
+They become current only if evidence/player value justifies them and the dashboard explicitly activates the work. Their presence in the development taxonomy is gap accounting, not a promise to ship them.
 
-Existing lobby membership/readiness remains an asset; new topology must extend rather than duplicate it.
+# Cross-system coverage accounting
 
-# E — Evidence promotion
+The exhaustive development concern inventory lives outside this roadmap:
 
-**Status: [~] E2 ACCEPTED; E3–E4 BLOCKED BY LATER RUNTIME GATES**
+- [`../architecture/DEVELOPMENT_TAXONOMY.md`](../architecture/DEVELOPMENT_TAXONOMY.md) — 300 stable concerns;
+- [`../architecture/DEVELOPMENT-ATLAS.md`](../architecture/DEVELOPMENT-ATLAS.md) — canonical engine/owner routing;
+- `../../config/coverage/living-kingdoms-development.json` — machine-readable coverage;
+- [`../production/DEVELOPMENT-COVERAGE-REPORT.md`](../production/DEVELOPMENT-COVERAGE-REPORT.md) — generated gap/health view.
 
-## E2 — Studio initialization
+The taxonomy makes broad areas visible without bloating the roadmap with 300 duplicated status lines.
 
-Accept only when a repository-synchronized build starts cleanly enough for the intended systems to initialize and diagnostics to be trustworthy.
+# Definition of progress
 
-**Accepted 2026-08-08** on pinned artifact 9028866465. See
-[`../production/evidence/2026-08-08-r1-playable-replay-loop.md`](../production/evidence/2026-08-08-r1-playable-replay-loop.md).
-
-## E3 — Single-player integrated behavior
-
-Accept only when the intended prepare/adventure/result/return loop can repeat without state, presentation, cleanup, reward or compatibility regressions.
-
-## E4 — Multiplayer/adversarial behavior
-
-Accept only after ownership, attribution, reset, disconnect, delayed readiness, replay/retry, audience isolation and adversarial client inputs behave correctly.
-
-## E5 — Device/performance/reliability
-
-Owned by Phase Q acceptance.
-
-## E6 — Outside-player fun
-
-Owned by Phase F acceptance.
-
-## E7 — Live telemetry
-
-Owned by Phase T after production telemetry exists.
-
-# D — Durable persistence and valuable state
-
-**Status: [!] BLOCKED UNTIL R + E3/E4**
-
-Reuse the strong historical P11/durable-value work rather than reinventing it.
-
-Required sequence:
-
-1. persistence adapter boundary;
-2. session ownership/lease rules;
-3. versioned/sequential migrations;
-4. no-blank-overwrite protection;
-5. unknown-write reconciliation;
-6. inventory/reward overflow recovery;
-7. deterministic/idempotent transaction replay;
-8. XP/rank/unlock commit boundaries;
-9. leave/rejoin/shutdown/failure testing;
-10. observability and degraded-mode behavior.
-
-Do not persist a state model still leaking, duplicating, or changing ownership semantics in memory.
-
-# M — Long-term progression
-
-**Status: [L]**
-
-Historical P11 and the RPG integration plan contain reusable groundwork.
-
-Define the final durable layer for:
-
-- account/career XP and ranks;
-- class/side-grade unlocks;
-- skill/progression mapping;
-- weapon/starting-option unlocks where justified;
-- world/dungeon access;
-- quest/discovery/codex progress;
-- achievements/challenges;
-- cosmetics/expression;
-- respec/reset policy;
-- catch-up/new-player policy.
-
-Permanent power must remain bounded enough that knowledge, execution, cooperation and run-build choices continue to matter.
-
-# ECON — Economy, crafting and resource value
-
-**Status: [L]**
-
-Before vendor/crafting/gathering activation, define one coherent economy using canonical inventory/persistence/currency owners.
-
-Required design:
-
-- currencies and ownership;
-- sources and sinks;
-- vendor price/value bands;
-- crafting costs and recipe tiers;
-- resource rarity and gathering cadence;
-- duplicate-item handling;
-- salvage/dismantle policy;
-- inventory overflow/recovery;
-- transaction IDs/idempotency;
-- exploit/duplication resistance;
-- economy telemetry;
-- inflation/value review.
-
-# C — Content production pipeline
-
-**Status: [~] PREPARATION AUTHORIZED**
-
-Turn content expansion into validated data authoring rather than repeated bespoke code.
-
-Target data-driven authoring for:
-
-- quests and objective chains;
-- NPC definitions/dialogue references;
-- vendors/catalogs;
-- recipes/resources/gathering nodes;
-- items/affixes/reward tables;
-- routes/landmarks/discoveries/secrets;
-- encounter beats/enemy compositions;
-- dungeons/room sequences;
-- elites/boss slots;
-- events/challenge modifiers.
-
-Required validators should catch:
-
-- duplicate IDs;
-- orphan references;
-- dependency cycles;
-- impossible prerequisites;
-- inaccessible destinations;
-- invalid reward/item references;
-- incompatible affixes;
-- invalid economy references;
-- content that bypasses canonical owners.
-
-A content pipeline is successful when new content mostly requires authored data plus bounded presentation, not another service.
-
-# V — First complete vertical slice
-
-**Status: [!] RUNTIME ACTIVATION BLOCKED; PREPARATION AUTHORIZED**
-
-Promote prepared work into the smallest complete replayable RPG expedition.
-
-Dependency order:
-
-1. preparation/loadout start;
-2. Main World/Forward Hub preparation surface and operation entry;
-3. authored outdoor route and landmarks;
-4. mixed-combat sequence;
-5. optional discovery/secret interaction;
-6. repeatable dungeon/room sequence;
-7. elite + meaningful item/build decision;
-8. boss/terminal outcome;
-9. result/reward commit;
-10. return/replay invitation.
-
-Exit only when the loop is coherent enough to evaluate as a game, not merely as connected systems.
-
-# Q — Quality, balance, device, performance, accessibility and reliability
-
-**Status: [!] REQUIRES REPRESENTATIVE INTEGRATED BUILD**
-
-Re-adopt the strongest historical P12 gates into current authority.
-
-Required work includes:
-
-- end-to-end telemetry baselines for 1/2/3/4 players;
-- solo-to-four-player pressure scaling;
-- class-composition resilience;
-- scarcity/relocation/pacing tuning;
-- horde/enemy/boss/visibility/UI profiling;
-- desktop/mobile/controller action coverage;
-- StreamingEnabled behavior;
-- memory/instance/presentation cleanup;
-- low-graphics readability;
-- reduced-motion behavior;
-- safe-area and input coverage;
-- accessibility using redundant text/shape/position/timing cues;
-- removal of fixed-four-player assumptions;
-- full security/regression audit;
-- repeated release-candidate playthroughs.
-
-Measured evidence beats intuition.
-
-# F — Outside-player fun and repeat-intent gate
-
-**Status: [!] REQUIRES STABLE INTEGRATED LOOP**
-
-Fresh players should be able to explain:
-
-- what their goal was;
-- why they took damage or failed;
-- what enemy/encounter pressures asked them to do;
-- what their build/reward choice changed;
-- what they wanted to do next.
-
-Track observed confusion, completion, abandonment and voluntary replay. The strongest signal is choosing to play again.
-
-**Monetization and broad content expansion remain locked until this gate produces a credible positive signal.**
-
-# T — Production telemetry and E7
-
-**Status: [L]**
-
-After a representative loop exists, define production-safe analytics for decisions such as:
-
-- onboarding completion;
-- Main World → expedition conversion;
-- party size/session start;
-- expedition starts/completions;
-- abandonment points;
-- failure/result causes;
-- objective timing;
-- deaths/incapacitations/revives;
-- class/build/upgrade/relic choices;
-- loot/reward choices;
-- boss phase/completion;
-- return/replay rate;
-- session length;
-- retention cohorts;
-- performance/error/reliability signals.
-
-Telemetry must be bounded, privacy/policy appropriate, versioned enough for analysis, and must not become gameplay authority.
-
-E7 requires actual live telemetry, not a logging API existing in source.
-
-# OPS — Runtime configuration, staged rollout and rollback operations
-
-**Status: [L]**
-
-Build only when a production need exists.
-
-Plan:
-
-- feature flags with explicit owners/removal gates;
-- balance/config values separable from code where safe;
-- emergency disable switches for high-risk optional systems;
-- development/staging/production configuration policy;
-- staged rollout/rollback procedure;
-- migration compatibility windows;
-- incident runbooks;
-- build/place identity tracking.
-
-Do not turn every value into remote configuration; keep security-critical rules authoritative and reviewable.
-
-# SAFE — Platform safety, security and compliance
-
-**Status: [L] WITH BASELINE SECURITY ALREADY ACTIVE**
-
-The repository's server-authority/security rules remain mandatory now. Before public launch, add a formal release gate for:
-
-- Roblox policy/content-maturity review;
-- text filtering where player/user text exists;
-- social/chat/UGC policy review;
-- PolicyService-dependent behavior where applicable;
-- violence/readability/content review;
-- exploit/security audit;
-- asset/audio/source-rights audit;
-- privacy/data-handling review;
-- purchase/entitlement policy review;
-- moderation-safe fallbacks.
-
-# LOC — Localization readiness
-
-**Status: [L]**
-
-Before broad launch:
-
-- externalize player-facing strings where practical;
-- define stable localization keys/context;
-- cover UI, quests, NPC dialogue, item descriptions and metadata;
-- test text expansion and mobile layout;
-- define language fallback behavior;
-- localize discovery/store metadata when appropriate.
-
-Localization readiness should be architectural before translation becomes a content-scale problem.
-
-# MON — Ethical monetization
-
-**Status: [L] LOCKED BEHIND F**
-
-Do not implement a broad monetization catalog before the game proves fun/repeat intent.
-
-Future eligible directions may include:
-
-- cosmetics;
-- visual/presentation expression;
-- optional non-dominating convenience only if it does not undermine progression or match difficulty;
-- cosmetic bundles/passes/products where appropriate.
-
-Never sell raw best-in-slot power, mandatory progression, paid recovery from failure, required match resources, or exclusive dominant classes/equipment.
-
-Any purchase system requires receipt/idempotency, entitlement reconciliation, failure recovery, policy review and analytics.
-
-# L — Launch pipeline
-
-**Status: [L]**
-
-The release path should be explicit:
+A roadmap item progresses only through truth appropriate to its layer:
 
 ```text
-internal alpha
-→ limited outside playtest
-→ closed/controlled beta
-→ soft launch / limited production exposure
-→ release candidate
-→ public production launch
+concept/scope defined
+→ canonical owner/seam identified
+→ source implemented
+→ automated gate green
+→ BUILT — VERIFICATION PENDING when manual facts remain
+→ evidence collected where required
+→ VERIFIED for the supported claim
+→ measured player/runtime outcome when live
 ```
 
-Required launch work includes:
+Do not use roadmap prose to upgrade evidence status.
 
-- release-blocker severity rules;
-- build/place rollback checkpoint;
-- smoke/regression matrix;
-- icon/thumbnail/video/description/store metadata;
-- audience/device settings;
-- content maturity/policy checks;
-- localization readiness;
-- telemetry dashboards/alerts;
-- hotfix procedure;
-- known-limitations record;
-- launch-day monitoring and rollback owner.
+# Roadmap maintenance
 
-# LIVE — Post-launch operations and expansion
+- Keep changing NOW/NEXT details in the dashboard only.
+- Keep per-patch product intent here/Playable Patch Scope, not branch numbers.
+- Keep machine-readable exhaustive concern coverage in the coverage registry.
+- Keep detailed evidence in production/evidence artifacts.
+- Keep historical implementation/provenance in Git history or explicitly historical documents.
+- When a system is removed/replaced, update scope/coverage/owner registries coherently rather than leaving parallel stories.
 
-**Status: [L]**
-
-After launch, expand from evidence rather than roadmap vanity metrics.
-
-Potential work includes:
-
-- balance/hotfix cadence;
-- bug and exploit response;
-- onboarding/readability improvements;
-- new items/build choices;
-- new quests/discoveries;
-- new enemies/elites/bosses;
-- new dungeons/expeditions;
-- additional Main World areas;
-- additional classes/sidegrades;
-- challenge modes/events;
-- retention/replay experiments;
-- later seasonal structures only when the player base and content pipeline justify them.
-
-Every expansion should reuse canonical owners and the content pipeline rather than creating a parallel game inside the game.
-
-# Scope protection
-
-Until Phase F is accepted, do not broadly activate:
-
-- multiple huge regions/continents;
-- PvP;
-- raids;
-- housing;
-- unrestricted player trading/auction house;
-- vehicles/mounts;
-- dozens of classes;
-- hundreds of items for item-count's sake;
-- broad monetization catalogs;
-- speculative backend complexity;
-- seasonal/battle-pass systems solely to manufacture retention.
-
-# Global stop conditions
-
-Stop and fix when:
-
-- remote queue/discard warnings occur in supported normal play;
-- state rate/connections/presentation objects grow across reset without gameplay reason;
-- client input can author damage, rewards, inventory, progression, economy or ownership;
-- two runtime owners compete for the same gameplay/presentation truth;
-- late join/delayed readiness loses current facts;
-- stream-out is interpreted as gameplay completion;
-- animation/viewmodel/camera listeners multiply across lifecycle transitions;
-- broad Highlights or presentation obscure gameplay;
-- low-graphics/mobile removes critical information;
-- valuable persistence can blank, duplicate or replay incorrectly;
-- build-ahead work activates before its gate;
-- a recovered legacy gameplay service is resurrected beside its canonical replacement;
-- Main World/world additions cannot explain their gameplay purpose or fail performance/readability review;
-- content data contains unresolved IDs/cycles/impossible dependencies;
-- monetization weakens the game's intended difficulty/progression contract;
-- an evidence claim cannot point to a reproducible packet/build/place identity.
-
-# Execution rule for agents
-
-1. Read the Current Product Authority and this roadmap for destination/context.
-2. For runtime work, obey Blueprint v2.7 and Production Core v2.7 first until the rollout closes.
-3. In build-ahead mode, select only a READY task authorized by the build-ahead queue.
-4. Do not choose a locked future phase merely because it appears valuable.
-5. Prefer the lowest dependency-safe task that unlocks more work without bypassing evidence.
-6. Update status only when the applicable Definition of Done and evidence level are satisfied.
-7. Preserve current runtime behavior unless the task explicitly authorizes a migration.
-
-# Next highest-ROI work at this checkpoint
-
-Two lanes remain valid:
-
-### Human/Studio runtime lane
-
-**Activate and evidence R2 ready-gated current-state delivery as one controlled stage change after the dormant keyed-readiness primitive merges.** Delayed readiness must reconstruct current state without queue warnings before R3 suppression or the MVP 0.1 safe-arrival runtime boundary may broaden the active lifecycle.
-
-### Agent build-ahead lane
-
-Continue the first READY dependency-safe task in [`AGENT-BUILD-AHEAD-QUEUE.md`](AGENT-BUILD-AHEAD-QUEUE.md), favoring work that strengthens world-content contracts, Main World composition/audit, operation-selection seams, content validation, or vertical-slice content without booting gated runtime systems.
-
-> Complete map, disciplined execution: describe the whole destination now, but build only the next dependency-safe slice.
+> **The Master Roadmap is the destination map. The dashboard drives. The taxonomy checks blind spots. Source/evidence decide what is real.**
