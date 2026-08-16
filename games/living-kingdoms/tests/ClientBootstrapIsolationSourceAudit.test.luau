@@ -59,7 +59,12 @@ check(string.find(bootstrap, "failedControllers", 1, true) ~= nil, "failures mus
 check(string.find(bootstrap, "task.spawn", 1, true) == nil, "controller steps must not be deferred; the order matters")
 check(string.find(bootstrap, "task.defer", 1, true) == nil, "controller steps must not be deferred; the order matters")
 
--- 2. Every module-scope network wait is bounded.
+-- 2. Every direct module-scope WaitForChild in client modules is bounded.
+--
+-- This intentionally checks the receiver generically rather than only
+-- ReplicatedStorage. A network folder can itself exist while one of its child
+-- remotes is missing; an unbounded child wait hangs the same ordered require
+-- chain just as completely as an unbounded root wait.
 
 local unbounded: { string } = {}
 for _, directory in { "Controllers", "State", "Presentation" } do
@@ -69,7 +74,7 @@ for _, directory in { "Controllers", "State", "Presentation" } do
 			if string.sub(entry, -5) == ".luau" then
 				local source = fs.readFile(root .. "/" .. entry)
 				for line in string.gmatch(source, "[^\n]+") do
-					if string.match(line, '^local %w+ = ReplicatedStorage:WaitForChild%("%w+"%)$') then
+					if string.match(line, '^local %w+ = [%w%.]+:WaitForChild%("%w+"%)') then
 						table.insert(unbounded, entry)
 					end
 				end
@@ -80,7 +85,7 @@ end
 table.sort(unbounded)
 check(
 	#unbounded == 0,
-	"a module-scope network wait must be bounded or it hangs the whole require chain: " .. table.concat(unbounded, ", ")
+	"a module-scope wait must be bounded or it hangs the whole require chain: " .. table.concat(unbounded, ", ")
 )
 
 print("ClientBootstrapIsolationSourceAudit: isolated requires and steps, ordered, with bounded network waits")
