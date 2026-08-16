@@ -22,8 +22,12 @@ assert(
 	"MeleePresentationController must not use an unbounded MeleeNetwork.Presentation wait"
 )
 assert(
-	string.find(source, "MeleeNetwork.Presentation did not become available before the client bootstrap timeout", 1, true)
-		~= nil,
+	string.find(
+		source,
+		"MeleeNetwork.Presentation did not become available before the client bootstrap timeout",
+		1,
+		true
+	) ~= nil,
 	"MeleePresentationController must fail closed when MeleeNetwork.Presentation is absent"
 )
 
