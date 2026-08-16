@@ -8,21 +8,30 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 --[[
-	Bounded so a network folder the server has not created yet fails this one
-	controller instead of stalling the whole client bootstrap. The bootstrap
-	requires controllers in a deliberate order with no isolation, so an
-	unbounded wait here would hold every controller after it forever.
+	Bounded so a network folder or child the server has not created yet fails
+	this one controller instead of stalling the whole client bootstrap. The
+	bootstrap requires controllers in a deliberate order with no isolation, so
+	an unbounded wait here would hold every controller after it forever.
 ]]
 local NETWORK_WAIT_SECONDS = 20
 
 local Controller = {}
 local player = Players.LocalPlayer
 local resultNetwork = ReplicatedStorage:WaitForChild("ExpeditionResultNetwork", NETWORK_WAIT_SECONDS)
-local resultState = resultNetwork:WaitForChild("State") :: RemoteEvent
-local resultRead = resultNetwork:WaitForChild("ReadState") :: RemoteFunction
+assert(resultNetwork ~= nil, "ExpeditionResultNetwork did not become available before the client bootstrap timeout")
+local resultState = resultNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(resultState ~= nil, "ExpeditionResultNetwork.State did not become available before the client bootstrap timeout")
+local resultRead = resultNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(
+	resultRead ~= nil,
+	"ExpeditionResultNetwork.ReadState did not become available before the client bootstrap timeout"
+)
 local lobbyNetwork = ReplicatedStorage:WaitForChild("ExpeditionLobbyNetwork", NETWORK_WAIT_SECONDS)
-local lobbyRequest = lobbyNetwork:WaitForChild("Request") :: RemoteFunction
-local lobbyState = lobbyNetwork:WaitForChild("State") :: RemoteEvent
+assert(lobbyNetwork ~= nil, "ExpeditionLobbyNetwork did not become available before the client bootstrap timeout")
+local lobbyRequest = lobbyNetwork:WaitForChild("Request", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(lobbyRequest ~= nil, "ExpeditionLobbyNetwork.Request did not become available before the client bootstrap timeout")
+local lobbyState = lobbyNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(lobbyState ~= nil, "ExpeditionLobbyNetwork.State did not become available before the client bootstrap timeout")
 
 local started = false
 local resultConnection: RBXScriptConnection? = nil
