@@ -22,7 +22,8 @@ for _, path in controllerPaths do
 		path .. " must never regress to an unbounded CombatPresentation wait"
 	)
 	assert(
-		string.find(source, "CombatNetwork did not become available before the client bootstrap timeout", 1, true) ~= nil,
+		string.find(source, "CombatNetwork did not become available before the client bootstrap timeout", 1, true)
+			~= nil,
 		path .. " must fail closed when CombatNetwork is absent"
 	)
 	assert(
