@@ -26,8 +26,14 @@ local RewardContainerViewportPresenter = require(script.Parent.Parent.Presentati
 local Controller = {}
 local localPlayer = Players.LocalPlayer
 local network = ReplicatedStorage:WaitForChild("ExpeditionResultNetwork", NETWORK_WAIT_SECONDS)
-local stateRemote = network:WaitForChild("State") :: RemoteEvent
-local readState = network:WaitForChild("ReadState") :: RemoteFunction
+assert(network ~= nil, "ExpeditionResultNetwork did not become available before the client bootstrap timeout")
+local stateRemote = network:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "ExpeditionResultNetwork.State did not become available before the client bootstrap timeout")
+local readState = network:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(
+	readState ~= nil,
+	"ExpeditionResultNetwork.ReadState did not become available before the client bootstrap timeout"
+)
 
 local started = false
 local connection: RBXScriptConnection? = nil
