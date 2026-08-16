@@ -26,6 +26,7 @@ local function resolveWeaponDefinition(weaponId: unknown)
 end
 
 local MINIMUM_CADENCE_SECONDS = 0.05
+local CADENCE_BOUNDARY_EPSILON_SECONDS = 1e-9
 local MAXIMUM_AMMO_CONSERVATION_CHANCE = 0.5
 local FALLBACK_AUTOMATIC_MODE_ID = "Automatic"
 local SEMI_AUTOMATIC_MODE_ID = "SemiAutomatic"
@@ -433,7 +434,7 @@ function AutomaticFireResolver.resolve(
 	if weaponState.ammunition.loadedRounds <= 0 then
 		return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.NoAmmunition)
 	end
-	if serverTimestamp < weaponState.cadence.nextAllowedFireServerTimestamp then
+	if serverTimestamp + CADENCE_BOUNDARY_EPSILON_SECONDS < weaponState.cadence.nextAllowedFireServerTimestamp then
 		if firingModeId == FALLBACK_AUTOMATIC_MODE_ID then
 			return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.CadenceBlocked)
 		end
