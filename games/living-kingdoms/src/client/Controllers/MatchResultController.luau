@@ -56,7 +56,9 @@ local hasDisplayedResult = false
 
 local localPlayer = Players.LocalPlayer
 local missionNetwork = ReplicatedStorage:WaitForChild("MissionNetwork", NETWORK_WAIT_SECONDS)
-local resultRemote = missionNetwork:WaitForChild("Result") :: RemoteEvent
+assert(missionNetwork ~= nil, "MissionNetwork did not become available before the client bootstrap timeout")
+local resultRemote = missionNetwork:WaitForChild("Result", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(resultRemote ~= nil, "MissionNetwork.Result did not become available before the client bootstrap timeout")
 
 local function onMissionPhaseChanged()
 	if localPlayer:GetAttribute("LK_HUD_MissionPhase") ~= "Insertion" then
