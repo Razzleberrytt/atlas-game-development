@@ -345,8 +345,6 @@ local neutralRelicModifiers = table.freeze({
 	equipmentReloadDurationMultiplier = 1,
 })
 
--- Relic modifier adapter mock: no operative has a relic equipped, so every read
--- returns the neutral bundle and the combat pass must behave exactly as before.
 local relicForgetCalls = {}
 local relicClearCalls = 0
 local relicModifierService = {
@@ -366,7 +364,6 @@ local relicModifierService = {
 	end,
 }
 
--- Roblox service mocks.
 local now = 0
 local raycastCalls = {}
 local raycastResultsByEntityId = {}
@@ -449,8 +446,6 @@ local HIT_TOKEN = {}
 local LIFE_TOKEN = {}
 local PRIMARY_COMBAT_MODE_SERVICE_TOKEN = {}
 local MATCH_RESULT_TOKEN = {}
--- The P10-0104 contribution ledger is inert authority: these fixtures only need
--- to prove the owner records through it, never that recording changes gameplay.
 local matchResultCalls = {}
 local matchResultService = setmetatable({}, {
 	__index = function(_self, key)
@@ -658,8 +653,6 @@ end
 local visibilityRadius = enemyConfig.Combat.GameplayVisibilityRadiusStuds
 local raycastBudget = enemyConfig.Combat.MaximumLineOfSightRaycastsPerEvaluation
 
--- One evaluation snapshots director facts once for the whole squad and reuses
--- each operative's raycast parameters on later passes.
 local operativeA = makePlayer(1, 0, 0)
 local operativeB = makePlayer(2, 4, 0)
 reset({ operativeA, operativeB })
@@ -673,7 +666,6 @@ service.evaluateAt(now)
 assert(enemyFactReadCount == 2, "each later evaluation must take one fresh shared enemy snapshot")
 assert(raycastParamsCreated == 4, "later evaluations must reuse the per-operative raycast parameters")
 
--- Acquisition, disclosure, fire, damage, cadence.
 reset({ operativeA })
 addEnemy("enemy.close", 30, 0)
 now = 1
@@ -692,23 +684,29 @@ assert(
 )
 local firstShotId = shotMessages[1].payload.shotId
 assert(commitCalls[1].healthStateAfter.processedShotIds[firstShotId] == true, "the shot must be duplicate-protected")
--- Cadence: immediately after firing, no second shot.
 now = 1 + firearmConfig.ServicePistol.CadenceSeconds - 0.01
 service.evaluateAt(now)
 assert(#messagesOfKind("ShotFired") == 1, "cadence must block the second shot")
 now = 1 + firearmConfig.ServicePistol.CadenceSeconds
 service.evaluateAt(now)
-assert(#messagesOfKind("ShotFired") == 2)
+assert(#messagesOfKind("ShotFired") == 1, "a semi-automatic pistol must not repeat while the trigger stays held")
+fireIntentSignal:Fire(operativeA, false, roblox.Vector3.new(1, 0, 0))
+service.evaluateAt(now)
+now += 0.03
+fireIntentSignal:Fire(operativeA, true, roblox.Vector3.new(1, 0, 0))
+service.evaluateAt(now)
+assert(#messagesOfKind("ShotFired") == 2, "release and re-press must re-arm the semi-automatic pistol")
 
--- Enemy death from operative fire clears the target on the next pass.
+local clearedBeforeDeath = #messagesOfKind("TargetCleared")
 enemies[1].currentHealth = 0
 enemies[1].isAlive = false
 now += 1
 service.evaluateAt(now)
-assert(#messagesOfKind("TargetCleared") == 1, "a dead enemy must clear the disclosed target")
+assert(
+	#messagesOfKind("TargetCleared") == clearedBeforeDeath + 1,
+	"a dead enemy must clear the disclosed target"
+)
 
--- Darkness bounds engagement: within firearm range but beyond the visibility
--- radius is not a candidate.
 reset({ operativeA })
 addEnemy("enemy.far", visibilityRadius + 1, 0)
 now = 1
@@ -716,8 +714,6 @@ service.evaluateAt(now)
 assert(#messagesOfKind("TargetSelected") == 0, "darkness must hide hostiles beyond the engagement radius")
 assert(#raycastCalls == 0, "invisible candidates must not consume raycasts")
 
--- Raycast budget: only the nearest budgeted candidates are sighted; a fully
--- blocked budget yields no target.
 reset({ operativeA })
 for index = 1, raycastBudget + 2 do
 	addEnemy("enemy.wall:" .. index, 10 + index * 4, 0)
@@ -729,8 +725,6 @@ assert(#raycastCalls == raycastBudget, "the per-evaluation raycast budget must h
 assert(#messagesOfKind("TargetSelected") == 0, "blocked line of sight must prevent acquisition")
 assert(#messagesOfKind("ShotFired") == 0)
 
--- Threat priority: the enemy actively pursuing this operative wins over a
--- closer non-threatening one.
 reset({ operativeA })
 addEnemy("enemy.near", 20, 0)
 addEnemy("enemy.threat", 40, 0, { targetOperativeEntityId = "operative.player:1" })
@@ -739,7 +733,6 @@ service.evaluateAt(now)
 local prioritized = messagesOfKind("TargetSelected")
 assert(#prioritized == 1 and prioritized[1].payload.targetEntityId == "enemy.threat")
 
--- Life-state restriction clears the target and disables combat.
 reset({ operativeA })
 addEnemy("enemy.watcher", 30, 0)
 now = 1
@@ -754,17 +747,19 @@ now = 3
 service.evaluateAt(now)
 assert(#messagesOfKind("ShotFired") <= 1, "restricted operatives cannot fire")
 
--- Reload flow: full magazine rejects silently; an emptied magazine reloads
--- with the authoritative timing; rate limiting holds.
 reset({ operativeA })
 now = 1
 reloadIntentSignal:Fire(operativeA, firearmConfig.ServicePistol.WeaponId)
 assert(#messagesOfKind("ReloadStarted") == 0, "a full magazine must not begin a reload")
 fireIntentSignal:Fire(operativeA, true, roblox.Vector3.new(1, 0, 0))
--- Empty the magazine against a target.
 addEnemy("enemy.pincushion", 30, 0, { currentHealth = 100000 })
 for shot = 1, firearmConfig.ServicePistol.MagazineCapacity do
+	if shot > 1 then
+		fireIntentSignal:Fire(operativeA, false, roblox.Vector3.new(1, 0, 0))
+		service.evaluateAt(now)
+	end
 	now += firearmConfig.ServicePistol.CadenceSeconds
+	fireIntentSignal:Fire(operativeA, true, roblox.Vector3.new(1, 0, 0))
 	service.evaluateAt(now)
 end
 assert(#messagesOfKind("ShotFired") == firearmConfig.ServicePistol.MagazineCapacity)
@@ -783,10 +778,8 @@ assert(
 	math.abs(scheduled[1].delaySeconds - firearmConfig.ServicePistol.ReloadDurationSeconds) < 0.001,
 	"reload schedule must match the pistol duration"
 )
--- Rate limit: an immediate second intent is dropped.
 reloadIntentSignal:Fire(operativeA, firearmConfig.ServicePistol.WeaponId)
 assert(#messagesOfKind("ReloadStarted") == 1, "the server request cooldown must hold")
--- Completion through the scheduled callback.
 now += firearmConfig.ServicePistol.ReloadDurationSeconds
 scheduled[1].callback()
 local completedReload = messagesOfKind("ReloadCompleted")
@@ -801,7 +794,6 @@ assert(
 	"a completed reload must restore fire"
 )
 
--- Revive combat-state boundary.
 local read = service.readReviveCombatState(operativeA)
 assert(read ~= nil and type(read.generation) == "number")
 assert(read.combatState.selectedTargetState == nil)
@@ -813,7 +805,6 @@ assert(
 assert(service.commitReviveCombatState(operativeA, read.generation, read.combatState))
 assert(service.readReviveCombatState({ UserId = 999 }) == nil, "unknown players expose no combat state")
 
--- Engineer resupply uses the combat owner, source deduplication, and reserve cap.
 assert(type(configuredEngineerInspector) == "function" and type(configuredEngineerCommitter) == "function")
 local compatible, hasCapacity = configuredEngineerInspector(operativeA)
 assert(compatible and hasCapacity, "known firearm with reserve capacity must be eligible")
@@ -837,7 +828,6 @@ local engineerState = service.readEngineerResupplyState(operativeA)
 assert(engineerState.grantedRoundsBySupplyId["class-resupply:test:1"] == 12, "first grant telemetry")
 assert(engineerState.grantedRoundsBySupplyId["class-resupply:test:2"] == 1, "partial grant telemetry")
 
--- Teardown: stop clears every connection and state.
 service.stop()
 assert(configuredEngineerInspector == nil and configuredEngineerCommitter == nil, "boundary must clear on stop")
 assert(heartbeatSignal:count() == 0 and reloadIntentSignal:count() == 0 and fireIntentSignal:count() == 0)
@@ -846,8 +836,6 @@ assert(lifeSignal:count() == 0)
 assert(service.readReviveCombatState(operativeA) == nil)
 service.stop()
 
--- Source and bootstrap audits: the production runtime is bootstrapped, sends
--- only presentation, and never widens the client request surface.
 local source = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau")
 local bootstrap = fs.readFile("games/living-kingdoms/src/server/init.server.luau")
 assert(string.find(bootstrap, "OperativeCombatRuntimeService.start()", 1, true) ~= nil)
