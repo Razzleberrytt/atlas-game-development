@@ -43,6 +43,7 @@ local REQUEST_COOLDOWN_SECONDS = 0.5
 local COMBAT_ENTITY_ID_ATTRIBUTE = "CombatEntityId"
 local FIRE_ACTION_NAME = "LK_Fire"
 local RELOAD_ACTION_NAME = "LK_Reload"
+local RELEASE_DIRECTION_FALLBACK = Vector3.new(0, 0, -1)
 local localPlayer = Players.LocalPlayer
 
 local HUD_ATTRIBUTES = {
@@ -171,7 +172,14 @@ end
 local function sendFireIntent(isFiring: boolean)
 	local direction = currentAimDirection()
 	if direction == nil then
-		return
+		if isFiring then
+			return
+		end
+		-- Release carries no targeting authority, but the current server transport
+		-- contract still validates a unit aim vector before it clears the latch.
+		-- Use a deterministic unit sentinel so a transient missing camera can never
+		-- strand semi/burst firing state on the server.
+		direction = RELEASE_DIRECTION_FALLBACK
 	end
 	state.lastAimSendLocalTimestamp = os.clock()
 	fireIntentRemote:FireServer(isFiring, direction)
