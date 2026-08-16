@@ -475,10 +475,6 @@ local function hasClearShot(
 	return result.Instance:IsDescendantOf(fact.model)
 end
 
--- A rear candidate naturally fails the normal sight ray when the selected
--- primary is the first hit. One accepted precision shot may therefore perform
--- one additional validation ray that excludes only the operative and the
--- already-hit primary. Terrain and any other hostile still block the path.
 local function hasClearPierceShot(
 	player: Player,
 	operativePosition: Vector3,
@@ -501,12 +497,6 @@ local function hasClearPierceShot(
 	return result.Instance:IsDescendantOf(secondaryFact.model)
 end
 
---[[
-	Build this operative's disclosed-fact candidates for one evaluation pass.
-	A hostile is visible only inside the darkness engagement radius, and the
-	line-of-sight raycast budget covers the nearest visible candidates first;
-	unbudgeted candidates fail closed as unsighted this pass.
-]]
 local function buildSightedCandidates(
 	player: Player,
 	playerState: PlayerCombatState,
@@ -552,10 +542,6 @@ local function buildSightedCandidates(
 	return candidates
 end
 
--- The client supplies only a camera direction. The server still discovers the
--- hostile, validates distance/life/relationship, performs line of sight, owns
--- cadence and ammunition, and resolves damage. A modest cone makes the center
--- crosshair usable without turning this back into automatic nearest-target aim.
 local function filterCandidatesToAim(
 	candidates: { TargetCandidate },
 	operativePosition: Vector3,
@@ -639,13 +625,6 @@ local function buildPatternTargetFacts(playerState: PlayerCombatState): { Weapon
 	return facts
 end
 
---[[
-	Suppression Engine (RPG-0109) rewards sustained automatic fire. The
-	sustained-shot counter lives in the operative's equipped relic slot, and this
-	owner gates it on an automatic firearm so a relic offered for one loadout can
-	never power another. Reloading, a loadout change, or losing combat rights
-	resets the counter.
-]]
 local function isAutomaticFirearm(weaponId: string): boolean
 	return weaponId == CombatContracts.WeaponIds.LightMachineGun or weaponId == CombatContracts.WeaponIds.SubmachineGun
 end
@@ -687,14 +666,6 @@ local function runDamageContext(
 	}
 end
 
---[[
-	Blood Battery restores bounded health every configured number of confirmed
-	kills. Kill credit comes only from a committed lethal shot resolved by this
-	owner, the counter lives in the operative's equipped relic slot, and the
-	healing commits through the existing revisioned P3 healing boundary — this
-	owner never writes health directly. A full-health operative still consumes the
-	trigger, matching every other authoritative healing source.
-]]
 local function applyBloodBattery(player: Player, killCount: number, shotId: string, nowTimestamp: number)
 	if killCount <= 0 then
 		return
@@ -722,19 +693,12 @@ local function applyBloodBattery(player: Player, killCount: number, shotId: stri
 	})
 end
 
---[[
-	Records one committed impact into the P10-0104 contribution ledger. Damage and
-	boss-exposure credit follow the shot that the authoritative health boundary
-	accepted, never a requested or predicted amount.
-]]
 local function recordCombatContribution(operativeEntityId: string, targetEntityId: string, damageAmount: number)
 	MatchResultService.recordDamageDealt(operativeEntityId, damageAmount)
 	local didRead, isBoss = pcall(function()
 		return EnemyDirectorService.isBossEntity(targetEntityId)
 	end)
 	if didRead and isBoss == true then
-		-- The boss only accepts damage inside its telegraphed exposure window, so a
-		-- committed boss hit is by definition an exposure hit.
 		MatchResultService.recordBossExposureHit(operativeEntityId)
 	end
 end
@@ -799,8 +763,6 @@ local function commitPatternImpacts(
 			if damageResolution.becameDead then
 				killCount += 1
 			end
-			-- P10-0104 contribution: only committed damage counts, and only the
-			-- operative whose shot committed it.
 			recordCombatContribution(
 				playerState.operativeState.entityId,
 				impact.targetEntityId,
@@ -949,11 +911,6 @@ function OperativeCombatRuntimeService.equipFoundWeapon(player: Player, weaponId
 	if not discoverable then
 		return false
 	end
-	--[[
-		A swap moves ammunition, it never creates it. Handing over a full
-		magazine let a player refill loaded rounds for free on every weapon
-		change, which bypassed scarcity entirely.
-	]]
 	local carried = playerState.weaponState.ammunition
 	local swap = WeaponSwapAmmunitionResolver.resolve({
 		loadedRounds = carried.loadedRounds,
@@ -968,8 +925,6 @@ function OperativeCombatRuntimeService.equipFoundWeapon(player: Player, weaponId
 	playerState.operativeState.equippedWeaponId = weaponId
 	local nextWeaponState = createWeaponState(weaponId, 0)
 	if swap.Accepted then
-		-- RunMagazineCapacityResolver returns an immutable ammunition snapshot.
-		-- Replace that snapshot atomically instead of mutating its readonly fields.
 		nextWeaponState.ammunition = {
 			weaponId = weaponId,
 			loadedRounds = swap.LoadedRounds,
@@ -1119,8 +1074,7 @@ local function completeReload(player: Player, expectedCompletionTimestamp: numbe
 	if reloadState == nil or reloadState.completionServerTimestamp ~= expectedCompletionTimestamp then
 		return
 	end
-	local resolution =
-		ReloadResolver.complete(playerState.operativeState, playerState.weaponState, Workspace:GetServerTimeNow())
+	local resolution = ReloadResolver.complete(playerState.operativeState, playerState.weaponState, Workspace:GetServerTimeNow())
 	playerState.operativeState = resolution.operativeStateAfter
 	playerState.weaponState = resolution.weaponStateAfter
 	if resolution.didComplete or resolution.wasInterrupted then
@@ -1133,12 +1087,6 @@ local function completeReload(player: Player, expectedCompletionTimestamp: numbe
 	end
 end
 
---[[
-	Durable equipment reload speed applies to the server-authored active weapon on
-	every accepted reload. Emergency Chamber remains conditional on the authoritative
-	P3 wounded fact, so an equipment-only bonus never needs health state and the
-	relic cannot leak onto healthy operatives.
-]]
 local function relicReloadContext(player: Player): ReloadResolver.RelicReloadContext?
 	local modifiers = RelicModifierService.read(player)
 	local hasEquipmentReloadModifier = modifiers.equipmentReloadDurationMultiplier < 1
@@ -1200,15 +1148,10 @@ local function onFireIntent(player: Player, isFiring: unknown, aimDirection: unk
 		-- A release can be followed by a new press before the next combat
 		-- evaluation. Reset semi/burst latch state immediately through the pure
 		-- resolver's existing nil-target reset path so that new edge is not lost.
-		local releaseResolution = AutomaticFireResolver.resolve(
-			{
-				entityId = playerState.operativeState.entityId,
-				combatStateId = playerState.operativeState.combatStateId,
-			},
-			nil,
-			playerState.weaponState,
-			nowTimestamp
-		)
+		local releaseResolution = AutomaticFireResolver.resolve({
+			entityId = playerState.operativeState.entityId,
+			combatStateId = playerState.operativeState.combatStateId,
+		}, nil, playerState.weaponState, nowTimestamp)
 		playerState.weaponState = releaseResolution.weaponStateAfter
 		discloseTarget(player, playerState, nil, nowTimestamp)
 		RelicModifierService.resetSustainedShots(player)
@@ -1258,9 +1201,6 @@ local function onReloadIntent(player: Player, weaponId: unknown, ...: unknown)
 	if resolveWeaponDefinition(playerState.weaponState.weaponId) == nil then
 		return
 	end
-	-- Wake at the authoritative deadline rather than the unmodified configured
-	-- duration, so Combat Loader and Emergency Chamber actually shorten the wait
-	-- instead of only shortening the deadline the completion pass checks.
 	task.delay(math.max(0, reloadState.completionServerTimestamp - nowTimestamp), function()
 		completeReload(player, reloadState.completionServerTimestamp, generation)
 	end)
@@ -1330,8 +1270,6 @@ local function removePlayer(player: Player)
 		connection:Disconnect()
 		characterAddedConnections[player] = nil
 	end
-	-- P10-0106: retain the exact rounds this operative left with, so a reconnect
-	-- resumes them instead of being reissued a full loadout.
 	local removedState = playerStates[player]
 	if removedState ~= nil then
 		local ammunition = removedState.weaponState.ammunition
@@ -1427,7 +1365,6 @@ function OperativeCombatRuntimeService.stop()
 	table.clear(raycastStates)
 	table.clear(engineerProcessedSupplyIds)
 	table.clear(engineerGrantedRoundsBySupplyId)
-	-- Retention is operation-scoped: a replay issues fresh loadouts.
 	table.clear(retainedCombatByOperativeEntityId)
 	RelicModifierService.clear()
 	accumulatedSeconds = 0
