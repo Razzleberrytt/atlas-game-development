@@ -28,7 +28,10 @@ assert(request ~= nil, "ExpeditionLobbyNetwork.Request did not become available 
 local stateRemote = network:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
 assert(stateRemote ~= nil, "ExpeditionLobbyNetwork.State did not become available before the client bootstrap timeout")
 local readState = network:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
-assert(readState ~= nil, "ExpeditionLobbyNetwork.ReadState did not become available before the client bootstrap timeout")
+assert(
+	readState ~= nil,
+	"ExpeditionLobbyNetwork.ReadState did not become available before the client bootstrap timeout"
+)
 
 local started = false
 local connection: RBXScriptConnection? = nil
