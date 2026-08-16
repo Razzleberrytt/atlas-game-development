@@ -1197,6 +1197,19 @@ local function onFireIntent(player: Player, isFiring: unknown, aimDirection: unk
 	playerState.aimDirection = direction.Unit
 	playerState.isFiring = isFiring and OperativeLifeService.isCombatAllowed(player)
 	if not playerState.isFiring then
+		-- A release can be followed by a new press before the next combat
+		-- evaluation. Reset semi/burst latch state immediately through the pure
+		-- resolver's existing nil-target reset path so that new edge is not lost.
+		local releaseResolution = AutomaticFireResolver.resolve(
+			{
+				entityId = playerState.operativeState.entityId,
+				combatStateId = playerState.operativeState.combatStateId,
+			},
+			nil,
+			playerState.weaponState,
+			nowTimestamp
+		)
+		playerState.weaponState = releaseResolution.weaponStateAfter
 		discloseTarget(player, playerState, nil, nowTimestamp)
 		RelicModifierService.resetSustainedShots(player)
 	end
