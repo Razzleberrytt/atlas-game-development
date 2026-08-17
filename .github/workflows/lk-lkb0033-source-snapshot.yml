@@ -1,4 +1,4 @@
-name: LK LKB-0033 Source Snapshot
+name: LK LKB-0033 Exhaustive Wait Repair
 
 on:
   push:
@@ -6,18 +6,55 @@ on:
       - lk/LKB-0033-run-build-rpg-playergui-waits
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  snapshot:
+  repair:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Upload Living Kingdoms client source
+        with:
+          ref: lk/LKB-0033-run-build-rpg-playergui-waits
+      - name: Apply deterministic bounded-wait repair
+        run: python scripts/lkb0033_bound_client_waits.py
+      - name: Verify broad client dependency audit shape
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          root = Path('games/living-kingdoms/src/client')
+          patterns = [
+              re.compile(r'([\w_]*[Nn]etwork):WaitForChild\("([^"]+)"\)'),
+              re.compile(r'ReplicatedStorage:WaitForChild\("([^"]*[Nn]etwork)"\)'),
+              re.compile(r'([\w_]+):WaitForChild\("PlayerGui"\)'),
+          ]
+          findings = []
+          for path in root.rglob('*.luau'):
+              for line_number, line in enumerate(path.read_text().splitlines(), 1):
+                  if any(pattern.search(line) for pattern in patterns):
+                      findings.append(f'{path}:{line_number}: {line.strip()}')
+          if findings:
+              raise SystemExit('Unbounded client bootstrap waits remain:\n' + '\n'.join(findings))
+          print('Broad client dependency scan: 0 unbounded waits')
+          PY
+      - name: Commit repaired source
+        shell: bash
+        run: |
+          git config user.name "Willie Randolph"
+          git config user.email "RazzleberryT@gmail.com"
+          git add games/living-kingdoms/src/client
+          if git diff --cached --quiet; then
+            echo "No source changes to commit"
+            exit 0
+          fi
+          git commit -m "fix(lk): bound remaining client bootstrap dependency waits (LKB-0033)"
+          git push origin HEAD:lk/LKB-0033-run-build-rpg-playergui-waits
+      - name: Upload repaired client source
         uses: actions/upload-artifact@v4
         with:
-          name: lk-lkb0033-client-source
+          name: lk-lkb0033-repaired-client-source
           path: games/living-kingdoms/src/client
           if-no-files-found: error
           retention-days: 1
