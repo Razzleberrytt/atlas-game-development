@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "state": "LOCKED",
-  "ticket_id": "LKB-0321",
-  "owner": "enemy-encounter-agent",
-  "claimed_at": "2026-08-17T13:14:53-04:00",
-  "branch": "lk/LKB-0321-enemy-navigation-budget",
-  "authority_reference": "docs/roadmap/EXECUTION-DASHBOARD.md NOW: bounded enemy pathfinding performance budget"
+  "state": "UNLOCKED",
+  "ticket_id": null,
+  "owner": null,
+  "claimed_at": null,
+  "branch": null,
+  "authority_reference": null
 }
