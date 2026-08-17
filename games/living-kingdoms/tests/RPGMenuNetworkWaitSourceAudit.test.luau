@@ -26,6 +26,8 @@ local requiredSnippets = {
 	"InventoryNetwork.ReadOwnInventory did not become available before the client bootstrap timeout",
 	'inventoryNetwork:WaitForChild("EquipOwnedItem", NETWORK_WAIT_SECONDS)',
 	"InventoryNetwork.EquipOwnedItem did not become available before the client bootstrap timeout",
+	'player:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS)',
+	"PlayerGui did not become available before the client bootstrap timeout",
 }
 
 for _, snippet in requiredSnippets do
@@ -45,6 +47,7 @@ local forbiddenSnippets = {
 	'inventoryNetwork:WaitForChild("State")',
 	'inventoryNetwork:WaitForChild("ReadOwnInventory")',
 	'inventoryNetwork:WaitForChild("EquipOwnedItem")',
+	'player:WaitForChild("PlayerGui")',
 }
 
 for _, snippet in forbiddenSnippets do
