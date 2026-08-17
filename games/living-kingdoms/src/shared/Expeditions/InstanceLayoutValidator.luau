@@ -56,10 +56,7 @@ local function roleOf(node: any): any
 end
 
 local function validPoint(point: any): boolean
-	return type(point) == "table"
-		and isFiniteNumber(point.x)
-		and isFiniteNumber(point.y)
-		and isFiniteNumber(point.z)
+	return type(point) == "table" and isFiniteNumber(point.x) and isFiniteNumber(point.y) and isFiniteNumber(point.z)
 end
 
 local function validSize(size: any): boolean
@@ -151,7 +148,8 @@ function Validator.validate(roomPlan: any, layout: any): any
 	if layout.LayoutVersion ~= LAYOUT_VERSION then
 		return failure("LayoutVersionMismatch", nil, nil, "layout version is not supported")
 	end
-	if layout.GridStep ~= GRID_STEP
+	if
+		layout.GridStep ~= GRID_STEP
 		or layout.RoomLength ~= ROOM_LENGTH
 		or layout.RoomWidth ~= ROOM_WIDTH
 		or layout.RoomHeight ~= ROOM_HEIGHT
@@ -197,7 +195,8 @@ function Validator.validate(roomPlan: any, layout: any): any
 		if placement.RoomId ~= node.RoomId or placement.RoleId ~= roleOf(node) then
 			return failure("RoomPlacementMismatch", index, nil, "placement identity differs from canonical room node")
 		end
-		if type(placement.GridCell) ~= "table"
+		if
+			type(placement.GridCell) ~= "table"
 			or not isInteger(placement.GridCell.x)
 			or not isInteger(placement.GridCell.z)
 		then
@@ -206,13 +205,15 @@ function Validator.validate(roomPlan: any, layout: any): any
 		if not validPoint(placement.Center) or not validSize(placement.Size) then
 			return failure("InvalidRoomGeometry", index, nil, "room center/size must contain finite positive geometry")
 		end
-		if not almostEqual(placement.Center.x, placement.GridCell.x * GRID_STEP)
+		if
+			not almostEqual(placement.Center.x, placement.GridCell.x * GRID_STEP)
 			or not almostEqual(placement.Center.y, ROOM_HEIGHT / 2)
 			or not almostEqual(placement.Center.z, placement.GridCell.z * GRID_STEP)
 		then
 			return failure("RoomCenterMismatch", index, nil, "room center must match its canonical grid cell")
 		end
-		if not almostEqual(placement.Size.x, ROOM_WIDTH)
+		if
+			not almostEqual(placement.Size.x, ROOM_WIDTH)
 			or not almostEqual(placement.Size.y, ROOM_HEIGHT)
 			or not almostEqual(placement.Size.z, ROOM_LENGTH)
 		then
@@ -249,7 +250,12 @@ function Validator.validate(roomPlan: any, layout: any): any
 	for index, placement in layout.Placements do
 		local turn = expectedTurn(index, #layout.Placements, layout.Placements)
 		if turn == nil then
-			return failure("InvalidGridConnection", index, nil, "canonical neighbors must be cardinal and cannot U-turn")
+			return failure(
+				"InvalidGridConnection",
+				index,
+				nil,
+				"canonical neighbors must be cardinal and cannot U-turn"
+			)
 		end
 		if placement.TurnId ~= turn then
 			return failure("TurnMetadataMismatch", index, nil, "turn metadata differs from neighboring room cells")
@@ -263,7 +269,12 @@ function Validator.validate(roomPlan: any, layout: any): any
 			return failure("InvalidConnectorOrder", nil, index, "connector must preserve canonical room order")
 		end
 		if connector.FromRoomId ~= from.RoomId or connector.ToRoomId ~= to.RoomId then
-			return failure("ConnectorIdentityMismatch", nil, index, "connector room identities differ from canonical order")
+			return failure(
+				"ConnectorIdentityMismatch",
+				nil,
+				index,
+				"connector room identities differ from canonical order"
+			)
 		end
 		local direction = directionBetween(from.GridCell, to.GridCell)
 		if direction == nil then
@@ -285,13 +296,23 @@ function Validator.validate(roomPlan: any, layout: any): any
 		if expectedLength <= EPSILON then
 			return failure("ConnectorTooShort", nil, index, "connector must have positive length")
 		end
-		if connector.Axis ~= expectedAxis or not isFiniteNumber(connector.Length) or not almostEqual(connector.Length, expectedLength) then
+		if
+			connector.Axis ~= expectedAxis
+			or not isFiniteNumber(connector.Length)
+			or not almostEqual(connector.Length, expectedLength)
+		then
 			return failure("ConnectorGeometryMismatch", nil, index, "connector axis/length does not match sockets")
 		end
 		if not validPoint(connector.Center) or not validSize(connector.Size) then
-			return failure("ConnectorGeometryMismatch", nil, index, "connector center/size must contain finite geometry")
+			return failure(
+				"ConnectorGeometryMismatch",
+				nil,
+				index,
+				"connector center/size must contain finite geometry"
+			)
 		end
-		if not almostEqual(connector.Center.x, (from.Exit.x + to.Entrance.x) / 2)
+		if
+			not almostEqual(connector.Center.x, (from.Exit.x + to.Entrance.x) / 2)
 			or not almostEqual(connector.Center.y, 0)
 			or not almostEqual(connector.Center.z, (from.Exit.z + to.Entrance.z) / 2)
 		then
@@ -299,11 +320,17 @@ function Validator.validate(roomPlan: any, layout: any): any
 		end
 		local expectedSizeX = if isX then expectedLength else DOORWAY_WIDTH
 		local expectedSizeZ = if isZ then expectedLength else DOORWAY_WIDTH
-		if not almostEqual(connector.Size.x, expectedSizeX)
+		if
+			not almostEqual(connector.Size.x, expectedSizeX)
 			or not almostEqual(connector.Size.y, 1)
 			or not almostEqual(connector.Size.z, expectedSizeZ)
 		then
-			return failure("ConnectorGeometryMismatch", nil, index, "connector size does not match its axis and sockets")
+			return failure(
+				"ConnectorGeometryMismatch",
+				nil,
+				index,
+				"connector size does not match its axis and sockets"
+			)
 		end
 	end
 
