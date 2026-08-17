@@ -142,6 +142,14 @@ assertThat(
 	"life notifications while already combat-eligible must not repeatedly reset the weapon"
 )
 assertThat(
+	string.find(inventoryNetwork, "queuePreferredWeaponActivation(player, false)", 1, true) ~= nil,
+	"passive load/life reconciliation must not grant the default firearm when no durable weapon exists"
+)
+assertThat(
+	string.find(inventoryNetwork, "queuePreferredWeaponActivation(player, true)", 1, true) ~= nil,
+	"explicit weapon unequip must remove the old durable weapon through a bounded fallback"
+)
+assertThat(
 	string.find(inventoryNetwork, "pendingWeaponActivationByPlayerId", 1, true) == nil,
 	"inventory network must not regress to the stale forever-heartbeat activation queue"
 )
@@ -159,12 +167,20 @@ assertThat(
 	"default reconciliation must derive the preferred durable weapon server-side"
 )
 assertThat(
+	string.find(combatAdapter, "function Service.activatePreferredEquippedWeapon", 1, true) ~= nil,
+	"passive reconciliation needs a no-default durable-only path"
+)
+assertThat(
+	string.find(combatAdapter, 'return true, "NoEquippedWeapon"', 1, true) ~= nil,
+	"no durable weapon must be an accepted passive no-op"
+)
+assertThat(
 	string.find(combatAdapter, "OperativeCombatRuntimeService.equipFoundWeapon", 1, true) ~= nil,
 	"equipment must use the existing authoritative combat equip seam"
 )
 assertThat(
 	string.find(combatAdapter, "FirearmConfig.DefaultSelectableWeaponId", 1, true) ~= nil,
-	"clearing weapon equipment must fall back through canonical combat config"
+	"explicitly clearing weapon equipment must fall back through canonical combat config"
 )
 
 assertThat(string.find(weaponResolver, "ItemNotOwned", 1, true) ~= nil, "forged instances must fail closed")
