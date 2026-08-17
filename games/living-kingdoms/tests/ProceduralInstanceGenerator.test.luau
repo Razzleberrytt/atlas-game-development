@@ -45,29 +45,30 @@ local assembler = luau.load(fs.readFile("games/living-kingdoms/src/shared/Expedi
 
 local planner = require("../src/shared/Expeditions/RoomPlacementPlanner")
 local validator = require("../src/shared/Expeditions/InstanceLayoutValidator")
-local generator = luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/ProceduralInstanceGenerator.luau"), {
-	debugName = "ProceduralInstanceGenerator",
-	environment = {
-		script = {
-			Parent = {
-				RoomSequenceAssembler = ASSEMBLER_TOKEN,
-				RoomPlacementPlanner = PLANNER_TOKEN,
-				InstanceLayoutValidator = VALIDATOR_TOKEN,
+local generator =
+	luau.load(fs.readFile("games/living-kingdoms/src/shared/Expeditions/ProceduralInstanceGenerator.luau"), {
+		debugName = "ProceduralInstanceGenerator",
+		environment = {
+			script = {
+				Parent = {
+					RoomSequenceAssembler = ASSEMBLER_TOKEN,
+					RoomPlacementPlanner = PLANNER_TOKEN,
+					InstanceLayoutValidator = VALIDATOR_TOKEN,
+				},
 			},
+			require = function(token: unknown)
+				if token == ASSEMBLER_TOKEN then
+					return assembler
+				elseif token == PLANNER_TOKEN then
+					return planner
+				elseif token == VALIDATOR_TOKEN then
+					return validator
+				end
+				error("unexpected ProceduralInstanceGenerator dependency")
+			end,
 		},
-		require = function(token: unknown)
-			if token == ASSEMBLER_TOKEN then
-				return assembler
-			elseif token == PLANNER_TOKEN then
-				return planner
-			elseif token == VALIDATOR_TOKEN then
-				return validator
-			end
-			error("unexpected ProceduralInstanceGenerator dependency")
-		end,
-	},
-	injectGlobals = true,
-})()
+		injectGlobals = true,
+	})()
 
 local function layoutSignature(layout: any): string
 	local values = {}
