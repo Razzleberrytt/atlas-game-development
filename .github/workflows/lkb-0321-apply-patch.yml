@@ -1,0 +1,106 @@
+name: LKB-0321 one-shot owner patch
+
+on:
+  push:
+    branches:
+      - lk/LKB-0321-enemy-navigation-budget
+
+permissions:
+  contents: write
+
+jobs:
+  patch-current-owner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: lk/LKB-0321-enemy-navigation-budget
+          fetch-depth: 0
+      - name: Apply guarded current-owner patch
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{path}: expected exactly one guarded match, found {count}")
+              p.write_text(text.replace(old, new, 1))
+
+          config = "games/living-kingdoms/src/shared/Config/EnemyConfig.luau"
+          replace_once(
+              config,
+              "\t\tWaypointSpacingStuds = 5,\n\t\tPackFlankOffsetStuds = 4.5,",
+              "\t\tWaypointSpacingStuds = 5,\n\t\tMaximumPathComputationsPerEvaluation = 4,\n\t\tPackFlankOffsetStuds = 4.5,",
+          )
+          replace_once(
+              config,
+              "for _, definition in OrdinaryArchetypesById do\n\tvalidateOrdinary(definition)\nend\n\nassert(\n\tEnemyConfig.FairSpawn.MinimumOperativeDistanceStuds",
+              "for _, definition in OrdinaryArchetypesById do\n\tvalidateOrdinary(definition)\nend\n\nassert(\n\tEnemyConfig.Navigation.MaximumPathComputationsPerEvaluation > 0\n\t\tand EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation % 1 == 0\n\t\tand EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation\n\t\t\t<= EnemyConfig.Population.AbsoluteMaximumConcurrent,\n\t\"the path-computation budget must be a positive bounded integer\"\n)\nassert(\n\tEnemyConfig.FairSpawn.MinimumOperativeDistanceStuds",
+          )
+
+          director = "games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau"
+          replace_once(
+              director,
+              "local WorldFoundationConfig = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)\nlocal EnemyBehaviorResolver = require(script.Parent.EnemyBehaviorResolver)",
+              "local WorldFoundationConfig = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)\nlocal EnemyNavigationScheduler = require(script.Parent.Parent.Domain.EnemyNavigationScheduler)\nlocal EnemyBehaviorResolver = require(script.Parent.EnemyBehaviorResolver)",
+          )
+          replace_once(
+              director,
+              "local sequenceCounter = 0\nlocal operationPressureStartedServerTimestamp: number? = nil",
+              "local sequenceCounter = 0\nlocal navigationPathBudgetCursorEntityId: string? = nil\nlocal operationPressureStartedServerTimestamp: number? = nil",
+          )
+          old_move = '''local function moveStalkerToward(entry: EnemyEntry, targetPosition: Vector3, serverTimestamp: number)\n\tif serverTimestamp < entry.nextPursuitRepathServerTimestamp then\n\t\treturn\n\tend\n\tentry.nextPursuitRepathServerTimestamp = serverTimestamp + EnemyConfig.Navigation.PursuitRepathIntervalSeconds\n\n\tlocal destination = targetPosition\n\tlocal toTarget = Vector3.new(targetPosition.X - entry.root.Position.X, 0, targetPosition.Z - entry.root.Position.Z)\n\tif\n\t\ttoTarget.Magnitude > EnemyConfig.Walker.AttackRangeStuds * 1.5\n\t\tand toTarget.Magnitude <= EnemyConfig.Navigation.FlankActivationDistanceStuds\n\tthen\n\t\tlocal perpendicular = Vector3.new(-toTarget.Z, 0, toTarget.X).Unit\n\t\tdestination += perpendicular * EnemyConfig.Navigation.PackFlankOffsetStuds * entry.pursuitFlankSign\n\tend\n\n\t-- Production uses a short, periodically refreshed path so stalkers flow around\n\t-- trees and structures. Lightweight fixtures deliberately fall back to the\n\t-- same bounded Humanoid destination without needing a pathfinding mock.\n\tlocal pathService = PathfindingService :: any\n\tif type(pathService.CreatePath) == "function" then\n\t\tlocal ok, path = pcall(function()\n\t\t\tlocal createdPath = pathService:CreatePath({\n\t\t\t\tAgentRadius = EnemyConfig.Navigation.AgentRadiusStuds,\n\t\t\t\tAgentHeight = EnemyConfig.Navigation.AgentHeightStuds,\n\t\t\t\tAgentCanJump = true,\n\t\t\t\tWaypointSpacing = EnemyConfig.Navigation.WaypointSpacingStuds,\n\t\t\t})\n\t\t\tcreatedPath:ComputeAsync(entry.root.Position, destination)\n\t\t\treturn createdPath\n\t\tend)\n\t\tif ok and path.Status == Enum.PathStatus.Success then\n\t\t\tlocal waypoints = path:GetWaypoints()\n\t\t\tlocal waypoint = waypoints[math.min(2, #waypoints)]\n\t\t\tif waypoint ~= nil then\n\t\t\t\tif waypoint.Action == Enum.PathWaypointAction.Jump then\n\t\t\t\t\tentry.humanoid.Jump = true\n\t\t\t\tend\n\t\t\t\tentry.humanoid:MoveTo(waypoint.Position)\n\t\t\t\treturn\n\t\t\tend\n\t\tend\n\tend\n\n\t-- Exact target fallback preserves direct pursuit if a path cannot be solved.\n\tentry.humanoid:MoveTo(targetPosition)\nend'''
+          new_move = '''local function moveStalkerToward(\n\tentry: EnemyEntry,\n\ttargetPosition: Vector3,\n\tserverTimestamp: number,\n\tpathComputationGranted: boolean\n)\n\tif serverTimestamp < entry.nextPursuitRepathServerTimestamp then\n\t\treturn\n\tend\n\n\tif pathComputationGranted then\n\t\tentry.nextPursuitRepathServerTimestamp = serverTimestamp + EnemyConfig.Navigation.PursuitRepathIntervalSeconds\n\n\t\tlocal destination = targetPosition\n\t\tlocal toTarget = Vector3.new(targetPosition.X - entry.root.Position.X, 0, targetPosition.Z - entry.root.Position.Z)\n\t\tif\n\t\t\ttoTarget.Magnitude > EnemyConfig.Walker.AttackRangeStuds * 1.5\n\t\t\tand toTarget.Magnitude <= EnemyConfig.Navigation.FlankActivationDistanceStuds\n\t\tthen\n\t\t\tlocal perpendicular = Vector3.new(-toTarget.Z, 0, toTarget.X).Unit\n\t\t\tdestination += perpendicular * EnemyConfig.Navigation.PackFlankOffsetStuds * entry.pursuitFlankSign\n\t\tend\n\n\t\t-- Pathfinding is the expensive part of pursuit, so only this evaluation's\n\t\t-- deterministic round-robin grant may enter CreatePath/ComputeAsync.\n\t\tlocal pathService = PathfindingService :: any\n\t\tif type(pathService.CreatePath) == "function" then\n\t\t\tlocal ok, path = pcall(function()\n\t\t\t\tlocal createdPath = pathService:CreatePath({\n\t\t\t\t\tAgentRadius = EnemyConfig.Navigation.AgentRadiusStuds,\n\t\t\t\t\tAgentHeight = EnemyConfig.Navigation.AgentHeightStuds,\n\t\t\t\t\tAgentCanJump = true,\n\t\t\t\t\tWaypointSpacing = EnemyConfig.Navigation.WaypointSpacingStuds,\n\t\t\t\t})\n\t\t\t\tcreatedPath:ComputeAsync(entry.root.Position, destination)\n\t\t\t\treturn createdPath\n\t\t\tend)\n\t\t\tif ok and path.Status == Enum.PathStatus.Success then\n\t\t\t\tlocal waypoints = path:GetWaypoints()\n\t\t\t\tlocal waypoint = waypoints[math.min(2, #waypoints)]\n\t\t\t\tif waypoint ~= nil then\n\t\t\t\t\tif waypoint.Action == Enum.PathWaypointAction.Jump then\n\t\t\t\t\t\tentry.humanoid.Jump = true\n\t\t\t\t\tend\n\t\t\t\t\tentry.humanoid:MoveTo(waypoint.Position)\n\t\t\t\t\treturn\n\t\t\t\tend\n\t\t\tend\n\t\tend\n\tend\n\n\t-- Ungranted enemies still pursue this evaluation, but do not consume an\n\t-- expensive path computation. Keeping the repath timestamp due makes them\n\t-- eligible for the next fair round-robin grant.\n\tentry.humanoid:MoveTo(targetPosition)\nend'''
+          replace_once(director, old_move, new_move)
+          replace_once(
+              director,
+              "local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperativeFact }, serverTimestamp: number): number",
+              "local function applyBehavior(\n\tentry: EnemyEntry,\n\toperativeFacts: { EnemyOperativeFact },\n\tserverTimestamp: number,\n\tpathComputationGranted: boolean\n): number",
+          )
+          replace_once(
+              director,
+              "\t\t\t\t\tVector3.new(fact.position.x, fact.position.y, fact.position.z),\n\t\t\t\t\tserverTimestamp\n\t\t\t\t)",
+              "\t\t\t\t\tVector3.new(fact.position.x, fact.position.y, fact.position.z),\n\t\t\t\t\tserverTimestamp,\n\t\t\t\t\tpathComputationGranted\n\t\t\t\t)",
+          )
+          old_eval = '''\trefreshCommanderAuras()\n\tsummary.attackCommittedCount += tickBloomZones(operativeFacts, serverTimestamp)\n\tlocal toClean: { string } = {}\n\tfor entityId, entry in entries do\n\t\tlocal cleanupAt = entry.cleanupAtServerTimestamp\n\t\tif cleanupAt ~= nil then\n\t\t\tdetonateVolatile(entry, serverTimestamp)\n\t\t\tif serverTimestamp >= cleanupAt then\n\t\t\t\ttable.insert(toClean, entityId)\n\t\t\tend\n\t\telseif entry.isAlive then\n\t\t\tapplyRegeneration(entry, serverTimestamp)\n\t\t\tsummary.attackCommittedCount += applyBehavior(entry, operativeFacts, serverTimestamp)\n\t\tend\n\tend'''
+          new_eval = '''\trefreshCommanderAuras()\n\tsummary.attackCommittedCount += tickBloomZones(operativeFacts, serverTimestamp)\n\n\tlocal eligiblePathEntityIds: { string } = {}\n\tfor entityId, entry in entries do\n\t\tif\n\t\t\tentry.isAlive\n\t\t\tand entry.cleanupAtServerTimestamp == nil\n\t\t\tand entry.archetypeId ~= PROGENITOR_ARCHETYPE_ID\n\t\t\tand entry.archetypeId ~= BLIGHT_SPITTER_ARCHETYPE_ID\n\t\t\tand entry.behaviorStateId == BehaviorStateIds.Pursuing\n\t\t\tand serverTimestamp >= entry.nextPursuitRepathServerTimestamp\n\t\tthen\n\t\t\ttable.insert(eligiblePathEntityIds, entityId)\n\t\tend\n\tend\n\tlocal budgetResolution = EnemyNavigationScheduler.resolveRoundRobinGrants(\n\t\teligiblePathEntityIds,\n\t\tnavigationPathBudgetCursorEntityId,\n\t\tEnemyConfig.Navigation.MaximumPathComputationsPerEvaluation\n\t)\n\tnavigationPathBudgetCursorEntityId = budgetResolution.CursorEntityId\n\tlocal pathGrantByEntityId: { [string]: boolean } = {}\n\tfor _, entityId in budgetResolution.GrantedEntityIds do\n\t\tpathGrantByEntityId[entityId] = true\n\tend\n\n\tlocal toClean: { string } = {}\n\tfor entityId, entry in entries do\n\t\tlocal cleanupAt = entry.cleanupAtServerTimestamp\n\t\tif cleanupAt ~= nil then\n\t\t\tdetonateVolatile(entry, serverTimestamp)\n\t\t\tif serverTimestamp >= cleanupAt then\n\t\t\t\ttable.insert(toClean, entityId)\n\t\t\tend\n\t\telseif entry.isAlive then\n\t\t\tapplyRegeneration(entry, serverTimestamp)\n\t\t\tsummary.attackCommittedCount += applyBehavior(\n\t\t\t\tentry,\n\t\t\t\toperativeFacts,\n\t\t\t\tserverTimestamp,\n\t\t\t\tpathGrantByEntityId[entityId] == true\n\t\t\t)\n\t\tend\n\tend'''
+          replace_once(director, old_eval, new_eval)
+          replace_once(
+              director,
+              "\tsequenceCounter = 0\n\tlocal folder = enemyFolder",
+              "\tsequenceCounter = 0\n\tnavigationPathBudgetCursorEntityId = nil\n\tlocal folder = enemyFolder",
+          )
+
+          fixture = "games/living-kingdoms/tests/EnemyDirectorService.test.luau"
+          replace_once(
+              fixture,
+              "local BOSS_RESOLVER_TOKEN = {}\n\nlocal rpgContracts",
+              "local BOSS_RESOLVER_TOKEN = {}\nlocal NAV_SCHEDULER_TOKEN = {}\n\nlocal navigationScheduler = loadSimple(\n\t\"games/living-kingdoms/src/server/Domain/EnemyNavigationScheduler.luau\",\n\t\"EnemyNavigationScheduler\"\n)\n\nlocal rpgContracts",
+          )
+          replace_once(
+              fixture,
+              "\t\t\t\tOperativeLifeService = LIFE_TOKEN,\n\t\t\t},\n\t\t},",
+              "\t\t\t\tOperativeLifeService = LIFE_TOKEN,\n\t\t\t\tParent = { Domain = { EnemyNavigationScheduler = NAV_SCHEDULER_TOKEN } },\n\t\t\t},\n\t\t},",
+          )
+          replace_once(
+              fixture,
+              "\t\t\telseif token == LIFE_TOKEN then\n\t\t\t\treturn lifeService\n\t\t\tend",
+              "\t\t\telseif token == LIFE_TOKEN then\n\t\t\t\treturn lifeService\n\t\t\telseif token == NAV_SCHEDULER_TOKEN then\n\t\t\t\treturn navigationScheduler\n\t\t\tend",
+          )
+          PY
+      - name: Commit scoped patch and remove one-shot workflow
+        shell: bash
+        run: |
+          git rm .github/workflows/lkb-0321-apply-patch.yml
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add games/living-kingdoms/src/shared/Config/EnemyConfig.luau \
+                  games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau \
+                  games/living-kingdoms/tests/EnemyDirectorService.test.luau
+          git commit -m "feat(lk): apply fair enemy pathfinding budget"
+          git push origin HEAD:lk/LKB-0321-enemy-navigation-budget
