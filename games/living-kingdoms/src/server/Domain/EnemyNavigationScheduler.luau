@@ -56,7 +56,7 @@ function Scheduler.resolveRoundRobinGrants(
 
 	local granted: { string } = {}
 	for offset = 0, grantCount - 1 do
-		local index = ((startIndex + offset - 2) % count) + 1
+		local index = ((startIndex + offset - 1) % count) + 1
 		table.insert(granted, ordered[index])
 	end
 
