@@ -19,6 +19,18 @@ local function copyPoint(value: any): any
 	return { x = value.x, y = value.y, z = value.z }
 end
 
+local function doorwayFor(center: any, sideId: string): any
+	if sideId == "North" then
+		return { x = center.x, y = 4, z = center.z - 32 }
+	elseif sideId == "South" then
+		return { x = center.x, y = 4, z = center.z + 32 }
+	elseif sideId == "East" then
+		return { x = center.x + 24, y = 4, z = center.z }
+	end
+	assert(sideId == "West")
+	return { x = center.x - 24, y = 4, z = center.z }
+end
+
 local function mutableLayout(layout: any): any
 	local placements = {}
 	for index, placement in layout.Placements do
@@ -111,15 +123,17 @@ turnDrift.Placements[2].TurnId = if turnDrift.Placements[2].TurnId == "Straight"
 assert(Validator.validate(plan, turnDrift).ReasonId == "TurnMetadataMismatch")
 
 local socketDrift = mutableLayout(layout)
-local originalExit = socketDrift.Placements[1].ExitSide
-local replacementSide = if originalExit == "North" then "East" else "North"
-socketDrift.Placements[1].ExitSide = replacementSide
-local center = socketDrift.Placements[1].Center
-if replacementSide == "North" then
-	socketDrift.Placements[1].Exit = { x = center.x, y = 4, z = center.z - 32 }
-else
-	socketDrift.Placements[1].Exit = { x = center.x + 24, y = 4, z = center.z }
+local firstPlacement = socketDrift.Placements[1]
+local replacementSide = nil
+for _, candidate in { "North", "East", "South", "West" } do
+	if candidate ~= firstPlacement.ExitSide and candidate ~= firstPlacement.EntranceSide then
+		replacementSide = candidate
+		break
+	end
 end
+assert(replacementSide ~= nil, "a distinct cardinal corruption side must exist")
+firstPlacement.ExitSide = replacementSide
+firstPlacement.Exit = doorwayFor(firstPlacement.Center, replacementSide)
 assert(Validator.validate(plan, socketDrift).ReasonId == "SocketDirectionMismatch")
 
 local connectorDrift = mutableLayout(layout)
