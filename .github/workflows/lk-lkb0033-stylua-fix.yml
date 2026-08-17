@@ -1,0 +1,53 @@
+name: LK LKB-0033 StyLua Fix
+
+on:
+  push:
+    branches:
+      - lk/LKB-0033-run-build-rpg-playergui-waits
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: lk/LKB-0033-run-build-rpg-playergui-waits
+      - name: Apply exact formatter rewrites
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          replacements = {
+            'games/living-kingdoms/src/client/Controllers/RunProgressionHUDController.luau': [
+              ('assert(readStateRemote ~= nil, "ProgressionNetwork.ReadState did not become available before the client bootstrap timeout")', 'assert(\n\treadStateRemote ~= nil,\n\t"ProgressionNetwork.ReadState did not become available before the client bootstrap timeout"\n)'),
+              ('assert(chooseUpgradeRemote ~= nil, "ProgressionNetwork.ChooseUpgrade did not become available before the client bootstrap timeout")', 'assert(\n\tchooseUpgradeRemote ~= nil,\n\t"ProgressionNetwork.ChooseUpgrade did not become available before the client bootstrap timeout"\n)'),
+            ],
+            'games/living-kingdoms/src/client/Controllers/OperativeProgressionPresentationController.luau': [
+              ('\tassert(modal ~= nil and modal:IsA("Frame"), "RPGMenu.Modal did not become available before the client bootstrap timeout")', '\tassert(\n\t\tmodal ~= nil and modal:IsA("Frame"),\n\t\t"RPGMenu.Modal did not become available before the client bootstrap timeout"\n\t)'),
+            ],
+          }
+          for name, pairs in replacements.items():
+            path = Path(name)
+            source = path.read_text()
+            changed = False
+            for old, new in pairs:
+              if old in source:
+                source = source.replace(old, new, 1)
+                changed = True
+              elif new not in source:
+                raise SystemExit(f'formatter target missing: {name}')
+            if changed:
+              path.write_text(source)
+          PY
+      - name: Commit formatter-only changes
+        shell: bash
+        run: |
+          git config user.name "Willie Randolph"
+          git config user.email "RazzleberryT@gmail.com"
+          git add games/living-kingdoms/src/client/Controllers/RunProgressionHUDController.luau games/living-kingdoms/src/client/Controllers/OperativeProgressionPresentationController.luau
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "style(lk): format exhaustive bounded waits"
+          git push origin HEAD:lk/LKB-0033-run-build-rpg-playergui-waits
