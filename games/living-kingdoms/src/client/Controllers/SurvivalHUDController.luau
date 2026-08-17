@@ -21,8 +21,11 @@ local TOAST_HORIZONTAL_MARGIN = 16
 local Controller = {}
 local player = Players.LocalPlayer
 local network = ReplicatedStorage:WaitForChild("SurvivalNetwork", NETWORK_WAIT_SECONDS)
-local stateRemote = network:WaitForChild("State") :: RemoteEvent
-local readState = network:WaitForChild("ReadState") :: RemoteFunction
+assert(network ~= nil, "SurvivalNetwork did not become available before the client bootstrap timeout")
+local stateRemote = network:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "SurvivalNetwork.State did not become available before the client bootstrap timeout")
+local readState = network:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(readState ~= nil, "SurvivalNetwork.ReadState did not become available before the client bootstrap timeout")
 
 local started = false
 local connection: RBXScriptConnection? = nil
@@ -95,7 +98,9 @@ local function createPresentation()
 	stroke.Transparency = 0.35
 	stroke.Parent = toast
 
-	created.Parent = player:WaitForChild("PlayerGui")
+	local playerGui = player:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
+	created.Parent = playerGui
 	gui = created
 	contextToast = toast
 end

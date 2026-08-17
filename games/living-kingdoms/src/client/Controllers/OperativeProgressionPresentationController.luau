@@ -105,7 +105,8 @@ local function refresh()
 end
 
 local function mount(): Frame
-	local playerGui = player:WaitForChild("PlayerGui")
+	local playerGui = player:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
 	local menu = playerGui:WaitForChild("RPGMenu")
 	local modal = menu:WaitForChild("Modal") :: Frame
 	local characterPanel = modal:FindFirstChild("CharacterPanel", true)

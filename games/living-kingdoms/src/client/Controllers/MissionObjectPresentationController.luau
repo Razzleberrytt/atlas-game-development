@@ -42,6 +42,7 @@ type ExtractionBinding = {
 
 local Controller = {}
 
+local NETWORK_WAIT_SECONDS = 20
 local RELAY_MODEL_NAME = "RelayConsole"
 local RELAY_BODY_NAME = "ConsoleBody"
 local RELAY_LAMP_NAME = "StatusLamp"
@@ -57,7 +58,10 @@ local descendantRemovingConnection: RBXScriptConnection? = nil
 local relayBinding: RelayBinding? = nil
 local extractionBinding: ExtractionBinding? = nil
 
-local stateRemote = ReplicatedStorage:WaitForChild("MissionNetwork"):WaitForChild("State") :: RemoteEvent
+local missionNetwork = ReplicatedStorage:WaitForChild("MissionNetwork", NETWORK_WAIT_SECONDS)
+assert(missionNetwork ~= nil, "MissionNetwork did not become available before the client bootstrap timeout")
+local stateRemote = missionNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "MissionNetwork.State did not become available before the client bootstrap timeout")
 
 local function findBasePart(model: Model, name: string): BasePart?
 	local found = model:FindFirstChild(name, true)

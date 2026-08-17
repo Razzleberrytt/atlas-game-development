@@ -18,11 +18,17 @@ local UserInputService = game:GetService("UserInputService")
 type Controller = { start: () -> (), stop: () -> () }
 
 local ACTION_NAME = "LK_Revive"
+local NETWORK_WAIT_SECONDS = 20
 
 local Controller: Controller = {} :: Controller
 local localPlayer = Players.LocalPlayer
-local reviveIntentRemote =
-	ReplicatedStorage:WaitForChild("OperativeLifeNetwork"):WaitForChild("ReviveIntent") :: RemoteEvent
+local operativeLifeNetwork = ReplicatedStorage:WaitForChild("OperativeLifeNetwork", NETWORK_WAIT_SECONDS)
+assert(operativeLifeNetwork ~= nil, "OperativeLifeNetwork did not become available before the client bootstrap timeout")
+local reviveIntentRemote = operativeLifeNetwork:WaitForChild("ReviveIntent", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	reviveIntentRemote ~= nil,
+	"OperativeLifeNetwork.ReviveIntent did not become available before the client bootstrap timeout"
+)
 local heldTargetOperativeEntityId: string? = nil
 local started = false
 

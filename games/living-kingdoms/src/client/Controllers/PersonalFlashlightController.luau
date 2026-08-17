@@ -181,7 +181,9 @@ local function createStatusPresentation()
 	-- backing label hidden so desktop players see one clear status surface.
 	label.Visible = false
 	label.Parent = gui
-	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+	local playerGui = localPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
+	gui.Parent = playerGui
 	screenGui = gui
 	stateLabel = label
 	updateText(false)
