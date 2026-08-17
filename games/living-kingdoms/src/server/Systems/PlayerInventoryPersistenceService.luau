@@ -629,11 +629,7 @@ function Service:unequip(playerId: number, slotId: EquipmentSlotId, nowUnix: num
 	if record == nil then
 		return result(false, "PlayerNotLoaded", nil)
 	end
-	if
-		not isKnownValue(VALID_SLOTS, slotId)
-		or type(nowUnix) ~= "number"
-		or nowUnix < record.UpdatedAtUnix
-	then
+	if not isKnownValue(VALID_SLOTS, slotId) or type(nowUnix) ~= "number" or nowUnix < record.UpdatedAtUnix then
 		return result(false, "InvalidUnequipRequest", cloneRecord(record))
 	end
 	if record.EquippedBySlot[slotId] == nil then
