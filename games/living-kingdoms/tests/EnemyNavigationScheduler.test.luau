@@ -21,11 +21,17 @@ assert(joined(second.GrantedEntityIds) == "enemy-c,enemy-a", "round robin must w
 assert(second.CursorEntityId == "enemy-a", "wrapped grants must advance the cursor")
 
 local third = scheduler.resolveRoundRobinGrants({ "enemy-b", "enemy-c", "enemy-d" }, second.CursorEntityId, 2)
-assert(joined(third.GrantedEntityIds) == "enemy-b,enemy-c", "missing cursor membership must fall back deterministically")
+assert(
+	joined(third.GrantedEntityIds) == "enemy-b,enemy-c",
+	"missing cursor membership must fall back deterministically"
+)
 
 local all = scheduler.resolveRoundRobinGrants({ "enemy-c", "enemy-a", "enemy-b" }, "enemy-a", 99)
 assert(#all.GrantedEntityIds == 3, "grant count must never exceed eligible enemy count")
-assert(joined(all.GrantedEntityIds) == "enemy-b,enemy-c,enemy-a", "grant-all case must still preserve round-robin order")
+assert(
+	joined(all.GrantedEntityIds) == "enemy-b,enemy-c,enemy-a",
+	"grant-all case must still preserve round-robin order"
+)
 
 local zero = scheduler.resolveRoundRobinGrants({ "enemy-a", "enemy-b" }, "enemy-a", 0)
 assert(#zero.GrantedEntityIds == 0, "zero budget must grant no path computations")

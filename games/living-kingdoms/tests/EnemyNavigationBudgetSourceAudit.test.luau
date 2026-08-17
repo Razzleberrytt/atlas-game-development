@@ -59,9 +59,6 @@ assert(
 	not contains(director, "remainingPathComputations"),
 	"director must not regress to first-N-wins mutable path budgeting"
 )
-assert(
-	not contains(director, "EnemyNavigationProgress"),
-	"LKB-0321 must not absorb stale #570 stuck-recovery state"
-)
+assert(not contains(director, "EnemyNavigationProgress"), "LKB-0321 must not absorb stale #570 stuck-recovery state")
 
 print("EnemyNavigationBudgetSourceAudit: fair bounded pathfinding budget and direct fallback passed")

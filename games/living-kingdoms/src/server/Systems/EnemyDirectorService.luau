@@ -1401,7 +1401,8 @@ local function moveStalkerToward(
 		entry.nextPursuitRepathServerTimestamp = serverTimestamp + EnemyConfig.Navigation.PursuitRepathIntervalSeconds
 
 		local destination = targetPosition
-		local toTarget = Vector3.new(targetPosition.X - entry.root.Position.X, 0, targetPosition.Z - entry.root.Position.Z)
+		local toTarget =
+			Vector3.new(targetPosition.X - entry.root.Position.X, 0, targetPosition.Z - entry.root.Position.Z)
 		if
 			toTarget.Magnitude > EnemyConfig.Walker.AttackRangeStuds * 1.5
 			and toTarget.Magnitude <= EnemyConfig.Navigation.FlankActivationDistanceStuds

@@ -44,10 +44,8 @@ local BOSS_CONFIG_TOKEN = {}
 local BOSS_RESOLVER_TOKEN = {}
 local NAV_SCHEDULER_TOKEN = {}
 
-local navigationScheduler = loadSimple(
-	"games/living-kingdoms/src/server/Domain/EnemyNavigationScheduler.luau",
-	"EnemyNavigationScheduler"
-)
+local navigationScheduler =
+	loadSimple("games/living-kingdoms/src/server/Domain/EnemyNavigationScheduler.luau", "EnemyNavigationScheduler")
 
 local rpgContracts = loadSimple("games/living-kingdoms/src/shared/RPG/RunRpgContracts.luau", "RunRpgContracts")
 local rpgConfig = luau.load(fs.readFile("games/living-kingdoms/src/shared/Config/RunRpgConfig.luau"), {
