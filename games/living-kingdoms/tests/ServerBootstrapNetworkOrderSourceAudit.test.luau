@@ -91,10 +91,7 @@ for _, entry in fs.readDir("games/living-kingdoms/src/server/Systems") do
 	if string.sub(entry, -5) == ".luau" then
 		local source = fs.readFile("games/living-kingdoms/src/server/Systems/" .. entry)
 		if
-			string.match(
-				source,
-				'\nlocal %w+ = ReplicatedStorage:WaitForChild%("%w+Network", NETWORK_WAIT_SECONDS%)'
-			)
+			string.match(source, '\nlocal %w+ = ReplicatedStorage:WaitForChild%("%w+Network", NETWORK_WAIT_SECONDS%)')
 		then
 			waitingServices += 1
 		end
