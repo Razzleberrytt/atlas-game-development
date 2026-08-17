@@ -102,8 +102,13 @@ assertThat(
 	"combat activation must have a hard attempt ceiling"
 )
 assertThat(
-	string.find(inventoryNetwork, "attempt < COMBAT_ACTIVATION_MAX_ATTEMPTS", 1, true) ~= nil,
-	"combat activation retry must stop at the hard attempt ceiling"
+	string.find(inventoryNetwork, 'reasonId == "CombatRuntimeNotReady" and attempt < COMBAT_ACTIVATION_MAX_ATTEMPTS', 1, true)
+		~= nil,
+	"only runtime startup readiness may use the bounded polling window"
+)
+assertThat(
+	string.find(inventoryNetwork, 'if reasonId == "CombatNotAllowed" then', 1, true) ~= nil,
+	"life-state ineligibility must leave polling and wait for authoritative state notification"
 )
 assertThat(
 	string.find(inventoryNetwork, "task.delay(COMBAT_ACTIVATION_RETRY_INTERVAL_SECONDS", 1, true) ~= nil,
@@ -112,6 +117,20 @@ assertThat(
 assertThat(
 	string.find(inventoryNetwork, "weaponActivationGenerationByPlayerId", 1, true) ~= nil,
 	"stale delayed combat activations must be cancellable by generation"
+)
+assertThat(
+	string.find(inventoryNetwork, "combatAllowedByPlayerId", 1, true) ~= nil,
+	"combat eligibility edges must be remembered without rewriting combat ownership"
+)
+assertThat(
+	string.find(inventoryNetwork, "OperativeLifeService.subscribe(function(player)", 1, true) ~= nil
+		and string.find(inventoryNetwork, "OperativeLifeService.subscribeRoster(function(eventName, operativeEntityId)", 1, true)
+			~= nil,
+	"durable equipment must reconcile both life transitions and late operative registration"
+)
+assertThat(
+	string.find(inventoryNetwork, "if not wasAllowed then", 1, true) ~= nil,
+	"life notifications while already combat-eligible must not repeatedly reset the weapon"
 )
 assertThat(
 	string.find(inventoryNetwork, "pendingWeaponActivationByPlayerId", 1, true) == nil,
