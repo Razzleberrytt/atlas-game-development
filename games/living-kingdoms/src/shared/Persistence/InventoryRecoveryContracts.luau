@@ -59,6 +59,7 @@ local OPERATIONAL_REASON_IDS = table.freeze({
 	InvalidLoadRequest = true,
 	InvalidReleaseRequest = true,
 	InvalidEquipRequest = true,
+	InvalidUnequipRequest = true,
 	InvalidDismantleRequest = true,
 	InvalidAcquireRequest = true,
 	InvalidRenewRequest = true,
