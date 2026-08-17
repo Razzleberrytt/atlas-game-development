@@ -16,7 +16,7 @@ local placement = fs.readFile("games/living-kingdoms/src/server/Systems/Expediti
 local presentation = fs.readFile("games/living-kingdoms/src/server/Systems/ModularDungeonRoomPresentation.luau")
 
 assertThat(
-	string.find(generator, "RoomSequenceAssembler.assemble(seed)", 1, true) ~= nil,
+	string.find(generator, "pcall(RoomSequenceAssembler.assemble, seed)", 1, true) ~= nil,
 	"procedural generator must delegate room content order to the current assembler"
 )
 assertThat(
@@ -53,6 +53,14 @@ assertThat(
 	"cardinal graybox owner must support walls on every side"
 )
 assertThat(
+	string.find(placement, "local segmentLength = (totalLength - doorwayWidth) / 2", 1, true) ~= nil,
+	"open wall sides must retain collision around the exact validated doorway width"
+)
+assertThat(
+	string.find(placement, 'value:SetAttribute("GameplayGrayboxVisual", true)', 1, true) ~= nil,
+	"authoritative floor/wall collision visuals must be explicitly identifiable"
+)
+assertThat(
 	string.find(placement, 'sideId == "East" or sideId == "West"', 1, true) ~= nil,
 	"east/west doorway fixtures must rotate to match authoritative sockets"
 )
@@ -70,6 +78,10 @@ assertThat(
 	string.find(presentation, 'placement.TurnId ~= "Straight"', 1, true) ~= nil
 		and string.find(presentation, '"UnsupportedTurnLayout"', 1, true) ~= nil,
 	"unsupported turn shells must fail visibly to authoritative graybox instead of lying about openings"
+)
+assertThat(
+	string.find(presentation, 'child:GetAttribute("GameplayGrayboxVisual") == true', 1, true) ~= nil,
+	"supported shells must hide every segmented graybox visual without dropping its collision"
 )
 assertThat(
 	string.find(presentation, "math.rad(90)", 1, true) ~= nil,
