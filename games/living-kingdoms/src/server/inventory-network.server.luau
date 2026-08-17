@@ -96,8 +96,18 @@ end
 	state/roster notifications below instead of being polled forever. A newer
 	equip/unequip increments the generation so an older delayed callback can never
 	overwrite the newer durable choice.
+
+	Passive load/life reconciliation never grants a default firearm when no durable
+	weapon is equipped. The default fallback is reserved for an explicit weapon-slot
+	unequip, where the previously active durable weapon must stop driving combat.
 ]]
-local function attemptWeaponActivation(player: Player, instanceId: string?, generation: number, attempt: number)
+local function attemptWeaponActivation(
+	player: Player,
+	instanceId: string?,
+	allowDefaultFallback: boolean,
+	generation: number,
+	attempt: number
+)
 	if
 		player.Parent ~= Players
 		or loadedPlayerIds[player.UserId] ~= true
@@ -109,7 +119,11 @@ local function attemptWeaponActivation(player: Player, instanceId: string?, gene
 	local accepted: boolean
 	local reasonId: string
 	if instanceId == nil then
-		accepted, reasonId = EquipmentCombatAdapter.activatePreferredOrDefault(player)
+		if allowDefaultFallback then
+			accepted, reasonId = EquipmentCombatAdapter.activatePreferredOrDefault(player)
+		else
+			accepted, reasonId = EquipmentCombatAdapter.activatePreferredEquippedWeapon(player)
+		end
 	else
 		accepted, reasonId = EquipmentCombatAdapter.activateOwnedEquippedWeapon(player, instanceId)
 	end
@@ -122,7 +136,7 @@ local function attemptWeaponActivation(player: Player, instanceId: string?, gene
 	end
 	if reasonId == "CombatRuntimeNotReady" and attempt < COMBAT_ACTIVATION_MAX_ATTEMPTS then
 		task.delay(COMBAT_ACTIVATION_RETRY_INTERVAL_SECONDS, function()
-			attemptWeaponActivation(player, instanceId, generation, attempt + 1)
+			attemptWeaponActivation(player, instanceId, allowDefaultFallback, generation, attempt + 1)
 		end)
 		return
 	end
@@ -144,23 +158,24 @@ local function queueSpecificWeaponActivation(player: Player, instanceId: string)
 		return
 	end
 	combatAllowedByPlayerId[player.UserId] = true
-	attemptWeaponActivation(player, instanceId, generation, 1)
+	attemptWeaponActivation(player, instanceId, false, generation, 1)
 end
 
-local function queuePreferredWeaponActivation(player: Player)
+local function queuePreferredWeaponActivation(player: Player, allowDefaultFallback: boolean)
 	local generation = nextWeaponActivationGeneration(player.UserId)
 	if not OperativeLifeService.isCombatAllowed(player) then
 		combatAllowedByPlayerId[player.UserId] = false
 		return
 	end
 	combatAllowedByPlayerId[player.UserId] = true
-	attemptWeaponActivation(player, nil, generation, 1)
+	attemptWeaponActivation(player, nil, allowDefaultFallback, generation, 1)
 end
 
 -- Durable equipment may load before OperativeLifeService has registered the
 -- player, and an operative can later return from a non-combat life state. Only a
--- false->true eligibility edge reapplies the preferred durable weapon, so health
--- changes while already Alive never reset ammunition or weapon state.
+-- false->true eligibility edge reapplies a durable equipped weapon, so health
+-- changes while already Alive never reset ammunition or weapon state and players
+-- without durable firearms remain on the canonical melee/recovery path.
 local function reconcileCombatEligibility(player: Player)
 	local playerId = player.UserId
 	if loadedPlayerIds[playerId] ~= true then
@@ -175,7 +190,7 @@ local function reconcileCombatEligibility(player: Player)
 	end
 	combatAllowedByPlayerId[playerId] = true
 	if not wasAllowed then
-		queuePreferredWeaponActivation(player)
+		queuePreferredWeaponActivation(player, false)
 	end
 end
 
@@ -267,7 +282,7 @@ unequipOwnedSlot.OnServerInvoke = function(player: Player, slotId: any): any
 	if outcome.Accepted == true then
 		reconcileEquipmentEffects(player)
 		if EquipmentCombatAdapter.isWeaponSlot(slotId) then
-			queuePreferredWeaponActivation(player)
+			queuePreferredWeaponActivation(player, true)
 		end
 		pushTo(player)
 	end
