@@ -63,8 +63,8 @@ local landmarkAccent =
 assertThat(contains(project, '"HordeNetwork"'), "Rojo mapping must retain HordeNetwork")
 assertThat(contains(project, '"State"'), "Rojo mapping must retain HordeNetwork.State")
 assertThat(
-	contains(hordeRuntime, 'local stateRemote = network:WaitForChild("State") :: RemoteEvent'),
-	"HordeExperienceService must identify the legacy State remote explicitly"
+	contains(hordeRuntime, 'local stateRemote = network:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?'),
+	"HordeExperienceService must identify the bounded legacy State remote explicitly"
 )
 assertThat(contains(hordeRuntime, "stateRemote:FireClient(player"), "legacy State producer must remain inventoried")
 assertThat(contains(hordeRuntime, "local function publishAll"), "periodic legacy publisher must remain inventoried")
