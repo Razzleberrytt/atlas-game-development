@@ -4,6 +4,6 @@
   "ticket_id": "LKB-0033",
   "owner": "runtime-network-agent",
   "claimed_at": "2026-08-16T21:46:00-04:00",
-  "branch": "lk/LKB-0033-rpg-menu-network-waits-reconcile",
+  "branch": "lk/LKB-0033-run-build-rpg-playergui-waits",
   "authority_reference": "docs/roadmap/EXECUTION-DASHBOARD.md NOW: reconcile the remaining concrete RPG menu bounded-network-wait defect"
 }
