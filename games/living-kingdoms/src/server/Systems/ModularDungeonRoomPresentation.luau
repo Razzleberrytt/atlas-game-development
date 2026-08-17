@@ -170,13 +170,12 @@ local function cloneAsset(assetId: string): Instance?
 end
 
 local function hideAuthoritativeGrayboxVisuals(roomModel: Model)
-	for _, name in ipairs({ "Floor", "NorthWall", "SouthWall", "WestWall", "EastWall" }) do
-		local graybox = roomModel:FindFirstChild(name)
-		if graybox ~= nil and graybox:IsA("BasePart") then
-			graybox.Transparency = 1
-			graybox.CastShadow = false
-			graybox:SetAttribute("ModularVisualProxy", true)
-			graybox:SetAttribute("GameplayCollisionRetained", true)
+	for _, child in ipairs(roomModel:GetChildren()) do
+		if child:IsA("BasePart") and child:GetAttribute("GameplayGrayboxVisual") == true then
+			child.Transparency = 1
+			child.CastShadow = false
+			child:SetAttribute("ModularVisualProxy", true)
+			child:SetAttribute("GameplayCollisionRetained", true)
 		end
 	end
 end
