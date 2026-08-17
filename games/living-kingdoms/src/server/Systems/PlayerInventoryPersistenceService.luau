@@ -35,6 +35,7 @@ export type Service = {
 		instanceId: string,
 		nowUnix: number
 	) -> MutationResult,
+	unequip: (self: Service, playerId: number, slotId: EquipmentSlotId, nowUnix: number) -> MutationResult,
 	getRecord: (self: Service, playerId: number) -> PlayerInventoryRecord?,
 	releasePlayer: (self: Service, playerId: number) -> any,
 	destroy: (self: Service) -> (),
@@ -612,6 +613,60 @@ function Service:equip(playerId: number, slotId: EquipmentSlotId, instanceId: st
 	end
 	selfAny._records[playerId] = nextRecord
 	return result(true, "ItemEquipped", cloneRecord(nextRecord))
+end
+
+--[[
+	Unequip is a first-class durable mutation owned beside equip. It never
+	deletes the item, changes its authored facts, or bypasses the guarded write.
+	An already-empty slot is accepted without a write so retries are idempotent.
+]]
+function Service:unequip(playerId: number, slotId: EquipmentSlotId, nowUnix: number): MutationResult
+	local selfAny = self :: any
+	if selfAny._destroyed then
+		return result(false, "ServiceDestroyed", nil)
+	end
+	local record: PlayerInventoryRecord? = selfAny._records[playerId]
+	if record == nil then
+		return result(false, "PlayerNotLoaded", nil)
+	end
+	if
+		not isKnownValue(VALID_SLOTS, slotId)
+		or type(nowUnix) ~= "number"
+		or nowUnix < record.UpdatedAtUnix
+	then
+		return result(false, "InvalidUnequipRequest", cloneRecord(record))
+	end
+	if record.EquippedBySlot[slotId] == nil then
+		return result(true, "SlotAlreadyUnequipped", cloneRecord(record))
+	end
+
+	local nextRecord = newRecord(playerId, nowUnix)
+	for id, existing in record.InventoryByInstanceId do
+		nextRecord.InventoryByInstanceId[id] = existing
+	end
+	for slot, id in record.EquippedBySlot do
+		nextRecord.EquippedBySlot[slot] = id
+	end
+	for id, applied in record.AppliedRewardInstanceIds do
+		nextRecord.AppliedRewardInstanceIds[id] = applied
+	end
+	for id, applied in record.AppliedRewardGrantIds do
+		nextRecord.AppliedRewardGrantIds[id] = applied
+	end
+	for transactionId, outcome in record.AppliedDismantleTransactions do
+		nextRecord.AppliedDismantleTransactions[transactionId] = outcome
+	end
+	for grantId, signature in record.AppliedRewardContentSignatures do
+		nextRecord.AppliedRewardContentSignatures[grantId] = signature
+	end
+	nextRecord.EquippedBySlot[slotId] = nil
+
+	local written, writeReason = guardedWrite(selfAny._store, keyFor(playerId), nextRecord)
+	if not written then
+		return result(false, writeReason, cloneRecord(record))
+	end
+	selfAny._records[playerId] = nextRecord
+	return result(true, "ItemUnequipped", cloneRecord(nextRecord))
 end
 
 --[[
