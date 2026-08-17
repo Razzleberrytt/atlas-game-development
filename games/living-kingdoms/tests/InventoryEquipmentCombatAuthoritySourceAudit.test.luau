@@ -102,8 +102,12 @@ assertThat(
 	"combat activation must have a hard attempt ceiling"
 )
 assertThat(
-	string.find(inventoryNetwork, 'reasonId == "CombatRuntimeNotReady" and attempt < COMBAT_ACTIVATION_MAX_ATTEMPTS', 1, true)
-		~= nil,
+	string.find(
+		inventoryNetwork,
+		'reasonId == "CombatRuntimeNotReady" and attempt < COMBAT_ACTIVATION_MAX_ATTEMPTS',
+		1,
+		true
+	) ~= nil,
 	"only runtime startup readiness may use the bounded polling window"
 )
 assertThat(
@@ -124,7 +128,12 @@ assertThat(
 )
 assertThat(
 	string.find(inventoryNetwork, "OperativeLifeService.subscribe(function(player)", 1, true) ~= nil
-		and string.find(inventoryNetwork, "OperativeLifeService.subscribeRoster(function(eventName, operativeEntityId)", 1, true)
+		and string.find(
+			inventoryNetwork,
+			"OperativeLifeService.subscribeRoster(function(eventName, operativeEntityId)",
+			1,
+			true
+		)
 			~= nil,
 	"durable equipment must reconcile both life transitions and late operative registration"
 )
