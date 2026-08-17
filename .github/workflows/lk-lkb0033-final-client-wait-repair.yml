@@ -1,0 +1,32 @@
+name: LK LKB-0033 Final Client Wait Repair
+
+on:
+  push:
+    branches:
+      - lk/LKB-0033-run-build-rpg-playergui-waits
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: lk/LKB-0033-run-build-rpg-playergui-waits
+      - name: Apply final bounded-wait repair
+        run: python scripts/lkb0033_finish_client_waits.py
+      - name: Commit repaired source and audit
+        shell: bash
+        run: |
+          git config user.name "Willie Randolph"
+          git config user.email "RazzleberryT@gmail.com"
+          git add games/living-kingdoms/src/client games/living-kingdoms/tests/ClientBootstrapDependencyWaitSourceAudit.test.luau
+          if git diff --cached --quiet; then
+            echo "No final wait changes to commit"
+            exit 0
+          fi
+          git commit -m "fix(lk): eliminate remaining untimed client dependency waits (LKB-0033)"
+          git push origin HEAD:lk/LKB-0033-run-build-rpg-playergui-waits
