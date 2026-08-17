@@ -110,7 +110,10 @@ local function mount(): Frame
 	local menu = playerGui:WaitForChild("RPGMenu", NETWORK_WAIT_SECONDS)
 	assert(menu ~= nil, "RPGMenu did not become available before the client bootstrap timeout")
 	local modal = menu:WaitForChild("Modal", NETWORK_WAIT_SECONDS) :: Frame?
-	assert(modal ~= nil and modal:IsA("Frame"), "RPGMenu.Modal did not become available before the client bootstrap timeout")
+	assert(
+		modal ~= nil and modal:IsA("Frame"),
+		"RPGMenu.Modal did not become available before the client bootstrap timeout"
+	)
 	local characterPanel = modal:FindFirstChild("CharacterPanel", true)
 	assert(characterPanel ~= nil and characterPanel:IsA("Frame"), "RPG menu CharacterPanel is required")
 

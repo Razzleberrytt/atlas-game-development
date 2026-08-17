@@ -48,9 +48,15 @@ assert(progressionNetwork ~= nil, "ProgressionNetwork did not become available b
 local stateRemote = progressionNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
 assert(stateRemote ~= nil, "ProgressionNetwork.State did not become available before the client bootstrap timeout")
 local readStateRemote = progressionNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
-assert(readStateRemote ~= nil, "ProgressionNetwork.ReadState did not become available before the client bootstrap timeout")
+assert(
+	readStateRemote ~= nil,
+	"ProgressionNetwork.ReadState did not become available before the client bootstrap timeout"
+)
 local chooseUpgradeRemote = progressionNetwork:WaitForChild("ChooseUpgrade", NETWORK_WAIT_SECONDS) :: RemoteEvent?
-assert(chooseUpgradeRemote ~= nil, "ProgressionNetwork.ChooseUpgrade did not become available before the client bootstrap timeout")
+assert(
+	chooseUpgradeRemote ~= nil,
+	"ProgressionNetwork.ChooseUpgrade did not become available before the client bootstrap timeout"
+)
 
 local function addCorner(parent: Instance, radius: number)
 	local corner = Instance.new("UICorner")
