@@ -37,11 +37,20 @@ function Scheduler.resolveRoundRobinGrants(
 
 	local startIndex = 1
 	if cursorEntityId ~= nil then
+		-- Resume at the first surviving id after the cursor, even if the cursor's
+		-- enemy despawned between evaluations. Falling back to index 1 whenever a
+		-- cursor disappears would repeatedly favor low sorted ids under spawn/death
+		-- churn and weaken the fairness guarantee this scheduler exists to provide.
+		local foundSuccessor = false
 		for index, entityId in ordered do
-			if entityId == cursorEntityId then
-				startIndex = (index % count) + 1
+			if entityId > cursorEntityId then
+				startIndex = index
+				foundSuccessor = true
 				break
 			end
+		end
+		if not foundSuccessor then
+			startIndex = 1
 		end
 	end
 
