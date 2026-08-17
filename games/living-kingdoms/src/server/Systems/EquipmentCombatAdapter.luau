@@ -58,6 +58,32 @@ function Service.activateOwnedEquippedWeapon(player: Player, instanceId: unknown
 	return activateWeaponId(player, resolved.WeaponId, "CombatWeaponActivated")
 end
 
+-- Passive inventory/life reconciliation must not grant the default firearm to a
+-- player with no durable weapon. That would skip the intentional melee-to-first-
+-- pistol recovery loop. No durable weapon is therefore an accepted no-op here.
+function Service.activatePreferredEquippedWeapon(player: Player): (boolean, string)
+	local record = InventoryLiveService.getRecord(player.UserId)
+	if record == nil then
+		return false, "InventoryNotLoaded"
+	end
+	local resolved = EquippedWeaponResolver.resolvePreferred(record, lookupDefinition)
+	if not resolved.Accepted then
+		if resolved.ReasonId == "NoEquippedWeapon" then
+			return true, "NoEquippedWeapon"
+		end
+		return false, resolved.ReasonId
+	end
+	if resolved.WeaponId == nil then
+		return false, "InvalidWeaponDefinition"
+	end
+	return activateWeaponId(player, resolved.WeaponId, "PreferredCombatWeaponActivated")
+end
+
+-- An explicit weapon-slot unequip is different from passive reconciliation: the
+-- current durable firearm must stop driving combat. Prefer any remaining durable
+-- weapon; with none left, swap through the canonical default firearm identity.
+-- Combat's swap resolver carries existing ammunition forward, so this fallback
+-- does not mint ammunition on equip/unequip churn.
 function Service.activatePreferredOrDefault(player: Player): (boolean, string)
 	local record = InventoryLiveService.getRecord(player.UserId)
 	if record == nil then
