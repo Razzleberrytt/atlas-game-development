@@ -41,7 +41,8 @@ assertThat(
 	string.find(placement, "RoomPlacementPlanner", 1, true) == nil,
 	"runtime placement must not bypass validation by requiring the planner directly"
 )
-local generationIndex = assert(string.find(placement, "ProceduralInstanceGenerator.generateFromRoomPlan(roomPlan)", 1, true))
+local generationIndex =
+	assert(string.find(placement, "ProceduralInstanceGenerator.generateFromRoomPlan(roomPlan)", 1, true))
 local rootCreationIndex = assert(string.find(placement, 'local root = Instance.new("Folder")', 1, true))
 assertThat(generationIndex < rootCreationIndex, "validation must finish before Workspace materialization begins")
 assertThat(
@@ -76,9 +77,18 @@ assertThat(
 )
 
 for _, pureSource in { assembler, planner, validator, generator } do
-	assertThat(string.find(pureSource, "math.random", 1, true) == nil, "pure procedural resolution must not use math.random")
-	assertThat(string.find(pureSource, "Random.new", 1, true) == nil, "pure procedural resolution must not use Random.new")
-	assertThat(string.find(pureSource, "game:GetService", 1, true) == nil, "pure procedural resolution must not use Roblox services")
+	assertThat(
+		string.find(pureSource, "math.random", 1, true) == nil,
+		"pure procedural resolution must not use math.random"
+	)
+	assertThat(
+		string.find(pureSource, "Random.new", 1, true) == nil,
+		"pure procedural resolution must not use Random.new"
+	)
+	assertThat(
+		string.find(pureSource, "game:GetService", 1, true) == nil,
+		"pure procedural resolution must not use Roblox services"
+	)
 end
 assertThat(
 	string.find(assembler, "function RoomSequenceAssembler.assemble(seed: number)", 1, true) ~= nil,
