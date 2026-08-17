@@ -25,6 +25,10 @@ local function part(name: string, size: Vector3, cframe: CFrame, parent: Instanc
 	return value
 end
 
+local function markGrayboxVisual(value: BasePart)
+	value:SetAttribute("GameplayGrayboxVisual", true)
+end
+
 local function doorwayCFrame(point: any, sideId: string): CFrame
 	local base = CFrame.new(point.x, point.y, point.z)
 	if sideId == "East" or sideId == "West" then
@@ -82,48 +86,50 @@ local function sideIsOpen(placement: any, sideId: string): boolean
 	return placement.EntranceSide == sideId or placement.ExitSide == sideId
 end
 
-local function buildClosedWalls(placement: any, parent: Instance)
+local function buildWallSide(
+	placement: any,
+	sideId: string,
+	baseName: string,
+	doorwayWidth: number,
+	parent: Instance
+)
 	local center = placement.Center
 	local size = placement.Size
-	if not sideIsOpen(placement, "North") then
-		local wall = part(
-			"NorthWall",
-			Vector3.new(size.x, size.y, 1),
-			CFrame.new(center.x, center.y, center.z - size.z / 2),
-			parent
-		)
+	local isNorthSouth = sideId == "North" or sideId == "South"
+	local sideSign = if sideId == "North" or sideId == "West" then -1 else 1
+	local totalLength = if isNorthSouth then size.x else size.z
+	local wallCenter = if isNorthSouth
+		then Vector3.new(center.x, center.y, center.z + sideSign * size.z / 2)
+		else Vector3.new(center.x + sideSign * size.x / 2, center.y, center.z)
+	local fullSize = if isNorthSouth then Vector3.new(totalLength, size.y, 1) else Vector3.new(1, size.y, totalLength)
+
+	if not sideIsOpen(placement, sideId) then
+		local wall = part(baseName, fullSize, CFrame.new(wallCenter), parent)
 		wall.Material = Enum.Material.Rock
+		markGrayboxVisual(wall)
+		return
 	end
-	if not sideIsOpen(placement, "South") then
-		local wall = part(
-			"SouthWall",
-			Vector3.new(size.x, size.y, 1),
-			CFrame.new(center.x, center.y, center.z + size.z / 2),
-			parent
-		)
+
+	-- An open side still owns collision everywhere except the validated doorway.
+	-- Leaving the whole wall absent would create a 48-64 stud hole around a
+	-- 10-stud connector and let players walk into void beside the intended route.
+	local segmentLength = (totalLength - doorwayWidth) / 2
+	assert(segmentLength > 0, "doorway must be narrower than its room wall")
+	local segmentOffset = doorwayWidth / 2 + segmentLength / 2
+	for segmentIndex, direction in { -1, 1 } do
+		local segmentCenter = if isNorthSouth
+			then wallCenter + Vector3.new(direction * segmentOffset, 0, 0)
+			else wallCenter + Vector3.new(0, 0, direction * segmentOffset)
+		local segmentSize = if isNorthSouth
+			then Vector3.new(segmentLength, size.y, 1)
+			else Vector3.new(1, size.y, segmentLength)
+		local wall = part(`{baseName}_{segmentIndex}`, segmentSize, CFrame.new(segmentCenter), parent)
 		wall.Material = Enum.Material.Rock
-	end
-	if not sideIsOpen(placement, "West") then
-		local wall = part(
-			"WestWall",
-			Vector3.new(1, size.y, size.z),
-			CFrame.new(center.x - size.x / 2, center.y, center.z),
-			parent
-		)
-		wall.Material = Enum.Material.Rock
-	end
-	if not sideIsOpen(placement, "East") then
-		local wall = part(
-			"EastWall",
-			Vector3.new(1, size.y, size.z),
-			CFrame.new(center.x + size.x / 2, center.y, center.z),
-			parent
-		)
-		wall.Material = Enum.Material.Rock
+		markGrayboxVisual(wall)
 	end
 end
 
-local function buildRoom(placement: any, seed: number, parent: Instance)
+local function buildRoom(placement: any, seed: number, doorwayWidth: number, parent: Instance)
 	local model = Instance.new("Model")
 	model.Name = string.format("%02d_%s", placement.Index, placement.RoomId)
 	model:SetAttribute("RoomIndex", placement.Index)
@@ -141,7 +147,11 @@ local function buildRoom(placement: any, seed: number, parent: Instance)
 	local floor = part("Floor", Vector3.new(size.x, 1, size.z), CFrame.new(center.x, 0, center.z), model)
 	floor.Material = Enum.Material.Slate
 	floor.Color = Color3.fromRGB(38, 43, 49)
-	buildClosedWalls(placement, model)
+	markGrayboxVisual(floor)
+	buildWallSide(placement, "North", "NorthWall", doorwayWidth, model)
+	buildWallSide(placement, "South", "SouthWall", doorwayWidth, model)
+	buildWallSide(placement, "West", "WestWall", doorwayWidth, model)
+	buildWallSide(placement, "East", "EastWall", doorwayWidth, model)
 
 	for offset = -1, 1 do
 		local rib = part(
@@ -194,7 +204,7 @@ function Service.place(roomPlan: any): any
 	root:SetAttribute("EnvironmentTheme", "RuinedSciFantasy")
 
 	for _, placement in layout.Placements do
-		buildRoom(placement, layout.Seed, root)
+		buildRoom(placement, layout.Seed, layout.DoorwayWidth, root)
 	end
 	for index, connector in layout.Connectors do
 		local center = connector.Center
