@@ -441,7 +441,9 @@ local function createPresentation()
 	fill.Parent = track
 	progressFill = fill
 
-	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+	local playerGui = localPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
+	gui.Parent = playerGui
 	screenGui = gui
 end
 
