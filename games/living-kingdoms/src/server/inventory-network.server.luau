@@ -95,12 +95,7 @@ end
 	80 attempts × 0.25 seconds. A newer equip/unequip increments the generation so
 	an older delayed callback can never overwrite the newer durable choice.
 ]]
-local function attemptWeaponActivation(
-	player: Player,
-	instanceId: string?,
-	generation: number,
-	attempt: number
-)
+local function attemptWeaponActivation(player: Player, instanceId: string?, generation: number, attempt: number)
 	if
 		player.Parent ~= Players
 		or loadedPlayerIds[player.UserId] ~= true
