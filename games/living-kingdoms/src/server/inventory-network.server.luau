@@ -13,10 +13,13 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local EquipmentCombatAdapter = require(script.Parent.Systems.EquipmentCombatAdapter)
 local InventoryLiveService = require(script.Parent.Systems.InventoryLiveService)
 local OperativeLifeService = require(script.Parent.Systems.OperativeLifeService)
 
 local LEASE_RENEW_INTERVAL_SECONDS = 30
+local COMBAT_ACTIVATION_RETRY_INTERVAL_SECONDS = 0.25
+local COMBAT_ACTIVATION_MAX_ATTEMPTS = 80
 
 local existing = ReplicatedStorage:FindFirstChild("InventoryNetwork")
 if existing ~= nil then
@@ -39,6 +42,10 @@ local equipOwnedItem = Instance.new("RemoteFunction")
 equipOwnedItem.Name = "EquipOwnedItem"
 equipOwnedItem.Parent = network
 
+local unequipOwnedSlot = Instance.new("RemoteFunction")
+unequipOwnedSlot.Name = "UnequipOwnedSlot"
+unequipOwnedSlot.Parent = network
+
 local dismantleOwnedItem = Instance.new("RemoteFunction")
 dismantleOwnedItem.Name = "DismantleOwnedItem"
 dismantleOwnedItem.Parent = network
@@ -48,6 +55,8 @@ state.Name = "State"
 state.Parent = network
 
 local loadedPlayerIds: { [number]: boolean } = {}
+local weaponActivationGenerationByPlayerId: { [number]: number } = {}
+local combatAllowedByPlayerId: { [number]: boolean } = {}
 local renewalAccumulatorSeconds = 0
 
 local function rejected(reasonId: string): any
@@ -68,6 +77,121 @@ end
 local function reconcileEquipmentEffects(player: Player)
 	OperativeLifeService.reconcileMaximumHealth(player)
 	OperativeLifeService.reconcileMovementSpeed(player)
+end
+
+local function nextWeaponActivationGeneration(playerId: number): number
+	local generation = (weaponActivationGenerationByPlayerId[playerId] or 0) + 1
+	weaponActivationGenerationByPlayerId[playerId] = generation
+	return generation
+end
+
+local function cancelWeaponActivation(playerId: number)
+	weaponActivationGenerationByPlayerId[playerId] = nil
+end
+
+--[[
+	Combat runtime startup may lag inventory by a fraction. That dependency gets a
+	finite 20-second retry window: 80 attempts × 0.25 seconds. Combat eligibility
+	is different: it is owned by OperativeLifeService and is reconciled from its
+	state/roster notifications below instead of being polled forever. A newer
+	equip/unequip increments the generation so an older delayed callback can never
+	overwrite the newer durable choice.
+
+	Passive load/life reconciliation never grants a default firearm when no durable
+	weapon is equipped. The default fallback is reserved for an explicit weapon-slot
+	unequip, where the previously active durable weapon must stop driving combat.
+]]
+local function attemptWeaponActivation(
+	player: Player,
+	instanceId: string?,
+	allowDefaultFallback: boolean,
+	generation: number,
+	attempt: number
+)
+	if
+		player.Parent ~= Players
+		or loadedPlayerIds[player.UserId] ~= true
+		or weaponActivationGenerationByPlayerId[player.UserId] ~= generation
+	then
+		return
+	end
+
+	local accepted: boolean
+	local reasonId: string
+	if instanceId == nil then
+		if allowDefaultFallback then
+			accepted, reasonId = EquipmentCombatAdapter.activatePreferredOrDefault(player)
+		else
+			accepted, reasonId = EquipmentCombatAdapter.activatePreferredEquippedWeapon(player)
+		end
+	else
+		accepted, reasonId = EquipmentCombatAdapter.activateOwnedEquippedWeapon(player, instanceId)
+	end
+	if accepted then
+		return
+	end
+	if reasonId == "CombatNotAllowed" then
+		combatAllowedByPlayerId[player.UserId] = false
+		return
+	end
+	if reasonId == "CombatRuntimeNotReady" and attempt < COMBAT_ACTIVATION_MAX_ATTEMPTS then
+		task.delay(COMBAT_ACTIVATION_RETRY_INTERVAL_SECONDS, function()
+			attemptWeaponActivation(player, instanceId, allowDefaultFallback, generation, attempt + 1)
+		end)
+		return
+	end
+
+	warn(
+		string.format(
+			"[InventoryNetwork] durable equipment combat activation stopped for %d after %d attempt(s): %s",
+			player.UserId,
+			attempt,
+			reasonId
+		)
+	)
+end
+
+local function queueSpecificWeaponActivation(player: Player, instanceId: string)
+	local generation = nextWeaponActivationGeneration(player.UserId)
+	if not OperativeLifeService.isCombatAllowed(player) then
+		combatAllowedByPlayerId[player.UserId] = false
+		return
+	end
+	combatAllowedByPlayerId[player.UserId] = true
+	attemptWeaponActivation(player, instanceId, false, generation, 1)
+end
+
+local function queuePreferredWeaponActivation(player: Player, allowDefaultFallback: boolean)
+	local generation = nextWeaponActivationGeneration(player.UserId)
+	if not OperativeLifeService.isCombatAllowed(player) then
+		combatAllowedByPlayerId[player.UserId] = false
+		return
+	end
+	combatAllowedByPlayerId[player.UserId] = true
+	attemptWeaponActivation(player, nil, allowDefaultFallback, generation, 1)
+end
+
+-- Durable equipment may load before OperativeLifeService has registered the
+-- player, and an operative can later return from a non-combat life state. Only a
+-- false->true eligibility edge reapplies a durable equipped weapon, so health
+-- changes while already Alive never reset ammunition or weapon state and players
+-- without durable firearms remain on the canonical melee/recovery path.
+local function reconcileCombatEligibility(player: Player)
+	local playerId = player.UserId
+	if loadedPlayerIds[playerId] ~= true then
+		return
+	end
+	local allowed = OperativeLifeService.isCombatAllowed(player)
+	local wasAllowed = combatAllowedByPlayerId[playerId] == true
+	if not allowed then
+		combatAllowedByPlayerId[playerId] = false
+		cancelWeaponActivation(playerId)
+		return
+	end
+	combatAllowedByPlayerId[playerId] = true
+	if not wasAllowed then
+		queuePreferredWeaponActivation(player, false)
+	end
 end
 
 --[[
@@ -92,12 +216,16 @@ local function loadPlayer(player: Player)
 		return
 	end
 	loadedPlayerIds[player.UserId] = true
+	combatAllowedByPlayerId[player.UserId] = false
 	reconcileEquipmentEffects(player)
+	reconcileCombatEligibility(player)
 	pushTo(player)
 end
 
 local function releasePlayer(player: Player)
 	loadedPlayerIds[player.UserId] = nil
+	combatAllowedByPlayerId[player.UserId] = nil
+	cancelWeaponActivation(player.UserId)
 	local released = InventoryLiveService.releasePlayer(player.UserId)
 	if released.Accepted ~= true and released.ReasonId ~= "LeaseNotOwned" then
 		warn(
@@ -133,6 +261,29 @@ equipOwnedItem.OnServerInvoke = function(player: Player, instanceId: any): any
 	local outcome = InventoryLiveService.equipOwnedItem(player.UserId, player.UserId, instanceId, os.time())
 	if outcome.Accepted == true then
 		reconcileEquipmentEffects(player)
+		local record = outcome.Record
+		local item = if type(record) == "table" then record.InventoryByInstanceId[instanceId] else nil
+		if type(item) == "table" and EquipmentCombatAdapter.isWeaponSlot(item.Slot) then
+			queueSpecificWeaponActivation(player, instanceId)
+		end
+		pushTo(player)
+	end
+	return table.freeze({ Accepted = outcome.Accepted == true, ReasonId = outcome.ReasonId })
+end
+
+-- Unequip accepts only a known slot intent. Owner identity is always the invoking
+-- player; the live service validates the slot and lease before the persistence
+-- owner changes durable state.
+unequipOwnedSlot.OnServerInvoke = function(player: Player, slotId: any): any
+	if type(slotId) ~= "string" then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidUnequipRequest" })
+	end
+	local outcome = InventoryLiveService.unequipOwnedSlot(player.UserId, player.UserId, slotId, os.time())
+	if outcome.Accepted == true then
+		reconcileEquipmentEffects(player)
+		if EquipmentCombatAdapter.isWeaponSlot(slotId) then
+			queuePreferredWeaponActivation(player, true)
+		end
 		pushTo(player)
 	end
 	return table.freeze({ Accepted = outcome.Accepted == true, ReasonId = outcome.ReasonId })
@@ -155,6 +306,18 @@ dismantleOwnedItem.OnServerInvoke = function(player: Player, instanceId: any, tr
 	})
 end
 
+local lifeStateConnection = OperativeLifeService.subscribe(function(player)
+	reconcileCombatEligibility(player)
+end)
+local lifeRosterConnection = OperativeLifeService.subscribeRoster(function(eventName, operativeEntityId)
+	if eventName ~= "Registered" then
+		return
+	end
+	local player = OperativeLifeService.playerForOperativeEntityId(operativeEntityId)
+	if player ~= nil then
+		reconcileCombatEligibility(player)
+	end
+end)
 local playerAddedConnection = Players.PlayerAdded:Connect(function(player)
 	task.spawn(loadPlayer, player)
 end)
@@ -194,6 +357,8 @@ local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
 					longer holds, so the session ends here.
 				]]
 				loadedPlayerIds[player.UserId] = nil
+				combatAllowedByPlayerId[player.UserId] = nil
+				cancelWeaponActivation(player.UserId)
 				InventoryLiveService.releasePlayer(player.UserId)
 				if player.Parent == Players then
 					player:Kick("Your inventory session could no longer be protected. Please rejoin.")
@@ -205,9 +370,13 @@ end)
 
 game:BindToClose(function()
 	heartbeatConnection:Disconnect()
+	lifeStateConnection:Disconnect()
+	lifeRosterConnection:Disconnect()
 	playerAddedConnection:Disconnect()
 	playerRemovingConnection:Disconnect()
 	table.clear(loadedPlayerIds)
+	table.clear(weaponActivationGenerationByPlayerId)
+	table.clear(combatAllowedByPlayerId)
 	InventoryLiveService.destroy()
 end)
 

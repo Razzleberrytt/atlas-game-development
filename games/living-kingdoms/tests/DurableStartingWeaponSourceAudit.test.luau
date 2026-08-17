@@ -44,16 +44,35 @@ assert(
 	),
 	"network must derive both inventory identities from the invoking player"
 )
+assert(
+	contains(inventoryNetwork, "equipOwnedItem.OnServerInvoke = function(player: Player, instanceId: any)"),
+	"equip intent must accept only the owned instance identity"
+)
 assert(not contains(inventoryNetwork, "weaponId: any"), "inventory client cannot author a combat WeaponId")
-assert(not contains(inventoryNetwork, "slotId: any"), "inventory client cannot author an equipment slot")
+assert(
+	not contains(inventoryNetwork, "equipOwnedItem.OnServerInvoke = function(player: Player, slotId"),
+	"inventory client cannot author the equip slot"
+)
+assert(
+	contains(inventoryNetwork, "unequipOwnedSlot.OnServerInvoke = function(player: Player, slotId: any)"),
+	"unequip may accept only a bounded slot-removal intent"
+)
+assert(
+	contains(inventoryService, "not isKnownSlot(slotId)"),
+	"unequip slot intent must be restricted to authored equipment slots"
+)
 
 assert(
-	contains(loadoutService, "local definition = definitionsById[item.DefinitionId]"),
-	"starting weapon must resolve from the owned item's authored definition"
+	contains(loadoutService, "EquippedWeaponResolver.resolvePreferred(record, lookupDefinition)"),
+	"starting weapon must use the same canonical resolver as live equipment activation"
 )
-assert(contains(loadoutService, "definition.WeaponId"), "authored equipment definition must be the WeaponId source")
 assert(
-	contains(loadoutService, "OperativeCombatRuntimeService.equipFoundWeapon(player, weaponId)"),
+	not contains(loadoutService, "local function resolveEquippedWeapon"),
+	"launch-time loadout must not maintain a second weapon-resolution implementation"
+)
+assert(contains(loadoutService, "resolved.WeaponId"), "authored equipment definition must be the WeaponId source")
+assert(
+	contains(loadoutService, "OperativeCombatRuntimeService.equipFoundWeapon(player, resolved.WeaponId)"),
 	"durable starting gear must reuse canonical combat equip authority"
 )
 
@@ -71,5 +90,5 @@ assert(
 )
 
 print(
-	"DurableStartingWeaponSourceAudit: owner-only equip, authored weapon handoff, launch ordering, and melee-only recovery passed"
+	"DurableStartingWeaponSourceAudit: owner-only equip, bounded unequip, shared resolver, launch ordering, and melee-only recovery passed"
 )

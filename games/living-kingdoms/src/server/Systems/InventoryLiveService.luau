@@ -31,15 +31,25 @@ local destroyed = false
 -- Accepted dismantle timestamps per owner, for the rate bound only.
 local recentDismantleRequests: { [number]: { number } } = {}
 
--- Authored definitions are static, so the tag lookup comparison needs is indexed
--- once rather than scanned per request.
+-- Authored definitions are static, so lookups and the bounded slot-intent set are
+-- indexed once rather than scanned per request. This keeps the live service on
+-- the same already-loaded authored source instead of adding a second dependency
+-- solely to validate unequip slot names.
 local definitionsById: { [string]: any } = {}
+local knownSlotIds: { [string]: boolean } = {}
 for _, definition in EquipmentRewardConfig.Definitions do
 	definitionsById[definition.Id] = definition
+	if type(definition.Slot) == "string" then
+		knownSlotIds[definition.Slot] = true
+	end
 end
 
 local function lookupEquipmentDefinition(definitionId: string): any
 	return definitionsById[definitionId]
+end
+
+local function isKnownSlot(slotId: unknown): boolean
+	return type(slotId) == "string" and knownSlotIds[slotId] == true
 end
 
 local Service = {}
@@ -185,6 +195,35 @@ function Service.equipOwnedItem(requesterId: number, ownerId: number, instanceId
 		return table.freeze({ Accepted = false, ReasonId = "ItemNotOwned", Record = record })
 	end
 	return persistence:equip(ownerId, item.Slot, instanceId, nowUnix)
+end
+
+--[[
+	Unequip accepts only a known slot intent. Identity is still derived from the
+	requesting player by the network caller, the live session lease is required,
+	and the persistence owner performs the guarded durable mutation. This layer
+	never reaches into persistence's resident cache or writes the store itself.
+]]
+function Service.unequipOwnedSlot(requesterId: number, ownerId: number, slotId: any, nowUnix: number): any
+	if destroyed then
+		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Record = nil })
+	end
+	if requesterId ~= ownerId then
+		return table.freeze({ Accepted = false, ReasonId = "CrossPlayerInventoryAccess", Record = nil })
+	end
+	if not isKnownSlot(slotId) or type(nowUnix) ~= "number" then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidUnequipRequest", Record = nil })
+	end
+	if not leases:hasLease(ownerId, nowUnix) then
+		return table.freeze({
+			Accepted = false,
+			ReasonId = "SessionLeaseRequired",
+			Record = persistence:getRecord(ownerId),
+		})
+	end
+	if persistence:getRecord(ownerId) == nil then
+		return table.freeze({ Accepted = false, ReasonId = "InventoryNotLoaded", Record = nil })
+	end
+	return persistence:unequip(ownerId, slotId, nowUnix)
 end
 
 --[[

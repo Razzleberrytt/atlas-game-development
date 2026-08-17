@@ -283,7 +283,10 @@ local function newServer(jobId: string): any
 	end
 	local liveReplicatedStorage = {
 		Shared = {
-			Equipment = { EquipmentComparisonResolver = token("EquipmentComparisonResolver") },
+			Equipment = {
+				EquipmentComparisonResolver = token("EquipmentComparisonResolver"),
+				EquipmentRewardContracts = token("EquipmentRewardContracts"),
+			},
 			Persistence = {
 				InventoryDismantleResolver = token("InventoryDismantleResolver"),
 				PlayerInventorySnapshot = token("PlayerInventorySnapshot"),
@@ -302,6 +305,7 @@ local function newServer(jobId: string): any
 				return table.freeze({ Accepted = true, ReasonId = "Compared", Comparison = {} })
 			end,
 		},
+		EquipmentRewardContracts = equipmentContracts,
 		InventoryDismantleResolver = dismantleResolver,
 		PlayerInventorySnapshot = inventorySnapshot,
 		EquipmentRewardConfig = { Definitions = {} },

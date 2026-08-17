@@ -8,44 +8,23 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local EquipmentRewardConfig = require(ReplicatedStorage.Shared.Config.EquipmentRewardConfig)
-local EquipmentRewardContracts = require(ReplicatedStorage.Shared.Equipment.EquipmentRewardContracts)
+local EquippedWeaponResolver = require(ReplicatedStorage.Shared.Equipment.EquippedWeaponResolver)
 local InventoryLiveService = require(script.Parent.InventoryLiveService)
 local OperativeCombatRuntimeService = require(script.Parent.OperativeCombatRuntimeService)
 
 local Service = {}
-local SlotIds = EquipmentRewardContracts.SlotIds
 
 local definitionsById: { [string]: any } = {}
 for _, definition in EquipmentRewardConfig.Definitions do
 	definitionsById[definition.Id] = definition
 end
 
-local function result(accepted: boolean, reasonId: string, weaponId: string?): any
-	return table.freeze({ Accepted = accepted, ReasonId = reasonId, WeaponId = weaponId })
+local function lookupDefinition(definitionId: string): any
+	return definitionsById[definitionId]
 end
 
-local function resolveEquippedWeapon(record: any, slotId: string): (string?, string?)
-	local instanceId = record.EquippedBySlot[slotId]
-	if instanceId == nil then
-		return nil, nil
-	end
-	if type(instanceId) ~= "string" or instanceId == "" then
-		return nil, "InvalidEquippedDurableItem"
-	end
-	local item = record.InventoryByInstanceId[instanceId]
-	if type(item) ~= "table" or item.Slot ~= slotId or type(item.DefinitionId) ~= "string" then
-		return nil, "InvalidEquippedDurableItem"
-	end
-	local definition = definitionsById[item.DefinitionId]
-	if
-		type(definition) ~= "table"
-		or definition.Slot ~= slotId
-		or type(definition.WeaponId) ~= "string"
-		or definition.WeaponId == ""
-	then
-		return nil, "InvalidEquippedDurableItem"
-	end
-	return definition.WeaponId, nil
+local function result(accepted: boolean, reasonId: string, weaponId: string?): any
+	return table.freeze({ Accepted = accepted, ReasonId = reasonId, WeaponId = weaponId })
 end
 
 function Service.applyForPlayer(player: Player): any
@@ -54,27 +33,24 @@ function Service.applyForPlayer(player: Player): any
 		return result(false, "InventoryNotLoaded", nil)
 	end
 
-	-- The current combat slice carries one firearm. Prefer a durable primary when
-	-- both slots are equipped; otherwise a saved sidearm is the starting option.
-	local weaponId, primaryError = resolveEquippedWeapon(record, SlotIds.Primary)
-	if primaryError ~= nil then
-		return result(false, primaryError, nil)
-	end
-	if weaponId == nil then
-		local secondaryError: string?
-		weaponId, secondaryError = resolveEquippedWeapon(record, SlotIds.Secondary)
-		if secondaryError ~= nil then
-			return result(false, secondaryError, nil)
+	local resolved = EquippedWeaponResolver.resolvePreferred(record, lookupDefinition)
+	if not resolved.Accepted then
+		if resolved.ReasonId == "NoEquippedWeapon" then
+			return result(false, "NoEquippedDurableWeapon", nil)
 		end
+		-- Preserve this service's pre-existing public failure vocabulary while
+		-- delegating all ownership/slot/definition validation to the shared pure
+		-- resolver used by live equipment activation.
+		return result(false, "InvalidEquippedDurableItem", nil)
 	end
-	if weaponId == nil then
-		return result(false, "NoEquippedDurableWeapon", nil)
+	if resolved.WeaponId == nil then
+		return result(false, "InvalidEquippedDurableItem", nil)
 	end
 
-	if not OperativeCombatRuntimeService.equipFoundWeapon(player, weaponId) then
+	if not OperativeCombatRuntimeService.equipFoundWeapon(player, resolved.WeaponId) then
 		return result(false, "CombatEquipRejected", nil)
 	end
-	return result(true, "DurableStartingWeaponApplied", weaponId)
+	return result(true, "DurableStartingWeaponApplied", resolved.WeaponId)
 end
 
 return table.freeze(Service)
