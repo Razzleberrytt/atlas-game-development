@@ -38,7 +38,10 @@ local swingStartedAtByPlayer: { [Player]: number } = {}
 local meleeNetwork = ReplicatedStorage:WaitForChild("MeleeNetwork", NETWORK_WAIT_SECONDS)
 assert(meleeNetwork ~= nil, "MeleeNetwork did not become available before the client bootstrap timeout")
 local presentationRemote = meleeNetwork:WaitForChild("Presentation", NETWORK_WAIT_SECONDS) :: RemoteEvent?
-assert(presentationRemote ~= nil, "MeleeNetwork.Presentation did not become available before the client bootstrap timeout")
+assert(
+	presentationRemote ~= nil,
+	"MeleeNetwork.Presentation did not become available before the client bootstrap timeout"
+)
 
 local function shouldPresent(player: Player): boolean
 	return player ~= Players.LocalPlayer
