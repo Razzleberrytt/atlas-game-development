@@ -273,8 +273,9 @@ function Controller.start()
 	started = true
 	local found = Workspace:FindFirstChild("EnemyEntities")
 	if found == nil then
-		found = Workspace:WaitForChild("EnemyEntities")
+		found = Workspace:WaitForChild("EnemyEntities", NETWORK_WAIT_SECONDS)
 	end
+	assert(found ~= nil, "EnemyEntities did not become available before the client bootstrap timeout")
 	assert(found:IsA("Folder"), "EnemyEntities must be a Folder")
 	for _, child in found:GetChildren() do
 		trackModel(child)

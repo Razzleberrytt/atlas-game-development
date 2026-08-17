@@ -23,19 +23,9 @@ local function scanDirectory(path: string)
 			for line in string.gmatch(source, "[^\n]+") do
 				lineNumber += 1
 
-				local networkReceiver, networkChild = string.match(line, '([%w_]*[Nn]etwork):WaitForChild%("([^"]+)"%)')
-				if networkReceiver ~= nil and networkChild ~= nil then
-					record(childPath, lineNumber, networkReceiver .. "." .. networkChild)
-				end
-
-				local replicatedNetwork = string.match(line, 'ReplicatedStorage:WaitForChild%("([^"]*[Nn]etwork)"%)')
-				if replicatedNetwork ~= nil then
-					record(childPath, lineNumber, "ReplicatedStorage." .. replicatedNetwork)
-				end
-
-				local playerGuiReceiver = string.match(line, '([%w_]+):WaitForChild%("PlayerGui"%)')
-				if playerGuiReceiver ~= nil then
-					record(childPath, lineNumber, playerGuiReceiver .. ".PlayerGui")
+				local waitArguments = string.match(line, ":WaitForChild%(([^%)]+)%)")
+				if waitArguments ~= nil and string.find(waitArguments, ",", 1, true) == nil then
+					record(childPath, lineNumber, "WaitForChild(" .. waitArguments .. ")")
 				end
 			end
 		end

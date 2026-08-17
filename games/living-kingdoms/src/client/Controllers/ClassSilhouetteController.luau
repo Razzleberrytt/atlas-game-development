@@ -87,13 +87,16 @@ local function resolveTorso(character: Model): BasePart?
 	if torso ~= nil and torso:IsA("BasePart") then
 		return torso
 	end
-	local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
-	if not humanoid:IsA("Humanoid") then
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid == nil then
+		humanoid = character:WaitForChild("Humanoid", NETWORK_WAIT_SECONDS)
+	end
+	if humanoid == nil or not humanoid:IsA("Humanoid") then
 		return nil
 	end
 	local torsoName = if humanoid.RigType == Enum.HumanoidRigType.R15 then "UpperTorso" else "Torso"
-	local awaitedTorso = character:WaitForChild(torsoName)
-	return if awaitedTorso:IsA("BasePart") then awaitedTorso else nil
+	local awaitedTorso = character:WaitForChild(torsoName, NETWORK_WAIT_SECONDS)
+	return if awaitedTorso ~= nil and awaitedTorso:IsA("BasePart") then awaitedTorso else nil
 end
 
 local function createEquipmentPart(torso: BasePart, parent: Model, definition: SilhouettePartDefinition)

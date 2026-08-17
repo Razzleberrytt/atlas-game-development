@@ -33,6 +33,7 @@ local SpecialAttributeNames = HordeSpecialTelegraphConfig.AttributeNames
 local SpecialKindIds = HordeSpecialTelegraphConfig.KindIds
 
 local ENEMY_FOLDER_NAME = "EnemyEntities"
+local BOOTSTRAP_WAIT_SECONDS = 20
 local SOUND_HOLDER_NAME = "LivingKingdomsEnemyAudio"
 local EMITTER_HOLDER_NAME = "LivingKingdomsEnemyAudioEmitters"
 
@@ -342,7 +343,8 @@ function EnemyAudioController.start()
 	started = true
 	createPresentation()
 
-	local folder = Workspace:WaitForChild(ENEMY_FOLDER_NAME)
+	local folder = Workspace:WaitForChild(ENEMY_FOLDER_NAME, BOOTSTRAP_WAIT_SECONDS)
+	assert(folder ~= nil, "EnemyEntities did not become available before the client bootstrap timeout")
 	assert(folder:IsA("Folder"), "EnemyEntities must be a Folder")
 	enemyFolder = folder
 	for _, child in folder:GetChildren() do
