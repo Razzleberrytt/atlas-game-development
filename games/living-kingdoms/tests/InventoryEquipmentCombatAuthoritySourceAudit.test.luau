@@ -15,15 +15,13 @@ local combatAdapter = fs.readFile("games/living-kingdoms/src/server/Systems/Equi
 local weaponResolver = fs.readFile("games/living-kingdoms/src/shared/Equipment/EquippedWeaponResolver.luau")
 local rewardConfig = fs.readFile("games/living-kingdoms/src/shared/Config/EquipmentRewardConfig.luau")
 local combatRuntime = fs.readFile("games/living-kingdoms/src/server/Systems/OperativeCombatRuntimeService.luau")
+local dismantleResolver = fs.readFile("games/living-kingdoms/src/shared/Persistence/InventoryDismantleResolver.luau")
 
 assertThat(
 	string.find(persistence, "function Service:unequip", 1, true) ~= nil,
 	"durable inventory owner must expose authoritative unequip"
 )
-assertThat(
-	string.find(persistence, "SlotAlreadyUnequipped", 1, true) ~= nil,
-	"unequip retries must be idempotent"
-)
+assertThat(string.find(persistence, "SlotAlreadyUnequipped", 1, true) ~= nil, "unequip retries must be idempotent")
 assertThat(
 	string.find(persistence, "guardedWrite(selfAny._store, keyFor(playerId), nextRecord)", 1, true) ~= nil,
 	"unequip must remain behind the guarded durable write"
@@ -34,9 +32,13 @@ assertThat(
 )
 local unequipStart = string.find(persistence, "function Service:unequip", 1, true)
 local dismantleStart = string.find(persistence, "function Service:dismantle", 1, true)
-assertThat(unequipStart ~= nil and dismantleStart ~= nil and unequipStart < dismantleStart, "unequip owner block missing")
+assertThat(
+	unequipStart ~= nil and dismantleStart ~= nil and unequipStart < dismantleStart,
+	"unequip owner block missing"
+)
 local unequipSource = string.sub(persistence, unequipStart :: number, (dismantleStart :: number) - 1)
-local guardedWritePosition = string.find(unequipSource, "guardedWrite(selfAny._store, keyFor(playerId), nextRecord)", 1, true)
+local guardedWritePosition =
+	string.find(unequipSource, "guardedWrite(selfAny._store, keyFor(playerId), nextRecord)", 1, true)
 local residentAdvancePosition = string.find(unequipSource, "selfAny._records[playerId] = nextRecord", 1, true)
 assertThat(
 	guardedWritePosition ~= nil and residentAdvancePosition ~= nil and guardedWritePosition < residentAdvancePosition,
@@ -83,12 +85,8 @@ assertThat(
 	"equip owner identity must come from invoking player"
 )
 assertThat(
-	string.find(
-		inventoryNetwork,
-		"InventoryLiveService.unequipOwnedSlot(player.UserId, player.UserId, slotId",
-		1,
-		true
-	) ~= nil,
+	string.find(inventoryNetwork, "InventoryLiveService.unequipOwnedSlot(player.UserId, player.UserId, slotId", 1, true)
+		~= nil,
 	"unequip owner identity must come from invoking player"
 )
 for _, forbidden in { "payload.Damage", "payload.Rarity", "payload.Affixes", "payload.Power", "payload.WeaponId" } do
@@ -155,5 +153,11 @@ assertThat(
 	string.find(combatRuntime, "function OperativeCombatRuntimeService.equipFoundWeapon", 1, true) ~= nil,
 	"authoritative combat equip seam must remain present"
 )
+assertThat(
+	string.find(dismantleResolver, 'return reject("ItemEquipped")', 1, true) ~= nil,
+	"equipped items must remain protected from dismantle so combat cannot outlive durable ownership"
+)
 
-print("InventoryEquipmentCombatAuthoritySourceAudit: durable equipment activation preserves ownership and bounded failure")
+print(
+	"InventoryEquipmentCombatAuthoritySourceAudit: durable equipment activation preserves ownership and bounded failure"
+)
