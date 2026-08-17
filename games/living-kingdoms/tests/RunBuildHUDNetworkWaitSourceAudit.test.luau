@@ -7,17 +7,17 @@ local source = fs.readFile(path)
 
 local requiredSnippets = {
 	'ReplicatedStorage:WaitForChild("RunBuildNetwork", NETWORK_WAIT_SECONDS)',
-	"RunBuildNetwork missing after bounded wait",
+	"RunBuildNetwork did not become available before the client bootstrap timeout",
+	'runBuildNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS)',
+	"RunBuildNetwork.State did not become available before the client bootstrap timeout",
 	'runBuildNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS)',
-	"RunBuildNetwork.ReadState missing after bounded wait",
-	'runBuildNetwork:WaitForChild("ClaimPlot", NETWORK_WAIT_SECONDS)',
-	"RunBuildNetwork.ClaimPlot missing after bounded wait",
-	'runBuildNetwork:WaitForChild("SaveBuild", NETWORK_WAIT_SECONDS)',
-	"RunBuildNetwork.SaveBuild missing after bounded wait",
-	'runBuildNetwork:WaitForChild("LoadBuild", NETWORK_WAIT_SECONDS)',
-	"RunBuildNetwork.LoadBuild missing after bounded wait",
-	'localPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS)',
-	"PlayerGui missing after bounded wait",
+	"RunBuildNetwork.ReadState did not become available before the client bootstrap timeout",
+	'runBuildNetwork:WaitForChild("SubmitRelicChoice", NETWORK_WAIT_SECONDS)',
+	"RunBuildNetwork.SubmitRelicChoice did not become available before the client bootstrap timeout",
+	'runBuildNetwork:WaitForChild("SubmitRelicReplacement", NETWORK_WAIT_SECONDS)',
+	"RunBuildNetwork.SubmitRelicReplacement did not become available before the client bootstrap timeout",
+	'Players.LocalPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS)',
+	"PlayerGui did not become available before the client bootstrap timeout",
 }
 
 for _, snippet in requiredSnippets do
@@ -28,11 +28,11 @@ end
 
 local forbiddenSnippets = {
 	'ReplicatedStorage:WaitForChild("RunBuildNetwork")',
+	'runBuildNetwork:WaitForChild("State")',
 	'runBuildNetwork:WaitForChild("ReadState")',
-	'runBuildNetwork:WaitForChild("ClaimPlot")',
-	'runBuildNetwork:WaitForChild("SaveBuild")',
-	'runBuildNetwork:WaitForChild("LoadBuild")',
-	'localPlayer:WaitForChild("PlayerGui")',
+	'runBuildNetwork:WaitForChild("SubmitRelicChoice")',
+	'runBuildNetwork:WaitForChild("SubmitRelicReplacement")',
+	'Players.LocalPlayer:WaitForChild("PlayerGui")',
 }
 
 for _, snippet in forbiddenSnippets do
