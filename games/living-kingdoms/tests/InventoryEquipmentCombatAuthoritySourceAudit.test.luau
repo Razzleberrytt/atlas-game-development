@@ -129,11 +129,11 @@ assertThat(
 assertThat(
 	string.find(inventoryNetwork, "OperativeLifeService.subscribe(function(player)", 1, true) ~= nil
 		and string.find(
-			inventoryNetwork,
-			"OperativeLifeService.subscribeRoster(function(eventName, operativeEntityId)",
-			1,
-			true
-		)
+				inventoryNetwork,
+				"OperativeLifeService.subscribeRoster(function(eventName, operativeEntityId)",
+				1,
+				true
+			)
 			~= nil,
 	"durable equipment must reconcile both life transitions and late operative registration"
 )
