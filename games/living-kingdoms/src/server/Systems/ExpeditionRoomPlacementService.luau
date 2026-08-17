@@ -3,7 +3,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
-local RoomPlacementPlanner = require(ReplicatedStorage.Shared.Expeditions.RoomPlacementPlanner)
+local ProceduralInstanceGenerator = require(ReplicatedStorage.Shared.Expeditions.ProceduralInstanceGenerator)
 local ExpeditionEnvironmentBuilder = require(script.Parent.ExpeditionEnvironmentBuilder)
 local ModularDungeonRoomPresentation = require(script.Parent.ModularDungeonRoomPresentation)
 
@@ -23,6 +23,14 @@ local function part(name: string, size: Vector3, cframe: CFrame, parent: Instanc
 	value.Color = Color3.fromRGB(47, 53, 60)
 	value.Parent = parent
 	return value
+end
+
+local function doorwayCFrame(point: any, sideId: string): CFrame
+	local base = CFrame.new(point.x, point.y, point.z)
+	if sideId == "East" or sideId == "West" then
+		return base * CFrame.Angles(0, math.rad(90), 0)
+	end
+	return base
 end
 
 local function doorwayFixture(name: string, cframe: CFrame, roleId: string, parent: Instance)
@@ -70,12 +78,62 @@ local function doorwayFixture(name: string, cframe: CFrame, roleId: string, pare
 	fixture.Parent = parent
 end
 
+local function sideIsOpen(placement: any, sideId: string): boolean
+	return placement.EntranceSide == sideId or placement.ExitSide == sideId
+end
+
+local function buildClosedWalls(placement: any, parent: Instance)
+	local center = placement.Center
+	local size = placement.Size
+	if not sideIsOpen(placement, "North") then
+		local wall = part(
+			"NorthWall",
+			Vector3.new(size.x, size.y, 1),
+			CFrame.new(center.x, center.y, center.z - size.z / 2),
+			parent
+		)
+		wall.Material = Enum.Material.Rock
+	end
+	if not sideIsOpen(placement, "South") then
+		local wall = part(
+			"SouthWall",
+			Vector3.new(size.x, size.y, 1),
+			CFrame.new(center.x, center.y, center.z + size.z / 2),
+			parent
+		)
+		wall.Material = Enum.Material.Rock
+	end
+	if not sideIsOpen(placement, "West") then
+		local wall = part(
+			"WestWall",
+			Vector3.new(1, size.y, size.z),
+			CFrame.new(center.x - size.x / 2, center.y, center.z),
+			parent
+		)
+		wall.Material = Enum.Material.Rock
+	end
+	if not sideIsOpen(placement, "East") then
+		local wall = part(
+			"EastWall",
+			Vector3.new(1, size.y, size.z),
+			CFrame.new(center.x + size.x / 2, center.y, center.z),
+			parent
+		)
+		wall.Material = Enum.Material.Rock
+	end
+end
+
 local function buildRoom(placement: any, seed: number, parent: Instance)
 	local model = Instance.new("Model")
 	model.Name = string.format("%02d_%s", placement.Index, placement.RoomId)
 	model:SetAttribute("RoomIndex", placement.Index)
 	model:SetAttribute("RoomId", placement.RoomId)
 	model:SetAttribute("RoomRoleId", placement.RoleId)
+	model:SetAttribute("GridX", placement.GridCell.x)
+	model:SetAttribute("GridZ", placement.GridCell.z)
+	model:SetAttribute("EntranceSide", placement.EntranceSide)
+	model:SetAttribute("ExitSide", placement.ExitSide)
+	model:SetAttribute("TurnId", placement.TurnId)
 	model:SetAttribute("RevealState", "Hidden")
 
 	local center = placement.Center
@@ -83,12 +141,7 @@ local function buildRoom(placement: any, seed: number, parent: Instance)
 	local floor = part("Floor", Vector3.new(size.x, 1, size.z), CFrame.new(center.x, 0, center.z), model)
 	floor.Material = Enum.Material.Slate
 	floor.Color = Color3.fromRGB(38, 43, 49)
-	local west =
-		part("WestWall", Vector3.new(1, size.y, size.z), CFrame.new(center.x - size.x / 2, center.y, center.z), model)
-	local east =
-		part("EastWall", Vector3.new(1, size.y, size.z), CFrame.new(center.x + size.x / 2, center.y, center.z), model)
-	west.Material = Enum.Material.Rock
-	east.Material = Enum.Material.Rock
+	buildClosedWalls(placement, model)
 
 	for offset = -1, 1 do
 		local rib = part(
@@ -101,8 +154,8 @@ local function buildRoom(placement: any, seed: number, parent: Instance)
 		rib.Color = Color3.fromRGB(61, 65, 69)
 	end
 
-	local entranceCFrame = CFrame.new(placement.Entrance.x, placement.Entrance.y, placement.Entrance.z)
-	local exitCFrame = CFrame.new(placement.Exit.x, placement.Exit.y, placement.Exit.z)
+	local entranceCFrame = doorwayCFrame(placement.Entrance, placement.EntranceSide)
+	local exitCFrame = doorwayCFrame(placement.Exit, placement.ExitSide)
 	local entrance = part("EntranceConnector", Vector3.new(8, 8, 1), entranceCFrame, model)
 	entrance.CanCollide = false
 	entrance.Transparency = 1
@@ -122,14 +175,22 @@ function Service.place(roomPlan: any): any
 	if activeRoot ~= nil then
 		return table.freeze({ Accepted = false, ReasonId = "RoomsAlreadyPlaced", Layout = nil })
 	end
-	local ok, layoutOrError = pcall(RoomPlacementPlanner.plan, roomPlan)
-	if not ok then
-		return table.freeze({ Accepted = false, ReasonId = "InvalidRoomPlan", Layout = nil })
+
+	-- Generate and validate before any Workspace mutation. If spatial resolution
+	-- fails closed, the placement owner creates nothing and preserves the previous
+	-- known-good lifecycle state.
+	local generated = ProceduralInstanceGenerator.generateFromRoomPlan(roomPlan)
+	if generated.Accepted ~= true or generated.Layout == nil then
+		return table.freeze({ Accepted = false, ReasonId = generated.ReasonId, Layout = nil })
 	end
-	local layout = layoutOrError
+	local layout = generated.Layout
+
 	local root = Instance.new("Folder")
 	root.Name = ROOT_NAME
 	root:SetAttribute("Seed", layout.Seed)
+	root:SetAttribute("LayoutVersion", layout.LayoutVersion)
+	root:SetAttribute("GenerationAttempt", layout.GenerationAttempt)
+	root:SetAttribute("UsedFallback", layout.UsedFallback)
 	root:SetAttribute("EnvironmentTheme", "RuinedSciFantasy")
 
 	for _, placement in layout.Placements do
@@ -139,13 +200,14 @@ function Service.place(roomPlan: any): any
 		local center = connector.Center
 		local bridge = part(
 			string.format("Connector_%02d_%02d", connector.FromIndex, connector.ToIndex),
-			Vector3.new(8, 1, connector.Length),
-			CFrame.new(center.x, 0, center.z),
+			Vector3.new(connector.Size.x, connector.Size.y, connector.Size.z),
+			CFrame.new(center.x, center.y, center.z),
 			root
 		)
 		bridge.Material = Enum.Material.CorrodedMetal
 		bridge.Color = Color3.fromRGB(50, 55, 60)
 		bridge:SetAttribute("ConnectorIndex", index)
+		bridge:SetAttribute("ConnectorAxis", connector.Axis)
 	end
 
 	root.Parent = Workspace
