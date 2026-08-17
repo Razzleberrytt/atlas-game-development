@@ -34,15 +34,30 @@ assert(inventoryNetwork ~= nil, "InventoryNetwork did not become available befor
 local survivalStateRemote = survivalNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
 assert(survivalStateRemote ~= nil, "SurvivalNetwork.State did not become available before the client bootstrap timeout")
 local survivalReadState = survivalNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
-assert(survivalReadState ~= nil, "SurvivalNetwork.ReadState did not become available before the client bootstrap timeout")
+assert(
+	survivalReadState ~= nil,
+	"SurvivalNetwork.ReadState did not become available before the client bootstrap timeout"
+)
 local progressionStateRemote = progressionNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
-assert(progressionStateRemote ~= nil, "ProgressionNetwork.State did not become available before the client bootstrap timeout")
+assert(
+	progressionStateRemote ~= nil,
+	"ProgressionNetwork.State did not become available before the client bootstrap timeout"
+)
 local progressionReadState = progressionNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
-assert(progressionReadState ~= nil, "ProgressionNetwork.ReadState did not become available before the client bootstrap timeout")
+assert(
+	progressionReadState ~= nil,
+	"ProgressionNetwork.ReadState did not become available before the client bootstrap timeout"
+)
 local inventoryStateRemote = inventoryNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
-assert(inventoryStateRemote ~= nil, "InventoryNetwork.State did not become available before the client bootstrap timeout")
+assert(
+	inventoryStateRemote ~= nil,
+	"InventoryNetwork.State did not become available before the client bootstrap timeout"
+)
 local inventoryReadOwn = inventoryNetwork:WaitForChild("ReadOwnInventory", NETWORK_WAIT_SECONDS) :: RemoteFunction?
-assert(inventoryReadOwn ~= nil, "InventoryNetwork.ReadOwnInventory did not become available before the client bootstrap timeout")
+assert(
+	inventoryReadOwn ~= nil,
+	"InventoryNetwork.ReadOwnInventory did not become available before the client bootstrap timeout"
+)
 local inventoryEquipOwnedItem = inventoryNetwork:WaitForChild("EquipOwnedItem", NETWORK_WAIT_SECONDS) :: RemoteFunction?
 assert(
 	inventoryEquipOwnedItem ~= nil,
