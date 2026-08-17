@@ -17,6 +17,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local NETWORK_WAIT_SECONDS = 20
 
 local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
@@ -58,8 +59,10 @@ local enemyRemovedConnection: RBXScriptConnection? = nil
 local playerAddedConnection: RBXScriptConnection? = nil
 local playerRemovingConnection: RBXScriptConnection? = nil
 
-local network = ReplicatedStorage:WaitForChild("HordeNetwork")
-local stateRemote = network:WaitForChild("State") :: RemoteEvent
+local network = ReplicatedStorage:WaitForChild("HordeNetwork", NETWORK_WAIT_SECONDS)
+assert(network ~= nil, "HordeNetwork did not become available before the server bootstrap timeout")
+local stateRemote = network:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "network.State did not become available before the server bootstrap timeout")
 
 local roleOrder = {
 	HordeConfig.Roles.Basic,

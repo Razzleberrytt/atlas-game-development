@@ -16,6 +16,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local NETWORK_WAIT_SECONDS = 20
 
 local EnemyConfig = require(ReplicatedStorage.Shared.Config.EnemyConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
@@ -113,10 +114,20 @@ local processedFieldIntelRewardIds: { [string]: boolean } = {}
 local fieldIntelRewardOrder: { string } = {}
 local MAX_PROCESSED_FIELD_INTEL_REWARDS = 64
 
-local progressionNetwork = ReplicatedStorage:WaitForChild("ProgressionNetwork")
-local stateRemote = progressionNetwork:WaitForChild("State") :: RemoteEvent
-local readStateRemote = progressionNetwork:WaitForChild("ReadState") :: RemoteFunction
-local chooseUpgradeRemote = progressionNetwork:WaitForChild("ChooseUpgrade") :: RemoteEvent
+local progressionNetwork = ReplicatedStorage:WaitForChild("ProgressionNetwork", NETWORK_WAIT_SECONDS)
+assert(progressionNetwork ~= nil, "ProgressionNetwork did not become available before the server bootstrap timeout")
+local stateRemote = progressionNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "progressionNetwork.State did not become available before the server bootstrap timeout")
+local readStateRemote = progressionNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(
+	readStateRemote ~= nil,
+	"progressionNetwork.ReadState did not become available before the server bootstrap timeout"
+)
+local chooseUpgradeRemote = progressionNetwork:WaitForChild("ChooseUpgrade", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	chooseUpgradeRemote ~= nil,
+	"progressionNetwork.ChooseUpgrade did not become available before the server bootstrap timeout"
+)
 
 local function readUpgradeStacks(): RunUpgradeResolver.UpgradeStacks
 	return RunBuildService.readSquadUpgradeStacks()

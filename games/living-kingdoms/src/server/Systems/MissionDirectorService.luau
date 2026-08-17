@@ -23,6 +23,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local NETWORK_WAIT_SECONDS = 20
 
 local MatchResultConfig = require(ReplicatedStorage.Shared.Config.MatchResultConfig)
 local MatchResultContracts = require(ReplicatedStorage.Shared.Mission.MatchResultContracts)
@@ -91,9 +92,12 @@ local Service = {}
 
 Service.RejectionReasonIds = RejectionReasonIds
 
-local missionNetwork = ReplicatedStorage:WaitForChild("MissionNetwork")
-local stateRemote = missionNetwork:WaitForChild("State") :: RemoteEvent
-local resultRemote = missionNetwork:WaitForChild("Result") :: RemoteEvent
+local missionNetwork = ReplicatedStorage:WaitForChild("MissionNetwork", NETWORK_WAIT_SECONDS)
+assert(missionNetwork ~= nil, "MissionNetwork did not become available before the server bootstrap timeout")
+local stateRemote = missionNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "missionNetwork.State did not become available before the server bootstrap timeout")
+local resultRemote = missionNetwork:WaitForChild("Result", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(resultRemote ~= nil, "missionNetwork.Result did not become available before the server bootstrap timeout")
 
 -- Index the authored objectives once for O(1) lookups.
 local objectiveDefinitionById: { [string]: any } = {}

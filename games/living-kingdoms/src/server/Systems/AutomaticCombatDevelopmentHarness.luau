@@ -17,6 +17,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
+local NETWORK_WAIT_SECONDS = 20
 
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
@@ -90,9 +91,18 @@ local hostileByEntityId: { [CombatEntityId]: HostileFixture } = {}
 local fixtureFolder: Folder? = nil
 local controlFolder: Folder? = nil
 
-local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
-local reloadIntentRemote = combatNetwork:WaitForChild("ReloadIntent") :: RemoteEvent
-local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: RemoteEvent
+local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork", NETWORK_WAIT_SECONDS)
+assert(combatNetwork ~= nil, "CombatNetwork did not become available before the server bootstrap timeout")
+local reloadIntentRemote = combatNetwork:WaitForChild("ReloadIntent", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	reloadIntentRemote ~= nil,
+	"combatNetwork.ReloadIntent did not become available before the server bootstrap timeout"
+)
+local presentationRemote = combatNetwork:WaitForChild("CombatPresentation", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	presentationRemote ~= nil,
+	"combatNetwork.CombatPresentation did not become available before the server bootstrap timeout"
+)
 
 local function createWeaponState(): WeaponReadinessState
 	local weaponId = FirearmConfig.BasicFirearm.WeaponId
