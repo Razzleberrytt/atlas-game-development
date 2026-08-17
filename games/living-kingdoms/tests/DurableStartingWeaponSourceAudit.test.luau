@@ -63,12 +63,16 @@ assert(
 )
 
 assert(
-	contains(loadoutService, "local definition = definitionsById[item.DefinitionId]"),
-	"starting weapon must resolve from the owned item's authored definition"
+	contains(loadoutService, "EquippedWeaponResolver.resolvePreferred(record, lookupDefinition)"),
+	"starting weapon must use the same canonical resolver as live equipment activation"
 )
-assert(contains(loadoutService, "definition.WeaponId"), "authored equipment definition must be the WeaponId source")
 assert(
-	contains(loadoutService, "OperativeCombatRuntimeService.equipFoundWeapon(player, weaponId)"),
+	not contains(loadoutService, "local function resolveEquippedWeapon"),
+	"launch-time loadout must not maintain a second weapon-resolution implementation"
+)
+assert(contains(loadoutService, "resolved.WeaponId"), "authored equipment definition must be the WeaponId source")
+assert(
+	contains(loadoutService, "OperativeCombatRuntimeService.equipFoundWeapon(player, resolved.WeaponId)"),
 	"durable starting gear must reuse canonical combat equip authority"
 )
 
@@ -86,5 +90,5 @@ assert(
 )
 
 print(
-	"DurableStartingWeaponSourceAudit: owner-only equip, bounded unequip, authored weapon handoff, launch ordering, and melee-only recovery passed"
+	"DurableStartingWeaponSourceAudit: owner-only equip, bounded unequip, shared resolver, launch ordering, and melee-only recovery passed"
 )
