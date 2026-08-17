@@ -1,0 +1,41 @@
+name: LK LKB-0033 Server Wait Repair
+
+on:
+  push:
+    branches:
+      - lk/LKB-0033-run-build-rpg-playergui-waits
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: lk/LKB-0033-run-build-rpg-playergui-waits
+      - uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Apply bounded network waits
+        run: python scripts/lkb0033_bound_server_network_waits.py
+      - name: Format audited roots
+        run: stylua games/living-kingdoms/src/server games/living-kingdoms/src/shared games/living-kingdoms/src/main-world
+      - name: Run durable server/shared audit
+        run: lune run games/living-kingdoms/tests/ServerBootstrapDependencyWaitSourceAudit.test.luau
+      - name: Commit repair
+        shell: bash
+        run: |
+          git config user.name "Willie Randolph"
+          git config user.email "RazzleberryT@gmail.com"
+          git add games/living-kingdoms/src/server games/living-kingdoms/src/shared games/living-kingdoms/src/main-world
+          if git diff --cached --quiet; then
+            echo "No source changes to commit"
+            exit 0
+          fi
+          git commit -m "fix(lk): bound server bootstrap network dependencies (LKB-0033)"
+          git push origin HEAD:lk/LKB-0033-run-build-rpg-playergui-waits
