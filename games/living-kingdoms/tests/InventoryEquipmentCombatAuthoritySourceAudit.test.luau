@@ -32,6 +32,20 @@ assertThat(
 	string.find(persistence, "selfAny._records[playerId] = nextRecord", 1, true) ~= nil,
 	"resident inventory may advance only through the persistence owner"
 )
+local unequipStart = string.find(persistence, "function Service:unequip", 1, true)
+local dismantleStart = string.find(persistence, "function Service:dismantle", 1, true)
+assertThat(unequipStart ~= nil and dismantleStart ~= nil and unequipStart < dismantleStart, "unequip owner block missing")
+local unequipSource = string.sub(persistence, unequipStart :: number, (dismantleStart :: number) - 1)
+local guardedWritePosition = string.find(unequipSource, "guardedWrite(selfAny._store, keyFor(playerId), nextRecord)", 1, true)
+local residentAdvancePosition = string.find(unequipSource, "selfAny._records[playerId] = nextRecord", 1, true)
+assertThat(
+	guardedWritePosition ~= nil and residentAdvancePosition ~= nil and guardedWritePosition < residentAdvancePosition,
+	"unequip must commit durably before advancing resident inventory"
+)
+assertThat(
+	string.find(unequipSource, "nextRecord.EquippedBySlot[slotId] = nil", 1, true) ~= nil,
+	"unequip must clear only the requested durable slot"
+)
 
 assertThat(
 	string.find(inventoryLive, "function Service.unequipOwnedSlot", 1, true) ~= nil,
@@ -48,6 +62,11 @@ assertThat(
 assertThat(
 	string.find(inventoryLive, "return persistence:unequip(ownerId, slotId, nowUnix)", 1, true) ~= nil,
 	"live service must delegate unequip to the durable owner"
+)
+assertThat(
+	string.find(inventoryLive, "persistenceState._records", 1, true) == nil
+		and string.find(inventoryLive, "local persistenceState = persistence :: any", 1, true) == nil,
+	"live inventory service must never mutate persistence's private resident cache"
 )
 
 assertThat(
@@ -75,6 +94,31 @@ assertThat(
 for _, forbidden in { "payload.Damage", "payload.Rarity", "payload.Affixes", "payload.Power", "payload.WeaponId" } do
 	assertThat(not string.find(inventoryNetwork, forbidden, 1, true), "inventory network must not trust " .. forbidden)
 end
+
+assertThat(
+	string.find(inventoryNetwork, "COMBAT_ACTIVATION_RETRY_INTERVAL_SECONDS = 0.25", 1, true) ~= nil,
+	"combat activation retry interval must remain explicit and bounded"
+)
+assertThat(
+	string.find(inventoryNetwork, "COMBAT_ACTIVATION_MAX_ATTEMPTS = 80", 1, true) ~= nil,
+	"combat activation must have a hard attempt ceiling"
+)
+assertThat(
+	string.find(inventoryNetwork, "attempt < COMBAT_ACTIVATION_MAX_ATTEMPTS", 1, true) ~= nil,
+	"combat activation retry must stop at the hard attempt ceiling"
+)
+assertThat(
+	string.find(inventoryNetwork, "task.delay(COMBAT_ACTIVATION_RETRY_INTERVAL_SECONDS", 1, true) ~= nil,
+	"bounded combat activation retry must use delayed finite attempts"
+)
+assertThat(
+	string.find(inventoryNetwork, "weaponActivationGenerationByPlayerId", 1, true) ~= nil,
+	"stale delayed combat activations must be cancellable by generation"
+)
+assertThat(
+	string.find(inventoryNetwork, "pendingWeaponActivationByPlayerId", 1, true) == nil,
+	"inventory network must not regress to the stale forever-heartbeat activation queue"
+)
 
 assertThat(
 	string.find(combatAdapter, "InventoryLiveService.getRecord(player.UserId)", 1, true) ~= nil,
@@ -111,3 +155,5 @@ assertThat(
 	string.find(combatRuntime, "function OperativeCombatRuntimeService.equipFoundWeapon", 1, true) ~= nil,
 	"authoritative combat equip seam must remain present"
 )
+
+print("InventoryEquipmentCombatAuthoritySourceAudit: durable equipment activation preserves ownership and bounded failure")
