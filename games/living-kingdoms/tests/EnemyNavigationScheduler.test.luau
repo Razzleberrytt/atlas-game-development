@@ -20,10 +20,22 @@ local second = scheduler.resolveRoundRobinGrants({ "enemy-a", "enemy-b", "enemy-
 assert(joined(second.GrantedEntityIds) == "enemy-c,enemy-a", "round robin must wrap after the cursor")
 assert(second.CursorEntityId == "enemy-a", "wrapped grants must advance the cursor")
 
-local third = scheduler.resolveRoundRobinGrants({ "enemy-b", "enemy-c", "enemy-d" }, second.CursorEntityId, 2)
+local missingLowCursor = scheduler.resolveRoundRobinGrants({ "enemy-b", "enemy-c", "enemy-d" }, second.CursorEntityId, 2)
 assert(
-	joined(third.GrantedEntityIds) == "enemy-b,enemy-c",
-	"missing cursor membership must fall back deterministically"
+	joined(missingLowCursor.GrantedEntityIds) == "enemy-b,enemy-c",
+	"missing low cursor must resume at its first surviving successor"
+)
+
+local missingMiddleCursor = scheduler.resolveRoundRobinGrants({ "enemy-a", "enemy-b", "enemy-d" }, "enemy-c", 2)
+assert(
+	joined(missingMiddleCursor.GrantedEntityIds) == "enemy-d,enemy-a",
+	"missing middle cursor must not restart at low ids and weaken fairness under churn"
+)
+
+local missingHighCursor = scheduler.resolveRoundRobinGrants({ "enemy-a", "enemy-b", "enemy-c" }, "enemy-z", 2)
+assert(
+	joined(missingHighCursor.GrantedEntityIds) == "enemy-a,enemy-b",
+	"cursor beyond the surviving population must wrap to the first id"
 )
 
 local all = scheduler.resolveRoundRobinGrants({ "enemy-c", "enemy-a", "enemy-b" }, "enemy-a", 99)
