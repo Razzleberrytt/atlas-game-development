@@ -111,10 +111,21 @@ local function choiceSubtitleText(familyId: string, tokens: { string }): string
 end
 
 local runBuildNetwork = ReplicatedStorage:WaitForChild("RunBuildNetwork", NETWORK_WAIT_SECONDS)
-local stateRemote = runBuildNetwork:WaitForChild("State") :: RemoteEvent
-local readStateRemote = runBuildNetwork:WaitForChild("ReadState") :: RemoteFunction
-local submitChoiceRemote = runBuildNetwork:WaitForChild("SubmitRelicChoice") :: RemoteEvent
-local submitReplacementRemote = runBuildNetwork:WaitForChild("SubmitRelicReplacement") :: RemoteEvent
+assert(runBuildNetwork ~= nil, "RunBuildNetwork did not become available before the client bootstrap timeout")
+local stateRemote = runBuildNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "RunBuildNetwork.State did not become available before the client bootstrap timeout")
+local readStateRemote = runBuildNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(readStateRemote ~= nil, "RunBuildNetwork.ReadState did not become available before the client bootstrap timeout")
+local submitChoiceRemote = runBuildNetwork:WaitForChild("SubmitRelicChoice", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	submitChoiceRemote ~= nil,
+	"RunBuildNetwork.SubmitRelicChoice did not become available before the client bootstrap timeout"
+)
+local submitReplacementRemote = runBuildNetwork:WaitForChild("SubmitRelicReplacement", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	submitReplacementRemote ~= nil,
+	"RunBuildNetwork.SubmitRelicReplacement did not become available before the client bootstrap timeout"
+)
 
 local relicDisplayNames: { [string]: string } = {}
 local relicDescriptions: { [string]: string } = {}
@@ -193,7 +204,8 @@ local function makeButton(parent: Instance, name: string): TextButton
 end
 
 local function createGui()
-	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
 	local existing = playerGui:FindFirstChild(GUI_NAME)
 	if existing ~= nil then
 		existing:Destroy()
