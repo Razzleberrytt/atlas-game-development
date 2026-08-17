@@ -51,7 +51,7 @@ end
 table.sort(findings)
 
 if #findings > 0 then
-	error("unbounded client bootstrap dependency wait: " .. findings[1], 2)
+	error("unbounded client bootstrap dependency waits:\n" .. table.concat(findings, "\n"), 2)
 end
 
 print("ClientBootstrapDependencyWaitSourceAudit: scoped client bootstrap dependency waits are bounded")
