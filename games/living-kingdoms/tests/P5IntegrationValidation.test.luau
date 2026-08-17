@@ -80,6 +80,10 @@ local ELITE_RESOLVER_TOKEN = {}
 local LIFE_TOKEN = {}
 local FAILURE_TOKEN = {}
 local ENEMY_DIRECTOR_TOKEN = {}
+local NAV_SCHEDULER_TOKEN = {}
+
+local navigationScheduler =
+	loadSimple("games/living-kingdoms/src/server/Domain/EnemyNavigationScheduler.luau", "EnemyNavigationScheduler")
 
 local rpgContracts = {
 	EliteAffixIds = {
@@ -533,6 +537,7 @@ local enemyDirector = luau.load(fs.readFile("games/living-kingdoms/src/server/Sy
 				BossPhaseResolver = BOSS_RESOLVER_TOKEN,
 				EliteAffixResolver = ELITE_RESOLVER_TOKEN,
 				OperativeLifeService = LIFE_TOKEN,
+				Parent = { Domain = { EnemyNavigationScheduler = NAV_SCHEDULER_TOKEN } },
 			},
 		},
 		require = function(token)
@@ -566,6 +571,8 @@ local enemyDirector = luau.load(fs.readFile("games/living-kingdoms/src/server/Sy
 				return eliteResolver
 			elseif token == LIFE_TOKEN then
 				return lifeService
+			elseif token == NAV_SCHEDULER_TOKEN then
+				return navigationScheduler
 			end
 			error("unexpected EnemyDirectorService dependency")
 		end,
