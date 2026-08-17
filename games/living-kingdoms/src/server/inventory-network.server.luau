@@ -13,10 +13,13 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local EquipmentCombatAdapter = require(script.Parent.Systems.EquipmentCombatAdapter)
 local InventoryLiveService = require(script.Parent.Systems.InventoryLiveService)
 local OperativeLifeService = require(script.Parent.Systems.OperativeLifeService)
 
 local LEASE_RENEW_INTERVAL_SECONDS = 30
+local COMBAT_ACTIVATION_RETRY_INTERVAL_SECONDS = 0.25
+local COMBAT_ACTIVATION_MAX_ATTEMPTS = 80
 
 local existing = ReplicatedStorage:FindFirstChild("InventoryNetwork")
 if existing ~= nil then
@@ -39,6 +42,10 @@ local equipOwnedItem = Instance.new("RemoteFunction")
 equipOwnedItem.Name = "EquipOwnedItem"
 equipOwnedItem.Parent = network
 
+local unequipOwnedSlot = Instance.new("RemoteFunction")
+unequipOwnedSlot.Name = "UnequipOwnedSlot"
+unequipOwnedSlot.Parent = network
+
 local dismantleOwnedItem = Instance.new("RemoteFunction")
 dismantleOwnedItem.Name = "DismantleOwnedItem"
 dismantleOwnedItem.Parent = network
@@ -48,6 +55,7 @@ state.Name = "State"
 state.Parent = network
 
 local loadedPlayerIds: { [number]: boolean } = {}
+local weaponActivationGenerationByPlayerId: { [number]: number } = {}
 local renewalAccumulatorSeconds = 0
 
 local function rejected(reasonId: string): any
@@ -68,6 +76,72 @@ end
 local function reconcileEquipmentEffects(player: Player)
 	OperativeLifeService.reconcileMaximumHealth(player)
 	OperativeLifeService.reconcileMovementSpeed(player)
+end
+
+local function nextWeaponActivationGeneration(playerId: number): number
+	local generation = (weaponActivationGenerationByPlayerId[playerId] or 0) + 1
+	weaponActivationGenerationByPlayerId[playerId] = generation
+	return generation
+end
+
+local function cancelWeaponActivation(playerId: number)
+	weaponActivationGenerationByPlayerId[playerId] = nil
+end
+
+--[[
+	Combat may mount a fraction later than the inventory record, or the operative
+	may be temporarily unable to receive a weapon transition. Retry is deliberately
+	bounded to the same 20-second window used by dependency startup hardening:
+	80 attempts × 0.25 seconds. A newer equip/unequip increments the generation so
+	an older delayed callback can never overwrite the newer durable choice.
+]]
+local function attemptWeaponActivation(
+	player: Player,
+	instanceId: string?,
+	generation: number,
+	attempt: number
+)
+	if
+		player.Parent ~= Players
+		or loadedPlayerIds[player.UserId] ~= true
+		or weaponActivationGenerationByPlayerId[player.UserId] ~= generation
+	then
+		return
+	end
+
+	local accepted, reasonId = if instanceId == nil
+		then EquipmentCombatAdapter.activatePreferredOrDefault(player)
+		else EquipmentCombatAdapter.activateOwnedEquippedWeapon(player, instanceId)
+	if accepted then
+		return
+	end
+
+	local retryable = reasonId == "CombatRuntimeNotReady" or reasonId == "CombatNotAllowed"
+	if retryable and attempt < COMBAT_ACTIVATION_MAX_ATTEMPTS then
+		task.delay(COMBAT_ACTIVATION_RETRY_INTERVAL_SECONDS, function()
+			attemptWeaponActivation(player, instanceId, generation, attempt + 1)
+		end)
+		return
+	end
+
+	warn(
+		string.format(
+			"[InventoryNetwork] durable equipment combat activation stopped for %d after %d attempt(s): %s",
+			player.UserId,
+			attempt,
+			reasonId
+		)
+	)
+end
+
+local function queueSpecificWeaponActivation(player: Player, instanceId: string)
+	local generation = nextWeaponActivationGeneration(player.UserId)
+	attemptWeaponActivation(player, instanceId, generation, 1)
+end
+
+local function queuePreferredWeaponActivation(player: Player)
+	local generation = nextWeaponActivationGeneration(player.UserId)
+	attemptWeaponActivation(player, nil, generation, 1)
 end
 
 --[[
@@ -93,11 +167,13 @@ local function loadPlayer(player: Player)
 	end
 	loadedPlayerIds[player.UserId] = true
 	reconcileEquipmentEffects(player)
+	queuePreferredWeaponActivation(player)
 	pushTo(player)
 end
 
 local function releasePlayer(player: Player)
 	loadedPlayerIds[player.UserId] = nil
+	cancelWeaponActivation(player.UserId)
 	local released = InventoryLiveService.releasePlayer(player.UserId)
 	if released.Accepted ~= true and released.ReasonId ~= "LeaseNotOwned" then
 		warn(
@@ -133,6 +209,29 @@ equipOwnedItem.OnServerInvoke = function(player: Player, instanceId: any): any
 	local outcome = InventoryLiveService.equipOwnedItem(player.UserId, player.UserId, instanceId, os.time())
 	if outcome.Accepted == true then
 		reconcileEquipmentEffects(player)
+		local record = outcome.Record
+		local item = if type(record) == "table" then record.InventoryByInstanceId[instanceId] else nil
+		if type(item) == "table" and EquipmentCombatAdapter.isWeaponSlot(item.Slot) then
+			queueSpecificWeaponActivation(player, instanceId)
+		end
+		pushTo(player)
+	end
+	return table.freeze({ Accepted = outcome.Accepted == true, ReasonId = outcome.ReasonId })
+end
+
+-- Unequip accepts only a known slot intent. Owner identity is always the invoking
+-- player; the live service validates the slot and lease before the persistence
+-- owner changes durable state.
+unequipOwnedSlot.OnServerInvoke = function(player: Player, slotId: any): any
+	if type(slotId) ~= "string" then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidUnequipRequest" })
+	end
+	local outcome = InventoryLiveService.unequipOwnedSlot(player.UserId, player.UserId, slotId, os.time())
+	if outcome.Accepted == true then
+		reconcileEquipmentEffects(player)
+		if EquipmentCombatAdapter.isWeaponSlot(slotId) then
+			queuePreferredWeaponActivation(player)
+		end
 		pushTo(player)
 	end
 	return table.freeze({ Accepted = outcome.Accepted == true, ReasonId = outcome.ReasonId })
@@ -194,6 +293,7 @@ local heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
 					longer holds, so the session ends here.
 				]]
 				loadedPlayerIds[player.UserId] = nil
+				cancelWeaponActivation(player.UserId)
 				InventoryLiveService.releasePlayer(player.UserId)
 				if player.Parent == Players then
 					player:Kick("Your inventory session could no longer be protected. Please rejoin.")
@@ -208,6 +308,7 @@ game:BindToClose(function()
 	playerAddedConnection:Disconnect()
 	playerRemovingConnection:Disconnect()
 	table.clear(loadedPlayerIds)
+	table.clear(weaponActivationGenerationByPlayerId)
 	InventoryLiveService.destroy()
 end)
 
