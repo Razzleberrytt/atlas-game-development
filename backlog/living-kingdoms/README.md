@@ -16,9 +16,9 @@ The `LKB-0001`–`LKB-1000` IDs are deliberately separate from the repository's 
 
 ## Files
 
-- `master_backlog.csv.xz.b64` — immutable compressed/base64 definitions for exactly 1,000 candidate tickets.
+- `master_backlog.csv.xz.b64.part01`–`part04` — immutable compressed/base64 definitions for exactly 1,000 candidate tickets.
 - `status.csv` — sparse mutable ledger for authorization, ownership, status, branch, blocker, and proof.
-- `materialize_backlog.py` — generates a readable `master_backlog.csv`.
+- `materialize_backlog.py` — concatenates/validates the four seed parts and generates a readable `master_backlog.csv`.
 - `AGENT_COORDINATION.md` — specialist lane and low-WIP claim protocol.
 - `IMPLEMENTATION_PLAYBOOK.md` — ticket implementation/validation contract.
 
@@ -29,6 +29,8 @@ python backlog/living-kingdoms/materialize_backlog.py
 ```
 
 `master_backlog.csv` is generated and intentionally ignored by Git.
+
+The spreadsheet companion contains richer planning fields such as scope, acceptance criteria, ROI, canonical-owner hints, and evidence notes. The repository seed intentionally preserves the compact execution-routing identity needed by agents while the mutable ledger remains reviewable in Git.
 
 ## Critical difference from the website backlog
 
