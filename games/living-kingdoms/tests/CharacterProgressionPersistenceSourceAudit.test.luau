@@ -1,0 +1,98 @@
+--!strict
+
+local fs = require("@lune/fs")
+
+local function contains(source: string, token: string): boolean
+	return string.find(source, token, 1, true) ~= nil
+end
+
+local persistence = fs.readFile("games/living-kingdoms/src/server/Systems/PlayerInventoryPersistenceService.luau")
+local inventoryOwner = fs.readFile("games/living-kingdoms/src/server/Systems/InventoryLiveService.luau")
+local lifecycle = fs.readFile("games/living-kingdoms/src/server/inventory-network.server.luau")
+local progression = fs.readFile("games/living-kingdoms/src/server/Systems/CharacterProgressionService.luau")
+local rewards = fs.readFile("games/living-kingdoms/src/server/Systems/CharacterProgressionGameplayRewardService.luau")
+local config = fs.readFile("games/living-kingdoms/src/shared/Config/CharacterProgressionConfig.luau")
+
+assert(
+	contains(inventoryOwner, 'DataStoreName = "AtlasPlayerInventoryV1"'),
+	"progression must remain under the existing datastore owner"
+)
+assert(
+	contains(inventoryOwner, "persistence:applyCharacterProgression"),
+	"XP writes must use the canonical account persistence service"
+)
+assert(
+	contains(inventoryOwner, "leases:hasLease(playerId, nowUnix)"),
+	"progression writes must require the existing session lease"
+)
+assert(contains(inventoryOwner, "saveCharacterProgression"), "lease owner must expose the progression persistence seam")
+assert(
+	contains(lifecycle, "CharacterProgressionService.hydratePlayer"),
+	"join lifecycle must hydrate durable progression"
+)
+assert(
+	contains(lifecycle, "CharacterProgressionService.configurePersistence"),
+	"award service must bind to the leased persistence owner"
+)
+
+assert(
+	contains(persistence, "local function normalizedCharacterProgression"),
+	"account persistence must own schema-local XP normalization"
+)
+assert(
+	contains(persistence, "raw.CharacterProgression or raw"),
+	"legacy root XP fields must remain migratable into schema five"
+)
+assert(contains(persistence, "CharacterProgression ="), "canonical account record must contain character progression")
+assert(
+	contains(persistence, "AppliedCharacterProgressionGrantIds"),
+	"durable one-time progression rewards need a replay ledger"
+)
+assert(
+	contains(persistence, "function Service:applyCharacterProgression"),
+	"account persistence must expose one bounded XP mutation seam"
+)
+assert(contains(persistence, "CharacterProgressionGrantAlreadyApplied"), "durable replay must resolve idempotently")
+assert(contains(persistence, "CharacterProgressionRollbackRejected"), "durable XP must never move backward")
+
+assert(contains(progression, "persistenceWriter"), "XP owner must persist before publishing live state")
+assert(
+	contains(progression, "ProgressionPersistenceUnavailable"),
+	"XP must fail closed when persistence is unavailable"
+)
+assert(contains(progression, "XPAlreadyAwarded"), "durable replay must not add XP twice")
+
+assert(
+	contains(rewards, "ExpeditionLiveRuntimeService.readSnapshot"),
+	"dungeon XP must observe the authoritative expedition runtime"
+)
+assert(contains(rewards, "ExpeditionRunRosterService.read"), "dungeon XP must use the launch-time participant roster")
+assert(
+	contains(rewards, "ExpeditionRewardDispositionResolver.shouldPersist"),
+	"failed/non-rewarding runs must not grant completion XP"
+)
+assert(contains(rewards, "Config.RewardXP.DungeonCompletion"), "dungeon XP amount must be configured")
+assert(
+	contains(rewards, "does not expose a trusted per-enemy contributor ledger"),
+	"kill/assist XP must remain disabled until attribution is authoritative"
+)
+assert(
+	not contains(rewards, "Config.RewardXP.EnemyKill"),
+	"reward bridge must not infer kill ownership from presentation-only death state"
+)
+
+assert(contains(config, "EnemyKill = 20"), "enemy XP default must be explicit for the future trusted contributor hook")
+assert(contains(config, "Assist = 10"), "assist XP default must be reserved for future contributor attribution")
+assert(contains(config, "DungeonCompletion = 250"), "dungeon XP default must be explicit and rebalanceable")
+
+for _, source in { persistence, inventoryOwner, progression, rewards } do
+	assert(
+		not contains(source, "DataStoreService:GetDataStore"),
+		"progression must not create a second datastore authority"
+	)
+	assert(not contains(source, "OnServerEvent"), "progression mutation must not accept client-authored reward events")
+end
+
+print(
+	"CharacterProgressionPersistenceSourceAudit: canonical record, lease ownership, durable replay, hydration, and dungeon reward boundaries passed"
+)
