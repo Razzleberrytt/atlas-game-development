@@ -1,8 +1,8 @@
-# Atlas — Execution Dashboard v1.24
+# Atlas — Execution Dashboard v1.25
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-16  
-**Main baseline audited:** `c2f2c1e4bd4e761ff85c890422b9fe67e310cc41`  
+**Main baseline audited:** `c9d23a7b4c8b892dd3d7d16e86684fa69882f7c8`  
 **Purpose:** answer quickly what is true, what is NOW, what may proceed, and what comes NEXT.
 
 ## Precedence
@@ -26,29 +26,28 @@ For documentation-authority routing, use [`../README.md`](../README.md). Histori
   - #64–#69 — duplicate durable authorities / currency without a gameplay consumer;
   - #84, #86–#88 — diagnostic/latency/randomized stress surfaces without a current consumer.
 - Patch 0.7's machine-readable detailed proof remains `../production/PATCH-0.7-ACCEPTANCE-MATRIX.json`.
-- Since that closure, `main` has moved through concrete **maintenance/audit hardening** rather than an explicitly activated broad numbered patch.
-- On 2026-08-16, merged work includes Main World rooted road-failure measurement (#619) and bounded client network-wait repairs through #633, #639, and #647. LKB-0033 is now VERIFIED: the direct post-merge audit found and repaired the remaining concrete `MeleeNetwork.Presentation` and `PlayerGui` startup dependency stalls, PR #647 passed Full Atlas validation #2280, and post-merge `main` passed Atlas validation #2281.
-- The bounded-network-wait maintenance mini-lane is **closed**. Its source/regression audits cover the concrete PrimaryAttackMode, remote melee presentation, and WeaponController startup waits found by direct audit. Do not open another wait-hardening PR without a newer reproducible culprit.
-- Open PR #620 still contains unique Main World northwest route-redundancy geometry that is absent from current `main`, but its branch is stale/non-mergeable. Its measured topology goal remains relevant, so it must be reconciled from current `main` rather than merged as-is.
+- Main World route-resilience ticket **LKB-0682 is VERIFIED**. PR #649 reconciled the still-unique northwest bypass from stale #620 onto current main, passed Full Atlas validation #2286, and merged as `c9d23a7b4c8b892dd3d7d16e86684fa69882f7c8`. Post-merge main push validation #2287 passed. Rooted road-failure evidence improved roads 7→9, edges 7→10, chokepoints 2→1, bridges 3→1; worst bridge failure improved from 6 districts / 4 roads lost to 0 districts / 1 road, and the prior worst non-root articulation failure disappeared. PR #620 is closed unmerged as superseded.
+- The previous LKB-0033 VERIFIED conclusion was **revoked by a fresh open-PR/current-main audit**. Current `RPGMenuController` bounds the three parent network folders but still acquires seven child remotes with unbounded `WaitForChild` calls. Stale/non-mergeable PR #646 preserves focused prior work and `RPGMenuNetworkWaitSourceAudit.test.luau` for this concrete defect family.
+- Therefore **LKB-0033 is BUILDING again** and remains the sole active backlog ticket. The bounded-network-wait maintenance mini-lane is not closed until the RPG menu child dependencies are reconciled on fresh main, fully validated, merged, and a new direct audit finds no additional concrete bootstrap/network dependency stalls.
 - Missing manual Studio/device evidence does not block dependency-safe source progression. A reproducible runtime, authority, persistence, data-loss, security, or deterministic-validation defect does.
 - The development coverage system preserves `LK-001`–`LK-300` as a machine-readable concern ontology in `../../config/coverage/living-kingdoms-development.json`, with generated taxonomy/atlas/report views. It is **not** a second roadmap and does not authorize one module per concern.
 
 ## NOW
 
-### 1. Resolve the measured Main World northwest route single-point-of-failure
+### 1. Reconcile the remaining concrete RPG menu bounded-network-wait defect — LKB-0033
 
-Activate backlog ticket **LKB-0682** in the `Main World Topology & Resilience` workstream to reconcile the still-unique intent of open PR #620 from current `main`.
+Use stale PR #646 only as evidence/source material. Reconcile its still-unique RPG menu child-dependency hardening onto a fresh branch from current `main`.
 
 Rules:
 
-- do not merge the stale/non-mergeable #620 branch as-is;
-- preserve the canonical recovered-world route/topology owners and replay only the smallest current-main-compatible geometry needed for the measured northwest bypass;
-- use the existing rooted road-failure/topology/readability/support analyzers to prove the change reduces player-facing failure blast radius rather than merely adding decorative geometry;
-- keep traversal support narrow and local to the new bypass rather than expanding whole biome shelves;
-- do not redesign Main World composition, portals, runtime authority, or unrelated environment content;
-- merge only when the applicable automated gate and focused resilience evidence are green.
-
-The candidate's static authored-geometry path does not require a new runtime startup/lifecycle owner; the LKB-0682 dependency on the generic lifecycle-startup dimension is therefore satisfied by the existing canonical Main World asset/composition pipeline rather than by inventing a new service.
+- do not merge stale/non-mergeable #646 as-is;
+- preserve current `RPGMenuController` ownership and behavior;
+- bound and fail clearly for the seven child remote dependencies under SurvivalNetwork, ProgressionNetwork, and InventoryNetwork;
+- add/reconcile the focused `RPGMenuNetworkWaitSourceAudit.test.luau` regression evidence;
+- do not redesign networking authority, inventory semantics, progression semantics, menu behavior, or server mutation paths;
+- merge only when Full Atlas validation is green;
+- after merge, require a green main push validation and re-run the direct current-main/open-PR audit before restoring VERIFIED status;
+- if the audit is clean, close the maintenance mini-lane rather than manufacturing another wait-hardening ticket.
 
 ### 2. Keep repository/documentation truth coherent
 
@@ -58,13 +57,13 @@ The 300-area development taxonomy, Development Atlas, coverage report, documenta
 
 Open PR count is **not** the execution queue.
 
-### Current Main World resilience source candidate
+### Current bounded-wait source candidate
 
-- **#620** — northwest route redundancy. Its two authored-geometry changes remain unique relative to current `main`, but the PR is stale/non-mergeable. LKB-0682 owns the current-main reconciliation; do not duplicate it in another parallel branch.
+- **#646** — RPG menu network waits. Current main still contains the seven unbounded child waits described by this PR, but its branch is stale/non-mergeable. LKB-0033 owns a fresh-main reconciliation; do not merge #646 directly or duplicate it in parallel.
 
-### Closed maintenance lane
+### Superseded Main World candidate
 
-- **#633 / #639 / #647** — bounded-network-wait hardening. The concrete audited wait family is repaired and validated; this lane is closed unless a new reproducible member is found.
+- **#620** — northwest route redundancy. Closed unmerged after current-main PR #649 implemented and verified the still-valid geometry under LKB-0682.
 
 ### Older feature candidates requiring deliberate reactivation
 
@@ -78,7 +77,7 @@ These PRs preserve potentially useful work, but age/open state does not grant au
 
 ## NEXT
 
-After LKB-0682 has current-main-compatible implementation proof and `main` is green:
+After LKB-0033 is re-verified and current `main` is green:
 
 1. audit older open feature candidates for still-valid unique work versus superseded/overlapping work;
 2. explicitly activate the next broad player-facing patch/capability here before broad expansion;
