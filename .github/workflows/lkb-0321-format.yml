@@ -1,0 +1,47 @@
+name: LKB-0321 one-shot formatter
+
+on:
+  push:
+    branches:
+      - lk/LKB-0321-enemy-navigation-budget
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: lk/LKB-0321-enemy-navigation-budget
+          fetch-depth: 0
+      - uses: CompeyDev/setup-rokit@v0.1.2
+        with:
+          version: v1.2.0
+          path: .
+          cache: false
+          token: ${{ github.token }}
+      - name: Format scoped files
+        shell: bash
+        run: |
+          stylua \
+            games/living-kingdoms/src/server/Domain/EnemyNavigationScheduler.luau \
+            games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau \
+            games/living-kingdoms/tests/EnemyNavigationScheduler.test.luau \
+            games/living-kingdoms/tests/EnemyNavigationBudgetSourceAudit.test.luau \
+            games/living-kingdoms/tests/EnemyDirectorService.test.luau
+      - name: Commit formatter-only result and remove workflow
+        shell: bash
+        run: |
+          git rm .github/workflows/lkb-0321-format.yml
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add games/living-kingdoms/src/server/Domain/EnemyNavigationScheduler.luau \
+                  games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau \
+                  games/living-kingdoms/tests/EnemyNavigationScheduler.test.luau \
+                  games/living-kingdoms/tests/EnemyNavigationBudgetSourceAudit.test.luau \
+                  games/living-kingdoms/tests/EnemyDirectorService.test.luau
+          git commit -m "style(lk): format LKB-0321 navigation budget"
+          git push origin HEAD:lk/LKB-0321-enemy-navigation-budget
