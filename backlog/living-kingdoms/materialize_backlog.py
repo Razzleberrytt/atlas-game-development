@@ -77,6 +77,9 @@ VALIDATION_BY_RISK = {
     "R2": "python scripts/validate.py full",
     "R3": "python scripts/validate.py full + focused targeted checks for persistence/security/value boundaries",
 }
+# These dimensions incur one additional planning-effort point for R3 workstreams.
+# This mirrors the human XLSX planning model exactly.
+R3_EFFORT_BUMP_DIMENSIONS = {4, 5, 10, 11, 12, 17, 20, 21, 25}
 
 
 def load_json(path: Path) -> list[dict]:
@@ -114,6 +117,8 @@ def generate_definitions() -> list[dict[str, object]]:
             impact = IMPACT_BY_PRIORITY[priority]
             confidence = int(dimension["confidence"])
             effort = int(dimension["effort"])
+            if risk == "R3" and dimension_index in R3_EFFORT_BUMP_DIMENSIONS:
+                effort += 1
             roi_score = round((impact * confidence) / effort, 2)
 
             if dimension["name"] == "Studio evidence packet":
