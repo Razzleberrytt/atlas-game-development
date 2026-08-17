@@ -1,8 +1,8 @@
-# Atlas — Execution Dashboard v1.25
+# Atlas — Execution Dashboard v1.26
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
-**Refreshed:** 2026-08-16  
-**Main baseline audited:** `c9d23a7b4c8b892dd3d7d16e86684fa69882f7c8`  
+**Refreshed:** 2026-08-17  
+**Main baseline audited:** `310ba09c6a79771739228ee1b749824883c822e2`  
 **Purpose:** answer quickly what is true, what is NOW, what may proceed, and what comes NEXT.
 
 ## Precedence
@@ -18,7 +18,7 @@
 
 For documentation-authority routing, use [`../README.md`](../README.md). Historical Studio/device/play gates are evidence instructions, not source-work scheduling authority. Experiential facts remain **UNMEASURED** until actually tested.
 
-## Current truth — 2026-08-16
+## Current truth — 2026-08-17
 
 - Atlas/Living Kingdoms is a **Roblox/Rojo repository-first codebase**. `games/living-kingdoms/src/` remains gameplay-authoritative source; the operation and dedicated Main World use their canonical Rojo project mappings.
 - **Patch 0.7 durable persistence + valuable-state hardening remains automated-acceptance complete for every non-deferred row.** It implemented **86 / 100** ranked tasks. The remaining 14 are explicit deferrals, not hidden incompletion:
@@ -27,27 +27,25 @@ For documentation-authority routing, use [`../README.md`](../README.md). Histori
   - #84, #86–#88 — diagnostic/latency/randomized stress surfaces without a current consumer.
 - Patch 0.7's machine-readable detailed proof remains `../production/PATCH-0.7-ACCEPTANCE-MATRIX.json`.
 - Main World route-resilience ticket **LKB-0682 is VERIFIED**. PR #649 reconciled the still-unique northwest bypass from stale #620 onto current main, passed Full Atlas validation #2286, and merged as `c9d23a7b4c8b892dd3d7d16e86684fa69882f7c8`. Post-merge main push validation #2287 passed. Rooted road-failure evidence improved roads 7→9, edges 7→10, chokepoints 2→1, bridges 3→1; worst bridge failure improved from 6 districts / 4 roads lost to 0 districts / 1 road, and the prior worst non-root articulation failure disappeared. PR #620 is closed unmerged as superseded.
-- The previous LKB-0033 VERIFIED conclusion was **revoked by a fresh open-PR/current-main audit**. Current `RPGMenuController` bounds the three parent network folders but still acquires seven child remotes with unbounded `WaitForChild` calls. Stale/non-mergeable PR #646 preserves focused prior work and `RPGMenuNetworkWaitSourceAudit.test.luau` for this concrete defect family.
-- Therefore **LKB-0033 is BUILDING again** and remains the sole active backlog ticket. The bounded-network-wait maintenance mini-lane is not closed until the RPG menu child dependencies are reconciled on fresh main, fully validated, merged, and a new direct audit finds no additional concrete bootstrap/network dependency stalls.
+- **LKB-0033 is VERIFIED and the bounded-dependency maintenance mini-lane is CLOSED.** PR #656 exhaustively bounded the remaining startup/dependency waits, passed Full Atlas validation #2353, and squash-merged as `310ba09c6a79771739228ee1b749824883c822e2`. Post-merge main push validation #2354 passed.
+- `ClientBootstrapDependencyWaitSourceAudit.test.luau` now enforces zero untimed `WaitForChild` calls under the canonical client source tree. `ServerBootstrapDependencyWaitSourceAudit.test.luau` reports no unbounded network dependency waits across canonical server/shared/Main World source. The fresh overlap audit found no surviving open LKB-0033 implementation; stale #646 and diagnostic #652 are closed unmerged.
+- Do **not** manufacture another bounded-wait ticket merely to keep that mini-lane alive. A new reproducible dependency-stall defect may reopen the concern through normal coordination.
 - Missing manual Studio/device evidence does not block dependency-safe source progression. A reproducible runtime, authority, persistence, data-loss, security, or deterministic-validation defect does.
 - The development coverage system preserves `LK-001`–`LK-300` as a machine-readable concern ontology in `../../config/coverage/living-kingdoms-development.json`, with generated taxonomy/atlas/report views. It is **not** a second roadmap and does not authorize one module per concern.
 
 ## NOW
 
-### 1. Reconcile the remaining concrete RPG menu bounded-network-wait defect — LKB-0033
+### 1. Audit older feature candidates and explicitly select one next player-facing capability
 
-Use stale PR #646 only as evidence/source material. Reconcile its still-unique RPG menu child-dependency hardening onto a fresh branch from current `main`.
+There is currently **no BUILDING implementation ticket** after LKB-0033 verification. Perform the coordination selector before starting new implementation work:
 
-Rules:
+1. inspect current `main` and the full open-PR inventory;
+2. compare each older candidate with current main for unique surviving work, superseding merges, ownership drift, dependency stacks, and conflicts;
+3. rank viable candidates by player-facing/reliability ROI, dependency readiness, current-main compatibility, overlap risk, and measurable exit criteria;
+4. explicitly activate exactly **one** capability here;
+5. map that capability to the smallest coherent Living Kingdoms backlog ticket, claim it as the sole BUILDING row, and reconcile useful old work onto a fresh current-main branch rather than blindly merging stale branches.
 
-- do not merge stale/non-mergeable #646 as-is;
-- preserve current `RPGMenuController` ownership and behavior;
-- bound and fail clearly for the seven child remote dependencies under SurvivalNetwork, ProgressionNetwork, and InventoryNetwork;
-- add/reconcile the focused `RPGMenuNetworkWaitSourceAudit.test.luau` regression evidence;
-- do not redesign networking authority, inventory semantics, progression semantics, menu behavior, or server mutation paths;
-- merge only when Full Atlas validation is green;
-- after merge, require a green main push validation and re-run the direct current-main/open-PR audit before restoring VERIFIED status;
-- if the audit is clean, close the maintenance mini-lane rather than manufacturing another wait-hardening ticket.
+Patch 0.8 remains an available planned queue, not the default. Do not activate it merely because Patch 0.7 and the bounded-wait mini-lane are closed.
 
 ### 2. Keep repository/documentation truth coherent
 
@@ -55,33 +53,38 @@ The 300-area development taxonomy, Development Atlas, coverage report, documenta
 
 ## Open-PR interpretation
 
-Open PR count is **not** the execution queue.
+Open PR count is **not** the execution queue. Age/open state does not grant authority.
 
-### Current bounded-wait source candidate
-
-- **#646** — RPG menu network waits. Current main still contains the seven unbounded child waits described by this PR, but its branch is stale/non-mergeable. LKB-0033 owns a fresh-main reconciliation; do not merge #646 directly or duplicate it in parallel.
-
-### Superseded Main World candidate
-
-- **#620** — northwest route redundancy. Closed unmerged after current-main PR #649 implemented and verified the still-valid geometry under LKB-0682.
-
-### Older feature candidates requiring deliberate reactivation
+### Older feature candidates requiring fresh deliberate audit
 
 - **#566 / #578 / #579** — progression stack/sync work;
 - **#577** — authoritative inventory/equipment activation;
 - **#568 / #574** — procedural-instance work;
 - **#570** — enemy navigation/combat framework;
-- older open presentation/test/refactor PRs such as #535, #537, #547, #550, #559 and #560.
+- older presentation/test/refactor PRs such as #535, #537, #547, #550, #559 and #560.
 
-These PRs preserve potentially useful work, but age/open state does not grant authority. Before adopting one: compare it with current main, inspect superseding merges and ownership drift, resolve stack dependencies, rebase/reconcile, and pass the current validation gate. Close or supersede obsolete branches when their useful work has already landed elsewhere.
+For every candidate: compare it with current main, inspect superseding merges and ownership drift, resolve stack dependencies, identify the still-unique player-facing outcome, and reject or close obsolete work. A viable candidate still requires explicit dashboard activation before implementation begins.
+
+### Closed/superseded bounded-wait sources
+
+- **#646** — RPG menu network waits; closed unmerged after its useful work was reconciled through later LKB-0033 checkpoints.
+- **#652** — diagnostic client network-child audit; closed unmerged by design after exposing the next concrete wait family.
+- **#656** — exhaustive LKB-0033 closeout; merged and VERIFIED after #2353/#2354.
+
+### Superseded Main World candidate
+
+- **#620** — northwest route redundancy. Closed unmerged after current-main PR #649 implemented and verified the still-valid geometry under LKB-0682.
 
 ## NEXT
 
-After LKB-0033 is re-verified and current `main` is green:
+After the candidate audit selects one capability:
 
-1. audit older open feature candidates for still-valid unique work versus superseded/overlapping work;
-2. explicitly activate the next broad player-facing patch/capability here before broad expansion;
-3. keep Patch 0.8 as an available planned queue only if/when it is deliberately selected.
+1. update this dashboard to name that capability as the sole active implementation lane;
+2. claim exactly one smallest matching backlog ticket in `backlog/living-kingdoms/status.csv`;
+3. create/reconcile a fresh current-main implementation branch;
+4. implement only the still-unique scoped outcome;
+5. pass the applicable full validation gate, merge, require post-merge evidence, and mark VERIFIED only after the current-main audit is clean;
+6. repeat this selector only after the active ticket leaves BUILDING.
 
 Patch 0.8 remains an available planned queue via `PATCH-0.8-ACCEPTANCE.md` + `PATCH-0.8-100-TASK-HARDENING-BACKLOG.md`, but **it is not automatically selected merely because Patch 0.7 closed**. Patch 0.9 and RC 1.0 remain later planned queues unless explicitly activated.
 
