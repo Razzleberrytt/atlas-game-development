@@ -2,6 +2,14 @@
 
 This directory is a **planning and execution-support inventory**, not a second roadmap.
 
+## One-command launch
+
+The repository-level launch contract is `BEGIN_BACKLOG_PROCESS.md`.
+
+When the user says **“begin the backlog process”**, treat that as sufficient authorization to start/resume the coordinator loop defined there. Do not ask the user to manually select a ticket, lane, branch, or priority when repository authority can resolve the choice.
+
+The launch is **resume-first**: if one valid ticket is already `BUILDING`, reconcile/resume it; otherwise select the smallest eligible dashboard-aligned candidate, claim it, route it to the correct specialist, implement/validate/merge it, update the ledger, and continue until a real stop condition is reached.
+
 ## Authority rule
 
 Before any backlog ticket is activated, read:
@@ -22,6 +30,7 @@ The `LKB-0001`–`LKB-1000` IDs are deliberately separate from the repository's 
 - `materialize_backlog.py` — deterministically generates exactly `40 × 25 = 1,000` readable tickets in `master_backlog.csv` and overlays live status.
 - `AGENT_COORDINATION.md` — specialist lane and low-WIP claim protocol.
 - `IMPLEMENTATION_PLAYBOOK.md` — ticket implementation/validation contract.
+- `/BEGIN_BACKLOG_PROCESS.md` — exact user-command launch/resume protocol.
 
 Generate the readable view:
 
