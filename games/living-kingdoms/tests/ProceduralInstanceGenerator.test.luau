@@ -15,7 +15,10 @@ local repeated = Generator.generate(777)
 assert(first.Accepted and repeated.Accepted, "valid current assembler seed must generate")
 assert(first.ReasonId == "ProceduralInstanceGenerated")
 assert(first.Validation.Accepted and first.Validation.ReasonId == "LayoutValid")
-assert(first.RoomPlan.PlanIdentity == repeated.RoomPlan.PlanIdentity, "same seed must preserve canonical content identity")
+assert(
+	first.RoomPlan.PlanIdentity == repeated.RoomPlan.PlanIdentity,
+	"same seed must preserve canonical content identity"
+)
 assert(layoutSignature(first.Layout) == layoutSignature(repeated.Layout), "same seed must reproduce spatial layout")
 
 local different = Generator.generate(778)
