@@ -1,8 +1,8 @@
-# Atlas — Execution Dashboard v1.30
+# Atlas — Execution Dashboard v1.31
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-17  
-**Main baseline audited:** `ddf3a13f0fac07a4538e371a8adaf143f56c8ede`  
+**Main baseline audited:** `0cb0c8c967a269ac6899d4056f70b90741f5fe1d`  
 **Purpose:** answer quickly what is true, what is NOW, what may proceed, and what comes NEXT.
 
 ## Precedence
@@ -20,60 +20,75 @@
 
 - Living Kingdoms remains a Roblox/Rojo repository-first codebase; `games/living-kingdoms/src/` is gameplay-authoritative source.
 - Patch 0.7 durable persistence/valuable-state hardening remains automated-acceptance complete for all non-deferred work (86 / 100 implemented; 14 explicit deferrals).
-- **LKB-0682 is VERIFIED** — Main World northwest route resilience, PR #649, merge `c9d23a7b4c8b892dd3d7d16e86684fa69882f7c8`, green #2286/#2287 evidence.
-- **LKB-0033 is VERIFIED and its bounded-dependency maintenance lane is CLOSED** — exhaustive source hardening via #656 and coordination closeout via #657; current recursive wait audits remain part of repository validation.
-- **LKB-0567 is VERIFIED and its claim is RELEASED.** PR #660 passed Full Atlas #2384, merged as `834b0c41be786aeddb4e17cde05fe9b0ca38cf16`, and main push #2385 passed. Durable equipment now drives combat through server-owned inventory/config authority without reopening persistence ownership.
-- **LKB-0321 is VERIFIED.** PR #663 passed Full Atlas #2398 on exact final head `0a27c248c0118e006dfe252fda534e716f4d3aa0`, squash-merged as `ddf3a13f0fac07a4538e371a8adaf143f56c8ede`, and post-merge main push #2399 passed.
-- LKB-0321 now bounds expensive walker path computation with authored `EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation`, one deterministic lexical round-robin `EnemyNavigationScheduler`, and direct `Humanoid:MoveTo` fallback for pursuers that do not receive an expensive path grant.
-- Exhaustive LKB-0321 review corrected two scheduler defects before merge: a despawned fairness cursor now resumes at its first lexical successor instead of repeatedly favoring low IDs, and the 1-based wrap formula now grants the actual intended first entity instead of the last entity.
-- Fresh #570 overlap audit shows its path-budget/fairness work is superseded by LKB-0321. #570 still preserves distinct stuck-detection/recovery and jump-policy ideas; those are separate failure-fallback candidate material, not implicit authorization.
-- Current main still has no `CharacterProgression` / durable `TotalXP` owner from the old #566 stack and no `ProceduralInstanceGenerator` / `InstanceLayoutValidator` owner from the old #568 stack. Both therefore remain genuinely distinct candidates rather than already-landed duplicates.
-- Missing manual Studio/device evidence does not block dependency-safe source progression. Runtime facts that require Studio remain UNMEASURED until actually observed.
+- **LKB-0682, LKB-0033, LKB-0567, and LKB-0321 are VERIFIED.** The latest completed gameplay capability, LKB-0321, merged as `ddf3a13f0fac07a4538e371a8adaf143f56c8ede` after Full Atlas #2398; main push #2399 passed. Its coordination closeout passed #2400, merged as `0cb0c8c967a269ac6899d4056f70b90741f5fe1d`, and main push #2401 passed.
+- LKB-0321 supersedes stale #570's path-budget/fairness work. #570's separate stuck-recovery/jump-policy ideas remain unselected source evidence only.
+- Current `RoomSequenceAssembler` already owns deterministic seeded **content order**, variable route length, encounter slots/intensity, reward source metadata, and Entry/Elite/Boss ordering. Do not replace that owner with stale #568 code.
+- Current `RoomPlacementPlanner` still owns only a fixed straight Z-axis layout. There is no current `InstanceLayoutValidator` and no current `ProceduralInstanceGenerator` orchestration seam.
+- Fresh #568 audit found a current-compatible separable capability: deterministic self-avoiding cardinal spatial placement with bounded attempts/fallback, pure fail-closed layout validation, and a thin generator/orchestration seam. The old branch's assembler options, spawn/reward metadata expansion, and runtime rewrite are not required for this slice.
+- Current `ExpeditionRoomPlacementService` already owns Roblox instance placement and current `ModularDungeonRoomPresentation.apply(...)`; any LKB-0481 integration must preserve those owners and adapt only the geometry/socket handling needed for cardinal layouts.
+- #566/#579 durable character progression remains genuinely absent but is a much larger R3 persistence/schema stack. #574 multi-run procedural-instance ownership is also a later independent capability and is not part of LKB-0481.
+- Therefore **LKB-0481 is the sole BUILDING ticket**. Canonical mapping: workstream 20 **Procedural Rooms & Spatial Placement** × dimension 6 **Deterministic resolution** = LKB-0481.
 
 ## NOW
 
-### 1. Fresh current-main capability selector — no BUILDING ticket
+### 1. Deterministic procedural spatial generation and validation — LKB-0481
 
-LKB-0321 is complete. The shared backlog claim is released by this closeout transaction; do **not** start implementation work until the selector publishes a new atomic claim.
+Reconcile only the smallest current-compatible spatial-generation capability from stale #568 onto fresh current main.
 
-Refresh and compare the smallest coherent surviving candidate capabilities against current main:
+Required outcome:
 
-- #570 surviving enemy-navigation stuck-detection/recovery only — reliability/failure-fallback scope, separate from the completed performance budget;
-- #566 / #579 durable character progression — high player-loop value but persistence/schema-sensitive and therefore higher blast radius;
-- #537 / #568 / #574 procedural-instance stack — high replayability value but broader runtime/world-generation scope;
-- any new concrete reproducible defect discovered on current main.
+- preserve `RoomSequenceAssembler` as the canonical owner of room content order and current public behavior;
+- upgrade `RoomPlacementPlanner` from one fixed linear axis to deterministic seeded self-avoiding cardinal placement with bounded generation attempts and deterministic fallback;
+- preserve canonical room sequence order even when the physical route turns;
+- expose explicit grid cell, entrance/exit side, turn, connector axis/size, layout version, generation-attempt, and fallback metadata needed to validate/render the layout;
+- add a pure `InstanceLayoutValidator` that fails closed on malformed plans/layouts, seed mismatch, room-count/order/identity drift, duplicate cells, overlap, invalid cardinal adjacency, socket-direction mismatch, and connector-geometry mismatch;
+- add a thin `ProceduralInstanceGenerator` that orchestrates the existing assembler → planner → validator path without inventing another room-content owner;
+- keep generation bounded and reproducible from seed; no hidden Roblox randomness/services in pure resolution;
+- adapt the existing `ExpeditionRoomPlacementService` only enough to consume validated cardinal layouts: orient doorway fixtures/connectors and create walls/openings correctly on North/East/South/West sides;
+- preserve `ExpeditionEnvironmentBuilder` and `ModularDungeonRoomPresentation.apply(...)` exactly as downstream presentation owners;
+- preserve the singleton current expedition-room lifecycle for this ticket; no #574 run registry/multi-run authority;
+- add focused deterministic planner/generator/validator tests plus source/integration audits proving the runtime placement service consumes the validated generator and does not bypass it;
+- pass Full Atlas validation before merge.
 
-Selection rule: rank by player value, dependency readiness, smallest coherent diff, ownership clarity, current-main compatibility, and validation risk. Old PR age/open state does not grant execution authority.
+Scope exclusions:
+
+- do **not** copy #568's stale `RoomSequenceAssembler` option/variable-count changes; current main already has a stronger deterministic assembler;
+- do not add encounter spawn-point attachments, reward/completion hook authority, or new gameplay metadata merely because old #568 bundled them;
+- do not import #574's `ExpeditionInstanceRegistry`, multi-run spatial slots, or party/run ownership;
+- do not change combat, enemies, loot, XP, persistence, mission authority, or room-content selection;
+- do not weaken current modular dungeon presentation to match the old branch.
+
+Risk tier: **R2**. If implementation requires changing durable state, run ownership, mission authority, or content-order contracts, stop and reclassify rather than silently expanding scope.
+
+Exit gate:
+
+1. deterministic same-seed layouts reproduce exactly; different seeds demonstrate bounded spatial variation;
+2. every accepted layout preserves canonical order, unique cells, non-overlap, cardinal adjacency, correctly facing sockets, and matching connector geometry;
+3. generation attempts are finite and fallback is deterministic;
+4. current placement/presentation owners render the validated axis-aware layout without a second spatial authority;
+5. Full Atlas validation is green on the exact final PR head;
+6. merge and require green main-push validation;
+7. audit #568/#574 overlap again, verify LKB-0481, release the shared claim, and re-run the selector.
 
 ### 2. Keep repository/documentation truth coherent
 
-When a selected capability materially changes development coverage or creates a reusable seam, update only the canonical coverage/efficiency registries and regenerate their views. Do not create another status system.
+Update canonical coverage/efficiency registries only if this coherent capability materially creates or retires a reusable seam. Do not create another status system.
 
-## Candidate interpretation
+## Selector audit — why LKB-0481 won
 
-### #570 — surviving source evidence only
-
-LKB-0321 supersedes #570's navigation budget, scheduler-fairness, and budget-gating purpose. The only meaningful distinct material still surviving is bounded stuck/progress recovery plus related jump-policy changes. Re-audit those against current behavior before any claim; do not reopen path-budget work under a new ticket.
-
-### #566 / #579 — durable progression
-
-Potentially strong player-loop value: durable level/XP progression and authoritative expedition rewards. However the old stack modifies the existing durable account record and was authored before substantial Patch 0.7 persistence hardening. A fresh implementation must first prove the current account schema/lease/migration seams it would extend, and must not copy stale persistence internals.
-
-### #537 / #568 / #574 — procedural instances
-
-Potentially strong replayability value: seeded room assembly/layout/validation and later instance runtime integration. The old stack is broader than the navigation ticket and must be decomposed from current main rather than force-merged. Prefer a pure deterministic generation/validation slice before runtime authority expansion if this capability wins the selector.
-
-Older presentation/test/refactor branches such as #535, #547, #550, #559 and #560 are provenance only unless a future selected capability directly needs still-unique work from them.
+- **#568 procedural spatial generation:** high replayability leverage, distinct from current main, decomposable into an R2 deterministic slice, and compatible with current assembler/runtime ownership when stale bundled metadata is excluded. **Selected as LKB-0481.**
+- **#566/#579 progression:** high player-loop value but currently an R3 durable-account/schema/migration stack spanning 26 changed files across two old PRs. Requires a fresh persistence-owner audit before activation.
+- **#570 stuck recovery:** smaller diff, but no current measured stuck defect justifies choosing it over a replayability capability; remains failure-fallback source evidence.
+- **#574 multi-run procedural ownership:** useful later, but it expands authoritative run-instance ownership before the current spatial generator/validator seam exists on main. Deferred until after LKB-0481 and a fresh runtime-ownership audit.
 
 ## NEXT
 
-1. validate and merge this LKB-0321 coordination closeout;
-2. require green post-closeout main push validation;
-3. refresh current main plus the surviving candidate branches/PRs;
-4. choose exactly one smallest high-value capability and map it to the canonical LKB workstream × dimension ID;
-5. publish `status.csv`, `active_claim.json`, and this dashboard atomically for the new claim;
-6. implement only that claimed capability from fresh main;
-7. repeat implement → validate → merge → post-merge verify → closeout → select.
+After LKB-0481 leaves BUILDING:
+
+1. require exact-head Full Atlas and post-merge main validation;
+2. record VERIFIED only with that evidence, then release the mutex through a validated closeout;
+3. re-audit #568/#574 for surviving unique work and #566/#579 against the then-current durable account architecture;
+4. rank the smallest next player-value capability, publish one atomic claim, and continue the same loop.
 
 Patch 0.8 remains an available planned queue but is not automatically selected. Patch 0.9 and RC 1.0 remain later planned queues unless explicitly activated.
 
