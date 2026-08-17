@@ -86,13 +86,7 @@ local function sideIsOpen(placement: any, sideId: string): boolean
 	return placement.EntranceSide == sideId or placement.ExitSide == sideId
 end
 
-local function buildWallSide(
-	placement: any,
-	sideId: string,
-	baseName: string,
-	doorwayWidth: number,
-	parent: Instance
-)
+local function buildWallSide(placement: any, sideId: string, baseName: string, doorwayWidth: number, parent: Instance)
 	local center = placement.Center
 	local size = placement.Size
 	local isNorthSouth = sideId == "North" or sideId == "South"
