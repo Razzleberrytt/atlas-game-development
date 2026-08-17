@@ -5,6 +5,7 @@ local luau = require("@lune/luau")
 
 local CONFIG_TOKEN = {}
 local CONTRACTS_TOKEN = {}
+local RESOLVER_TOKEN = {}
 local INVENTORY_TOKEN = {}
 local COMBAT_TOKEN = {}
 
@@ -21,6 +22,10 @@ local config = table.freeze({
 local contracts = table.freeze({
 	SlotIds = table.freeze({ Primary = "Primary", Secondary = "Secondary", Armor = "Armor", Relic = "Relic" }),
 })
+local resolver = luau.load(fs.readFile("games/living-kingdoms/src/shared/Equipment/EquippedWeaponResolver.luau"), {
+	debugName = "EquippedWeaponResolver",
+	injectGlobals = true,
+})()
 local inventory = table.freeze({
 	getRecord = function(_playerId: number)
 		return record
@@ -42,7 +47,10 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return {
 					Shared = {
 						Config = { EquipmentRewardConfig = CONFIG_TOKEN },
-						Equipment = { EquipmentRewardContracts = CONTRACTS_TOKEN },
+						Equipment = {
+							EquipmentRewardContracts = CONTRACTS_TOKEN,
+							EquippedWeaponResolver = RESOLVER_TOKEN,
+						},
 					},
 				}
 			end,
@@ -53,6 +61,8 @@ local service = luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/
 				return config
 			elseif token == CONTRACTS_TOKEN then
 				return contracts
+			elseif token == RESOLVER_TOKEN then
+				return resolver
 			elseif token == INVENTORY_TOKEN then
 				return inventory
 			elseif token == COMBAT_TOKEN then
