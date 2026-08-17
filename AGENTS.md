@@ -25,6 +25,7 @@ Then load specialist documents **only when the task touches them**:
 | Evidence-bearing Studio run | `docs/production/V2.7-EVIDENCE-PACKET-TEMPLATE.md` |
 | Main World / environment | applicable `docs/specifications/main-world-*` documents |
 | Prepared later-phase dependency work | `docs/roadmap/AGENT-BUILD-AHEAD-QUEUE.md` |
+| Living Kingdoms LKB backlog coordination / “begin backlog process” | `BEGIN_BACKLOG_PROCESS.md`, `backlog/living-kingdoms/AGENT_COORDINATION.md`, `backlog/living-kingdoms/active_claim.json`, `backlog/living-kingdoms/status.csv` |
 | Importing/reconciling a Roblox place | `docs/production/RBXL-IMPORT-MIGRATION.md` |
 
 Do **not** preload the entire roadmap stack for an ordinary isolated change. More-specific `AGENTS.md` files override this file within their directory scope.
@@ -49,6 +50,18 @@ When asked to continue or implement the roadmap:
 12. stop only when roadmap work is exhausted or a real named blocker makes further implementation unsafe/impossible.
 
 Do not duplicate work already present in an open PR. An old open PR is not automatically current work: re-check its base, overlap, architecture, and validation before adopting it. Pending ordinary Studio/device/play-feel evidence is not, by itself, a source-development blocker.
+
+### LKB backlog serialization
+
+When execution is being coordinated through `LKB-0001`–`LKB-1000`, run:
+
+```bash
+python backlog/living-kingdoms/materialize_backlog.py --check
+```
+
+before ticket selection. `backlog/living-kingdoms/active_claim.json` is the shared implementation lock and must exactly mirror the one `BUILDING` row in `status.csv`. A valid lock means resume/reconcile that ticket; it forbids starting another LKB implementation lane.
+
+Claims, owner transfers, blockers that release WIP, and closeouts must update `status.csv` and `active_claim.json` together and publish/merge that coordination transaction to `main`. A new implementation claim must be visible on `main` before substantive source edits begin. Never force through a competing/stale lock or treat an implementation merge alone as ownership release.
 
 ## Status vocabulary
 
@@ -127,6 +140,7 @@ Never build abstraction for abstraction's sake.
 
 - Keep one coherent result per PR when practical.
 - Keep implementation PR WIP low: one active PR for the current capability; at most one additional non-overlapping feature PR when the first is externally blocked.
+- When using the LKB backlog, the shared active claim is stricter: only its one `BUILDING` ticket may own active backlog implementation work.
 - Parallel-development eligibility means work *may* proceed across lanes; it does not authorize unlimited simultaneous implementation branches.
 - Preserve existing architecture unless the task explicitly requires migration.
 - Keep client, server, and shared responsibilities separated.
