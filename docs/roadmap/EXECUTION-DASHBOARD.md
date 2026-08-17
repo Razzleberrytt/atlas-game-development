@@ -1,8 +1,8 @@
-# Atlas — Execution Dashboard v1.23
+# Atlas — Execution Dashboard v1.24
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-16  
-**Main baseline audited:** `f372be01f53c769ff64afa0f5ed6c1b8f108c21a`  
+**Main baseline audited:** `c2f2c1e4bd4e761ff85c890422b9fe67e310cc41`  
 **Purpose:** answer quickly what is true, what is NOW, what may proceed, and what comes NEXT.
 
 ## Precedence
@@ -27,31 +27,30 @@ For documentation-authority routing, use [`../README.md`](../README.md). Histori
   - #84, #86–#88 — diagnostic/latency/randomized stress surfaces without a current consumer.
 - Patch 0.7's machine-readable detailed proof remains `../production/PATCH-0.7-ACCEPTANCE-MATRIX.json`.
 - Since that closure, `main` has moved through concrete **maintenance/audit hardening** rather than an explicitly activated broad numbered patch.
-- On 2026-08-16, merged work includes Main World rooted road-failure measurement (#619) and a sequence of bounded client network-wait repairs (#622, #624, #626, #628, #631). The current open continuation is #633 for `PersonalFlashlight` bounded network waits.
+- On 2026-08-16, merged work includes Main World rooted road-failure measurement (#619) and bounded client network-wait repairs through #633, #639, and #647. LKB-0033 is now VERIFIED: the direct post-merge audit found and repaired the remaining concrete `MeleeNetwork.Presentation` and `PlayerGui` startup dependency stalls, PR #647 passed Full Atlas validation #2280, and post-merge `main` passed Atlas validation #2281.
+- The bounded-network-wait maintenance mini-lane is **closed**. Its source/regression audits cover the concrete PrimaryAttackMode, remote melee presentation, and WeaponController startup waits found by direct audit. Do not open another wait-hardening PR without a newer reproducible culprit.
+- Open PR #620 still contains unique Main World northwest route-redundancy geometry that is absent from current `main`, but its branch is stale/non-mergeable. Its measured topology goal remains relevant, so it must be reconciled from current `main` rather than merged as-is.
 - Missing manual Studio/device evidence does not block dependency-safe source progression. A reproducible runtime, authority, persistence, data-loss, security, or deterministic-validation defect does.
-- The development coverage system now preserves `LK-001`–`LK-300` as a machine-readable concern ontology in `../../config/coverage/living-kingdoms-development.json`, with generated taxonomy/atlas/report views. It is **not** a second roadmap and does not authorize one module per concern.
+- The development coverage system preserves `LK-001`–`LK-300` as a machine-readable concern ontology in `../../config/coverage/living-kingdoms-development.json`, with generated taxonomy/atlas/report views. It is **not** a second roadmap and does not authorize one module per concern.
 
 ## NOW
 
-### 1. Finish the concrete bounded-network-wait hardening lane
+### 1. Resolve the measured Main World northwest route single-point-of-failure
 
-The current source-maintenance lane is the family of reproducible ordered-client-bootstrap risks caused by unbounded waits for network folders/remotes/events. #633 is the current open continuation as of this refresh.
+Activate backlog ticket **LKB-0682** in the `Main World Topology & Resilience` workstream to reconcile the still-unique intent of open PR #620 from current `main`.
 
 Rules:
 
-- fix only concrete bounded-wait defects found in canonical client/bootstrap paths;
-- add source/regression coverage that prevents reintroduction of the same wait family;
-- do not redesign networking authority while repairing startup reliability;
-- merge only when the applicable automated gate is green;
-- stop the lane when the audit has no remaining concrete members rather than inventing work to keep the lane alive.
+- do not merge the stale/non-mergeable #620 branch as-is;
+- preserve the canonical recovered-world route/topology owners and replay only the smallest current-main-compatible geometry needed for the measured northwest bypass;
+- use the existing rooted road-failure/topology/readability/support analyzers to prove the change reduces player-facing failure blast radius rather than merely adding decorative geometry;
+- keep traversal support narrow and local to the new bypass rather than expanding whole biome shelves;
+- do not redesign Main World composition, portals, runtime authority, or unrelated environment content;
+- merge only when the applicable automated gate and focused resilience evidence are green.
 
-### 2. Keep Main World resilience work evidence-driven
+The candidate's static authored-geometry path does not require a new runtime startup/lifecycle owner; the LKB-0682 dependency on the generic lifecycle-startup dimension is therefore satisfied by the existing canonical Main World asset/composition pipeline rather than by inventing a new service.
 
-Rooted road-failure analysis is now a canonical measurable surface. The next geometric resilience change must prove reduced player-facing failure impact through the existing topology/readability/support checks.
-
-Open PR #620 was based before the current bounded-wait merges and was previously observed non-mergeable against then-current `main`. Treat it as a **rebase + revalidation candidate**, not current accepted work. Do not merge or duplicate it without refreshing onto current main and rerunning the required evidence.
-
-### 3. Keep repository/documentation truth coherent
+### 2. Keep repository/documentation truth coherent
 
 The 300-area development taxonomy, Development Atlas, coverage report, documentation router, and coverage validator are the canonical cross-system gap/audit framework. When a coherent implementation materially changes coverage, update the machine registry and regenerate the views; do not create another independent status document.
 
@@ -59,13 +58,13 @@ The 300-area development taxonomy, Development Atlas, coverage report, documenta
 
 Open PR count is **not** the execution queue.
 
-### Current maintenance candidate
+### Current Main World resilience source candidate
 
-- **#633** — bounded `PersonalFlashlight` network waits. Fits the current concrete reliability lane; merge only after its required validation is green.
+- **#620** — northwest route redundancy. Its two authored-geometry changes remain unique relative to current `main`, but the PR is stale/non-mergeable. LKB-0682 owns the current-main reconciliation; do not duplicate it in another parallel branch.
 
-### Rebase/revalidation candidate
+### Closed maintenance lane
 
-- **#620** — Main World northwest route redundancy. Potentially valuable and metrics-backed, but not current until rebased against latest main and revalidated.
+- **#633 / #639 / #647** — bounded-network-wait hardening. The concrete audited wait family is repaired and validated; this lane is closed unless a new reproducible member is found.
 
 ### Older feature candidates requiring deliberate reactivation
 
@@ -79,11 +78,11 @@ These PRs preserve potentially useful work, but age/open state does not grant au
 
 ## NEXT
 
-After the bounded-wait maintenance audit has no remaining concrete defects and current main is green:
+After LKB-0682 has current-main-compatible implementation proof and `main` is green:
 
-1. resolve the Main World resilience candidate from current main if its measured ROI remains positive;
-2. audit older open feature candidates for still-valid unique work versus superseded/overlapping work;
-3. explicitly activate the next broad player-facing patch/capability here before broad expansion.
+1. audit older open feature candidates for still-valid unique work versus superseded/overlapping work;
+2. explicitly activate the next broad player-facing patch/capability here before broad expansion;
+3. keep Patch 0.8 as an available planned queue only if/when it is deliberately selected.
 
 Patch 0.8 remains an available planned queue via `PATCH-0.8-ACCEPTANCE.md` + `PATCH-0.8-100-TASK-HARDENING-BACKLOG.md`, but **it is not automatically selected merely because Patch 0.7 closed**. Patch 0.9 and RC 1.0 remain later planned queues unless explicitly activated.
 
