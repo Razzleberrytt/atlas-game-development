@@ -167,7 +167,9 @@ local function createCrosshair()
 	corner.CornerRadius = UDim.new(1, 0)
 	corner.Parent = dot
 
-	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+	local playerGui =
+		assert(localPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS), "PlayerGui unavailable after bounded wait")
+	gui.Parent = playerGui
 	state.crosshairGui = gui
 end
 
