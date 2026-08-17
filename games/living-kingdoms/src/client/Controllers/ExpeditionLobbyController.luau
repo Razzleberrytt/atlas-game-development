@@ -99,7 +99,9 @@ local function createGui()
 	screen.Name = "LK_ExpeditionLobby"
 	screen.ResetOnSpawn = false
 	screen.DisplayOrder = 18
-	screen.Parent = player:WaitForChild("PlayerGui")
+	local playerGui = player:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
+	screen.Parent = playerGui
 	gui = screen
 
 	local viewportProbe = Instance.new("Frame")
