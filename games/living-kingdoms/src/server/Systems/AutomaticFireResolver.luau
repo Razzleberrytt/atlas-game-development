@@ -1,12 +1,14 @@
 --!strict
 
 --[[
-	Resolves at most one automatic-fire attempt from authoritative caller state.
-	The caller owns the monotonic server time source and must commit the returned
-	weapon state before resolving another attempt. This module does not discover
-	or validate candidates, retain state, resolve hits, apply damage, or present
-	combat. Server-owned run modifiers may shorten cadence and deterministically
-	conserve a round within strict floors and ceilings; clients never provide them.
+	Resolves one server-authoritative firearm attempt from caller-owned state.
+	Cadence, ammunition and firing-mode state are committed only through the
+	returned weapon state. Automatic, semi-automatic and bounded burst behavior
+	all share this resolver; no weapon owns a copied firing script.
+
+	The caller intentionally supplies only a validated selected target, never
+	client-authored damage, cadence, ammunition or hit results. A nil selected
+	target is also the resolver's release/reset signal for semi/burst latches.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -24,7 +26,11 @@ local function resolveWeaponDefinition(weaponId: unknown)
 end
 
 local MINIMUM_CADENCE_SECONDS = 0.05
+local CADENCE_BOUNDARY_EPSILON_SECONDS = 1e-9
 local MAXIMUM_AMMO_CONSERVATION_CHANCE = 0.5
+local FALLBACK_AUTOMATIC_MODE_ID = "Automatic"
+local SEMI_AUTOMATIC_MODE_ID = "SemiAutomatic"
+local BURST_MODE_ID = "Burst"
 
 type AmmunitionState = CombatContracts.AmmunitionState
 type AutomaticFireDecision = CombatContracts.AutomaticFireDecision
@@ -36,6 +42,13 @@ type ReloadState = CombatContracts.ReloadState
 type SelectedTargetState = CombatContracts.SelectedTargetState
 type WeaponCadenceState = CombatContracts.WeaponCadenceState
 type WeaponReadinessState = CombatContracts.WeaponReadinessState
+
+type FireModeState = {
+	weaponId: string,
+	firingModeId: string,
+	triggerLatched: boolean,
+	burstShotsRemaining: number,
+}
 
 export type OperativeAutomaticFireState = {
 	entityId: CombatEntityId,
@@ -49,7 +62,8 @@ type AutomaticFireResolver = {
 		weaponState: WeaponReadinessState,
 		serverTimestamp: number,
 		cadenceSecondsOverride: number?,
-		relicCadenceMultiplier: number?
+		relicCadenceMultiplier: number?,
+		classCadenceMultiplier: number?
 	) -> AutomaticFireResolution,
 }
 
@@ -77,7 +91,6 @@ local function copyReloadState(reloadState: ReloadState?): ReloadState?
 	if reloadState == nil then
 		return nil
 	end
-
 	return {
 		weaponId = reloadState.weaponId,
 		startedAtServerTimestamp = reloadState.startedAtServerTimestamp,
@@ -85,14 +98,56 @@ local function copyReloadState(reloadState: ReloadState?): ReloadState?
 	}
 end
 
-local function copyWeaponState(weaponState: WeaponReadinessState): WeaponReadinessState
+local function readFireModeState(weaponState: WeaponReadinessState, firingModeId: string): FireModeState
+	local raw = (weaponState :: any).fireModeState
+	if
+		type(raw) == "table"
+		and raw.weaponId == weaponState.weaponId
+		and raw.firingModeId == firingModeId
+		and type(raw.triggerLatched) == "boolean"
+		and type(raw.burstShotsRemaining) == "number"
+		and raw.burstShotsRemaining >= 0
+		and raw.burstShotsRemaining % 1 == 0
+	then
+		return {
+			weaponId = weaponState.weaponId,
+			firingModeId = firingModeId,
+			triggerLatched = raw.triggerLatched,
+			burstShotsRemaining = raw.burstShotsRemaining,
+		}
+	end
 	return {
+		weaponId = weaponState.weaponId,
+		firingModeId = firingModeId,
+		triggerLatched = false,
+		burstShotsRemaining = 0,
+	}
+end
+
+local function copyWeaponState(weaponState: WeaponReadinessState): WeaponReadinessState
+	local result: any = {
 		weaponId = weaponState.weaponId,
 		readinessStateId = weaponState.readinessStateId,
 		ammunition = copyAmmunition(weaponState.ammunition),
 		cadence = copyCadence(weaponState.cadence),
 		reloadState = copyReloadState(weaponState.reloadState),
 	}
+	local raw = (weaponState :: any).fireModeState
+	if type(raw) == "table" then
+		result.fireModeState = {
+			weaponId = raw.weaponId,
+			firingModeId = raw.firingModeId,
+			triggerLatched = raw.triggerLatched,
+			burstShotsRemaining = raw.burstShotsRemaining,
+		}
+	end
+	return result :: WeaponReadinessState
+end
+
+local function setFireModeState(weaponState: WeaponReadinessState, fireModeState: FireModeState): WeaponReadinessState
+	local result = copyWeaponState(weaponState);
+	(result :: any).fireModeState = fireModeState
+	return result
 end
 
 local function createDecision(
@@ -113,21 +168,20 @@ local function createDecision(
 	}
 end
 
-local function reject(
+local function rejection(
 	operativeState: OperativeAutomaticFireState,
-	weaponState: WeaponReadinessState,
+	weaponStateAfter: WeaponReadinessState,
 	targetEntityId: CombatEntityId?,
 	serverTimestamp: number,
 	reasonId: AutomaticFireRejectionReasonId
 ): AutomaticFireResolution
-	local weaponStateAfter = copyWeaponState(weaponState)
 	return {
-		decision = createDecision(operativeState, weaponState, targetEntityId, serverTimestamp, false, reasonId),
+		decision = createDecision(operativeState, weaponStateAfter, targetEntityId, serverTimestamp, false, reasonId),
 		fireResult = {
 			statusId = CombatContracts.AuthoritativeFireStatusIds.Rejected,
 			shotId = nil,
 			operativeEntityId = operativeState.entityId,
-			weaponId = weaponState.weaponId,
+			weaponId = weaponStateAfter.weaponId,
 			targetEntityId = targetEntityId,
 			firedAtServerTimestamp = nil,
 			ammunitionAfter = copyAmmunition(weaponStateAfter.ammunition),
@@ -137,6 +191,16 @@ local function reject(
 		},
 		weaponStateAfter = weaponStateAfter,
 	}
+end
+
+local function reject(
+	operativeState: OperativeAutomaticFireState,
+	weaponState: WeaponReadinessState,
+	targetEntityId: CombatEntityId?,
+	serverTimestamp: number,
+	reasonId: AutomaticFireRejectionReasonId
+): AutomaticFireResolution
+	return rejection(operativeState, copyWeaponState(weaponState), targetEntityId, serverTimestamp, reasonId)
 end
 
 local function deterministicShotId(
@@ -168,10 +232,6 @@ local function readProgressionNumber(attributeName: string, fallback: number): n
 	return if type(value) == "number" and value == value then value else fallback
 end
 
--- Hard safety floor for the caller-supplied Suppression Engine (RPG-0109)
--- multiplier, matching the shared ModifierCeilings.minimumCadenceMultiplier. The
--- squad Hair Trigger multiplier and this per-operative one compose, and the
--- product still cannot pass MINIMUM_CADENCE_SECONDS below.
 local RELIC_CADENCE_MULTIPLIER_FLOOR = 0.55
 local CLASS_CADENCE_MULTIPLIER_FLOOR = 0.75
 
@@ -234,6 +294,17 @@ local function resolveAmmoConservationChance(): number?
 	return chance
 end
 
+local function resolveFiringMode(definition: any): string?
+	local modeId = definition.FiringModeId
+	if modeId == nil then
+		return FALLBACK_AUTOMATIC_MODE_ID
+	end
+	if modeId == FALLBACK_AUTOMATIC_MODE_ID or modeId == SEMI_AUTOMATIC_MODE_ID or modeId == BURST_MODE_ID then
+		return modeId
+	end
+	return nil
+end
+
 function AutomaticFireResolver.resolve(
 	operativeState: OperativeAutomaticFireState,
 	selectedTarget: SelectedTargetState?,
@@ -244,7 +315,6 @@ function AutomaticFireResolver.resolve(
 	classCadenceMultiplier: number?
 ): AutomaticFireResolution
 	local targetEntityId = if selectedTarget == nil then nil else selectedTarget.targetEntityId
-
 	if operativeState.combatStateId ~= CombatContracts.OperativeCombatStateIds.Ready then
 		return reject(
 			operativeState,
@@ -255,14 +325,13 @@ function AutomaticFireResolver.resolve(
 		)
 	end
 
-	if selectedTarget == nil then
-		return reject(operativeState, weaponState, nil, serverTimestamp, rejectionReasons.NoSelectedTarget)
-	end
-
 	if
-		not selectedTarget.isValid
-		or selectedTarget.operativeEntityId ~= operativeState.entityId
-		or targetEntityId == nil
+		selectedTarget ~= nil
+		and (
+			not selectedTarget.isValid
+			or selectedTarget.operativeEntityId ~= operativeState.entityId
+			or targetEntityId == nil
+		)
 	then
 		return reject(
 			operativeState,
@@ -273,31 +342,109 @@ function AutomaticFireResolver.resolve(
 		)
 	end
 
+	local configuredWeapon = resolveWeaponDefinition(weaponState.weaponId)
+	if configuredWeapon == nil then
+		return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.WeaponNotReady)
+	end
+	local firingModeId = resolveFiringMode(configuredWeapon)
+	if firingModeId == nil then
+		return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.WeaponNotReady)
+	end
+	local fireModeState = readFireModeState(weaponState, firingModeId)
+
+	if selectedTarget == nil then
+		if firingModeId ~= FALLBACK_AUTOMATIC_MODE_ID then
+			fireModeState.triggerLatched = false
+			fireModeState.burstShotsRemaining = 0
+			return rejection(
+				operativeState,
+				setFireModeState(weaponState, fireModeState),
+				nil,
+				serverTimestamp,
+				rejectionReasons.NoSelectedTarget
+			)
+		end
+		return reject(operativeState, weaponState, nil, serverTimestamp, rejectionReasons.NoSelectedTarget)
+	end
+
+	if firingModeId == SEMI_AUTOMATIC_MODE_ID and fireModeState.triggerLatched then
+		return rejection(
+			operativeState,
+			setFireModeState(weaponState, fireModeState),
+			targetEntityId,
+			serverTimestamp,
+			rejectionReasons.CadenceBlocked
+		)
+	end
+	if firingModeId == BURST_MODE_ID then
+		if fireModeState.triggerLatched and fireModeState.burstShotsRemaining <= 0 then
+			return rejection(
+				operativeState,
+				setFireModeState(weaponState, fireModeState),
+				targetEntityId,
+				serverTimestamp,
+				rejectionReasons.CadenceBlocked
+			)
+		end
+		if not fireModeState.triggerLatched then
+			local burstCount = configuredWeapon.BurstCount
+			if type(burstCount) ~= "number" or burstCount < 2 or burstCount > 5 or burstCount % 1 ~= 0 then
+				return reject(
+					operativeState,
+					weaponState,
+					targetEntityId,
+					serverTimestamp,
+					rejectionReasons.WeaponNotReady
+				)
+			end
+			fireModeState.burstShotsRemaining = burstCount
+		end
+	end
+
+	local effectiveCadenceOverride = cadenceSecondsOverride
+	if firingModeId == BURST_MODE_ID and fireModeState.burstShotsRemaining > 1 then
+		local burstInterval = configuredWeapon.BurstIntervalSeconds
+		if
+			type(burstInterval) ~= "number"
+			or burstInterval < MINIMUM_CADENCE_SECONDS
+			or burstInterval > configuredWeapon.CadenceSeconds
+		then
+			return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.WeaponNotReady)
+		end
+		effectiveCadenceOverride = if effectiveCadenceOverride == nil
+			then burstInterval
+			else math.min(effectiveCadenceOverride, burstInterval)
+	end
 	local cadenceSeconds = resolveCadenceSeconds(
 		weaponState.weaponId,
-		cadenceSecondsOverride,
+		effectiveCadenceOverride,
 		relicCadenceMultiplier,
 		classCadenceMultiplier
 	)
 	local ammoConservationChance = resolveAmmoConservationChance()
-	local configuredWeapon = resolveWeaponDefinition(weaponState.weaponId)
 	if
 		cadenceSeconds == nil
 		or ammoConservationChance == nil
-		or configuredWeapon == nil
 		or weaponState.ammunition.weaponId ~= weaponState.weaponId
 		or weaponState.cadence.weaponId ~= weaponState.weaponId
 		or weaponState.readinessStateId ~= CombatContracts.WeaponReadinessStateIds.Ready
 	then
 		return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.WeaponNotReady)
 	end
-
 	if weaponState.ammunition.loadedRounds <= 0 then
 		return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.NoAmmunition)
 	end
-
-	if serverTimestamp < weaponState.cadence.nextAllowedFireServerTimestamp then
-		return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.CadenceBlocked)
+	if serverTimestamp + CADENCE_BOUNDARY_EPSILON_SECONDS < weaponState.cadence.nextAllowedFireServerTimestamp then
+		if firingModeId == FALLBACK_AUTOMATIC_MODE_ID then
+			return reject(operativeState, weaponState, targetEntityId, serverTimestamp, rejectionReasons.CadenceBlocked)
+		end
+		return rejection(
+			operativeState,
+			setFireModeState(weaponState, fireModeState),
+			targetEntityId,
+			serverTimestamp,
+			rejectionReasons.CadenceBlocked
+		)
 	end
 
 	local shotId = deterministicShotId(operativeState.entityId, weaponState.weaponId, serverTimestamp)
@@ -308,13 +455,23 @@ function AutomaticFireResolver.resolve(
 	local cadenceAfter = copyCadence(weaponState.cadence)
 	cadenceAfter.lastFireServerTimestamp = serverTimestamp
 	cadenceAfter.nextAllowedFireServerTimestamp = serverTimestamp + cadenceSeconds
-	local weaponStateAfter: WeaponReadinessState = {
+	if firingModeId == SEMI_AUTOMATIC_MODE_ID then
+		fireModeState.triggerLatched = true
+	elseif firingModeId == BURST_MODE_ID then
+		fireModeState.triggerLatched = true
+		fireModeState.burstShotsRemaining = math.max(0, fireModeState.burstShotsRemaining - 1)
+	end
+
+	local weaponStateAfter: any = {
 		weaponId = weaponState.weaponId,
 		readinessStateId = weaponState.readinessStateId,
 		ammunition = ammunitionAfter,
 		cadence = cadenceAfter,
 		reloadState = copyReloadState(weaponState.reloadState),
 	}
+	if firingModeId ~= FALLBACK_AUTOMATIC_MODE_ID then
+		weaponStateAfter.fireModeState = fireModeState
+	end
 
 	return {
 		decision = createDecision(operativeState, weaponState, targetEntityId, serverTimestamp, true, nil),
@@ -330,7 +487,7 @@ function AutomaticFireResolver.resolve(
 			hitEntityId = nil,
 			rejectionReasonId = nil,
 		},
-		weaponStateAfter = weaponStateAfter,
+		weaponStateAfter = weaponStateAfter :: WeaponReadinessState,
 	}
 end
 

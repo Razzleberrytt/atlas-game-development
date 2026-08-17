@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "product_layer": "MVP 0.1",
+  "updated": "2026-08-16",
+  "status_vocabulary": ["SOURCE_PRESENT", "PARTIAL", "UNMEASURED", "BLOCKED", "NOT_REQUIRED"],
+  "evidence_vocabulary": ["source", "automated", "studio", "pr-candidate", "none"],
+  "nodes": [
+    {
+      "id": "MVP01-01",
+      "name": "safe-arrival-and-preparation",
+      "status": "SOURCE_PRESENT",
+      "evidence": "source",
+      "evidence_refs": ["commit:d33e8914159a0845c2c973a132f0e5035355fa8e"],
+      "exit_condition": "Player arrives without hostile pressure and can deliberately choose to launch."
+    },
+    {
+      "id": "MVP01-02",
+      "name": "deliberate-expedition-launch",
+      "status": "SOURCE_PRESENT",
+      "evidence": "source",
+      "evidence_refs": ["commit:d33e8914159a0845c2c973a132f0e5035355fa8e"],
+      "exit_condition": "Accepted server-owned launch transitions the player from preparation into the operation."
+    },
+    {
+      "id": "MVP01-03",
+      "name": "operation-lifecycle",
+      "status": "SOURCE_PRESENT",
+      "evidence": "automated",
+      "evidence_refs": ["commit:406fd39f5ad059222cd659c96a75c644f13d5a58", "commit:be9346346532740d6d39f6d92cf93a82cc9ddbd9"],
+      "exit_condition": "A run can start, progress, terminate, clean up, and create a fresh replay identity."
+    },
+    {
+      "id": "MVP01-04",
+      "name": "movement-exploration-route",
+      "status": "UNMEASURED",
+      "evidence": "none",
+      "evidence_refs": ["commit:406fd39f5ad059222cd659c96a75c644f13d5a58"],
+      "exit_condition": "A player can traverse the operation route without developer guidance, collision traps, or prolonged confusion."
+    },
+    {
+      "id": "MVP01-05",
+      "name": "combat-loop",
+      "status": "UNMEASURED",
+      "evidence": "source",
+      "evidence_refs": ["games/living-kingdoms/src/server/Systems/AutomaticFireResolver.luau", "games/living-kingdoms/src/server/Systems/DamageResolver.luau"],
+      "exit_condition": "Combat is responsive, readable, understandable, and satisfying enough to sustain the run."
+    },
+    {
+      "id": "MVP01-06",
+      "name": "authored-objectives",
+      "status": "SOURCE_PRESENT",
+      "evidence": "automated",
+      "evidence_refs": ["commit:c75818e81d49adcbf4fb40cea5fc0f69bb1b46b5"],
+      "exit_condition": "Required objectives progress authoritatively and guide the player through the operation."
+    },
+    {
+      "id": "MVP01-07",
+      "name": "enemy-pressure-and-elite",
+      "status": "SOURCE_PRESENT",
+      "evidence": "source",
+      "evidence_refs": ["games/living-kingdoms/src/server/Systems/EnemyDirectorService.luau", "games/living-kingdoms/src/server/Systems/EliteAffixResolver.luau"],
+      "exit_condition": "Enemy pressure escalates coherently and at least one elite question is readable and beatable."
+    },
+    {
+      "id": "MVP01-08",
+      "name": "boss-climax",
+      "status": "SOURCE_PRESENT",
+      "evidence": "automated",
+      "evidence_refs": ["games/living-kingdoms/src/server/Systems/BossPhaseResolver.luau", "commit:5bab6597910e6c8ccd348dbf008734a2b677b120"],
+      "exit_condition": "Boss completion produces a readable terminal transition and reward opportunity."
+    },
+    {
+      "id": "MVP01-09",
+      "name": "run-reward-choice",
+      "status": "SOURCE_PRESENT",
+      "evidence": "automated",
+      "evidence_refs": ["commit:5bab6597910e6c8ccd348dbf008734a2b677b120", "commit:83e6cff7e357c47d4151c37a9e750d6cd0beff72"],
+      "exit_condition": "The run offers at least one meaningful, server-authoritative reward decision."
+    },
+    {
+      "id": "MVP01-10",
+      "name": "durable-bank-equip-upgrade",
+      "status": "SOURCE_PRESENT",
+      "evidence": "automated",
+      "evidence_refs": ["pr:317", "games/living-kingdoms/src/server/Systems/DurableStartingLoadoutService.luau", "games/living-kingdoms/src/server/Systems/OperativeProgressionService.luau", "games/living-kingdoms/src/shared/Config/OperativeProgressionConfig.luau", "pr:495"],
+      "exit_condition": "A reward or progression result survives the run boundary and changes a subsequent run through canonical durable owners."
+    },
+    {
+      "id": "MVP01-11",
+      "name": "result-and-debrief",
+      "status": "SOURCE_PRESENT",
+      "evidence": "automated",
+      "evidence_refs": ["commit:e94188fe17824b8f597a94fb9d75b52acea8adea", "commit:4d3fe8e6544fdfd259eb1137a7a84016e197e87f"],
+      "exit_condition": "Success/failure is committed once and presented clearly to the player."
+    },
+    {
+      "id": "MVP01-12",
+      "name": "return-and-clean-replay",
+      "status": "SOURCE_PRESENT",
+      "evidence": "automated",
+      "evidence_refs": ["commit:947ac9b0184997509e694ccc88c2cdd5ee249d9e", "commit:4aa3086ecf2781cce57cfd34501febba1a06495e", "commit:0c038c68c99aba632be2810d6f64c1606a3c7816"],
+      "exit_condition": "The player can leave the completed run, return safely, and start a fresh run with no stale run state."
+    },
+    {
+      "id": "MVP01-13",
+      "name": "20-30-minute-player-experience",
+      "status": "UNMEASURED",
+      "evidence": "none",
+      "evidence_refs": [],
+      "exit_condition": "A normal player can complete a coherent 20-30 minute session and wants another run."
+    }
+  ]
+}

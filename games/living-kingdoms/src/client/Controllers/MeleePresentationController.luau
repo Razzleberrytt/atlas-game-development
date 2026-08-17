@@ -58,7 +58,12 @@ local localHitConfirmedAtClock: number? = nil
 local localImpactConfirmedAtClock: number? = nil
 local localHitWasKill = false
 local meleeNetwork = ReplicatedStorage:WaitForChild("MeleeNetwork", NETWORK_WAIT_SECONDS)
-local presentationRemote = meleeNetwork:WaitForChild("Presentation") :: RemoteEvent
+assert(meleeNetwork ~= nil, "MeleeNetwork did not become available before the client bootstrap timeout")
+local presentationRemote = meleeNetwork:WaitForChild("Presentation", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	presentationRemote ~= nil,
+	"MeleeNetwork.Presentation did not become available before the client bootstrap timeout"
+)
 
 local function shouldPresentMelee(player: Player): boolean
 	return player:GetAttribute(AttributeName) == ModeIds.Melee

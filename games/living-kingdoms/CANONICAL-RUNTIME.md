@@ -1,142 +1,42 @@
 # Living Kingdoms — Canonical Runtime
 
-This file is the short answer to **what is live and authoritative right now?**
+**Compatibility pointer — not an independent status authority document.**
 
-## Canonical source
+This path is retained for old links. Current runtime rules and changing status are intentionally owned elsewhere so they cannot drift across multiple root documents.
 
-`games/living-kingdoms/src/` is the only gameplay-authoritative source tree.
+Use:
 
-The modern runtime owns combat, enemies, operative life, missions, expedition runtime, inventory/persistence boundaries, loot/rewards, classes, weapons, progression, presentation state, the generated operation world, and the source-managed preparation shell.
+- [`AGENTS.md`](AGENTS.md) for canonical source layout, client/server/shared authority boundaries, import rules, risk tiers, and completion discipline.
+- [`../../docs/roadmap/EXECUTION-DASHBOARD.md`](../../docs/roadmap/EXECUTION-DASHBOARD.md) for current implementation/status truth.
+- [`../../docs/bible/00-current-product-authority.md`](../../docs/bible/00-current-product-authority.md) for current Atlas product identity and conflict resolution.
+- [`../../docs/README.md`](../../docs/README.md) when documentation authority itself is unclear.
+- [`../../docs/migration/`](../../docs/migration/) plus [`imports/`](imports/) for Studio preservation/reconstruction evidence.
+- applicable [`../../docs/specifications/`](../../docs/specifications/) documents for focused Main World, expedition, runtime, or migration contracts.
 
-## Imported Studio content
+## Durable runtime invariants
 
-`games/living-kingdoms/imports/studio-2026-08-07/` is preservation/reference material.
+`games/living-kingdoms/src/` is the gameplay-authoritative Luau source tree.
 
-It exists so the older authored place can be reconciled without losing content. **Nothing under `imports/` is allowed to become a second gameplay authority.** Do not boot the imported RPG bootstrap or its legacy combat, enemy, inventory, loot, player-data, monetization, quest, dungeon, or gathering managers beside the modern runtime.
+Canonical Rojo mappings are place-specific:
 
-## Current preservation and reconstruction truth
+- `default.project.json` — operation/expedition runtime mapping;
+- `main-world.project.json` — dedicated Main World mapping.
 
-The repaired direct re-extraction verifies:
+Neither generated place output nor imported Studio content is a second source tree.
 
-- all **28 / 28** Studio-only source files
-- all **1,775 / 1,775** Workspace identity/hierarchy rows
+The recovered authored overworld and the modern operation/expedition runtime remain separate lifecycle/coordinate spaces. Imported legacy services must not be booted beside current owners.
 
-BA-005 property recovery now also verifies:
+The accepted macro direction remains:
 
-- **1,699** base geometry/light/world-property rows
-- **1,742** rows after adding SurfaceGui, TextLabel and ParticleEmitter presentation decoding
-- zero failures among the current allowlisted property types
+```text
+authored overworld / Main World
+→ canonical expedition launch
+→ modern operation / expedition runtime
+→ return
+```
 
-Current evidence:
+When systems overlap, retain the canonical modern owner and reconcile missing content through it rather than creating or reviving a second authority.
 
-- `../../docs/migration/REEXTRACTED-WORLD-EVIDENCE.md`
-- `../../docs/migration/current/reextracted-world-evidence.json`
-- `../../docs/migration/current/reextracted-property-evidence.json`
-- `../../docs/migration/current/reextracted-presentation-evidence.json`
+Broad cross-system gaps may be classified through `LK-001`–`LK-300`, but the development taxonomy never establishes runtime ownership; source/registries/contracts do.
 
-Older migration files that cite only 122 recovered Workspace rows describe the damaged first archive. Do not use those missing-row conclusions as current reconstruction evidence.
-
-## Two coordinate spaces
-
-### Authored Overworld
-
-The recovered Studio world is a separate future overworld coordinate space. Preserve its authored coordinates at 1:1 scale.
-
-Source roots include:
-
-- legacy HubTown
-- Resources
-- WorldPath
-- WorldStructures
-- original overworld spawn/environment presentation
-
-Do not scale/translate these roots into the current combat forest and do not parent them under `WorldFoundationService` merely to make them fit.
-
-The placement contract is:
-
-`src/shared/Config/RecoveredWorldPlacementConfig.luau`
-
-It remains held and runtime-disabled.
-
-### Modern Operation Space
-
-The current `LivingKingdomsWorld` forest remains the modern operation/expedition space with its existing ±640-stud design and server-authoritative gameplay systems.
-
-The intended end-state transition is:
-
-**authored overworld / HubTown → canonical expedition launch → modern operation runtime**
-
-The current Ranger Station Forward Operations Hub is the temporary preparation bridge until the dedicated overworld lifecycle/place boundary exists.
-
-## World-content bridge
-
-Stable IDs live in:
-
-- `src/shared/World/WorldContentContracts.luau`
-- `src/shared/Config/WorldContentConfig.luau`
-
-Gameplay should target stable IDs rather than legacy Studio instance names.
-
-Current live status:
-
-- `world.operation.forest` — **active** modern operation world
-- current operation landmarks — **active**
-- `zone.hub.forward_operations` — **active** temporary preparation shell
-- `station.hub.class` — **active**, delegates to current class selection
-- `station.hub.weapon` — **active**, delegates to current weapon loadout
-- `portal.expedition.primary` — **active presentation entry point**, delegates launch authority to current expedition lobby/runtime
-- `world.hub.primary` / legacy `HubTown` — **reconstruction source; legacy runtime authority inactive**
-
-## Held authored-overworld reconstruction contracts
-
-### WorldPath
-
-`src/shared/Config/RecoveredWorldPathConfig.luau`
-
-The 189 identical Studio path slabs are represented by one deterministic route contract rather than promoted as 189 canonical runtime instances.
-
-- source hold enabled
-- runtime disabled
-- 1:1 authored coordinate evidence retained
-
-### DungeonPortal
-
-`src/shared/Config/RecoveredDungeonPortalConfig.luau`
-
-The first recovered HubTown group now accounts for all 10 identities:
-
-- 1 generated container
-- 9 / 9 non-container nodes with property-backed reconstruction data
-- recovered Parts, PointLights, Attachment, SurfaceGui, TextLabel and ParticleEmitter
-- one known visual omission: TextLabel `FontFace`
-
-The old sign text and particle behavior are evidence/presentation only. No prompt is invented and no old dungeon authority returns.
-
-Future portal gameplay still delegates to:
-
-- `portal.expedition.primary`
-- `ExpeditionLobbyService`
-
-## Forward Operations Hub
-
-The live hub shell does **not** claim to be the reconstructed legacy HubTown.
-
-It removes preparation-screen clutter by making existing specialist, armory, and expedition lobby surfaces available through physical Ranger Station stations. `C` and `I` remain the character and inventory surfaces. The premature persistent `K` skill-tree entry point is paused for MVP 0.1; level-up choices remain server-authored and are selected contextually with `1` / `2` / `3`, gamepad GUI focus, touch, or a temporarily released desktop cursor.
-
-The environment currently holds `NightCorruptionConfig.RuntimeEnabled = false` at the warm morning baseline. `NightCorruptionService` remains the sole cycle/pressure owner and continues publishing tier-zero state. The flag owner is the MVP 0.1 environment baseline; removal requires daytime-biome visual and combat-readability acceptance in Studio.
-
-## Merge rule
-
-When old and new systems overlap, keep the modern authoritative owner and port only missing content, rules, presentation, or data into it.
-
-Do not solve overlap by running both systems.
-
-## Next integration order
-
-1. Use the BA-011 dedicated Main World place/project, representation, streaming-group and arrival/return strategy in `../../docs/specifications/main-world-source-representation-strategy.md`.
-2. Use the BA-012 stable Hub interaction anchors and owner/dependency boundaries in `../../docs/specifications/canonical-hub-interaction-registry.md`; do not revive legacy QuestService or HubTownService authority.
-3. Define BA-013 environment kits, profile ownership, quality tiers and measured budgets.
-4. Continue coherent BA-005 reconstruction groups such as Central Fountain, vendor presentation, Resources and high-value WorldStructures behind the hold.
-5. Create the dedicated Main World Rojo project only after its property-validated model/bootstrap creation gate is satisfied.
-6. Add gathering/crafting and vendor/economy gameplay only through canonical inventory/persistence/currency owners.
-7. Collect Studio/runtime/multiplayer evidence before describing the combined game as fully fused.
+Detailed reconstruction counts, current world-content status, completed batches, open PR lists, and next-integration queues belong to their evidence/dashboard owners and are deliberately not copied into this file.

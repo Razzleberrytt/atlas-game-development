@@ -6,6 +6,7 @@ on:
       - "AGENTS.md"
       - "README.md"
       - ".github/**"
+      - "backlog/living-kingdoms/**"
       - "games/living-kingdoms/**"
       - "docs/**"
       - "scripts/**"
@@ -19,6 +20,7 @@ on:
       - "AGENTS.md"
       - "README.md"
       - ".github/**"
+      - "backlog/living-kingdoms/**"
       - "games/living-kingdoms/**"
       - "docs/**"
       - "scripts/**"
@@ -39,6 +41,10 @@ on:
 
 permissions:
   contents: read
+
+concurrency:
+  group: atlas-validation-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   classify:

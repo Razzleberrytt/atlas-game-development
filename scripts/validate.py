@@ -2,7 +2,7 @@
 """Unified Atlas repository validation entry point.
 
 Profiles:
-  docs  Documentation/roadmap authority + efficiency-construct checks only.
+  docs  Documentation/roadmap authority + efficiency/coverage construct checks only.
   fast  R1 iteration: docs + layout + formatting/lint + all Lune fixtures + Rojo builds.
   full  R2/R3/CI: fast plus import/migration/evidence decoder and reconciliation checks.
 
@@ -39,8 +39,24 @@ def run(label: str, command: list[str]) -> None:
         raise RuntimeError(
             f"required executable {executable!r} was not found; install pinned tools from rokit.toml"
         )
-    result = subprocess.run(command, cwd=ROOT, check=False)
+    result = subprocess.run(
+        command,
+        cwd=ROOT,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    output = result.stdout or ""
+    if output:
+        print(output, end="" if output.endswith("\n") else "\n", flush=True)
     if result.returncode != 0:
+        tail = output[-3000:].strip()
+        if tail:
+            escaped_tail = tail.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+            print(f"::error title=Atlas command output::{escaped_tail}", file=sys.stderr)
         raise RuntimeError(f"{label} failed with exit code {result.returncode}")
 
 
@@ -50,10 +66,32 @@ def python_script(label: str, script: str, *args: str) -> None:
 
 def validate_docs() -> None:
     python_script("roadmap/authority integrity", "scripts/validate_roadmap_authority.py")
+    python_script(
+        "Living Kingdoms backlog coordination",
+        "backlog/living-kingdoms/materialize_backlog.py",
+        "--check",
+    )
+    python_script(
+        "Living Kingdoms development coverage",
+        "scripts/development_coverage.py",
+        "validate",
+        "--check-generated",
+    )
     python_script("engineering efficiency construct", "scripts/validate_efficiency_construct.py")
     python_script("Patch 0.7 acceptance matrix", "scripts/validate_patch_07_acceptance.py")
     python_script("modular asset systems", "scripts/validate_modular_asset_systems.py")
     python_script("Main World CI artifact contract", "scripts/validate_main_world_ci_artifact.py")
+    python_script("Main World traversal topology", "scripts/validate_main_world_traversal_topology.py")
+    python_script("Main World route readability", "scripts/validate_main_world_route_readability.py")
+    python_script("Main World static scene stabilization", "scripts/validate_main_world_static_scene.py")
+    python_script("Main World graph metrics self-test", "scripts/main_world_metrics.py", "--self-test")
+    python_script("Main World canonical metrics", "scripts/main_world_metrics.py")
+    python_script(
+        "Main World road failure impact self-test",
+        "scripts/analyze_main_world_road_failure_impact.py",
+        "--self-test",
+    )
+    python_script("Main World road failure impact", "scripts/analyze_main_world_road_failure_impact.py")
     python_script(
         "Main World artifact bundle verifier",
         "scripts/verify_main_world_artifact_bundle.py",
@@ -210,6 +248,7 @@ def main() -> int:
         if args.profile in {"fast", "full"}:
             validate_toolchain_and_game()
     except RuntimeError as exc:
+        print(f"::error title=Atlas validation::{exc}", file=sys.stderr)
         print(f"\n[validate] FAILED: {exc}", file=sys.stderr)
         return 1
 

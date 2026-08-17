@@ -14,8 +14,14 @@ local resolver = fs.readFile("games/living-kingdoms/src/shared/Classes/ClassPres
 local bootstrap = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 local combined = squad .. "\n" .. owner .. "\n" .. resolver
 
-assertThat(string.find(squad, 'WaitForChild("State")', 1, true) ~= nil, "reuse safe class state remote")
-assertThat(string.find(squad, 'WaitForChild("ReadState")', 1, true) ~= nil, "reuse safe initial snapshot")
+assertThat(
+	string.find(squad, 'WaitForChild("State", NETWORK_WAIT_SECONDS)', 1, true) ~= nil,
+	"reuse bounded safe class state remote"
+)
+assertThat(
+	string.find(squad, 'WaitForChild("ReadState", NETWORK_WAIT_SECONDS)', 1, true) ~= nil,
+	"reuse bounded safe initial snapshot"
+)
 assertThat(string.find(squad, "validateSafeClassSelectionSnapshot", 1, true) ~= nil, "validate every snapshot")
 assertThat(string.find(squad, "BillboardGui", 1, true) ~= nil, "teammate world cue required")
 assertThat(string.find(squad, "MaxDistance = 72", 1, true) ~= nil, "world cue range must be bounded")

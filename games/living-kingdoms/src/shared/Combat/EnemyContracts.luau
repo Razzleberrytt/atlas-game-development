@@ -1,22 +1,34 @@
 --!strict
 
 --[[
-	P5-0104 shared enemy vocabulary. Declarations only: stable IDs and data
-	shapes for the production enemy lifecycle. The server owns every enemy
-	fact — identity, spawning, position, behavior, health, attacks, and death.
-	Clients never mint, steer, damage, or reveal an enemy through these types;
-	enemy bodies replicate as ordinary server-owned Workspace instances.
+	Wave 2 shared enemy vocabulary. Stable IDs and server-owned data shapes for
+	enemy spawning, behavior, encounter attribution, and reward hooks.
+
+	ServerRuntimeMetadataByEntityId is intentionally a mutable nested table inside
+	the otherwise frozen vocabulary. Module state is VM-local: the server uses it
+	to bridge encounter-authored metadata into legacy Wave 1 resolvers, while each
+	client receives its own empty copy and therefore gains no authority or server
+	state disclosure.
 ]]
 
 local EnemyContracts = {}
 
-export type EnemyArchetypeId = "enemy.exclusion_walker" | "enemy.blight_spitter" | "boss.progenitor"
-
+export type EnemyArchetypeId =
+	"enemy.exclusion_walker"
+	| "enemy.razor_runner"
+	| "enemy.grief_brute"
+	| "enemy.blight_spitter"
+	| "boss.progenitor"
 export type EnemyBehaviorStateId = "Roaming" | "Pursuing" | "WindingUp" | "Attacking" | "StandDown" | "Dead"
-
 export type EnemyAttackWindupActionId = "None" | "Begin" | "Continue" | "Cancel" | "Commit"
-
 export type EnemySpawnSourceId = "AuthoredWave" | "RoamingPressure"
+export type EnemyMovementBehaviorId =
+	"DirectPursuit"
+	| "Skirmish"
+	| "HeavyPressure"
+	| "RangedApproach"
+	| "StationaryBoss"
+export type EnemyAttackBehaviorId = "Melee" | "CorrosiveBloom" | "BossSlam"
 
 export type EnemySpawnRejectionReasonId =
 	"InvalidDefinition"
@@ -24,14 +36,9 @@ export type EnemySpawnRejectionReasonId =
 	| "PopulationCapReached"
 	| "OutsidePlayableExtent"
 	| "TooCloseToOperative"
-
 export type EnemyBehaviorRejectionReasonId = "InvalidFacts" | "InvalidTimestamp"
 
-export type EnemyWorldPosition = {
-	x: number,
-	y: number,
-	z: number,
-}
+export type EnemyWorldPosition = { x: number, y: number, z: number }
 
 export type EnemySpawnRequest = {
 	entityId: string,
@@ -41,10 +48,12 @@ export type EnemySpawnRequest = {
 	position: EnemyWorldPosition,
 	isHordePulse: boolean?,
 	hordeRoleId: string?,
+	encounterId: string?,
+	compositionIdentity: string?,
+	eliteChance: number?,
+	requestedEliteAffixId: string?,
 }
 
--- Caller-supplied server-owned facts for one fair-spawn decision. Remote
--- payloads and client-authored values are never valid sources.
 export type EnemySpawnFacts = {
 	existingEnemyEntityIds: { [string]: boolean },
 	activeEnemyCount: number,
@@ -53,14 +62,8 @@ export type EnemySpawnFacts = {
 	alivePositions: { EnemyWorldPosition },
 }
 
-export type EnemySpawnResolution = {
-	isLegal: boolean,
-	rejectionReasonId: EnemySpawnRejectionReasonId?,
-}
+export type EnemySpawnResolution = { isLegal: boolean, rejectionReasonId: EnemySpawnRejectionReasonId? }
 
--- Server-owned facts about one alive-or-not operative used for behavior
--- decisions. `operativeEntityId` is the P3 life identity, which is also the
--- P2 combat entity identity.
 export type EnemyOperativeFact = {
 	operativeEntityId: string,
 	isAlive: boolean,
@@ -69,6 +72,7 @@ export type EnemyOperativeFact = {
 
 export type EnemyBehaviorFacts = {
 	entityId: string,
+	archetypeId: EnemyArchetypeId?,
 	behaviorStateId: EnemyBehaviorStateId,
 	position: EnemyWorldPosition,
 	targetOperativeEntityId: string?,
@@ -78,8 +82,6 @@ export type EnemyBehaviorFacts = {
 	attackCadenceMultiplier: number?,
 }
 
--- One authoritative melee swing derived entirely from server-owned facts.
--- Shape-compatible with the P3 AuthoritativeOperativeDamage commit boundary.
 export type AuthoritativeEnemyAttack = {
 	damageEventId: string,
 	sourceEntityId: string,
@@ -97,14 +99,38 @@ export type EnemyBehaviorDecision = {
 	rejectionReasonId: EnemyBehaviorRejectionReasonId?,
 }
 
--- The single registry of every enemy archetype ID. The fair-spawn resolver
--- validates against it, so a new director archetype (P9 special enemy, boss)
--- must be listed here. Ability vocabulary for a special archetype lives in its
--- own contracts module (e.g. SpecialEnemyContracts).
+export type ServerRuntimeEnemyMetadata = {
+	archetypeId: EnemyArchetypeId,
+	encounterId: string?,
+	compositionIdentity: string?,
+	eliteChance: number?,
+	requestedEliteAffixId: string?,
+	hordeRoleId: string?,
+	eliteEligible: boolean?,
+	lastDamagingOperativeEntityId: string?,
+	deathHandled: boolean?,
+}
+
 EnemyContracts.EnemyArchetypeIds = table.freeze({
 	ExclusionWalker = "enemy.exclusion_walker" :: EnemyArchetypeId,
+	RazorRunner = "enemy.razor_runner" :: EnemyArchetypeId,
+	GriefBrute = "enemy.grief_brute" :: EnemyArchetypeId,
 	BlightSpitter = "enemy.blight_spitter" :: EnemyArchetypeId,
 	Progenitor = "boss.progenitor" :: EnemyArchetypeId,
+})
+
+EnemyContracts.EnemyMovementBehaviorIds = table.freeze({
+	DirectPursuit = "DirectPursuit" :: EnemyMovementBehaviorId,
+	Skirmish = "Skirmish" :: EnemyMovementBehaviorId,
+	HeavyPressure = "HeavyPressure" :: EnemyMovementBehaviorId,
+	RangedApproach = "RangedApproach" :: EnemyMovementBehaviorId,
+	StationaryBoss = "StationaryBoss" :: EnemyMovementBehaviorId,
+})
+
+EnemyContracts.EnemyAttackBehaviorIds = table.freeze({
+	Melee = "Melee" :: EnemyAttackBehaviorId,
+	CorrosiveBloom = "CorrosiveBloom" :: EnemyAttackBehaviorId,
+	BossSlam = "BossSlam" :: EnemyAttackBehaviorId,
 })
 
 EnemyContracts.EnemyBehaviorStateIds = table.freeze({
@@ -141,5 +167,7 @@ EnemyContracts.EnemyBehaviorRejectionReasonIds = table.freeze({
 	InvalidFacts = "InvalidFacts" :: EnemyBehaviorRejectionReasonId,
 	InvalidTimestamp = "InvalidTimestamp" :: EnemyBehaviorRejectionReasonId,
 })
+
+EnemyContracts.ServerRuntimeMetadataByEntityId = {} :: { [string]: ServerRuntimeEnemyMetadata }
 
 return table.freeze(EnemyContracts)

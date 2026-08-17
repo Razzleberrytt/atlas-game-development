@@ -14,6 +14,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local NETWORK_WAIT_SECONDS = 20
 
 local RunBuildStateStore = require(script.Parent.RunBuildStateStore)
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
@@ -30,11 +31,23 @@ local choiceConnection: RBXScriptConnection? = nil
 local replacementConnection: RBXScriptConnection? = nil
 local lastRequestTimestamps: { [Player]: number } = {}
 
-local runBuildNetwork = ReplicatedStorage:WaitForChild("RunBuildNetwork")
-local stateRemote = runBuildNetwork:WaitForChild("State") :: RemoteEvent
-local readStateRemote = runBuildNetwork:WaitForChild("ReadState") :: RemoteFunction
-local submitChoiceRemote = runBuildNetwork:WaitForChild("SubmitRelicChoice") :: RemoteEvent
-local submitReplacementRemote = runBuildNetwork:WaitForChild("SubmitRelicReplacement") :: RemoteEvent
+local runBuildNetwork = ReplicatedStorage:WaitForChild("RunBuildNetwork", NETWORK_WAIT_SECONDS)
+assert(runBuildNetwork ~= nil, "RunBuildNetwork did not become available before the server bootstrap timeout")
+local stateRemote = runBuildNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "runBuildNetwork.State did not become available before the server bootstrap timeout")
+local readStateRemote = runBuildNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(readStateRemote ~= nil, "runBuildNetwork.ReadState did not become available before the server bootstrap timeout")
+local submitChoiceRemote = runBuildNetwork:WaitForChild("SubmitRelicChoice", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	submitChoiceRemote ~= nil,
+	"runBuildNetwork.SubmitRelicChoice did not become available before the server bootstrap timeout"
+)
+local submitReplacementRemote =
+	runBuildNetwork:WaitForChild("SubmitRelicReplacement", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	submitReplacementRemote ~= nil,
+	"runBuildNetwork.SubmitRelicReplacement did not become available before the server bootstrap timeout"
+)
 
 local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
 local OperativeLifeContracts = require(ReplicatedStorage.Shared.Health.OperativeLifeContracts)

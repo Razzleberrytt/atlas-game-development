@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
+local NETWORK_WAIT_SECONDS = 20
 
 local OperativeProgressionConfig = require(ReplicatedStorage.Shared.Config.OperativeProgressionConfig)
 local PersonalFlashlightConfig = require(ReplicatedStorage.Shared.Config.PersonalFlashlightConfig)
@@ -77,9 +78,15 @@ local LIGHT_INACTIVE = GameplayLightContracts.GameplayLightActivationStateIds.In
 local BUDGET_EXCEEDED = GameplayLightContracts.GameplayLightRejectionReasonIds.BudgetExceeded
 local TRANSITION_EPSILON_SECONDS = 0.000001
 
-local flashlightNetwork = ReplicatedStorage:WaitForChild("FlashlightNetwork")
-local toggleIntentRemote = flashlightNetwork:WaitForChild("ToggleIntent") :: RemoteEvent
-local stateRemote = flashlightNetwork:WaitForChild("State") :: RemoteEvent
+local flashlightNetwork = ReplicatedStorage:WaitForChild("FlashlightNetwork", NETWORK_WAIT_SECONDS)
+assert(flashlightNetwork ~= nil, "FlashlightNetwork did not become available before the server bootstrap timeout")
+local toggleIntentRemote = flashlightNetwork:WaitForChild("ToggleIntent", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	toggleIntentRemote ~= nil,
+	"flashlightNetwork.ToggleIntent did not become available before the server bootstrap timeout"
+)
+local stateRemote = flashlightNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "flashlightNetwork.State did not become available before the server bootstrap timeout")
 
 local entriesByOperativeId: { [string]: Entry } = {}
 local entryByPlayer: { [Player]: Entry } = {}

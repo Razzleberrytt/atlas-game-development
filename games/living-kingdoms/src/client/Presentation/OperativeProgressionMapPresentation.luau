@@ -17,7 +17,15 @@ local NETWORK_WAIT_SECONDS = 20
 local OperativeProgressionConfig = require(ReplicatedStorage.Shared.Config.OperativeProgressionConfig)
 
 local progressionNetwork = ReplicatedStorage:WaitForChild("OperativeProgressionNetwork", NETWORK_WAIT_SECONDS)
-local progressionReadState = progressionNetwork:WaitForChild("ReadState") :: RemoteFunction
+assert(
+	progressionNetwork ~= nil,
+	"OperativeProgressionNetwork did not become available before the client bootstrap timeout"
+)
+local progressionReadState = progressionNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(
+	progressionReadState ~= nil,
+	"OperativeProgressionNetwork.ReadState did not become available before the client bootstrap timeout"
+)
 
 local Presentation = {}
 

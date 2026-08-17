@@ -33,20 +33,18 @@ end
 
 local service = fs.readFile("games/living-kingdoms/src/server/Systems/RunBuildService.luau")
 local controller = fs.readFile("games/living-kingdoms/src/client/Controllers/RunBuildHUDController.luau")
-local choiceCoordinator = fs.readFile("games/living-kingdoms/src/client/Controllers/ChoiceInputCoordinator.luau")
+local choiceCoordinator = fs.readFile("games/living-kingdoms/src/client/Controllers/Input/ChoiceInputCoordinator.luau")
 local bootstrapServer = fs.readFile("games/living-kingdoms/src/server/init.server.luau")
 local bootstrapClient = fs.readFile("games/living-kingdoms/src/client/init.client.luau")
 
--- The network is created once, by the server, with exactly the surface RPG-0111
--- needs: one state channel, one read, and the two intents.
-assertThat(contains(bootstrapServer, 'network.Name = "RunBuildNetwork"'), "the server must own the run-build network")
+-- The network is created once, by the server, through the canonical atomic
+-- builder with exactly the surface RPG-0111 needs: one state channel, one read,
+-- and the two identity-free intents.
+local runBuildNetworkContract =
+	'ensureNetwork("RunBuildNetwork", { "State", "SubmitRelicChoice", "SubmitRelicReplacement" }, { "ReadState" })'
 assertThat(
-	contains(bootstrapServer, '{ "State", "SubmitRelicChoice", "SubmitRelicReplacement" }'),
-	"the run-build network must expose exactly the state channel and the two intents"
-)
-assertThat(
-	contains(bootstrapServer, 'assert(existingReadState:IsA("RemoteFunction"), "RunBuildNetwork.ReadState'),
-	"the run-build network must expose one read function"
+	contains(bootstrapServer, runBuildNetworkContract),
+	"the server must own the exact run-build network contract"
 )
 assertThat(contains(bootstrapServer, "ensureRunBuildNetwork()"), "the run-build network must be created at bootstrap")
 

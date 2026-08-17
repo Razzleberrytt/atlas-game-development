@@ -2,11 +2,13 @@
 
 **Status:** CURRENT PRODUCT AUTHORITY  
 **Adopted:** 2026-08-08  
-**Scope:** Product direction, roadmap interpretation, and conflict resolution.  
-**Runtime execution authority:** Blueprint v2.7 remains controlling for the active rollout until its gates close.  
-**Implementation sequencing authority:** [`../roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md`](../roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md) controls which player-facing slice is built next once work is dependency-safe.
+**Refreshed:** 2026-08-16  
+**Scope:** product identity, design priorities, roadmap interpretation, and product-level conflict resolution.  
+**Current execution:** [`../roadmap/EXECUTION-DASHBOARD.md`](../roadmap/EXECUTION-DASHBOARD.md).
 
-This document exists because the repository contains valuable Living Kingdoms history whose product assumptions no longer describe the entire Atlas destination. Historical documents remain useful provenance, but agents must not let an older camera, combat, world, or genre statement silently override the current Atlas roadmap.
+This document defines **what Atlas is trying to become**. It does not maintain the daily task queue and does not grant permission to bypass runtime/security/persistence evidence requirements.
+
+Historical Living Kingdoms documents remain valuable provenance, but old camera, combat, genre, branch, or phase assumptions do not silently override current Atlas direction.
 
 ## Product identity
 
@@ -14,278 +16,330 @@ Atlas is a **cooperative action RPG on Roblox** built around:
 
 - readable, skillful cooperative combat;
 - run-based build and loot decisions;
-- persistent progression and world access without mandatory power inflation;
-- a recognizable safe overworld / Main World that players return to;
-- authored and replayable expeditions, dungeons, encounters, elites, and bosses;
-- discovery, landmarks, secrets, quests, NPCs, vendors, gathering, and crafting where they improve the core loop;
-- strong solo-to-co-op support, with multiplayer systems designed around server authority and resilient lifecycle ownership;
-- a data-driven content architecture that can expand without creating parallel gameplay authorities.
+- durable progression and world access without mandatory runaway power inflation;
+- a recognizable safe Main World players return to;
+- authored plus replayable expeditions, routes, dungeons, encounters, elites, and bosses;
+- discovery, landmarks, secrets, quests, NPCs, vendors, gathering, and crafting where they make the core loop better;
+- strong solo-to-co-op support;
+- server-authoritative valuable game truth;
+- reproducible, bounded procedural/systemic variation;
+- data-driven content architecture that can scale without parallel gameplay authorities.
 
-The current Living Kingdoms runtime is an important implementation asset, not a disposable prototype. Existing tactical/isometric camera behavior, automatic-combat systems, survival pressure, classes, objectives, RPG run-build systems, persistence boundaries, and authored-operation work must be preserved unless a focused future decision explicitly replaces them.
+The existing Living Kingdoms runtime is an implementation asset, not disposable prototype code. Working combat, camera, mission, enemy, progression, loot, persistence, world, and presentation systems are preserved unless a focused decision deliberately replaces them.
 
-**Do not infer a camera or combat rewrite from this strategic authority document.** Camera mode, aiming model, and combat presentation remain whatever the canonical runtime and accepted specifications currently implement until an explicit architecture/design decision changes them with migration and evidence.
+**Do not infer a camera or combat rewrite from product strategy alone.** Canonical source and accepted specifications decide the current implementation until an explicit migration changes it.
 
-## Current playable-identity decisions — 2026-08-08
+## North-star player promise
 
-The first playable target is an **exploration-first, hard-but-fair extraction RPG**, not a tower-defense or stationary wave-survival game.
+A session should repeatedly create this feeling:
 
-Player-facing expedition rhythm:
+> **I know where I am, I understand what is threatening us, my choices change the run, my teammates matter, the world makes me curious, and I want one more expedition.**
+
+When priorities conflict, favor features that strengthen that promise over breadth for its own sake.
+
+## Core player-facing rhythm
 
 ```text
 safe arrival / home
-→ choose a humble starting path
-→ enter a seeded expedition
-→ explore and discover
-→ face readable roaming pressure and authored encounters
-→ collect meaningful loot through direct world interaction
-→ decide whether to press deeper or preserve the run
-→ defeat an elite and terminal encounter
-→ return, bank progress and prepare again
-```
-
-The following decisions control playable work:
-
-- enemies may use existing horde/director machinery internally, but presentation and mission pacing must read as roaming danger, ambushes, elite events and terminal encounters — never as waiting for numbered waves;
-- the default HUD is contextual and decision-focused; persistent diagnostics, duplicate inventory panels and non-actionable meters do not belong on the ordinary play surface;
-- desktop world interactions use a clear nearby `E` action, with the same native prompt path supporting controller and touch; clients never author loot identity, value or ownership;
-- difficulty comes from readable threats, resource pressure, enemy combinations, navigation risk and the decision to continue, not opaque one-shots, unwinnable generation or inflated health alone;
-- a death ends the active expedition and forfeits unbanked run loot and temporary run power; durable identity such as achievements, discoveries, codex progress, unlocked starting options, cosmetics and safely banked state may persist through canonical owners;
-- a humble melee-first opening is the target power curve, with firearms becoming discoveries or later starting unlocks; implementing it requires a dedicated server-authoritative combat migration rather than disguising a melee weapon as a firearm;
-- seeded server-owned variation should drive expedition route assembly, encounters, loot, weather, side events and discoveries wherever practical; the seed must be reproducible and every admitted layout must remain navigable and winnable;
-- the safe home, core controls, combat rules, progression math, story truth and reward validation remain stable rather than random;
-- gathering and tree cutting are not MVP requirements until gathered resources have a coherent inventory/economy use beyond busywork.
-
-These are product and sequencing decisions, not permission to bypass the active rollout gates or activate the held Main World, gathering, economy or operation-selection systems without their required contracts and evidence.
-
-## Primary production rule
-
-> Build the smallest complete playable loop, prove it, then improve Atlas through coherent upgrade patches while preserving the playable baseline.
-
-The required development rhythm is:
-
-```text
-stabilize
-→ playable MVP
-→ play / debug / fix
-→ one coherent upgrade patch
-→ replay / regression test
-→ next patch
-```
-
-The roadmap may describe the full destination now. Description does not authorize early implementation, and a later broad phase may not leapfrog the current playable patch merely because its specification is complete.
-
-## Player-facing macro loop
-
-```text
-arrive in the Main World
-→ orient and discover what is available
-→ interact / prepare / choose loadout or build
-→ form or join an expedition context
-→ enter an authored route, mission, dungeon, or operation
-→ fight, explore, discover, and make build/reward decisions
-→ defeat an elite/boss or reach a terminal outcome
-→ return safely to the Main World
-→ apply durable progress/unlocks where allowed
+→ orient and prepare
+→ choose a humble starting path / build
+→ form or enter an expedition context
+→ explore a readable route
+→ face roaming pressure + authored encounters
+→ discover / collect / choose meaningful rewards
+→ decide whether to push deeper
+→ defeat an elite and terminal/boss encounter
+→ receive a clear outcome
+→ return safely
+→ bank/equip/unlock/learn
 → choose what to do next
 ```
 
-The shorter expedition loop remains:
+A run should create tension and decisions without becoming opaque, unfair, or dependent on developer explanation.
 
-```text
-prepare
-→ choose a build/weapon
-→ readable authored route
-→ mixed combat with distinct tactical questions
-→ information/discovery interaction
-→ repeatable dungeon/encounter sequence
-→ elite/reward decision
-→ boss/result
-→ return
-→ choose to play again
-```
+## Product pillars
 
-## Main World / overworld role
+### 1. Readable intensity
 
-The Main World is not a decorative menu and must not become a giant empty open world.
+Combat may be intense, but threats, telegraphs, damage, failure, objectives, and recovery should be understandable.
 
-Its job is to provide a memorable, readable, expandable home for:
+Difficulty should come from:
 
-- arrival and orientation;
-- loadout and character preparation;
-- NPCs and quest surfaces;
-- vendors/economy surfaces;
-- crafting and gathering integration where justified;
-- social/party preparation;
-- dungeon/expedition entrances;
-- progression/world-access feedback;
-- exploration, landmarks, secrets, and environmental storytelling;
-- clean return/replay flow.
+- positioning;
+- timing;
+- target priority;
+- movement;
+- enemy combinations;
+- resource pressure;
+- build choices;
+- exploration risk;
+- cooperation;
+- knowledge/mastery.
 
-The accepted architectural direction is:
+Avoid opaque one-shots, unreadable clutter, unwinnable generation, and health inflation as substitutes for difficulty.
 
-**authored overworld / HubTown → canonical expedition launch → modern operation runtime → return**
+### 2. Curiosity and discovery
 
-The recovered authored overworld and the modern operation forest are separate coordinate/lifecycle spaces. Do not squeeze one into the other or reactivate legacy gameplay services to obtain presentation content.
+The game should reward looking around rather than only following HUD markers.
 
-## RPG depth
+Use:
 
-Atlas should feel meaningfully RPG-like without requiring a permanent gear treadmill.
+- landmarks;
+- optional routes;
+- caches/secrets;
+- environmental storytelling;
+- discoveries/codex facts;
+- dynamic events;
+- meaningful biome/region identity;
+- rewards that create tension between safety and exploration.
 
-### Run-based depth
+### 3. Builds change decisions
 
-Run/operation power may include:
+Loot, relics, classes, equipment, affixes, abilities, and progression should alter tactics—not only produce larger numbers.
 
-- build-defining upgrade choices;
-- relics or bounded equipment decisions;
-- weapon/class synergies;
-- elite modifiers;
-- temporary resources;
-- reward choices that alter how the current run is played.
+Run-to-run variation should create moments like:
 
-These systems should create different tactical decisions, not merely larger numbers.
+- “this weapon changes how I approach the next room”;
+- “this relic makes a risky synergy worth trying”;
+- “this class lets me solve a team problem differently”;
+- “this route/resource discovery changes what we do next.”
 
-### Durable progression
+### 4. Durable identity without compulsory power creep
 
-Long-term systems may include:
+Long-term progression can include:
 
 - XP/ranks;
-- class or side-grade unlocks;
-- skill/progression mapping;
-- world and dungeon access;
-- quests/discoveries/codex progress;
-- cosmetics and expression;
-- challenge modifiers and additional starting options.
+- classes/archetypes/side-grades;
+- loadouts;
+- bounded stat/talent choices;
+- discoveries/codex/achievements;
+- world/dungeon access;
+- starting options;
+- cosmetics/expression;
+- challenge modifiers.
 
-Durable progression must not erase the value of knowledge, execution, cooperation, or expedition difficulty. Any permanent combat power must remain bounded and explicitly justified.
+Permanent power must not erase the value of execution, knowledge, cooperation, or expedition difficulty.
 
-## World and content expansion philosophy
+### 5. A real home, not a menu and not an empty MMO map
 
-Prefer reusable engines and validated content contracts over one-off content piles.
+The Main World exists to make return, preparation, discovery, and future expansion feel physical and memorable.
 
-New quests, NPCs, vendors, crafting recipes, resources, routes, encounters, dungeons, items, affixes, bosses, landmarks, secrets, and events should be representable as data/configuration wherever practical and validated for orphan references, duplicate IDs, cycles, impossible prerequisites, and invalid rewards.
+It should support:
 
-Procedural/random systems should increase replayability while preserving authored readability. Randomness must not make objectives, navigation, difficulty, or rewards incomprehensible.
+- arrival/orientation;
+- preparation/loadouts;
+- NPC/quest surfaces;
+- vendors/economy when useful;
+- crafting/gathering when useful;
+- social/party preparation;
+- expedition/dungeon entrances;
+- world-access/progression feedback;
+- exploration/landmarks/secrets;
+- clean return/replay flow.
 
-## Cooperative and social direction
+Accepted architectural direction:
 
-Atlas is cooperative first. Future party/session infrastructure should eventually support:
+```text
+authored overworld / HubTown
+→ canonical expedition launch
+→ modern operation runtime
+→ return
+```
 
-- party formation and invitations;
-- friend joins;
-- readiness and expedition selection;
-- public/private session policy;
-- matchmaking where justified;
-- reserved-server/teleport lifecycle where appropriate;
-- disconnect/reconnect rules;
-- late-join policy;
-- deterministic return-to-hub behavior.
+Recovered Studio content is preservation/migration/presentation input. Do not reactivate legacy gameplay services merely to obtain world art or authored content.
 
-Do not invent party-leader or matchmaking authority inside unrelated tasks. Those models require dedicated contracts and evidence.
+### 6. Co-op that creates interdependence without punishing solo play
 
-## Economy and crafting direction
+Co-op should make players feel more capable together because roles/builds/positioning/support complement one another.
 
-Quests, vendors, gathering, crafting, and item progression may exist, but they must share canonical inventory/persistence/currency owners.
+Support:
 
-Before broad activation, the roadmap must define:
+- solo viability where practical;
+- 1–4 player core sessions initially;
+- party formation/invites/friend joins;
+- readiness/launch clarity;
+- revive/support mechanics;
+- scaling that preserves tactical identity;
+- reconnect/late-join rules;
+- run/session ownership and cleanup;
+- low-friction communication/presence.
 
-- currencies and ownership;
-- sources and sinks;
-- pricing and value bands;
-- recipe/resource rarity;
-- duplicate/salvage/overflow behavior;
-- transaction idempotency;
-- exploit resistance;
-- telemetry and inflation/balance review.
+Do not require social complexity that adds friction without improving cooperative play.
 
-Do not activate isolated vendor/crafting/gathering systems that create an incoherent economy.
+### 7. Procedural variation with authored quality
 
-## Visual and environment quality bar
+Randomness should multiply replayability while remaining reproducible, readable, navigable, and winnable.
 
-The game should not ship with a generic Roblox-template world or a sophisticated backend attached to placeholder geography.
+Server-owned seeds may influence:
 
-Main World and expedition environments should prioritize:
+- dungeon/route layout;
+- encounters/events;
+- enemy variants/modifiers;
+- loot/rewards;
+- environmental variation;
+- discoveries;
+- resource distribution;
+- selected world-state systems.
 
-- recognizable landmarks;
-- readable navigation and sightlines;
-- deliberate traversal time;
-- terrain and prop composition with controlled repetition;
-- environmental storytelling;
-- coherent materials, lighting, atmosphere, VFX, and audio;
-- strong silhouette and gameplay readability;
-- StreamingEnabled compatibility and measured performance;
-- modular expansion seams.
+Stable truths should not randomly drift without reason: core controls, combat rules, reward validation, story facts, and canonical durable ownership remain dependable.
 
-Visual approval requires Studio/camera evidence. Source shape alone cannot prove atmosphere, composition, scale, or readability.
+## Combat identity
 
-## Monetization guardrails
+Atlas is an action RPG, not a stationary wave-defense game.
 
-Monetization is locked behind the outside-player fun/repeat-intent gate.
+Existing horde/director systems may create pressure internally, but player-facing pacing should read as:
 
-Never sell:
+- roaming danger;
+- pursuit/ambush;
+- authored encounter pressure;
+- elite events;
+- terminal/boss confrontations;
+- traversal risk;
+- decisions about when to push, regroup, retreat, or extract/finish.
+
+Numbered-wave presentation should not dominate the experience unless a specific mode intentionally calls for it.
+
+The exact camera/aiming/attack implementation remains an architecture/runtime decision. Product authority requires only that the result is readable, responsive, skillful, and compatible with current controls/platform constraints.
+
+## Opening power curve
+
+The preferred opening arc is **humble → discovery → capability** rather than spawning with every strong option.
+
+A melee-capable or otherwise modest starting path can make recovered firearms/gear feel earned. Implementation must remain mechanically truthful: do not disguise one combat contract as another to fake the fantasy.
+
+## Loot and run stakes
+
+Loot should create decisions about what to use, keep, bank, dismantle, or risk.
+
+A run may contain temporary power/value that disappears on failure or replay. Durable identity/value is preserved only through canonical persistence owners.
+
+Preferred failure philosophy:
+
+- failure ends or meaningfully resets the active expedition;
+- unbanked run loot/temporary power may be lost;
+- safely banked state, achievements, discoveries, codex progress, unlocked options, and other explicitly durable identity survive according to their canonical rules;
+- failure should teach rather than feel arbitrary.
+
+## Progression philosophy
+
+Long-term progression should primarily create:
+
+- more choices;
+- clearer identity;
+- mastery paths;
+- new starting options;
+- access to new content;
+- build variety;
+- expression;
+- reasons to return.
+
+Avoid a design where account age alone trivializes the game.
+
+## Economy, gathering, crafting
+
+These are **support systems**, not mandatory checkboxes.
+
+Gathering/crafting/economy should ship only when resources and outputs create meaningful decisions in the core loop.
+
+Do not add tree cutting, ore nodes, recipes, currencies, vendors, or profession grinds merely because RPGs often have them.
+
+## Housing / guild / large-social systems
+
+Player housing, guild halls, complex trading, and large social structures are conditional future systems. They are not current product promises unless evidence/player demand makes them worthwhile and the roadmap/dashboard explicitly activates them.
+
+Their presence in the 300-area development taxonomy means “remember this concern exists,” not “must ship.”
+
+## Monetization principles
+
+Monetization is downstream of product readiness.
+
+Do not sell:
 
 - raw best-in-slot combat power;
 - exclusive mandatory classes/equipment;
-- paid recovery from failure;
-- required match resources;
-- progression shortcuts that undermine the designed progression experience.
+- recovery from intentionally designed failure pressure;
+- client-trusted valuable outcomes;
+- manipulative friction created solely to sell relief.
 
-Future monetization should favor cosmetics, presentation, expression, and other non-dominating value. Exact products and pricing require a dedicated post-fun-gate roadmap phase.
+Future monetization may include fair cosmetics/expression/convenience only when:
 
-## Release philosophy
+- the core game is worth playing without payment;
+- purchases are server-validated and platform-compliant;
+- the value proposition is clear;
+- the design does not damage player trust or competitive/co-op integrity.
 
-A release candidate is not the end of the roadmap. The product path includes:
+## UX principles
 
-- runtime stability and security;
-- integrated vertical slice;
-- durable persistence;
-- world/environment acceptance;
-- performance/accessibility/device validation;
-- outside-player playtests;
-- production telemetry;
-- policy/compliance and localization readiness;
-- soft launch / staged release;
-- rollback/hotfix operations;
-- post-launch balance and content expansion driven by evidence.
+- Keep the ordinary HUD contextual and decision-focused.
+- Critical interactions must work across keyboard/controller/touch through canonical input/prompt systems.
+- Present useful recovery/error states instead of silently failing.
+- Avoid duplicate inventory/status panels and debug-like telemetry on the normal play surface.
+- Accessibility is part of product quality, not final-day polish.
 
-The implementation path to that release is governed by the playable patch sequence rather than by completing every long-range phase in isolation.
+## World / content principles
 
-## Explicit non-goals before the core loop is proven
+- Every region/biome/route should have identity and a gameplay reason to exist.
+- Landmarks should help navigation, not only decoration.
+- Content density should follow travel time and decision value.
+- Procedural generation must respect traversal support, readability, encounter space, and performance.
+- Main World routes should avoid unnecessary single points of failure when measured alternatives are affordable.
+- NPCs/quests/vendors/factions should have clear gameplay roles rather than populate the world with hollow interactions.
 
-Do not prematurely build:
+## Technical/product contract
 
-- multiple huge regions/continents;
-- PvP;
-- raids;
-- housing;
-- unrestricted player trading/auction house;
-- vehicles/mounts;
-- dozens of classes;
-- hundreds of items for item-count's sake;
-- broad monetization catalogs;
-- speculative backend systems unsupported by a demonstrated player need;
-- seasonal/battle-pass structures solely to manufacture retention.
+Product ambition never overrides these engineering laws:
 
-These may be revisited only through later roadmap decisions after the core game earns expansion.
+- server owns valuable game truth;
+- no duplicate authority;
+- stable IDs/references/contracts;
+- deterministic/reproducible systems where appropriate;
+- bounded lifecycle/network waits and failure paths;
+- durable mutations are replay/duplication safe;
+- content growth uses canonical registries/seams when mature;
+- source claims and Studio/player evidence remain distinct;
+- performance/mobile/controller constraints are first-class Roblox realities.
 
-## Authority and precedence
+## Explicit non-goals unless later activated
 
-When product documents conflict, use this order:
+Atlas is not currently defined by:
 
-```text
-accepted runtime evidence / current Roblox platform behavior
-→ active runtime execution authority (currently Blueprint v2.7 + Production Core v2.7)
-→ PLAYABLE-MVP-PATCH-EXECUTION.md for implementation sequencing
-→ this Current Product Authority + MASTER-ROADMAP.md for product direction and complete scope
-→ active rollout / cross-system / production-control documents
-→ accepted current specifications and architecture decisions
-→ specialist visual/environment/Studio bibles
-→ historical project charters, pivots, and older roadmaps
-```
+- PvP competition;
+- large-scale MMO simulation;
+- giant empty open-world acreage;
+- army-command RTS control;
+- stationary endless wave defense as the primary mode;
+- mandatory player housing;
+- deep trading economy;
+- paid power;
+- daily-chore retention loops;
+- procedural randomness that compromises readability/winnability.
 
-`MASTER-ROADMAP.md` remains the complete product-path and requirements inventory. When its phase ordering can be satisfied in more than one safe way, the playable patch document controls the chosen implementation order.
+A later evidence-backed product decision may change one of these, but old historical documents cannot do so implicitly.
 
-Historical documents may still contain intentionally preserved principles. They do not regain authority merely because a current implementation originated there.
+## Production rule
 
-## Change rule
+> **Build the smallest coherent playable result, keep valuable truth authoritative, measure what source cannot prove, and improve Atlas through evidence-driven layers rather than speculative breadth.**
 
-If a future decision materially changes product identity—camera model, combat model, overworld structure, progression philosophy, multiplayer topology, monetization guardrails, or another foundational assumption—record it as an explicit decision and update this authority document, the playable patch execution document, and the master roadmap together.
+## Roadmap relationship
+
+- [`../roadmap/EXECUTION-DASHBOARD.md`](../roadmap/EXECUTION-DASHBOARD.md) — what happens now.
+- [`../roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md`](../roadmap/PLAYABLE-MVP-PATCH-EXECUTION.md) — player-facing patch intent.
+- [`../roadmap/MASTER-ROADMAP.md`](../roadmap/MASTER-ROADMAP.md) — long-range destination/dependencies.
+- [`../architecture/DEVELOPMENT_TAXONOMY.md`](../architecture/DEVELOPMENT_TAXONOMY.md) — comprehensive concern inventory.
+- [`../architecture/DEVELOPMENT-ATLAS.md`](../architecture/DEVELOPMENT-ATLAS.md) — concern-to-engine/owner routing.
+
+## Conflict resolution
+
+When product documents disagree:
+
+1. current accepted runtime facts beat prose about implementation reality;
+2. this document controls current product identity/design direction;
+3. the dashboard controls NOW/NEXT execution;
+4. current governance controls work eligibility/WIP/merge rules;
+5. current patch/master documents control product layering and scope;
+6. specialist architecture/specifications control their accepted technical boundary;
+7. historical documents remain provenance only.
+
+If a real product change is desired, make it explicit here/through a decision record and update dependent roadmap/coverage documents coherently. Do not let an old file silently pivot the game.
+
+> **Atlas should feel intense, curious, replayable, cooperative, and trustworthy—not merely large.**

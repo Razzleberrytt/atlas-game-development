@@ -56,7 +56,9 @@ local hasDisplayedResult = false
 
 local localPlayer = Players.LocalPlayer
 local missionNetwork = ReplicatedStorage:WaitForChild("MissionNetwork", NETWORK_WAIT_SECONDS)
-local resultRemote = missionNetwork:WaitForChild("Result") :: RemoteEvent
+assert(missionNetwork ~= nil, "MissionNetwork did not become available before the client bootstrap timeout")
+local resultRemote = missionNetwork:WaitForChild("Result", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(resultRemote ~= nil, "MissionNetwork.Result did not become available before the client bootstrap timeout")
 
 local function onMissionPhaseChanged()
 	if localPlayer:GetAttribute("LK_HUD_MissionPhase") ~= "Insertion" then
@@ -68,8 +70,6 @@ local function onMissionPhaseChanged()
 	end
 end
 
--- Plain-language headline and explanation per authored cause. Text, never colour
--- alone, carries the outcome.
 local HEADLINE_BY_CAUSE_ID: { [string]: string } = {
 	Extracted = "EXTRACTION COMPLETE",
 	SquadWipe = "SQUAD LOST",
@@ -88,8 +88,6 @@ local SURVIVAL_TEXT_BY_STATE_ID: { [string]: string } = {
 	Dead = "lost",
 }
 
--- RPG-0112 display names, so the debrief explains the build in the same words the
--- HUD used rather than raw identifiers.
 local RELIC_NAME_BY_ID: { [string]: string } = {}
 for _, definition in RunRpgConfig.RelicCatalog do
 	RELIC_NAME_BY_ID[definition.relicId] = definition.displayName
@@ -100,8 +98,6 @@ for _, definition in RunProgressionConfig.UpgradeDefinitions do
 	UPGRADE_NAME_BY_ID[definition.Id] = definition.Name
 end
 
--- One stacked section on the debrief. Heights are fixed; the padded list layout
--- owns the vertical rhythm, so no section hand-computes a pixel offset.
 local function section(
 	parent: Instance,
 	name: string,
@@ -116,8 +112,38 @@ local function section(
 	return label
 end
 
+-- Information-dense debrief sections sit on quieter raised cards so the player's
+-- eye can scan outcome → operation facts → squad contribution → build without
+-- every line competing on one flat surface.
+local function cardSection(
+	parent: Instance,
+	name: string,
+	order: number,
+	height: number,
+	options: InterfaceTheme.LabelOptions
+): TextLabel
+	local card = Instance.new("Frame")
+	card.Name = name .. "Card"
+	card.LayoutOrder = order
+	card.Size = UDim2.new(1, 0, 0, height)
+	card.BackgroundColor3 = InterfaceTheme.Palette.PanelRaised
+	card.BackgroundTransparency = InterfaceTheme.Opacity.RaisedTransparency
+	card.BorderSizePixel = 0
+	card.Parent = parent
+	InterfaceTheme.corner(card, InterfaceTheme.Radius.Control)
+	InterfaceTheme.surfaceGradient(card, InterfaceTheme.Palette.PanelHighlight, InterfaceTheme.Palette.Panel)
+	InterfaceTheme.stroke(card, InterfaceTheme.Palette.Line, 0.72, InterfaceTheme.Stroke.Hairline)
+	InterfaceTheme.padding(card, InterfaceTheme.Spacing.Medium)
+
+	local label = InterfaceTheme.label(card, options)
+	label.Name = name
+	label.Size = UDim2.fromScale(1, 1)
+	return label
+end
+
 local function createGui()
-	local playerGui = localPlayer:WaitForChild("PlayerGui")
+	local playerGui = localPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
 	local existing = playerGui:FindFirstChild(GUI_NAME)
 	if existing ~= nil then
 		existing:Destroy()
@@ -137,13 +163,13 @@ local function createGui()
 	local frame = InterfaceTheme.panel(gui, "Debrief")
 	frame.AnchorPoint = Vector2.new(0.5, 0.5)
 	frame.Position = UDim2.fromScale(0.5, 0.5)
-	frame.Size = UDim2.fromOffset(700, 512)
+	frame.Size = UDim2.fromOffset(720, 540)
 	InterfaceTheme.padding(frame, InterfaceTheme.Spacing.XLarge)
 
 	local layout = Instance.new("UIListLayout")
 	layout.FillDirection = Enum.FillDirection.Vertical
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
-	layout.Padding = UDim.new(0, InterfaceTheme.Spacing.Medium)
+	layout.Padding = UDim.new(0, 10)
 	layout.Parent = frame
 
 	headlineLabel = section(frame, "Headline", 1, 38, {
@@ -151,17 +177,24 @@ local function createGui()
 		size = InterfaceTheme.TextSize.Display,
 		color = InterfaceTheme.Palette.Accent,
 	})
-	causeLabel = section(frame, "Cause", 2, 40, {
+	causeLabel = section(frame, "Cause", 2, 34, {
 		role = "Body",
 		size = InterfaceTheme.TextSize.Subtitle,
 		color = InterfaceTheme.Palette.TextMuted,
 	})
-	eventsLabel = section(frame, "Events", 3, 92, { role = "Body", size = InterfaceTheme.TextSize.Subtitle })
-	contributionLabel = section(frame, "Contributions", 4, 150, { role = "Body" })
-	buildLabel = section(frame, "Build", 5, 52, { role = "Body", color = InterfaceTheme.Palette.TextMuted })
-	nextActionLabel = section(frame, "NextAction", 6, 34, {
+	eventsLabel = cardSection(frame, "Events", 3, 90, {
+		role = "Body",
+		size = InterfaceTheme.TextSize.Subtitle,
+	})
+	contributionLabel = cardSection(frame, "Contributions", 4, 142, { role = "Body" })
+	buildLabel = cardSection(frame, "Build", 5, 58, {
+		role = "Body",
+		color = InterfaceTheme.Palette.TextMuted,
+	})
+	nextActionLabel = cardSection(frame, "NextAction", 6, 42, {
 		role = "Heading",
-		color = InterfaceTheme.Palette.Accent,
+		color = InterfaceTheme.Palette.AccentBright,
+		yAlign = Enum.TextYAlignment.Center,
 	})
 end
 
@@ -170,7 +203,6 @@ local function formatDuration(durationSeconds: number): string
 	return string.format("%d:%02d", wholeSeconds // 60, wholeSeconds % 60)
 end
 
--- RPG-0112: the relics the operative finished the run holding.
 local function formatRelics(equippedRelicIds: { string }): string
 	if #equippedRelicIds == 0 then
 		return "no relics"
@@ -215,8 +247,6 @@ local function applyResult(snapshot: unknown)
 	hasDisplayedResult = true
 
 	headline.Text = HEADLINE_BY_CAUSE_ID[result.causeId] or string.upper(result.outcomeId)
-	-- Colour reinforces the outcome the headline already states in words, so the
-	-- result reads instantly without relying on colour alone.
 	headline.TextColor3 = if result.causeId == "Extracted"
 		then InterfaceTheme.Palette.Accent
 		else InterfaceTheme.Palette.Danger
@@ -242,8 +272,6 @@ local function applyResult(snapshot: unknown)
 	end
 	contributions.Text = table.concat(lines, "\n")
 
-	-- RPG-0112: the squad build the run finished with, in the same words the HUD
-	-- used. Field Upgrades are squad-wide, so they read once beneath the rows.
 	local build = buildLabel
 	if build ~= nil then
 		if #result.upgradeStacks == 0 then
@@ -260,9 +288,6 @@ local function applyResult(snapshot: unknown)
 		end
 	end
 
-	-- The next action is real: P10-0105 restarts the operation deterministically
-	-- after this window. The screen still promises no reward, because none is
-	-- recorded until P11.
 	nextAction.Text = string.format(
 		"A fresh operation begins in %d seconds. No rewards are recorded yet.",
 		math.floor(MatchResultConfig.ReplayDebriefSeconds)
@@ -277,9 +302,6 @@ function MatchResultController.start()
 	started = true
 	hasDisplayedResult = false
 	createGui()
-
-	-- Listen only. A client that arrives after resolution is pushed the frozen
-	-- debrief by the mission owner on join, so no request is ever needed.
 	resultConnection = resultRemote.OnClientEvent:Connect(applyResult)
 	missionPhaseConnection = localPlayer:GetAttributeChangedSignal("LK_HUD_MissionPhase"):Connect(onMissionPhaseChanged)
 	onMissionPhaseChanged()

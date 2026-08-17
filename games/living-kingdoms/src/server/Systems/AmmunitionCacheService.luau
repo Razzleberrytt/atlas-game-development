@@ -7,6 +7,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local NETWORK_WAIT_SECONDS = 20
 
 local CachePresentationContracts = require(ReplicatedStorage.Shared.Combat.AmmunitionCachePresentationContracts)
 local Contracts = require(ReplicatedStorage.Shared.Combat.AmmunitionScarcityContracts)
@@ -27,8 +28,13 @@ local OperativeLifeService = require(script.Parent.OperativeLifeService)
 
 local SourceIds = Contracts.SupplySourceIds
 local CACHE_FOLDER_NAME = "AmmunitionCaches"
-local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
-local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: any
+local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork", NETWORK_WAIT_SECONDS)
+assert(combatNetwork ~= nil, "CombatNetwork did not become available before the server bootstrap timeout")
+local presentationRemote = combatNetwork:WaitForChild("CombatPresentation", NETWORK_WAIT_SECONDS) :: any
+assert(
+	presentationRemote ~= nil,
+	"combatNetwork.CombatPresentation did not become available before the server bootstrap timeout"
+)
 
 export type CollectionState = {
 	processedCacheIds: { [string]: boolean },

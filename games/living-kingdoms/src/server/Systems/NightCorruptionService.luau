@@ -3,12 +3,14 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local NETWORK_WAIT_SECONDS = 20
 
 local Config = require(ReplicatedStorage.Shared.Config.NightCorruptionConfig)
 local EnvironmentProfileService = require(script.Parent.EnvironmentProfileService)
 
 local Service = {}
-local network = ReplicatedStorage:WaitForChild("HordeNetwork")
+local network = ReplicatedStorage:WaitForChild("HordeNetwork", NETWORK_WAIT_SECONDS)
+assert(network ~= nil, "HordeNetwork did not become available before the server bootstrap timeout")
 local started = false
 local startedAt = 0
 local lastTier = -1

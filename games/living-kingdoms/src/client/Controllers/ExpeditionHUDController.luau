@@ -22,8 +22,11 @@ local InterfaceTheme = require(script.Parent.Parent.UI.InterfaceTheme)
 local Controller = {}
 local localPlayer = Players.LocalPlayer
 local network = ReplicatedStorage:WaitForChild("ExpeditionNetwork", NETWORK_WAIT_SECONDS)
-local stateRemote = network:WaitForChild("State") :: RemoteEvent
-local readState = network:WaitForChild("ReadState") :: RemoteFunction
+assert(network ~= nil, "ExpeditionNetwork did not become available before the client bootstrap timeout")
+local stateRemote = network:WaitForChild("State", NETWORK_WAIT_SECONDS)
+assert(stateRemote ~= nil, "ExpeditionNetwork.State did not become available before the client bootstrap timeout")
+local readState = network:WaitForChild("ReadState", NETWORK_WAIT_SECONDS)
+assert(readState ~= nil, "ExpeditionNetwork.ReadState did not become available before the client bootstrap timeout")
 
 local started = false
 local connection: RBXScriptConnection? = nil
@@ -61,7 +64,8 @@ local function validSnapshot(value: any): boolean
 end
 
 local function createGui()
-	local playerGui = localPlayer:WaitForChild("PlayerGui")
+	local playerGui = localPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
 	local existing = playerGui:FindFirstChild("LK_ExpeditionHUD")
 	if existing ~= nil then
 		existing:Destroy()

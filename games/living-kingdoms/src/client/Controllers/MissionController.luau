@@ -17,10 +17,14 @@ local MissionContracts = require(ReplicatedStorage.Shared.Mission.MissionContrac
 type SafeMissionSnapshot = MissionContracts.SafeMissionSnapshot
 type Controller = { start: () -> (), stop: () -> () }
 
+local NETWORK_WAIT_SECONDS = 20
 local RADIO_VISIBLE_SECONDS = 6
 local Controller: Controller = {} :: Controller
 local localPlayer = Players.LocalPlayer
-local stateRemote = ReplicatedStorage:WaitForChild("MissionNetwork"):WaitForChild("State") :: RemoteEvent
+local missionNetwork = ReplicatedStorage:WaitForChild("MissionNetwork", NETWORK_WAIT_SECONDS)
+assert(missionNetwork ~= nil, "MissionNetwork did not become available before the client bootstrap timeout")
+local stateRemote = missionNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "MissionNetwork.State did not become available before the client bootstrap timeout")
 local started = false
 local connections: { RBXScriptConnection } = {}
 local latestSnapshot: SafeMissionSnapshot? = nil

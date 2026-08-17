@@ -32,8 +32,11 @@ type PlayerRecord = {
 local Controller = {}
 
 local classNetwork = ReplicatedStorage:WaitForChild("ClassNetwork", NETWORK_WAIT_SECONDS)
-local stateRemote = classNetwork:WaitForChild("State") :: RemoteEvent
-local readStateFunction = classNetwork:WaitForChild("ReadState") :: RemoteFunction
+assert(classNetwork ~= nil, "ClassNetwork did not become available before the client bootstrap timeout")
+local stateRemote = classNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS)
+assert(stateRemote ~= nil, "ClassNetwork.State did not become available before the client bootstrap timeout")
+local readStateFunction = classNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS)
+assert(readStateFunction ~= nil, "ClassNetwork.ReadState did not become available before the client bootstrap timeout")
 
 local PRESENTATION_MODEL_NAME = ClassSilhouetteConfig.PresentationModelName
 local OPERATIVE_ID_ATTRIBUTE = ClassSilhouetteConfig.OperativeIdAttributeName
@@ -84,13 +87,16 @@ local function resolveTorso(character: Model): BasePart?
 	if torso ~= nil and torso:IsA("BasePart") then
 		return torso
 	end
-	local humanoid = character:FindFirstChildOfClass("Humanoid") or character:WaitForChild("Humanoid")
-	if not humanoid:IsA("Humanoid") then
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid == nil then
+		humanoid = character:WaitForChild("Humanoid", NETWORK_WAIT_SECONDS)
+	end
+	if humanoid == nil or not humanoid:IsA("Humanoid") then
 		return nil
 	end
 	local torsoName = if humanoid.RigType == Enum.HumanoidRigType.R15 then "UpperTorso" else "Torso"
-	local awaitedTorso = character:WaitForChild(torsoName)
-	return if awaitedTorso:IsA("BasePart") then awaitedTorso else nil
+	local awaitedTorso = character:WaitForChild(torsoName, NETWORK_WAIT_SECONDS)
+	return if awaitedTorso ~= nil and awaitedTorso:IsA("BasePart") then awaitedTorso else nil
 end
 
 local function createEquipmentPart(torso: BasePart, parent: Model, definition: SilhouettePartDefinition)

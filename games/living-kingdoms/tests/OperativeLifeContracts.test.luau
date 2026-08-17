@@ -265,7 +265,7 @@ assert(combatContracts.OperativeCombatStateIds.Incapacitated == "Incapacitated",
 assert(firearmConfig.BasicFirearm.WeaponId == "weapon.basic_firearm", "P2 weapon ID changed")
 assert(firearmConfig.BasicFirearm.DamageTypeId == "Ballistic", "P2 damage type changed")
 assert(firearmConfig.BasicFirearm.RangeStuds == 80, "P2 range changed")
-assert(firearmConfig.BasicFirearm.CadenceSeconds == 0.2, "P2 cadence changed")
+assert(firearmConfig.BasicFirearm.CadenceSeconds == 0.48, "P2 cadence changed")
 assert(firearmConfig.BasicFirearm.MagazineCapacity == 12, "P2 magazine capacity changed")
 assert(firearmConfig.BasicFirearm.PrototypeInitialLoadedRounds == 12, "P2 loaded rounds changed")
 assert(firearmConfig.BasicFirearm.PrototypeInitialReserveRounds == 24, "P2 reserve rounds changed")

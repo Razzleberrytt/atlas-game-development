@@ -1,11 +1,14 @@
 --!strict
 
 --[[
-	P5-0104 pure enemy decision logic. Deterministic, side-effect free, and
-	loop free: the caller supplies server-owned facts and a monotonic server
-	timestamp, and receives a spawn-legality or behavior decision without any
-	input mutation, Roblox service access, raycast, or randomness. The runtime
-	director owns state commits, movement, windup disclosure, and damage.
+	Wave 2 pure ordinary-enemy decision logic. Deterministic and side-effect free:
+	the caller supplies server-owned facts plus a monotonic timestamp and receives
+	spawn legality / behavior intent. Runtime movement and damage commits remain
+	owned by EnemyDirectorService.
+
+	The dependency surface intentionally remains identical to Wave 1 so existing
+	Lune fixtures and director harnesses remain valid. Encounter-authored identity
+	is read from EnemyContracts' VM-local server runtime metadata registry.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -24,6 +27,7 @@ local BehaviorStateIds = EnemyContracts.EnemyBehaviorStateIds
 local AttackWindupActionIds = EnemyContracts.EnemyAttackWindupActionIds
 local SpawnRejectionReasonIds = EnemyContracts.EnemySpawnRejectionReasonIds
 local BehaviorRejectionReasonIds = EnemyContracts.EnemyBehaviorRejectionReasonIds
+local ArchetypeIds = EnemyContracts.EnemyArchetypeIds
 
 local EnemyBehaviorResolver = {}
 
@@ -78,7 +82,11 @@ function EnemyBehaviorResolver.resolveSpawn(request: EnemySpawnRequest, facts: E
 		or not isNonemptyString(request.displayName)
 		or not isWorldPosition(request.position)
 		or (request.isHordePulse ~= nil and type(request.isHordePulse) ~= "boolean")
-		or (request.hordeRoleId ~= nil and (type(request.hordeRoleId) ~= "string" or request.hordeRoleId == ""))
+		or (request.hordeRoleId ~= nil and not isNonemptyString(request.hordeRoleId))
+		or (request.encounterId ~= nil and not isNonemptyString(request.encounterId))
+		or (request.compositionIdentity ~= nil and not isNonemptyString(request.compositionIdentity))
+		or (request.eliteChance ~= nil and (not isFiniteNumber(request.eliteChance) or (request.eliteChance :: number) < 0 or (request.eliteChance :: number) > 1))
+		or (request.requestedEliteAffixId ~= nil and not isNonemptyString(request.requestedEliteAffixId))
 		or type(facts) ~= "table"
 		or type(facts.existingEnemyEntityIds) ~= "table"
 		or not isFiniteNumber(facts.activeEnemyCount)
@@ -99,9 +107,11 @@ function EnemyBehaviorResolver.resolveSpawn(request: EnemySpawnRequest, facts: E
 	if math.abs(position.x) > halfExtent or math.abs(position.z) > halfExtent then
 		return spawnResolution(SpawnRejectionReasonIds.OutsidePlayableExtent)
 	end
-	local minimumDistance = EnemyConfig.FairSpawn.MinimumOperativeDistanceStuds
-	local minimumDistanceSquared = minimumDistance * minimumDistance
+	local minimumDistanceSquared = EnemyConfig.FairSpawn.MinimumOperativeDistanceStuds ^ 2
 	for _, alivePosition in facts.alivePositions do
+		if not isWorldPosition(alivePosition) then
+			return spawnResolution(SpawnRejectionReasonIds.InvalidDefinition)
+		end
 		if horizontalDistanceSquared(position, alivePosition) < minimumDistanceSquared then
 			return spawnResolution(SpawnRejectionReasonIds.TooCloseToOperative)
 		end
@@ -142,6 +152,14 @@ local function targetStateDecision(
 	return decision(BehaviorStateIds.Attacking, targetId, windupActionId, false, nil, nil)
 end
 
+local function resolveOrdinaryArchetype(enemy: EnemyBehaviorFacts)
+	local metadata = EnemyContracts.ServerRuntimeMetadataByEntityId[enemy.entityId]
+	local archetypeId = enemy.archetypeId
+		or (if metadata == nil then nil else metadata.archetypeId)
+		or ArchetypeIds.ExclusionWalker
+	return EnemyConfig.getOrdinaryArchetype(archetypeId)
+end
+
 function EnemyBehaviorResolver.resolveBehavior(
 	enemy: EnemyBehaviorFacts,
 	operatives: { EnemyOperativeFact },
@@ -171,6 +189,18 @@ function EnemyBehaviorResolver.resolveBehavior(
 			false,
 			nil,
 			BehaviorRejectionReasonIds.InvalidTimestamp
+		)
+	end
+
+	local archetype = resolveOrdinaryArchetype(enemy)
+	if archetype == nil then
+		return decision(
+			BehaviorStateIds.Roaming,
+			nil,
+			AttackWindupActionIds.None,
+			false,
+			nil,
+			BehaviorRejectionReasonIds.InvalidFacts
 		)
 	end
 
@@ -216,7 +246,6 @@ function EnemyBehaviorResolver.resolveBehavior(
 		)
 	end
 
-	local walker = EnemyConfig.Walker
 	local cadenceMultiplier = enemy.attackCadenceMultiplier
 	if cadenceMultiplier == nil then
 		cadenceMultiplier = 1
@@ -230,16 +259,17 @@ function EnemyBehaviorResolver.resolveBehavior(
 			BehaviorRejectionReasonIds.InvalidFacts
 		)
 	end
-	local detectionSquared = walker.DetectionRadiusStuds * walker.DetectionRadiusStuds
-	local dropSquared = walker.PursuitDropRadiusStuds * walker.PursuitDropRadiusStuds
-	local attackRangeSquared = walker.AttackRangeStuds * walker.AttackRangeStuds
 
+	local detectionSquared = archetype.DetectionRadiusStuds ^ 2
+	local dropSquared = archetype.PursuitDropRadiusStuds ^ 2
+	local attackRangeSquared = archetype.AttackRangeStuds ^ 2
 	local retainedTargetId: string? = nil
 	local retainedDistanceSquared = math.huge
 	local nearestTargetId: string? = nil
 	local nearestDistanceSquared = math.huge
 	local windupTargetIsAlive = false
 	local windupTargetDistanceSquared = math.huge
+
 	for _, operative in operatives do
 		if
 			type(operative) ~= "table"
@@ -283,7 +313,7 @@ function EnemyBehaviorResolver.resolveBehavior(
 	if hasWindup then
 		if windupTargetIsAlive and windupTargetDistanceSquared <= attackRangeSquared then
 			local startedAt = windupStartedAt :: number
-			local commitAt = startedAt + walker.AttackWindupSeconds * cadenceMultiplier
+			local commitAt = startedAt + archetype.AttackWindupSeconds * cadenceMultiplier
 			if serverTimestamp < commitAt then
 				return decision(
 					BehaviorStateIds.WindingUp,
@@ -303,7 +333,7 @@ function EnemyBehaviorResolver.resolveBehavior(
 					.. startedAt,
 				sourceEntityId = enemy.entityId,
 				targetEntityId = windupTargetId :: string,
-				damageAmount = walker.AttackDamage,
+				damageAmount = archetype.AttackDamage,
 				serverTimestamp = serverTimestamp,
 			})
 			return decision(BehaviorStateIds.WindingUp, windupTargetId, AttackWindupActionIds.Commit, true, attack, nil)
@@ -320,7 +350,7 @@ function EnemyBehaviorResolver.resolveBehavior(
 
 	local lastAttack = enemy.lastAttackServerTimestamp
 	local cooldownElapsed = lastAttack == nil
-		or serverTimestamp >= lastAttack + walker.AttackCooldownSeconds * cadenceMultiplier
+		or serverTimestamp >= lastAttack + archetype.AttackCooldownSeconds * cadenceMultiplier
 	if not cooldownElapsed then
 		return decision(BehaviorStateIds.Attacking, targetId, AttackWindupActionIds.None, false, nil, nil)
 	end

@@ -2,252 +2,106 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local function ensureCombatNetwork()
-	local existingNetwork = ReplicatedStorage:FindFirstChild("CombatNetwork")
+--[[
+	Network publication is atomic for every newly-created network. Build and
+	validate the complete remote family while its Folder is still unparented,
+	then publish the Folder to ReplicatedStorage in one final step. This closes
+	the replication window where a client could observe the parent network before
+	one of its required children existed.
+
+	Existing folders are still repaired in place for Studio/reload compatibility;
+	wrong instance classes continue to fail closed rather than being replaced.
+]]
+local function ensureNetwork(
+	networkName: string,
+	remoteEventNames: { string },
+	remoteFunctionNames: { string }?
+): Folder
+	local existingNetwork = ReplicatedStorage:FindFirstChild(networkName)
 	local network: Folder
+	local publishWhenComplete = false
+
 	if existingNetwork == nil then
 		network = Instance.new("Folder")
-		network.Name = "CombatNetwork"
-		network.Parent = ReplicatedStorage
+		network.Name = networkName
+		publishWhenComplete = true
 	else
-		assert(existingNetwork:IsA("Folder"), "CombatNetwork must be a Folder")
+		assert(existingNetwork:IsA("Folder"), networkName .. " must be a Folder")
 		network = existingNetwork
 	end
-	for _, remoteName in { "CombatPresentation", "FireIntent", "ReloadIntent" } do
+
+	for _, remoteName in remoteEventNames do
 		local existingRemote = network:FindFirstChild(remoteName)
 		if existingRemote == nil then
 			local remote = Instance.new("RemoteEvent")
 			remote.Name = remoteName
 			remote.Parent = network
 		else
-			assert(existingRemote:IsA("RemoteEvent"), "CombatNetwork." .. remoteName .. " must be a RemoteEvent")
+			assert(
+				existingRemote:IsA("RemoteEvent"),
+				string.format("%s.%s must be a RemoteEvent", networkName, remoteName)
+			)
 		end
 	end
+
+	for _, remoteName in remoteFunctionNames or {} do
+		local existingRemote = network:FindFirstChild(remoteName)
+		if existingRemote == nil then
+			local remote = Instance.new("RemoteFunction")
+			remote.Name = remoteName
+			remote.Parent = network
+		else
+			assert(
+				existingRemote:IsA("RemoteFunction"),
+				string.format("%s.%s must be a RemoteFunction", networkName, remoteName)
+			)
+		end
+	end
+
+	if publishWhenComplete then
+		network.Parent = ReplicatedStorage
+	end
+
+	return network
+end
+
+local function ensureCombatNetwork()
+	ensureNetwork("CombatNetwork", { "CombatPresentation", "FireIntent", "ReloadIntent" })
 end
 
 local function ensureRunBuildNetwork()
-	local existingNetwork = ReplicatedStorage:FindFirstChild("RunBuildNetwork")
-	local network: Folder
-	if existingNetwork == nil then
-		network = Instance.new("Folder")
-		network.Name = "RunBuildNetwork"
-		network.Parent = ReplicatedStorage
-	else
-		assert(existingNetwork:IsA("Folder"), "RunBuildNetwork must be a Folder")
-		network = existingNetwork
-	end
-	for _, remoteName in { "State", "SubmitRelicChoice", "SubmitRelicReplacement" } do
-		local existingRemote = network:FindFirstChild(remoteName)
-		if existingRemote == nil then
-			local remote = Instance.new("RemoteEvent")
-			remote.Name = remoteName
-			remote.Parent = network
-		else
-			assert(existingRemote:IsA("RemoteEvent"), "RunBuildNetwork." .. remoteName .. " must be a RemoteEvent")
-		end
-	end
-	local existingReadState = network:FindFirstChild("ReadState")
-	if existingReadState == nil then
-		local readState = Instance.new("RemoteFunction")
-		readState.Name = "ReadState"
-		readState.Parent = network
-	else
-		assert(existingReadState:IsA("RemoteFunction"), "RunBuildNetwork.ReadState must be a RemoteFunction")
-	end
+	ensureNetwork("RunBuildNetwork", { "State", "SubmitRelicChoice", "SubmitRelicReplacement" }, { "ReadState" })
 end
 
 local function ensureFlashlightNetwork()
-	local existingNetwork = ReplicatedStorage:FindFirstChild("FlashlightNetwork")
-	local network: Folder
-	if existingNetwork == nil then
-		network = Instance.new("Folder")
-		network.Name = "FlashlightNetwork"
-		network.Parent = ReplicatedStorage
-	else
-		assert(existingNetwork:IsA("Folder"), "FlashlightNetwork must be a Folder")
-		network = existingNetwork
-	end
-	for _, remoteName in { "ToggleIntent", "State" } do
-		local existingRemote = network:FindFirstChild(remoteName)
-		if existingRemote == nil then
-			local remote = Instance.new("RemoteEvent")
-			remote.Name = remoteName
-			remote.Parent = network
-		else
-			assert(existingRemote:IsA("RemoteEvent"), remoteName .. " must be a RemoteEvent")
-		end
-	end
+	ensureNetwork("FlashlightNetwork", { "ToggleIntent", "State" })
 end
 
 local function ensureSurvivalNetwork()
-	local existing = ReplicatedStorage:FindFirstChild("SurvivalNetwork")
-	local network: Folder
-	if existing == nil then
-		network = Instance.new("Folder")
-		network.Name = "SurvivalNetwork"
-		network.Parent = ReplicatedStorage
-	else
-		assert(existing:IsA("Folder"), "SurvivalNetwork must be a Folder")
-		network = existing
-	end
-	local state = network:FindFirstChild("State")
-	if state == nil then
-		state = Instance.new("RemoteEvent")
-		state.Name = "State"
-		state.Parent = network
-	else
-		assert(state:IsA("RemoteEvent"), "SurvivalNetwork.State must be a RemoteEvent")
-	end
-	local readState = network:FindFirstChild("ReadState")
-	if readState == nil then
-		readState = Instance.new("RemoteFunction")
-		readState.Name = "ReadState"
-		readState.Parent = network
-	else
-		assert(readState:IsA("RemoteFunction"), "SurvivalNetwork.ReadState must be a RemoteFunction")
-	end
+	ensureNetwork("SurvivalNetwork", { "State" }, { "ReadState" })
 end
 
 local function ensureSquadPingNetwork()
-	local existingNetwork = ReplicatedStorage:FindFirstChild("SquadPingNetwork")
-	local network: Folder
-	if existingNetwork == nil then
-		network = Instance.new("Folder")
-		network.Name = "SquadPingNetwork"
-		network.Parent = ReplicatedStorage
-	else
-		assert(existingNetwork:IsA("Folder"), "SquadPingNetwork must be a Folder")
-		network = existingNetwork
-	end
-	for _, remoteName in { "Intent", "State" } do
-		local existingRemote = network:FindFirstChild(remoteName)
-		if existingRemote == nil then
-			local remote = Instance.new("RemoteEvent")
-			remote.Name = remoteName
-			remote.Parent = network
-		else
-			assert(existingRemote:IsA("RemoteEvent"), remoteName .. " must be a RemoteEvent")
-		end
-	end
+	ensureNetwork("SquadPingNetwork", { "Intent", "State" })
 end
 
 local function ensureMissionNetwork()
-	local existingNetwork = ReplicatedStorage:FindFirstChild("MissionNetwork")
-	local network: Folder
-	if existingNetwork == nil then
-		network = Instance.new("Folder")
-		network.Name = "MissionNetwork"
-		network.Parent = ReplicatedStorage
-	else
-		assert(existingNetwork:IsA("Folder"), "MissionNetwork must be a Folder")
-		network = existingNetwork
-	end
 	-- State is the live mission snapshot; Result is the one terminal debrief. Both
 	-- are server-to-client disclosure only -- the mission owner accepts nothing.
-	for _, remoteName in { "State", "Result" } do
-		local existingRemote = network:FindFirstChild(remoteName)
-		if existingRemote == nil then
-			local remote = Instance.new("RemoteEvent")
-			remote.Name = remoteName
-			remote.Parent = network
-		else
-			assert(existingRemote:IsA("RemoteEvent"), remoteName .. " must be a RemoteEvent")
-		end
-	end
+	ensureNetwork("MissionNetwork", { "State", "Result" })
 end
 
 local function ensureClassNetwork()
-	local existingNetwork = ReplicatedStorage:FindFirstChild("ClassNetwork")
-	local network: Folder
-	if existingNetwork == nil then
-		network = Instance.new("Folder")
-		network.Name = "ClassNetwork"
-		network.Parent = ReplicatedStorage
-	else
-		assert(existingNetwork:IsA("Folder"), "ClassNetwork must be a Folder")
-		network = existingNetwork
-	end
-	for _, remoteName in { "SelectionIntent", "ActionIntent", "State" } do
-		local existingRemote = network:FindFirstChild(remoteName)
-		if existingRemote == nil then
-			local remote = Instance.new("RemoteEvent")
-			remote.Name = remoteName
-			remote.Parent = network
-		else
-			assert(existingRemote:IsA("RemoteEvent"), remoteName .. " must be a RemoteEvent")
-		end
-	end
-	local existingReadState = network:FindFirstChild("ReadState")
-	if existingReadState == nil then
-		local readState = Instance.new("RemoteFunction")
-		readState.Name = "ReadState"
-		readState.Parent = network
-	else
-		assert(existingReadState:IsA("RemoteFunction"), "ReadState must be a RemoteFunction")
-	end
+	ensureNetwork("ClassNetwork", { "SelectionIntent", "ActionIntent", "State" }, { "ReadState" })
 end
 
 local function ensureWeaponLoadoutNetwork()
-	local existingNetwork = ReplicatedStorage:FindFirstChild("WeaponLoadoutNetwork")
-	local network: Folder
-	if existingNetwork == nil then
-		network = Instance.new("Folder")
-		network.Name = "WeaponLoadoutNetwork"
-		network.Parent = ReplicatedStorage
-	else
-		assert(existingNetwork:IsA("Folder"), "WeaponLoadoutNetwork must be a Folder")
-		network = existingNetwork
-	end
-	for _, remoteName in { "SelectionIntent", "State" } do
-		local existing = network:FindFirstChild(remoteName)
-		if existing == nil then
-			local remote = Instance.new("RemoteEvent")
-			remote.Name = remoteName
-			remote.Parent = network
-		else
-			assert(existing:IsA("RemoteEvent"), remoteName .. " must be a RemoteEvent")
-		end
-	end
-	local existingRead = network:FindFirstChild("ReadState")
-	if existingRead == nil then
-		local read = Instance.new("RemoteFunction")
-		read.Name = "ReadState"
-		read.Parent = network
-	else
-		assert(existingRead:IsA("RemoteFunction"), "WeaponLoadoutNetwork.ReadState must be a RemoteFunction")
-	end
+	ensureNetwork("WeaponLoadoutNetwork", { "SelectionIntent", "State" }, { "ReadState" })
 end
 
 local function ensureProgressionNetwork()
 	ensureRunBuildNetwork()
-	local existingNetwork = ReplicatedStorage:FindFirstChild("ProgressionNetwork")
-	local network: Folder
-	if existingNetwork == nil then
-		network = Instance.new("Folder")
-		network.Name = "ProgressionNetwork"
-		network.Parent = ReplicatedStorage
-	else
-		assert(existingNetwork:IsA("Folder"), "ProgressionNetwork must be a Folder")
-		network = existingNetwork
-	end
-	for _, remoteName in { "State", "ChooseUpgrade" } do
-		local existingRemote = network:FindFirstChild(remoteName)
-		if existingRemote == nil then
-			local remote = Instance.new("RemoteEvent")
-			remote.Name = remoteName
-			remote.Parent = network
-		else
-			assert(existingRemote:IsA("RemoteEvent"), "ProgressionNetwork." .. remoteName .. " must be a RemoteEvent")
-		end
-	end
-	local existingReadState = network:FindFirstChild("ReadState")
-	if existingReadState == nil then
-		local readState = Instance.new("RemoteFunction")
-		readState.Name = "ReadState"
-		readState.Parent = network
-	else
-		assert(existingReadState:IsA("RemoteFunction"), "ProgressionNetwork.ReadState must be a RemoteFunction")
-	end
+	ensureNetwork("ProgressionNetwork", { "State", "ChooseUpgrade" }, { "ReadState" })
 end
 
 ensureCombatNetwork()

@@ -35,7 +35,7 @@ local duplicateGuardPosition = string.find(cache, "processed[definition.cacheId]
 local combatReadPosition = string.find(cache, "readReviveCombatState", 1, true)
 check(duplicateGuardPosition ~= nil and combatReadPosition ~= nil and duplicateGuardPosition < combatReadPosition)
 
-check(string.find(controller, 'WaitForChild("CombatPresentation")', 1, true) ~= nil)
+check(string.find(controller, 'WaitForChild("CombatPresentation", NETWORK_WAIT_SECONDS)', 1, true) ~= nil)
 check(string.find(controller, "Contracts.MessageKindIds.Consumed", 1, true) ~= nil)
 check(string.find(controller, "GetAttribute(SUPPLY_CACHE_ID_ATTRIBUTE)", 1, true) ~= nil)
 check(string.find(controller, "SupplyCachePresentationFactory.create(root)", 1, true) ~= nil)

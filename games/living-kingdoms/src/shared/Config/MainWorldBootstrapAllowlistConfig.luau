@@ -1,18 +1,67 @@
 --!strict
 
--- Patch 0.5 dedicated Main World bootstrap boundary.
+-- Dedicated Main World bootstrap boundary.
 --
--- This is an allowlist contract only. Nothing here activates a second place,
--- maps the held world into the operation project, or grants preserved runtime
--- authority. A future dedicated Rojo project may map only these explicit
--- bootstrap roots plus canonical Shared modules.
+-- This remains an allowlist contract. It does not activate operation gameplay
+-- runtime, map preserved runtime code, or grant authority to recovered assets.
+-- StaticSceneStabilization is a narrow pre-runtime safety pass over explicitly
+-- classified world roots so recovered presentation geometry cannot fall apart
+-- under Roblox physics while RuntimeEnabled remains false.
 
 local Config = {
-	Version = "P0.5-MAIN-WORLD-BOOTSTRAP-ALLOWLIST-v1",
+	Version = "P0.5-MAIN-WORLD-BOOTSTRAP-ALLOWLIST-v2",
 	RuntimeEnabled = false,
 	DedicatedMainWorldOnly = true,
 	CurrentOperationProjectMappingAllowed = false,
 	SharedSourceRoot = "games/living-kingdoms/src/shared",
+	StaticSceneStabilization = table.freeze({
+		Enabled = true,
+		WorldRootName = "LivingKingdomsMainWorld",
+		StaticRootNames = table.freeze({
+			"HubCore",
+			"Routes",
+			"TraversalRepair",
+			"OuterTraversalRepair",
+			"GroundSkin",
+			"RegionalRoutes",
+			"ArrivalTraversal",
+			"Environment",
+			"Structures",
+			"Props",
+			"Dark",
+			"Village",
+			"Forest",
+			"Castle",
+			"Zones",
+			"Crystal",
+			"Beach",
+			"Volcanic",
+			"Desert",
+			"Swamp",
+			"Snow",
+			"Jungle",
+			"Autumn",
+			"Sky",
+			"Meadow",
+			"Mushroom",
+			"Ruins",
+			"Ocean",
+			"Ice",
+			"Bamboo",
+			"Geyser",
+			"Lavender",
+			"Cherry",
+			"Tundra",
+			"Canyon",
+			"Coral",
+			"Geothermal",
+			"Oasis",
+			"CrystalDesert",
+		}),
+		DynamicRootNames = table.freeze({
+			"NPCs",
+		}),
+	}),
 	Server = table.freeze({
 		BootstrapRoot = "games/living-kingdoms/src/main-world/server",
 		EntryPoint = "MainWorldServer.server.luau",
@@ -20,6 +69,7 @@ local Config = {
 			"ExpeditionLobbyService",
 		}),
 		AllowedResponsibilities = table.freeze({
+			"static-scene-stabilization",
 			"expedition-launch-intent",
 			"durable-player-state-adapter",
 			"durable-inventory-adapter",

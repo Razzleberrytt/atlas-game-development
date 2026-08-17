@@ -36,9 +36,23 @@ local localPlayer = Players.LocalPlayer
 -- Progression is owned by RunProgressionService. The combat HUD only renders its
 -- published snapshot and submits one offered upgrade ID back to it.
 local progressionNetwork = ReplicatedStorage:WaitForChild("ProgressionNetwork", NETWORK_WAIT_SECONDS)
-local progressionStateRemote = progressionNetwork:WaitForChild("State") :: RemoteEvent
-local progressionReadStateRemote = progressionNetwork:WaitForChild("ReadState") :: RemoteFunction
-local progressionChooseUpgradeRemote = progressionNetwork:WaitForChild("ChooseUpgrade") :: RemoteEvent
+assert(progressionNetwork ~= nil, "ProgressionNetwork did not become available before the client bootstrap timeout")
+local progressionStateRemote = progressionNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	progressionStateRemote ~= nil,
+	"ProgressionNetwork.State did not become available before the client bootstrap timeout"
+)
+local progressionReadStateRemote = progressionNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(
+	progressionReadStateRemote ~= nil,
+	"ProgressionNetwork.ReadState did not become available before the client bootstrap timeout"
+)
+local progressionChooseUpgradeRemote =
+	progressionNetwork:WaitForChild("ChooseUpgrade", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	progressionChooseUpgradeRemote ~= nil,
+	"ProgressionNetwork.ChooseUpgrade did not become available before the client bootstrap timeout"
+)
 
 local started = false
 local connections: { RBXScriptConnection } = {}
@@ -955,7 +969,9 @@ local function createPresentation()
 	levelCelebration = celebration
 	levelCelebrationText = celebrationText
 
-	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+	local playerGui = localPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
+	gui.Parent = playerGui
 	screenGui = gui
 end
 

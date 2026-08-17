@@ -6,6 +6,7 @@
 -- Only already-committed successful damage is disclosed back to the attacker as
 -- presentation; rejected/missed swings remain silent and grant no client state.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local NETWORK_WAIT_SECONDS = 20
 
 local MeleePresentationContracts = require(ReplicatedStorage.Shared.Combat.MeleePresentationContracts)
 local PrimaryCombatModeContracts = require(ReplicatedStorage.Shared.Combat.PrimaryCombatModeContracts)
@@ -18,9 +19,15 @@ local MessageKindIds = MeleePresentationContracts.MessageKindIds
 
 local started = false
 local intentConnection: RBXScriptConnection? = nil
-local meleeNetwork = ReplicatedStorage:WaitForChild("MeleeNetwork")
-local strikeIntent = meleeNetwork:WaitForChild("StrikeIntent") :: RemoteEvent
-local presentationRemote = meleeNetwork:WaitForChild("Presentation") :: RemoteEvent
+local meleeNetwork = ReplicatedStorage:WaitForChild("MeleeNetwork", NETWORK_WAIT_SECONDS)
+assert(meleeNetwork ~= nil, "MeleeNetwork did not become available before the server bootstrap timeout")
+local strikeIntent = meleeNetwork:WaitForChild("StrikeIntent", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(strikeIntent ~= nil, "meleeNetwork.StrikeIntent did not become available before the server bootstrap timeout")
+local presentationRemote = meleeNetwork:WaitForChild("Presentation", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	presentationRemote ~= nil,
+	"meleeNetwork.Presentation did not become available before the server bootstrap timeout"
+)
 
 local function onStrikeIntent(player: Player, requestId: unknown, aimDirection: unknown, ...: unknown)
 	if select("#", ...) ~= 0 or type(requestId) ~= "string" or typeof(aimDirection) ~= "Vector3" then

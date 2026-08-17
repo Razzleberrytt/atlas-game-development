@@ -1,32 +1,111 @@
 --!strict
 
 --[[
-	Shared balance home for the production enemy runtime. This integrates the
-	validated Horde Pressure v1 time-to-contact and time-to-kill tuning with the
-	higher-density horde vertical-slice population and evaluation budgets. Every
-	consequential value remains server-owned and configuration-driven.
+	Shared balance home for the production enemy runtime. Wave 2 keeps the legacy
+	Walker table byte-for-value compatible while adding a compact ordinary-
+	archetype catalog consumed by the shared pure behavior resolver.
 ]]
 
 local EnemyContracts = require(script.Parent.Parent.Combat.EnemyContracts)
 local WorldFoundationConfig = require(script.Parent.WorldFoundationConfig)
 
+local MovementIds = EnemyContracts.EnemyMovementBehaviorIds
+local AttackIds = EnemyContracts.EnemyAttackBehaviorIds
+local ArchetypeIds = EnemyContracts.EnemyArchetypeIds
+
+local Walker = table.freeze({
+	ArchetypeId = ArchetypeIds.ExclusionWalker,
+	DisplayName = "Exclusion Stalker",
+	MaximumHealth = 68,
+	PursuitSpeedStudsPerSecond = 16.5,
+	RoamSpeedStudsPerSecond = 5.5,
+	DetectionRadiusStuds = 135,
+	PursuitDropRadiusStuds = 170,
+	AttackRangeStuds = 7,
+	AttackDamage = 20,
+	AttackWindupSeconds = 0.7,
+	AttackCooldownSeconds = 2.1,
+	RoamWanderRadiusStuds = 12,
+	RoamRetargetIntervalSeconds = 6,
+	MovementBehaviorId = MovementIds.DirectPursuit,
+	AttackBehaviorId = AttackIds.Melee,
+	WeakPointPartName = "Head",
+	WeakPointDamageMultiplier = 1.5,
+	FactionId = "faction.exclusion",
+	EliteEligible = true,
+	SpawnCost = 1,
+	EncounterWeight = 6,
+	BaseFieldXp = 10,
+	LootProfileId = "enemy.standard",
+	Tags = table.freeze({ "Common", "Melee", "Rusher" }),
+})
+
+local RazorRunner = table.freeze({
+	ArchetypeId = ArchetypeIds.RazorRunner,
+	DisplayName = "Razor Runner",
+	MaximumHealth = 48,
+	PursuitSpeedStudsPerSecond = 21,
+	RoamSpeedStudsPerSecond = 8,
+	DetectionRadiusStuds = 145,
+	PursuitDropRadiusStuds = 185,
+	AttackRangeStuds = 6,
+	AttackDamage = 13,
+	AttackWindupSeconds = 0.45,
+	AttackCooldownSeconds = 1.45,
+	RoamWanderRadiusStuds = 18,
+	RoamRetargetIntervalSeconds = 2.8,
+	MovementBehaviorId = MovementIds.Skirmish,
+	AttackBehaviorId = AttackIds.Melee,
+	WeakPointPartName = "Head",
+	WeakPointDamageMultiplier = 1.6,
+	FactionId = "faction.exclusion",
+	EliteEligible = true,
+	SpawnCost = 1,
+	EncounterWeight = 3,
+	BaseFieldXp = 12,
+	LootProfileId = "enemy.standard",
+	Tags = table.freeze({ "Common", "Melee", "Skirmisher", "Fast" }),
+})
+
+local GriefBrute = table.freeze({
+	ArchetypeId = ArchetypeIds.GriefBrute,
+	DisplayName = "Grief Brute",
+	MaximumHealth = 150,
+	PursuitSpeedStudsPerSecond = 10.5,
+	RoamSpeedStudsPerSecond = 4,
+	DetectionRadiusStuds = 120,
+	PursuitDropRadiusStuds = 155,
+	AttackRangeStuds = 8.5,
+	AttackDamage = 34,
+	AttackWindupSeconds = 1.05,
+	AttackCooldownSeconds = 2.8,
+	RoamWanderRadiusStuds = 8,
+	RoamRetargetIntervalSeconds = 5.5,
+	MovementBehaviorId = MovementIds.HeavyPressure,
+	AttackBehaviorId = AttackIds.Melee,
+	WeakPointPartName = "Head",
+	WeakPointDamageMultiplier = 1.35,
+	FactionId = "faction.exclusion",
+	EliteEligible = true,
+	SpawnCost = 3,
+	EncounterWeight = 2,
+	BaseFieldXp = 28,
+	LootProfileId = "enemy.heavy",
+	Tags = table.freeze({ "Heavy", "Melee", "Bruiser" }),
+})
+
+local OrdinaryArchetypesById = table.freeze({
+	[ArchetypeIds.ExclusionWalker] = Walker,
+	[ArchetypeIds.RazorRunner] = RazorRunner,
+	[ArchetypeIds.GriefBrute] = GriefBrute,
+})
+
 local EnemyConfig = {
-	Version = "MVP-0.1-v6-purposeful-stalker-pressure",
-	Walker = table.freeze({
-		ArchetypeId = EnemyContracts.EnemyArchetypeIds.ExclusionWalker,
-		DisplayName = "Exclusion Stalker",
-		MaximumHealth = 68,
-		PursuitSpeedStudsPerSecond = 16.5,
-		RoamSpeedStudsPerSecond = 5.5,
-		DetectionRadiusStuds = 135,
-		PursuitDropRadiusStuds = 170,
-		AttackRangeStuds = 7,
-		AttackDamage = 20,
-		AttackWindupSeconds = 0.7,
-		AttackCooldownSeconds = 2.1,
-		RoamWanderRadiusStuds = 12,
-		RoamRetargetIntervalSeconds = 6,
-	}),
+	Version = "MVP-0.1-v7-wave2-archetypes",
+	Walker = Walker,
+	RazorRunner = RazorRunner,
+	GriefBrute = GriefBrute,
+	OrdinaryArchetypesById = OrdinaryArchetypesById,
 	Navigation = table.freeze({
 		PursuitRepathIntervalSeconds = 0.45,
 		AgentRadiusStuds = 2.5,
@@ -56,9 +135,7 @@ local EnemyConfig = {
 		RoamingSpawnMinimumDistanceStuds = 68,
 		RoamingSpawnMaximumDistanceStuds = 118,
 	}),
-	Cleanup = table.freeze({
-		CorpseCleanupSeconds = 5,
-	}),
+	Cleanup = table.freeze({ CorpseCleanupSeconds = 5 }),
 	Combat = table.freeze({
 		GameplayVisibilityRadiusStuds = 60,
 		EvaluationIntervalSeconds = 0.08,
@@ -67,28 +144,38 @@ local EnemyConfig = {
 	EvaluationIntervalSeconds = 0.1,
 }
 
-assert(EnemyConfig.Walker.MaximumHealth > 0, "walker health must be positive")
-assert(EnemyConfig.Walker.PursuitSpeedStudsPerSecond > 0, "pursuit speed must be positive")
-assert(
-	EnemyConfig.Walker.RoamSpeedStudsPerSecond > 0
-		and EnemyConfig.Walker.RoamSpeedStudsPerSecond <= EnemyConfig.Walker.PursuitSpeedStudsPerSecond,
-	"roam speed must be positive and no faster than pursuit"
-)
-assert(
-	EnemyConfig.Walker.DetectionRadiusStuds > EnemyConfig.Walker.AttackRangeStuds,
-	"detection must reach beyond melee range"
-)
-assert(
-	EnemyConfig.Walker.PursuitDropRadiusStuds > EnemyConfig.Walker.DetectionRadiusStuds,
-	"pursuit drop hysteresis must exceed detection"
-)
-assert(EnemyConfig.Walker.AttackDamage > 0, "attack damage must be positive")
-assert(
-	EnemyConfig.Walker.AttackWindupSeconds >= EnemyConfig.EvaluationIntervalSeconds
-		and EnemyConfig.Walker.AttackWindupSeconds < EnemyConfig.Walker.AttackCooldownSeconds,
-	"attack windup must be visible, bounded, and shorter than the cooldown"
-)
-assert(EnemyConfig.Walker.AttackCooldownSeconds > 0, "attack cooldown must be positive")
+function EnemyConfig.getOrdinaryArchetype(archetypeId: unknown)
+	if type(archetypeId) ~= "string" then
+		return nil
+	end
+	return OrdinaryArchetypesById[archetypeId]
+end
+
+local function validateOrdinary(definition)
+	assert(definition.MaximumHealth > 0, "enemy health must be positive")
+	assert(definition.PursuitSpeedStudsPerSecond > 0, "pursuit speed must be positive")
+	assert(
+		definition.RoamSpeedStudsPerSecond > 0
+			and definition.RoamSpeedStudsPerSecond <= definition.PursuitSpeedStudsPerSecond,
+		"roam speed must be positive and no faster than pursuit"
+	)
+	assert(definition.DetectionRadiusStuds > definition.AttackRangeStuds, "detection must reach beyond attack range")
+	assert(definition.PursuitDropRadiusStuds > definition.DetectionRadiusStuds, "pursuit drop must exceed detection")
+	assert(definition.AttackDamage > 0, "attack damage must be positive")
+	assert(
+		definition.AttackWindupSeconds >= EnemyConfig.EvaluationIntervalSeconds
+			and definition.AttackWindupSeconds < definition.AttackCooldownSeconds,
+		"attack windup must be visible and shorter than cooldown"
+	)
+	assert(definition.AttackCooldownSeconds > 0, "attack cooldown must be positive")
+	assert(definition.SpawnCost > 0 and definition.EncounterWeight > 0, "encounter cost/weight must be positive")
+	assert(definition.BaseFieldXp >= 0, "base Field XP hook must be non-negative")
+end
+
+for _, definition in OrdinaryArchetypesById do
+	validateOrdinary(definition)
+end
+
 assert(
 	EnemyConfig.FairSpawn.MinimumOperativeDistanceStuds > EnemyConfig.Combat.GameplayVisibilityRadiusStuds,
 	"fair spawns must land outside the darkness engagement radius"

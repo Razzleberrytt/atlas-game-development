@@ -26,6 +26,7 @@ local SpecialEnemyConfig = require(ReplicatedStorage.Shared.Config.SpecialEnemyC
 local Controller = {}
 
 local ENEMY_FOLDER_NAME = "EnemyEntities"
+local BOOTSTRAP_WAIT_SECONDS = 20
 local PRESENTATION_FOLDER_NAME = "LivingKingdomsSpecialEncounterTelegraphs"
 local BossStatusConfig = SpecialEncounterTelegraphConfig.BossStatus
 local BLOOM_LINGER_SECONDS = SpecialEnemyConfig.Bloom.Lingering.LifetimeSeconds
@@ -405,7 +406,8 @@ function Controller.start()
 	end
 	started = true
 	createPresentation()
-	local found = Workspace:WaitForChild(ENEMY_FOLDER_NAME)
+	local found = Workspace:WaitForChild(ENEMY_FOLDER_NAME, BOOTSTRAP_WAIT_SECONDS)
+	assert(found ~= nil, "EnemyEntities did not become available before the client bootstrap timeout")
 	assert(found:IsA("Folder"), "EnemyEntities must be a Folder")
 	for _, child in found:GetChildren() do
 		trackModel(child)

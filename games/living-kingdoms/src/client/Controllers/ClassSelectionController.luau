@@ -25,9 +25,16 @@ local SelectionStateIds = ClassContracts.ClassSelectionStateIds
 
 local localPlayer = Players.LocalPlayer
 local classNetwork = ReplicatedStorage:WaitForChild("ClassNetwork", NETWORK_WAIT_SECONDS)
-local selectionIntentRemote = classNetwork:WaitForChild("SelectionIntent") :: RemoteEvent
-local stateRemote = classNetwork:WaitForChild("State") :: RemoteEvent
-local readStateFunction = classNetwork:WaitForChild("ReadState") :: RemoteFunction
+assert(classNetwork ~= nil, "ClassNetwork did not become available before the client bootstrap timeout")
+local selectionIntentRemote = classNetwork:WaitForChild("SelectionIntent", NETWORK_WAIT_SECONDS)
+assert(
+	selectionIntentRemote ~= nil,
+	"ClassNetwork.SelectionIntent did not become available before the client bootstrap timeout"
+)
+local stateRemote = classNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS)
+assert(stateRemote ~= nil, "ClassNetwork.State did not become available before the client bootstrap timeout")
+local readStateFunction = classNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS)
+assert(readStateFunction ~= nil, "ClassNetwork.ReadState did not become available before the client bootstrap timeout")
 
 local Controller = {}
 
@@ -171,7 +178,9 @@ local function createPresentation()
 		buttonsByClassId[classId] = button
 	end
 
-	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+	local playerGui = localPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
+	gui.Parent = playerGui
 	screenGui = gui
 end
 

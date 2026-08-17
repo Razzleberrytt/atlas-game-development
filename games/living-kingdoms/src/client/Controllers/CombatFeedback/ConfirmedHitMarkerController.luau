@@ -67,7 +67,12 @@ local presentedShotIds: { [string]: boolean } = {}
 local presentedShotOrder: { string } = {}
 
 local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork", NETWORK_WAIT_SECONDS)
-local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: RemoteEvent
+assert(combatNetwork ~= nil, "CombatNetwork did not become available before the client bootstrap timeout")
+local presentationRemote = combatNetwork:WaitForChild("CombatPresentation", NETWORK_WAIT_SECONDS)
+assert(
+	presentationRemote ~= nil,
+	"CombatNetwork.CombatPresentation did not become available before the client bootstrap timeout"
+)
 
 local function isNonEmptyString(value: unknown): boolean
 	return type(value) == "string" and value ~= ""
@@ -200,7 +205,9 @@ local function createPresentation()
 	label.Parent = root
 	markerLabel = label
 
-	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+	local playerGui = localPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
+	gui.Parent = playerGui
 	screenGui = gui
 end
 

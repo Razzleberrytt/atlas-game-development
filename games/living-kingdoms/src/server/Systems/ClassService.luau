@@ -8,6 +8,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local NETWORK_WAIT_SECONDS = 20
 
 local ClassContracts = require(ReplicatedStorage.Shared.Classes.ClassContracts)
 local ClassConfig = require(ReplicatedStorage.Shared.Config.ClassConfig)
@@ -43,11 +44,22 @@ local ClassIds = ClassContracts.ClassIds
 local ResourceIds = ClassContracts.ClassResourceIds
 local LifeStateIds = OperativeLifeContracts.OperativeLifeStateIds
 
-local classNetwork = ReplicatedStorage:WaitForChild("ClassNetwork")
-local selectionIntentRemote = classNetwork:WaitForChild("SelectionIntent") :: RemoteEvent
-local actionIntentRemote = classNetwork:WaitForChild("ActionIntent") :: RemoteEvent
-local stateRemote = classNetwork:WaitForChild("State") :: RemoteEvent
-local readStateFunction = classNetwork:WaitForChild("ReadState") :: RemoteFunction
+local classNetwork = ReplicatedStorage:WaitForChild("ClassNetwork", NETWORK_WAIT_SECONDS)
+assert(classNetwork ~= nil, "ClassNetwork did not become available before the server bootstrap timeout")
+local selectionIntentRemote = classNetwork:WaitForChild("SelectionIntent", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	selectionIntentRemote ~= nil,
+	"classNetwork.SelectionIntent did not become available before the server bootstrap timeout"
+)
+local actionIntentRemote = classNetwork:WaitForChild("ActionIntent", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	actionIntentRemote ~= nil,
+	"classNetwork.ActionIntent did not become available before the server bootstrap timeout"
+)
+local stateRemote = classNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "classNetwork.State did not become available before the server bootstrap timeout")
+local readStateFunction = classNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(readStateFunction ~= nil, "classNetwork.ReadState did not become available before the server bootstrap timeout")
 
 type ClassSelectionStateId = ClassContracts.ClassSelectionStateId
 type AuthoritativeClassAssignment = ClassContracts.AuthoritativeClassAssignment

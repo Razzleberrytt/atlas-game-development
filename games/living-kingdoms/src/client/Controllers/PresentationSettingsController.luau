@@ -12,6 +12,8 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local NETWORK_WAIT_SECONDS = 20
+
 local PresentationAccessibilityConfig = require(ReplicatedStorage.Shared.Config.PresentationAccessibilityConfig)
 local PresentationAccessibilityState = require(script.Parent.Parent.Presentation.PresentationAccessibilityState)
 
@@ -71,7 +73,8 @@ function Controller.start()
 		return
 	end
 	started = true
-	local playerGui = localPlayer:WaitForChild("PlayerGui")
+	local playerGui = localPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "PresentationSettings"
 	gui.ResetOnSpawn = false

@@ -18,9 +18,22 @@ local NETWORK_WAIT_SECONDS = 20
 local Controller = {}
 local player = Players.LocalPlayer
 local progressionNetwork = ReplicatedStorage:WaitForChild("OperativeProgressionNetwork", NETWORK_WAIT_SECONDS)
-local progressionReadState = progressionNetwork:WaitForChild("ReadState") :: RemoteFunction
+assert(
+	progressionNetwork ~= nil,
+	"OperativeProgressionNetwork did not become available before the client bootstrap timeout"
+)
+local progressionReadState = progressionNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(
+	progressionReadState ~= nil,
+	"OperativeProgressionNetwork.ReadState did not become available before the client bootstrap timeout"
+)
 local inventoryNetwork = ReplicatedStorage:WaitForChild("InventoryNetwork", NETWORK_WAIT_SECONDS)
-local inventoryStateRemote = inventoryNetwork:WaitForChild("State") :: RemoteEvent
+assert(inventoryNetwork ~= nil, "InventoryNetwork did not become available before the client bootstrap timeout")
+local inventoryStateRemote = inventoryNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	inventoryStateRemote ~= nil,
+	"InventoryNetwork.State did not become available before the client bootstrap timeout"
+)
 
 local started = false
 local connections: { RBXScriptConnection } = {}
@@ -92,9 +105,15 @@ local function refresh()
 end
 
 local function mount(): Frame
-	local playerGui = player:WaitForChild("PlayerGui")
-	local menu = playerGui:WaitForChild("RPGMenu")
-	local modal = menu:WaitForChild("Modal") :: Frame
+	local playerGui = player:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
+	local menu = playerGui:WaitForChild("RPGMenu", NETWORK_WAIT_SECONDS)
+	assert(menu ~= nil, "RPGMenu did not become available before the client bootstrap timeout")
+	local modal = menu:WaitForChild("Modal", NETWORK_WAIT_SECONDS) :: Frame?
+	assert(
+		modal ~= nil and modal:IsA("Frame"),
+		"RPGMenu.Modal did not become available before the client bootstrap timeout"
+	)
 	local characterPanel = modal:FindFirstChild("CharacterPanel", true)
 	assert(characterPanel ~= nil and characterPanel:IsA("Frame"), "RPG menu CharacterPanel is required")
 
