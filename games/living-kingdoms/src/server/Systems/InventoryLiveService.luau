@@ -6,7 +6,6 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local EquipmentComparisonResolver = require(ReplicatedStorage.Shared.Equipment.EquipmentComparisonResolver)
-local EquipmentContracts = require(ReplicatedStorage.Shared.Equipment.EquipmentRewardContracts)
 local InventoryDismantleResolver = require(ReplicatedStorage.Shared.Persistence.InventoryDismantleResolver)
 local EquipmentRewardConfig = require(ReplicatedStorage.Shared.Config.EquipmentRewardConfig)
 local PlayerInventorySnapshot = require(ReplicatedStorage.Shared.Persistence.PlayerInventorySnapshot)
@@ -32,11 +31,17 @@ local destroyed = false
 -- Accepted dismantle timestamps per owner, for the rate bound only.
 local recentDismantleRequests: { [number]: { number } } = {}
 
--- Authored definitions are static, so the tag lookup comparison needs is indexed
--- once rather than scanned per request.
+-- Authored definitions are static, so lookups and the bounded slot-intent set are
+-- indexed once rather than scanned per request. This keeps the live service on
+-- the same already-loaded authored source instead of adding a second dependency
+-- solely to validate unequip slot names.
 local definitionsById: { [string]: any } = {}
+local knownSlotIds: { [string]: boolean } = {}
 for _, definition in EquipmentRewardConfig.Definitions do
 	definitionsById[definition.Id] = definition
+	if type(definition.Slot) == "string" then
+		knownSlotIds[definition.Slot] = true
+	end
 end
 
 local function lookupEquipmentDefinition(definitionId: string): any
@@ -44,12 +49,7 @@ local function lookupEquipmentDefinition(definitionId: string): any
 end
 
 local function isKnownSlot(slotId: unknown): boolean
-	for _, candidate in EquipmentContracts.SlotIds do
-		if slotId == candidate then
-			return true
-		end
-	end
-	return false
+	return type(slotId) == "string" and knownSlotIds[slotId] == true
 end
 
 local Service = {}
