@@ -83,6 +83,20 @@ local function removeBossEndWalls(model: Model, root: BasePart)
 	end
 end
 
+local function isEastWestStraight(placement: any): boolean
+	return (placement.EntranceSide == "East" and placement.ExitSide == "West")
+		or (placement.EntranceSide == "West" and placement.ExitSide == "East")
+end
+
+local function isSupportedStraightPlacement(placement: any): boolean
+	if placement.TurnId ~= "Straight" then
+		return false
+	end
+	return isEastWestStraight(placement)
+		or (placement.EntranceSide == "North" and placement.ExitSide == "South")
+		or (placement.EntranceSide == "South" and placement.ExitSide == "North")
+end
+
 local function fitShellToPlacement(model: Model, root: BasePart, placement: any): boolean
 	local size = placement.Size
 	local center = placement.Center
@@ -103,10 +117,17 @@ local function fitShellToPlacement(model: Model, root: BasePart, placement: any)
 		return false
 	end
 
-	local scaleX = size.x / root.Size.X
+	local quarterTurn = isEastWestStraight(placement)
+	-- For a 90-degree world rotation the shell's local X dimension becomes world
+	-- Z and local Z becomes world X. Swap target dimensions before scaling so the
+	-- rotated visual still fits the authoritative unrotated collision rectangle.
+	local targetLocalX = if quarterTurn then size.z else size.x
+	local targetLocalZ = if quarterTurn then size.x else size.z
+	local scaleX = targetLocalX / root.Size.X
 	local scaleY = size.y / ModularAssetProductionCatalog.Dungeon.WallHeightStuds
-	local scaleZ = size.z / root.Size.Z
-	local targetRootCFrame = CFrame.new(center.x, 0, center.z)
+	local scaleZ = targetLocalZ / root.Size.Z
+	local yaw = if quarterTurn then math.rad(90) else 0
+	local targetRootCFrame = CFrame.new(center.x, 0, center.z) * CFrame.Angles(0, yaw, 0)
 	local snapshots: { PartSnapshot } = {}
 	for _, descendant in ipairs(model:GetDescendants()) do
 		if descendant:IsA("BasePart") then
@@ -149,7 +170,7 @@ local function cloneAsset(assetId: string): Instance?
 end
 
 local function hideAuthoritativeGrayboxVisuals(roomModel: Model)
-	for _, name in ipairs({ "Floor", "WestWall", "EastWall" }) do
+	for _, name in ipairs({ "Floor", "NorthWall", "SouthWall", "WestWall", "EastWall" }) do
 		local graybox = roomModel:FindFirstChild(name)
 		if graybox ~= nil and graybox:IsA("BasePart") then
 			graybox.Transparency = 1
@@ -165,10 +186,21 @@ function Presentation.apply(roomModel: Model, placement: any): boolean
 		return true
 	end
 
+	-- Current role assets are authored as straight-through modules. A cardinal
+	-- turn has two perpendicular authoritative openings, so using one of those
+	-- shells would visually close a real path. Keep the collision graybox visible
+	-- until a dedicated corner-module presentation capability is authored.
+	if not isSupportedStraightPlacement(placement) then
+		roomModel:SetAttribute("ModularDungeonVisualStatus", FALLBACK_STATUS)
+		roomModel:SetAttribute("ModularDungeonFallbackReason", "UnsupportedTurnLayout")
+		return false
+	end
+
 	local roleId = placement.RoleId
 	local assetId = if type(roleId) == "string" then ASSET_ID_BY_ROLE[roleId] else nil
 	if assetId == nil then
 		roomModel:SetAttribute("ModularDungeonVisualStatus", FALLBACK_STATUS)
+		roomModel:SetAttribute("ModularDungeonFallbackReason", "UnknownRoomRole")
 		return false
 	end
 	roomModel:SetAttribute("ModularDungeonRequestedAssetId", assetId)
@@ -179,6 +211,7 @@ function Presentation.apply(roomModel: Model, placement: any): boolean
 			clone:Destroy()
 		end
 		roomModel:SetAttribute("ModularDungeonVisualStatus", FALLBACK_STATUS)
+		roomModel:SetAttribute("ModularDungeonFallbackReason", "AssetUnavailable")
 		return false
 	end
 	local shell = clone :: Model
@@ -186,6 +219,7 @@ function Presentation.apply(roomModel: Model, placement: any): boolean
 	if root == nil or not root:IsA("BasePart") then
 		shell:Destroy()
 		roomModel:SetAttribute("ModularDungeonVisualStatus", FALLBACK_STATUS)
+		roomModel:SetAttribute("ModularDungeonFallbackReason", "InvalidAssetRoot")
 		return false
 	end
 	shell.PrimaryPart = root
@@ -197,6 +231,7 @@ function Presentation.apply(roomModel: Model, placement: any): boolean
 	if not fitShellToPlacement(shell, root, placement) then
 		shell:Destroy()
 		roomModel:SetAttribute("ModularDungeonVisualStatus", FALLBACK_STATUS)
+		roomModel:SetAttribute("ModularDungeonFallbackReason", "InvalidPlacementGeometry")
 		return false
 	end
 
@@ -208,6 +243,7 @@ function Presentation.apply(roomModel: Model, placement: any): boolean
 	hideAuthoritativeGrayboxVisuals(roomModel)
 	roomModel:SetAttribute("ModularDungeonAssetId", assetId)
 	roomModel:SetAttribute("ModularDungeonVisualStatus", MODULAR_STATUS)
+	roomModel:SetAttribute("ModularDungeonFallbackReason", nil)
 	return true
 end
 
