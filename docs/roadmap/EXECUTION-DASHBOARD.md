@@ -1,8 +1,8 @@
-# Atlas — Execution Dashboard v1.26
+# Atlas — Execution Dashboard v1.27
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-17  
-**Main baseline audited:** `310ba09c6a79771739228ee1b749824883c822e2`  
+**Main baseline audited:** `888b3106ee98059c712f1d7cd27b673ce4d8afb5`  
 **Purpose:** answer quickly what is true, what is NOW, what may proceed, and what comes NEXT.
 
 ## Precedence
@@ -27,68 +27,83 @@ For documentation-authority routing, use [`../README.md`](../README.md). Histori
   - #84, #86–#88 — diagnostic/latency/randomized stress surfaces without a current consumer.
 - Patch 0.7's machine-readable detailed proof remains `../production/PATCH-0.7-ACCEPTANCE-MATRIX.json`.
 - Main World route-resilience ticket **LKB-0682 is VERIFIED**. PR #649 reconciled the still-unique northwest bypass from stale #620 onto current main, passed Full Atlas validation #2286, and merged as `c9d23a7b4c8b892dd3d7d16e86684fa69882f7c8`. Post-merge main push validation #2287 passed. Rooted road-failure evidence improved roads 7→9, edges 7→10, chokepoints 2→1, bridges 3→1; worst bridge failure improved from 6 districts / 4 roads lost to 0 districts / 1 road, and the prior worst non-root articulation failure disappeared. PR #620 is closed unmerged as superseded.
-- **LKB-0033 is VERIFIED and the bounded-dependency maintenance mini-lane is CLOSED.** PR #656 exhaustively bounded the remaining startup/dependency waits, passed Full Atlas validation #2353, and squash-merged as `310ba09c6a79771739228ee1b749824883c822e2`. Post-merge main push validation #2354 passed.
-- `ClientBootstrapDependencyWaitSourceAudit.test.luau` now enforces zero untimed `WaitForChild` calls under the canonical client source tree. `ServerBootstrapDependencyWaitSourceAudit.test.luau` reports no unbounded network dependency waits across canonical server/shared/Main World source. The fresh overlap audit found no surviving open LKB-0033 implementation; stale #646 and diagnostic #652 are closed unmerged.
-- Do **not** manufacture another bounded-wait ticket merely to keep that mini-lane alive. A new reproducible dependency-stall defect may reopen the concern through normal coordination.
+- **LKB-0033 is VERIFIED and the bounded-dependency maintenance mini-lane is CLOSED.** PR #656 exhaustively bounded startup/dependency waits, passed Full Atlas validation #2353, and squash-merged as `310ba09c6a79771739228ee1b749824883c822e2`. Post-merge main validation #2354 passed. Coordination closeout PR #657 passed Full Atlas #2357, merged as `888b3106ee98059c712f1d7cd27b673ce4d8afb5`, and post-merge main validation #2358 passed.
+- `ClientBootstrapDependencyWaitSourceAudit.test.luau` enforces zero untimed `WaitForChild` calls under the canonical client source tree. `ServerBootstrapDependencyWaitSourceAudit.test.luau` reports no unbounded network dependency waits across canonical server/shared/Main World source. Do not manufacture another bounded-wait ticket without a new concrete defect.
+- The dashboard-mandated older-feature audit was refreshed against current main. **#577 retains a small, independent, still-missing player-facing authority bridge:** current main does not contain `EquipmentCombatAdapter.luau` or `EquippedWeaponResolver.luau`. The other named candidates are either larger dependency stacks (#566/#579 progression; #537/#568/#574 procedural), enemy-navigation reliability (#570), presentation-only (#535), test/maintenance-only (#547/#559/#560), or environment-refactor work (#550).
+- Therefore **LKB-0567 is the sole BUILDING ticket**: cross-system integration for Equipment, Affixes & Comparison, specifically durable server-owned equipment identity → existing authoritative combat weapon activation.
 - Missing manual Studio/device evidence does not block dependency-safe source progression. A reproducible runtime, authority, persistence, data-loss, security, or deterministic-validation defect does.
 - The development coverage system preserves `LK-001`–`LK-300` as a machine-readable concern ontology in `../../config/coverage/living-kingdoms-development.json`, with generated taxonomy/atlas/report views. It is **not** a second roadmap and does not authorize one module per concern.
 
 ## NOW
 
-### 1. Audit older feature candidates and explicitly select one next player-facing capability
+### 1. Reconcile authoritative durable equipment → combat activation — LKB-0567
 
-There is currently **no BUILDING implementation ticket** after LKB-0033 verification. Perform the coordination selector before starting new implementation work:
+Use open PR #577 only as source evidence. Reconcile its still-valid player-facing outcome onto a fresh branch from the published LKB-0567 claim baseline.
 
-1. inspect current `main` and the full open-PR inventory;
-2. compare each older candidate with current main for unique surviving work, superseding merges, ownership drift, dependency stacks, and conflicts;
-3. rank viable candidates by player-facing/reliability ROI, dependency readiness, current-main compatibility, overlap risk, and measurable exit criteria;
-4. explicitly activate exactly **one** capability here;
-5. map that capability to the smallest coherent Living Kingdoms backlog ticket, claim it as the sole BUILDING row, and reconcile useful old work onto a fresh current-main branch rather than blindly merging stale branches.
+Required outcome:
 
-Patch 0.8 remains an available planned queue, not the default. Do not activate it merely because Patch 0.7 and the bounded-wait mini-lane are closed.
+- resolve combat weapon identity only from the server-owned durable inventory record plus authored equipment definitions;
+- route accepted durable weapon equips through the existing authoritative combat owner/API rather than creating a second combat state path;
+- support authoritative weapon-slot unequip/fallback through a **public current persistence mutation seam**, not by reaching into another service's private resident cache;
+- expose only minimal client intent at the inventory network boundary (owned instance ID for equip, known slot ID for unequip); never accept client-authored weapon IDs, damage, RPM, magazine size, rarity, power, affixes, or definitions;
+- preserve current Patch 0.7 lease, guarded-write, capacity, rollback, and resident-record rules;
+- preserve LKB-0033 bounded-failure guarantees: no indefinite dependency wait or open-ended retry loop may be introduced;
+- add focused pure/resolver, persistence, authority/source-audit, and integration evidence for the canonical handoff;
+- do not redesign combat, inventory persistence, equipment generation, affix semantics, progression, UI, or unrelated remotes.
+
+Exit gate:
+
+1. the implementation diff is reconciled from current main and contains only the smallest coherent LKB-0567 integration;
+2. Full Atlas validation is green on the final PR head;
+3. merge to main and require green main push validation;
+4. directly audit current main and #577 for surviving unique scope/overlap;
+5. close #577 unmerged as superseded if its useful outcome has landed;
+6. mark LKB-0567 VERIFIED and release `active_claim.json` only through the coordination release transaction.
 
 ### 2. Keep repository/documentation truth coherent
 
 The 300-area development taxonomy, Development Atlas, coverage report, documentation router, and coverage validator are the canonical cross-system gap/audit framework. When a coherent implementation materially changes coverage, update the machine registry and regenerate the views; do not create another independent status document.
 
-## Open-PR interpretation
+## Candidate audit — 2026-08-17 selector result
 
 Open PR count is **not** the execution queue. Age/open state does not grant authority.
 
-### Older feature candidates requiring fresh deliberate audit
+### Selected source candidate
 
-- **#566 / #578 / #579** — progression stack/sync work;
-- **#577** — authoritative inventory/equipment activation;
-- **#568 / #574** — procedural-instance work;
-- **#570** — enemy navigation/combat framework;
-- older presentation/test/refactor PRs such as #535, #537, #547, #550, #559 and #560.
+- **#577 — authoritative inventory equipment and weapon stat activation.** Selected because its server-owned equipment → combat bridge is still absent from current main, it is independently implementable, it produces an immediate player-facing loadout/combat outcome, and it has a measurable authority/security exit gate. Reconcile; do not merge stale branch wholesale.
 
-For every candidate: compare it with current main, inspect superseding merges and ownership drift, resolve stack dependencies, identify the still-unique player-facing outcome, and reject or close obsolete work. A viable candidate still requires explicit dashboard activation before implementation begins.
+### Deferred larger feature stacks
 
-### Closed/superseded bounded-wait sources
+- **#566 / #579** — durable character progression/stats. #579 is stacked on #566; this is a broader persistence/progression capability and is not the current lane.
+- **#537 / #568 / #574** — seeded/procedural instance work. Useful but forms a larger procedural stack with current-main reconciliation and Studio facts still relevant.
+- **#570** — enemy-navigation scheduling/stuck recovery. Reliability value remains, but it is not the selected player-facing equipment bridge.
 
-- **#646** — RPG menu network waits; closed unmerged after its useful work was reconciled through later LKB-0033 checkpoints.
-- **#652** — diagnostic client network-child audit; closed unmerged by design after exposing the next concrete wait family.
-- **#656** — exhaustive LKB-0033 closeout; merged and VERIFIED after #2353/#2354.
+### Not selected as player-facing implementation lanes
 
-### Superseded Main World candidate
+- **#535** — enemy archetype presentation only; does not change gameplay authority.
+- **#547** — test layout organization only.
+- **#550** — environment composition math refactor/evidence tooling.
+- **#559 / #560** — source-audit path maintenance only.
+- **#578** — coordination sync from main into the old progression branch, not an independent feature.
 
-- **#620** — northwest route redundancy. Closed unmerged after current-main PR #649 implemented and verified the still-valid geometry under LKB-0682.
+### Closed/superseded sources
+
+- **#646** — RPG menu network waits; useful work reconciled through later LKB-0033 checkpoints.
+- **#652** — diagnostic client network-child audit; closed unmerged by design.
+- **#656** — exhaustive LKB-0033 implementation; merged and verified.
+- **#620** — northwest route redundancy; superseded by verified LKB-0682 PR #649.
 
 ## NEXT
 
-After the candidate audit selects one capability:
+After LKB-0567 leaves BUILDING and the shared claim is released:
 
-1. update this dashboard to name that capability as the sole active implementation lane;
-2. claim exactly one smallest matching backlog ticket in `backlog/living-kingdoms/status.csv`;
-3. create/reconcile a fresh current-main implementation branch;
-4. implement only the still-unique scoped outcome;
-5. pass the applicable full validation gate, merge, require post-merge evidence, and mark VERIFIED only after the current-main audit is clean;
-6. repeat this selector only after the active ticket leaves BUILDING.
+1. refresh current main and the full open-PR inventory again;
+2. re-rank the remaining viable capabilities using player-facing/reliability ROI, dependency readiness, current-main compatibility, overlap risk, and measurable exit criteria;
+3. explicitly activate exactly one smallest matching backlog ticket through a new atomic claim transaction;
+4. reconcile useful old work onto fresh main rather than blindly merging stale branches;
+5. repeat until a concrete blocker or authority boundary prevents safe progression.
 
-Patch 0.8 remains an available planned queue via `PATCH-0.8-ACCEPTANCE.md` + `PATCH-0.8-100-TASK-HARDENING-BACKLOG.md`, but **it is not automatically selected merely because Patch 0.7 closed**. Patch 0.9 and RC 1.0 remain later planned queues unless explicitly activated.
-
-Selection criteria: player-facing/reliability ROI, dependency readiness, fresh current-main compatibility, no overlap with open work, no duplicate authority, and measurable exit criteria.
+Patch 0.8 remains an available planned queue via `PATCH-0.8-ACCEPTANCE.md` + `PATCH-0.8-100-TASK-HARDENING-BACKLOG.md`, but **it is not automatically selected** merely because prior lanes closed. Patch 0.9 and RC 1.0 remain later planned queues unless explicitly activated.
 
 ## Development coverage lens
 
