@@ -67,6 +67,11 @@ def python_script(label: str, script: str, *args: str) -> None:
 def validate_docs() -> None:
     python_script("roadmap/authority integrity", "scripts/validate_roadmap_authority.py")
     python_script(
+        "Living Kingdoms backlog coordination",
+        "backlog/living-kingdoms/materialize_backlog.py",
+        "--check",
+    )
+    python_script(
         "Living Kingdoms development coverage",
         "scripts/development_coverage.py",
         "validate",
