@@ -12,8 +12,14 @@ assert(
 	contains('ReplicatedStorage:WaitForChild("InventoryNetwork"'),
 	"RPG menu must consume the owner inventory network"
 )
-assert(contains('inventoryNetwork:WaitForChild("ReadOwnInventory")'), "RPG menu must read the sanitized owner snapshot")
-assert(contains('inventoryNetwork:WaitForChild("EquipOwnedItem")'), "RPG menu must use the owner-only equip intent")
+assert(
+	contains('inventoryNetwork:WaitForChild("ReadOwnInventory", NETWORK_WAIT_SECONDS)'),
+	"RPG menu must read the sanitized owner snapshot through a bounded dependency wait"
+)
+assert(
+	contains('inventoryNetwork:WaitForChild("EquipOwnedItem", NETWORK_WAIT_SECONDS)'),
+	"RPG menu must use the owner-only equip intent through a bounded dependency wait"
+)
 assert(contains("latestDurableInventory"), "RPG menu must retain the latest sanitized durable snapshot")
 assert(contains("latestDurableInventory.Items"), "durable inventory cards must come from sanitized snapshot items")
 assert(contains('durableEquippedItem("Primary")'), "character panel must display durable primary equipment")
