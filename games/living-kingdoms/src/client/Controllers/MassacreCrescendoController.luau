@@ -14,6 +14,8 @@ local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local Workspace = game:GetService("Workspace")
 
+local NETWORK_WAIT_SECONDS = 20
+
 local MassacreCrescendoConfig = require(ReplicatedStorage.Shared.Config.MassacreCrescendoConfig)
 local HordeStateEarlyListener = require(script.Parent.Parent.State.HordeStateEarlyListener)
 
@@ -164,7 +166,9 @@ local function createPresentation()
 	fillCorner.Parent = fill
 	timeFill = fill
 
-	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+	local playerGui = localPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
+	gui.Parent = playerGui
 	screenGui = gui
 
 	local sound = Instance.new("Sound")

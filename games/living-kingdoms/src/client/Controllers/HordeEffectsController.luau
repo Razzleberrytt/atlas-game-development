@@ -14,6 +14,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
+local NETWORK_WAIT_SECONDS = 20
+
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 local HordeConfig = require(ReplicatedStorage.Shared.Config.HordeExperienceConfig)
@@ -25,8 +27,13 @@ local PresentationAccessibilityState = require(script.Parent.Parent.Presentation
 local Controller = {}
 local lifeAttribute = EnemyPresentationContracts.AttributeNames.LifeStateId
 local deadLifeState = EnemyPresentationContracts.LifeStateIds.Dead
-local presentationRemote =
-	ReplicatedStorage:WaitForChild("CombatNetwork"):WaitForChild("CombatPresentation") :: RemoteEvent
+local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork", NETWORK_WAIT_SECONDS)
+assert(combatNetwork ~= nil, "CombatNetwork did not become available before the client bootstrap timeout")
+local presentationRemote = combatNetwork:WaitForChild("CombatPresentation", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	presentationRemote ~= nil,
+	"CombatNetwork.CombatPresentation did not become available before the client bootstrap timeout"
+)
 local punctuationKindIds = HordeDeathPunctuationConfig.KindIds
 local SpecialAttributeNames = HordeSpecialTelegraphConfig.AttributeNames
 local SpecialKindIds = HordeSpecialTelegraphConfig.KindIds
@@ -266,8 +273,9 @@ function Controller.start()
 	started = true
 	local found = Workspace:FindFirstChild("EnemyEntities")
 	if found == nil then
-		found = Workspace:WaitForChild("EnemyEntities")
+		found = Workspace:WaitForChild("EnemyEntities", NETWORK_WAIT_SECONDS)
 	end
+	assert(found ~= nil, "EnemyEntities did not become available before the client bootstrap timeout")
 	assert(found:IsA("Folder"), "EnemyEntities must be a Folder")
 	for _, child in found:GetChildren() do
 		trackModel(child)

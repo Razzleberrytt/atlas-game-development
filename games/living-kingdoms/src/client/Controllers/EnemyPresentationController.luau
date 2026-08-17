@@ -29,6 +29,7 @@ local PresentationAttributeNames = EnemyPresentationContracts.AttributeNames
 local PresentationLifeStateIds = EnemyPresentationContracts.LifeStateIds
 
 local ENEMY_FOLDER_NAME = "EnemyEntities"
+local BOOTSTRAP_WAIT_SECONDS = 20
 local PRESENTATION_MODEL_NAME = "ExclusionWalkerPresentation"
 local MOVEMENT_THRESHOLD = 0.05
 
@@ -457,7 +458,8 @@ function EnemyPresentationController.start()
 	end
 	started = true
 
-	local folder = Workspace:WaitForChild(ENEMY_FOLDER_NAME)
+	local folder = Workspace:WaitForChild(ENEMY_FOLDER_NAME, BOOTSTRAP_WAIT_SECONDS)
+	assert(folder ~= nil, "EnemyEntities did not become available before the client bootstrap timeout")
 	assert(folder:IsA("Folder"), "EnemyEntities must be a Folder")
 	enemyFolder = folder
 	for _, child in folder:GetChildren() do

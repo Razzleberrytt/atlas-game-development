@@ -9,6 +9,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
+local NETWORK_WAIT_SECONDS = 20
 
 local WeaponLoadoutConfig = require(ReplicatedStorage.Shared.Config.WeaponLoadoutConfig)
 local WeaponLoadoutContracts = require(ReplicatedStorage.Shared.Weapons.WeaponLoadoutContracts)
@@ -21,10 +22,17 @@ local States = WeaponLoadoutContracts.SelectionStateIds
 local Operations = WeaponLoadoutContracts.NetworkOperationIds
 local Reasons = WeaponLoadoutContracts.RejectionReasonIds
 
-local network = ReplicatedStorage:WaitForChild("WeaponLoadoutNetwork")
-local selectionIntentRemote = network:WaitForChild("SelectionIntent") :: RemoteEvent
-local stateRemote = network:WaitForChild("State") :: RemoteEvent
-local readStateFunction = network:WaitForChild("ReadState") :: RemoteFunction
+local network = ReplicatedStorage:WaitForChild("WeaponLoadoutNetwork", NETWORK_WAIT_SECONDS)
+assert(network ~= nil, "WeaponLoadoutNetwork did not become available before the server bootstrap timeout")
+local selectionIntentRemote = network:WaitForChild("SelectionIntent", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	selectionIntentRemote ~= nil,
+	"network.SelectionIntent did not become available before the server bootstrap timeout"
+)
+local stateRemote = network:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "network.State did not become available before the server bootstrap timeout")
+local readStateFunction = network:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(readStateFunction ~= nil, "network.ReadState did not become available before the server bootstrap timeout")
 
 type Entry = {
 	player: Player,

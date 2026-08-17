@@ -12,6 +12,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
+local NETWORK_WAIT_SECONDS = 20
+
 local CriticalConditionConfig = require(ReplicatedStorage.Shared.Config.CriticalConditionConfig)
 
 local WARNING_MAX_WIDTH = 620
@@ -111,7 +113,9 @@ local function createPresentation()
 	sizeConstraint.MaxSize = Vector2.new(WARNING_MAX_WIDTH, WARNING_HEIGHT)
 	sizeConstraint.Parent = warning
 
-	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+	local playerGui = localPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
+	gui.Parent = playerGui
 	screenGui = gui
 end
 

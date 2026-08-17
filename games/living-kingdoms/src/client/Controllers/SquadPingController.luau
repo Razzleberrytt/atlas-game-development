@@ -34,8 +34,11 @@ type Marker = {
 local Controller = {}
 local localPlayer = Players.LocalPlayer
 local network = ReplicatedStorage:WaitForChild("SquadPingNetwork", NETWORK_WAIT_SECONDS)
-local intentRemote = network:WaitForChild("Intent") :: RemoteEvent
-local stateRemote = network:WaitForChild("State") :: RemoteEvent
+assert(network ~= nil, "SquadPingNetwork did not become available before the client bootstrap timeout")
+local intentRemote = network:WaitForChild("Intent", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(intentRemote ~= nil, "SquadPingNetwork.Intent did not become available before the client bootstrap timeout")
+local stateRemote = network:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "SquadPingNetwork.State did not become available before the client bootstrap timeout")
 
 local connections: { RBXScriptConnection } = {}
 local markersByPingId: { [string]: Marker } = {}
@@ -274,7 +277,9 @@ local function createStatusPresentation()
 	label.TextColor3 = Color3.fromRGB(238, 246, 255)
 	label.TextSize = 14
 	label.Parent = gui
-	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+	local playerGui = localPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
+	gui.Parent = playerGui
 	statusGui = gui
 	statusLabel = label
 	updateReadyStatus()

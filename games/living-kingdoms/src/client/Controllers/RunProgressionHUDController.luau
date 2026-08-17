@@ -44,9 +44,19 @@ local lastSelectionSequence = 0
 local gainExpiresAtServerTimestamp = 0
 
 local progressionNetwork = ReplicatedStorage:WaitForChild("ProgressionNetwork", NETWORK_WAIT_SECONDS)
-local stateRemote = progressionNetwork:WaitForChild("State") :: RemoteEvent
-local readStateRemote = progressionNetwork:WaitForChild("ReadState") :: RemoteFunction
-local chooseUpgradeRemote = progressionNetwork:WaitForChild("ChooseUpgrade") :: RemoteEvent
+assert(progressionNetwork ~= nil, "ProgressionNetwork did not become available before the client bootstrap timeout")
+local stateRemote = progressionNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "ProgressionNetwork.State did not become available before the client bootstrap timeout")
+local readStateRemote = progressionNetwork:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(
+	readStateRemote ~= nil,
+	"ProgressionNetwork.ReadState did not become available before the client bootstrap timeout"
+)
+local chooseUpgradeRemote = progressionNetwork:WaitForChild("ChooseUpgrade", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	chooseUpgradeRemote ~= nil,
+	"ProgressionNetwork.ChooseUpgrade did not become available before the client bootstrap timeout"
+)
 
 local function addCorner(parent: Instance, radius: number)
 	local corner = Instance.new("UICorner")
@@ -136,7 +146,8 @@ local function createChoicePanel(gui: ScreenGui)
 end
 
 local function createGui()
-	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
+	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
 	local stale = playerGui:FindFirstChild(GUI_NAME)
 	if stale ~= nil then
 		stale:Destroy()

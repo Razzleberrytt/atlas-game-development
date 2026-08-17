@@ -745,7 +745,9 @@ local function createPresentation()
 	skillPanel.Parent = window
 	skillsPanel = skillPanel
 
-	created.Parent = player:WaitForChild("PlayerGui")
+	local playerGui = player:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
+	created.Parent = playerGui
 	gui = created
 	selectTab("Character")
 end

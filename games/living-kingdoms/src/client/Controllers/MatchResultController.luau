@@ -142,7 +142,8 @@ local function cardSection(
 end
 
 local function createGui()
-	local playerGui = localPlayer:WaitForChild("PlayerGui")
+	local playerGui = localPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
 	local existing = playerGui:FindFirstChild(GUI_NAME)
 	if existing ~= nil then
 		existing:Destroy()

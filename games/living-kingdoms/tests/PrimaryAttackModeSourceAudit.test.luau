@@ -67,12 +67,12 @@ assert(
 )
 assert(contains(intentService, 'typeof(aimDirection) ~= "Vector3"'), "server must validate the melee aim payload")
 assert(
-	contains(intentService, 'meleeNetwork:WaitForChild("StrikeIntent")'),
-	"client-to-server melee transport must remain the narrow StrikeIntent channel"
+	contains(intentService, 'meleeNetwork:WaitForChild("StrikeIntent", NETWORK_WAIT_SECONDS)'),
+	"client-to-server melee transport must remain the narrow bounded StrikeIntent channel"
 )
 assert(
-	contains(intentService, 'meleeNetwork:WaitForChild("Presentation")'),
-	"server-to-client melee feedback must remain the separate Presentation channel"
+	contains(intentService, 'meleeNetwork:WaitForChild("Presentation", NETWORK_WAIT_SECONDS)'),
+	"server-to-client melee feedback must remain the separate bounded Presentation channel"
 )
 assert(contains(serverMount, "PrimaryCombatModeService.start()"), "server combat-mode owner must be mounted")
 assert(contains(serverMount, "MeleeCombatService.start()"), "authoritative melee service must be mounted")

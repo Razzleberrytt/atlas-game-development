@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local ServerStorage = game:GetService("ServerStorage")
 local Workspace = game:GetService("Workspace")
+local NETWORK_WAIT_SECONDS = 20
 
 local OperativeProgressionConfig = require(ReplicatedStorage.Shared.Config.OperativeProgressionConfig)
 local SquadPingConfig = require(ReplicatedStorage.Shared.Config.SquadPingConfig)
@@ -58,9 +59,12 @@ local Service = {}
 
 Service.RejectionReasonIds = SquadPingContracts.RejectionReasonIds
 
-local pingNetwork = ReplicatedStorage:WaitForChild("SquadPingNetwork")
-local intentRemote = pingNetwork:WaitForChild("Intent") :: RemoteEvent
-local stateRemote = pingNetwork:WaitForChild("State") :: RemoteEvent
+local pingNetwork = ReplicatedStorage:WaitForChild("SquadPingNetwork", NETWORK_WAIT_SECONDS)
+assert(pingNetwork ~= nil, "SquadPingNetwork did not become available before the server bootstrap timeout")
+local intentRemote = pingNetwork:WaitForChild("Intent", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(intentRemote ~= nil, "pingNetwork.Intent did not become available before the server bootstrap timeout")
+local stateRemote = pingNetwork:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "pingNetwork.State did not become available before the server bootstrap timeout")
 
 local entriesByOperativeId: { [string]: OperativeEntry } = {}
 local entryByPlayer: { [Player]: OperativeEntry } = {}

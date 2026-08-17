@@ -20,9 +20,16 @@ local WeaponLoadoutContracts = require(ReplicatedStorage.Shared.Weapons.WeaponLo
 local Controller = {}
 local localPlayer = Players.LocalPlayer
 local network = ReplicatedStorage:WaitForChild("WeaponLoadoutNetwork", NETWORK_WAIT_SECONDS)
-local intentRemote = network:WaitForChild("SelectionIntent") :: RemoteEvent
-local stateRemote = network:WaitForChild("State") :: RemoteEvent
-local readState = network:WaitForChild("ReadState") :: RemoteFunction
+assert(network ~= nil, "WeaponLoadoutNetwork did not become available before the client bootstrap timeout")
+local intentRemote = network:WaitForChild("SelectionIntent", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	intentRemote ~= nil,
+	"WeaponLoadoutNetwork.SelectionIntent did not become available before the client bootstrap timeout"
+)
+local stateRemote = network:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "WeaponLoadoutNetwork.State did not become available before the client bootstrap timeout")
+local readState = network:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(readState ~= nil, "WeaponLoadoutNetwork.ReadState did not become available before the client bootstrap timeout")
 
 local started = false
 local requestSequence = 0
@@ -153,7 +160,9 @@ local function createPresentation()
 		buttons[weaponId] = button
 	end
 
-	createdGui.Parent = localPlayer:WaitForChild("PlayerGui")
+	local playerGui = localPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
+	createdGui.Parent = playerGui
 	gui = createdGui
 end
 

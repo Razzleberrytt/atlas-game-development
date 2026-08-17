@@ -112,7 +112,12 @@ local state: State = {
 }
 
 local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork", NETWORK_WAIT_SECONDS)
-local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: RemoteEvent
+assert(combatNetwork ~= nil, "CombatNetwork did not become available before the client bootstrap timeout")
+local presentationRemote = combatNetwork:WaitForChild("CombatPresentation", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	presentationRemote ~= nil,
+	"CombatNetwork.CombatPresentation did not become available before the client bootstrap timeout"
+)
 
 local function isNonEmptyString(value: unknown): boolean
 	return type(value) == "string" and value ~= ""

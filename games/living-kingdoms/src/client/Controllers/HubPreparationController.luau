@@ -25,7 +25,9 @@ local closeAffordanceGui: ScreenGui? = nil
 local closeAffordanceButton: TextButton? = nil
 
 local function playerGui(): PlayerGui
-	return player:WaitForChild("PlayerGui") :: PlayerGui
+	local gui = player:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(gui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
+	return gui
 end
 
 local function setHubUiEnabled(guiName: string, enabled: boolean): boolean

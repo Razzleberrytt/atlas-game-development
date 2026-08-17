@@ -3,20 +3,20 @@
 --[[
 	Server bootstrap ordering.
 
-	Several server services resolve their remotes at module scope with an
-	unbounded `WaitForChild` -- ClassService waits for `ClassNetwork`,
+	Several server services resolve their remotes at module scope with bounded
+	`WaitForChild` calls -- ClassService waits for `ClassNetwork`,
 	HordeExperienceService for `HordeNetwork`, and so on. Most of those folders do
 	not exist in the place: `init.server.luau` creates them itself at boot.
 
-	So the order is load-bearing in a way nothing was checking. Every
-	`ensure*Network()` must run before the first service is required. Move one
-	require above them and the server deadlocks: the require yields waiting for a
-	folder that the very script it is blocking would have created. There is no
-	error, no timeout, and no output -- the server simply never finishes starting,
-	which is the hardest possible failure to diagnose from the symptom.
+	So the order remains load-bearing even though those waits are now bounded.
+	Every `ensure*Network()` must run before the first service is required. Move
+	one require above them and the service blocks until its timeout and then fails
+	startup against a folder that the very bootstrap it interrupted would have
+	created.
 
 	This is deliberately an ordering audit rather than a rule against module-scope
-	waits. Those waits are correct *given* the ordering, and resolve instantly.
+	waits. Those waits are safe when bounded, and the correct ordering means they
+	resolve immediately instead of consuming their failure budget.
 ]]
 
 local fs = require("@lune/fs")
@@ -77,29 +77,32 @@ end
 check(
 	lastEnsureAt < (firstRequireAt :: number),
 	"every ensure*Network() must run before the first service require, or a module-scope "
-		.. "WaitForChild deadlocks the server against a folder this script has not created yet"
+		.. "WaitForChild consumes its timeout and fails startup against a folder this script has not created yet"
 )
 
 --[[
-	The services that wait at module scope are the ones this ordering protects.
-	If one stops waiting the audit still holds; if a new one starts waiting, the
-	ordering already covers it. This records which ones depend on it today.
+	The services that resolve networks at module scope are the ones this ordering
+	protects. If one stops resolving there the audit still holds; if a new one
+	starts, the ordering already covers it. This records which ones depend on the
+	ordering today while requiring the bounded form.
 ]]
 local waitingServices = 0
 for _, entry in fs.readDir("games/living-kingdoms/src/server/Systems") do
 	if string.sub(entry, -5) == ".luau" then
 		local source = fs.readFile("games/living-kingdoms/src/server/Systems/" .. entry)
-		if string.match(source, '\nlocal %w+ = ReplicatedStorage:WaitForChild%("%w+Network"%)') then
+		if
+			string.match(source, '\nlocal %w+ = ReplicatedStorage:WaitForChild%("%w+Network", NETWORK_WAIT_SECONDS%)')
+		then
 			waitingServices += 1
 		end
 	end
 end
-check(waitingServices > 0, "expected at least one service resolving its network at module scope")
+check(waitingServices > 0, "expected at least one service resolving its bounded network at module scope")
 
 print(
 	string.format(
 		"ServerBootstrapNetworkOrderSourceAudit: %d network creators run before the first of %d "
-			.. "module-scope waiting services is required",
+			.. "bounded module-scope waiting services is required",
 		#ensureNames,
 		waitingServices
 	)

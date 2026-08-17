@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local NETWORK_WAIT_SECONDS = 20
 
 local Config = require(ReplicatedStorage.Shared.Config.SurvivalLootConfig)
 local FirearmConfig = require(ReplicatedStorage.Shared.Config.FirearmConfig)
@@ -15,9 +16,12 @@ local OperativeLifeService = require(script.Parent.OperativeLifeService)
 local Service = {}
 local PrimaryCombatModeAttributeName = PrimaryCombatModeContracts.AttributeName
 local PrimaryCombatModeIds = PrimaryCombatModeContracts.ModeIds
-local network = ReplicatedStorage:WaitForChild("SurvivalNetwork")
-local stateRemote = network:WaitForChild("State") :: RemoteEvent
-local readState = network:WaitForChild("ReadState") :: RemoteFunction
+local network = ReplicatedStorage:WaitForChild("SurvivalNetwork", NETWORK_WAIT_SECONDS)
+assert(network ~= nil, "SurvivalNetwork did not become available before the server bootstrap timeout")
+local stateRemote = network:WaitForChild("State", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(stateRemote ~= nil, "network.State did not become available before the server bootstrap timeout")
+local readState = network:WaitForChild("ReadState", NETWORK_WAIT_SECONDS) :: RemoteFunction?
+assert(readState ~= nil, "network.ReadState did not become available before the server bootstrap timeout")
 
 type PendingLoot = {
 	itemId: string,

@@ -15,6 +15,8 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local NETWORK_WAIT_SECONDS = 20
+
 local RuntimeRolloutConfig = require(ReplicatedStorage.Shared.Config.RuntimeRolloutConfig)
 
 local HordeStateEarlyListener = {}
@@ -74,9 +76,11 @@ function HordeStateEarlyListener.start()
 		return
 	end
 
-	local network = ReplicatedStorage:WaitForChild("HordeNetwork")
+	local network = ReplicatedStorage:WaitForChild("HordeNetwork", NETWORK_WAIT_SECONDS)
+	assert(network ~= nil, "HordeNetwork did not become available before the client bootstrap timeout")
 	diagnosticNetwork = network
-	local stateRemote = network:WaitForChild("State")
+	local stateRemote = network:WaitForChild("State", NETWORK_WAIT_SECONDS)
+	assert(stateRemote ~= nil, "HordeNetwork.State did not become available before the client bootstrap timeout")
 	assert(stateRemote:IsA("RemoteEvent"), "HordeNetwork.State must be a RemoteEvent")
 
 	-- Bind synchronously before the rest of the application controller graph is

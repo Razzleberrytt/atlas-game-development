@@ -21,6 +21,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local NETWORK_WAIT_SECONDS = 20
 
 local CombatContracts = require(ReplicatedStorage.Shared.Combat.CombatContracts)
 local AmmunitionScarcityContracts = require(ReplicatedStorage.Shared.Combat.AmmunitionScarcityContracts)
@@ -152,10 +153,20 @@ local retainedCombatByOperativeEntityId: { [string]: RetainedCombatState } = {}
 local engineerProcessedSupplyIds: { [Player]: { [string]: boolean } } = {}
 local engineerGrantedRoundsBySupplyId: { [Player]: { [string]: number } } = {}
 
-local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork")
-local fireIntentRemote = combatNetwork:WaitForChild("FireIntent") :: RemoteEvent
-local reloadIntentRemote = combatNetwork:WaitForChild("ReloadIntent") :: RemoteEvent
-local presentationRemote = combatNetwork:WaitForChild("CombatPresentation") :: RemoteEvent
+local combatNetwork = ReplicatedStorage:WaitForChild("CombatNetwork", NETWORK_WAIT_SECONDS)
+assert(combatNetwork ~= nil, "CombatNetwork did not become available before the server bootstrap timeout")
+local fireIntentRemote = combatNetwork:WaitForChild("FireIntent", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(fireIntentRemote ~= nil, "combatNetwork.FireIntent did not become available before the server bootstrap timeout")
+local reloadIntentRemote = combatNetwork:WaitForChild("ReloadIntent", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	reloadIntentRemote ~= nil,
+	"combatNetwork.ReloadIntent did not become available before the server bootstrap timeout"
+)
+local presentationRemote = combatNetwork:WaitForChild("CombatPresentation", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+assert(
+	presentationRemote ~= nil,
+	"combatNetwork.CombatPresentation did not become available before the server bootstrap timeout"
+)
 
 local function readProgressionNumber(attributeName: string, fallback: number): number
 	local network = ReplicatedStorage:FindFirstChild("ProgressionNetwork")

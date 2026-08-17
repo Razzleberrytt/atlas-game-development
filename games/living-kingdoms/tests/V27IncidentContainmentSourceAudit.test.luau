@@ -47,7 +47,10 @@ assertThat(
 )
 
 assertThat(contains(listener, 'WaitForChild("HordeNetwork"'), "early listener must bind canonical HordeNetwork")
-assertThat(contains(listener, 'WaitForChild("State")'), "early listener must bind canonical State remote")
+assertThat(
+	contains(listener, 'WaitForChild("State", NETWORK_WAIT_SECONDS)'),
+	"early listener must bind canonical bounded State remote"
+)
 assertThat(
 	contains(listener, "stateRemote.OnClientEvent:Connect(onState)"),
 	"early listener must consume State immediately"

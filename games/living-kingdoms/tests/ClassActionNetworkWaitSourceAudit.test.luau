@@ -17,6 +17,7 @@ requireBoundedWait("ReplicatedStorage", "ClassNetwork")
 requireBoundedWait("classNetwork", "ActionIntent")
 requireBoundedWait("classNetwork", "State")
 requireBoundedWait("classNetwork", "ReadState")
+requireBoundedWait("localPlayer", "PlayerGui")
 
 for _, childName in { "ActionIntent", "State", "ReadState" } do
 	local unbounded = string.format('classNetwork:WaitForChild("%s")', childName)
@@ -26,11 +27,17 @@ for _, childName in { "ActionIntent", "State", "ReadState" } do
 	)
 end
 
+assert(
+	string.find(source, 'localPlayer:WaitForChild("PlayerGui")', 1, true) == nil,
+	"PlayerGui must never regress to an unbounded client startup wait"
+)
+
 for _, snippet in
 	{
 		'assert(classNetwork ~= nil, "ClassNetwork did not become available before the client bootstrap timeout")',
 		'assert(stateRemote ~= nil, "ClassNetwork.State did not become available before the client bootstrap timeout")',
 		'assert(readStateFunction ~= nil, "ClassNetwork.ReadState did not become available before the client bootstrap timeout")',
+		'assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")',
 	}
 do
 	assert(string.find(source, snippet, 1, true) ~= nil, "missing ClassAction bootstrap assertion: " .. snippet)
@@ -46,4 +53,4 @@ assert(
 	"ActionIntent must fail closed when the remote is absent"
 )
 
-print("ClassActionNetworkWaitSourceAudit: ClassNetwork and all required children are bounded")
+print("ClassActionNetworkWaitSourceAudit: ClassNetwork, required children, and PlayerGui are bounded")

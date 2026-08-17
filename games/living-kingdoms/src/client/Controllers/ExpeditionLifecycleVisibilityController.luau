@@ -15,7 +15,9 @@ local started = false
 local connection: RBXScriptConnection? = nil
 
 local function setEnabled(name: string, enabled: boolean)
-	local gui = Players.LocalPlayer:WaitForChild("PlayerGui"):FindFirstChild(name)
+	local playerGui = Players.LocalPlayer:WaitForChild("PlayerGui", NETWORK_WAIT_SECONDS) :: PlayerGui?
+	assert(playerGui ~= nil, "PlayerGui did not become available before the client bootstrap timeout")
+	local gui = playerGui:FindFirstChild(name)
 	if gui and gui:IsA("ScreenGui") then
 		gui.Enabled = enabled
 	end
