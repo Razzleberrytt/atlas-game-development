@@ -20,7 +20,8 @@ local second = scheduler.resolveRoundRobinGrants({ "enemy-a", "enemy-b", "enemy-
 assert(joined(second.GrantedEntityIds) == "enemy-c,enemy-a", "round robin must wrap after the cursor")
 assert(second.CursorEntityId == "enemy-a", "wrapped grants must advance the cursor")
 
-local missingLowCursor = scheduler.resolveRoundRobinGrants({ "enemy-b", "enemy-c", "enemy-d" }, second.CursorEntityId, 2)
+local missingLowCursor =
+	scheduler.resolveRoundRobinGrants({ "enemy-b", "enemy-c", "enemy-d" }, second.CursorEntityId, 2)
 assert(
 	joined(missingLowCursor.GrantedEntityIds) == "enemy-b,enemy-c",
 	"missing low cursor must resume at its first surviving successor"
