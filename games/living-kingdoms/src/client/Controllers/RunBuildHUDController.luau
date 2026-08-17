@@ -121,7 +121,8 @@ assert(
 	submitChoiceRemote ~= nil,
 	"RunBuildNetwork.SubmitRelicChoice did not become available before the client bootstrap timeout"
 )
-local submitReplacementRemote = runBuildNetwork:WaitForChild("SubmitRelicReplacement", NETWORK_WAIT_SECONDS) :: RemoteEvent?
+local submitReplacementRemote =
+	runBuildNetwork:WaitForChild("SubmitRelicReplacement", NETWORK_WAIT_SECONDS) :: RemoteEvent?
 assert(
 	submitReplacementRemote ~= nil,
 	"RunBuildNetwork.SubmitRelicReplacement did not become available before the client bootstrap timeout"
