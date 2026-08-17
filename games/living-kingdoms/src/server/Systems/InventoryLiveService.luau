@@ -6,6 +6,7 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local EquipmentComparisonResolver = require(ReplicatedStorage.Shared.Equipment.EquipmentComparisonResolver)
+local EquipmentContracts = require(ReplicatedStorage.Shared.Equipment.EquipmentRewardContracts)
 local InventoryDismantleResolver = require(ReplicatedStorage.Shared.Persistence.InventoryDismantleResolver)
 local EquipmentRewardConfig = require(ReplicatedStorage.Shared.Config.EquipmentRewardConfig)
 local PlayerInventorySnapshot = require(ReplicatedStorage.Shared.Persistence.PlayerInventorySnapshot)
@@ -40,6 +41,15 @@ end
 
 local function lookupEquipmentDefinition(definitionId: string): any
 	return definitionsById[definitionId]
+end
+
+local function isKnownSlot(slotId: unknown): boolean
+	for _, candidate in EquipmentContracts.SlotIds do
+		if slotId == candidate then
+			return true
+		end
+	end
+	return false
 end
 
 local Service = {}
@@ -185,6 +195,35 @@ function Service.equipOwnedItem(requesterId: number, ownerId: number, instanceId
 		return table.freeze({ Accepted = false, ReasonId = "ItemNotOwned", Record = record })
 	end
 	return persistence:equip(ownerId, item.Slot, instanceId, nowUnix)
+end
+
+--[[
+	Unequip accepts only a known slot intent. Identity is still derived from the
+	requesting player by the network caller, the live session lease is required,
+	and the persistence owner performs the guarded durable mutation. This layer
+	never reaches into persistence's resident cache or writes the store itself.
+]]
+function Service.unequipOwnedSlot(requesterId: number, ownerId: number, slotId: any, nowUnix: number): any
+	if destroyed then
+		return table.freeze({ Accepted = false, ReasonId = "ServiceDestroyed", Record = nil })
+	end
+	if requesterId ~= ownerId then
+		return table.freeze({ Accepted = false, ReasonId = "CrossPlayerInventoryAccess", Record = nil })
+	end
+	if not isKnownSlot(slotId) or type(nowUnix) ~= "number" then
+		return table.freeze({ Accepted = false, ReasonId = "InvalidUnequipRequest", Record = nil })
+	end
+	if not leases:hasLease(ownerId, nowUnix) then
+		return table.freeze({
+			Accepted = false,
+			ReasonId = "SessionLeaseRequired",
+			Record = persistence:getRecord(ownerId),
+		})
+	end
+	if persistence:getRecord(ownerId) == nil then
+		return table.freeze({ Accepted = false, ReasonId = "InventoryNotLoaded", Record = nil })
+	end
+	return persistence:unequip(ownerId, slotId, nowUnix)
 end
 
 --[[
