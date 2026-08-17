@@ -16,9 +16,10 @@ The `LKB-0001`–`LKB-1000` IDs are deliberately separate from the repository's 
 
 ## Files
 
-- `master_backlog.csv.xz.b64` — immutable compressed/base64 definitions for exactly 1,000 candidate tickets.
+- `workstreams.json` — 40 auditable game workstreams with lane, phase, risk, priority, canonical-owner hints, tags, and PR-overlap guards.
+- `dimensions.json` — 25 auditable implementation/QA dimensions with scoped title/instruction/acceptance templates and dependencies.
 - `status.csv` — sparse mutable ledger for authorization, ownership, status, branch, blocker, and proof.
-- `materialize_backlog.py` — generates a readable `master_backlog.csv`.
+- `materialize_backlog.py` — deterministically generates exactly `40 × 25 = 1,000` readable tickets in `master_backlog.csv` and overlays live status.
 - `AGENT_COORDINATION.md` — specialist lane and low-WIP claim protocol.
 - `IMPLEMENTATION_PLAYBOOK.md` — ticket implementation/validation contract.
 
@@ -28,7 +29,7 @@ Generate the readable view:
 python backlog/living-kingdoms/materialize_backlog.py
 ```
 
-`master_backlog.csv` is generated and intentionally ignored by Git.
+`master_backlog.csv` is generated and intentionally ignored by Git. Ticket definitions are reviewable in the two JSON source files instead of being stored as an opaque generated blob.
 
 ## Critical difference from the website backlog
 
