@@ -30,6 +30,7 @@ local BossContracts = require(ReplicatedStorage.Shared.Combat.BossContracts)
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
 local WorldFoundationConfig = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)
+local EnemyNavigationScheduler = require(script.Parent.Parent.Domain.EnemyNavigationScheduler)
 local EnemyBehaviorResolver = require(script.Parent.EnemyBehaviorResolver)
 local SpecialEnemyBehaviorResolver = require(script.Parent.SpecialEnemyBehaviorResolver)
 local BossPhaseResolver = require(script.Parent.BossPhaseResolver)
@@ -220,6 +221,7 @@ local recoveryWindowEndServerTimestamp: number? = nil
 -- Deterministic counter behind roam identity, wander headings, and spawn-ring
 -- placement; no randomness enters enemy behavior.
 local sequenceCounter = 0
+local navigationPathBudgetCursorEntityId: string? = nil
 local operationPressureStartedServerTimestamp: number? = nil
 local activeEliteCount = 0
 -- Alive Blight Spitters and their live area-denial pools. Bounded by config.
@@ -1385,55 +1387,69 @@ local function applyBossBehavior(
 	return 0
 end
 
-local function moveStalkerToward(entry: EnemyEntry, targetPosition: Vector3, serverTimestamp: number)
+local function moveStalkerToward(
+	entry: EnemyEntry,
+	targetPosition: Vector3,
+	serverTimestamp: number,
+	pathComputationGranted: boolean
+)
 	if serverTimestamp < entry.nextPursuitRepathServerTimestamp then
 		return
 	end
-	entry.nextPursuitRepathServerTimestamp = serverTimestamp + EnemyConfig.Navigation.PursuitRepathIntervalSeconds
 
-	local destination = targetPosition
-	local toTarget = Vector3.new(targetPosition.X - entry.root.Position.X, 0, targetPosition.Z - entry.root.Position.Z)
-	if
-		toTarget.Magnitude > EnemyConfig.Walker.AttackRangeStuds * 1.5
-		and toTarget.Magnitude <= EnemyConfig.Navigation.FlankActivationDistanceStuds
-	then
-		local perpendicular = Vector3.new(-toTarget.Z, 0, toTarget.X).Unit
-		destination += perpendicular * EnemyConfig.Navigation.PackFlankOffsetStuds * entry.pursuitFlankSign
-	end
+	if pathComputationGranted then
+		entry.nextPursuitRepathServerTimestamp = serverTimestamp + EnemyConfig.Navigation.PursuitRepathIntervalSeconds
 
-	-- Production uses a short, periodically refreshed path so stalkers flow around
-	-- trees and structures. Lightweight fixtures deliberately fall back to the
-	-- same bounded Humanoid destination without needing a pathfinding mock.
-	local pathService = PathfindingService :: any
-	if type(pathService.CreatePath) == "function" then
-		local ok, path = pcall(function()
-			local createdPath = pathService:CreatePath({
-				AgentRadius = EnemyConfig.Navigation.AgentRadiusStuds,
-				AgentHeight = EnemyConfig.Navigation.AgentHeightStuds,
-				AgentCanJump = true,
-				WaypointSpacing = EnemyConfig.Navigation.WaypointSpacingStuds,
-			})
-			createdPath:ComputeAsync(entry.root.Position, destination)
-			return createdPath
-		end)
-		if ok and path.Status == Enum.PathStatus.Success then
-			local waypoints = path:GetWaypoints()
-			local waypoint = waypoints[math.min(2, #waypoints)]
-			if waypoint ~= nil then
-				if waypoint.Action == Enum.PathWaypointAction.Jump then
-					entry.humanoid.Jump = true
+		local destination = targetPosition
+		local toTarget = Vector3.new(targetPosition.X - entry.root.Position.X, 0, targetPosition.Z - entry.root.Position.Z)
+		if
+			toTarget.Magnitude > EnemyConfig.Walker.AttackRangeStuds * 1.5
+			and toTarget.Magnitude <= EnemyConfig.Navigation.FlankActivationDistanceStuds
+		then
+			local perpendicular = Vector3.new(-toTarget.Z, 0, toTarget.X).Unit
+			destination += perpendicular * EnemyConfig.Navigation.PackFlankOffsetStuds * entry.pursuitFlankSign
+		end
+
+		-- Pathfinding is the expensive part of pursuit, so only this evaluation's
+		-- deterministic round-robin grant may enter CreatePath/ComputeAsync.
+		local pathService = PathfindingService :: any
+		if type(pathService.CreatePath) == "function" then
+			local ok, path = pcall(function()
+				local createdPath = pathService:CreatePath({
+					AgentRadius = EnemyConfig.Navigation.AgentRadiusStuds,
+					AgentHeight = EnemyConfig.Navigation.AgentHeightStuds,
+					AgentCanJump = true,
+					WaypointSpacing = EnemyConfig.Navigation.WaypointSpacingStuds,
+				})
+				createdPath:ComputeAsync(entry.root.Position, destination)
+				return createdPath
+			end)
+			if ok and path.Status == Enum.PathStatus.Success then
+				local waypoints = path:GetWaypoints()
+				local waypoint = waypoints[math.min(2, #waypoints)]
+				if waypoint ~= nil then
+					if waypoint.Action == Enum.PathWaypointAction.Jump then
+						entry.humanoid.Jump = true
+					end
+					entry.humanoid:MoveTo(waypoint.Position)
+					return
 				end
-				entry.humanoid:MoveTo(waypoint.Position)
-				return
 			end
 		end
 	end
 
-	-- Exact target fallback preserves direct pursuit if a path cannot be solved.
+	-- Ungranted enemies still pursue this evaluation, but do not consume an
+	-- expensive path computation. Keeping the repath timestamp due makes them
+	-- eligible for the next fair round-robin grant.
 	entry.humanoid:MoveTo(targetPosition)
 end
 
-local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperativeFact }, serverTimestamp: number): number
+local function applyBehavior(
+	entry: EnemyEntry,
+	operativeFacts: { EnemyOperativeFact },
+	serverTimestamp: number,
+	pathComputationGranted: boolean
+): number
 	if entry.archetypeId == PROGENITOR_ARCHETYPE_ID then
 		return applyBossBehavior(entry, operativeFacts, serverTimestamp)
 	end
@@ -1481,7 +1497,8 @@ local function applyBehavior(entry: EnemyEntry, operativeFacts: { EnemyOperative
 				moveStalkerToward(
 					entry,
 					Vector3.new(fact.position.x, fact.position.y, fact.position.z),
-					serverTimestamp
+					serverTimestamp,
+					pathComputationGranted
 				)
 				break
 			end
@@ -1670,6 +1687,31 @@ function EnemyDirectorService.evaluateAt(serverTimestamp: number): EvaluationSum
 	summary.spawnedCount += attemptRoamingSpawns(operativeFacts, serverTimestamp)
 	refreshCommanderAuras()
 	summary.attackCommittedCount += tickBloomZones(operativeFacts, serverTimestamp)
+
+	local eligiblePathEntityIds: { string } = {}
+	for entityId, entry in entries do
+		if
+			entry.isAlive
+			and entry.cleanupAtServerTimestamp == nil
+			and entry.archetypeId ~= PROGENITOR_ARCHETYPE_ID
+			and entry.archetypeId ~= BLIGHT_SPITTER_ARCHETYPE_ID
+			and entry.behaviorStateId == BehaviorStateIds.Pursuing
+			and serverTimestamp >= entry.nextPursuitRepathServerTimestamp
+		then
+			table.insert(eligiblePathEntityIds, entityId)
+		end
+	end
+	local budgetResolution = EnemyNavigationScheduler.resolveRoundRobinGrants(
+		eligiblePathEntityIds,
+		navigationPathBudgetCursorEntityId,
+		EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation
+	)
+	navigationPathBudgetCursorEntityId = budgetResolution.CursorEntityId
+	local pathGrantByEntityId: { [string]: boolean } = {}
+	for _, entityId in budgetResolution.GrantedEntityIds do
+		pathGrantByEntityId[entityId] = true
+	end
+
 	local toClean: { string } = {}
 	for entityId, entry in entries do
 		local cleanupAt = entry.cleanupAtServerTimestamp
@@ -1680,7 +1722,12 @@ function EnemyDirectorService.evaluateAt(serverTimestamp: number): EvaluationSum
 			end
 		elseif entry.isAlive then
 			applyRegeneration(entry, serverTimestamp)
-			summary.attackCommittedCount += applyBehavior(entry, operativeFacts, serverTimestamp)
+			summary.attackCommittedCount += applyBehavior(
+				entry,
+				operativeFacts,
+				serverTimestamp,
+				pathGrantByEntityId[entityId] == true
+			)
 		end
 	end
 	for _, entityId in toClean do
@@ -1761,6 +1808,7 @@ function EnemyDirectorService.stop()
 	recoveryWindowEndServerTimestamp = nil
 	accumulatedSeconds = 0
 	sequenceCounter = 0
+	navigationPathBudgetCursorEntityId = nil
 	local folder = enemyFolder
 	if folder ~= nil then
 		clearEnemyFolder(folder)

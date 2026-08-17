@@ -111,6 +111,7 @@ local EnemyConfig = {
 		AgentRadiusStuds = 2.5,
 		AgentHeightStuds = 4,
 		WaypointSpacingStuds = 5,
+		MaximumPathComputationsPerEvaluation = 4,
 		PackFlankOffsetStuds = 4.5,
 		FlankActivationDistanceStuds = 38,
 	}),
@@ -176,6 +177,13 @@ for _, definition in OrdinaryArchetypesById do
 	validateOrdinary(definition)
 end
 
+assert(
+	EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation > 0
+		and EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation % 1 == 0
+		and EnemyConfig.Navigation.MaximumPathComputationsPerEvaluation
+			<= EnemyConfig.Population.AbsoluteMaximumConcurrent,
+	"the path-computation budget must be a positive bounded integer"
+)
 assert(
 	EnemyConfig.FairSpawn.MinimumOperativeDistanceStuds > EnemyConfig.Combat.GameplayVisibilityRadiusStuds,
 	"fair spawns must land outside the darkness engagement radius"
