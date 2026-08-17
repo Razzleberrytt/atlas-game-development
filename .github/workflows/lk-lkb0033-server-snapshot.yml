@@ -1,0 +1,25 @@
+name: LK LKB-0033 Server Shared Snapshot
+
+on:
+  push:
+    branches:
+      - lk/LKB-0033-run-build-rpg-playergui-waits
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upload audited source roots
+        uses: actions/upload-artifact@v4
+        with:
+          name: lk-lkb0033-server-shared-source
+          path: |
+            games/living-kingdoms/src/server
+            games/living-kingdoms/src/shared
+            games/living-kingdoms/src/main-world
+          if-no-files-found: error
+          retention-days: 1
