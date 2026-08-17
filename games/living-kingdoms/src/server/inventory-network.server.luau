@@ -106,9 +106,13 @@ local function attemptWeaponActivation(player: Player, instanceId: string?, gene
 		return
 	end
 
-	local accepted, reasonId = if instanceId == nil
-		then EquipmentCombatAdapter.activatePreferredOrDefault(player)
-		else EquipmentCombatAdapter.activateOwnedEquippedWeapon(player, instanceId)
+	local accepted: boolean
+	local reasonId: string
+	if instanceId == nil then
+		accepted, reasonId = EquipmentCombatAdapter.activatePreferredOrDefault(player)
+	else
+		accepted, reasonId = EquipmentCombatAdapter.activateOwnedEquippedWeapon(player, instanceId)
+	end
 	if accepted then
 		return
 	end
