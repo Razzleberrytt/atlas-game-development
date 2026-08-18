@@ -1,96 +1,114 @@
-# Atlas — Execution Dashboard v1.31
+# Atlas — Execution Dashboard v1.32
 
 **Status:** CURRENT DAILY EXECUTION AUTHORITY  
 **Refreshed:** 2026-08-17  
-**Main baseline audited:** `0cb0c8c967a269ac6899d4056f70b90741f5fe1d`  
+**Decision baseline audited:** `5072f1f989df67e2b522d18c2d795f23657d3782`  
 **Purpose:** answer quickly what is true, what is NOW, what may proceed, and what comes NEXT.
 
 ## Precedence
 
 1. Accepted runtime evidence and current Roblox platform behavior — truth about what actually works.
 2. [`../bible/00-current-product-authority.md`](../bible/00-current-product-authority.md) — product identity and design conflict resolution.
-3. [`PARALLEL-DEVELOPMENT-POLICY.md`](PARALLEL-DEVELOPMENT-POLICY.md) — dependency-safe eligibility, not unlimited WIP.
-4. [`AUTOMATED-FIRST-EXECUTION-POLICY.md`](AUTOMATED-FIRST-EXECUTION-POLICY.md) — automated execution cadence and verification authority.
-5. This dashboard — current daily status and NOW/NEXT selection.
-6. [`PLAYABLE-MVP-PATCH-EXECUTION.md`](PLAYABLE-MVP-PATCH-EXECUTION.md) — player-facing patch goals/product intent.
-7. [`MASTER-ROADMAP.md`](MASTER-ROADMAP.md) — long-range destination inventory.
-8. Patch-specific acceptance/backlog documents — active only when this dashboard selects that patch/capability.
+3. [`STATIC-PLAYABLE-EVIDENCE-GATE.md`](STATIC-PLAYABLE-EVIDENCE-GATE.md) — currently activated product-evidence gate.
+4. [`PARALLEL-DEVELOPMENT-POLICY.md`](PARALLEL-DEVELOPMENT-POLICY.md) — dependency-safe eligibility, not unlimited WIP.
+5. [`AUTOMATED-FIRST-EXECUTION-POLICY.md`](AUTOMATED-FIRST-EXECUTION-POLICY.md) — normal automated execution cadence and verification authority.
+6. This dashboard — current daily status and NOW/NEXT selection.
+7. [`PLAYABLE-MVP-PATCH-EXECUTION.md`](PLAYABLE-MVP-PATCH-EXECUTION.md) — player-facing patch goals/product intent.
+8. [`MASTER-ROADMAP.md`](MASTER-ROADMAP.md) — long-range destination inventory.
+9. Patch-specific acceptance/backlog documents — active only when this dashboard selects that patch/capability.
+
+The static playable gate is an **explicit product-evidence gate**, not ordinary pending Studio verification. While it is NOW, normal source-through cadence does not authorize unrelated expansion merely because the LKB mutex is unlocked.
 
 ## Current truth — 2026-08-17
 
 - Living Kingdoms remains a Roblox/Rojo repository-first codebase; `games/living-kingdoms/src/` is gameplay-authoritative source.
-- Patch 0.7 durable persistence/valuable-state hardening remains automated-acceptance complete for all non-deferred work (86 / 100 implemented; 14 explicit deferrals).
-- **LKB-0682, LKB-0033, LKB-0567, and LKB-0321 are VERIFIED.** The latest completed gameplay capability, LKB-0321, merged as `ddf3a13f0fac07a4538e371a8adaf143f56c8ede` after Full Atlas #2398; main push #2399 passed. Its coordination closeout passed #2400, merged as `0cb0c8c967a269ac6899d4056f70b90741f5fe1d`, and main push #2401 passed.
-- LKB-0321 supersedes stale #570's path-budget/fairness work. #570's separate stuck-recovery/jump-policy ideas remain unselected source evidence only.
-- Current `RoomSequenceAssembler` already owns deterministic seeded **content order**, variable route length, encounter slots/intensity, reward source metadata, and Entry/Elite/Boss ordering. Do not replace that owner with stale #568 code.
-- Current `RoomPlacementPlanner` still owns only a fixed straight Z-axis layout. There is no current `InstanceLayoutValidator` and no current `ProceduralInstanceGenerator` orchestration seam.
-- Fresh #568 audit found a current-compatible separable capability: deterministic self-avoiding cardinal spatial placement with bounded attempts/fallback, pure fail-closed layout validation, and a thin generator/orchestration seam. The old branch's assembler options, spawn/reward metadata expansion, and runtime rewrite are not required for this slice.
-- Current `ExpeditionRoomPlacementService` already owns Roblox instance placement and current `ModularDungeonRoomPresentation.apply(...)`; any LKB-0481 integration must preserve those owners and adapt only the geometry/socket handling needed for cardinal layouts.
-- #566/#579 durable character progression remains genuinely absent but is a much larger R3 persistence/schema stack. #574 multi-run procedural-instance ownership is also a later independent capability and is not part of LKB-0481.
-- Therefore **LKB-0481 is the sole BUILDING ticket**. Canonical mapping: workstream 20 **Procedural Rooms & Spatial Placement** × dimension 6 **Deterministic resolution** = LKB-0481.
+- The current product authority says to build the smallest coherent playable result, preserve canonical owners, and measure what source cannot prove.
+- The patch path defines **MVP 0.1 as the first complete repeatable run** and procedural/systemic replayability as a later layer.
+- Existing source already contains substantial camera, combat, enemy, mission, loot, progression, persistence, Main World, and presentation systems. The next move is **not** to rebuild those systems into a separate prototype.
+- LKB-0682, LKB-0033, LKB-0567, and LKB-0321 remain VERIFIED from their recorded validation/merge evidence.
+- LKB-0481 procedural spatial resolution was activated on baseline `5072f1f989df67e2b522d18c2d795f23657d3782` and accumulated meaningful unmerged candidate work in PR #666.
+- PR #666 currently contains 19 commits / 9 changed files and preserves useful deterministic cardinal planner/validator/generator work, but it is not merged and its latest Atlas validation on head `6acbe11fd2e95c664d85e941c28f7570d5262413` failed.
+- The fixed current-main spatial path is sufficient to ask the higher-value product question: whether one complete run is readable, satisfying, and worth replaying.
+- Therefore LKB-0481 is **DEFERRED, not discarded**. Its branch/PR remains provenance/candidate implementation for later re-audit.
+- The shared LKB implementation mutex is **UNLOCKED** while the product evidence gate runs. That unlocked state does not authorize unrelated candidate work.
 
 ## NOW
 
-### 1. Deterministic procedural spatial generation and validation — LKB-0481
+### 1. Static playable evidence gate — first complete repeatable run
 
-Reconcile only the smallest current-compatible spatial-generation capability from stale #568 onto fresh current main.
+Run the existing canonical game loop on a fixed/deterministic layout and collect evidence against [`STATIC-PLAYABLE-EVIDENCE-GATE.md`](STATIC-PLAYABLE-EVIDENCE-GATE.md).
 
-Required outcome:
+This gate deliberately measures the parts source inspection cannot prove:
 
-- preserve `RoomSequenceAssembler` as the canonical owner of room content order and current public behavior;
-- upgrade `RoomPlacementPlanner` from one fixed linear axis to deterministic seeded self-avoiding cardinal placement with bounded generation attempts and deterministic fallback;
-- preserve canonical room sequence order even when the physical route turns;
-- expose explicit grid cell, entrance/exit side, turn, connector axis/size, layout version, generation-attempt, and fallback metadata needed to validate/render the layout;
-- add a pure `InstanceLayoutValidator` that fails closed on malformed plans/layouts, seed mismatch, room-count/order/identity drift, duplicate cells, overlap, invalid cardinal adjacency, socket-direction mismatch, and connector-geometry mismatch;
-- add a thin `ProceduralInstanceGenerator` that orchestrates the existing assembler → planner → validator path without inventing another room-content owner;
-- keep generation bounded and reproducible from seed; no hidden Roblox randomness/services in pure resolution;
-- adapt the existing `ExpeditionRoomPlacementService` only enough to consume validated cardinal layouts: orient doorway fixtures/connectors and create walls/openings correctly on North/East/South/West sides;
-- preserve `ExpeditionEnvironmentBuilder` and `ModularDungeonRoomPresentation.apply(...)` exactly as downstream presentation owners;
-- preserve the singleton current expedition-room lifecycle for this ticket; no #574 run registry/multi-run authority;
-- add focused deterministic planner/generator/validator tests plus source/integration audits proving the runtime placement service consumes the validated generator and does not bypass it;
-- pass Full Atlas validation before merge.
+- boot/reset/replay lifecycle in the actual engine;
+- movement/combat responsiveness and readability;
+- whether a player understands threats and meaningful damage/death;
+- whether launch, route, objective, result, return, and replay flow are understandable without developer coaching;
+- whether current loot/reward/build outcomes are legible and meaningful;
+- whether first-time testers show an unprompted desire for another attempt.
 
-Scope exclusions:
+### Test rule
 
-- do **not** copy #568's stale `RoomSequenceAssembler` option/variable-count changes; current main already has a stronger deterministic assembler;
-- do not add encounter spawn-point attachments, reward/completion hook authority, or new gameplay metadata merely because old #568 bundled them;
-- do not import #574's `ExpeditionInstanceRegistry`, multi-run spatial slots, or party/run ownership;
-- do not change combat, enemies, loot, XP, persistence, mission authority, or room-content selection;
-- do not weaken current modular dungeon presentation to match the old branch.
+Use current canonical owners. Do **not** build a second camera, combat, enemy, mission, loot, inventory, persistence, expedition, or world path to manufacture the slice.
 
-Risk tier: **R2**. If implementation requires changing durable state, run ownership, mission authority, or content-order contracts, stop and reclassify rather than silently expanding scope.
+Use the smallest current fixed route/configuration that exercises the loop. If the run fails, classify the exact measured failure before editing code.
 
-Exit gate:
+### Product gates
 
-1. deterministic same-seed layouts reproduce exactly; different seeds demonstrate bounded spatial variation;
-2. every accepted layout preserves canonical order, unique cells, non-overlap, cardinal adjacency, correctly facing sockets, and matching connector geometry;
-3. generation attempts are finite and fallback is deterministic;
-4. current placement/presentation owners render the validated axis-aware layout without a second spatial authority;
-5. Full Atlas validation is green on the exact final PR head;
-6. merge and require green main-push validation;
-7. audit #568/#574 overlap again, verify LKB-0481, release the shared claim, and re-run the selector.
+1. **Boot/reset:** repeated start → result/failure → return/reset → restart does not accumulate broken state.
+2. **Combat:** controls, threats, hits, damage, failure, and recovery are understandable enough to play without narration.
+3. **Complete fixed expedition:** a first-time tester can launch, progress, reach a legitimate result/failure, return, and see how to replay.
+4. **Reward/replay:** the player understands the outcome/reward and has a clear reason/action to try again.
 
-### 2. Keep repository/documentation truth coherent
+Directional repeat signal: **at least 50% of first-time external testers who reach a legitimate result choose another attempt without prompting**. For small cohorts, record raw counts and treat the threshold as a product-decision signal, not statistical proof.
 
-Update canonical coverage/efficiency registries only if this coherent capability materially creates or retires a reusable seam. Do not create another status system.
+### Allowed work during NOW
 
-## Selector audit — why LKB-0481 won
+- evidence setup/documentation needed to run the gate;
+- a focused source fix for a reproducible gate failure;
+- narrow build/runtime repair required to make the gate runnable;
+- independent security, data-integrity, or concrete safety fixes that preempt product work.
 
-- **#568 procedural spatial generation:** high replayability leverage, distinct from current main, decomposable into an R2 deterministic slice, and compatible with current assembler/runtime ownership when stale bundled metadata is excluded. **Selected as LKB-0481.**
-- **#566/#579 progression:** high player-loop value but currently an R3 durable-account/schema/migration stack spanning 26 changed files across two old PRs. Requires a fresh persistence-owner audit before activation.
-- **#570 stuck recovery:** smaller diff, but no current measured stuck defect justifies choosing it over a replayability capability; remains failure-fallback source evidence.
-- **#574 multi-run procedural ownership:** useful later, but it expands authoritative run-instance ownership before the current spatial generator/validator seam exists on main. Deferred until after LKB-0481 and a fresh runtime-ownership audit.
+### Explicitly not automatic NOW/NEXT
+
+- procedural spatial expansion;
+- multi-run procedural-instance ownership;
+- additional dungeon themes/regions;
+- large Main World expansion;
+- generic hardening without a measured defect;
+- broad class/crafting/economy/content expansion;
+- guild/housing/trading/PvP/raid breadth;
+- monetization.
+
+### Exit gate
+
+**PASS:** the fixed run is coherent enough to resume normal source ranking. Procedural work becomes eligible again but is not automatically selected.
+
+**FAIL:** choose the single highest-leverage measured failure, map it to the existing canonical owner, authorize the smallest focused FIX, and rerun the affected gate.
+
+**UNKNOWN:** improve evidence setup only. Do not turn uncertainty into feature work.
+
+## LKB-0481 disposition
+
+LKB-0481 is deferred because the next information bottleneck is player/runtime evidence, not route-layout variety.
+
+Preserve:
+
+- branch `lk/LKB-0481-procedural-spatial-resolution`;
+- PR #666 history/diff;
+- the deterministic planner/validator/generator ideas that remain current-compatible.
+
+Do not merge the branch solely because work was invested. Do not delete or reimplement the work. After the static gate passes, re-audit it against then-current `main` and the measured player-value queue.
 
 ## NEXT
 
-After LKB-0481 leaves BUILDING:
+After the static gate produces evidence:
 
-1. require exact-head Full Atlas and post-merge main validation;
-2. record VERIFIED only with that evidence, then release the mutex through a validated closeout;
-3. re-audit #568/#574 for surviving unique work and #566/#579 against the then-current durable account architecture;
-4. rank the smallest next player-value capability, publish one atomic claim, and continue the same loop.
-
-Patch 0.8 remains an available planned queue but is not automatically selected. Patch 0.9 and RC 1.0 remain later planned queues unless explicitly activated.
+1. if a concrete failure exists, activate the smallest canonical-owner FIX and only that FIX;
+2. validate/merge the fix at its truthful risk tier;
+3. rerun the affected evidence gate;
+4. when the fixed run passes, re-run the selector across combat/readability, loot/build replayability, co-op/session value, Main World wrapper needs, procedural replayability, and other current candidates;
+5. select the smallest highest-player-value dependency-safe capability rather than automatically advancing a patch number.
 
 ## Development coverage lens
 
@@ -110,15 +128,26 @@ LK concern(s)
 
 Coverage gaps are candidates, not automatic priority.
 
-## Manual evidence backlog
+## Manual evidence rule
 
-Manual Studio/device/play work is separate from NOW/NEXT. Record only what was actually measured. Reproducible defects discovered there may become source-work candidates; unrun facts remain UNMEASURED.
+Ordinary pending Studio/device evidence remains non-blocking by default elsewhere in the roadmap.
+
+**Exception:** this dashboard has explicitly activated the static playable evidence gate as current product work. Until it passes/fails with usable evidence, agents must not bypass it by selecting unrelated source expansion.
+
+A reproducible defect discovered during the gate immediately becomes eligible source work. Once the gate exits, normal automated-first cadence resumes.
 
 ## WIP rule
 
-- one active implementation PR for the current capability/lane;
-- at most one additional non-overlapping feature PR only when the first is externally blocked;
+- no unrelated LKB source ticket while the static evidence gate is the unresolved NOW item;
+- one active implementation PR when a measured gate failure authorizes a FIX;
+- at most one additional non-overlapping feature PR only when the first is externally blocked and the dashboard explicitly permits it;
 - open PR count is not the execution queue;
 - inspect freshness/overlap before starting;
 - merge only after applicable automated validation is green;
 - update NOW/NEXT whenever execution truth materially changes.
+
+## Coordinator decision rule
+
+> **Prove one understandable, satisfying, repeatable run before multiplying it.**
+
+The repo should scale a game that players have shown is worth replaying, not use procedural breadth to postpone discovering whether the underlying loop works.
