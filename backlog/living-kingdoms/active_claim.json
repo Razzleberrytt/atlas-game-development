@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "state": "LOCKED",
-  "ticket_id": "LKB-0481",
-  "owner": "expedition-procedural-agent",
-  "claimed_at": "2026-08-17T14:09:00-04:00",
-  "branch": "lk/LKB-0481-procedural-spatial-resolution",
-  "authority_reference": "docs/roadmap/EXECUTION-DASHBOARD.md NOW: deterministic procedural spatial generation and validation"
+  "state": "UNLOCKED",
+  "ticket_id": null,
+  "owner": null,
+  "claimed_at": null,
+  "branch": null,
+  "authority_reference": null
 }
