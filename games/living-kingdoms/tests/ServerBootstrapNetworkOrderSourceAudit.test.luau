@@ -56,10 +56,19 @@ for definition in string.gmatch(bootstrap, "local function (ensure%w+Network)%("
 	)
 end
 
--- The first service require must come after the last network creation.
+--[[
+	The first service require must come after the last network creation.
 
+	Match the require itself rather than the statement that captures it. The
+	bootstrap now loads each service through the isolation helper, so the require
+	no longer sits directly behind `local X =`, and pinning that older spelling
+	would have measured the position of whichever require still happened to look
+	the old way instead of the genuinely first one. The guarantee this audit
+	holds is about when a Systems module is first loaded, not how the result is
+	bound, so any occurrence counts.
+]]
 local firstRequireAt: number? = nil
-for position in string.gmatch(bootstrap, "()\nlocal %w+ = require%(script%.Systems%.") do
+for position in string.gmatch(bootstrap, "()require%(script%.Systems%.") do
 	if firstRequireAt == nil or position < firstRequireAt then
 		firstRequireAt = position
 	end

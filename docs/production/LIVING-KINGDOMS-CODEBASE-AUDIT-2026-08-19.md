@@ -67,7 +67,7 @@ the current NOW gate or corrupt the signal agents execute against.
 
 ### A. Runtime correctness and robustness
 
-#### F-A1 — Server bootstrap has no failure containment (High)
+#### F-A1 — Server bootstrap has no failure containment (High) — **FIXED in this branch**
 
 `games/living-kingdoms/src/server/init.server.luau:115-179` requires 28 services at module level
 and then calls 29 bare `.start()` functions in a deliberate order, with no `pcall`, no `task.spawn`,
@@ -91,11 +91,38 @@ tokens (`ServerBootstrapNetworkOrderSourceAudit`, `P4IntegrationValidation`,
 constraint at `src/client/init.client.luau:28-32`: the call must stay written out at each site
 rather than routed through a string. Any server fix must preserve those literal tokens.
 
-Design caveat worth deciding explicitly: on the server, "continue past a failed owner" is not
+Design caveat, decided explicitly: on the server, "continue past a failed owner" is not
 automatically safer than stopping. `MatchResultService` starts before any owner that can commit a
-fact precisely so facts are never committed without a ledger. The proposed shape is containment
-plus a named warning plus a recorded failure list, with a small explicitly-listed set of ordering-
-critical owners that still abort — not blanket fail-open.
+fact precisely so facts are never committed without a ledger.
+
+**Resolution (Phase 1.1).** All 29 service requires now load through `safeRequire` and all 29
+starts run through `safeStep`, mirroring the client helpers, with every literal `X.start()` token
+and its relative order preserved. `WorldFoundationService` and `MatchResultService` use a
+`criticalStep` that warns by name and then re-raises, so the two owners whose absence would let the
+server commit facts against a missing world root or a missing ledger still abort the bootstrap
+rather than failing open. Contained failures are collected and warned by name at the end, as on the
+client.
+
+`ServerBootstrapIsolationSourceAudit` pins the guarantee and was mutation-tested against four
+regressions: a bare `X.start()`, a bare `require(script.Systems.X)`, a critical owner downgraded to
+`safeStep`, and `criticalStep` losing its abort. Each is caught.
+
+Which owners are critical was decided deliberately and is worth reviewing. Only the two above
+abort. Every other owner fails **closed** rather than wrong when skipped — an unstarted
+`OperativeCombatRuntimeService` leaves `FireIntent` unlistened, so no damage resolves at all rather
+than resolving unvalidated. `MovementValidationSystem` is the one contained owner that is a
+validation boundary; it stays contained because its own module documents itself as "a prototype
+sanity boundary, not production-grade exploit prevention", and because a skipped owner is now named
+in the console rather than inferred. If that module is ever promoted to a real trust boundary, it
+belongs in the critical set.
+
+One existing audit had to change. `ServerBootstrapNetworkOrderSourceAudit` located the first service
+require by matching `\nlocal %w+ = require(script.Systems.` — a spelling, not the guarantee. Once
+requires load through the helper, that pattern matched nothing and the audit failed on a refactor
+that preserves what it protects. It now matches any `require(script.Systems.` occurrence, which is
+strictly **stronger**: it finds the genuinely first load rather than the first one that still looks
+like the old form. This is the rewrite `CLAUDE.md` asks for — hold the guarantee, not the spelling —
+and not a loosening; no assertion was removed or weakened.
 
 #### F-A2 — Unbounded `WaitForChild` on Workspace folders, including in two started services (Medium)
 
@@ -187,7 +214,7 @@ gate produces a measured symptom.
 
 ### C. Validation system
 
-#### F-C1 — `validate.py` reports false failures in a shallow clone (High for agent throughput)
+#### F-C1 — `validate.py` reports false failures in a shallow clone (High for agent throughput) — **FIXED in this branch**
 
 `scripts/validate_roadmap_authority.py:85-103` resolves every backticked commit hash cited by an
 authority document. `commit_exists` already returns `None` (skip) when git is unavailable, but a
@@ -201,8 +228,17 @@ After `git fetch --unshallow`, the identical command passed. CI uses `fetch-dept
 better: an agent sees a red gate that CI will never reproduce, and the documented advice in
 `CLAUDE.md` ("a red run here looks exactly like a red `main` and is not") does not cover this cause.
 
-Fix is a few lines: treat a shallow repository the same as "git unavailable" and set the existing
-`hash_checks_skipped` flag.
+**Resolution (Phase 0.1).** `commit_exists` now treats a shallow repository as unanswerable rather
+than as evidence of a bad hash, and the OK line names which of the two reasons applied
+(`commit checks skipped: shallow clone`) instead of always claiming git was unavailable. Detection
+uses `git rev-parse --is-shallow-repository`, falling back to the `shallow` marker file for git
+older than 2.15. A genuinely dangling hash in a complete clone still fails.
+
+The self-test now builds a real origin, a full clone and a `--depth 1` clone in a temp directory and
+asserts the whole decision table, including that the full clone still rejects a bad hash; it is
+wired into the `docs` profile so the behavior is gated rather than asserted in prose. Verified
+end-to-end against a fresh `--depth 5` clone of this repository: five dangling-reference errors
+before, clean with the skip reason after.
 
 #### F-C2 — No Luau type-check gate (Medium)
 
@@ -337,7 +373,7 @@ gate failure land before the gate runs.
 
 | # | Work | Files | Validation |
 |---|---|---|---|
-| 0.1 | Treat a shallow repository as "hash checks unavailable" (F-C1) | `scripts/validate_roadmap_authority.py` + a self-test | `validate.py docs` in both a shallow and a full clone |
+| 0.1 | **DONE** — shallow repository treated as "hash checks unanswerable" (F-C1) | `scripts/validate_roadmap_authority.py`, `scripts/validate.py` | `validate.py docs` green; self-test exercises full and `--depth 1` clones |
 | 0.2 | Commit a generated `roblox.yml` + refresh script; move Selene after fixtures/builds in `validate_toolchain_and_game` (F-C3) | `selene.toml`, `scripts/`, `validate.py` | `validate.py full` offline |
 | 0.3 | Refresh `CLAUDE.md` counts; rewrite trap #4 to say the client error path is contained, the client *yield* path is not, and the server has neither (F-E1) | `CLAUDE.md` | `validate.py docs` |
 
@@ -349,7 +385,7 @@ moved.
 
 | # | Work | Notes |
 |---|---|---|
-| 1.1 | Mirror the client's `safeRequire`/`safeStep` containment into `src/server/init.server.luau` (F-A1) | Preserve every literal `X.start()` token — 37 fixtures read this file. Decide and document the small set of ordering-critical owners (`WorldFoundationService`, `MatchResultService`) that still abort rather than continue. Add `ServerBootstrapIsolationSourceAudit` |
+| 1.1 | **DONE** — client containment mirrored into `src/server/init.server.luau` (F-A1) | Literal `X.start()` tokens and order preserved; `WorldFoundationService` and `MatchResultService` abort by name via `criticalStep`; `ServerBootstrapIsolationSourceAudit` added and mutation-tested |
 | 1.2 | Bound the two in-service Workspace waits, then the five root-script waits (F-A2) | Copy `MeleeIntentService.luau:20-31`: named timeout constant + `assert` with a specific message |
 | 1.3 | Widen both wait audits (F-A3) | Client audit: add `src/main-world/client` (and any future client root). Server audit: flag every untimed `WaitForChild`, not only `*Network` ones. Correct the LKB-0033 closeout note to state the audits' real scope |
 | 1.4 | Replace the dot-index nil-guards in `RelicModifierService.luau:20-35` with `FindFirstChild` (F-A4) | Add a fixture whose stub *raises* on a missing child, so the harness stops disagreeing with the engine. Then sweep for the same class repo-wide |
@@ -418,12 +454,15 @@ overhead against a 1,300-commit fortnight.
 **Audit: complete.** Findings are static-source and tooling facts, reproducible from the commands in
 §1 at `e456e57`.
 
-**Plan: proposed, not executed.** No source under `games/living-kingdoms/src` was modified by this
-audit.
+**Plan: Phase 0.1 and Phase 1.1 implemented on this branch** (F-C1 and F-A1). Everything else in
+§4 remains proposed and unexecuted. Phase 1.1 is **BUILT — VERIFICATION PENDING**: it changes server
+bootstrap behavior, so its intended effect under a real service failure is a Studio observation, not
+something the fixture suite can prove.
 
 **Blocked:** Phase 2 requires Roblox Studio, unavailable in this environment. Selene (F-C3) is
 environment-blocked here and remains CI-verified.
 
-**Next highest-ROI action:** Phase 0.1 (shallow-clone false failure) and Phase 1.1 (server bootstrap
-containment) — the first because every other result is read through it, the second because it is the
-most plausible way the current build fails the gate it is about to be measured against.
+**Next highest-ROI action:** Phase 1.2 and 1.3 — bound the two in-service `Workspace` waits (F-A2)
+and widen both bootstrap-wait audits to the scope their recorded claim already asserts (F-A3).
+Together they close the remaining boot/reset hazard that containment cannot reach, because a yield
+is not an error and `pcall` does not interrupt one.
