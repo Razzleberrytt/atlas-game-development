@@ -124,7 +124,7 @@ strictly **stronger**: it finds the genuinely first load rather than the first o
 like the old form. This is the rewrite `CLAUDE.md` asks for — hold the guarantee, not the spelling —
 and not a loosening; no assertion was removed or weakened.
 
-#### F-A2 — Unbounded `WaitForChild` on Workspace folders, including in two started services (Medium)
+#### F-A2 — Unbounded `WaitForChild` on Workspace folders, including in two started services (Medium) — **FIXED in this branch**
 
 Eleven untimed `WaitForChild` sites remain outside `src/client`:
 
@@ -145,10 +145,23 @@ The two inside started services are the material ones. In the current order they
 containment from F-A1 would not help here: `pcall` catches errors, it does not interrupt a yield.
 An unsatisfied `WaitForChild` inside `start()` stalls the bootstrap forever regardless.
 
-`MeleeIntentService.luau:20-31` is the pattern to copy: a named `NETWORK_WAIT_SECONDS = 20` bound
+`MeleeIntentService.luau:20-31` was the pattern to copy: a named `NETWORK_WAIT_SECONDS = 20` bound
 plus an `assert` with a specific message.
 
-#### F-A3 — The bootstrap-wait audits are narrower than the claim recorded against them (Medium)
+**Resolution (Phase 1.2).** All eleven sites are bounded. The two inside started services and the
+dependency waits that mean the world never built `assert` with a message naming what was waited on;
+the presentation-only waits (`Landmarks`, the archetype rig folder, Main World static stabilization)
+warn and skip, because halting a presentation script forever is strictly worse than rendering
+nothing and saying why. `games/living-kingdoms/src` now contains **zero** untimed `WaitForChild`.
+
+One validator had to change with it. `scripts/validate_main_world_static_scene.py` asserted the
+literal `Workspace:WaitForChild(stabilization.WorldRootName)`, so pinning that text also pinned the
+*absence* of a timeout — adding the required bound read as a violation of "resolve only the
+configured world root". It now matches the receiver and its first argument, and additionally
+rejects a second world-root lookup, which the substring check could not see. Mutation-tested both
+ways: a hard-coded root and a second lookup are each caught. Stronger, not looser.
+
+#### F-A3 — The bootstrap-wait audits are narrower than the claim recorded against them (Medium) — **FIXED in this branch**
 
 Two audits exist and neither covers the gap above:
 
@@ -163,11 +176,18 @@ in `main-world.project.json:75-76` — carries an untimed wait that neither audi
 LKB-0033 closeout note in `backlog/living-kingdoms/status.csv` records that the client audit
 "enforces zero untimed WaitForChild calls across the client tree."
 
-The code is not currently dangerous (Rojo maps `Shared`, and the script is an allowlist-gated
-no-op). The defect is that the guard rail is believed to be broader than it is, and the closeout
-note tells the next agent not to open another wait-hardening ticket.
+The code was not itself dangerous (Rojo maps `Shared`, and the script is an allowlist-gated no-op).
+The defect was that the guard rail was believed to be broader than it is, while the closeout note
+tells the next agent not to open another wait-hardening ticket.
 
-#### F-A4 — Dead defensive branch in `RelicModifierService` (Medium)
+**Resolution (Phase 1.3).** The client audit now scans every mapped client tree, including
+`src/main-world/client`. The server audit now flags **any** untimed `WaitForChild` in
+`src/server`, `src/shared` and `src/main-world` rather than only `*Network` ones, and reports every
+finding instead of the first. Both were mutation-tested against precisely the gaps that used to be
+invisible — an unbounded wait in the Main World client, and a non-network wait inside a started
+service — and each is now caught. Neither audit lost an assertion; both only gained scope.
+
+#### F-A4 — Dead defensive branch in `RelicModifierService` (Medium) — **FIXED in this branch**
 
 `src/server/Systems/RelicModifierService.luau:20-35` reads:
 
@@ -191,7 +211,18 @@ key legitimately is `nil`. The fixture stub and the engine disagree, and the fix
 being believed. Fix is one word each: `:FindFirstChild("Equipment")`.
 
 This is worth flagging beyond the single site because it is a **class**: any `--!strict` nil-guard
-written against a dot-indexed Instance child is dead code that our test harness cannot detect.
+written against a dot-indexed Instance child is dead code that our test harness could not detect.
+
+**Resolution (Phase 1.4).** Both lookups now go through `FindFirstChild`, so the documented
+fail-closed path actually fails closed. More importantly the harness no longer disagrees with the
+engine: the stub in `tests/RelicCombatIntegration.test.luau` returns `nil` from `FindFirstChild` for
+an absent child and **raises** on a dotted index for one, exactly as an `Instance` does, and that
+fixture runs with `Equipment` deliberately absent so it exercises the partial-runtime path.
+Mutation-tested by restoring the dotted index: the fixture reproduces the engine's real error
+(`Equipment is not a valid member of ...`) and `LiveEquipmentDamageAffixSourceAudit` independently
+rejects the spelling. That audit was rewritten to name both halves of the composed path instead of
+one dotted literal — the guarantee is which module is composed and from where, not how the
+reference is spelled.
 
 ### B. Trust and abuse surface
 
@@ -386,13 +417,13 @@ moved.
 | # | Work | Notes |
 |---|---|---|
 | 1.1 | **DONE** — client containment mirrored into `src/server/init.server.luau` (F-A1) | Literal `X.start()` tokens and order preserved; `WorldFoundationService` and `MatchResultService` abort by name via `criticalStep`; `ServerBootstrapIsolationSourceAudit` added and mutation-tested |
-| 1.2 | Bound the two in-service Workspace waits, then the five root-script waits (F-A2) | Copy `MeleeIntentService.luau:20-31`: named timeout constant + `assert` with a specific message |
-| 1.3 | Widen both wait audits (F-A3) | Client audit: add `src/main-world/client` (and any future client root). Server audit: flag every untimed `WaitForChild`, not only `*Network` ones. Correct the LKB-0033 closeout note to state the audits' real scope |
-| 1.4 | Replace the dot-index nil-guards in `RelicModifierService.luau:20-35` with `FindFirstChild` (F-A4) | Add a fixture whose stub *raises* on a missing child, so the harness stops disagreeing with the engine. Then sweep for the same class repo-wide |
+| 1.2 | **DONE** — all eleven untimed waits bounded (F-A2) | Dependency waits `assert` with a message naming the target; presentation-only waits warn and skip. Zero untimed `WaitForChild` remain in `src` |
+| 1.3 | **DONE** — both wait audits widened to their recorded claim (F-A3) | Client audit covers every mapped client tree; server audit flags any untimed `WaitForChild` and reports all findings. Both mutation-tested against the previously invisible gaps |
+| 1.4 | **DONE** — dot-index nil-guards replaced with `FindFirstChild` (F-A4) | The fixture stub now raises on a dotted index for an absent child, as the engine does, and runs the partial-runtime path. A repo-wide sweep found no other instance of the class |
 
-Phase 1 is the only phase that should precede the gate run. Each item maps to an existing canonical
-owner and adds no new authority, no new remote, and no new state — consistent with the gate's
-"do not rebuild the game" rule.
+Phase 1 is the only phase that should precede the gate run, and it is now complete. Each item maps
+to an existing canonical owner and adds no new authority, no new remote, and no new state —
+consistent with the gate's "do not rebuild the game" rule.
 
 ### Phase 2 — Run the static playable evidence gate (blocked here)
 
@@ -454,15 +485,15 @@ overhead against a 1,300-commit fortnight.
 **Audit: complete.** Findings are static-source and tooling facts, reproducible from the commands in
 §1 at `e456e57`.
 
-**Plan: Phase 0.1 and Phase 1.1 implemented on this branch** (F-C1 and F-A1). Everything else in
-§4 remains proposed and unexecuted. Phase 1.1 is **BUILT — VERIFICATION PENDING**: it changes server
-bootstrap behavior, so its intended effect under a real service failure is a Studio observation, not
+**Plan: Phase 0.1 and all of Phase 1 implemented on this branch** (F-C1, F-A1, F-A2, F-A3, F-A4).
+Phases 0.2, 0.3, 2, 3, 4 and 5 remain proposed and unexecuted. Phase 1 is
+**BUILT — VERIFICATION PENDING**: it changes server bootstrap and dependency-wait behavior, so its
+intended effect under a real service failure or a missing dependency is a Studio observation, not
 something the fixture suite can prove.
 
 **Blocked:** Phase 2 requires Roblox Studio, unavailable in this environment. Selene (F-C3) is
 environment-blocked here and remains CI-verified.
 
-**Next highest-ROI action:** Phase 1.2 and 1.3 — bound the two in-service `Workspace` waits (F-A2)
-and widen both bootstrap-wait audits to the scope their recorded claim already asserts (F-A3).
-Together they close the remaining boot/reset hazard that containment cannot reach, because a yield
-is not an error and `pcall` does not interrupt one.
+**Next highest-ROI action:** Phase 2 — run the static playable evidence gate. Boot/reset safety is
+now closed on both the error path and the yield path, which is what Phase 1 existed to do. The
+remaining bottleneck is the one no static gate can reach, and it needs Studio.

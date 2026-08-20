@@ -605,6 +605,38 @@ local buildService = {
 		return counterAdvanceResult
 	end,
 }
+--[[
+	Instance-like stubs for the composition seam.
+
+	A plain Lua table returns nil for a missing key; a Roblox Instance *raises*
+	on a dotted index for a child that does not exist. That difference is exactly
+	what let a dead nil-guard survive in RelicModifierService: the module checked
+	`ReplicatedStorage.Shared.Equipment == nil` to fail closed in a partial
+	runtime, which no fixture could contradict while the stub was a plain table,
+	and which would have errored at module load in the engine.
+
+	So these stubs behave the way the engine does. FindFirstChild returns nil for
+	an absent child; a dotted index for one errors. This fixture runs with
+	Equipment deliberately absent, so it exercises the partial-runtime path and
+	fails if the lookup ever goes back to a dotted index.
+]]
+local function instanceStub(children: { [string]: unknown }): any
+	local stub = {
+		FindFirstChild = function(_self: unknown, name: string): unknown
+			return children[name]
+		end,
+	}
+	return setmetatable(stub, {
+		__index = function(_stub: unknown, key: string): unknown
+			local child = children[key]
+			if child == nil then
+				error(string.format("%s is not a valid member of the stubbed Instance", tostring(key)), 2)
+			end
+			return child
+		end,
+	})
+end
+
 local relicModifierService =
 	luau.load(fs.readFile("games/living-kingdoms/src/server/Systems/RelicModifierService.luau"), {
 		debugName = "RelicModifierService",
@@ -612,17 +644,17 @@ local relicModifierService =
 			game = {
 				GetService = function(_self: unknown, serviceName: string)
 					assertThat(serviceName == "ReplicatedStorage", "unexpected service request")
-					return {
-						Shared = {
-							RPG = {
+					return instanceStub({
+						Shared = instanceStub({
+							RPG = instanceStub({
 								RelicModifierResolver = RESOLVER_TOKEN,
 								RunRpgContracts = RPG_CONTRACTS_TOKEN,
-							},
-						},
-					}
+							}),
+						}),
+					})
 				end,
 			},
-			script = { Parent = { RunBuildService = BUILD_SERVICE_TOKEN } },
+			script = { Parent = instanceStub({ RunBuildService = BUILD_SERVICE_TOKEN }) },
 			require = function(token: unknown)
 				if token == RESOLVER_TOKEN then
 					return relicResolver

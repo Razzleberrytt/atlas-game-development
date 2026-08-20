@@ -183,13 +183,22 @@ local function applyDressing(worldRoot: Folder)
 	worldRoot:SetAttribute("EnvironmentCompositionSeed", EnvironmentModelPlacementConfig.Seed)
 end
 
-local worldRootInstance = Workspace:WaitForChild(Config.WorldRootName)
+local DEPENDENCY_WAIT_SECONDS = 20
+
+local worldRootInstance = Workspace:WaitForChild(Config.WorldRootName, DEPENDENCY_WAIT_SECONDS)
+assert(worldRootInstance ~= nil, Config.WorldRootName .. " did not become available before the world dressing timeout")
 assert(worldRootInstance:IsA("Folder"), Config.WorldRootName .. " must be a Folder")
 local worldRoot = worldRootInstance :: Folder
 
 -- Waiting for Landmarks makes this pass deterministic relative to the synchronous
--- world builder without polling or adding a recurring server loop.
-worldRoot:WaitForChild("Landmarks")
+-- world builder without polling or adding a recurring server loop. The wait is
+-- bounded: dressing is presentation-only, so a world that never produced
+-- Landmarks should skip dressing with a named warning rather than leave this
+-- script parked on a yield no containment can interrupt.
+if worldRoot:WaitForChild("Landmarks", DEPENDENCY_WAIT_SECONDS) == nil then
+	warn("[Living Kingdoms] World visual dressing skipped: Landmarks were not ready")
+	return
+end
 applyDressing(worldRoot)
 
 print(

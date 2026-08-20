@@ -11,8 +11,10 @@ local ModularEnemyAssetPresentationService = require(script.Parent.Systems.Modul
 local ENEMY_FOLDER_NAME = "EnemyEntities"
 local PRESENTATION_MODEL_NAME = "ExclusionWalkerPresentation"
 local PRESENTATION_WAIT_SECONDS = 4
+local ENEMY_FOLDER_WAIT_SECONDS = 20
 
-local folderInstance = Workspace:WaitForChild(ENEMY_FOLDER_NAME)
+local folderInstance = Workspace:WaitForChild(ENEMY_FOLDER_NAME, ENEMY_FOLDER_WAIT_SECONDS)
+assert(folderInstance ~= nil, ENEMY_FOLDER_NAME .. " did not become available before the modular enemy asset timeout")
 assert(folderInstance:IsA("Folder"), ENEMY_FOLDER_NAME .. " must be a Folder")
 local enemyFolder = folderInstance :: Folder
 

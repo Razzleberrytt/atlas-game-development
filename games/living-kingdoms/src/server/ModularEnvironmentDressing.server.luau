@@ -190,7 +190,11 @@ local function cloneFieldProp(
 	return true
 end
 
-local worldRootInstance = Workspace:WaitForChild(WorldConfig.WorldRootName)
+local worldRootInstance = Workspace:WaitForChild(WorldConfig.WorldRootName, Config.WorldDressingWaitSeconds)
+assert(
+	worldRootInstance ~= nil,
+	WorldConfig.WorldRootName .. " did not become available before the modular dressing timeout"
+)
 assert(worldRootInstance:IsA("Folder"), WorldConfig.WorldRootName .. " must be a Folder")
 local worldRoot = worldRootInstance :: Folder
 
