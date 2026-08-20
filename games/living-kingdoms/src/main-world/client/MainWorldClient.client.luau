@@ -2,7 +2,10 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
+local DEPENDENCY_WAIT_SECONDS = 20
+
+local Shared = ReplicatedStorage:WaitForChild("Shared", DEPENDENCY_WAIT_SECONDS)
+assert(Shared ~= nil, "ReplicatedStorage.Shared did not become available before the Main World client timeout")
 local Config = require(Shared.Config.MainWorldBootstrapAllowlistConfig)
 
 if not Config.RuntimeEnabled then

@@ -17,19 +17,33 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Equipment is an additive Patch 0.3 composition seam. Full production builds
--- contain both modules; narrow resolver fixtures and partial runtimes may omit
--- them. Missing composition dependencies therefore fail closed to neutral
--- multipliers instead of crashing unrelated relic behavior.
-local equippedEquipmentModifierResolverModule = if ReplicatedStorage.Shared.Equipment == nil
+--[[
+	Equipment is an additive Patch 0.3 composition seam. Full production builds
+	contain both modules; narrow resolver fixtures and partial runtimes may omit
+	them. Missing composition dependencies fail closed to neutral multipliers
+	instead of crashing unrelated relic behavior.
+
+	The lookups go through FindFirstChild deliberately. Indexing an Instance for a
+	child that does not exist *raises* in the engine rather than returning nil, so
+	a `... == nil` guard written against a dotted child is dead code: in the exact
+	partial-runtime case this comment describes it would error at module load and
+	take the whole require chain behind it -- the opposite of failing closed.
+
+	No fixture can observe that difference on its own, because the Lune harness
+	hands these modules plain tables where a missing key really is nil. The stub
+	in tests/RelicCombatIntegration.test.luau therefore raises on an unknown child
+	the way the engine does, so the guard is proven rather than assumed.
+]]
+local sharedEquipment = ReplicatedStorage.Shared:FindFirstChild("Equipment")
+local equippedEquipmentModifierResolverModule = if sharedEquipment == nil
 	then nil
-	else ReplicatedStorage.Shared.Equipment.EquippedEquipmentModifierResolver
+	else sharedEquipment:FindFirstChild("EquippedEquipmentModifierResolver")
 local EquippedEquipmentModifierResolver = if equippedEquipmentModifierResolverModule == nil
 	then nil
 	else require(equippedEquipmentModifierResolverModule)
 local RelicModifierResolver = require(ReplicatedStorage.Shared.RPG.RelicModifierResolver)
 local RunRpgContracts = require(ReplicatedStorage.Shared.RPG.RunRpgContracts)
-local inventoryLiveServiceModule = script.Parent.InventoryLiveService
+local inventoryLiveServiceModule = script.Parent:FindFirstChild("InventoryLiveService")
 local InventoryLiveService = if EquippedEquipmentModifierResolver == nil or inventoryLiveServiceModule == nil
 	then nil
 	else require(inventoryLiveServiceModule)

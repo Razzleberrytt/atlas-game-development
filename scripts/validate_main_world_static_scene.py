@@ -113,7 +113,20 @@ def main() -> int:
         raise RuntimeError("Main World server lost its disabled-runtime gate")
     if stabilize_call > runtime_gate:
         raise RuntimeError("static-scene stabilization must run before the disabled-runtime early return")
-    if "Workspace:WaitForChild(stabilization.WorldRootName)" not in server:
+    # The guarantee is that the server resolves the world root from the configured
+    # name and from nothing else. Pinning the exact call text also pinned the
+    # absence of a timeout argument, so adding a bound to that wait -- which is
+    # required, since an unbounded WaitForChild parks the script on a yield no
+    # error handling can interrupt -- read as a violation. Match the receiver and
+    # its first argument instead, and additionally reject a second world-root
+    # lookup, which the old substring check could not see.
+    world_root_waits = re.findall(r"Workspace:WaitForChild\(([^)]*)\)", server)
+    if len(world_root_waits) != 1:
+        raise RuntimeError(
+            "Main World server must resolve the world root exactly once, found "
+            f"{len(world_root_waits)}"
+        )
+    if world_root_waits[0].split(",")[0].strip() != "stabilization.WorldRootName":
         raise RuntimeError("Main World server must resolve only the configured world root")
 
     required_stabilizer_fragments = (

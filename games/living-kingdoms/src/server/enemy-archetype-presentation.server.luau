@@ -8,5 +8,13 @@ local Workspace = game:GetService("Workspace")
 
 local EnemyArchetypePresentationService = require(script.Parent.Systems.EnemyArchetypePresentationService)
 
-Workspace:WaitForChild("EnemyEntities")
+-- Bounded: presentation must not start against a world that never produced the
+-- folder, and an unbounded wait would park this script forever instead of
+-- reporting why the archetype rigs never appeared.
+local ENEMY_FOLDER_WAIT_SECONDS = 20
+
+if Workspace:WaitForChild("EnemyEntities", ENEMY_FOLDER_WAIT_SECONDS) == nil then
+	warn("[Living Kingdoms] Enemy archetype presentation skipped: EnemyEntities was not ready")
+	return
+end
 EnemyArchetypePresentationService.start()

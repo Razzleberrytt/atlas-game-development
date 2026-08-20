@@ -18,6 +18,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local NETWORK_WAIT_SECONDS = 20
+-- EnemyDirectorService.start() creates EnemyEntities immediately before this
+-- service starts, so the wait normally resolves at once. It stays bounded
+-- because containment cannot help here: a pcall catches an error, it does not
+-- interrupt a yield, so an unbounded wait would stall the whole bootstrap.
+local WORLD_WAIT_SECONDS = 20
 
 local EnemyContracts = require(ReplicatedStorage.Shared.Combat.EnemyContracts)
 local EnemyPresentationContracts = require(ReplicatedStorage.Shared.Visual.EnemyPresentationContracts)
@@ -616,8 +621,12 @@ function Service.start()
 	nextHordeServerTimestamp = startTimestamp + HordeConfig.Pressure.WarmupSeconds
 	local foundEnemyFolder = Workspace:FindFirstChild(ENEMY_FOLDER_NAME)
 	if foundEnemyFolder == nil then
-		foundEnemyFolder = Workspace:WaitForChild(ENEMY_FOLDER_NAME)
+		foundEnemyFolder = Workspace:WaitForChild(ENEMY_FOLDER_NAME, WORLD_WAIT_SECONDS)
 	end
+	assert(
+		foundEnemyFolder ~= nil,
+		ENEMY_FOLDER_NAME .. " did not become available before the horde runtime start timeout"
+	)
 	assert(foundEnemyFolder:IsA("Folder"), "EnemyEntities must be a Folder")
 	for _, child in foundEnemyFolder:GetChildren() do
 		trackEnemy(child)

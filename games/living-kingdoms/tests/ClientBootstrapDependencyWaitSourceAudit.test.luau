@@ -2,8 +2,18 @@
 
 local fs = require("@lune/fs")
 
+--[[
+	Every client tree, not just the operation place's.
+
+	This audit was recorded as enforcing "zero untimed WaitForChild calls across
+	the client tree", but it scanned only src/client, so the Main World place's
+	own client script was outside it. A guarantee that names the client tree has
+	to cover every client tree that a project actually maps, so any new client
+	root belongs in this list on the day it is created.
+]]
 local roots = {
 	"games/living-kingdoms/src/client",
+	"games/living-kingdoms/src/main-world/client",
 }
 
 local findings: { string } = {}

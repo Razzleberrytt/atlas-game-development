@@ -10,9 +10,22 @@ local function contains(source: string, needle: string): boolean
 	return string.find(source, needle, 1, true) ~= nil
 end
 
+--[[
+	The adapter must compose the shared equipped-item resolver out of
+	ReplicatedStorage.Shared.Equipment. It used to reach that module by dotted
+	index, which raises in the engine when the folder is absent, so the lookup is
+	now a FindFirstChild pair. Name both halves of the path rather than one dotted
+	literal: the guarantee is which module is composed and where it comes from,
+	not how the reference happens to be spelled.
+]]
 assert(
-	contains(modifierService, "Shared.Equipment.EquippedEquipmentModifierResolver"),
+	contains(modifierService, 'ReplicatedStorage.Shared:FindFirstChild("Equipment")')
+		and contains(modifierService, 'FindFirstChild("EquippedEquipmentModifierResolver")'),
 	"server modifier adapter must use the shared equipped-item resolver"
+)
+assert(
+	not contains(modifierService, "ReplicatedStorage.Shared.Equipment."),
+	"the equipment seam must not be reached by dotted index: a missing child raises rather than returning nil"
 )
 assert(
 	contains(modifierService, "InventoryLiveService.getRecord(player.UserId)"),

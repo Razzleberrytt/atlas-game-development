@@ -1,5 +1,24 @@
 --!strict
 
+--[[
+	Server and Main World bootstrap dependency waits stay bounded.
+
+	An unbounded WaitForChild is the one bootstrap hazard that failure
+	containment cannot reach. A pcall catches an error; it does not interrupt a
+	yield. So a service that waits forever on a folder or a network stalls the
+	whole start sequence behind it, with no error naming what it was waiting for.
+
+	This audit used to match only `*Network` waits, which left every
+	`Workspace:WaitForChild(...)` and `ReplicatedStorage:WaitForChild("Shared")`
+	invisible to it -- including two inside started services. The guarantee was
+	always "bootstrap dependency waits are bounded", so the audit now holds that
+	rather than the narrower spelling: any untimed WaitForChild in these trees is
+	a finding.
+
+	Bounded waits remain correct and expected. Ordering makes most of them
+	resolve immediately; the bound only decides what happens when it does not.
+]]
+
 local fs = require("@lune/fs")
 
 local roots = {
@@ -24,14 +43,11 @@ local function scanDirectory(path: string)
 			local lineNumber = 0
 			for line in string.gmatch(source, "[^\n]+") do
 				lineNumber += 1
-				local networkReceiver, networkChild = string.match(line, '([%w_]*[Nn]etwork):WaitForChild%("([^"]+)"%)')
-				if networkReceiver ~= nil and networkChild ~= nil then
-					record(childPath, lineNumber, networkReceiver .. "." .. networkChild)
-				end
 
-				local replicatedNetwork = string.match(line, 'ReplicatedStorage:WaitForChild%("([^"]*[Nn]etwork)"%)')
-				if replicatedNetwork ~= nil then
-					record(childPath, lineNumber, "ReplicatedStorage." .. replicatedNetwork)
+				-- A second argument is the timeout. Its absence is the finding.
+				local waitArguments = string.match(line, ":WaitForChild%(([^%)]+)%)")
+				if waitArguments ~= nil and string.find(waitArguments, ",", 1, true) == nil then
+					record(childPath, lineNumber, "WaitForChild(" .. waitArguments .. ")")
 				end
 			end
 		end
@@ -47,7 +63,10 @@ end
 table.sort(findings)
 
 if #findings > 0 then
-	error("unbounded server/shared bootstrap network dependency wait: " .. findings[1], 2)
+	for _, finding in findings do
+		print("UNBOUNDED_SERVER_BOOTSTRAP_WAIT :: " .. finding)
+	end
+	error(string.format("%d unbounded server/shared bootstrap dependency wait(s) remain", #findings), 2)
 end
 
-print("ServerBootstrapDependencyWaitSourceAudit: scoped server/shared bootstrap network dependency waits are bounded")
+print("ServerBootstrapDependencyWaitSourceAudit: server, shared and Main World dependency waits are bounded")

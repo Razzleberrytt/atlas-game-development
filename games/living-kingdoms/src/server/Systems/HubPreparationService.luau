@@ -11,6 +11,12 @@ local HubPreparationConfig = require(ReplicatedStorage.Shared.Config.HubPreparat
 local WorldContentConfig = require(ReplicatedStorage.Shared.Config.WorldContentConfig)
 local WorldFoundationConfig = require(ReplicatedStorage.Shared.Config.WorldFoundationConfig)
 
+-- WorldFoundationService creates the world root before this service starts, so
+-- the wait normally resolves at once. It stays bounded because an unbounded
+-- WaitForChild in a start() yields forever rather than erroring, which no
+-- failure containment can interrupt.
+local WORLD_WAIT_SECONDS = 20
+
 local HubPreparationService = {}
 
 local started = false
@@ -111,7 +117,11 @@ function HubPreparationService.start()
 	end
 	started = true
 
-	local worldRoot = Workspace:WaitForChild(WorldFoundationConfig.WorldRootName)
+	local worldRoot = Workspace:WaitForChild(WorldFoundationConfig.WorldRootName, WORLD_WAIT_SECONDS)
+	assert(
+		worldRoot ~= nil,
+		WorldFoundationConfig.WorldRootName .. " did not become available before the hub preparation start timeout"
+	)
 	local existing = worldRoot:FindFirstChild(HubPreparationConfig.RootName)
 	if existing ~= nil then
 		existing:Destroy()
