@@ -152,8 +152,11 @@ each plus the three success rows.
 2. Close **every** client window (or stop all clients) so no admitted operative
    remains connected.
 3. Confirm the operation resolves **`Abandoned` / Failure** authoritatively (not a
-   wipe). Read the debrief from the Server view or a rejoining client.
-4. Complete RETURN TO LOBBY consensus, then READY the squad and confirm one fresh operation launches.
+   wipe). Rejoin with one of the admitted player identities and confirm that client
+   is pushed the frozen debrief.
+4. Activate **RETURN TO LOBBY** on the rejoined client. Because every prior client
+   disconnected, confirm the Expedition Lobby shows **JOIN** rather than assuming
+   membership survived; JOIN, then READY, and confirm one fresh operation launches.
 
 ### Disconnect during extraction (`P10-2P-DISCONNECT`)
 
@@ -197,7 +200,8 @@ Return / replay:
   Waiting-for-squad count accurate before consensus? (Y/N + observed count)
   Returned to preparation after consensus? (Y/N)
   Expedition Lobby reachable without coaching? (Y/N)
-  All members reset to unready? (Y/N)
+  All retained members reset to unready? (Y/N)
+  Rejoin/JOIN required after disconnect? (Y/N + observed state)
   READY launched exactly one fresh operation? (Y/N)
   Next operationId suffix incremented? (Y/N)
 
