@@ -163,8 +163,13 @@ assertThat(
 	"the debrief must say plainly that nothing has been awarded"
 )
 assertThat(
-	contains(controller, "MatchResultConfig.ReplayDebriefSeconds"),
-	"the announced restart must come from the same configured window the server uses"
+	contains(controller, "RETURN TO THE EXPEDITION LOBBY AND READY UP FOR ANOTHER OPERATION."),
+	"the debrief must name the deliberate replay path"
+)
+assertThat(
+	not contains(controller, "A fresh operation begins in")
+		and not contains(controller, "MatchResultConfig.ReplayDebriefSeconds"),
+	"the debrief must not promise the retired timer-driven restart"
 )
 
 assertThat(contains(bootstrapClient, "MatchResultController.start()"), "the debrief must be bootstrapped")
