@@ -14,9 +14,9 @@
 	arrives after resolution is pushed the same frozen snapshot on join.
 
 	It deliberately shows **no XP, rank, or unlock** — P11 owns those. It offers no
-	control either: the P10-0105 lifecycle owner restarts the operation from the
-	server after the configured debrief window, so the screen states what will
-	happen rather than presenting a button.
+	control either: the server-owned expedition lobby decides when a fresh run
+	launches, so the screen gives an accurate, input-neutral replay instruction
+	instead of promising an automatic restart or creating a second launch path.
 ]]
 
 local Players = game:GetService("Players")
@@ -30,7 +30,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 ]]
 local NETWORK_WAIT_SECONDS = 20
 
-local MatchResultConfig = require(ReplicatedStorage.Shared.Config.MatchResultConfig)
 local MatchResultContracts = require(ReplicatedStorage.Shared.Mission.MatchResultContracts)
 local RunRpgConfig = require(ReplicatedStorage.Shared.Config.RunRpgConfig)
 local RunProgressionConfig = require(ReplicatedStorage.Shared.Config.RunProgressionConfig)
@@ -288,10 +287,7 @@ local function applyResult(snapshot: unknown)
 		end
 	end
 
-	nextAction.Text = string.format(
-		"A fresh operation begins in %d seconds. No rewards are recorded yet.",
-		math.floor(MatchResultConfig.ReplayDebriefSeconds)
-	)
+	nextAction.Text = "RETURN TO THE EXPEDITION LOBBY AND READY UP FOR ANOTHER OPERATION. No rewards are recorded yet."
 	gui.Enabled = true
 end
 
