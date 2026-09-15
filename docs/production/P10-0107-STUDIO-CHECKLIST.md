@@ -5,8 +5,16 @@
 > surface: the full cause/race matrix and precedence, single-result assembly per
 > run, cleanup-owner coverage, and a server-only loop). The **1/2/4-operative
 > Studio matrix below is the outstanding manual gate**, and **P10 is not signed
-> off until these rows are recorded.** This document is the script for that
-> session and the place to capture its evidence.
+> off until these rows are recorded.** The current
+> [static playable evidence gate](../roadmap/STATIC-PLAYABLE-EVIDENCE-GATE.md)
+> also uses this packet for the complete fixed run.
+>
+> **Current replay contract (main at and after `ca3b0c3`):** a resolved run does
+> not restart on a timer. Every connected participant uses **RETURN TO LOBBY**;
+> after the server-owned return vote resolves, the squad opens the Expedition
+> Lobby and uses **READY** to deliberately launch a fresh run. The server alone
+> performs cleanup and launch preparation. Older automatic-20-second-restart
+> instructions are superseded.
 
 ## What this is
 
@@ -23,15 +31,19 @@ the capture shape to the implemented owners.
 ## What makes a run valid
 
 A row counts toward the gate only if it was produced by ordinary play through the
-authored operation, resolved once, and restarted on its own:
+authored operation, resolved once, and deliberately launched again through the
+visible return/lobby flow:
 
 - the squad travels the authored route on foot and reaches its terminal outcome
   through ordinary play (or the deliberate scripted action named in the scenario),
   never by editing config or forcing a result directly;
 - the operation resolves **exactly once**, with the **cause the scenario
   intends** (verify `causeId` on the debrief, not just the headline);
-- the replay restarts **without developer intervention** after the debrief window,
-  as a **fresh run** (`operationId` suffix increments `…:run-N`);
+- every connected participant activates **RETURN TO LOBBY**; the UI truthfully
+  shows whether the squad is still waiting for consensus;
+- after return, the squad opens the Expedition Lobby and uses **READY** to launch
+  a **fresh run** without a command-bar action (`operationId` suffix increments
+  `…:run-N`);
 - the debrief renders and its fields are internally consistent with what was
   observed (a wiped squad shows no survivors, a defeated boss shows
   `bossDefeated`).
@@ -44,9 +56,8 @@ invalid row is more useful than a fabricated valid one.
 - **Phases / timing** (`MissionConfig.luau`, `MatchResultConfig.luau`):
   `Insertion` → `Infiltration` → `Exfiltration` → `Holdout` (boss fight, **no
   countdown while the boss lives**) → boss defeated → **extraction inbound for
-  `ExtractionArrivalWindowSeconds = 15 s`** → `Resolved`. After resolution the
-  debrief holds for **`ReplayDebriefSeconds = 20 s`**, then the operation restarts
-  on its own.
+  `ExtractionArrivalWindowSeconds = 15 s`** → `Resolved`. Resolution remains
+  stable until the server-owned return vote and a later deliberate lobby launch.
 - **Terminal causes** (`MatchResultContracts.luau`), fixed precedence
   **`SquadWipe` > `Abandoned` > `Extracted`**:
   - `Extracted` → `Success` (boss defeated, an admitted **Alive** operative in the
@@ -70,14 +81,19 @@ invalid row is more useful than a fabricated valid one.
 
 ## Studio setup (once)
 
-1. Confirm the working tree is the commit under test and record the SHA. Do not
-   pull, rebase, or edit config between runs.
-2. `rojo build` / sync the place, or open the synced place in Studio.
-3. **Test → Clients and Server.** Set the player count for the scenario (1, 2, or
+1. Record the exact commit SHA, Rojo project (`default.project.json` for the
+   operation), published place identity if a published place is used, Studio
+   version, date/time, server/client count, and input/device path. Never infer a
+   place or universe ID.
+2. Confirm the working tree is that SHA. Do not pull, rebase, edit config, or
+   change the synced place between comparable runs.
+3. `rojo build` / sync the place, or open the synced place in Studio.
+4. **Test → Clients and Server.** Set the player count for the scenario (1, 2, or
    4). "Clients and Server" gives you a dedicated Server window whose command bar
    the harness listens to.
-4. Press **Start**. Confirm every client spawns at the Ranger Station insertion
-   and the mission HUD shows `Insertion`.
+5. Press **Start**. Confirm every client spawns at the Ranger Station insertion,
+   the mission HUD shows `Insertion`, and Output names no failed bootstrap
+   service/controller. Record any warning rather than silently dismissing it.
 
 ## The scenario matrix
 
@@ -112,8 +128,12 @@ each plus the three success rows.
 6. Keep at least one **Alive** operative in the clearing at the deadline. Confirm
    the operation resolves **`Extracted` / Success**.
 7. Read the debrief. Capture every field in the table below.
-8. **Do nothing.** After ~20 s confirm the operation **restarts on its own** and
-   the next debrief (when you reach it) carries the **next** `…:run-N` identity.
+8. On every connected client activate **RETURN TO LOBBY**. Before the final vote,
+   confirm the button reports the waiting-for-squad count; after consensus,
+   confirm the terminal expedition closes and preparation becomes available.
+9. Open the Expedition Lobby, confirm all members begin unready, then use
+   **READY** on each client. Confirm the server launches one fresh operation and
+   the next mission snapshot carries the next `…:run-N` identity.
 
 ### Squad wipe (`P10-2P-WIPE`)
 
@@ -124,7 +144,7 @@ each plus the three success rows.
 3. Confirm the operation resolves **`SquadWipe` / Failure** once, and that a later
    viability change cannot undo it.
 4. Read and capture the debrief; confirm no operative shows a surviving state.
-5. Confirm the operation restarts on its own.
+5. Complete RETURN TO LOBBY consensus, then READY the squad and confirm one fresh operation launches.
 
 ### Abandonment (`P10-2P-ABANDON`)
 
@@ -132,8 +152,11 @@ each plus the three success rows.
 2. Close **every** client window (or stop all clients) so no admitted operative
    remains connected.
 3. Confirm the operation resolves **`Abandoned` / Failure** authoritatively (not a
-   wipe). Read the debrief from the Server view or a rejoining client.
-4. Confirm the operation restarts on its own.
+   wipe). Rejoin with one of the admitted player identities and confirm that client
+   is pushed the frozen debrief.
+4. Activate **RETURN TO LOBBY** on the rejoined client. Because every prior client
+   disconnected, confirm the Expedition Lobby shows **JOIN** rather than assuming
+   membership survived; JOIN, then READY, and confirm one fresh operation launches.
 
 ### Disconnect during extraction (`P10-2P-DISCONNECT`)
 
@@ -145,7 +168,7 @@ each plus the three success rows.
    disconnect is not a failure, and the remaining operative extracts.
 4. Capture the debrief; confirm the disconnected operative's contribution is
    **retained** (their row is present) and the surviving operative extracted.
-5. Confirm the operation restarts on its own.
+5. Complete RETURN TO LOBBY consensus, then READY the squad and confirm one fresh operation launches.
 
 ## Capture — per run
 
@@ -172,12 +195,29 @@ Per-operative contribution (one line each):
 
 Squad Field Upgrades (upgradeStacks): [ … ]
 
-Replay:
-  Restarted without intervention? (Y/N)
-  Debrief window observed (~20 s)? (Y/N)
+Return / replay:
+  RETURN TO LOBBY visible and understandable? (Y/N)
+  Waiting-for-squad count accurate before consensus? (Y/N + observed count)
+  Returned to preparation after consensus? (Y/N)
+  Expedition Lobby reachable without coaching? (Y/N)
+  All retained members reset to unready? (Y/N)
+  Rejoin/JOIN required after disconnect? (Y/N + observed state)
+  READY launched exactly one fresh operation? (Y/N)
   Next operationId suffix incremented? (Y/N)
 
-Notes / deviations / defects:
+Player-experience observations (raw, not inferred):
+  Input/device path:
+  What did the player try without coaching?
+  First unclear instruction or route:
+  Threat/hit/damage/failure readability:
+  Objective/navigation clarity:
+  Result/reward/build comprehension:
+  Return/replay comprehension:
+  Frame-time/memory/network observation source (or NOT CAPTURED):
+  Accessibility/safe-area issue observed (or NONE OBSERVED):
+  Would attempt again unprompted? (Y/N; first-time external tester only)
+
+Notes / deviations / reproducible defects:
 ```
 
 ## Session sign-off
@@ -186,11 +226,19 @@ P10-0107 is complete — and P10 may be signed off — only when:
 
 - all six matrix rows are recorded as **valid**, each resolving once with its
   intended `causeId`;
-- every run **restarted without developer intervention** and the next run carried
-  a fresh `…:run-N` identity;
+- every run completed the visible RETURN TO LOBBY → Expedition Lobby → READY
+  path without developer coaching or command-bar intervention, launched exactly
+  once, and carried a fresh `…:run-N` identity;
 - the disconnect-during-extraction run **retained** the disconnected operative's
   contribution and still extracted;
-- no defect required developer intervention to reach or leave a terminal state.
+- no defect required developer intervention to reach or leave a terminal state;
+- at least three clean result/failure → return → ready → restart cycles are
+  recorded with no stale UI, duplicate listener, orphaned entity, or accumulated
+  lifecycle state;
+- first-time external attempts, when available, report raw
+  `unprompted replay / reached legitimate result` counts. The current directional
+  signal is at least 50%; record the fraction and do not present a small cohort as
+  statistical proof.
 
 Record the outcome here and mirror the disposition into
 [`../roadmap/P6-P12-EXECUTION-ROADMAP.md`](../roadmap/P6-P12-EXECUTION-ROADMAP.md)

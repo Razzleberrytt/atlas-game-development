@@ -118,7 +118,8 @@ A result screen, driven only from the validated safe result snapshot, communicat
   lost", "Operation abandoned");
 - the key operation events (objectives, boss, waves survived, duration);
 - personal and squad **contribution facts**;
-- the next action (replay / return to briefing).
+- the next action: use the server-owned return vote, then READY in the Expedition
+  Lobby for another operation.
 
 It shows **no XP, rank, or unlock** — P11 owns those, and the screen must not imply
 an unconfirmed reward. Disclosure stays within the P4 limits (no hidden threat or
@@ -139,12 +140,15 @@ lifecycle:
 3. `SquadFailureService` and the mission director's own timers, connections, and
    revision.
 
-**Replay creates a fresh operation identity.** Today `operationId` is the static
-`MissionConfig.OperationId`; P10 mints a **new per-run `operationId`** on each
-`start`, so a replayed operation is a distinct result with **zero stale** timers,
-connections, revisions, cache/collection history, class resources, enemies, boss
-state, contribution records, or terminal result. Replay is a clean restart of the
-same authored operation, not a resume.
+**Replay creates a fresh operation identity.** A resolved operation remains
+resolved until the server-owned expedition return vote completes and a later
+Expedition Lobby launch calls `OperationLifecycleService.prepareForLaunch()`.
+That boundary runs the documented cleanup/start sequence and the mission director
+mints a **new per-run `operationId`**, so a replayed operation is a distinct
+result with **zero stale** timers, connections, revisions, cache/collection
+history, class resources, enemies, boss state, contribution records, or terminal
+result. Replay is a deliberate clean launch of the same authored operation, not a
+resume and not a timer-driven client action.
 
 ## Leave, disconnect, rejoin, and shutdown (`P10-0106`)
 
@@ -277,9 +281,10 @@ begin without further design decisions.
   "SQUAD LOST", "OPERATION ABANDONED"), the key events (duration, phase reached,
   objectives completed, waves survived, boss outcome), and every operative's
   contribution row with the local operative marked and survival state in words.
-  It shows **no XP, rank, or unlock** and **no replay control** — replay does not
-  exist until `P10-0105`, so the screen states plainly that nothing has been
-  awarded rather than offering a dead button. Fixture:
+  It shows **no XP, rank, or unlock** and establishes no replay authority. The
+  screen states plainly that nothing has been awarded and points to the existing
+  RETURN TO LOBBY → Expedition Lobby → READY path rather than offering a second
+  launch control. Fixture:
   `tests/MatchResultPresentation.test.luau`.
 - **Deterministic cleanup and replay (`P10-0105`) — complete.**
   `src/server/Systems/OperationLifecycleService.luau` is the one owner of the
@@ -293,21 +298,24 @@ begin without further design decisions.
   `MissionDirectorService.resetObjectiveRuntime()` while the director tears the
   rest of itself down last.
 
-  Replay is server-driven and needs no developer intervention: the lifecycle owner
-  subscribes to the mission's single terminal commit through the new
-  `subscribeResolved`, holds the operation at `Resolved` for
-  `MatchResultConfig.ReplayDebriefSeconds` so the squad can read the debrief, then
-  moves to `Replayable` and restarts. It owns exactly one timer and one
-  subscription, both released on teardown, and exposes no remote — a client cannot
-  request or delay a replay. `replayNow()` is a server-only immediate path for
-  validation.
+  Replay needs no developer intervention but is deliberately player-initiated.
+  The lifecycle owner subscribes to the mission's single terminal commit through
+  `subscribeResolved` and holds the operation at `Resolved`. Connected
+  participants use the existing server-owned RETURN TO LOBBY consensus; after
+  return, the Expedition Lobby resets members to unready and consumes a fresh
+  all-ready launch. Only that server launch calls
+  `OperationLifecycleService.prepareForLaunch()`, which performs the cleanup/start
+  sequence immediately before pressure is armed. The lifecycle owner has no timer
+  and no client request surface; clients can request lobby actions, but cannot
+  perform cleanup or establish a launch.
 
-  **A replayed operation is a fresh run, not a resume.** The mission director now
+  **A replayed operation is a fresh run, not a resume.** The mission director
   mints a per-run `operationId` (`operation.blackwater-relay:run-N`) on every
   start, and that identity is what the mission snapshot publishes and the result
-  ledger records — so two runs on one server are two distinct results. The debrief
-  screen's next action became real and now names the same configured window.
-  Fixture: `tests/OperationLifecycleReplay.test.luau`.
+  ledger records — so two runs on one server are two distinct results. The
+  debrief now names the deliberate lobby/READY route. Fixtures:
+  `tests/OperationLifecycleReplay.test.luau` and
+  `tests/MatchResultPresentation.test.luau`.
 - **Leave, disconnect, rejoin, and shutdown (`P10-0106`) — complete.**
   Retention lives in the owner that holds each fact, keyed by the server-owned
   operative entity ID, so there is no session hub to keep in sync and no ordering
@@ -347,9 +355,10 @@ begin without further design decisions.
   debrief sending nothing.
 
   **Still outstanding (manual gate):** the 1/2/4-operative Studio sessions across
-  success, squad failure, abandonment, disconnect during extraction, and replay,
-  completed without developer intervention. No automated coverage substitutes for
-  that evidence, and P10 is not signed off until it is recorded.
+  success, squad failure, abandonment, disconnect during extraction, and the
+  complete RETURN TO LOBBY → lobby READY → fresh-launch replay path, completed
+  without developer coaching or command-bar intervention. No automated coverage
+  substitutes for that evidence, and P10 is not signed off until it is recorded.
 
 ## Deliberate exclusions
 
