@@ -31,26 +31,34 @@ the capture shape to the implemented owners.
 ## What makes a run valid
 
 A row counts toward the gate only if it was produced by ordinary play through the
-authored operation, resolved once, and deliberately launched again through the
-visible return/lobby flow:
+authored operation, resolved once, and satisfied every criterion applicable to
+its Studio topology. Connected-client rows must also complete the visible
+return/lobby/replay flow; abandonment is intentionally a server-observation-only
+row because the accepted Studio topology cannot reconnect a closed client to the
+same local server:
 
 - the squad travels the authored route on foot and reaches its terminal outcome
   through ordinary play (or the deliberate scripted action named in the scenario),
   never by editing config or forcing a result directly;
 - the operation resolves **exactly once**, with the **cause the scenario
-  intends** (verify `causeId` on the debrief, not just the headline);
+  intends**; verify `causeId` on the debrief for connected-client rows and from
+  an inspectable authoritative server-side observable for abandonment;
 - for every scenario except abandonment, every connected participant activates
   **RETURN TO LOBBY**; in multiplayer, the UI truthfully shows the waiting count
   before the final vote, while the one-player vote returns immediately;
-- after return, the squad opens the Expedition Lobby and uses **READY** to launch
-  a **fresh run** without a command-bar action (`operationId` suffix increments
-  `…:run-N`);
-- the debrief renders and its fields are internally consistent with what was
-  observed (a wiped squad shows no survivors, a defeated boss shows
-  `bossDefeated`).
+- for every scenario except abandonment, after return the squad opens the
+  Expedition Lobby and uses **READY** to launch a **fresh run** without a
+  command-bar action (`operationId` suffix increments `…:run-N`);
+- for every scenario except abandonment, the debrief renders and its fields are
+  internally consistent with what was observed (a wiped squad shows no
+  survivors, a defeated boss shows `bossDefeated`);
+- for abandonment, the server-side observable proves exactly one
+  `Abandoned` / Failure resolution and the debrief, return-vote, and
+  same-server replay fields are recorded **N/A**, never inferred.
 
-If any of these breaks, classify the run **invalid** and note why — an honest
-invalid row is more useful than a fabricated valid one.
+If any applicable criterion breaks, classify the run **invalid** and note why.
+If abandonment has no inspectable authoritative result, classify it **UNKNOWN**.
+An honest invalid or unknown row is more useful than a fabricated valid one.
 
 ## Fixtures and exact values referenced
 
@@ -188,10 +196,11 @@ match `SafeMatchResultSnapshot`.
 Run ID:              (e.g. P10-2P-SUCCESS)
 Build SHA:
 Operatives:
-Valid? (Y/N + why):
+Valid? (Y/N/UNKNOWN + why):
+Evidence source:       (debrief or exact authoritative server-side observable)
 
-Operation facts:
-  operationId:            (must carry a :run-N suffix; note N)
+Operation facts (record N/A only where abandonment cannot expose the field):
+  operationId:            (must carry a :run-N suffix; note N when observable)
   outcomeId / causeId:
   durationSeconds:
   phaseReachedId:
@@ -199,20 +208,20 @@ Operation facts:
   bossDefeated:
   wavesSurvived:
 
-Per-operative contribution (one line each):
+Per-operative contribution (one line each; N/A for abandonment):
   <op>  survival= kills= damage= revives= objectives= classActions= bossHits=  relics=[…]
 
-Squad Field Upgrades (upgradeStacks): [ … ]
+Squad Field Upgrades (upgradeStacks; N/A for abandonment): [ … ]
 
-Return / replay:
-  RETURN TO LOBBY visible and understandable? (Y/N)
+Return / replay (record every field N/A for abandonment):
+  RETURN TO LOBBY visible and understandable? (Y/N/N/A)
   Waiting-for-squad count accurate before consensus? (Y/N + observed count; N/A for 1P and abandonment)
-  Returned to preparation after consensus? (Y/N)
-  Expedition Lobby reachable without coaching? (Y/N)
-  All retained members reset to unready? (Y/N)
-  Rejoin/JOIN required after disconnect? (Y/N + observed state)
-  READY launched exactly one fresh operation? (Y/N)
-  Next operationId suffix incremented? (Y/N)
+  Returned to preparation after consensus? (Y/N/N/A)
+  Expedition Lobby reachable without coaching? (Y/N/N/A)
+  All retained members reset to unready? (Y/N/N/A)
+  Rejoin/JOIN required after disconnect? (Y/N + observed state; N/A for abandonment)
+  READY launched exactly one fresh operation? (Y/N/N/A)
+  Next operationId suffix incremented? (Y/N/N/A)
 
 Player-experience observations (raw, not inferred):
   Input/device path:
