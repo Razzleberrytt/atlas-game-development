@@ -287,7 +287,7 @@ local function applyResult(snapshot: unknown)
 		end
 	end
 
-	nextAction.Text = "RETURN TO THE EXPEDITION LOBBY AND READY UP FOR ANOTHER OPERATION."
+	nextAction.Text = "RETURN TO THE EXPEDITION LOBBY AND READY UP FOR ANOTHER OPERATION. No rewards are recorded yet."
 	gui.Enabled = true
 end
 
