@@ -4,13 +4,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local RoomPlacementPlanner = require(ReplicatedStorage.Shared.Expeditions.RoomPlacementPlanner)
+local ExpeditionInstanceRegistry = require(ReplicatedStorage.Shared.Expeditions.ExpeditionInstanceRegistry)
 local ExpeditionEnvironmentBuilder = require(script.Parent.ExpeditionEnvironmentBuilder)
 local ModularDungeonRoomPresentation = require(script.Parent.ModularDungeonRoomPresentation)
 
-local ROOT_NAME = "ExpeditionRooms"
+local CONTAINER_NAME = "ExpeditionInstances"
+local LEGACY_RUN_ID = "legacy:singleton"
 local Service = {}
 
-local activeRoot: Folder? = nil
+local registry = ExpeditionInstanceRegistry.new()
+local rootsByRunId: { [string]: Folder } = {}
+local layoutsByRunId: { [string]: any } = {}
 
 local function part(name: string, size: Vector3, cframe: CFrame, parent: Instance): Part
 	local value = Instance.new("Part")
@@ -23,6 +27,34 @@ local function part(name: string, size: Vector3, cframe: CFrame, parent: Instanc
 	value.Color = Color3.fromRGB(47, 53, 60)
 	value.Parent = parent
 	return value
+end
+
+local function container(): Folder
+	local existing = Workspace:FindFirstChild(CONTAINER_NAME)
+	if existing ~= nil and existing:IsA("Folder") then
+		return existing
+	end
+	local created = Instance.new("Folder")
+	created.Name = CONTAINER_NAME
+	created:SetAttribute("AuthoritativeExpeditionContainer", true)
+	created.Parent = Workspace
+	return created
+end
+
+local function shiftPoint(pointValue: any, originX: number, originZ: number): any
+	return table.freeze({
+		x = pointValue.x + originX,
+		y = pointValue.y,
+		z = pointValue.z + originZ,
+	})
+end
+
+local function shiftPlacement(placement: any, originX: number, originZ: number): any
+	local shifted = table.clone(placement)
+	shifted.Center = shiftPoint(placement.Center, originX, originZ)
+	shifted.Entrance = shiftPoint(placement.Entrance, originX, originZ)
+	shifted.Exit = shiftPoint(placement.Exit, originX, originZ)
+	return table.freeze(shifted)
 end
 
 local function doorwayFixture(name: string, cframe: CFrame, roleId: string, parent: Instance)
@@ -118,50 +150,135 @@ local function buildRoom(placement: any, seed: number, parent: Instance)
 	model.Parent = parent
 end
 
-function Service.place(roomPlan: any): any
-	if activeRoot ~= nil then
-		return table.freeze({ Accepted = false, ReasonId = "RoomsAlreadyPlaced", Layout = nil })
+local function normalizePlanIdentity(roomPlan: any): string
+	if type(roomPlan.PlanIdentity) == "string" and #roomPlan.PlanIdentity > 0 then
+		return roomPlan.PlanIdentity
 	end
+	return `seed={roomPlan.Seed}|rooms={#roomPlan.Nodes}`
+end
+
+local function removeEmptyContainer()
+	local existing = Workspace:FindFirstChild(CONTAINER_NAME)
+	if existing ~= nil and existing:IsA("Folder") and #existing:GetChildren() == 0 then
+		existing:Destroy()
+	end
+end
+
+function Service.placeForRun(runId: string, roomPlan: any): any
 	local ok, layoutOrError = pcall(RoomPlacementPlanner.plan, roomPlan)
 	if not ok then
-		return table.freeze({ Accepted = false, ReasonId = "InvalidRoomPlan", Layout = nil })
+		return table.freeze({ Accepted = false, ReasonId = "InvalidRoomPlan", Layout = nil, RunId = runId })
 	end
 	local layout = layoutOrError
+	local planIdentity = normalizePlanIdentity(roomPlan)
+	local reproductionKey = `run={runId}|seed={layout.Seed}|plan={planIdentity}`
+	local registration = registry:create(runId, layout.Seed, planIdentity, reproductionKey)
+	if registration.Accepted ~= true then
+		return table.freeze({
+			Accepted = false,
+			ReasonId = registration.ReasonId,
+			Layout = layoutsByRunId[runId],
+			RunId = runId,
+			Instance = registration.Record,
+		})
+	end
+	local instance = registration.Record
 	local root = Instance.new("Folder")
-	root.Name = ROOT_NAME
+	root.Name = string.format("Run_%02d", instance.SlotIndex)
+	root:SetAttribute("RunId", runId)
+	root:SetAttribute("InstanceSlot", instance.SlotIndex)
 	root:SetAttribute("Seed", layout.Seed)
+	root:SetAttribute("PlanIdentity", planIdentity)
+	root:SetAttribute("ReproductionKey", reproductionKey)
+	root:SetAttribute("OriginX", instance.OriginX)
+	root:SetAttribute("OriginZ", instance.OriginZ)
 	root:SetAttribute("EnvironmentTheme", "RuinedSciFantasy")
 
-	for _, placement in layout.Placements do
-		buildRoom(placement, layout.Seed, root)
-	end
-	for index, connector in layout.Connectors do
-		local center = connector.Center
-		local bridge = part(
-			string.format("Connector_%02d_%02d", connector.FromIndex, connector.ToIndex),
-			Vector3.new(8, 1, connector.Length),
-			CFrame.new(center.x, 0, center.z),
-			root
-		)
-		bridge.Material = Enum.Material.CorrodedMetal
-		bridge.Color = Color3.fromRGB(50, 55, 60)
-		bridge:SetAttribute("ConnectorIndex", index)
+	local buildOk, buildError = pcall(function()
+		for _, placement in layout.Placements do
+			buildRoom(shiftPlacement(placement, instance.OriginX, instance.OriginZ), layout.Seed, root)
+		end
+		for index, connector in layout.Connectors do
+			local center = connector.Center
+			local bridge = part(
+				string.format("Connector_%02d_%02d", connector.FromIndex, connector.ToIndex),
+				Vector3.new(8, 1, connector.Length),
+				CFrame.new(center.x + instance.OriginX, 0, center.z + instance.OriginZ),
+				root
+			)
+			bridge.Material = Enum.Material.CorrodedMetal
+			bridge.Color = Color3.fromRGB(50, 55, 60)
+			bridge:SetAttribute("ConnectorIndex", index)
+		end
+	end)
+	if not buildOk then
+		root:Destroy()
+		registry:remove(runId)
+		warn("[ExpeditionRoomPlacement] failed to build run instance:", runId, buildError)
+		return table.freeze({ Accepted = false, ReasonId = "InstanceBuildFailed", Layout = nil, RunId = runId })
 	end
 
-	root.Parent = Workspace
-	activeRoot = root
-	return table.freeze({ Accepted = true, ReasonId = "RoomsPlaced", Layout = layout })
+	root.Parent = container()
+	rootsByRunId[runId] = root
+	layoutsByRunId[runId] = layout
+	return table.freeze({
+		Accepted = true,
+		ReasonId = "RoomsPlaced",
+		Layout = layout,
+		RunId = runId,
+		Instance = instance,
+	})
+end
+
+function Service.destroyRun(runId: string): any
+	local root = rootsByRunId[runId]
+	if root ~= nil then
+		root:Destroy()
+	end
+	rootsByRunId[runId] = nil
+	layoutsByRunId[runId] = nil
+	local removed = registry:remove(runId)
+	removeEmptyContainer()
+	return removed
+end
+
+function Service.getRootForRun(runId: string): Folder?
+	return rootsByRunId[runId]
+end
+
+function Service.getLayoutForRun(runId: string): any
+	return layoutsByRunId[runId]
+end
+
+function Service.getInstanceForRun(runId: string): any
+	return registry:get(runId)
+end
+
+function Service.getActiveInstances(): { any }
+	return registry:list()
+end
+
+function Service.destroyAll()
+	for _, root in rootsByRunId do
+		root:Destroy()
+	end
+	table.clear(rootsByRunId)
+	table.clear(layoutsByRunId)
+	registry:reset()
+	removeEmptyContainer()
+end
+
+-- Compatibility surface for the current singleton ExpeditionLiveRuntimeService.
+function Service.place(roomPlan: any): any
+	return Service.placeForRun(LEGACY_RUN_ID, roomPlan)
 end
 
 function Service.destroy()
-	if activeRoot ~= nil then
-		activeRoot:Destroy()
-		activeRoot = nil
-	end
+	Service.destroyRun(LEGACY_RUN_ID)
 end
 
 function Service.getRoot(): Folder?
-	return activeRoot
+	return Service.getRootForRun(LEGACY_RUN_ID)
 end
 
 return table.freeze(Service)
