@@ -39,8 +39,9 @@ visible return/lobby flow:
   never by editing config or forcing a result directly;
 - the operation resolves **exactly once**, with the **cause the scenario
   intends** (verify `causeId` on the debrief, not just the headline);
-- every connected participant activates **RETURN TO LOBBY**; the UI truthfully
-  shows whether the squad is still waiting for consensus;
+- for every scenario except abandonment, every connected participant activates
+  **RETURN TO LOBBY**; in multiplayer, the UI truthfully shows the waiting count
+  before the final vote, while the one-player vote returns immediately;
 - after return, the squad opens the Expedition Lobby and uses **READY** to launch
   a **fresh run** without a command-bar action (`operationId` suffix increments
   `…:run-N`);
@@ -94,6 +95,10 @@ invalid row is more useful than a fabricated valid one.
 5. Press **Start**. Confirm every client spawns at the Ranger Station insertion,
    the mission HUD shows `Insertion`, and Output names no failed bootstrap
    service/controller. Record any warning rather than silently dismissing it.
+6. Before running scenario actions, open the Expedition Lobby on every client,
+   **JOIN** where required, then use **READY** on every member. Confirm the
+   all-ready transition launches exactly one expedition and the mission advances
+   from its unarmed insertion state through the ordinary server-owned launch path.
 
 ## The scenario matrix
 
@@ -128,9 +133,11 @@ each plus the three success rows.
 6. Keep at least one **Alive** operative in the clearing at the deadline. Confirm
    the operation resolves **`Extracted` / Success**.
 7. Read the debrief. Capture every field in the table below.
-8. On every connected client activate **RETURN TO LOBBY**. Before the final vote,
-   confirm the button reports the waiting-for-squad count; after consensus,
-   confirm the terminal expedition closes and preparation becomes available.
+8. On every connected client activate **RETURN TO LOBBY**. For the 2P and 4P
+   rows, confirm the waiting-for-squad count before the final vote. For the 1P
+   row, record that check as **N/A** because the sole vote returns immediately.
+   After consensus, confirm the terminal expedition closes and preparation
+   becomes available.
 9. Open the Expedition Lobby, confirm all members begin unready, then use
    **READY** on each client. Confirm the server launches one fresh operation and
    the next mission snapshot carries the next `…:run-N` identity.
@@ -151,12 +158,14 @@ each plus the three success rows.
 1. Begin the operation and reach `Infiltration`.
 2. Close **every** client window (or stop all clients) so no admitted operative
    remains connected.
-3. Confirm the operation resolves **`Abandoned` / Failure** authoritatively (not a
-   wipe). Rejoin with one of the admitted player identities and confirm that client
-   is pushed the frozen debrief.
-4. Activate **RETURN TO LOBBY** on the rejoined client. Because every prior client
-   disconnected, confirm the Expedition Lobby shows **JOIN** rather than assuming
-   membership survived; JOIN, then READY, and confirm one fresh operation launches.
+3. Confirm from server-side evidence in the still-running Studio server that the
+   operation resolves **`Abandoned` / Failure** authoritatively (not a wipe), and
+   record the exact observable used. If the current session exposes no inspectable
+   authoritative result, mark the row **UNKNOWN** rather than inferring it.
+4. End this row after the abandonment observation. Record debrief, return-vote,
+   and same-server replay fields as **N/A**: the accepted Studio topology cannot
+   reconnect a closed client to that same local server. Exercise return/replay in
+   the other connected-client rows; do not fabricate a rejoin.
 
 ### Disconnect during extraction (`P10-2P-DISCONNECT`)
 
@@ -197,7 +206,7 @@ Squad Field Upgrades (upgradeStacks): [ … ]
 
 Return / replay:
   RETURN TO LOBBY visible and understandable? (Y/N)
-  Waiting-for-squad count accurate before consensus? (Y/N + observed count)
+  Waiting-for-squad count accurate before consensus? (Y/N + observed count; N/A for 1P and abandonment)
   Returned to preparation after consensus? (Y/N)
   Expedition Lobby reachable without coaching? (Y/N)
   All retained members reset to unready? (Y/N)
@@ -226,9 +235,12 @@ P10-0107 is complete — and P10 may be signed off — only when:
 
 - all six matrix rows are recorded as **valid**, each resolving once with its
   intended `causeId`;
-- every run completed the visible RETURN TO LOBBY → Expedition Lobby → READY
-  path without developer coaching or command-bar intervention, launched exactly
-  once, and carried a fresh `…:run-N` identity;
+- every non-abandonment run completed the visible RETURN TO LOBBY → Expedition
+  Lobby → READY path without developer coaching or command-bar intervention,
+  launched exactly once, and carried a fresh `…:run-N` identity;
+- the abandonment row records an authoritative server-side `Abandoned` result
+  and marks debrief/return/replay fields N/A rather than claiming an unsupported
+  same-server Studio rejoin;
 - the disconnect-during-extraction run **retained** the disconnected operative's
   contribution and still extracted;
 - no defect required developer intervention to reach or leave a terminal state;
